@@ -4,15 +4,9 @@ import logger from "@/infrastructure/logging";
 import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api";
-import { NftInstanceStatus, NftMintStatus } from "@prisma/client";
+import { NftInstance, NftInstanceStatus, NftMint, NftMintStatus } from "@prisma/client";
 
-function isSuccessState(state: string): boolean {
-  return ["minted", "sold"].includes(state.toLowerCase());
-}
-
-function isFailedState(state: string): boolean {
-  return ["error", "failed"].includes(state.toLowerCase());
-}
+const MAX_RETRIES = 3;
 
 export async function syncMintingInstances() {
   logger.info("🚀 Starting sync for MINTING nftInstances...");
@@ -32,7 +26,10 @@ export async function syncMintingInstances() {
         tx.nftInstance.findMany({
           where: { status: NftInstanceStatus.MINTING },
           include: {
-            nftMint: true,
+            nftMints: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+            },
           },
           take: BATCH_SIZE,
           skip,
@@ -49,52 +46,28 @@ export async function syncMintingInstances() {
       );
 
       for (const instance of instances) {
+        const latestMint = instance.nftMints[0];
+        if (!latestMint) {
+          logger.warn(`⚠️ No mint record found for instance ${instance.id}`);
+          continue;
+        }
+
         try {
           const details = await client.getNftDetails(instance.instanceId);
+          const state = (details.state ?? "").toLowerCase();
 
-          logger.debug("📊 NFT Details:", details);
+          logger.debug("📊 NFT Details:", { instanceId: instance.instanceId, state, details });
 
-          if (isSuccessState(details.state)) {
-            await issuer.internal(async (tx) => {
-              await tx.nftInstance.update({
-                where: { id: instance.id },
-                data: { status: NftInstanceStatus.OWNED },
-              });
+          const result = await handleInstanceState(
+            issuer,
+            instance,
+            latestMint,
+            state,
+            details.initialminttxhash,
+          );
 
-              if (instance.nftMint) {
-                await tx.nftMint.update({
-                  where: { id: instance.nftMint.id },
-                  data: {
-                    status: NftMintStatus.MINTED,
-                    txHash: details.initialminttxhash ?? undefined,
-                  },
-                });
-              }
-            });
-            totalProcessed++;
-            logger.info(`✅ Updated instance ${instance.id} to OWNED`);
-          } else if (isFailedState(details.state)) {
-            await issuer.internal(async (tx) => {
-              await tx.nftInstance.update({
-                where: { id: instance.id },
-                data: { status: NftInstanceStatus.MINTING },
-              });
-
-              if (instance.nftMint) {
-                await tx.nftMint.update({
-                  where: { id: instance.nftMint.id },
-                  data: {
-                    status: NftMintStatus.FAILED,
-                    error: "NMKR reported error during minting",
-                  },
-                });
-              }
-            });
-            totalErrors++;
-            logger.warn(`⚠️ Error state for instance ${instance.id}, kept as MINTING`);
-          } else {
-            logger.info(`⏳ Still minting: ${instance.id} (state=${details.state})`);
-          }
+          if (result === "processed") totalProcessed++;
+          if (result === "error") totalErrors++;
         } catch (err) {
           totalErrors++;
           logger.error(
@@ -111,6 +84,71 @@ export async function syncMintingInstances() {
   } catch (error) {
     logger.error("💥 Batch process error:", error);
     throw error;
+  }
+}
+
+// -------------------- 状態ハンドラ --------------------
+
+async function handleInstanceState(
+  issuer: PrismaClientIssuer,
+  instance: NftInstance & { nftMints: NftMint[] },
+  latestMint: NftMint,
+  state: string,
+  txHash?: string | null,
+): Promise<"processed" | "error" | "skipped"> {
+  switch (state) {
+    case "minted":
+      await issuer.internal(async (tx) => {
+        await tx.nftInstance.update({
+          where: { id: instance.id },
+          data: { status: NftInstanceStatus.OWNED },
+        });
+
+        await tx.nftMint.update({
+          where: { id: latestMint.id },
+          data: {
+            status: NftMintStatus.MINTED,
+            txHash: txHash ?? undefined,
+            error: null,
+          },
+        });
+      });
+      logger.info(`✅ Updated instance ${instance.id} to OWNED`);
+      return "processed";
+
+    case "sold":
+      await issuer.internal(async (tx) => {
+        await tx.nftMint.update({
+          where: { id: latestMint.id },
+          data: { status: NftMintStatus.SUBMITTED, error: null },
+        });
+      });
+      logger.info(`⏳ Instance ${instance.id} is SOLD, still minting`);
+      return "skipped";
+
+    case "error":
+    case "failed":
+      if (latestMint.retryCount >= MAX_RETRIES) {
+        await issuer.internal(async (tx) => {
+          await tx.nftMint.update({
+            where: { id: latestMint.id },
+            data: {
+              status: NftMintStatus.FAILED,
+              error: "NMKR reported persistent error during minting",
+            },
+          });
+        });
+        logger.error(`❌ Instance ${instance.id} marked as FAILED after ${MAX_RETRIES} retries`);
+      } else {
+        logger.warn(
+          `⚠️ Instance ${instance.id} still failing (retryCount=${latestMint.retryCount}), will retry later`,
+        );
+      }
+      return "error";
+
+    default:
+      logger.info(`⏳ Still minting: ${instance.id} (state=${state})`);
+      return "skipped";
   }
 }
 
