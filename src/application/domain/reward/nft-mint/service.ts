@@ -136,6 +136,8 @@ export default class NftMintService {
         params.walletAddress,
       );
 
+      logger.debug("[NftMintService] NMKR mint triggered", res);
+
       if (!this.validateMintResponse(res)) {
         logger.error("NMKR mint failed", { res });
         return;
