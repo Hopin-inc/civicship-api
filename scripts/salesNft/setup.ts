@@ -4,8 +4,8 @@ import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { NmkrClient } from "../../src/infrastructure/libs/nmkr/api";
-import { ProductType } from "@prisma/client";
-import { CreateProjectRequest } from "../../src/infrastructure/libs/nmkr/type";
+import { NftInstanceStatus, ProductType } from "@prisma/client";
+import { CreateProjectRequest, UploadNftResponse } from "../../src/infrastructure/libs/nmkr/type";
 import { UploadNftRequest } from "../../src/infrastructure/libs/nmkr/type";
 import * as process from "node:process";
 import fs from "fs";
@@ -226,14 +226,35 @@ async function main() {
         metadataPlaceholder: [{ name: "DESCRIPTION", value: `NFT ${i + 1} metadata` }],
       };
 
+      let uploaded: UploadNftResponse;
       try {
-        const uploaded = await nmkrClient.uploadNft(project.uid, nftPayload);
+        // -------------------------------
+        // NMKR へのアップロード
+        // -------------------------------
+        uploaded = await nmkrClient.uploadNft(project.uid, nftPayload);
 
+        logger.info("✅ NFT uploaded", {
+          file,
+          nftUid: uploaded.nftUid,
+          assetId: uploaded.assetId,
+        });
+      } catch (err) {
+        logger.error("❌ Failed to upload NFT to NMKR", {
+          file,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return; // DB登録に進まない
+      }
+
+      try {
+        // -------------------------------
+        // DB 登録
+        // -------------------------------
         await tx.nftInstance.create({
           data: {
             instanceId: uploaded.nftUid,
             sequenceNum: i + 1,
-            status: "STOCK",
+            status: NftInstanceStatus.STOCK,
             name: displayname,
             description: nftPayload.description,
             imageUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
@@ -244,13 +265,14 @@ async function main() {
           },
         });
 
-        logger.info("✅ NFT uploaded & registered", {
+        logger.info("✅ NFT registered in DB", {
           nftUid: uploaded.nftUid,
-          assetId: uploaded.assetId,
+          productId: product.id,
         });
       } catch (err) {
-        logger.error("❌ Failed to upload NFT", {
+        logger.error("❌ Failed to register NFT in DB", {
           file,
+          nftUid: uploaded?.nftUid,
           error: err instanceof Error ? err.message : String(err),
         });
       }
