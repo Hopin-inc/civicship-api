@@ -95,13 +95,19 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     logger.error("Stripe webhook processing failed", {
       error: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
+      isSignatureError: error instanceof Error && error.message.includes("signature"),
     });
 
     if (error instanceof Error && error.message.includes("signature")) {
-      return res.status(400).json({ error: "Invalid signature" });
+      logger.warn("Security event detected", {
+        type: "webhook_signature_failure",
+        source: "stripe",
+        timestamp: new Date().toISOString(),
+        requestId: req.headers['x-request-id'],
+      });
     }
 
-    return res.status(400).json({ error: "Webhook processing failed" });
+    return res.status(200).json({ received: true });
   }
 });
 

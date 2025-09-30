@@ -139,8 +139,13 @@ export default class NftMintService {
       logger.debug("[NftMintService] NMKR mint triggered", res);
 
       if (!this.validateMintResponse(res)) {
-        logger.error("NMKR mint failed", { res });
-        return;
+        const validationError = this.createValidationError(res, params);
+        logger.error("[NftMintService] NMKR mint validation failed", { 
+          ...params, 
+          response: res,
+          error: validationError.message 
+        });
+        throw validationError;
       }
 
       await this.processStateTransition(
@@ -161,6 +166,29 @@ export default class NftMintService {
     if (resp.mintAndSendId <= 0) return false;
     if (!resp.sendedNft?.length) return false;
     return !resp.sendedNft.some((nft) => !nft.minted);
+  }
+
+  private createValidationError(
+    response: MintAndSendSpecificResponse, 
+    params: { orderId: string; orderItemId: string }
+  ): NmkrMintingError {
+    const reasons: string[] = [];
+    
+    if (response.mintAndSendId <= 0) {
+      reasons.push(`Invalid mintAndSendId: ${response.mintAndSendId}`);
+    }
+    if (!response.sendedNft?.length) {
+      reasons.push("No NFTs in sendedNft array");
+    }
+    if (response.sendedNft?.some(nft => !nft.minted)) {
+      reasons.push("Some NFTs failed to mint");
+    }
+    
+    return new NmkrMintingError(
+      `NMKR mint validation failed: ${reasons.join(", ")}`,
+      params.orderId,
+      params.orderItemId
+    );
   }
 
   private classifyNmkrError(error: unknown, params: StripeMetadata): NmkrMintingError {
