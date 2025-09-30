@@ -1,8 +1,9 @@
 import { injectable } from "tsyringe";
-import { Prisma } from "@prisma/client";
+import { Prisma, NftMintStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { INftMintRepository } from "./interface";
 import { nftMintSelectBase, PrismaNftMint } from "./type";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export class NftMintRepository implements INftMintRepository {
@@ -55,7 +56,27 @@ export class NftMintRepository implements INftMintRepository {
     data: Prisma.NftMintCreateInput,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
-    return tx.nftMint.create({ data, select: nftMintSelectBase });
+    try {
+      return await tx.nftMint.create({ data, select: nftMintSelectBase });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('P2002') && error.message.includes('order_item_id')) {
+        logger.warn("[NftMintRepository] Mint job already exists for order item", {
+          orderItemId: (data as any).orderItem?.connect?.id,
+        });
+        
+        const existing = await tx.nftMint.findFirst({
+          where: { orderItemId: (data as any).orderItem?.connect?.id },
+          select: nftMintSelectBase,
+        });
+        
+        if (!existing) {
+          throw error;
+        }
+        
+        return existing;
+      }
+      throw error;
+    }
   }
 
   async update(
@@ -72,4 +93,27 @@ export class NftMintRepository implements INftMintRepository {
       dbTx.nftMint.update({ where: { id }, data, select: nftMintSelectBase }),
     );
   }
+
+  async findAndLockPending(
+    ctx: IContext,
+    limit: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint[]> {
+    const queryFn = async (prisma: Prisma.TransactionClient) => {
+      return await prisma.$queryRaw<PrismaNftMint[]>`
+        SELECT * FROM t_nft_mints 
+        WHERE status = ${NftMintStatus.QUEUED}
+        ORDER BY created_at ASC
+        LIMIT ${limit}
+        FOR UPDATE SKIP LOCKED
+      `;
+    };
+
+    if (tx) {
+      return queryFn(tx);
+    }
+
+    return ctx.issuer.internal(queryFn);
+  }
+
 }

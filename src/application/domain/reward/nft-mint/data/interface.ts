@@ -25,4 +25,9 @@ export interface INftMintRepository {
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint>;
   find(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaNftMint | null>;
+  findAndLockPending(
+    ctx: IContext,
+    limit: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint[]>;
 }

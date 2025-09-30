@@ -115,6 +115,9 @@ import OrderItemConverter from "@/application/domain/order/orderItem/data/conver
 import OrderService from "@/application/domain/order/service";
 import OrderWebhook from "@/application/domain/order/webhook";
 
+import StripeEventService from "@/application/domain/stripe/service";
+import StripeEventRepository from "@/application/domain/stripe/data/repository";
+
 export function registerProductionDependencies() {
   // ------------------------------
   // 🏗️ Infrastructure
@@ -322,6 +325,12 @@ export function registerProductionDependencies() {
 
   container.register("NmkrClient", { useClass: NmkrClient });
   container.register("StripeClient", { useClass: StripeClient });
+
+  // ------------------------------
+  // ------------------------------
+  
+  container.register("StripeEventService", { useClass: StripeEventService });
+  container.register("StripeEventRepository", { useClass: StripeEventRepository });
 }
 
 registerProductionDependencies();

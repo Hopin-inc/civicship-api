@@ -1211,10 +1211,11 @@ model NftMint {
   id     String        @id @default(cuid())
   status NftMintStatus @default(QUEUED)
 
-  txHash String? @unique @map("tx_hash")
-  error  String?
+  txHash     String? @unique @map("tx_hash")
+  error      String?
+  retryCount Int     @default(0) @map("retry_count")
 
-  orderItemId String?    @map("order_item_id")
+  orderItemId String?    @unique @map("order_item_id")
   orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
 
   nftWalletId String    @map("nft_wallet_id")
@@ -1226,6 +1227,7 @@ model NftMint {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@index([createdAt, id])
+  @@index([status, createdAt])
   @@map("t_nft_mints")
 }
 
@@ -1289,6 +1291,20 @@ enum OrderStatus {
   CANCELED
   REFUNDED
   FAILED
+}
+
+// ------------------------------ Stripe Events ------------------------------
+
+model StripeEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique @map("event_id")
+  eventType   String   @map("event_type")
+  orderId     String?  @map("order_id")
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@index([eventId])
+  @@index([orderId])
+  @@map("t_stripe_events")
 }
 
 // ------------------------------ Product (NFTのみ) ------------------------------

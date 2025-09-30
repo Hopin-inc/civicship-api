@@ -6,6 +6,7 @@ export default class NftMintConverter {
   buildMintCreate(p: { orderItemId: string; nftWalletId: string }): Prisma.NftMintCreateInput {
     return {
       status: NftMintStatus.QUEUED,
+      retryCount: 0,
       nftWallet: { connect: { id: p.nftWalletId } },
       orderItem: { connect: { id: p.orderItemId } },
     };

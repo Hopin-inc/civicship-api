@@ -14,6 +14,13 @@ import {
 import { MintAndSendSpecificResponse } from "@/infrastructure/libs/nmkr/type";
 import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 
+export class InvalidStateTransitionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidStateTransitionError";
+  }
+}
+
 @injectable()
 export default class NftMintService {
   constructor(
@@ -37,17 +44,33 @@ export default class NftMintService {
     nftWalletId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
-    const input = this.converter.buildMintCreate({
-      orderItemId,
-      nftWalletId,
-    });
-    const mint = await this.repo.create(ctx, input, tx);
+    try {
+      const input = this.converter.buildMintCreate({
+        orderItemId,
+        nftWalletId,
+      });
+      const mint = await this.repo.create(ctx, input, tx);
 
-    logger.debug("[OrderWebhook] Mint record created", {
-      orderItemId,
-      mintId: mint.id,
-    });
-    return mint;
+      logger.info("[NftMintService] Mint record created in QUEUED status", {
+        orderItemId,
+        nftWalletId,
+        mintId: mint.id,
+        status: NftMintStatus.QUEUED,
+      });
+      return mint;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('P2002') && error.message.includes('order_item_id')) {
+        logger.warn("[NftMintService] Mint job already exists for order item", {
+          orderItemId,
+        });
+        
+        const existing = await this.repo.query(ctx, orderItemId, tx);
+        if (existing.length > 0) {
+          return existing[0];
+        }
+      }
+      throw error;
+    }
   }
 
   async processStateTransition(
@@ -60,14 +83,7 @@ export default class NftMintService {
       throw new Error(`NftMint not found: ${transition.nftMintId}`);
     }
 
-    if (!this.canTransitionTo(currentMint.status, transition.status)) {
-      logger.warn("Invalid status transition attempted", {
-        nftMintId: transition.nftMintId,
-        currentStatus: currentMint.status,
-        newStatus: transition.status,
-      });
-      return currentMint;
-    }
+    this.assertValidTransition(currentMint.status, transition.status);
 
     if (
       !this.shouldUpdateMint(
@@ -92,18 +108,80 @@ export default class NftMintService {
       transition.txHash,
       transition.error,
     );
-    return this.repo.update(ctx, transition.nftMintId, input, tx);
+    const updatedMint = await this.repo.update(ctx, transition.nftMintId, input, tx);
+
+    logger.info("[NftMintService] Status transition completed", {
+      nftMintId: transition.nftMintId,
+      fromStatus: currentMint.status,
+      toStatus: transition.status,
+      txHash: transition.txHash,
+      error: transition.error,
+    });
+
+    return updatedMint;
+  }
+
+  async updateStatus(
+    ctx: IContext,
+    mintId: string,
+    newStatus: NftMintStatus,
+    txHash?: string,
+    error?: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint> {
+    const executeUpdate = async (dbTx: Prisma.TransactionClient) => {
+      return this.processStateTransition(
+        ctx,
+        { nftMintId: mintId, status: newStatus, txHash, error },
+        dbTx,
+      );
+    };
+
+    if (tx) {
+      return executeUpdate(tx);
+    }
+
+    return ctx.issuer.internal(executeUpdate);
+  }
+
+  async markAsCompleted(
+    ctx: IContext,
+    mintId: string,
+    txHash: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint> {
+    return this.updateStatus(ctx, mintId, NftMintStatus.MINTED, txHash, undefined, tx);
+  }
+
+  async markAsFailed(
+    ctx: IContext,
+    mintId: string,
+    error: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint> {
+    return this.updateStatus(ctx, mintId, NftMintStatus.FAILED, undefined, error, tx);
   }
 
   private canTransitionTo(currentStatus: NftMintStatus, newStatus: NftMintStatus): boolean {
-    const statusRank: Record<NftMintStatus, number> = {
-      QUEUED: 0,
-      SUBMITTED: 1,
-      MINTED: 2,
-      FAILED: 2,
-    };
-    return statusRank[newStatus] > statusRank[currentStatus];
+    const validTransitions: Map<NftMintStatus, NftMintStatus[]> = new Map([
+      [NftMintStatus.QUEUED, [NftMintStatus.SUBMITTED, NftMintStatus.FAILED]],
+      [NftMintStatus.SUBMITTED, [NftMintStatus.MINTED, NftMintStatus.FAILED]],
+      [NftMintStatus.MINTED, []],
+      [NftMintStatus.FAILED, [NftMintStatus.QUEUED]],
+    ]);
+    
+    const allowedTransitions = validTransitions.get(currentStatus) || [];
+    return allowedTransitions.includes(newStatus);
   }
+
+  private assertValidTransition(from: NftMintStatus, to: NftMintStatus): void {
+    if (!this.canTransitionTo(from, to)) {
+      throw new InvalidStateTransitionError(
+        `Invalid state transition from ${from} to ${to}`,
+      );
+    }
+  }
+
 
   private shouldUpdateMint(
     currentStatus: NftMintStatus,
