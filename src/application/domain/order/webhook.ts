@@ -9,10 +9,7 @@ import ProductService from "@/application/domain/product/service";
 import { Prisma } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
-import {
-  WebhookMetadataError,
-  PaymentStateTransitionError,
-} from "@/errors/graphql";
+import { WebhookMetadataError, PaymentStateTransitionError } from "@/errors/graphql";
 import { OrderWithItems } from "@/application/domain/order/data/type";
 
 type StripePayload = {
@@ -116,24 +113,16 @@ export default class OrderWebhook {
   ): Promise<void> {
     const { orderId, paymentTransactionUid, tx, meta } = args;
 
-    const order = await this.markOrderPaid(ctx, orderId, paymentTransactionUid, tx);
-    const wallet = await this.getOrCreateWallet(ctx, order.userId);
+    const order = await this.orderService.processPaymentCompletion(
+      ctx,
+      orderId,
+      paymentTransactionUid,
+      tx,
+    );
+    const wallet = await this.nftWalletService.ensureNmkrWallet(ctx, order.userId);
 
     await this.processOrderItems(ctx, order, wallet, meta, tx);
     await this.productService.snapshotOrderInventory(ctx, order, tx);
-  }
-
-  private async markOrderPaid(
-    ctx: IContext,
-    orderId: string,
-    paymentTransactionUid: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    return await this.orderService.processPaymentCompletion(ctx, orderId, paymentTransactionUid, tx);
-  }
-
-  private async getOrCreateWallet(ctx: IContext, userId: string) {
-    return await this.nftWalletService.ensureNmkrWallet(ctx, userId);
   }
 
   private async processOrderItems(
@@ -168,14 +157,18 @@ export default class OrderWebhook {
       });
 
       if (nmkrProjectUid && nmkrNftUid) {
-        await this.nftMintService.mintViaNmkr(ctx, {
-          mintId: mint.id,
-          projectUid: nmkrProjectUid,
-          nftUid: nmkrNftUid,
-          walletAddress: wallet.walletAddress,
-          orderId: order.id,
-          orderItemId: orderItem.id,
-        }, tx);
+        await this.nftMintService.mintViaNmkr(
+          ctx,
+          {
+            mintId: mint.id,
+            projectUid: nmkrProjectUid,
+            nftUid: nmkrNftUid,
+            walletAddress: wallet.walletAddress,
+            orderId: order.id,
+            orderItemId: orderItem.id,
+          },
+          tx,
+        );
       } else {
         logger.error("[OrderWebhook] Missing projectUid or nftUid; skip NMKR mint", {
           orderId: order.id,
@@ -192,7 +185,4 @@ export default class OrderWebhook {
     const found = await this.nftInstanceService.findInstanceById(ctx, id);
     return found ? found.id : fallbackWalletId;
   }
-
-
-
 }
