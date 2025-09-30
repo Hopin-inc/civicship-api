@@ -8,7 +8,6 @@ export const nftMintSelectBase = Prisma.validator<Prisma.NftMintSelect>()({
   error: true,
 
   orderItem: true,
-  nftWallet: true,
 
   createdAt: true,
   updatedAt: true,

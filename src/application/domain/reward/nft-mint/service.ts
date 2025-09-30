@@ -40,12 +40,16 @@ export default class NftMintService {
     ctx: IContext,
     orderItemId: string,
     nftWalletId: string,
+    externalRequestId: string,
+    nftInstanceId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
     try {
       const input = this.converter.buildMintCreate({
         orderItemId,
         nftWalletId,
+        externalRequestId,
+        nftInstanceId,
       });
       const mint = await this.repo.create(ctx, input, tx);
 

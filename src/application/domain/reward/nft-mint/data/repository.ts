@@ -59,20 +59,24 @@ export class NftMintRepository implements INftMintRepository {
     try {
       return await tx.nftMint.create({ data, select: nftMintSelectBase });
     } catch (error) {
-      if (error instanceof Error && error.message.includes('P2002') && error.message.includes('order_item_id')) {
+      if (
+        error instanceof Error &&
+        error.message.includes("P2002") &&
+        error.message.includes("order_item_id")
+      ) {
         logger.warn("[NftMintRepository] Mint job already exists for order item", {
           orderItemId: (data as any).orderItem?.connect?.id,
         });
-        
+
         const existing = await tx.nftMint.findFirst({
           where: { orderItemId: (data as any).orderItem?.connect?.id },
           select: nftMintSelectBase,
         });
-        
+
         if (!existing) {
           throw error;
         }
-        
+
         return existing;
       }
       throw error;
@@ -100,12 +104,14 @@ export class NftMintRepository implements INftMintRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaNftMint[]> {
     const queryFn = async (prisma: Prisma.TransactionClient) => {
-      return await prisma.$queryRaw<PrismaNftMint[]>`
-        SELECT * FROM t_nft_mints 
+      return prisma.$queryRaw<PrismaNftMint[]>`
+        SELECT *
+        FROM t_nft_mints
         WHERE status = ${NftMintStatus.QUEUED}
         ORDER BY created_at ASC
-        LIMIT ${limit}
-        FOR UPDATE SKIP LOCKED
+          LIMIT ${limit}
+          FOR
+        UPDATE SKIP LOCKED
       `;
     };
 
@@ -115,5 +121,4 @@ export class NftMintRepository implements INftMintRepository {
 
     return ctx.issuer.internal(queryFn);
   }
-
 }
