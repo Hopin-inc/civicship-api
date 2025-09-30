@@ -33,30 +33,41 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     let state: string;
     let metadata: Stripe.Metadata = {};
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      paymentTransactionUid = session.payment_intent as string;
-      state = "succeeded";
-      metadata = session.metadata ?? {};
-    } else if (event.type === "checkout.session.async_payment_failed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      paymentTransactionUid = session.payment_intent as string;
-      state = "payment_failed";
-      metadata = session.metadata ?? {};
-    } else if (event.type === "checkout.session.expired") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      paymentTransactionUid = session.payment_intent as string;
-      state = "expired";
-      metadata = session.metadata ?? {};
-    } else {
-      logger.warn("Unhandled Stripe webhook event type", {
-        eventType: event.type,
-        eventId: event.id,
-      });
-      return res.status(200).json({
-        received: true,
-        message: `Event type ${event.type} not handled`,
-      });
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        paymentTransactionUid = session.payment_intent as string;
+        state = "succeeded";
+        metadata = session.metadata ?? {};
+        break;
+      }
+
+      case "checkout.session.async_payment_failed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        paymentTransactionUid = session.payment_intent as string;
+        state = "payment_failed";
+        metadata = session.metadata ?? {};
+        break;
+      }
+
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        paymentTransactionUid = session.payment_intent as string;
+        state = "expired";
+        metadata = session.metadata ?? {};
+        break;
+      }
+
+      default: {
+        logger.warn("Unhandled Stripe webhook event type", {
+          eventType: event.type,
+          eventId: event.id,
+        });
+        return res.status(200).json({
+          received: true,
+          message: `Event type ${event.type} not handled`,
+        });
+      }
     }
 
     const ctx = { issuer } as IContext;
