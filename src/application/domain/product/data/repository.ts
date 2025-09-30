@@ -65,12 +65,14 @@ export default class ProductRepository implements IProductRepository {
     soldPendingMint: number;
     minted: number;
   } | null> {
-    const result = await tx.$queryRaw<{
-      max_supply: number | null;
-      reserved: number;
-      sold_pending_mint: number;
-      minted: number;
-    }[]>`
+    const result = await tx.$queryRaw<
+      {
+        max_supply: number | null;
+        reserved: number;
+        sold_pending_mint: number;
+        minted: number;
+      }[]
+    >`
       WITH inventory_counts AS (
         SELECT 
           p.max_supply,
@@ -109,10 +111,10 @@ export default class ProductRepository implements IProductRepository {
 
     const data = result[0];
     return {
-      maxSupply: data.max_supply,
-      reserved: data.reserved,
-      soldPendingMint: data.sold_pending_mint,
-      minted: data.minted,
+      maxSupply: data.max_supply === null ? null : Number(data.max_supply),
+      reserved: Number(data.reserved),
+      soldPendingMint: Number(data.sold_pending_mint),
+      minted: Number(data.minted),
     };
   }
 }
