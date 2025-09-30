@@ -127,12 +127,13 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       nftWalletId: string;
       nftTokenId: string;
     },
+    productId: string,
     tx: Prisma.TransactionClient,
   ) {
     return tx.nftInstance.upsert({
       where: {
-        nftWalletId_instanceId: {
-          nftWalletId: data.nftWalletId,
+        productId_instanceId: {
+          productId,
           instanceId: data.instanceId,
         },
       },
@@ -204,7 +205,9 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     return tx.nftInstance.update({
       where: { id: nftInstanceId },
       data: {
-        nftMintId: mintId,
+        nftMints: {
+          connect: { id: mintId },
+        },
         nftWalletId: walletId,
         status: NftInstanceStatus.MINTING,
       },

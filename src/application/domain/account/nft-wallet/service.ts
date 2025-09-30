@@ -11,6 +11,7 @@ import { ValidationError } from "@/errors/graphql";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import crypto from "crypto";
+import { KIBOTCHCA_PRODUCT_ID_BY_JUST_DAO_IT } from "@/application/domain/utils";
 
 @injectable()
 export default class NFTWalletService {
@@ -103,6 +104,7 @@ export default class NFTWalletService {
             nftWalletId: wallet.id,
             nftTokenId: nftToken.id,
           },
+          KIBOTCHCA_PRODUCT_ID_BY_JUST_DAO_IT,
           tx,
         );
       }

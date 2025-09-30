@@ -46,6 +46,7 @@ export default interface INftInstanceRepository {
       nftWalletId: string;
       nftTokenId: string;
     },
+    productId: string,
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string }>;
 
