@@ -12,6 +12,7 @@ import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/d
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import { WebhookMetadataError, PaymentStateTransitionError } from "@/errors/graphql";
 import { OrderWithItems } from "@/application/domain/order/data/type";
+import { PrismaNftMint } from "@/application/domain/reward/nft-mint/data/type";
 
 type StripePayload = {
   id: string;
@@ -158,9 +159,15 @@ export default class OrderWebhook {
     for (const orderItem of order.items) {
       const nftInstanceId = await this.resolveInstanceId(ctx, metaNftInstanceId, wallet.id);
 
-      const mint = await this.nftMintService.createMintRecord(ctx, orderItem.id, wallet.id, tx);
-
+      let mint: PrismaNftMint | null = null;
       if (nftInstanceId) {
+        mint = await this.nftMintService.createMintRecord(
+          ctx,
+          orderItem.id,
+          wallet.id,
+          nftInstanceId,
+          tx,
+        );
         await this.nftInstanceService.markAsMinting(ctx, nftInstanceId, mint.id, wallet.id, tx);
       } else {
         logger.error("[OrderWebhook] No nftInstance found for nftUid", {
@@ -174,8 +181,8 @@ export default class OrderWebhook {
         orderId: order.id,
         orderItemId: orderItem.id,
         nftInstanceId,
-        mintId: mint.id,
-        status: mint.status,
+        mintId: mint?.id ?? null,
+        status: mint?.status ?? "SKIPPED",
       });
     }
   }
