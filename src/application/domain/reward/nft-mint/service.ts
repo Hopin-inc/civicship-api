@@ -7,12 +7,10 @@ import { PrismaNftMint } from "./data/type";
 import logger from "@/infrastructure/logging";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import {
-  NmkrMintingError,
-  NmkrTokenUnavailableError,
-  NmkrInsufficientCreditsError,
-} from "@/errors/graphql";
-import { MintAndSendSpecificResponse } from "@/infrastructure/libs/nmkr/type";
-import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
+  classifyNmkrError,
+  createValidationError,
+  validateMintResponse,
+} from "@/infrastructure/libs/nmkr/validator";
 
 export class InvalidStateTransitionError extends Error {
   constructor(message: string) {
@@ -59,17 +57,67 @@ export default class NftMintService {
       });
       return mint;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('P2002') && error.message.includes('order_item_id')) {
+      if (
+        error instanceof Error &&
+        error.message.includes("P2002") &&
+        error.message.includes("order_item_id")
+      ) {
         logger.warn("[NftMintService] Mint job already exists for order item", {
           orderItemId,
         });
-        
+
         const existing = await this.repo.query(ctx, orderItemId, tx);
         if (existing.length > 0) {
           return existing[0];
         }
       }
       throw error;
+    }
+  }
+
+  async mintViaNmkr(
+    ctx: IContext,
+    params: {
+      mintId: string;
+      projectUid: string;
+      nftUid: string;
+      walletAddress: string;
+      orderId: string;
+      orderItemId: string;
+    },
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    try {
+      const res = await this.nmkrClient.mintAndSendSpecific(
+        params.projectUid,
+        params.nftUid,
+        1,
+        params.walletAddress,
+      );
+
+      logger.debug("[NftMintService] NMKR mint triggered", res);
+
+      if (!validateMintResponse(res)) {
+        const validationError = createValidationError(res, params);
+        logger.error("[NftMintService] NMKR mint validation failed", {
+          ...params,
+          response: res,
+          error: validationError.message,
+        });
+        throw validationError;
+      }
+
+      await this.processStateTransition(
+        ctx,
+        { nftMintId: params.mintId, status: NftMintStatus.SUBMITTED },
+        tx,
+      );
+
+      logger.info("[NftMintService] NMKR mint triggered & marked SUBMITTED", params);
+    } catch (e) {
+      const classifiedError = classifyNmkrError(e, params);
+      logger.error("[NftMintService] NMKR mint failed", { ...params, error: classifiedError, e });
+      throw classifiedError;
     }
   }
 
@@ -121,47 +169,6 @@ export default class NftMintService {
     return updatedMint;
   }
 
-  async updateStatus(
-    ctx: IContext,
-    mintId: string,
-    newStatus: NftMintStatus,
-    txHash?: string,
-    error?: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaNftMint> {
-    const executeUpdate = async (dbTx: Prisma.TransactionClient) => {
-      return this.processStateTransition(
-        ctx,
-        { nftMintId: mintId, status: newStatus, txHash, error },
-        dbTx,
-      );
-    };
-
-    if (tx) {
-      return executeUpdate(tx);
-    }
-
-    return ctx.issuer.internal(executeUpdate);
-  }
-
-  async markAsCompleted(
-    ctx: IContext,
-    mintId: string,
-    txHash: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaNftMint> {
-    return this.updateStatus(ctx, mintId, NftMintStatus.MINTED, txHash, undefined, tx);
-  }
-
-  async markAsFailed(
-    ctx: IContext,
-    mintId: string,
-    error: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaNftMint> {
-    return this.updateStatus(ctx, mintId, NftMintStatus.FAILED, undefined, error, tx);
-  }
-
   private canTransitionTo(currentStatus: NftMintStatus, newStatus: NftMintStatus): boolean {
     const validTransitions: Map<NftMintStatus, NftMintStatus[]> = new Map([
       [NftMintStatus.QUEUED, [NftMintStatus.SUBMITTED, NftMintStatus.FAILED]],
@@ -169,19 +176,16 @@ export default class NftMintService {
       [NftMintStatus.MINTED, []],
       [NftMintStatus.FAILED, [NftMintStatus.QUEUED]],
     ]);
-    
+
     const allowedTransitions = validTransitions.get(currentStatus) || [];
     return allowedTransitions.includes(newStatus);
   }
 
   private assertValidTransition(from: NftMintStatus, to: NftMintStatus): void {
     if (!this.canTransitionTo(from, to)) {
-      throw new InvalidStateTransitionError(
-        `Invalid state transition from ${from} to ${to}`,
-      );
+      throw new InvalidStateTransitionError(`Invalid state transition from ${from} to ${to}`);
     }
   }
-
 
   private shouldUpdateMint(
     currentStatus: NftMintStatus,
@@ -192,93 +196,5 @@ export default class NftMintService {
     const canTransition = this.canTransitionTo(currentStatus, newStatus);
     if (!canTransition) return false;
     return !(currentTxHash && !newTxHash);
-  }
-
-  async mintViaNmkr(
-    ctx: IContext,
-    params: {
-      mintId: string;
-      projectUid: string;
-      nftUid: string;
-      walletAddress: string;
-      orderId: string;
-      orderItemId: string;
-    },
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
-    try {
-      const res = await this.nmkrClient.mintAndSendSpecific(
-        params.projectUid,
-        params.nftUid,
-        1,
-        params.walletAddress,
-      );
-
-      logger.debug("[NftMintService] NMKR mint triggered", res);
-
-      if (!this.validateMintResponse(res)) {
-        const validationError = this.createValidationError(res, params);
-        logger.error("[NftMintService] NMKR mint validation failed", { 
-          ...params, 
-          response: res,
-          error: validationError.message 
-        });
-        throw validationError;
-      }
-
-      await this.processStateTransition(
-        ctx,
-        { nftMintId: params.mintId, status: NftMintStatus.SUBMITTED },
-        tx,
-      );
-
-      logger.info("[NftMintService] NMKR mint triggered & marked SUBMITTED", params);
-    } catch (e) {
-      const classifiedError = this.classifyNmkrError(e, params);
-      logger.error("[NftMintService] NMKR mint failed", { ...params, error: classifiedError, e });
-      throw classifiedError;
-    }
-  }
-
-  private validateMintResponse(resp: MintAndSendSpecificResponse) {
-    if (resp.mintAndSendId <= 0) return false;
-    if (!resp.sendedNft?.length) return false;
-    return !resp.sendedNft.some((nft) => !nft.minted);
-  }
-
-  private createValidationError(
-    response: MintAndSendSpecificResponse, 
-    params: { orderId: string; orderItemId: string }
-  ): NmkrMintingError {
-    const reasons: string[] = [];
-    
-    if (response.mintAndSendId <= 0) {
-      reasons.push(`Invalid mintAndSendId: ${response.mintAndSendId}`);
-    }
-    if (!response.sendedNft?.length) {
-      reasons.push("No NFTs in sendedNft array");
-    }
-    if (response.sendedNft?.some(nft => !nft.minted)) {
-      reasons.push("Some NFTs failed to mint");
-    }
-    
-    return new NmkrMintingError(
-      `NMKR mint validation failed: ${reasons.join(", ")}`,
-      params.orderId,
-      params.orderItemId
-    );
-  }
-
-  private classifyNmkrError(error: unknown, params: StripeMetadata): NmkrMintingError {
-    if (error instanceof Error && error.message.includes("404")) {
-      return new NmkrTokenUnavailableError(params.nmkrNftUid, params.orderId, params.orderItemId);
-    } else if (error instanceof Error && error.message.includes("402")) {
-      return new NmkrInsufficientCreditsError(params.orderId, params.orderItemId);
-    }
-    return new NmkrMintingError(
-      "NMKR minting operation failed",
-      params.orderId,
-      params.orderItemId,
-    );
   }
 }
