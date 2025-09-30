@@ -115,8 +115,8 @@ import OrderItemConverter from "@/application/domain/order/orderItem/data/conver
 import OrderService from "@/application/domain/order/service";
 import OrderWebhook from "@/application/domain/order/webhook";
 
-import StripeEventService from "@/application/domain/stripe/service";
-import StripeEventRepository from "@/application/domain/stripe/data/repository";
+import PaymentEventService from "@/application/domain/order/paymentEvent/service";
+import PaymentEventRepository from "@/application/domain/order/paymentEvent/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -328,9 +328,9 @@ export function registerProductionDependencies() {
 
   // ------------------------------
   // ------------------------------
-  
-  container.register("StripeEventService", { useClass: StripeEventService });
-  container.register("StripeEventRepository", { useClass: StripeEventRepository });
+
+  container.register("PaymentEventService", { useClass: PaymentEventService });
+  container.register("PaymentEventRepository", { useClass: PaymentEventRepository });
 }
 
 registerProductionDependencies();
