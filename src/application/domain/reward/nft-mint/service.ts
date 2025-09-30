@@ -39,21 +39,19 @@ export default class NftMintService {
   async createMintRecord(
     ctx: IContext,
     orderItemId: string,
-    nftWalletId: string,
     nftInstanceId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
     try {
       const input = this.converter.buildMintCreate({
         orderItemId,
-        nftWalletId,
         nftInstanceId,
       });
       const mint = await this.repo.create(ctx, input, tx);
 
       logger.info("[NftMintService] Mint record created in QUEUED status", {
         orderItemId,
-        nftWalletId,
+        nftInstanceId,
         mintId: mint.id,
         status: NftMintStatus.QUEUED,
       });

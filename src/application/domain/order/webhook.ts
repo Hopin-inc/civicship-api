@@ -164,7 +164,6 @@ export default class OrderWebhook {
         mint = await this.nftMintService.createMintRecord(
           ctx,
           orderItem.id,
-          wallet.id,
           nftInstanceId,
           tx,
         );

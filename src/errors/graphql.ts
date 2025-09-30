@@ -343,3 +343,53 @@ export class PaymentStateTransitionError extends OrderProcessingError {
     Object.defineProperty(this, "name", { value: "PaymentStateTransitionError" });
   }
 }
+
+export class ProductNotFoundError extends ApolloError {
+  public productId: string;
+
+  constructor(productId: string) {
+    super(`Product not found: ${productId}`, "PRODUCT_NOT_FOUND");
+    this.productId = productId;
+    Object.defineProperty(this, "name", { value: "ProductNotFoundError" });
+  }
+}
+
+export class InventoryCalculationError extends ApolloError {
+  public productId: string;
+  public cause?: string;
+
+  constructor(productId: string, cause: unknown) {
+    super(`Inventory calculation failed for product: ${productId}`, "INVENTORY_CALCULATION_ERROR");
+    this.productId = productId;
+    this.cause = cause instanceof Error ? cause.message : String(cause);
+    Object.defineProperty(this, "name", { value: "InventoryCalculationError" });
+  }
+}
+
+export class OversellDetectedError extends ApolloError {
+  public productId: string;
+  public oversellAmount: number;
+  public snapshot: any;
+
+  constructor(productId: string, oversellAmount: number, snapshot: any) {
+    super(`Oversell detected: ${oversellAmount} units for product ${productId}`, "OVERSELL_DETECTED");
+    this.productId = productId;
+    this.oversellAmount = oversellAmount;
+    this.snapshot = snapshot;
+    Object.defineProperty(this, "name", { value: "OversellDetectedError" });
+  }
+}
+
+export class InsufficientInventoryError extends ApolloError {
+  public productId: string;
+  public requestedQuantity: number;
+  public availableQuantity: number;
+
+  constructor(productId: string, requestedQuantity: number, availableQuantity: number) {
+    super(`Insufficient inventory for product ${productId}: requested ${requestedQuantity}, available ${availableQuantity}`, "INSUFFICIENT_INVENTORY");
+    this.productId = productId;
+    this.requestedQuantity = requestedQuantity;
+    this.availableQuantity = availableQuantity;
+    Object.defineProperty(this, "name", { value: "InsufficientInventoryError" });
+  }
+}

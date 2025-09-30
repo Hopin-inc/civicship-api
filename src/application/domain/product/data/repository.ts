@@ -54,4 +54,65 @@ export default class ProductRepository implements IProductRepository {
       select: { maxSupply: true },
     });
   }
+
+  async calculateInventoryAtomic(
+    ctx: IContext,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{
+    maxSupply: number | null;
+    reserved: number;
+    soldPendingMint: number;
+    minted: number;
+  } | null> {
+    const result = await tx.$queryRaw<{
+      max_supply: number | null;
+      reserved: number;
+      sold_pending_mint: number;
+      minted: number;
+    }[]>`
+      WITH inventory_counts AS (
+        SELECT 
+          p.max_supply,
+          -- Reserved: PENDING orders
+          COALESCE(SUM(
+            CASE WHEN o.status = 'PENDING' 
+            THEN oi.quantity ELSE 0 END
+          ), 0) as reserved,
+          
+          -- Sold Pending Mint: PAID orders with incomplete minting (including FAILED as lost)
+          COALESCE(SUM(
+            CASE WHEN o.status = 'PAID' 
+                 AND (nm.status IS NULL OR nm.status IN ('QUEUED', 'SUBMITTED', 'FAILED'))
+            THEN oi.quantity ELSE 0 END
+          ), 0) as sold_pending_mint,
+          
+          -- Minted: Successfully completed mints
+          COALESCE(SUM(
+            CASE WHEN nm.status = 'MINTED' 
+            THEN oi.quantity ELSE 0 END
+          ), 0) as minted
+          
+        FROM t_products p
+        LEFT JOIN t_order_items oi ON oi.product_id = p.id
+        LEFT JOIN t_orders o ON o.id = oi.order_id
+        LEFT JOIN t_nft_mints nm ON nm.order_item_id = oi.id
+        WHERE p.id = ${productId}
+        GROUP BY p.id, p.max_supply
+      )
+      SELECT * FROM inventory_counts
+    `;
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    const data = result[0];
+    return {
+      maxSupply: data.max_supply,
+      reserved: data.reserved,
+      soldPendingMint: data.sold_pending_mint,
+      minted: data.minted,
+    };
+  }
 }

@@ -34,6 +34,7 @@ export interface InventorySnapshot {
   reserved: number;
   soldPendingMint: number;
   minted: number;
-  available: number;
+  available: number | null;
   maxSupply: number | null;
+  calculatedAt: Date;
 }

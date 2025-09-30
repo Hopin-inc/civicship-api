@@ -4,17 +4,19 @@ import { IContext } from "@/types/server";
 import { IProductService } from "./data/interface";
 import ProductRepository from "./data/repository";
 import { PrismaProduct, InventorySnapshot } from "./data/type";
-import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
-import NftMintService from "@/application/domain/reward/nft-mint/service";
 import { OrderWithItems } from "@/application/domain/order/data/type";
 import logger from "@/infrastructure/logging";
+import { 
+  ProductNotFoundError, 
+  InventoryCalculationError, 
+  OversellDetectedError, 
+  InsufficientInventoryError 
+} from "@/errors/graphql";
 
 @injectable()
 export default class ProductService implements IProductService {
   constructor(
     @inject("ProductRepository") private readonly repository: ProductRepository,
-    @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
-    @inject("NftMintService") private readonly nftMintService: NftMintService,
   ) {}
 
   async findOrThrowForOrder(
@@ -54,15 +56,48 @@ export default class ProductService implements IProductService {
     ctx: IContext,
     order: OrderWithItems,
     tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  ): Promise<InventorySnapshot[]> {
+    const snapshots: InventorySnapshot[] = [];
+    
     for (const item of order.items) {
-      const inventory = await this.calculateProductInventory(ctx, item.productId, tx);
-      logger.debug("[ProductService] Inventory snapshot", {
-        orderId: order.id,
-        orderItemId: item.id,
-        inventory,
-      });
+      try {
+        const inventory = await this.calculateProductInventory(ctx, item.productId, tx);
+        
+        if (inventory.available !== null && inventory.available < item.quantity) {
+          throw new InsufficientInventoryError(
+            item.productId,
+            item.quantity,
+            inventory.available
+          );
+        }
+        
+        snapshots.push(inventory);
+        
+        logger.debug("[ProductService] Inventory snapshot", {
+          orderId: order.id,
+          orderItemId: item.id,
+          inventory,
+        });
+        
+      } catch (error) {
+        logger.error("[ProductService] Inventory snapshot failed", {
+          orderId: order.id,
+          orderItemId: item.id,
+          productId: item.productId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        
+        if (error instanceof ProductNotFoundError || 
+            error instanceof InsufficientInventoryError ||
+            error instanceof OversellDetectedError) {
+          throw error;
+        }
+        
+        throw new InventoryCalculationError(item.productId, error);
+      }
     }
+    
+    return snapshots;
   }
 
   private async calculateProductInventory(
@@ -70,19 +105,81 @@ export default class ProductService implements IProductService {
     productId: string,
     tx: Prisma.TransactionClient,
   ): Promise<InventorySnapshot> {
-    const product = await this.repository.findMaxSupplyById(ctx, productId, tx);
+    try {
+      const result = await this.calculateProductInventoryAtomic(ctx, productId, tx);
+      
+      logger.debug("[ProductService] Inventory calculated", {
+        productId,
+        snapshot: result,
+      });
+      
+      return result;
+    } catch (error) {
+      logger.error("[ProductService] Inventory calculation failed", {
+        productId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      
+      if (error instanceof ProductNotFoundError) {
+        throw error;
+      }
+      
+      throw new InventoryCalculationError(productId, error);
+    }
+  }
 
-    const [reserved, soldPendingMint, minted] = await Promise.all([
-      this.orderItemService.countReservedByProduct(ctx, productId, tx),
-      this.orderItemService.countSoldPendingMintByProduct(ctx, productId, tx),
-      this.nftMintService.countMintedByProduct(ctx, productId, tx),
-    ]);
+  private async calculateProductInventoryAtomic(
+    ctx: IContext,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<InventorySnapshot> {
+    const result = await this.repository.calculateInventoryAtomic(ctx, productId, tx);
 
-    const maxSupply = product?.maxSupply ?? null;
-    const available = maxSupply == null 
-      ? Number.MAX_SAFE_INTEGER 
-      : Math.max(0, (maxSupply ?? 0) - reserved - soldPendingMint - minted);
+    if (!result) {
+      throw new ProductNotFoundError(productId);
+    }
 
-    return { productId, reserved, soldPendingMint, minted, available, maxSupply };
+    const { maxSupply, reserved, soldPendingMint, minted } = result;
+    
+    const rawAvailable = maxSupply === null 
+      ? null 
+      : maxSupply - reserved - soldPendingMint - minted;
+    
+    if (rawAvailable !== null && rawAvailable < 0) {
+      const oversellAmount = Math.abs(rawAvailable);
+      
+      logger.error("[ProductService] Oversell detected", {
+        productId,
+        maxSupply,
+        reserved,
+        soldPendingMint,
+        minted,
+        oversellAmount,
+      });
+      
+      throw new OversellDetectedError(productId, oversellAmount, {
+        productId,
+        reserved,
+        soldPendingMint,
+        minted,
+        available: rawAvailable,
+        maxSupply,
+        calculatedAt: new Date(),
+      });
+    }
+
+    const available = maxSupply === null 
+      ? null
+      : Math.max(0, rawAvailable!);
+
+    return {
+      productId,
+      reserved,
+      soldPendingMint,
+      minted,
+      available,
+      maxSupply,
+      calculatedAt: new Date(),
+    };
   }
 }

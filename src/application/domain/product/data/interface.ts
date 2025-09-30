@@ -28,4 +28,15 @@ export interface IProductRepository {
     productId: string,
     tx: Prisma.TransactionClient,
   ): Promise<{ maxSupply: number | null } | null>;
+
+  calculateInventoryAtomic(
+    ctx: IContext,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{
+    maxSupply: number | null;
+    reserved: number;
+    soldPendingMint: number;
+    minted: number;
+  } | null>;
 }
