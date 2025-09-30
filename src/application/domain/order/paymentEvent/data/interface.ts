@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
-export interface IStripeEventRepository {
+export interface IPaymentEventRepository {
   findByEventId(
     ctx: IContext,
     eventId: string,
@@ -19,7 +19,7 @@ export interface IStripeEventRepository {
   ): Promise<{ id: string; eventId: string }>;
 }
 
-export interface IStripeEventService {
+export interface IPaymentEventService {
   ensureEventIdempotency(
     ctx: IContext,
     eventId: string,
