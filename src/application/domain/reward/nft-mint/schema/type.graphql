@@ -5,9 +5,8 @@ type NftMint {
     txHash: String
     error: String
 
-    order: Order
-    nftWallet: NftWallet
-    nftInstance: NftInstance
+    order: Order!
+    nftInstance: NftInstance!
 
     createdAt: Datetime!
     updatedAt: Datetime
