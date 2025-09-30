@@ -716,7 +716,7 @@ FAILED FAILED
     String tx_hash "❓"
     String error "❓"
     Int retry_count 
-    String external_request_id 
+    String external_request_id "❓"
     String order_item_id 
     String nft_instance_id 
     DateTime created_at 

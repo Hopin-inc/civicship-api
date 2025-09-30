@@ -7107,9 +7107,7 @@ export const defineNftInstanceFactory = (<TOptions extends NftInstanceFactoryDef
 
 defineNftInstanceFactory.withTransientFields = defaultTransientFieldValues => options => defineNftInstanceFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
-type NftMintScalarOrEnumFields = {
-    externalRequestId: string;
-};
+type NftMintScalarOrEnumFields = {};
 
 type NftMintorderItemFactory = {
     _factoryFor: "OrderItem";
@@ -7127,7 +7125,7 @@ type NftMintFactoryDefineInput = {
     txHash?: string | null;
     error?: string | null;
     retryCount?: number;
-    externalRequestId?: string;
+    externalRequestId?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     orderItem: NftMintorderItemFactory | Prisma.OrderItemCreateNestedOneWithoutNftMintsInput;
@@ -7177,9 +7175,7 @@ export interface NftMintFactoryInterface<TTransients extends Record<string, unkn
 function autoGenerateNftMintScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): NftMintScalarOrEnumFields {
-    return {
-        externalRequestId: getScalarFieldValueGenerator().String({ modelName: "NftMint", fieldName: "externalRequestId", isId: false, isUnique: true, seq })
-    };
+    return {};
 }
 
 function defineNftMintFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends NftMintFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): NftMintFactoryInterface<TTransients, NftMintTraitKeys<TOptions>> {

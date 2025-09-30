@@ -589,7 +589,7 @@ Table t_nft_mints {
   txHash String
   error String
   retryCount Int [not null, default: 0]
-  externalRequestId String [unique, not null]
+  externalRequestId String [unique]
   orderItemId String [not null]
   orderItem t_order_items [not null]
   nftInstanceId String [unique, not null]

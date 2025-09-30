@@ -1214,7 +1214,7 @@ model NftMint {
   error      String?
   retryCount Int     @default(0) @map("retry_count")
 
-  externalRequestId String @unique @map("external_request_id")
+  externalRequestId String? @unique @map("external_request_id")
 
   orderItemId String    @map("order_item_id")
   orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
