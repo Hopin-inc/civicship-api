@@ -1295,16 +1295,16 @@ enum OrderStatus {
 
 // ------------------------------ Stripe Events ------------------------------
 
-model StripeEvent {
+model PaymentEvent {
   id          String   @id @default(cuid())
-  eventId     String   @unique @map("event_id")
+  eventId     String   @map("event_id")
   eventType   String   @map("event_type")
   orderId     String?  @map("order_id")
   processedAt DateTime @default(now()) @map("processed_at")
 
-  @@index([eventId])
+  @@unique([eventId])
   @@index([orderId])
-  @@map("t_stripe_events")
+  @@map("t_payment_events")
 }
 
 // ------------------------------ Product (NFTのみ) ------------------------------

@@ -747,7 +747,7 @@ FAILED FAILED
     }
   
 
-  "t_stripe_events" {
+  "t_payment_events" {
     String id "🗝️"
     String event_id 
     String event_type 

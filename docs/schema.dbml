@@ -626,7 +626,7 @@ Table t_order_items {
   updatedAt DateTime [not null]
 }
 
-Table t_stripe_events {
+Table t_payment_events {
   id String [pk]
   eventId String [unique, not null]
   eventType String [not null]
