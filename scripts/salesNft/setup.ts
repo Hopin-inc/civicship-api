@@ -34,6 +34,7 @@ async function main() {
    * -------------------------------
    */
   const PAYOUT_ADDR = process.env.NMKR_PAYOUT_ADDR ?? "addr_test1..."; // 売上送金先
+  const DESCRIPTION = "デジタル住民証";
 
   /**
    * -------------------------------
@@ -46,8 +47,6 @@ async function main() {
   const PROJECT_NAME = `KIBOTCHAスマートエコビレッジDAO-${timestamp}`; // プロジェクト名
   const PROJECT_IMG =
     "https://storage.googleapis.com/studio-design-asset-files/projects/BXaxJLbXO7/s-3534x2926_v-frms_webp_f7afab6f-3f7c-4067-8367-0991ab4d1651_small.webp";
-  const PROJECT_DESC =
-    "スマートエコビレッジ住民証NFTは、何が起きても「大丈夫」と希望を持てるデジタルな御守りです。KIBOTCHAスマートエコビレッジは、宮城県東松島の廃校をリノベーションし、1万人規模の安心安全な村づくりを実践する共創プロジェクトです。食・住・エネルギーを地域資源から自律的に生み出す最先端技術を導入し、DAOによる住民主導の意思決定で未来を描きます。";
   const PROJECT_URL = "https://dao.kibotcha.com/"; // 表示用URL
   const TOKEN_PREFIX = "KIBOTCHA"; // NFTのプレフィックス
 
@@ -82,7 +81,7 @@ async function main() {
    */
   const projectPayload: CreateProjectRequest = {
     projectname: PROJECT_NAME,
-    description: PROJECT_DESC,
+    description: DESCRIPTION,
     projecturl: PROJECT_URL,
     tokennamePrefix: TOKEN_PREFIX,
     policyExpires: true,
@@ -120,7 +119,7 @@ async function main() {
   const stripeProduct = await stripeClient.createProduct({
     name: PROJECT_NAME, // 表示名
     active: true, // 販売可能状態
-    description: PROJECT_DESC,
+    description: DESCRIPTION,
     images: [PROJECT_IMG],
     metadata: {
       communityId: COMMUNITY_ID,
@@ -160,7 +159,7 @@ async function main() {
       const product = await tx.product.create({
         data: {
           name: PROJECT_NAME,
-          description: PROJECT_DESC,
+          description: DESCRIPTION,
           price: PER_PRICE,
           maxSupply: MAX_SUPPLY,
           type: ProductType.NFT,
