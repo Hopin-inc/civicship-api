@@ -522,6 +522,7 @@ Table t_transactions {
   createdByUser t_users
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+  merkleProofs t_merkle_proofs [not null]
 }
 
 Table m_api_keys {
@@ -572,6 +573,27 @@ Table t_nft_instances {
   indexes {
     (nftWalletId, instanceId) [unique]
   }
+}
+
+Table t_merkle_commits {
+  id String [pk]
+  rootHash String [not null]
+  label Int [not null]
+  periodStart DateTime [not null]
+  periodEnd DateTime [not null]
+  committedAt DateTime [default: `now()`, not null]
+  proofs t_merkle_proofs [not null]
+}
+
+Table t_merkle_proofs {
+  id String [pk]
+  txId String [not null]
+  tx t_transactions [not null]
+  commitId String [not null]
+  commit t_merkle_commits [not null]
+  index Int [not null]
+  sibling String [not null]
+  position Position [not null]
 }
 
 Table v_place_public_opportunity_count {
@@ -856,6 +878,11 @@ Enum TransactionReason {
   OPPORTUNITY_RESERVATION_REJECTED
 }
 
+Enum Position {
+  LEFT
+  RIGHT
+}
+
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 
 Ref: t_places.imageId > t_images.id
@@ -977,6 +1004,10 @@ Ref: t_nft_wallets.userId - t_users.id [delete: Cascade]
 Ref: t_nft_instances.nftWalletId > t_nft_wallets.id [delete: Cascade]
 
 Ref: t_nft_instances.nftTokenId > t_nft_tokens.id [delete: Set Null]
+
+Ref: t_merkle_proofs.txId > t_transactions.id [delete: Cascade]
+
+Ref: t_merkle_proofs.commitId > t_merkle_commits.id [delete: Cascade]
 
 Ref: v_place_public_opportunity_count.placeId - t_places.id [delete: Restrict]
 

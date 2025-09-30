@@ -212,6 +212,13 @@ OPPORTUNITY_RESERVATION_CANCELED OPPORTUNITY_RESERVATION_CANCELED
 OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
         }
     
+
+
+        Position {
+            LEFT LEFT
+RIGHT RIGHT
+        }
+    
   "t_images" {
     String id "🗝️"
     Boolean is_public 
@@ -657,6 +664,26 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
     }
   
 
+  "t_merkle_commits" {
+    String id "🗝️"
+    String root_hash 
+    Int label 
+    DateTime period_start 
+    DateTime period_end 
+    DateTime committed_at 
+    }
+  
+
+  "t_merkle_proofs" {
+    String id "🗝️"
+    String tx_id 
+    String commit_id 
+    Int index 
+    String sibling 
+    Position position 
+    }
+  
+
   "v_place_public_opportunity_count" {
     String placeId "🗝️"
     Int currentPublicCount 
@@ -901,11 +928,16 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
     "t_transactions" o|--|o "t_reservations" : "reservation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "t_transactions" o|--|o "t_users" : "createdByUser"
+    "t_transactions" o{--}o "t_merkle_proofs" : "merkleProofs"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
+    "t_merkle_commits" o{--}o "t_merkle_proofs" : "proofs"
+    "t_merkle_proofs" o|--|| "t_transactions" : "tx"
+    "t_merkle_proofs" o|--|| "t_merkle_commits" : "commit"
+    "t_merkle_proofs" o|--|| "Position" : "enum:position"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

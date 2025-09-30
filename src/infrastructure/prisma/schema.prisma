@@ -1088,6 +1088,8 @@ model Transaction {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  merkleProofs MerkleProof[]
+
   @@map("t_transactions")
 }
 
@@ -1168,4 +1170,39 @@ model NftInstance {
 
   @@unique([nftWalletId, instanceId])
   @@map("t_nft_instances")
+}
+
+// ------------------------------ Merkle Extension ------------------------------
+
+enum Position {
+  LEFT
+  RIGHT
+}
+
+model MerkleCommit {
+  id          String        @id
+  rootHash    String        @map("root_hash")
+  label       Int
+  periodStart DateTime      @map("period_start")
+  periodEnd   DateTime      @map("period_end")
+  committedAt DateTime      @default(now()) @map("committed_at")
+  proofs      MerkleProof[]
+
+  @@map("t_merkle_commits")
+}
+
+model MerkleProof {
+  id String @id @default(cuid())
+
+  txId String      @map("tx_id")
+  tx   Transaction @relation(fields: [txId], references: [id], onDelete: Cascade)
+
+  commitId String       @map("commit_id")
+  commit   MerkleCommit @relation(fields: [commitId], references: [id], onDelete: Cascade)
+
+  index    Int
+  sibling  String
+  position Position
+
+  @@map("t_merkle_proofs")
 }
