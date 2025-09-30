@@ -6,7 +6,7 @@ import NftMintService from "@/application/domain/reward/nft-mint/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderService from "@/application/domain/order/service";
 import ProductService from "@/application/domain/product/service";
-import StripeEventService from "@/application/domain/stripe/service";
+import PaymentEventService from "@/application/domain/order/paymentEvent/service";
 import { Prisma } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
@@ -32,7 +32,7 @@ export default class OrderWebhook {
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
     @inject("NftInstanceService") private readonly nftInstanceService: NftInstanceService,
     @inject("ProductService") private readonly productService: ProductService,
-    @inject("StripeEventService") private readonly stripeEventService: StripeEventService,
+    @inject("PaymentEventService") private readonly paymentEventService: PaymentEventService,
   ) {}
 
   public async processStripeWebhook(ctx: IContext, payload: StripePayload): Promise<void> {
@@ -48,7 +48,7 @@ export default class OrderWebhook {
     const meta = metadata;
 
     await ctx.issuer.internal(async (tx) => {
-      const shouldProcess = await this.stripeEventService.ensureEventIdempotency(
+      const shouldProcess = await this.paymentEventService.ensureEventIdempotency(
         ctx,
         paymentTransactionUid,
         `webhook.${state}`,
@@ -109,6 +109,11 @@ export default class OrderWebhook {
         state,
       });
     } catch (error) {
+      logger.error("[OrderWebhook] Failed to handle payment failure", {
+        orderId,
+        state,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new PaymentStateTransitionError(
         "Failed to handle payment failure",
         orderId,
