@@ -3,7 +3,6 @@ import { Prisma, NftInstance, NftInstanceStatus } from "@prisma/client";
 import { injectable } from "tsyringe";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
-import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class NftInstanceRepository implements INftInstanceRepository {
@@ -62,10 +61,6 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       where: { id: instanceId },
       data: { status: NftInstanceStatus.STOCK },
     });
-
-    logger.debug("[NftInstanceRepository] Released NFT instance reservation", {
-      instanceId,
-    });
   }
 
   async updateStatus(
@@ -74,25 +69,19 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     status: NftInstanceStatus,
     tx?: Prisma.TransactionClient,
   ): Promise<NftInstance> {
-    const updateFn = async (prisma: Prisma.TransactionClient) => {
-      const updatedInstance = await prisma.nftInstance.update({
+    if (tx) {
+      return tx.nftInstance.update({
         where: { id: instanceId },
         data: { status },
       });
-
-      logger.debug("[NftInstanceRepository] Updated NFT instance status", {
-        instanceId,
-        status,
-      });
-
-      return updatedInstance;
-    };
-
-    if (tx) {
-      return updateFn(tx);
     }
 
-    return ctx.issuer.internal(updateFn);
+    return ctx.issuer.internal((prisma) =>
+      prisma.nftInstance.update({
+        where: { id: instanceId },
+        data: { status },
+      }),
+    );
   }
 
   async count(ctx: IContext, where: Prisma.NftInstanceWhereInput): Promise<number> {

@@ -7,6 +7,7 @@ import NftInstanceConverter from "@/application/domain/account/nft-instance/data
 import NftInstancePresenter from "@/application/domain/account/nft-instance/presenter";
 import { clampFirst } from "@/application/domain/utils";
 import { Prisma } from "@prisma/client";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class NftInstanceService {
@@ -68,21 +69,16 @@ export default class NftInstanceService {
     return this.repository.findReservedByProduct(ctx, productId, quantity, tx);
   }
 
-  async releaseReservations(
-    ctx: IContext,
-    instanceIds: string[],
-    tx: Prisma.TransactionClient,
-  ) {
+  async releaseReservations(ctx: IContext, instanceIds: string[], tx: Prisma.TransactionClient) {
     for (const instanceId of instanceIds) {
       await this.repository.releaseReservation(ctx, instanceId, tx);
+      logger.debug("[NftInstanceRepository] Released NFT instance reservation", {
+        instanceId,
+      });
     }
   }
 
-  async findInstanceById(
-    ctx: IContext,
-    instanceId: string,
-    tx?: Prisma.TransactionClient,
-  ) {
+  async findInstanceById(ctx: IContext, instanceId: string, tx?: Prisma.TransactionClient) {
     return this.repository.findByIdWithTransaction(ctx, instanceId, tx);
   }
 }
