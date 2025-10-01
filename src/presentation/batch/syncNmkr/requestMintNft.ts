@@ -48,7 +48,7 @@ export async function processQueuedMints() {
         try {
           // --- NMKR submission 実行 ---
           await issuer.internal(async (tx) => {
-            await mintService.mintViaNmkr(
+            const res = await mintService.mintViaNmkr(
               ctx,
               {
                 mintId: mint.id,
@@ -65,6 +65,7 @@ export async function processQueuedMints() {
               where: { id: mint.id },
               data: {
                 status: NftMintStatus.SUBMITTED,
+                externalRequestId: String(res.mintAndSendId),
                 error: null,
               },
             });

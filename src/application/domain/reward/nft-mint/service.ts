@@ -11,6 +11,7 @@ import {
   createValidationError,
   validateMintResponse,
 } from "@/infrastructure/libs/nmkr/validator";
+import { MintAndSendSpecificResponse } from "@/infrastructure/libs/nmkr/type";
 
 export class InvalidStateTransitionError extends Error {
   constructor(message: string) {
@@ -86,7 +87,7 @@ export default class NftMintService {
       orderItemId: string;
     },
     tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  ): Promise<MintAndSendSpecificResponse> {
     try {
       const res = await this.nmkrClient.mintAndSendSpecific(
         params.projectUid,
@@ -114,6 +115,8 @@ export default class NftMintService {
       );
 
       logger.info("[NftMintService] NMKR mint triggered & marked SUBMITTED", params);
+
+      return res;
     } catch (e) {
       const classifiedError = classifyNmkrError(e, params);
       logger.error("[NftMintService] NMKR mint failed", { ...params, error: classifiedError, e });
