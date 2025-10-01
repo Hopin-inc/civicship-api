@@ -29,7 +29,7 @@ export default class OrderUseCase {
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmg6gty8l000f8zlppv82g6u3";
+    const currentUserId = "cmg6sybtg000n8zge8k9ndzst";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await this.orderService.createOrder(ctx, {
@@ -49,67 +49,68 @@ export default class OrderUseCase {
     order: OrderWithItems,
     product: PrismaProduct,
   ): Promise<{ uid: string; url: string }> {
-    return ctx.issuer.internal(async (tx) => {
-      try {
-        const nftInstance = await this.nftInstanceRepo.findAndReserveInstance(
-          ctx,
-          ctx.communityId,
-          product.id,
-          tx,
-        );
+    const nftInstance = await ctx.issuer.internal(async (tx) => {
+      const instance = await this.nftInstanceRepo.findAndReserveInstance(
+        ctx,
+        ctx.communityId,
+        product.id,
+        tx,
+      );
 
-        if (!nftInstance) {
-          throw new InventoryUnavailableError(product.id, ctx.communityId);
-        }
-
-        const nftInstanceId = nftInstance["instance_id"];
-
-        logger.debug("[NftInstanceRepository] Reserved NFT instance", {
-          instanceId: nftInstanceId,
-          communityId: ctx.communityId,
-          productId: product.id,
-          sequenceNum: nftInstance.sequenceNum,
-        });
-
-        const metadata: StripeMetadata = {
-          orderId: order.id,
-          orderItemId: order.items?.[0].id,
-          nftInstanceId: nftInstance.id,
-          nmkrProjectUid: product.nftProduct?.nmkrProjectId ?? "",
-          nmkrNftUid: nftInstanceId,
-        };
-
-        const sessionParams = this.converter.stripeCheckoutSessionInput(product, metadata);
-        const session = await this.stripeClient.createCheckoutSession(sessionParams);
-
-        logger.debug("[OrderUseCase] Created Stripe checkout session", {
-          sessionId: session.id,
-          metadata: metadata,
-        });
-
-        return {
-          uid: session.id,
-          url: session.url ?? "",
-        };
-      } catch (error) {
-        logger.error(
-          "[OrderUseCase] Failed to reserve instance and create Stripe payment session",
-          {
-            orderId: order.id,
-            error,
-          },
-        );
-
-        if (error instanceof InventoryUnavailableError) {
-          throw error;
-        }
-
-        throw new PaymentSessionCreationError(
-          "Failed to create Stripe checkout session",
-          order.id,
-          error,
-        );
+      if (!instance) {
+        throw new InventoryUnavailableError(product.id, ctx.communityId);
       }
+
+      const instanceId = instance["instance_id"];
+
+      logger.debug("[NftInstanceRepository] Reserved NFT instance", {
+        instanceId: instanceId,
+        communityId: ctx.communityId,
+        productId: product.id,
+        sequenceNum: instance.sequenceNum,
+      });
+
+      return instance;
     });
+
+    const instanceId = nftInstance["instance_id"];
+
+    let session;
+    try {
+      const metadata: StripeMetadata = {
+        orderId: order.id,
+        orderItemId: order.items?.[0].id,
+        nftInstanceId: nftInstance.id,
+        nmkrProjectUid: product.nftProduct?.nmkrProjectId ?? "",
+        nmkrNftUid: instanceId,
+      };
+
+      const sessionParams = this.converter.stripeCheckoutSessionInput(product, metadata);
+      session = await this.stripeClient.createCheckoutSession(sessionParams);
+
+      logger.debug("[OrderUseCase] Created Stripe checkout session", {
+        sessionId: session.id,
+        metadata,
+      });
+    } catch (error) {
+      await ctx.issuer.internal(async (tx) => {
+        await this.nftInstanceRepo.releaseReservation(ctx, nftInstance.id, tx);
+      });
+
+      throw new PaymentSessionCreationError(
+        "Failed to create Stripe checkout session",
+        order.id,
+        error,
+      );
+    }
+
+    await ctx.issuer.internal(async (tx) => {
+      await this.orderService.updateOrderWithExternalRef(ctx, order.id, session.id, tx);
+    });
+
+    return {
+      uid: session.id,
+      url: session.url ?? "",
+    };
   }
 }
