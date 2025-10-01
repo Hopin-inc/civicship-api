@@ -5,7 +5,6 @@ import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 import NftMintService from "@/application/domain/reward/nft-mint/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderService from "@/application/domain/order/service";
-import ProductService from "@/application/domain/product/service";
 import PaymentEventService from "@/application/domain/order/paymentEvent/service";
 import { Prisma } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
@@ -32,7 +31,6 @@ export default class OrderWebhook {
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
     @inject("NftInstanceService") private readonly nftInstanceService: NftInstanceService,
-    @inject("ProductService") private readonly productService: ProductService,
     @inject("PaymentEventService") private readonly paymentEventService: PaymentEventService,
   ) {}
 
@@ -144,7 +142,6 @@ export default class OrderWebhook {
     const wallet = await this.nftWalletService.ensureNmkrWallet(ctx, order.userId);
 
     await this.enqueueMintJobs(ctx, order, wallet, meta, tx);
-    await this.productService.snapshotOrderInventory(ctx, order, tx);
   }
 
   private async enqueueMintJobs(
