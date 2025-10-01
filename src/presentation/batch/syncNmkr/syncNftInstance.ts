@@ -55,6 +55,7 @@ export async function syncMintingInstances() {
         try {
           const details = await client.getNftDetails(instance.instanceId);
           const state = (details.state ?? "").toLowerCase();
+          const minted = details.minted;
 
           logger.debug("📊 NFT Details:", { instanceId: instance.instanceId, state, details });
 
@@ -63,6 +64,7 @@ export async function syncMintingInstances() {
             instance,
             latestMint,
             state,
+            minted,
             details.initialminttxhash,
           );
 
@@ -94,28 +96,30 @@ async function handleInstanceState(
   instance: NftInstance & { nftMints: NftMint[] },
   latestMint: NftMint,
   state: string,
+  minted: boolean,
   txHash?: string | null,
 ): Promise<"processed" | "error" | "skipped"> {
-  switch (state) {
-    case "minted":
-      await issuer.internal(async (tx) => {
-        await tx.nftInstance.update({
-          where: { id: instance.id },
-          data: { status: NftInstanceStatus.OWNED },
-        });
-
-        await tx.nftMint.update({
-          where: { id: latestMint.id },
-          data: {
-            status: NftMintStatus.MINTED,
-            txHash: txHash ?? undefined,
-            error: null,
-          },
-        });
+  if (minted) {
+    await issuer.internal(async (tx) => {
+      await tx.nftInstance.update({
+        where: { id: instance.id },
+        data: { status: NftInstanceStatus.OWNED },
       });
-      logger.info(`✅ Updated instance ${instance.id} to OWNED`);
-      return "processed";
 
+      await tx.nftMint.update({
+        where: { id: latestMint.id },
+        data: {
+          status: NftMintStatus.MINTED,
+          txHash: txHash ?? undefined,
+          error: null,
+        },
+      });
+    });
+    logger.info(`✅ Updated instance ${instance.id} to OWNED`);
+    return "processed";
+  }
+
+  switch (state) {
     case "sold":
       await issuer.internal(async (tx) => {
         await tx.nftMint.update({
