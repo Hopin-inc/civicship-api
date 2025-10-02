@@ -1235,6 +1235,7 @@ export type GqlOpportunityCreateInput = {
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
   placeId?: InputMaybe<Scalars['ID']['input']>;
+  pointsRequired?: InputMaybe<Scalars['Int']['input']>;
   pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
   publishStatus: GqlPublishStatus;
   relatedArticleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -1408,6 +1409,7 @@ export type GqlOpportunityUpdateContentInput = {
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
   placeId?: InputMaybe<Scalars['ID']['input']>;
+  pointsRequired?: InputMaybe<Scalars['Int']['input']>;
   pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
   publishStatus: GqlPublishStatus;
   relatedArticleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
