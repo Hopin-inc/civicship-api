@@ -1,5 +1,5 @@
 # civicship-api
-![logo.svg](./docs/asset/logo.svg)
+![logo.svg](./docs/handbook/asset/logo.svg)
 
 ## Overview
 
@@ -12,7 +12,7 @@
 - 📱 LINE Integration & Notifications
 - 📝 Content & Media Management
 
-For detailed features, see [FEATURES.md](./docs/FEATURES.md).
+For detailed features, see [FEATURES.md](./docs/handbook/handbook/FEATURES.md).
 
 ## Quick Start
 
@@ -86,40 +86,40 @@ src/
 ## 📖 Documentation
 
 ### 🚀 Getting Started
-- 🔧 [Setup Guide](./docs/SETUP.md) - Complete installation & configuration
-- 🌍 [Environment Variables](./docs/ENVIRONMENT.md) - Configuration reference
-- 🔍 [Troubleshooting](./docs/TROUBLESHOOTING.md) - Common issues & solutions
+- 🔧 [Setup Guide](./docs/handbook/SETUP.md) - Complete installation & configuration
+- 🌍 [Environment Variables](./docs/handbook/ENVIRONMENT.md) - Configuration reference
+- 🔍 [Troubleshooting](./docs/handbook/TROUBLESHOOTING.md) - Common issues & solutions
 
 ### 🏗️ Architecture & Development  
-- 🏗️ [Architecture Guide](./docs/ARCHITECTURE.md) - System design overview
-- 🔒 [Security Architecture](./docs/SECURITY.md) - Authentication & authorization
-- 🔌 [Infrastructure Guide](./docs/INFRASTRUCTURE.md) - External systems & database
-- ⚡ [Performance Guide](./docs/PERFORMANCE.md) - Optimization strategies
-- 🎯 [Implementation Patterns](./docs/PATTERNS.md) - Code patterns & best practices
-- 👨‍💻 [Development Workflow](./docs/DEVELOPMENT.md) - Daily development procedures
+- 🏗️ [Architecture Guide](./docs/handbook/ARCHITECTURE.md) - System design overview
+- 🔒 [Security Architecture](./docs/handbook/SECURITY.md) - Authentication & authorization
+- 🔌 [Infrastructure Guide](./docs/handbook/INFRASTRUCTURE.md) - External systems & database
+- ⚡ [Performance Guide](./docs/handbook/PERFORMANCE.md) - Optimization strategies
+- 🎯 [Implementation Patterns](./docs/handbook/PATTERNS.md) - Code patterns & best practices
+- 👨‍💻 [Development Workflow](./docs/handbook/DEVELOPMENT.md) - Daily development procedures
 
 ### 📊 Reference & Operations
-- ✨ [Features](./docs/FEATURES.md) - Complete feature overview
-- 🗄️ [Database Schema](./docs/ERD.md) - Entity relationship diagram
-- 🧪 [Testing](./docs/TESTING.md) - Test strategy & execution
-- 🚀 [Deployment](./docs/DEPLOYMENT.md) - Production deployment guide
-- 💻 [Commands Reference](./docs/COMMANDS.md) - All available commands
+- ✨ [Features](./docs/handbook/FEATURES.md) - Complete feature overview
+- 🗄️ [Database Schema](./docs/handbook/ERD.md) - Entity relationship diagram
+- 🧪 [Testing](./docs/handbook/TESTING.md) - Test strategy & execution
+- 🚀 [Deployment](./docs/handbook/DEPLOYMENT.md) - Production deployment guide
+- 💻 [Commands Reference](./docs/handbook/COMMANDS.md) - All available commands
 
 ## 🎯 Quick Navigation by Role
 
 ### For New Developers
-1. [Setup Guide](./docs/SETUP.md) → [Environment Variables](./docs/ENVIRONMENT.md)
-2. [Architecture Guide](./docs/ARCHITECTURE.md) → [Development Workflow](./docs/DEVELOPMENT.md)
-3. [Implementation Patterns](./docs/PATTERNS.md) → [Testing](./docs/TESTING.md)
+1. [Setup Guide](./docs/handbook/SETUP.md) → [Environment Variables](./docs/handbook/ENVIRONMENT.md)
+2. [Architecture Guide](./docs/handbook/ARCHITECTURE.md) → [Development Workflow](./docs/handbook/DEVELOPMENT.md)
+3. [Implementation Patterns](./docs/handbook/PATTERNS.md) → [Testing](./docs/handbook/TESTING.md)
 
 ### For System Administrators  
-1. [Infrastructure Guide](./docs/INFRASTRUCTURE.md) → [Security Architecture](./docs/SECURITY.md)
-2. [Deployment Guide](./docs/DEPLOYMENT.md) → [Performance Guide](./docs/PERFORMANCE.md)
-3. [Environment Variables](./docs/ENVIRONMENT.md) → [Troubleshooting](./docs/TROUBLESHOOTING.md)
+1. [Infrastructure Guide](./docs/handbook/INFRASTRUCTURE.md) → [Security Architecture](./docs/handbook/SECURITY.md)
+2. [Deployment Guide](./docs/handbook/DEPLOYMENT.md) → [Performance Guide](./docs/handbook/PERFORMANCE.md)
+3. [Environment Variables](./docs/handbook/ENVIRONMENT.md) → [Troubleshooting](./docs/handbook/TROUBLESHOOTING.md)
 
 ### For API Users
-1. [Features](./docs/FEATURES.md) → [Database Schema](./docs/ERD.md)
-2. [Commands Reference](./docs/COMMANDS.md) → [Testing](./docs/TESTING.md)
+1. [Features](./docs/handbook/FEATURES.md) → [Database Schema](./docs/handbook/ERD.md)
+2. [Commands Reference](./docs/handbook/COMMANDS.md) → [Testing](./docs/handbook/TESTING.md)
 
 ## License
 
