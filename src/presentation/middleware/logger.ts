@@ -8,16 +8,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     contentType: req.headers["content-type"],
   });
 
-  if (req.is("multipart/form-data")) {
-    let raw = "";
-    req.on("data", (chunk) => {
-      raw += chunk.toString();
-    });
-    req.on("end", () => {
-      logger.debug("[Requested][Raw Multipart]", { raw });
-    });
-  } else {
-    logger.debug("[Requested][Body]", req.body ?? null);
+  if (!req.is("multipart/form-data")) {
+    logger.debug("[Requested][Body]", { body: req.body ?? null });
   }
 
   next();
