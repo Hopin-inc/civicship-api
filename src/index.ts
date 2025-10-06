@@ -38,9 +38,18 @@ async function startServer() {
 
   const apolloServer = await createApolloServer(server);
 
+  app.use((req, res, next): void => {
+    if (req.method === "TRACE") {
+      logger.warn(`Blocked TRACE request: ${req.originalUrl}`);
+      res.status(405).send("TRACE method not allowed");
+      return;
+    }
+    next();
+  });
+  app.use(requestLogger);
+
   app.use(corsHandler);
   app.use(express.json({ limit: "50mb" }));
-  app.use(requestLogger);
   app.use(tokenUpdaterMiddleware);
   app.use(
     graphqlUploadExpress({
