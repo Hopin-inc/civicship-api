@@ -538,7 +538,7 @@ export type GqlIdentity = {
 };
 
 export type GqlIdentityCheckPhoneUserInput = {
-  communityId: Scalars['ID']['input'];
+  phoneUid: Scalars['String']['input'];
 };
 
 export type GqlIdentityCheckPhoneUserPayload = {
