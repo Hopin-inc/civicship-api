@@ -95,7 +95,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   try {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     const decoded = await (authMode === "session"
-      ? tenantedAuth.verifySessionCookie(idToken, true)
+      ? tenantedAuth.verifySessionCookie(idToken, false)
       : tenantedAuth.verifyIdToken(idToken));
     const uid = decoded.uid;
     const platform = decoded.platform;
