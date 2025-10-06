@@ -51,7 +51,7 @@ input StorePhoneAuthTokenInput {
 }
 
 input IdentityCheckPhoneUserInput {
-    communityId: ID!
+    phoneUid: String!
 }
 
 # ------------------------------

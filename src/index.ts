@@ -14,6 +14,8 @@ import { requestLogger } from "@/presentation/middleware/logger";
 import { tokenUpdaterMiddleware } from "@/presentation/middleware/token-updater";
 import { customProcessRequest } from "@/presentation/middleware/custom-process-request";
 import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
+import cookieParser from "cookie-parser";
+import { handleSessionLogin } from "@/presentation/middleware/session";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -36,15 +38,26 @@ async function startServer() {
 
   const apolloServer = await createApolloServer(server);
 
+  app.use((req, res, next): void => {
+    if (req.method === "TRACE") {
+      logger.warn(`Blocked TRACE request: ${req.originalUrl}`);
+      res.status(405).send("TRACE method not allowed");
+      return;
+    }
+    next();
+  });
+  app.use(requestLogger);
+
   app.use(corsHandler);
   app.use(express.json({ limit: "50mb" }));
-  app.use(requestLogger);
   app.use(tokenUpdaterMiddleware);
-  app.use(graphqlUploadExpress({ 
-    maxFileSize: 10_000_000, 
-    maxFiles: 10,
-    processRequest: customProcessRequest 
-  }));
+  app.use(
+    graphqlUploadExpress({
+      maxFileSize: 10_000_000,
+      maxFiles: 10,
+      processRequest: customProcessRequest,
+    }),
+  );
 
   app.use((err, req, res, _next) => {
     logger.error("Unhandled Express Error:", {
@@ -53,6 +66,9 @@ async function startServer() {
     });
     res.status(500).json({ error: "Internal Server Error" });
   });
+
+  app.use(cookieParser());
+  app.post("/sessionLogin", handleSessionLogin);
 
   app.use("/graphql", authHandler(apolloServer), tokenUpdaterMiddleware);
   app.use("/line", lineRouter);
@@ -72,9 +88,9 @@ async function startServer() {
 
 async function main() {
   if (process.env.PROCESS_TYPE === "batch") {
-    logger.info(`Batch process started: ${ process.env.BATCH_PROCESS_NAME }`);
+    logger.info(`Batch process started: ${process.env.BATCH_PROCESS_NAME}`);
     await batchProcess();
-    logger.info(`Batch process completed: ${ process.env.BATCH_PROCESS_NAME }`);
+    logger.info(`Batch process completed: ${process.env.BATCH_PROCESS_NAME}`);
     if (process.env.ENV === "LOCAL") {
       process.exit(0);
     }
