@@ -221,13 +221,9 @@ export default class IdentityUseCase {
     ctx: IContext,
     args: GqlMutationIdentityCheckPhoneUserArgs,
   ): Promise<GqlIdentityCheckPhoneUserPayload> {
-    if (!ctx.phoneUid) {
-      throw new Error("Phone authentication required");
-    }
+    const { phoneUid } = args.input;
 
-    const { communityId } = args.input;
-
-    const existingUser = await this.identityService.findUserByIdentity(ctx, ctx.phoneUid);
+    const existingUser = await this.identityService.findUserByIdentity(ctx, phoneUid);
 
     if (!existingUser) {
       return {
@@ -240,7 +236,7 @@ export default class IdentityUseCase {
     const existingMembership = await this.membershipService.findMembership(
       ctx,
       existingUser.id,
-      communityId,
+      ctx.communityId,
     );
 
     if (existingMembership) {
@@ -265,10 +261,15 @@ export default class IdentityUseCase {
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         existingUser.id,
-        communityId,
+        ctx.communityId,
         tx,
       );
-      await this.walletService.createMemberWalletIfNeeded(ctx, existingUser.id, communityId, tx);
+      await this.walletService.createMemberWalletIfNeeded(
+        ctx,
+        existingUser.id,
+        ctx.communityId,
+        tx,
+      );
       return membership;
     });
 
