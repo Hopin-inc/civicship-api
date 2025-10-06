@@ -27,7 +27,6 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const adminApiKey = getAdminApiKeyFromRequest(req);
   const expectedAdminKey = process.env.CIVICSHIP_ADMIN_API_KEY;
 
-  const authMode = (req.headers["x-auth-mode"] as string) || "id_token";
   const phoneAuthToken = (req.headers["x-phone-auth-token"] as string) || "";
   const phoneRefreshToken = (req.headers["x-phone-refresh-token"] as string) || "";
   const phoneTokenExpiresAt = (req.headers["x-phone-token-expires-at"] as string) || "";
@@ -94,9 +93,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
 
   try {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
-    const decoded = await (authMode === "session"
-      ? tenantedAuth.verifySessionCookie(idToken, false)
-      : tenantedAuth.verifyIdToken(idToken));
+    const decoded = await tenantedAuth.verifyIdToken(idToken);
     const uid = decoded.uid;
     const platform = decoded.platform;
 
