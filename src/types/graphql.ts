@@ -183,6 +183,10 @@ export type GqlCitiesInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type GqlCitiesSortInput = {
+  code?: InputMaybe<GqlSortDirection>;
+};
+
 export type GqlCity = {
   __typename?: 'City';
   code: Scalars['ID']['output'];
@@ -1810,6 +1814,7 @@ export type GqlQueryCitiesArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<GqlCitiesInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlCitiesSortInput>;
 };
 
 
@@ -3056,6 +3061,7 @@ export type GqlResolversTypes = ResolversObject<{
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   CitiesConnection: ResolverTypeWrapper<Omit<GqlCitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['CityEdge']> }>;
   CitiesInput: GqlCitiesInput;
+  CitiesSortInput: GqlCitiesSortInput;
   City: ResolverTypeWrapper<City>;
   CityEdge: ResolverTypeWrapper<Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['City']> }>;
   ClaimLinkStatus: GqlClaimLinkStatus;
@@ -3381,6 +3387,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   CitiesConnection: Omit<GqlCitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['CityEdge']> };
   CitiesInput: GqlCitiesInput;
+  CitiesSortInput: GqlCitiesSortInput;
   City: City;
   CityEdge: Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['City']> };
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };

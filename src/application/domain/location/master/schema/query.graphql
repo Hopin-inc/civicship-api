@@ -1,6 +1,7 @@
 extend type Query {
   cities(
     filter: CitiesInput
+    sort: CitiesSortInput
     cursor: String
     first: Int
   ): CitiesConnection!
@@ -35,6 +36,10 @@ type StateEdge implements Edge {
 
 input CitiesInput {
   name: String
+}
+
+input CitiesSortInput {
+  code: SortDirection
 }
 
 input StatesInput {
