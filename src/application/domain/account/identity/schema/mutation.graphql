@@ -28,15 +28,17 @@ extend type Mutation {
 input UserSignUpInput {
     name: String!
     slug: String
+    currentPrefecture: CurrentPrefecture!
     image: ImageInput
 
-    communityId: ID!
-
-    currentPrefecture: CurrentPrefecture!
     phoneUid: String
     phoneNumber: String
-    lineRefreshToken: String
+    phoneAccessToken: String
     phoneRefreshToken: String
+    phoneTokenExpiresAt: String
+
+    lineRefreshToken: String
+    lineTokenExpiresAt: String
 }
 
 input LinkPhoneAuthInput {
