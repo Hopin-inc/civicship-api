@@ -159,6 +159,7 @@ async function main() {
       data: {
         name: PROJECT_NAME,
         description: DESCRIPTION,
+        imageUrl: PROJECT_IMG,
         price: PER_PRICE,
         maxSupply: MAX_SUPPLY,
         type: ProductType.NFT,
@@ -175,12 +176,33 @@ async function main() {
     // Policy（nftToken）は connectOrCreate で作成/接続
     const nftToken = await tx.nftToken.upsert({
       where: { address: project.policyId },
-      update: {},
+      update: {
+        json: {
+          policyScript: project.policyScript ? JSON.parse(project.policyScript) : null,
+          policyExpiration: project.policyExpiration,
+          enabledCoins: project.enabledCoins?.trim().split(/\s+/) ?? [],
+          metadataTemplate: project.metadata ? JSON.parse(project.metadata) : null,
+          metadataTemplateMultiChain: {
+            aptos: project.metadataTemplateAptos,
+            solana: project.metadataTemplateSolana,
+          },
+        } as Prisma.JsonObject,
+      },
       create: {
         address: project.policyId,
         type: "CIP-25",
         name: PROJECT_NAME,
         symbol: TOKEN_PREFIX,
+        json: {
+          policyScript: project.policyScript ? JSON.parse(project.policyScript) : null,
+          policyExpiration: project.policyExpiration,
+          enabledCoins: project.enabledCoins?.trim().split(/\s+/) ?? [],
+          metadataTemplate: project.metadata ? JSON.parse(project.metadata) : null,
+          metadataTemplateMultiChain: {
+            aptos: project.metadataTemplateAptos,
+            solana: project.metadataTemplateSolana,
+          },
+        } as Prisma.JsonObject,
       },
     });
 
