@@ -4,7 +4,7 @@ import logger from "@/infrastructure/logging";
 import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import NftMintService from "@/application/domain/reward/nft-mint/service";
-import { NftMintStatus } from "@prisma/client";
+import { NftMintStatus, Provider } from "@prisma/client";
 import { IContext } from "@/types/server";
 
 export async function processQueuedMints() {
@@ -27,7 +27,11 @@ export async function processQueuedMints() {
             nftInstance: {
               include: {
                 nftWallet: true,
-                product: { include: { nftProduct: true } },
+                nftProduct: {
+                  include: {
+                    product: { include: { integrations: true } },
+                  },
+                },
               },
             },
             orderItem: true,
@@ -46,16 +50,24 @@ export async function processQueuedMints() {
 
       for (const mint of mints) {
         try {
+          const nmkrProjectUid =
+            mint.nftInstance?.nftProduct?.product?.integrations.find(
+              (i) => i.provider === Provider.NMKR,
+            )?.externalRef ?? "";
+          const walletAddress = mint.nftInstance?.nftWallet?.walletAddress ?? "";
+          const nftUid = mint.nftInstance?.instanceId ?? "";
+          const orderId = mint.orderItem?.orderId ?? "";
+
           // --- NMKR submission 実行 ---
           await issuer.internal(async (tx) => {
             const res = await mintService.mintViaNmkr(
               ctx,
               {
                 mintId: mint.id,
-                projectUid: mint.nftInstance?.product?.nftProduct?.nmkrProjectId ?? "",
-                nftUid: mint.nftInstance?.instanceId ?? "",
-                walletAddress: mint.nftInstance?.nftWallet?.walletAddress ?? "",
-                orderId: mint.orderItem?.orderId ?? "",
+                projectUid: nmkrProjectUid,
+                nftUid,
+                walletAddress,
+                orderId,
                 orderItemId: mint.orderItemId,
               },
               tx,
