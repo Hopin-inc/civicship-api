@@ -12,12 +12,12 @@ export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
   startsAt: true,
   endsAt: true,
 
-  nftProduct: {
+  nftProduct: true,
+  integrations: {
     select: {
       id: true,
-      stripeProductId: true,
-      nmkrProjectId: true,
-      policyId: true,
+      provider: true,
+      externalRef: true,
     },
   },
 
