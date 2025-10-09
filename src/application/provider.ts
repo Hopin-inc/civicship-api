@@ -31,8 +31,6 @@ import OrderRepository from "@/application/domain/order/data/repository";
 import OrderConverter from "@/application/domain/order/data/converter";
 import { OrderItemRepository } from "@/application/domain/order/orderItem/data/repository";
 import { OrderItemService } from "@/application/domain/order/orderItem/service";
-import OrderUseCase from "@/application/domain/order/usecase";
-import OrderResolver from "@/application/domain/order/controller/resolver";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { StripeClient } from "@/infrastructure/libs/stripe/client";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
@@ -117,6 +115,8 @@ import OrderWebhook from "@/application/domain/order/webhook";
 
 import PaymentEventService from "@/application/domain/order/paymentEvent/service";
 import PaymentEventRepository from "@/application/domain/order/paymentEvent/data/repository";
+import ProductResolver from "@/application/domain/product/controller/resolver";
+import ProductUseCase from "@/application/domain/product/usecase";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -170,8 +170,6 @@ export function registerProductionDependencies() {
   container.register("OrderItemRepository", { useClass: OrderItemRepository });
   container.register("OrderItemService", { useClass: OrderItemService });
   container.register("OrderItemConverter", { useClass: OrderItemConverter });
-  container.register("OrderUseCase", { useClass: OrderUseCase });
-  container.register("OrderResolver", { useClass: OrderResolver });
   container.register("OrderService", { useClass: OrderService });
   container.register("OrderWebhook", { useClass: OrderWebhook });
 
@@ -308,6 +306,8 @@ export function registerProductionDependencies() {
   // ------------------------------
   // 💸 Transaction
   // ------------------------------
+  container.register("ProductResolver", { useClass: ProductResolver });
+  container.register("ProductUseCase", { useClass: ProductUseCase });
 
   container.register("TransactionUseCase", { useClass: TransactionUseCase });
   container.register("TransactionRepository", { useClass: TransactionRepository });

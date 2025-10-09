@@ -16,13 +16,13 @@ import PlaceResolver from "@/application/domain/location/place/controller/resolv
 import TicketResolver from "@/application/domain/reward/ticket/controller/resolver";
 import UtilityResolver from "@/application/domain/reward/utility/controller/resolver";
 import TransactionResolver from "@/application/domain/transaction/controller/resolver";
-import OrderResolver from "@/application/domain/order/controller/resolver";
 import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
 import NftInstanceResolver from "@/application/domain/account/nft-instance/controller/resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
+import ProductResolver from "@/application/domain/product/controller/resolver";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
@@ -49,7 +49,7 @@ const ticketIssuer = container.resolve(TicketIssuerResolver);
 const ticketClaimLink = container.resolve(TicketClaimLinkResolver);
 const utility = container.resolve(UtilityResolver);
 const transaction = container.resolve(TransactionResolver);
-const order = container.resolve(OrderResolver);
+const product = container.resolve(ProductResolver);
 
 const resolvers = {
   Query: {
@@ -73,6 +73,7 @@ const resolvers = {
     ...ticketIssuer.Query,
     ...ticketClaimLink.Query,
     ...transaction.Query,
+    ...product.Query,
   },
   Mutation: {
     ...identity.Mutation,
@@ -88,7 +89,7 @@ const resolvers = {
     ...place.Mutation,
     ...utility.Mutation,
     ...transaction.Mutation,
-    ...order.Mutation,
+    ...product.Mutation,
   },
   Identity: identity.Identity,
   User: user.User,
