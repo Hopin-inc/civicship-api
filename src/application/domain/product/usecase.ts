@@ -14,6 +14,8 @@ import { OrderWithItems } from "@/application/domain/order/data/type";
 import { Provider } from "@prisma/client";
 import { GqlMutationProductBuyArgs, GqlProduct, GqlProductBuyPayload } from "@/types/graphql";
 import ProductPresenter from "./presenter";
+import { getCurrentUserId } from "@/application/domain/utils";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
 
 @injectable()
 export default class ProductUseCase {
@@ -23,10 +25,13 @@ export default class ProductUseCase {
     @inject("ProductService") private readonly productService: ProductService,
     @inject("StripeClient") private readonly stripeClient: StripeClient,
     @inject("NftInstanceRepository") private readonly nftInstanceRepo: INftInstanceRepository,
+    @inject("CommunityConfigService")
+    private readonly communityConfigService: CommunityConfigService,
   ) {}
 
-  async userViewProduct(ctx: IContext, id: string): Promise<GqlProduct> {
+  async userViewProduct(ctx: IContext, id: string): Promise<GqlProduct | null> {
     const product = await this.productService.findProduct(ctx, id);
+    if (!product) return null;
     return ProductPresenter.get(product);
   }
 
@@ -34,8 +39,7 @@ export default class ProductUseCase {
     ctx: IContext,
     { productId }: GqlMutationProductBuyArgs,
   ): Promise<GqlProductBuyPayload> {
-    // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmgj4a1nt000c8z3emr263g5q";
+    const currentUserId = getCurrentUserId(ctx);
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await this.orderService.createOrder(ctx, {
@@ -92,7 +96,12 @@ export default class ProductUseCase {
         nmkrNftUid: instanceId,
       };
 
-      const sessionParams = this.converter.stripeCheckoutSessionInput(product, metadata);
+      const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      const sessionParams = this.converter.stripeCheckoutSessionInput(
+        product,
+        metadata,
+        liffBaseUrl,
+      );
       session = await this.stripeClient.createCheckoutSession(sessionParams);
 
       logger.debug("[OrderUseCase] Created Stripe checkout session", {
