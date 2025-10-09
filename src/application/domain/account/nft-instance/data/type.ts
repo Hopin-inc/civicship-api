@@ -1,6 +1,10 @@
-import { NftInstance, NftToken, NftWallet } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
-export type NftInstanceWithRelations = NftInstance & {
-  nftToken?: NftToken | null;
-  nftWallet: NftWallet;
-};
+export const nftInstanceInclude = Prisma.validator<Prisma.NftInstanceInclude>()({
+  nftProduct: { include: { nftToken: true } },
+  nftWallet: true,
+});
+
+export type PrismaNftInstance = Prisma.NftInstanceGetPayload<{
+  include: typeof nftInstanceInclude;
+}>;

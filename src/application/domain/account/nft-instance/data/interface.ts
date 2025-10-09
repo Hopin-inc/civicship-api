@@ -1,6 +1,6 @@
 import { Prisma, NftInstance, NftInstanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
+import { PrismaNftInstance } from "@/application/domain/account/nft-instance/data/type";
 
 export default interface INftInstanceRepository {
   query(
@@ -9,7 +9,7 @@ export default interface INftInstanceRepository {
     orderBy: Prisma.NftInstanceOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<NftInstanceWithRelations[]>;
+  ): Promise<PrismaNftInstance[]>;
 
   findAndReserveInstance(
     ctx: IContext,
@@ -31,7 +31,7 @@ export default interface INftInstanceRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<NftInstance>;
 
-  findById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null>;
+  findById(ctx: IContext, id: string): Promise<PrismaNftInstance | null>;
 
   count(ctx: IContext, where: Prisma.NftInstanceWhereInput): Promise<number>;
 
