@@ -45,6 +45,7 @@ input OpportunityCreateInput {
     requiredUtilityIds: [ID!]
 
     pointsToEarn: Int
+    pointsRequired: Int
     feeRequired: Int
 
     slots: [OpportunitySlotCreateInput!]
@@ -68,6 +69,7 @@ input OpportunityUpdateContentInput {
     requiredUtilityIds: [ID!]
 
     pointsToEarn: Int
+    pointsRequired: Int
     feeRequired: Int
 
     relatedArticleIds: [ID!]

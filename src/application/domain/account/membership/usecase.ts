@@ -39,8 +39,8 @@ export default class MembershipUseCase {
     const records = await this.membershipService.fetchMemberships(ctx, args, take);
 
     const hasNextPage = records.length > take;
-    const data = records.slice(0, take).map(MembershipPresenter.get);
-    return MembershipPresenter.query(data, hasNextPage, args.cursor?.userId + "_" + args.cursor?.communityId);
+    const data = records.slice(0, take);
+    return MembershipPresenter.query(data, hasNextPage, args.cursor ? args.cursor.userId + "_" + args.cursor.communityId : undefined);
   }
 
   async visitorViewMembership(

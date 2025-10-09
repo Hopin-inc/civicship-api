@@ -183,6 +183,10 @@ export type GqlCitiesInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type GqlCitiesSortInput = {
+  code?: InputMaybe<GqlSortDirection>;
+};
+
 export type GqlCity = {
   __typename?: 'City';
   code: Scalars['ID']['output'];
@@ -618,7 +622,7 @@ export type GqlMembershipEdge = GqlEdge & {
 export type GqlMembershipFilterInput = {
   communityId?: InputMaybe<Scalars['ID']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
-  role?: InputMaybe<GqlRole>;
+  role?: InputMaybe<Array<GqlRole>>;
   status?: InputMaybe<GqlMembershipStatus>;
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -1273,6 +1277,7 @@ export type GqlOpportunityCreateInput = {
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
   placeId?: InputMaybe<Scalars['ID']['input']>;
+  pointsRequired?: InputMaybe<Scalars['Int']['input']>;
   pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
   publishStatus: GqlPublishStatus;
   relatedArticleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -1446,6 +1451,7 @@ export type GqlOpportunityUpdateContentInput = {
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
   placeId?: InputMaybe<Scalars['ID']['input']>;
+  pointsRequired?: InputMaybe<Scalars['Int']['input']>;
   pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
   publishStatus: GqlPublishStatus;
   relatedArticleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -1720,6 +1726,7 @@ export type GqlPlaceEdge = GqlEdge & {
 
 export type GqlPlaceFilterInput = {
   cityCode?: InputMaybe<Scalars['ID']['input']>;
+  communityId?: InputMaybe<Scalars['ID']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1916,6 +1923,7 @@ export type GqlQueryCitiesArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<GqlCitiesInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlCitiesSortInput>;
 };
 
 
@@ -2620,6 +2628,7 @@ export type GqlTicketsConnection = {
 
 export type GqlTransaction = {
   __typename?: 'Transaction';
+  comment?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   createdByUser?: Maybe<GqlUser>;
   fromPointChange?: Maybe<Scalars['Int']['output']>;
@@ -2635,6 +2644,7 @@ export type GqlTransaction = {
 };
 
 export type GqlTransactionDonateSelfPointInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   communityId: Scalars['ID']['input'];
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
@@ -2672,6 +2682,7 @@ export type GqlTransactionFilterInput = {
 };
 
 export type GqlTransactionGrantCommunityPointInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
@@ -2684,6 +2695,7 @@ export type GqlTransactionGrantCommunityPointSuccess = {
 };
 
 export type GqlTransactionIssueCommunityPointInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   transferPoints: Scalars['Int']['input'];
 };
 
@@ -3164,6 +3176,7 @@ export type GqlResolversTypes = ResolversObject<{
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   CitiesConnection: ResolverTypeWrapper<Omit<GqlCitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['CityEdge']> }>;
   CitiesInput: GqlCitiesInput;
+  CitiesSortInput: GqlCitiesSortInput;
   City: ResolverTypeWrapper<City>;
   CityEdge: ResolverTypeWrapper<Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['City']> }>;
   ClaimLinkStatus: GqlClaimLinkStatus;
@@ -3499,6 +3512,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   CitiesConnection: Omit<GqlCitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['CityEdge']> };
   CitiesInput: GqlCitiesInput;
+  CitiesSortInput: GqlCitiesSortInput;
   City: City;
   CityEdge: Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['City']> };
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };
@@ -4956,6 +4970,7 @@ export type GqlTicketsConnectionResolvers<ContextType = any, ParentType extends 
 }>;
 
 export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Transaction'] = GqlResolversParentTypes['Transaction']> = ResolversObject<{
+  comment?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   fromPointChange?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
