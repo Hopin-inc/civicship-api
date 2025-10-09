@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
+import { Prisma, OrderStatus, Provider } from "@prisma/client";
 import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import Stripe from "stripe";
@@ -10,7 +10,7 @@ export default class OrderConverter {
     userId: string,
     totalAmount: number,
     items: Array<{ productId: string; quantity: number; priceSnapshot: number }>,
-    paymentProvider: PaymentProvider = PaymentProvider.NMKR,
+    paymentProvider: Provider = Provider.STRIPE,
   ): Prisma.OrderCreateInput {
     return {
       status: OrderStatus.PENDING,

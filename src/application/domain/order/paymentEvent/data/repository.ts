@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { Prisma } from "@prisma/client";
+import { Prisma, Provider } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { IPaymentEventRepository } from "@/application/domain/order/paymentEvent/data/interface";
 
@@ -12,14 +12,14 @@ export default class PaymentEventRepository implements IPaymentEventRepository {
   ): Promise<{ id: string; eventId: string } | null> {
     if (tx) {
       return tx.paymentEvent.findUnique({
-        where: { eventId },
+        where: { provider_eventId: { eventId, provider: Provider.STRIPE } },
         select: { id: true, eventId: true },
       });
     }
 
     return ctx.issuer.internal((dbTx) => {
       return dbTx.paymentEvent.findUnique({
-        where: { eventId },
+        where: { provider_eventId: { eventId, provider: Provider.STRIPE } },
         select: { id: true, eventId: true },
       });
     });

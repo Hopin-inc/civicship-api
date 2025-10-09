@@ -1,6 +1,6 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
+import { Prisma, OrderStatus, Provider } from "@prisma/client";
 import OrderRepository from "@/application/domain/order/data/repository";
 import { IOrderService } from "@/application/domain/order/data/interface";
 import OrderConverter from "@/application/domain/order/data/converter";
@@ -21,7 +21,7 @@ export default class OrderService implements IOrderService {
     input: {
       userId: string;
       items: Array<{ productId: string; quantity: number; priceSnapshot: number }>;
-      paymentProvider?: PaymentProvider;
+      paymentProvider?: Provider;
     },
     tx?: Prisma.TransactionClient,
   ): Promise<OrderWithItems> {
@@ -30,7 +30,12 @@ export default class OrderService implements IOrderService {
       0,
     );
 
-    const createInput = this.converter.create(input.userId, totalAmount, input.items, input.paymentProvider);
+    const createInput = this.converter.create(
+      input.userId,
+      totalAmount,
+      input.items,
+      input.paymentProvider,
+    );
     return await this.repository.create(ctx, createInput, tx);
   }
 
@@ -77,7 +82,7 @@ export default class OrderService implements IOrderService {
     tx: Prisma.TransactionClient,
   ): Promise<void> {
     await this.processPaymentFailure(ctx, orderId, tx);
-    
+
     const order = await this.repository.findWithItemsById(ctx, orderId, tx);
 
     if (order?.items) {
@@ -99,7 +104,7 @@ export default class OrderService implements IOrderService {
       tx,
     );
 
-    const instanceIds = nftInstances.map(instance => instance.id);
+    const instanceIds = nftInstances.map((instance) => instance.id);
     await this.nftInstanceService.releaseReservations(ctx, instanceIds, tx);
   }
 }

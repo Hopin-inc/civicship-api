@@ -6,13 +6,13 @@ import { StripeClient } from "@/infrastructure/libs/stripe/client";
 import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
-import { PaymentProvider } from "@prisma/client";
 import OrderConverter from "@/application/domain/order/data/converter";
 import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import { InventoryUnavailableError, PaymentSessionCreationError } from "@/errors/graphql";
 import { OrderWithItems } from "@/application/domain/order/data/type";
+import { Provider } from "@prisma/client";
 
 @injectable()
 export default class OrderUseCase {
@@ -29,13 +29,13 @@ export default class OrderUseCase {
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmg6sybtg000n8zge8k9ndzst";
+    const currentUserId = "cmgj3716i000g8zx12nqqofk8";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await this.orderService.createOrder(ctx, {
       userId: currentUserId,
       items: [{ productId, quantity: 1, priceSnapshot: product.price }],
-      paymentProvider: PaymentProvider.STRIPE,
+      paymentProvider: Provider.STRIPE,
     });
 
     const paymentResult = await this.reserveInstanceAndCreateStripePayment(ctx, order, product);
@@ -77,11 +77,12 @@ export default class OrderUseCase {
 
     let session;
     try {
+      const nmkrIntegration = product.integrations.find((i) => i.provider === Provider.NMKR);
       const metadata: StripeMetadata = {
         orderId: order.id,
         orderItemId: order.items?.[0].id,
         nftInstanceId: nftInstance.id,
-        nmkrProjectUid: product.nftProduct?.nmkrProjectId ?? "",
+        nmkrProjectUid: nmkrIntegration?.externalRef ?? "",
         nmkrNftUid: instanceId,
       };
 
