@@ -1821,7 +1821,6 @@ export type GqlProduct = {
   estimatedNextNumber?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   imageUrl?: Maybe<Scalars['String']['output']>;
-  isSoldOut: Scalars['Boolean']['output'];
   maxSupply?: Maybe<Scalars['Int']['output']>;
   name: Scalars['String']['output'];
   price: Scalars['Int']['output'];
@@ -4659,7 +4658,6 @@ export type GqlProductResolvers<ContextType = any, ParentType extends GqlResolve
   estimatedNextNumber?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   imageUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  isSoldOut?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   maxSupply?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   price?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
