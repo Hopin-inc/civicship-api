@@ -87,7 +87,7 @@ describe("MembershipService", () => {
         { userId: "user2", communityId, role: Role.MANAGER },
       ];
       mockConverter.filter.mockReturnValue({
-        role: { in: [Role.OWNER, Role.MANAGER] },
+        AND: [{ role: { in: [Role.OWNER, Role.MANAGER] } }],
       });
       mockConverter.sort.mockReturnValue({ createdAt: "desc" });
       mockRepository.query.mockResolvedValue(memberships);
