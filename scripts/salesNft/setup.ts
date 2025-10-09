@@ -1,16 +1,15 @@
 import "reflect-metadata";
 import "@/application/provider";
-import { container } from "tsyringe";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import logger from "@/infrastructure/logging";
-import { NmkrClient } from "../../src/infrastructure/libs/nmkr/api";
-import { NftInstanceStatus, ProductType } from "@prisma/client";
-import { CreateProjectRequest, UploadNftResponse } from "../../src/infrastructure/libs/nmkr/type";
-import { UploadNftRequest } from "../../src/infrastructure/libs/nmkr/type";
 import * as process from "node:process";
-import fs from "fs";
-import path from "path";
+import { container } from "tsyringe";
+import { NftInstanceStatus, Prisma, ProductType } from "@prisma/client";
+import { NmkrClient } from "../../src/infrastructure/libs/nmkr/api";
 import { StripeClient } from "../../src/infrastructure/libs/stripe/client";
+import { CreateProjectRequest, UploadNftRequest } from "../../src/infrastructure/libs/nmkr/type";
+import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
+import logger from "../../src/infrastructure/logging";
+import * as path from "path";
+import * as fs from "fs";
 
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
@@ -51,7 +50,7 @@ async function main() {
   const TOKEN_PREFIX = "KIBOTCHA"; // NFTのプレフィックス
 
   const PER_PRICE = 10000;
-  const STATMENT_INVOICE = "KIBOTCHA DAO NFT";
+  const STATEMENT_INVOICE = "KIBOTCHA DAO NFT";
 
   const MAX_SUPPLY = files.length; // 最大発行数（デフォルト 50）
   const POLICY_LOCKS = new Date("9999-12-31").toISOString(); // 実質無期限ポリシー
@@ -127,7 +126,7 @@ async function main() {
       policyId: project.policyId,
     },
     shippable: false,
-    statement_descriptor: STATMENT_INVOICE,
+    statement_descriptor: STATEMENT_INVOICE,
     url: PROJECT_URL,
   });
 
@@ -154,48 +153,26 @@ async function main() {
    * DB 登録
    * -------------------------------
    */
-  const product = await issuer.internal(async (tx) => {
-    try {
-      const product = await tx.product.create({
-        data: {
-          name: PROJECT_NAME,
-          description: DESCRIPTION,
-          price: PER_PRICE,
-          maxSupply: MAX_SUPPLY,
-          type: ProductType.NFT,
+  // 1) Product, Integration, NftToken, NftProduct を先に作成（DB整備）
+  const { nftProduct } = await issuer.internal(async (tx) => {
+    const product = await tx.product.create({
+      data: {
+        name: PROJECT_NAME,
+        description: DESCRIPTION,
+        price: PER_PRICE,
+        maxSupply: MAX_SUPPLY,
+        type: ProductType.NFT,
+        integrations: {
+          create: [
+            { provider: "STRIPE", externalRef: stripeProduct.id },
+            { provider: "NMKR", externalRef: project.uid },
+          ],
         },
-      });
+      },
+      include: { integrations: true },
+    });
 
-      await tx.nftProduct.create({
-        data: {
-          productId: product.id,
-          nmkrProjectId: String(project.uid),
-          policyId: project.policyId,
-          stripeProductId: stripeProduct.id,
-        },
-      });
-
-      logger.info("✅ Project registered in DB", {
-        productId: product.id,
-        nmkrProjectId: project.uid,
-      });
-
-      return product;
-    } catch (err) {
-      logger.error("❌ Failed to register project in DB", {
-        error: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-      });
-      process.exit(1);
-    }
-  });
-
-  /**
-   * -------------------------------
-   * NFT アップロード（複数）
-   * -------------------------------
-   */
-  await issuer.internal(async (tx) => {
+    // Policy（nftToken）は connectOrCreate で作成/接続
     const nftToken = await tx.nftToken.upsert({
       where: { address: project.policyId },
       update: {},
@@ -207,76 +184,96 @@ async function main() {
       },
     });
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const tokenname = `${String(i + 1).padStart(5, "0")}`;
-      const displayname = `${PROJECT_NAME} #${i + 1}`;
+    const nftProduct = await tx.nftProduct.create({
+      data: { productId: product.id, nftTokenId: nftToken.id },
+    });
 
-      const fileBuffer = fs.readFileSync(path.join(NFTS_DIR, file));
-      const base64 = fileBuffer.toString("base64");
+    return { nftProduct };
+  });
 
-      const nftPayload: UploadNftRequest = {
-        tokenname,
-        displayname,
-        description: `NFT ${i + 1} for ${PROJECT_NAME}`,
-        previewImageNft: {
-          mimetype: "image/png",
-          fileFromBase64: base64,
-        },
-        metadataPlaceholder: [{ name: "DESCRIPTION", value: `NFT ${i + 1} metadata` }],
-      };
+  // 2) NMKR へ “全件” アップロード（DBはまだ触らない）
+  type UploadedItem = {
+    instanceId: string;
+    sequenceNum: number;
+    name: string;
+    description: string;
+    imageUrl: string;
+    json: Record<string, unknown>;
+  };
 
-      let uploaded: UploadNftResponse;
-      try {
-        // -------------------------------
-        // NMKR へのアップロード
-        // -------------------------------
-        uploaded = await nmkrClient.uploadNft(project.uid, nftPayload);
+  const uploadedItems: UploadedItem[] = [];
+  const failures: Array<{ file: string; error: string }> = [];
 
-        logger.info("✅ NFT uploaded", {
-          file,
-          nftUid: uploaded.nftUid,
-          assetId: uploaded.assetId,
-        });
-      } catch (err) {
-        logger.error("❌ Failed to upload NFT to NMKR", {
-          file,
-          error: err instanceof Error ? err.message : String(err),
-        });
-        return; // DB登録に進まない
-      }
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const tokenname = `${String(i + 1).padStart(5, "0")}`;
+    const displayname = `${PROJECT_NAME} #${i + 1}`;
 
-      try {
-        // -------------------------------
-        // DB 登録
-        // -------------------------------
-        await tx.nftInstance.create({
-          data: {
-            instanceId: uploaded.nftUid,
-            sequenceNum: i + 1,
-            status: NftInstanceStatus.STOCK,
-            name: displayname,
-            description: nftPayload.description,
-            imageUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
-            json: uploaded.metadata ? JSON.parse(uploaded.metadata) : {},
-            productId: product.id,
-            communityId: COMMUNITY_ID,
-            nftTokenId: nftToken.id,
-          },
-        });
+    const fileBuffer = fs.readFileSync(path.join(NFTS_DIR, file));
+    const base64 = fileBuffer.toString("base64");
 
-        logger.info("✅ NFT registered in DB", {
-          nftUid: uploaded.nftUid,
-          productId: product.id,
-        });
-      } catch (err) {
-        logger.error("❌ Failed to register NFT in DB", {
-          file,
-          nftUid: uploaded?.nftUid,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
+    const nftPayload: UploadNftRequest = {
+      tokenname,
+      displayname,
+      description: `NFT ${i + 1} for ${PROJECT_NAME}`,
+      previewImageNft: { mimetype: "image/png", fileFromBase64: base64 },
+      metadataPlaceholder: [{ name: "DESCRIPTION", value: `NFT ${i + 1} metadata` }],
+    };
+
+    try {
+      const uploaded = await nmkrClient.uploadNft(project.uid, nftPayload);
+
+      logger.info("✅ NFT uploaded", {
+        file,
+        nftUid: uploaded.nftUid,
+        assetId: uploaded.assetId,
+      });
+
+      uploadedItems.push({
+        instanceId: uploaded.nftUid,
+        sequenceNum: i + 1,
+        name: displayname,
+        description: nftPayload.description!,
+        imageUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
+        json: uploaded.metadata ? JSON.parse(uploaded.metadata) : {},
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      failures.push({ file, error: message });
+      logger.error("❌ Failed to upload NFT to NMKR", { file, error: message });
     }
+  }
+
+  // 3) 失敗が1件でもあれば “DBは一切書かず” に終わる（不整合を避ける）
+  if (failures.length > 0) {
+    logger.error("❌ NMKR upload failed for some items", {
+      failures: JSON.stringify(failures, null, 2),
+    });
+    throw new Error("NMKR upload failed for some items");
+  }
+
+  // 4) 全件成功したら “1トランザクションでDB一括” 反映
+  await issuer.internal(async (tx) => {
+    // createMany で一括登録（Prisma 6系なら JSON 列も OK）
+    await tx.nftInstance.createMany({
+      data: uploadedItems.map((u) => ({
+        instanceId: u.instanceId,
+        sequenceNum: u.sequenceNum,
+        status: NftInstanceStatus.STOCK,
+        name: u.name,
+        description: u.description,
+        imageUrl: u.imageUrl,
+        json: u.json as Prisma.JsonObject,
+        nftProductId: nftProduct.id,
+        communityId: COMMUNITY_ID,
+      })),
+      skipDuplicates: true, // idempotent 実行を許容（再実行に強い）
+    });
+
+    logger.info("✅ All NFT instances registered in DB", {
+      count: uploadedItems.length,
+      nftProductId: nftProduct.id,
+    });
   });
 }
 
