@@ -1818,7 +1818,6 @@ export type GqlProduct = {
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   endsAt?: Maybe<Scalars['Datetime']['output']>;
-  estimatedNextNumber?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   imageUrl?: Maybe<Scalars['String']['output']>;
   maxSupply?: Maybe<Scalars['Int']['output']>;
@@ -4655,7 +4654,6 @@ export type GqlProductResolvers<ContextType = any, ParentType extends GqlResolve
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   endsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  estimatedNextNumber?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   imageUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   maxSupply?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
