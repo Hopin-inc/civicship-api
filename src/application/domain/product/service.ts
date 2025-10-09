@@ -9,6 +9,10 @@ import ProductRepository from "@/application/domain/product/data/repository";
 export default class ProductService implements IProductService {
   constructor(@inject("ProductRepository") private readonly repository: ProductRepository) {}
 
+  async findProduct(ctx: IContext, productId: string): Promise<PrismaProduct | null> {
+    return await this.repository.find(ctx, productId);
+  }
+
   async findOrThrowForOrder(
     ctx: IContext,
     productId: string,

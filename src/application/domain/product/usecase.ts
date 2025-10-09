@@ -12,7 +12,8 @@ import INftInstanceRepository from "@/application/domain/account/nft-instance/da
 import { InventoryUnavailableError, PaymentSessionCreationError } from "@/errors/graphql";
 import { OrderWithItems } from "@/application/domain/order/data/type";
 import { Provider } from "@prisma/client";
-import { GqlMutationProductBuyArgs, GqlProductBuyPayload } from "@/types/graphql";
+import { GqlMutationProductBuyArgs, GqlProduct, GqlProductBuyPayload } from "@/types/graphql";
+import ProductPresenter from "./presenter";
 
 @injectable()
 export default class ProductUseCase {
@@ -23,6 +24,11 @@ export default class ProductUseCase {
     @inject("StripeClient") private readonly stripeClient: StripeClient,
     @inject("NftInstanceRepository") private readonly nftInstanceRepo: INftInstanceRepository,
   ) {}
+
+  async userViewProduct(ctx: IContext, id: string): Promise<GqlProduct> {
+    const product = await this.productService.findProduct(ctx, id);
+    return ProductPresenter.get(product);
+  }
 
   async userBuyProduct(
     ctx: IContext,

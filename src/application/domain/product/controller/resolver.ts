@@ -15,11 +15,10 @@ export default class ProductResolver {
   Query = {
     product: async (
       _: unknown,
-      args: GqlQueryProductArgs,
+      { id }: GqlQueryProductArgs,
       ctx: IContext,
     ): Promise<GqlProduct | null> => {
-      return null;
-      // return this.productUseCase.userGetProduct(args, ctx);
+      return this.productUseCase.userViewProduct(ctx, id);
     },
   };
 

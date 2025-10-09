@@ -9,6 +9,8 @@ export default class ProductPresenter {
       __typename: "Product",
       id: product.id,
       name: product.name,
+      description: product.description,
+      imageUrl: product.imageUrl,
       price: product.price,
       type: product.type as GqlProductType,
       remainingSupply: 0,
