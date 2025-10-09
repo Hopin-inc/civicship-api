@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { GqlProduct, GqlProductType } from "@/types/graphql";
+import { GqlProduct, GqlProductBuySuccess, GqlProductType } from "@/types/graphql";
 import { PrismaProduct } from "./data/type";
 
 @injectable()
@@ -11,9 +11,18 @@ export default class ProductPresenter {
       name: product.name,
       price: product.price,
       type: product.type as GqlProductType,
+      remainingSupply: 0,
+      isSoldOut: false,
       maxSupply: product.maxSupply,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
+    };
+  }
+
+  static create(paymentUrl: string): GqlProductBuySuccess {
+    return {
+      __typename: "ProductBuySuccess",
+      paymentLink: paymentUrl,
     };
   }
 }
