@@ -32,6 +32,7 @@ export default class OrderConverter {
   stripeCheckoutSessionInput(
     product: PrismaProduct,
     customProps: StripeMetadata,
+    liffBaseUrl: string,
   ): Stripe.Checkout.SessionCreateParams {
     const amountInYen = Math.round(product.price);
 
@@ -61,8 +62,8 @@ export default class OrderConverter {
             "NFT購入後、KIBOTCHA DAOの住民として参加できる権利（非業務執行社員権トークン）が付与されます。",
         },
       },
-      success_url: `https://localhost:8000/users/me`,
-      cancel_url: `https://localhost:8000/users/me`,
+      success_url: `${liffBaseUrl}/users/me`,
+      cancel_url: `${liffBaseUrl}/users/me`,
       metadata: {
         orderId: customProps.orderId || "",
         nmkrProjectUid: customProps.nmkrProjectUid || "",
