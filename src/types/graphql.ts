@@ -610,7 +610,7 @@ export type GqlMembershipEdge = GqlEdge & {
 export type GqlMembershipFilterInput = {
   communityId?: InputMaybe<Scalars['ID']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
-  role?: InputMaybe<GqlRole>;
+  role?: InputMaybe<Array<GqlRole>>;
   status?: InputMaybe<GqlMembershipStatus>;
   userId?: InputMaybe<Scalars['ID']['input']>;
 };

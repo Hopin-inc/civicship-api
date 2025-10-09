@@ -5,28 +5,40 @@ import { injectable } from "tsyringe";
 @injectable()
 export default class MembershipConverter {
   filter(filter?: GqlMembershipFilterInput): Prisma.MembershipWhereInput {
-    return {
-      AND: [
-        filter?.keyword
-          ? {
-              OR: [
-                { user: { name: { contains: filter.keyword, mode: "insensitive" } } },
-                {
-                  user: {
-                    didIssuanceRequests: {
-                      some: { didValue: { contains: filter.keyword, mode: "insensitive" } },
-                    },
-                  },
-                },
-              ],
-            }
-          : {},
-        filter?.userId ? { userId: filter.userId } : {},
-        filter?.communityId ? { communityId: filter.communityId } : {},
-        filter?.status ? { status: filter.status } : {},
-        filter?.role ? { role: filter.role } : {},
-      ],
-    };
+    const conditions: Prisma.MembershipWhereInput[] = [];
+
+    if (filter?.keyword) {
+      conditions.push({
+        OR: [
+          { user: { name: { contains: filter.keyword, mode: "insensitive" } } },
+          {
+            user: {
+              didIssuanceRequests: {
+                some: { didValue: { contains: filter.keyword, mode: "insensitive" } },
+              },
+            },
+          },
+        ],
+      });
+    }
+
+    if (filter?.userId) {
+      conditions.push({ userId: filter.userId });
+    }
+
+    if (filter?.communityId) {
+      conditions.push({ communityId: filter.communityId });
+    }
+
+    if (filter?.status) {
+      conditions.push({ status: filter.status });
+    }
+
+    if (filter?.role?.length) {
+      conditions.push({ role: { in: filter.role } });
+    }
+
+    return conditions.length > 0 ? { AND: conditions } : {};
   }
 
   sort(sort?: GqlMembershipSortInput): Prisma.MembershipOrderByWithRelationInput[] {
