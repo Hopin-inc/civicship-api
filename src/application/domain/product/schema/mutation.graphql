@@ -1,0 +1,10 @@
+extend type Mutation {
+    productBuy(productId: ID!): ProductBuyPayload!
+    #  @authz(rules: [IsUser])
+}
+
+type ProductBuySuccess {
+    paymentLink: String!
+}
+
+union ProductBuyPayload = ProductBuySuccess
