@@ -1156,12 +1156,28 @@ model NftToken {
   symbol String?
   json   Json?
 
-  nftInstances NftInstance[]
+  nftProducts NftProduct[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_nft_tokens")
+}
+
+model NftProduct {
+  id        String  @id @default(cuid())
+  productId String  @unique @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  nftTokenId String   @map("nft_token_id")
+  nftToken   NftToken @relation(fields: [nftTokenId], references: [id], onDelete: Restrict)
+
+  nftInstances NftInstance[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("t_nft_products")
 }
 
 model NftInstance {
@@ -1175,14 +1191,12 @@ model NftInstance {
   imageUrl    String?           @map("image_url")
   json        Json?
 
-  productId String?  @map("product_id")
-  product   Product? @relation(fields: [productId], references: [id], onDelete: Restrict)
+  // TODO 既存DB変えてからnull許容しない
+  nftProductId String?     @map("nft_product_id")
+  nftProduct   NftProduct? @relation(fields: [nftProductId], references: [id], onDelete: Restrict)
 
   nftWalletId String?    @map("nft_wallet_id")
   nftWallet   NftWallet? @relation(fields: [nftWalletId], references: [id], onDelete: SetNull)
-
-  nftTokenId String?   @map("nft_token_id")
-  nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: SetNull)
 
   nftMints NftMint[]
 
@@ -1192,7 +1206,7 @@ model NftInstance {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@unique([productId, instanceId])
+  @@unique([nftProductId, instanceId])
   @@index([instanceId])
   @@index([nftWalletId])
   @@map("t_nft_instances")
@@ -1242,8 +1256,8 @@ model Order {
   id     String      @id @default(cuid())
   status OrderStatus @default(PENDING)
 
-  paymentProvider PaymentProvider @default(NMKR) @map("payment_provider")
-  externalRef     String?         @unique @map("external_ref")
+  paymentProvider Provider @default(STRIPE) @map("payment_provider")
+  externalRef     String?  @unique @map("external_ref")
 
   totalAmount Int? @map("total_amount")
 
@@ -1278,7 +1292,7 @@ model OrderItem {
   @@map("t_order_items")
 }
 
-enum PaymentProvider {
+enum Provider {
   NMKR
   STRIPE
 }
@@ -1291,16 +1305,15 @@ enum OrderStatus {
   FAILED
 }
 
-// ------------------------------ Stripe Events ------------------------------
-
 model PaymentEvent {
   id          String   @id @default(cuid())
+  provider    Provider @default(STRIPE)
   eventId     String   @map("event_id")
   eventType   String   @map("event_type")
   orderId     String?  @map("order_id")
   processedAt DateTime @default(now()) @map("processed_at")
 
-  @@unique([eventId])
+  @@unique([provider, eventId])
   @@index([orderId])
   @@map("t_payment_events")
 }
@@ -1319,9 +1332,10 @@ model Product {
   startsAt  DateTime? @map("starts_at")
   endsAt    DateTime? @map("ends_at")
 
-  orderItem   OrderItem[]
-  nftProduct  NftProduct?
-  nftInstance NftInstance[]
+  integrations ProductIntegration[]
+
+  orderItem  OrderItem[]
+  nftProduct NftProduct?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1333,18 +1347,18 @@ enum ProductType {
   NFT
 }
 
-model NftProduct {
+model ProductIntegration {
   id        String  @id @default(cuid())
-  productId String  @unique @map("product_id")
-  product   Product @relation(fields: [productId], references: [id])
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  stripeProductId String @map("stripe_product_id") //TODO サービス依存やめる
-  nmkrProjectId   String @map("nmkr_project_id")
+  provider    Provider
+  externalRef String   @map("external_ref")
 
-  policyId String @map("policy_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("t_nft_products")
+  @@unique([productId, provider])
+  @@unique([provider, externalRef])
+  @@map("t_product_integrations")
 }
