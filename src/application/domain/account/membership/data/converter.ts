@@ -24,7 +24,7 @@ export default class MembershipConverter {
         filter?.userId ? { userId: filter.userId } : {},
         filter?.communityId ? { communityId: filter.communityId } : {},
         filter?.status ? { status: filter.status } : {},
-        filter?.role ? { role: filter.role } : {},
+        filter?.role?.length ? { role: { in: filter.role } } : {},
       ],
     };
   }

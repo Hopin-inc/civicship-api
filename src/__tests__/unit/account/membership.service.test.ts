@@ -80,6 +80,47 @@ describe("MembershipService", () => {
       expect(mockRepository.query).toHaveBeenCalled();
       expect(result).toEqual(memberships);
     });
+
+    it("should filter memberships by multiple roles", async () => {
+      const memberships = [
+        { userId: "user1", communityId, role: Role.OWNER },
+        { userId: "user2", communityId, role: Role.MANAGER },
+      ];
+      mockConverter.filter.mockReturnValue({
+        role: { in: [Role.OWNER, Role.MANAGER] },
+      });
+      mockConverter.sort.mockReturnValue({ createdAt: "desc" });
+      mockRepository.query.mockResolvedValue(memberships);
+
+      const result = await service.fetchMemberships(
+        mockCtx,
+        { filter: { role: [Role.OWNER, Role.MANAGER] }, sort: {}, cursor: undefined },
+        10,
+      );
+
+      expect(mockConverter.filter).toHaveBeenCalledWith({
+        role: [Role.OWNER, Role.MANAGER],
+      });
+      expect(result).toEqual(memberships);
+    });
+
+    it("should handle empty role array", async () => {
+      const memberships = [{ userId, communityId, role: Role.MEMBER }];
+      mockConverter.filter.mockReturnValue({});
+      mockConverter.sort.mockReturnValue({ createdAt: "desc" });
+      mockRepository.query.mockResolvedValue(memberships);
+
+      const result = await service.fetchMemberships(
+        mockCtx,
+        { filter: { role: [] }, sort: {}, cursor: undefined },
+        10,
+      );
+
+      expect(mockConverter.filter).toHaveBeenCalledWith({
+        role: [],
+      });
+      expect(result).toEqual(memberships);
+    });
   });
 
   describe("findMembership", () => {
