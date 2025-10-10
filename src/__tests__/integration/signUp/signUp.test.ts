@@ -50,15 +50,13 @@ describe("IdentityUseCase.userCreateAccount", () => {
         name: "Test User",
         slug: `test-user-${uniqueId}`,
         currentPrefecture: GqlCurrentPrefecture.Kagawa,
-        communityId: community.id,
         phoneUid: `test-phone-uid-${uniqueId}`,
+        phoneAccessToken: "test-phone-access-token",
       },
     };
 
-    // Act
     const result = await useCase.userCreateAccount(ctx, input);
 
-    // Assert
     expect(result.user).toBeDefined();
     expect(result.user?.name).toBe("Test User");
 

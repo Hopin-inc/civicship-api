@@ -542,7 +542,7 @@ export type GqlIdentity = {
 };
 
 export type GqlIdentityCheckPhoneUserInput = {
-  communityId: Scalars['ID']['input'];
+  phoneUid: Scalars['String']['input'];
 };
 
 export type GqlIdentityCheckPhoneUserPayload = {
@@ -2691,13 +2691,15 @@ export type GqlUserFilterInput = {
 };
 
 export type GqlUserSignUpInput = {
-  communityId: Scalars['ID']['input'];
   currentPrefecture: GqlCurrentPrefecture;
   image?: InputMaybe<GqlImageInput>;
   lineRefreshToken?: InputMaybe<Scalars['String']['input']>;
+  lineTokenExpiresAt?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+  phoneAccessToken?: InputMaybe<Scalars['String']['input']>;
   phoneNumber?: InputMaybe<Scalars['String']['input']>;
   phoneRefreshToken?: InputMaybe<Scalars['String']['input']>;
+  phoneTokenExpiresAt?: InputMaybe<Scalars['String']['input']>;
   phoneUid?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
 };

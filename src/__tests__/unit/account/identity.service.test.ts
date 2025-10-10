@@ -21,7 +21,6 @@ jest.mock("@/infrastructure/libs/firebase", () => {
 });
 
 describe("IdentityService", () => {
-  // --- Mockクラス ---
   class MockUserRepository {
     query = jest.fn();
     find = jest.fn();
@@ -36,7 +35,6 @@ describe("IdentityService", () => {
     update = jest.fn();
   }
 
-  // --- モックインスタンス ---
   let mockUserRepository: MockUserRepository;
   let mockIdentityRepository: MockIdentityRepository;
   let service: IdentityService;
@@ -87,19 +85,16 @@ describe("IdentityService", () => {
       const uid = "test-uid";
       const platform = IdentityPlatform.FACEBOOK;
 
-      const result = await service.createUserAndIdentity(
-        TEST_USER_DATA,
-        uid,
-        platform,
-        TEST_COMMUNITY_ID,
-      );
-
-      expect(mockUserRepository.create).toHaveBeenCalledWith({
+      const userData = {
         ...TEST_USER_DATA,
         identities: {
           create: { uid, platform, communityId: TEST_COMMUNITY_ID },
         },
-      });
+      };
+
+      const result = await service.createUserAndIdentity(userData);
+
+      expect(mockUserRepository.create).toHaveBeenCalledWith(userData);
       expect(result).toEqual(TEST_USER);
     });
 
@@ -109,8 +104,15 @@ describe("IdentityService", () => {
       const error = new Error("User creation failed");
       mockUserRepository.create.mockRejectedValue(error);
 
+      const userData = {
+        ...TEST_USER_DATA,
+        identities: {
+          create: { uid, platform, communityId: TEST_COMMUNITY_ID },
+        },
+      };
+
       await expect(
-        service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID),
+        service.createUserAndIdentity(userData),
       ).rejects.toThrow("User creation failed");
     });
   });
@@ -179,7 +181,7 @@ describe("IdentityService", () => {
     it("should successfully fetch new ID token", async () => {
       const mockResponse = {
         id_token: "new-id-token",
-        refresh_token: "new-refresh-token", 
+        refresh_token: "new-refresh-token",
         expires_in: "3600",
       };
 
@@ -245,7 +247,7 @@ describe("IdentityService", () => {
 
     it("should handle different HTTP error codes", async () => {
       const errorCodes = [401, 403, 500, 503];
-      
+
       for (const code of errorCodes) {
         (global.fetch as jest.Mock).mockResolvedValue({
           ok: false,

@@ -14,25 +14,9 @@ export default class IdentityService {
     @inject("IdentityRepository") private readonly identityRepository: IIdentityRepository,
   ) {}
 
-  async createUserAndIdentity(
-    data: Prisma.UserCreateInput,
-    uid: string,
-    platform: IdentityPlatform,
-    communityId: string,
-    phoneUid?: string,
-  ) {
-    const identityCreate = phoneUid
-      ? {
-          create: [
-            { uid, platform, communityId },
-            { uid: phoneUid, platform: IdentityPlatform.PHONE },
-          ],
-        }
-      : { create: { uid, platform, communityId } };
-
+  async createUserAndIdentity(data: Prisma.UserCreateInput) {
     return this.userRepository.create({
       ...data,
-      identities: identityCreate,
     });
   }
 
