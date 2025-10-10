@@ -1,8 +1,8 @@
 import { GqlNftToken } from "@/types/graphql";
-import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
+import { NftToken } from "@prisma/client";
 
 export default class NftTokenPresenter {
-  static get(nftToken: NftInstanceWithRelations['nftToken']): GqlNftToken | null {
+  static get(nftToken?: NftToken | null): GqlNftToken | null {
     if (!nftToken) return null;
 
     return {

@@ -1,4 +1,8 @@
-import { GqlNftInstanceFilterInput, GqlNftInstanceSortInput, GqlSortDirection } from "@/types/graphql";
+import {
+  GqlNftInstanceFilterInput,
+  GqlNftInstanceSortInput,
+  GqlSortDirection,
+} from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 
@@ -18,11 +22,23 @@ export default class NftInstanceConverter {
     }
 
     if (input.nftTokenAddress?.length) {
-      conditions.push({ nftToken: { address: { in: input.nftTokenAddress } } });
+      conditions.push({
+        nftProduct: {
+          nftToken: {
+            address: { in: input.nftTokenAddress },
+          },
+        },
+      });
     }
 
     if (input.nftTokenType?.length) {
-      conditions.push({ nftToken: { type: { in: input.nftTokenType } } });
+      conditions.push({
+        nftProduct: {
+          nftToken: {
+            type: { in: input.nftTokenType },
+          },
+        },
+      });
     }
 
     if (input.hasName !== undefined) {
@@ -30,7 +46,9 @@ export default class NftInstanceConverter {
     }
 
     if (input.hasDescription !== undefined) {
-      conditions.push(input.hasDescription ? { description: { not: null } } : { description: null });
+      conditions.push(
+        input.hasDescription ? { description: { not: null } } : { description: null },
+      );
     }
 
     if (input.hasImage !== undefined) {
@@ -40,7 +58,7 @@ export default class NftInstanceConverter {
     const allAndConditions: Prisma.NftInstanceWhereInput[] = [...conditions];
 
     if (input.and?.length) {
-      const andConditions = input.and.map(filter => this.filter(filter));
+      const andConditions = input.and.map((filter) => this.filter(filter));
       allAndConditions.push(...andConditions);
     }
 
@@ -51,7 +69,7 @@ export default class NftInstanceConverter {
     }
 
     if (input.or?.length) {
-      where.OR = input.or.map(filter => this.filter(filter));
+      where.OR = input.or.map((filter) => this.filter(filter));
     }
 
     if (input.not) {

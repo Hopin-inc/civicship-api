@@ -2,6 +2,9 @@ import { IContext } from "@/types/server";
 import { Role } from "@prisma/client";
 import { AuthorizationError, RateLimitError } from "@/errors/graphql";
 
+//TODO リリース前に統合する
+export const KIBOTCHCA_PRODUCT_ID_BY_JUST_DAO_IT = "";
+
 export function getCurrentUserId(ctx: IContext, inputUserId?: string): string {
   if (ctx.isAdmin && inputUserId) return inputUserId;
 

@@ -1,0 +1,24 @@
+# ------------------------------
+# Product Object Type Definitions
+# ------------------------------
+type Product {
+  id: ID!
+  type: ProductType!
+  name: String!
+  description: String
+  imageUrl: String
+
+  price: Int!
+  maxSupply: Int
+  startsAt: Datetime
+  endsAt: Datetime
+
+  remainingSupply: Int!
+
+  createdAt: Datetime
+  updatedAt: Datetime
+}
+
+enum ProductType {
+  NFT
+}

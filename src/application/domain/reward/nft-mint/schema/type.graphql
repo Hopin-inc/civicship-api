@@ -1,0 +1,20 @@
+type NftMint {
+    id: ID!
+    status: NftMintStatus!
+
+    txHash: String
+    error: String
+
+    order: Order!
+    nftInstance: NftInstance!
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+enum NftMintStatus {
+    QUEUED
+    SUBMITTED
+    MINTED
+    FAILED
+}
