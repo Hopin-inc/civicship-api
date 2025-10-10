@@ -216,7 +216,7 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
 
         Position {
             LEFT LEFT
-            RIGHT RIGHT
+RIGHT RIGHT
         }
     
   "t_images" {
