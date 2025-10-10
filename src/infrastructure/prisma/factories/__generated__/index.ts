@@ -40,6 +40,8 @@ import type { OrderItem } from "@prisma/client";
 import type { PaymentEvent } from "@prisma/client";
 import type { Product } from "@prisma/client";
 import type { ProductIntegration } from "@prisma/client";
+import type { MerkleCommit } from "@prisma/client";
+import type { MerkleProof } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -79,6 +81,7 @@ import type { NftMintStatus } from "@prisma/client";
 import type { OrderStatus } from "@prisma/client";
 import type { Provider } from "@prisma/client";
 import type { ProductType } from "@prisma/client";
+import type { Position } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
@@ -767,6 +770,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "createdByUser",
                 type: "User",
                 relationName: "TransactionToUser"
+            }, {
+                name: "merkleProofs",
+                type: "MerkleProof",
+                relationName: "MerkleProofToTransaction"
             }]
     }, {
         name: "ApiKey",
@@ -884,6 +891,24 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "product",
                 type: "Product",
                 relationName: "ProductToProductIntegration"
+            }]
+    }, {
+        name: "MerkleCommit",
+        fields: [{
+                name: "proofs",
+                type: "MerkleProof",
+                relationName: "MerkleCommitToMerkleProof"
+            }]
+    }, {
+        name: "MerkleProof",
+        fields: [{
+                name: "tx",
+                type: "Transaction",
+                relationName: "MerkleProofToTransaction"
+            }, {
+                name: "commit",
+                type: "MerkleCommit",
+                relationName: "MerkleCommitToMerkleProof"
             }]
     }, {
         name: "PlacePublicOpportunityCountView",
@@ -6286,6 +6311,7 @@ type TransactioncreatedByUserFactory = {
 type TransactionFactoryDefineInput = {
     id?: string;
     reason?: TransactionReason;
+    comment?: string | null;
     fromPointChange?: number;
     toPointChange?: number;
     createdAt?: Date;
@@ -6296,6 +6322,7 @@ type TransactionFactoryDefineInput = {
     reservation?: TransactionreservationFactory | Prisma.ReservationCreateNestedOneWithoutTransactionsInput;
     ticketStatusHistory?: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput;
     createdByUser?: TransactioncreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput;
+    merkleProofs?: Prisma.MerkleProofCreateNestedManyWithoutTxInput;
 };
 
 type TransactionTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionFactoryDefineInput, never>>;
@@ -8226,6 +8253,328 @@ export const defineProductIntegrationFactory = (<TOptions extends ProductIntegra
 }) as ProductIntegrationFactoryBuilder;
 
 defineProductIntegrationFactory.withTransientFields = defaultTransientFieldValues => options => defineProductIntegrationFactoryInternal(options, defaultTransientFieldValues);
+
+type MerkleCommitScalarOrEnumFields = {
+    id: string;
+    rootHash: string;
+    label: number;
+    periodStart: Date;
+    periodEnd: Date;
+};
+
+type MerkleCommitFactoryDefineInput = {
+    id?: string;
+    rootHash?: string;
+    label?: number;
+    periodStart?: Date;
+    periodEnd?: Date;
+    committedAt?: Date;
+    proofs?: Prisma.MerkleProofCreateNestedManyWithoutCommitInput;
+};
+
+type MerkleCommitTransientFields = Record<string, unknown> & Partial<Record<keyof MerkleCommitFactoryDefineInput, never>>;
+
+type MerkleCommitFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<MerkleCommitFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<MerkleCommit, Prisma.MerkleCommitCreateInput, TTransients>;
+
+type MerkleCommitFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<MerkleCommitFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: MerkleCommitFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<MerkleCommit, Prisma.MerkleCommitCreateInput, TTransients>;
+
+type MerkleCommitTraitKeys<TOptions extends MerkleCommitFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface MerkleCommitFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "MerkleCommit";
+    build(inputData?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<Prisma.MerkleCommitCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<Prisma.MerkleCommitCreateInput>;
+    buildList(list: readonly Partial<Prisma.MerkleCommitCreateInput & TTransients>[]): PromiseLike<Prisma.MerkleCommitCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<Prisma.MerkleCommitCreateInput[]>;
+    pickForConnect(inputData: MerkleCommit): Pick<MerkleCommit, "id">;
+    create(inputData?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<MerkleCommit>;
+    createList(list: readonly Partial<Prisma.MerkleCommitCreateInput & TTransients>[]): PromiseLike<MerkleCommit[]>;
+    createList(count: number, item?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<MerkleCommit[]>;
+    createForConnect(inputData?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<Pick<MerkleCommit, "id">>;
+}
+
+export interface MerkleCommitFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends MerkleCommitFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): MerkleCommitFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateMerkleCommitScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): MerkleCommitScalarOrEnumFields {
+    return {
+        id: getScalarFieldValueGenerator().String({ modelName: "MerkleCommit", fieldName: "id", isId: true, isUnique: false, seq }),
+        rootHash: getScalarFieldValueGenerator().String({ modelName: "MerkleCommit", fieldName: "rootHash", isId: false, isUnique: false, seq }),
+        label: getScalarFieldValueGenerator().Int({ modelName: "MerkleCommit", fieldName: "label", isId: false, isUnique: false, seq }),
+        periodStart: getScalarFieldValueGenerator().DateTime({ modelName: "MerkleCommit", fieldName: "periodStart", isId: false, isUnique: false, seq }),
+        periodEnd: getScalarFieldValueGenerator().DateTime({ modelName: "MerkleCommit", fieldName: "periodEnd", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineMerkleCommitFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends MerkleCommitFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): MerkleCommitFactoryInterface<TTransients, MerkleCommitTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly MerkleCommitTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("MerkleCommit", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.MerkleCommitCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateMerkleCommitScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<MerkleCommitFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<MerkleCommitFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.MerkleCommitCreateInput;
+            const data: Prisma.MerkleCommitCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MerkleCommitCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: MerkleCommit) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.MerkleCommitCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().merkleCommit.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MerkleCommitCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.MerkleCommitCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "MerkleCommit" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: MerkleCommitTraitKeys<TOptions>, ...names: readonly MerkleCommitTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface MerkleCommitFactoryBuilder {
+    <TOptions extends MerkleCommitFactoryDefineOptions>(options?: TOptions): MerkleCommitFactoryInterface<{}, MerkleCommitTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends MerkleCommitTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends MerkleCommitFactoryDefineOptions<TTransients>>(options?: TOptions) => MerkleCommitFactoryInterface<TTransients, MerkleCommitTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link MerkleCommit} model.
+ *
+ * @param options
+ * @returns factory {@link MerkleCommitFactoryInterface}
+ */
+export const defineMerkleCommitFactory = (<TOptions extends MerkleCommitFactoryDefineOptions>(options?: TOptions): MerkleCommitFactoryInterface<TOptions> => {
+    return defineMerkleCommitFactoryInternal(options ?? {}, {});
+}) as MerkleCommitFactoryBuilder;
+
+defineMerkleCommitFactory.withTransientFields = defaultTransientFieldValues => options => defineMerkleCommitFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type MerkleProofScalarOrEnumFields = {
+    index: number;
+    sibling: string;
+    position: Position;
+};
+
+type MerkleProoftxFactory = {
+    _factoryFor: "Transaction";
+    build: () => PromiseLike<Prisma.TransactionCreateNestedOneWithoutMerkleProofsInput["create"]>;
+};
+
+type MerkleProofcommitFactory = {
+    _factoryFor: "MerkleCommit";
+    build: () => PromiseLike<Prisma.MerkleCommitCreateNestedOneWithoutProofsInput["create"]>;
+};
+
+type MerkleProofFactoryDefineInput = {
+    id?: string;
+    index?: number;
+    sibling?: string;
+    position?: Position;
+    tx: MerkleProoftxFactory | Prisma.TransactionCreateNestedOneWithoutMerkleProofsInput;
+    commit: MerkleProofcommitFactory | Prisma.MerkleCommitCreateNestedOneWithoutProofsInput;
+};
+
+type MerkleProofTransientFields = Record<string, unknown> & Partial<Record<keyof MerkleProofFactoryDefineInput, never>>;
+
+type MerkleProofFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<MerkleProofFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<MerkleProof, Prisma.MerkleProofCreateInput, TTransients>;
+
+type MerkleProofFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<MerkleProofFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: MerkleProofFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<MerkleProof, Prisma.MerkleProofCreateInput, TTransients>;
+
+function isMerkleProoftxFactory(x: MerkleProoftxFactory | Prisma.TransactionCreateNestedOneWithoutMerkleProofsInput | undefined): x is MerkleProoftxFactory {
+    return (x as any)?._factoryFor === "Transaction";
+}
+
+function isMerkleProofcommitFactory(x: MerkleProofcommitFactory | Prisma.MerkleCommitCreateNestedOneWithoutProofsInput | undefined): x is MerkleProofcommitFactory {
+    return (x as any)?._factoryFor === "MerkleCommit";
+}
+
+type MerkleProofTraitKeys<TOptions extends MerkleProofFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface MerkleProofFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "MerkleProof";
+    build(inputData?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<Prisma.MerkleProofCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<Prisma.MerkleProofCreateInput>;
+    buildList(list: readonly Partial<Prisma.MerkleProofCreateInput & TTransients>[]): PromiseLike<Prisma.MerkleProofCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<Prisma.MerkleProofCreateInput[]>;
+    pickForConnect(inputData: MerkleProof): Pick<MerkleProof, "id">;
+    create(inputData?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<MerkleProof>;
+    createList(list: readonly Partial<Prisma.MerkleProofCreateInput & TTransients>[]): PromiseLike<MerkleProof[]>;
+    createList(count: number, item?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<MerkleProof[]>;
+    createForConnect(inputData?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<Pick<MerkleProof, "id">>;
+}
+
+export interface MerkleProofFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends MerkleProofFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): MerkleProofFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateMerkleProofScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): MerkleProofScalarOrEnumFields {
+    return {
+        index: getScalarFieldValueGenerator().Int({ modelName: "MerkleProof", fieldName: "index", isId: false, isUnique: false, seq }),
+        sibling: getScalarFieldValueGenerator().String({ modelName: "MerkleProof", fieldName: "sibling", isId: false, isUnique: false, seq }),
+        position: "LEFT"
+    };
+}
+
+function defineMerkleProofFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends MerkleProofFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): MerkleProofFactoryInterface<TTransients, MerkleProofTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly MerkleProofTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("MerkleProof", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.MerkleProofCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateMerkleProofScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<MerkleProofFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<MerkleProofFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                tx: isMerkleProoftxFactory(defaultData.tx) ? {
+                    create: await defaultData.tx.build()
+                } : defaultData.tx,
+                commit: isMerkleProofcommitFactory(defaultData.commit) ? {
+                    create: await defaultData.commit.build()
+                } : defaultData.commit
+            } as Prisma.MerkleProofCreateInput;
+            const data: Prisma.MerkleProofCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MerkleProofCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: MerkleProof) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.MerkleProofCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().merkleProof.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MerkleProofCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.MerkleProofCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "MerkleProof" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: MerkleProofTraitKeys<TOptions>, ...names: readonly MerkleProofTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface MerkleProofFactoryBuilder {
+    <TOptions extends MerkleProofFactoryDefineOptions>(options: TOptions): MerkleProofFactoryInterface<{}, MerkleProofTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends MerkleProofTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends MerkleProofFactoryDefineOptions<TTransients>>(options: TOptions) => MerkleProofFactoryInterface<TTransients, MerkleProofTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link MerkleProof} model.
+ *
+ * @param options
+ * @returns factory {@link MerkleProofFactoryInterface}
+ */
+export const defineMerkleProofFactory = (<TOptions extends MerkleProofFactoryDefineOptions>(options: TOptions): MerkleProofFactoryInterface<TOptions> => {
+    return defineMerkleProofFactoryInternal(options, {});
+}) as MerkleProofFactoryBuilder;
+
+defineMerkleProofFactory.withTransientFields = defaultTransientFieldValues => options => defineMerkleProofFactoryInternal(options, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;

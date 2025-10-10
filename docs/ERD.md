@@ -261,6 +261,13 @@ FAILED FAILED
             NFT NFT
         }
     
+
+
+        Position {
+            LEFT LEFT
+RIGHT RIGHT
+        }
+    
   "t_images" {
     String id "🗝️"
     Boolean is_public 
@@ -648,6 +655,7 @@ FAILED FAILED
   "t_transactions" {
     String id "🗝️"
     TransactionReason reason 
+    String comment "❓"
     String from "❓"
     Int from_point_change 
     String to "❓"
@@ -787,6 +795,26 @@ FAILED FAILED
     String external_ref 
     DateTime created_at 
     DateTime updated_at "❓"
+    }
+  
+
+  "t_merkle_commits" {
+    String id "🗝️"
+    String root_hash 
+    Int label 
+    DateTime period_start 
+    DateTime period_end 
+    DateTime committed_at 
+    }
+  
+
+  "t_merkle_proofs" {
+    String id "🗝️"
+    String tx_id 
+    String commit_id 
+    Int index 
+    String sibling 
+    Position position 
     }
   
 
@@ -1036,6 +1064,7 @@ FAILED FAILED
     "t_transactions" o|--|o "t_reservations" : "reservation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "t_transactions" o|--|o "t_users" : "createdByUser"
+    "t_transactions" o{--}o "t_merkle_proofs" : "merkleProofs"
     "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
@@ -1065,6 +1094,10 @@ FAILED FAILED
     "t_products" o{--}o "t_nft_products" : "nftProduct"
     "t_product_integrations" o|--|| "t_products" : "product"
     "t_product_integrations" o|--|| "Provider" : "enum:provider"
+    "t_merkle_commits" o{--}o "t_merkle_proofs" : "proofs"
+    "t_merkle_proofs" o|--|| "t_transactions" : "tx"
+    "t_merkle_proofs" o|--|| "t_merkle_commits" : "commit"
+    "t_merkle_proofs" o|--|| "Position" : "enum:position"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"
