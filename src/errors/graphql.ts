@@ -81,35 +81,6 @@ export class InsufficientBalanceError extends ApolloError {
   }
 }
 
-export class InvalidTransferMethodError extends ApolloError {
-  constructor(message: string = "Use validateTransferMemberToMember()") {
-    super(message, "INVALID_TRANSFER_METHOD");
-    Object.defineProperty(this, "name", { value: "InvalidTransferMethodError" });
-  }
-}
-
-export class MissingWalletInformationError extends ApolloError {
-  public missingWallets: string[];
-
-  constructor(missingWallets: string[]) {
-    const message = `Wallet information is missing for points transfer: ${missingWallets.join(", ")}`;
-    super(message, "MISSING_WALLET_INFORMATION");
-    this.missingWallets = missingWallets;
-    Object.defineProperty(this, "name", { value: "MissingWalletInformationError" });
-  }
-}
-
-export class UnsupportedTransactionReasonError extends ApolloError {
-  public reason: string;
-
-  constructor(reason: string) {
-    const message = `Unsupported TransactionReason: ${reason}`;
-    super(message, "UNSUPPORTED_TRANSACTION_REASON");
-    this.reason = reason;
-    Object.defineProperty(this, "name", { value: "UnsupportedTransactionReasonError" });
-  }
-}
-
 //Reservation
 export class ReservationFullError extends ApolloError {
   public capacity: number;
@@ -161,19 +132,6 @@ export class SlotNotScheduledError extends ApolloError {
   }
 }
 
-export class TicketParticipantMismatchError extends ApolloError {
-  public ticketCount: number;
-  public participantCount: number;
-
-  constructor(ticketCount: number, participantCount: number) {
-    const message = `The number of tickets (${ticketCount}) does not match the number of participants (${participantCount})`;
-    super(message, "TICKET_PARTICIPANT_MISMATCH");
-    this.ticketCount = ticketCount;
-    this.participantCount = participantCount;
-    Object.defineProperty(this, "name", { value: "TicketParticipantMismatchError" });
-  }
-}
-
 //Participation
 export class AlreadyJoinedError extends ApolloError {
   constructor(message: string = "You have already joined this reservation.") {
@@ -214,21 +172,6 @@ export class CannotEvaluateBeforeOpportunityStartError extends ApolloError {
   }
 }
 
-//Ticket
-export class AlreadyUsedClaimLinkError extends ApolloError {
-  constructor(message: string = "This claim link has already been used.") {
-    super(message, "ALREADY_USED_CLAIM_LINK");
-    Object.defineProperty(this, "name", { value: "AlreadyUsedClaimLinkError" });
-  }
-}
-
-export class ClaimLinkExpiredError extends ApolloError {
-  constructor(message: string = "This claim link has expired.") {
-    super(message, "CLAIM_LINK_EXPIRED");
-    Object.defineProperty(this, "name", { value: "ClaimLinkExpiredError" });
-  }
-}
-
 export abstract class OrderProcessingError extends ApolloError {
   public orderId?: string;
 
@@ -255,21 +198,14 @@ export class InventoryUnavailableError extends OrderProcessingError {
 export class PaymentSessionCreationError extends OrderProcessingError {
   public cause?: string;
 
-  constructor(message: string = "Failed to create payment session", orderId?: string, cause?: unknown) {
+  constructor(
+    message: string = "Failed to create payment session",
+    orderId?: string,
+    cause?: unknown,
+  ) {
     super(message, "PAYMENT_SESSION_CREATION_FAILED", orderId);
     this.cause = cause instanceof Error ? cause.message : String(cause);
     Object.defineProperty(this, "name", { value: "PaymentSessionCreationError" });
-  }
-}
-
-export class OrderCancellationError extends OrderProcessingError {
-  public cause?: string;
-
-  constructor(orderId: string, cause?: unknown) {
-    const message = `Failed to cancel order ${orderId}`;
-    super(message, "ORDER_CANCELLATION_FAILED", orderId);
-    this.cause = cause instanceof Error ? cause.message : String(cause);
-    Object.defineProperty(this, "name", { value: "OrderCancellationError" });
   }
 }
 
@@ -310,7 +246,7 @@ export class NmkrTokenUnavailableError extends NmkrMintingError {
   public nftUid?: string;
 
   constructor(nftUid?: string, orderId?: string, orderItemId?: string, mintId?: string) {
-    const message = nftUid 
+    const message = nftUid
       ? `NMKR token ${nftUid} is not available or does not exist`
       : "NMKR token is not available";
     super(message, orderId, orderItemId, mintId, undefined, "404");
@@ -331,65 +267,10 @@ export class PaymentStateTransitionError extends OrderProcessingError {
   public currentState?: string;
   public targetState?: string;
 
-  constructor(
-    message: string,
-    orderId?: string,
-    currentState?: string,
-    targetState?: string,
-  ) {
+  constructor(message: string, orderId?: string, currentState?: string, targetState?: string) {
     super(message, "PAYMENT_STATE_TRANSITION_FAILED", orderId);
     this.currentState = currentState;
     this.targetState = targetState;
     Object.defineProperty(this, "name", { value: "PaymentStateTransitionError" });
-  }
-}
-
-export class ProductNotFoundError extends ApolloError {
-  public productId: string;
-
-  constructor(productId: string) {
-    super(`Product not found: ${productId}`, "PRODUCT_NOT_FOUND");
-    this.productId = productId;
-    Object.defineProperty(this, "name", { value: "ProductNotFoundError" });
-  }
-}
-
-export class InventoryCalculationError extends ApolloError {
-  public productId: string;
-  public cause?: string;
-
-  constructor(productId: string, cause: unknown) {
-    super(`Inventory calculation failed for product: ${productId}`, "INVENTORY_CALCULATION_ERROR");
-    this.productId = productId;
-    this.cause = cause instanceof Error ? cause.message : String(cause);
-    Object.defineProperty(this, "name", { value: "InventoryCalculationError" });
-  }
-}
-
-export class OversellDetectedError extends ApolloError {
-  public productId: string;
-  public oversellAmount: number;
-  public snapshot: any;
-
-  constructor(productId: string, oversellAmount: number, snapshot: any) {
-    super(`Oversell detected: ${oversellAmount} units for product ${productId}`, "OVERSELL_DETECTED");
-    this.productId = productId;
-    this.oversellAmount = oversellAmount;
-    this.snapshot = snapshot;
-    Object.defineProperty(this, "name", { value: "OversellDetectedError" });
-  }
-}
-
-export class InsufficientInventoryError extends ApolloError {
-  public productId: string;
-  public requestedQuantity: number;
-  public availableQuantity: number;
-
-  constructor(productId: string, requestedQuantity: number, availableQuantity: number) {
-    super(`Insufficient inventory for product ${productId}: requested ${requestedQuantity}, available ${availableQuantity}`, "INSUFFICIENT_INVENTORY");
-    this.productId = productId;
-    this.requestedQuantity = requestedQuantity;
-    this.availableQuantity = availableQuantity;
-    Object.defineProperty(this, "name", { value: "InsufficientInventoryError" });
   }
 }
