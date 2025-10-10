@@ -257,7 +257,13 @@ async function main() {
         name: displayname,
         description: nftPayload.description!,
         imageUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
-        json: uploaded.metadata ? JSON.parse(uploaded.metadata) : {},
+        json: (() => {
+          try {
+            return uploaded.metadata ? JSON.parse(uploaded.metadata) : {};
+          } catch {
+            return {};
+          }
+        })(),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
