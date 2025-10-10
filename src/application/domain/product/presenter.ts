@@ -4,19 +4,13 @@ import { PrismaProduct } from "./data/type";
 
 @injectable()
 export default class ProductPresenter {
-  static get(product: PrismaProduct): GqlProduct {
+  static get(product: PrismaProduct, stockNftInstancesCount: number): GqlProduct {
+    const remainingSupply = product.maxSupply ? product.maxSupply - stockNftInstancesCount : 0;
+
     return {
       __typename: "Product",
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      imageUrl: product.imageUrl,
-      price: product.price,
-      type: product.type,
-      remainingSupply: 0,
-      maxSupply: product.maxSupply,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
+      ...product,
+      remainingSupply,
     };
   }
 

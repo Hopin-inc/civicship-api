@@ -13,7 +13,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     ctx: IContext,
     where: Prisma.NftInstanceWhereInput,
     orderBy: Prisma.NftInstanceOrderByWithRelationInput[],
-    take: number,
+    take?: number,
     cursor?: string,
   ): Promise<PrismaNftInstance[]> {
     return ctx.issuer.public(ctx, async (tx) => {

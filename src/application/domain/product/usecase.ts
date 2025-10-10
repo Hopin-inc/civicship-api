@@ -11,7 +11,7 @@ import { PrismaProduct } from "@/application/domain/product/data/type";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import { InventoryUnavailableError, PaymentSessionCreationError } from "@/errors/graphql";
 import { OrderWithItems } from "@/application/domain/order/data/type";
-import { Provider } from "@prisma/client";
+import { NftInstanceStatus, Provider } from "@prisma/client";
 import { GqlMutationProductBuyArgs, GqlProduct, GqlProductBuyPayload } from "@/types/graphql";
 import ProductPresenter from "./presenter";
 import { getCurrentUserId } from "@/application/domain/utils";
@@ -30,9 +30,12 @@ export default class ProductUseCase {
   ) {}
 
   async userViewProduct(ctx: IContext, id: string): Promise<GqlProduct | null> {
+    const stockNftInstancesCount = await this.nftInstanceRepo.count(ctx, {
+      status: NftInstanceStatus.STOCK,
+    });
     const product = await this.productService.findProduct(ctx, id);
     if (!product) return null;
-    return ProductPresenter.get(product);
+    return ProductPresenter.get(product, stockNftInstancesCount);
   }
 
   async userBuyProduct(

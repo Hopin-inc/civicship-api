@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 export const nftInstanceInclude = Prisma.validator<Prisma.NftInstanceInclude>()({
-  nftProduct: { include: { nftToken: true } },
+  nftProduct: { include: { nftToken: true, product: true } },
   nftWallet: true,
 });
 
