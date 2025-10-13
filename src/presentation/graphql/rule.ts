@@ -49,7 +49,7 @@ const IsCommunityOwner = preExecRule({
   if (!user) return false;
   if (!permission?.communityId) return false;
 
-  const membership = context.hasPermissions?.memberships?.find(
+  const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
 
@@ -67,7 +67,7 @@ const IsCommunityManager = preExecRule({
 
   if (!user || !permission?.communityId) return false;
 
-  const membership = context.hasPermissions?.memberships?.find(
+  const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
   return membership?.role === Role.OWNER || membership?.role === Role.MANAGER;
@@ -84,7 +84,7 @@ const IsCommunityMember = preExecRule({
 
   if (!user || !permission?.communityId) return false;
 
-  const membership = context.hasPermissions?.memberships?.find(
+  const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
   return [Role.OWNER, Role.MANAGER, Role.MEMBER].includes(membership?.role as Role);
@@ -102,17 +102,17 @@ const IsOpportunityOwner = preExecRule({
   if (!user || !opportunityId) return false;
 
   return (
-    context.hasPermissions?.opportunitiesCreatedByMe?.some((op) => op.id === opportunityId) ?? false
+    context.currentUser?.opportunitiesCreatedByMe?.some((op) => op.id === opportunityId) ?? false
   );
 });
 
 const CanReadPhoneNumber = postExecRule({
   error: new AuthorizationError("Not authorized to read phone number"),
 })((
-  context: IContext,
-  args: { permission?: Record<string, unknown> },
-  phoneNumber: string | null,
-  user: GqlUser,
+  _context: IContext,
+  _args: { permission?: Record<string, unknown> },
+  _phoneNumber: string | null,
+  _user: GqlUser,
 ) => {
   return true;
 
@@ -128,7 +128,7 @@ const CanReadPhoneNumber = postExecRule({
   //   user?.memberships?.flatMap((m) => (m?.community?.id ? [m.community.id] : [])) ?? [];
   //
   // const isCommunityManager = targetCommunityIds.some((cid) =>
-  //   context.hasPermissions?.memberships?.some(
+  //   context.currentUser?.memberships?.some(
   //     (m) => m.communityId === cid && (m.role === Role.OWNER || m.role === Role.MANAGER),
   //   ),
   // );
