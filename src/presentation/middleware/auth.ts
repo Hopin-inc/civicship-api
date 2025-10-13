@@ -1,4 +1,5 @@
 import http from "http";
+import crypto from "crypto";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
@@ -53,25 +54,34 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   }
 
   if (adminApiKey) {
-    if (adminApiKey === expectedAdminKey) {
-      logger.info("Admin access via API key");
-      return {
-        issuer,
-        loaders,
-        communityId,
-        isAdmin: true,
+    if (expectedAdminKey) {
+      try {
+        const adminKeyBuffer = Buffer.from(adminApiKey);
+        const expectedKeyBuffer = Buffer.from(expectedAdminKey);
+        
+        if (adminKeyBuffer.length === expectedKeyBuffer.length &&
+            crypto.timingSafeEqual(adminKeyBuffer, expectedKeyBuffer)) {
+          logger.info("Admin access via API key");
+          return {
+            issuer,
+            loaders,
+            communityId,
+            isAdmin: true,
 
-        phoneAuthToken,
-        phoneRefreshToken,
-        phoneTokenExpiresAt,
-        phoneUid,
-        refreshToken,
-        tokenExpiresAt,
-      };
+            phoneAuthToken,
+            phoneRefreshToken,
+            phoneTokenExpiresAt,
+            phoneUid,
+            refreshToken,
+            tokenExpiresAt,
+          };
+        }
+        logger.warn("Admin API key provided but does not match expected value");
+      } catch (error) {
+        logger.warn("Admin API key validation error", { error });
+      }
     } else {
-      logger.warn("Admin API key provided but does not match expected value", {
-        received: adminApiKey,
-      });
+      logger.warn("Admin API key provided but does not match expected value");
     }
   }
 
