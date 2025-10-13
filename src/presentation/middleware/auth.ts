@@ -76,11 +76,13 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
             tokenExpiresAt,
           };
         }
+        logger.warn("Admin API key provided but does not match expected value");
       } catch (error) {
         logger.warn("Admin API key validation error", { error });
       }
+    } else {
+      logger.warn("Admin API key provided but does not match expected value");
     }
-    logger.warn("Admin API key provided but does not match expected value");
   }
 
   if (!idToken) {
