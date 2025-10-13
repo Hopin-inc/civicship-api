@@ -53,7 +53,9 @@ EXPRESS_SESSION_SECRET=your_session_secret_key
 
 ```env
 # アクティビティごとの予約受付日数設定（JSON形式）
-ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG={"activity-id-1":0,"activity-id-2":1,"activity-id-3":7}
+# 現在は全アクティビティ一律1日前まで予約可能に設定されているため、環境変数は不要（削除済み）
+# 個別設定が必要な場合のみ、以下の形式で設定可能
+# ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG={"activity-id-1":0,"activity-id-2":1,"activity-id-3":7}
 ```
 
 ## 環境ファイルのセットアップ
