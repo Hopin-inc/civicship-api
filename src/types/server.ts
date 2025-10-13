@@ -1,5 +1,5 @@
 import { Loaders } from "@/presentation/graphql/dataloader";
-import { PrismaAuthUser, PrismaUserPermission } from "@/application/domain/account/user/data/type";
+import { PrismaAuthUser } from "@/application/domain/account/user/data/type";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 
@@ -14,7 +14,6 @@ export type LoggedInUserInfo = {
   phoneUid?: string;
 
   currentUser?: PrismaAuthUser | null;
-  hasPermissions?: PrismaUserPermission | null;
   isAdmin?: boolean;
 
   phoneAuthToken?: string;

@@ -29,7 +29,7 @@ export default class UtilityUseCase {
     const take = clampFirst(first);
 
     const currentUserId = ctx.currentUser?.id;
-    const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
+    const communityIds = ctx.currentUser?.memberships?.map((m) => m.communityId) || [];
 
     const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
     const allowedStatuses = getAllowedPublishStatuses(communityIds, isManager, isMember);

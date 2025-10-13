@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
-import { userAuthInclude, userAuthSelect } from "@/application/domain/account/user/data/type";
+import { userAuthInclude } from "@/application/domain/account/user/data/type";
 import { createLoaders, Loaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
@@ -110,20 +110,12 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     const uid = decoded.uid;
     const platform = decoded.platform;
 
-    const [currentUser, hasPermissions] = await Promise.all([
-      issuer.internal(async (tx) =>
-        tx.user.findFirst({
-          where: { identities: { some: { uid } } },
-          include: userAuthInclude,
-        }),
-      ),
-      issuer.internal(async (tx) =>
-        tx.user.findFirst({
-          where: { identities: { some: { uid } } },
-          select: userAuthSelect,
-        }),
-      ),
-    ]);
+    const currentUser = await issuer.internal(async (tx) =>
+      tx.user.findFirst({
+        where: { identities: { some: { uid } } },
+        include: userAuthInclude,
+      }),
+    );
 
     return {
       issuer,
@@ -135,7 +127,6 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       platform,
 
       currentUser,
-      hasPermissions,
 
       phoneUid,
       phoneAuthToken,
