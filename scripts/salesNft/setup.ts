@@ -5,16 +5,60 @@ import { container } from "tsyringe";
 import { NftInstanceStatus, Prisma, ProductType } from "@prisma/client";
 import { NmkrClient } from "../../src/infrastructure/libs/nmkr/api";
 import { StripeClient } from "../../src/infrastructure/libs/stripe/client";
+import { SquareClient } from "../../src/infrastructure/libs/square/client";
 import { CreateProjectRequest, UploadNftRequest } from "../../src/infrastructure/libs/nmkr/type";
 import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
 import logger from "../../src/infrastructure/logging";
 import * as path from "path";
 import * as fs from "fs";
 
+async function createSquareIntegration(
+  squareClient: SquareClient | null,
+  project: { uid: string; policyId: string },
+  projectName: string,
+  description: string,
+  priceAmount: number,
+  communityId: string,
+) {
+  if (!squareClient) {
+    logger.info("⏭️  Square payment is disabled, skipping Square catalog creation");
+    return null;
+  }
+
+  try {
+    const squareItem = await squareClient.createCatalogItem({
+      name: projectName,
+      description,
+      priceAmount,
+      metadata: {
+        communityId,
+        projectUid: project.uid,
+        policyId: project.policyId,
+      },
+    });
+
+    logger.info("✅ Square catalog item created", {
+      itemId: squareItem.itemId,
+      variationId: squareItem.variationId,
+    });
+
+    return { provider: "SQUARE" as const, externalRef: squareItem.variationId };
+  } catch (err) {
+    logger.error("❌ Failed to create Square catalog item", {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    throw err;
+  }
+}
+
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
   const stripeClient = container.resolve(StripeClient);
+
+  const enableSquare = process.env.ENABLE_SQUARE_PAYMENT === "true";
+  const squareClient = enableSquare ? container.resolve(SquareClient) : null;
 
   const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts");
 
@@ -150,11 +194,34 @@ async function main() {
 
   /**
    * -------------------------------
+   * Square 商品作成（オプション）
+   * -------------------------------
+   */
+  const squareIntegration = await createSquareIntegration(
+    squareClient,
+    project,
+    PROJECT_NAME,
+    DESCRIPTION,
+    PER_PRICE,
+    COMMUNITY_ID,
+  );
+
+  /**
+   * -------------------------------
    * DB 登録
    * -------------------------------
    */
   // 1) Product, Integration, NftToken, NftProduct を先に作成（DB整備）
   const { nftProduct } = await issuer.internal(async (tx) => {
+    const integrations = [
+      { provider: "STRIPE", externalRef: stripeProduct.id },
+      { provider: "NMKR", externalRef: project.uid },
+    ];
+
+    if (squareIntegration) {
+      integrations.push(squareIntegration);
+    }
+
     const product = await tx.product.create({
       data: {
         name: PROJECT_NAME,
@@ -164,10 +231,7 @@ async function main() {
         maxSupply: MAX_SUPPLY,
         type: ProductType.NFT,
         integrations: {
-          create: [
-            { provider: "STRIPE", externalRef: stripeProduct.id },
-            { provider: "NMKR", externalRef: project.uid },
-          ],
+          create: integrations,
         },
       },
       include: { integrations: true },

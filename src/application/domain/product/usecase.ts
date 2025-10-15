@@ -206,16 +206,21 @@ export default class ProductUseCase {
 
       const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
       
+      const squareIntegration = product.integrations.find((i) => i.provider === Provider.SQUARE);
+      if (!squareIntegration) {
+        throw new PaymentSessionCreationError(
+          "Square integration not found for product",
+          order.id,
+          null,
+        );
+      }
+
       paymentLink = await this.squareClient.createPaymentLink({
         orderId: order.id,
         lineItems: [
           {
-            name: product.name,
+            catalogObjectId: squareIntegration.externalRef,
             quantity: "1",
-            basePriceMoney: {
-              amount: BigInt(product.price),
-              currency: "JPY",
-            },
           },
         ],
         successUrl: `${liffBaseUrl}/payment/success`,
