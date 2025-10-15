@@ -1298,6 +1298,7 @@ model OrderItem {
 enum Provider {
   NMKR
   STRIPE
+  SQUARE
 }
 
 enum OrderStatus {
@@ -1308,13 +1309,19 @@ enum OrderStatus {
   FAILED
 }
 
+enum PaymentEventType {
+  PAYMENT
+  REFUND
+}
+
 model PaymentEvent {
-  id          String   @id @default(cuid())
-  provider    Provider @default(STRIPE)
-  eventId     String   @map("event_id")
-  eventType   String   @map("event_type")
-  orderId     String?  @map("order_id")
-  processedAt DateTime @default(now()) @map("processed_at")
+  id            String           @id @default(cuid())
+  provider      Provider         @default(STRIPE)
+  eventId       String           @map("event_id")
+  eventType     String           @map("event_type")
+  eventCategory PaymentEventType @default(PAYMENT) @map("event_category")
+  orderId       String?          @map("order_id")
+  processedAt   DateTime         @default(now()) @map("processed_at")
 
   @@unique([provider, eventId])
   @@index([orderId])

@@ -982,6 +982,7 @@ export type GqlMutationPlaceUpdateArgs = {
 
 
 export type GqlMutationProductBuyArgs = {
+  paymentProvider?: InputMaybe<GqlPaymentProvider>;
   productId: Scalars['ID']['input'];
 };
 
@@ -1660,6 +1661,7 @@ export type GqlParticipationsConnection = {
 
 export const GqlPaymentProvider = {
   Nmkr: 'NMKR',
+  Square: 'SQUARE',
   Stripe: 'STRIPE'
 } as const;
 

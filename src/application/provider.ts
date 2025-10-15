@@ -33,6 +33,8 @@ import { OrderItemRepository } from "@/application/domain/order/orderItem/data/r
 import { OrderItemService } from "@/application/domain/order/orderItem/service";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { StripeClient } from "@/infrastructure/libs/stripe/client";
+import { SquareClient } from "@/infrastructure/libs/square/client";
+import { SquareWebhookValidator } from "@/infrastructure/libs/square/webhook-validator";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
@@ -325,6 +327,8 @@ export function registerProductionDependencies() {
 
   container.register("NmkrClient", { useClass: NmkrClient });
   container.register("StripeClient", { useClass: StripeClient });
+  container.register("SquareClient", { useClass: SquareClient });
+  container.register("SquareWebhookValidator", { useClass: SquareWebhookValidator });
 
   // ------------------------------
   // ------------------------------

@@ -7,6 +7,7 @@ export const orderSelectWithItems = Prisma.validator<Prisma.OrderDefaultArgs>()(
         product: {
           include: {
             nftProduct: true,
+            integrations: true,
           },
         },
         nftMints: true,
