@@ -35,7 +35,7 @@ export default class NFTWalletUsecase {
 
       logger.debug(`📦 Fetched ${metadata.items.length} NFTs, fetching token info...`);
 
-      const tokenInfos = await this.nftWalletService.fetchTokenInfos(ctx, metadata, this.issuer);
+      const tokenInfos = await this.nftWalletService.fetchTokenInfos(ctx, metadata);
 
       logger.debug(`📥 Fetched token info for ${Object.keys(tokenInfos).length} tokens, persisting to DB...`);
 

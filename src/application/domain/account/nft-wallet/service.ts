@@ -90,7 +90,6 @@ export default class NFTWalletService {
   async fetchTokenInfos(
     ctx: IContext,
     metadata: NftMetadata,
-    issuer: any,
   ): Promise<Record<string, BaseSepoliaTokenResponse | null>> {
     const baseApiUrl =
       process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
@@ -102,7 +101,7 @@ export default class NFTWalletService {
         continue;
       }
 
-      const existingToken = await issuer.internal(async (tx: Prisma.TransactionClient) => {
+      const existingToken = await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
         return await this.nftTokenRepository.findByAddress(ctx, tokenAddress, tx);
       });
 
