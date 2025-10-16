@@ -31,7 +31,7 @@ export type NftMetadataItem = {
     name?: string;
     description?: string;
     image?: string;
-  };
+  } | null;
 };
 
 export type NftMetadata = {
@@ -90,11 +90,17 @@ export default class NFTWalletService {
       });
       return response;
     } catch (error) {
-      logger.error("❌ Failed to fetch NFT metadata", {
+      const errorDetails = {
         walletAddress,
         durationMs: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error),
-      });
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorName: error instanceof Error ? error.name : 'Unknown',
+        errorCode: (error as any).code,
+        errorType: (error as any).type,
+        errorStack: error instanceof Error ? error.stack : undefined,
+      };
+      
+      logger.error("❌ Failed to fetch NFT metadata", errorDetails);
       throw error;
     }
   }
@@ -226,6 +232,16 @@ export default class NFTWalletService {
         skippedCount++;
         logger.warn("⚠️ Missing token address, skipping NFT", { 
           instanceId: item.id,
+          walletAddress: wallet.walletAddress,
+        });
+        continue;
+      }
+
+      if (!item.metadata) {
+        skippedCount++;
+        logger.warn("⚠️ Missing metadata, skipping NFT", { 
+          instanceId: item.id,
+          tokenAddress,
           walletAddress: wallet.walletAddress,
         });
         continue;
