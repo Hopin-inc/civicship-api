@@ -12,5 +12,5 @@ export interface INftTokenRepository {
     ctx: IContext,
     address: string,
     tx: Prisma.TransactionClient,
-  ): Promise<{ id: string; address: string; name: string | null; symbol: string | null; type: string; updatedAt: Date } | null>;
+  ): Promise<{ id: string; address: string; name: string | null; symbol: string | null; type: string; updatedAt: Date | null } | null>;
 }
