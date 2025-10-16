@@ -72,7 +72,10 @@ export default class ProductUseCase {
   }
 
   private mapPaymentProvider(gqlProvider?: GqlPaymentProvider | null): Provider {
-    if (!gqlProvider) return Provider.STRIPE;
+    if (!gqlProvider) {
+      const envProvider = process.env.PAYMENT_PROVIDER;
+      return envProvider === "SQUARE" ? Provider.SQUARE : Provider.STRIPE;
+    }
 
     switch (gqlProvider) {
       case GqlPaymentProvider.Stripe:
@@ -82,7 +85,8 @@ export default class ProductUseCase {
       case GqlPaymentProvider.Nmkr:
         return Provider.NMKR;
       default:
-        return Provider.STRIPE;
+        const envProvider = process.env.PAYMENT_PROVIDER;
+        return envProvider === "SQUARE" ? Provider.SQUARE : Provider.STRIPE;
     }
   }
 

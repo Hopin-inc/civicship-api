@@ -55,10 +55,14 @@ async function createSquareIntegration(
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
-  const stripeClient = container.resolve(StripeClient);
 
-  const enableSquare = process.env.ENABLE_SQUARE_PAYMENT === "true";
-  const squareClient = enableSquare ? container.resolve(SquareClient) : null;
+  const paymentProvider = process.env.PAYMENT_PROVIDER;
+  if (!paymentProvider || (paymentProvider !== "STRIPE" && paymentProvider !== "SQUARE")) {
+    throw new Error('PAYMENT_PROVIDER must be set to either "STRIPE" or "SQUARE"');
+  }
+
+  const stripeClient = paymentProvider === "STRIPE" ? container.resolve(StripeClient) : null;
+  const squareClient = paymentProvider === "SQUARE" ? container.resolve(SquareClient) : null;
 
   const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts");
 
@@ -159,52 +163,60 @@ async function main() {
     process.exit(1); // ここで終了（DBに中途半端に登録しない）
   }
 
-  const stripeProduct = await stripeClient.createProduct({
-    name: PROJECT_NAME, // 表示名
-    active: true, // 販売可能状態
-    description: DESCRIPTION,
-    images: [PROJECT_IMG],
-    metadata: {
-      communityId: COMMUNITY_ID,
-      projectUid: project.uid,
-      policyId: project.policyId,
-    },
-    shippable: false,
-    statement_descriptor: STATEMENT_INVOICE,
-    url: PROJECT_URL,
-  });
-
-  const stripePrice = await stripeClient.createPrice({
-    currency: "jpy",
-    unit_amount: PER_PRICE,
-    product: stripeProduct.id,
-    active: true,
-    tax_behavior: "inclusive",
-    metadata: {
-      communityId: COMMUNITY_ID,
-      projectUid: project.uid,
-      policyId: project.policyId,
-    },
-  });
-
-  logger.info("✅ Stripe product/price created", {
-    stripeProductId: stripeProduct.id,
-    stripePriceId: stripePrice.id,
-  });
-
   /**
    * -------------------------------
-   * Square 商品作成（オプション）
+   * 決済プロバイダー商品作成
    * -------------------------------
    */
-  const squareIntegration = await createSquareIntegration(
-    squareClient,
-    project,
-    PROJECT_NAME,
-    DESCRIPTION,
-    PER_PRICE,
-    COMMUNITY_ID,
-  );
+  let stripeProductId: string | null = null;
+  let squareIntegration: { provider: "SQUARE"; externalRef: string } | null = null;
+
+  if (paymentProvider === "STRIPE") {
+    const stripeProduct = await stripeClient!.createProduct({
+      name: PROJECT_NAME,
+      active: true,
+      description: DESCRIPTION,
+      images: [PROJECT_IMG],
+      metadata: {
+        communityId: COMMUNITY_ID,
+        projectUid: project.uid,
+        policyId: project.policyId,
+      },
+      shippable: false,
+      statement_descriptor: STATEMENT_INVOICE,
+      url: PROJECT_URL,
+    });
+
+    const stripePrice = await stripeClient!.createPrice({
+      currency: "jpy",
+      unit_amount: PER_PRICE,
+      product: stripeProduct.id,
+      active: true,
+      tax_behavior: "inclusive",
+      metadata: {
+        communityId: COMMUNITY_ID,
+        projectUid: project.uid,
+        policyId: project.policyId,
+      },
+    });
+
+    stripeProductId = stripeProduct.id;
+
+    logger.info("✅ Stripe product/price created", {
+      stripeProductId: stripeProduct.id,
+      stripePriceId: stripePrice.id,
+    });
+  } else {
+    // paymentProvider === "SQUARE"
+    squareIntegration = await createSquareIntegration(
+      squareClient,
+      project,
+      PROJECT_NAME,
+      DESCRIPTION,
+      PER_PRICE,
+      COMMUNITY_ID,
+    );
+  }
 
   /**
    * -------------------------------
@@ -213,10 +225,13 @@ async function main() {
    */
   // 1) Product, Integration, NftToken, NftProduct を先に作成（DB整備）
   const { nftProduct } = await issuer.internal(async (tx) => {
-    const integrations = [
-      { provider: "STRIPE", externalRef: stripeProduct.id },
+    const integrations: Array<{ provider: string; externalRef: string }> = [
       { provider: "NMKR", externalRef: project.uid },
     ];
+
+    if (stripeProductId) {
+      integrations.push({ provider: "STRIPE", externalRef: stripeProductId });
+    }
 
     if (squareIntegration) {
       integrations.push(squareIntegration);
