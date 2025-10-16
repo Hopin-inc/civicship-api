@@ -10,12 +10,51 @@ export type SyncMetadataResult = {
   error?: string;
 };
 
+export type RegisterWalletResult = {
+  id: string;
+  walletAddress: string;
+  userId: string;
+};
+
 @injectable()
 export default class NFTWalletUsecase {
   constructor(
     @inject("PrismaClientIssuer") private issuer: PrismaClientIssuer,
     @inject("NFTWalletService") private nftWalletService: NFTWalletService,
   ) {}
+
+  async registerWallet(
+    ctx: IContext,
+    userId: string,
+    walletAddress: string,
+    userName?: string,
+    currentUserName?: string,
+  ): Promise<RegisterWalletResult> {
+    return await this.issuer.public(ctx, async (tx) => {
+      const wallet = await this.nftWalletService.createOrUpdateWalletAddress(
+        ctx,
+        userId,
+        walletAddress,
+        tx,
+      );
+
+      if (userName && currentUserName === "名前未設定") {
+        await tx.user.update({
+          where: { id: userId },
+          data: { name: userName },
+        });
+        logger.info(`✅ Updated user name for user ${userId}: ${userName}`);
+      }
+
+      logger.info(`✅ Wallet registered for user ${userId}: ${walletAddress}`);
+      
+      return {
+        id: wallet.id,
+        walletAddress: wallet.walletAddress,
+        userId: wallet.userId,
+      };
+    });
+  }
 
   async syncMetadata(
     ctx: IContext,
