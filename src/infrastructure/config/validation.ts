@@ -7,7 +7,6 @@ export interface SquareConfig {
   accessToken: string;
   locationId: string;
   webhookSecret: string;
-  webhookNotificationUrl: string;
   environment: "sandbox" | "production";
 }
 
@@ -23,7 +22,6 @@ export function validateEnvironmentVariables(): AppConfig {
     'SQUARE_ACCESS_TOKEN',
     'SQUARE_LOCATION_ID',
     'SQUARE_WEBHOOK_SECRET',
-    'SQUARE_WEBHOOK_NOTIFICATION_URL',
     'SQUARE_ENVIRONMENT',
   ];
 
@@ -47,7 +45,6 @@ export function validateEnvironmentVariables(): AppConfig {
       accessToken: process.env.SQUARE_ACCESS_TOKEN!,
       locationId: process.env.SQUARE_LOCATION_ID!,
       webhookSecret: process.env.SQUARE_WEBHOOK_SECRET!,
-      webhookNotificationUrl: process.env.SQUARE_WEBHOOK_NOTIFICATION_URL!,
       environment: squareEnv as "sandbox" | "production",
     },
   };
