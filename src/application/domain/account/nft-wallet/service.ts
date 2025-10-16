@@ -7,6 +7,7 @@ import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/re
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
+import pLimit from "p-limit";
 
 const TOKEN_CACHE_TTL = 24 * 60 * 60 * 1000;
 const MAX_RETRIES = 3;
@@ -116,9 +117,8 @@ export default class NFTWalletService {
     const existingTokens = await this.nftTokenRepository.findManyByAddresses(ctx, uniqueAddresses);
     const tokenMap = new Map(existingTokens.map((token) => [token.address, token]));
 
+    const addressesToFetch: string[] = [];
     let cachedCount = 0;
-    let fetchedCount = 0;
-    let failedCount = 0;
 
     for (const address of uniqueAddresses) {
       const existingToken = tokenMap.get(address);
@@ -133,6 +133,13 @@ export default class NFTWalletService {
         cachedCount++;
         logger.debug("📦 Using cached token info", { tokenAddress: address });
       } else {
+        addressesToFetch.push(address);
+      }
+    }
+
+    const limit = pLimit(5);
+    const fetchPromises = addressesToFetch.map((address) =>
+      limit(async () => {
         try {
           const tokenApiUrl = `${baseApiUrl}/tokens/${address}`;
           logger.debug("🌐 Fetching token info", { tokenAddress: address });
@@ -142,17 +149,28 @@ export default class NFTWalletService {
             RETRY_DELAY,
             TIMEOUT,
           );
-          result[address] = info;
-          fetchedCount++;
           logger.debug("📥 Fetched token info", { tokenAddress: address });
+          return { address, info };
         } catch (err) {
-          failedCount++;
           logger.warn("⚠️ Failed to fetch token info", {
             tokenAddress: address,
             error: err instanceof Error ? err.message : String(err),
           });
-          result[address] = null;
+          return { address, info: null };
         }
+      }),
+    );
+
+    const fetchedTokens = await Promise.all(fetchPromises);
+    let fetchedCount = 0;
+    let failedCount = 0;
+
+    for (const { address, info } of fetchedTokens) {
+      result[address] = info;
+      if (info !== null) {
+        fetchedCount++;
+      } else {
+        failedCount++;
       }
     }
 
@@ -161,6 +179,7 @@ export default class NFTWalletService {
       cachedCount,
       fetchedCount,
       failedCount,
+      concurrentLimit: 5,
       durationMs: Date.now() - startTime,
     });
 
