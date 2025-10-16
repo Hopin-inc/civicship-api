@@ -7,4 +7,10 @@ export interface INftTokenRepository {
     data: { address: string; name?: string | null; symbol?: string | null; type: string; json?: any },
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string; address: string }>;
+  
+  findByAddress(
+    ctx: IContext,
+    address: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ id: string; address: string; name: string | null; symbol: string | null; type: string; updatedAt: Date } | null>;
 }
