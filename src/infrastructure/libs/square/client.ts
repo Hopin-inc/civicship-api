@@ -53,6 +53,7 @@ export class SquareClient {
         locationId: this.config.square.locationId,
         lineItems: params.lineItems as any,
         referenceId: params.orderId,
+        metadata: params.metadata as Record<string, string>,
       },
       checkoutOptions: {
         redirectUrl: params.successUrl,

@@ -30,7 +30,7 @@ type StripePayload = {
 type SquarePayload = {
   id: string;
   state: string;
-  orderId?: string;
+  metadata?: PaymentMetadata;
 };
 
 type PaymentState = "succeeded" | "payment_failed" | "expired" | "canceled";
@@ -68,61 +68,24 @@ export default class OrderWebhook {
   }
 
   public async processSquareWebhook(ctx: IContext, payload: SquarePayload): Promise<void> {
-    const { id: paymentId, state, orderId } = payload;
+    const { id: paymentId, state, metadata } = payload;
 
     logger.info("[OrderWebhook] Square webhook received", {
       paymentId,
       state,
-      orderId,
+      metadata,
     });
 
-    if (!orderId) {
-      logger.error("[OrderWebhook] Missing orderId in Square webhook", { paymentId, state });
-      throw new WebhookMetadataError("Missing orderId in Square webhook", JSON.stringify(payload));
-    }
+    this.validateMetadata(metadata);
+    const meta = metadata;
 
-    const order = await this.orderRepository.findById(ctx, orderId);
-    if (!order) {
-      logger.error("[OrderWebhook] Order not found for Square payment", { orderId, paymentId });
-      throw new WebhookMetadataError("Order not found", orderId);
-    }
-
-    const firstItem = order.items?.[0];
-    if (!firstItem) {
-      logger.error("[OrderWebhook] No order items found", { orderId });
-      throw new WebhookMetadataError("No order items found", orderId);
-    }
-
-    const product = firstItem.product;
-    if (!product) {
-      logger.error("[OrderWebhook] Product not found for order", { orderId });
-      throw new WebhookMetadataError("Product not found", orderId);
-    }
-
-    const nmkrIntegration = product.integrations?.find((i) => i.provider === Provider.NMKR);
-    if (!nmkrIntegration) {
-      logger.error("[OrderWebhook] NMKR integration not found for product", { 
-        productId: product.id,
-        orderId 
-      });
-      throw new WebhookMetadataError("NMKR integration not found", product.id);
-    }
-
-    const nftInstance = await this.nftInstanceService.findInstanceById(
+    await this.handlePaymentEvent(
       ctx,
-      nmkrIntegration.externalRef,
+      Provider.SQUARE,
+      paymentId,
+      state as PaymentState,
+      meta,
     );
-    
-    const nftInstanceId = nftInstance?.id || nmkrIntegration.externalRef;
-
-    const meta: PaymentMetadata = {
-      orderId,
-      nmkrProjectUid: nmkrIntegration.externalRef,
-      nmkrNftUid: nmkrIntegration.externalRef,
-      nftInstanceId,
-    };
-
-    await this.handlePaymentEvent(ctx, Provider.SQUARE, paymentId, state as PaymentState, meta);
   }
 
   private async handlePaymentEvent(

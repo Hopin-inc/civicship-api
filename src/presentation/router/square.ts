@@ -5,6 +5,7 @@ import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
 import { SquareWebhookValidator } from "@/infrastructure/libs/square/webhook-validator";
+import { SquareClient } from "@/infrastructure/libs/square/client";
 
 const router = express();
 
@@ -106,11 +107,43 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       return res.status(200).json({ received: true });
     }
 
+    if (!orderId) {
+      logger.error("Missing orderId in Square payment", {
+        eventType: event.type,
+        paymentId,
+      });
+      return res.status(400).json({ error: "Missing orderId" });
+    }
+
+    const squareClient = container.resolve<SquareClient>("SquareClient");
+    const squareOrder = await squareClient.retrieveOrder(orderId);
+
+    if (!squareOrder) {
+      logger.error("Failed to retrieve Square order", {
+        squareOrderId: orderId,
+        paymentId,
+      });
+      return res.status(400).json({ error: "Square order not found" });
+    }
+
+    const internalOrderId = squareOrder.referenceId;
+    const metadata = squareOrder.metadata;
+
+    if (!internalOrderId || !metadata) {
+      logger.error("Missing referenceId or metadata in Square Order", {
+        squareOrderId: orderId,
+        paymentId,
+        hasReferenceId: !!internalOrderId,
+        hasMetadata: !!metadata,
+      });
+      return res.status(400).json({ error: "Invalid Square Order data" });
+    }
+
     const ctx = { issuer } as IContext;
     await orderWebhook.processSquareWebhook(ctx, {
       id: paymentId,
       state,
-      orderId,
+      metadata: metadata as any,
     });
 
     logger.info("Successfully processed Square webhook", {
