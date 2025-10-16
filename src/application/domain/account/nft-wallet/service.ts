@@ -37,13 +37,40 @@ export default class NFTWalletService {
     wallet: { id: string; walletAddress: string },
     tx: Prisma.TransactionClient,
   ): Promise<{ success: boolean; itemsProcessed: number; error?: string }> {
+    const RATE_LIMIT_DELAY = 200; // 200ms between requests to stay under 5 req/sec
+    const TOKEN_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+    const MAX_RETRIES = 3;
+    const INITIAL_RETRY_DELAY = 1000; // 1 second
+
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    const fetchWithRetry = async <T>(url: string, attempt = 0): Promise<T> => {
+      try {
+        return await fetchData<T>(url, { timeout: 30000 });
+      } catch (error) {
+        if (attempt < MAX_RETRIES) {
+          const retryDelay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
+          logger.warn(`Retry ${attempt + 1}/${MAX_RETRIES} after ${retryDelay}ms for ${url}`);
+          await delay(retryDelay);
+          return fetchWithRetry<T>(url, attempt + 1);
+        }
+        throw error;
+      }
+    };
+
+    const isTokenCacheValid = (updatedAt: Date): boolean => {
+      return Date.now() - updatedAt.getTime() < TOKEN_CACHE_TTL;
+    };
+
     try {
       logger.info(`🔄 Processing wallet: ${wallet.walletAddress}`);
 
       const baseApiUrl =
         process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
       const apiUrl = `${baseApiUrl}/addresses/${wallet.walletAddress}/nft`;
-      const response = await fetchData<BaseSepoliaNftResponse>(apiUrl);
+      
+      const response = await fetchWithRetry<BaseSepoliaNftResponse>(apiUrl);
+      await delay(RATE_LIMIT_DELAY);
 
       if (!response.items || response.items.length === 0) {
         logger.info(`📭 No NFTs found for wallet: ${wallet.walletAddress}`);
@@ -58,12 +85,21 @@ export default class NFTWalletService {
         }
 
         let tokenInfo: BaseSepoliaTokenResponse | null = null;
-        try {
-          const tokenApiUrl = `${baseApiUrl}/tokens/${tokenAddress}`;
-          tokenInfo = await fetchData<BaseSepoliaTokenResponse>(tokenApiUrl);
-          logger.info(`🔄 Fetched latest token info for: ${tokenAddress}`);
-        } catch (tokenError) {
-          logger.warn(`⚠️ Failed to fetch token info for ${tokenAddress}:`, tokenError);
+        
+        const existingToken = await this.nftTokenRepository.findByAddress(ctx, tokenAddress, tx);
+        
+        if (existingToken && isTokenCacheValid(existingToken.updatedAt)) {
+          tokenInfo = existingToken as unknown as BaseSepoliaTokenResponse;
+          logger.debug(`📦 Using cached token info for: ${tokenAddress}`);
+        } else {
+          try {
+            const tokenApiUrl = `${baseApiUrl}/tokens/${tokenAddress}`;
+            tokenInfo = await fetchWithRetry<BaseSepoliaTokenResponse>(tokenApiUrl);
+            await delay(RATE_LIMIT_DELAY);
+            logger.info(`🔄 Fetched latest token info for: ${tokenAddress}`);
+          } catch (tokenError) {
+            logger.warn(`⚠️ Failed to fetch token info for ${tokenAddress}:`, tokenError);
+          }
         }
 
         const tokenName = tokenInfo?.name || item.token.name;
