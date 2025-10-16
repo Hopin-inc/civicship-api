@@ -88,7 +88,7 @@ export default class NFTWalletService {
         
         const existingToken = await this.nftTokenRepository.findByAddress(ctx, tokenAddress, tx);
         
-        if (existingToken && isTokenCacheValid(existingToken.updatedAt)) {
+        if (existingToken && existingToken.updatedAt && isTokenCacheValid(existingToken.updatedAt)) {
           tokenInfo = {
             address: existingToken.address,
             name: existingToken.name ?? undefined,
