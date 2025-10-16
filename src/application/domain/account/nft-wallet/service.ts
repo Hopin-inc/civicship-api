@@ -38,6 +38,12 @@ export type NftMetadata = {
   items: NftMetadataItem[];
 };
 
+export type TokenFetchResult = {
+  info: BaseSepoliaTokenResponse | null;
+  success: boolean;
+  error?: string;
+};
+
 @injectable()
 export default class NFTWalletService {
   constructor(
@@ -96,11 +102,11 @@ export default class NFTWalletService {
   async fetchTokenInfos(
     ctx: IContext,
     metadata: NftMetadata,
-  ): Promise<Record<string, BaseSepoliaTokenResponse | null>> {
+  ): Promise<Record<string, TokenFetchResult>> {
     const startTime = Date.now();
     const baseApiUrl =
       process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
-    const result: Record<string, BaseSepoliaTokenResponse | null> = {};
+    const result: Record<string, TokenFetchResult> = {};
 
     const uniqueAddresses = [
       ...new Set(
@@ -125,10 +131,13 @@ export default class NFTWalletService {
 
       if (existingToken && existingToken.updatedAt && isTokenCacheValid(existingToken.updatedAt)) {
         result[address] = {
-          address: existingToken.address,
-          name: existingToken.name ?? undefined,
-          symbol: existingToken.symbol ?? undefined,
-          type: existingToken.type,
+          info: {
+            address: existingToken.address,
+            name: existingToken.name ?? undefined,
+            symbol: existingToken.symbol ?? undefined,
+            type: existingToken.type,
+          },
+          success: true,
         };
         cachedCount++;
         logger.debug("📦 Using cached token info", { tokenAddress: address });
@@ -150,13 +159,27 @@ export default class NFTWalletService {
             TIMEOUT,
           );
           logger.debug("📥 Fetched token info", { tokenAddress: address });
-          return { address, info };
+          return { 
+            address, 
+            result: {
+              info,
+              success: true,
+            }
+          };
         } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
           logger.warn("⚠️ Failed to fetch token info", {
             tokenAddress: address,
-            error: err instanceof Error ? err.message : String(err),
+            error: errorMessage,
           });
-          return { address, info: null };
+          return { 
+            address, 
+            result: {
+              info: null,
+              success: false,
+              error: errorMessage,
+            }
+          };
         }
       }),
     );
@@ -165,9 +188,9 @@ export default class NFTWalletService {
     let fetchedCount = 0;
     let failedCount = 0;
 
-    for (const { address, info } of fetchedTokens) {
-      result[address] = info;
-      if (info !== null) {
+    for (const { address, result: fetchResult } of fetchedTokens) {
+      result[address] = fetchResult;
+      if (fetchResult.success) {
         fetchedCount++;
       } else {
         failedCount++;
@@ -190,7 +213,7 @@ export default class NFTWalletService {
     ctx: IContext,
     wallet: { id: string; walletAddress: string },
     metadata: NftMetadata,
-    tokenInfos: Record<string, BaseSepoliaTokenResponse | null>,
+    tokenInfos: Record<string, TokenFetchResult>,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
     const startTime = Date.now();
@@ -208,7 +231,8 @@ export default class NFTWalletService {
         continue;
       }
 
-      const tokenInfo = tokenInfos[tokenAddress];
+      const tokenFetchResult = tokenInfos[tokenAddress];
+      const tokenInfo = tokenFetchResult?.info;
       const tokenName = tokenInfo?.name || item.token.name;
       const tokenSymbol = tokenInfo?.symbol || item.token.symbol;
       const tokenType = tokenInfo?.type || item.token.type || "UNKNOWN";
