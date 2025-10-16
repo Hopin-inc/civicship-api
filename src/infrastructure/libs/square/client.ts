@@ -74,50 +74,62 @@ export class SquareClient {
     const itemId = `ITEM_${timestamp}`;
     const variationId = `VAR_${timestamp}`;
 
-    const response = await this.client.catalog.batchUpsert({
-      idempotencyKey: `${itemId}_${variationId}`,
-      batches: [
-        {
-          objects: [
-            {
-              type: "ITEM",
-              id: `#${itemId}`,
-              itemData: {
-                name: params.name,
-                description: params.description,
-                variations: [
-                  {
-                    type: "ITEM_VARIATION",
-                    id: `#${variationId}`,
-                    itemVariationData: {
-                      name: params.name,
-                      pricingType: "FIXED_PRICING",
-                      priceMoney: {
-                        amount: BigInt(params.priceAmount),
-                        currency: "JPY",
+    try {
+      const response = await this.client.catalog.batchUpsert({
+        idempotencyKey: `${itemId}_${variationId}`,
+        batches: [
+          {
+            objects: [
+              {
+                type: "ITEM",
+                id: `#${itemId}`,
+                itemData: {
+                  name: params.name,
+                  description: params.description,
+                  variations: [
+                    {
+                      type: "ITEM_VARIATION",
+                      id: `#${variationId}`,
+                      itemVariationData: {
+                        name: params.name,
+                        pricingType: "FIXED_PRICING",
+                        priceMoney: {
+                          amount: BigInt(params.priceAmount),
+                          currency: "JPY",
+                        },
                       },
                     },
-                  },
-                ],
+                  ],
+                },
               },
-            },
-          ],
-        },
-      ],
-    });
+            ],
+          },
+        ],
+      });
 
-    const objects = response.objects || [];
-    const item = objects.find((o) => o.type === "ITEM");
-    const variation = objects.find((o) => o.type === "ITEM_VARIATION");
+      const objects = response.objects || [];
+      const item = objects.find((o) => o.type === "ITEM");
 
-    if (!item?.id || !variation?.id) {
+      if (!item?.id) {
+        throw new Error("Failed to create Square catalog item - missing item ID");
+      }
+
+      const variation = item.itemData?.variations?.[0];
+      if (!variation?.id) {
+        throw new Error("Failed to create Square catalog item - missing variation ID");
+      }
+
+      return {
+        itemId: item.id,
+        variationId: variation.id,
+      };
+    } catch (error) {
+      console.error("Square catalog creation error:", error);
+      if (error instanceof Error) {
+        throw new Error(`Failed to create Square catalog item: ${error.message}`);
+      }
       throw new Error("Failed to create Square catalog item");
     }
-
-    return {
-      itemId: item.id,
-      variationId: variation.id,
-    };
   }
 
   async updateCatalogItem(
