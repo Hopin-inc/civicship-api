@@ -1,33 +1,18 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import { injectable, inject } from "tsyringe";
-import { fetchData } from "@/utils/fetch";
+import { delay, fetchWithRetry } from "@/utils/retry";
 import logger from "@/infrastructure/logging";
 import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/repository";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 
-const RATE_LIMIT_DELAY = 200; // 200ms between requests to stay under 5 req/sec
-const TOKEN_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
+const RATE_LIMIT_DELAY = 200;
+const TOKEN_CACHE_TTL = 24 * 60 * 60 * 1000;
 const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY = 1000; // 1 second
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-const fetchWithRetry = async <T>(url: string, attempt = 0): Promise<T> => {
-  try {
-    return await fetchData<T>(url, { timeout: 30000 });
-  } catch (error) {
-    if (attempt < MAX_RETRIES) {
-      const retryDelay = INITIAL_RETRY_DELAY * 2 ** attempt;
-      logger.warn(`Retry ${attempt + 1}/${MAX_RETRIES} after ${retryDelay}ms for ${url}`);
-      await delay(retryDelay);
-      return fetchWithRetry<T>(url, attempt + 1);
-    }
-    throw error;
-  }
-};
+const INITIAL_RETRY_DELAY = 1000;
+const TIMEOUT = 30000;
 
 const isTokenCacheValid = (updatedAt: Date): boolean => {
   return Date.now() - updatedAt.getTime() < TOKEN_CACHE_TTL;
@@ -69,7 +54,12 @@ export default class NFTWalletService {
         process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
       const apiUrl = `${baseApiUrl}/addresses/${wallet.walletAddress}/nft`;
       
-      const response = await fetchWithRetry<BaseSepoliaNftResponse>(apiUrl);
+      const response = await fetchWithRetry<BaseSepoliaNftResponse>(
+        apiUrl, 
+        MAX_RETRIES, 
+        INITIAL_RETRY_DELAY, 
+        TIMEOUT
+      );
       await delay(RATE_LIMIT_DELAY);
 
       if (!response.items || response.items.length === 0) {
@@ -88,7 +78,7 @@ export default class NFTWalletService {
         
         const existingToken = await this.nftTokenRepository.findByAddress(ctx, tokenAddress, tx);
         
-        if (existingToken && isTokenCacheValid(existingToken.updatedAt)) {
+        if (existingToken && existingToken.updatedAt && isTokenCacheValid(existingToken.updatedAt)) {
           tokenInfo = {
             address: existingToken.address,
             name: existingToken.name ?? undefined,
@@ -99,7 +89,12 @@ export default class NFTWalletService {
         } else {
           try {
             const tokenApiUrl = `${baseApiUrl}/tokens/${tokenAddress}`;
-            tokenInfo = await fetchWithRetry<BaseSepoliaTokenResponse>(tokenApiUrl);
+            tokenInfo = await fetchWithRetry<BaseSepoliaTokenResponse>(
+              tokenApiUrl,
+              MAX_RETRIES,
+              INITIAL_RETRY_DELAY,
+              TIMEOUT
+            );
             await delay(RATE_LIMIT_DELAY);
             logger.info(`🔄 Fetched latest token info for: ${tokenAddress}`);
           } catch (tokenError) {
