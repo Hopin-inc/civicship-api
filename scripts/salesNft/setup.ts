@@ -13,56 +13,39 @@ import * as path from "path";
 import * as fs from "fs";
 
 async function createSquareIntegration(
-  squareClient: SquareClient | null,
+  squareClient: SquareClient,
   project: { uid: string; policyId: string },
   projectName: string,
   description: string,
   priceAmount: number,
   communityId: string,
 ) {
-  if (!squareClient) {
-    logger.info("⏭️  Square payment is disabled, skipping Square catalog creation");
-    return null;
-  }
+  const squareItem = await squareClient.createCatalogItem({
+    name: projectName,
+    description,
+    priceAmount,
+    metadata: {
+      communityId,
+      projectUid: project.uid,
+      policyId: project.policyId,
+    },
+  });
 
-  try {
-    const squareItem = await squareClient.createCatalogItem({
-      name: projectName,
-      description,
-      priceAmount,
-      metadata: {
-        communityId,
-        projectUid: project.uid,
-        policyId: project.policyId,
-      },
-    });
+  logger.info("✅ Square catalog item created", {
+    itemId: squareItem.itemId,
+    variationId: squareItem.variationId,
+  });
 
-    logger.info("✅ Square catalog item created", {
-      itemId: squareItem.itemId,
-      variationId: squareItem.variationId,
-    });
-
-    return { provider: "SQUARE" as const, externalRef: squareItem.variationId };
-  } catch (err) {
-    logger.error("❌ Failed to create Square catalog item", {
-      error: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
-    });
-    throw err;
-  }
+  return { provider: "SQUARE" as const, externalRef: squareItem.variationId };
 }
 
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
+  const stripeClient = container.resolve(StripeClient);
+  const squareClient = container.resolve(SquareClient);
 
-  const paymentProvider = process.env.PAYMENT_PROVIDER;
-  if (!paymentProvider || (paymentProvider !== "STRIPE" && paymentProvider !== "SQUARE")) {
-    throw new Error('PAYMENT_PROVIDER must be set to either "STRIPE" or "SQUARE"');
-  }
-
-  const stripeClient = paymentProvider === "STRIPE" ? container.resolve(StripeClient) : null;
-  const squareClient = paymentProvider === "SQUARE" ? container.resolve(SquareClient) : null;
+  const paymentProvider = process.env.PAYMENT_PROVIDER || "STRIPE";
 
   const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts");
 
@@ -163,60 +146,47 @@ async function main() {
     process.exit(1); // ここで終了（DBに中途半端に登録しない）
   }
 
-  /**
-   * -------------------------------
-   * 決済プロバイダー商品作成
-   * -------------------------------
-   */
-  let stripeProductId: string | null = null;
-  let squareIntegration: { provider: "SQUARE"; externalRef: string } | null = null;
+  const stripeProduct = await stripeClient.createProduct({
+    name: PROJECT_NAME,
+    active: true,
+    description: DESCRIPTION,
+    images: [PROJECT_IMG],
+    metadata: {
+      communityId: COMMUNITY_ID,
+      projectUid: project.uid,
+      policyId: project.policyId,
+    },
+    shippable: false,
+    statement_descriptor: STATEMENT_INVOICE,
+    url: PROJECT_URL,
+  });
 
-  if (paymentProvider === "STRIPE") {
-    const stripeProduct = await stripeClient!.createProduct({
-      name: PROJECT_NAME,
-      active: true,
-      description: DESCRIPTION,
-      images: [PROJECT_IMG],
-      metadata: {
-        communityId: COMMUNITY_ID,
-        projectUid: project.uid,
-        policyId: project.policyId,
-      },
-      shippable: false,
-      statement_descriptor: STATEMENT_INVOICE,
-      url: PROJECT_URL,
-    });
+  const stripePrice = await stripeClient.createPrice({
+    currency: "jpy",
+    unit_amount: PER_PRICE,
+    product: stripeProduct.id,
+    active: true,
+    tax_behavior: "inclusive",
+    metadata: {
+      communityId: COMMUNITY_ID,
+      projectUid: project.uid,
+      policyId: project.policyId,
+    },
+  });
 
-    const stripePrice = await stripeClient!.createPrice({
-      currency: "jpy",
-      unit_amount: PER_PRICE,
-      product: stripeProduct.id,
-      active: true,
-      tax_behavior: "inclusive",
-      metadata: {
-        communityId: COMMUNITY_ID,
-        projectUid: project.uid,
-        policyId: project.policyId,
-      },
-    });
+  logger.info("✅ Stripe product/price created", {
+    stripeProductId: stripeProduct.id,
+    stripePriceId: stripePrice.id,
+  });
 
-    stripeProductId = stripeProduct.id;
-
-    logger.info("✅ Stripe product/price created", {
-      stripeProductId: stripeProduct.id,
-      stripePriceId: stripePrice.id,
-    });
-  } else {
-    // paymentProvider === "SQUARE"
-    squareIntegration = await createSquareIntegration(
-      squareClient,
-      project,
-      PROJECT_NAME,
-      DESCRIPTION,
-      PER_PRICE,
-      COMMUNITY_ID,
-    );
-  }
+  const squareIntegration = await createSquareIntegration(
+    squareClient,
+    project,
+    PROJECT_NAME,
+    DESCRIPTION,
+    PER_PRICE,
+    COMMUNITY_ID,
+  );
 
   /**
    * -------------------------------
@@ -225,13 +195,10 @@ async function main() {
    */
   // 1) Product, Integration, NftToken, NftProduct を先に作成（DB整備）
   const { nftProduct } = await issuer.internal(async (tx) => {
-    const integrations: Array<{ provider: string; externalRef: string }> = [
+    const integrations = [
+      { provider: "STRIPE", externalRef: stripeProduct.id },
       { provider: "NMKR", externalRef: project.uid },
     ];
-
-    if (stripeProductId) {
-      integrations.push({ provider: "STRIPE", externalRef: stripeProductId });
-    }
 
     if (squareIntegration) {
       integrations.push(squareIntegration);
