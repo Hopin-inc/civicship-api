@@ -28,7 +28,7 @@ export default class NFTWalletUsecase {
       
       const metadata = await this.nftWalletService.fetchMetadata(wallet.walletAddress);
       
-      if (!metadata || metadata.items.length === 0) {
+      if (metadata.items.length === 0) {
         logger.info(`📭 No NFTs found for wallet: ${wallet.walletAddress}`);
         return { success: true, itemsProcessed: 0 };
       }

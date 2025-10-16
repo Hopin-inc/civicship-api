@@ -6,18 +6,19 @@ export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, 
 export const fetchWithRetry = async <T>(
   url: string,
   maxRetries: number = 3,
-  retryDelay: number = 1000,
+  delayMs: number = 1000,
   timeout: number = 60000,
-  attempt: number = 0,
 ): Promise<T> => {
-  try {
-    return await fetchData<T>(url, { timeout });
-  } catch (error) {
-    if (attempt < maxRetries) {
-      logger.warn(`Retry ${attempt + 1}/${maxRetries} after ${retryDelay}ms for ${url}`);
-      await delay(retryDelay);
-      return fetchWithRetry<T>(url, maxRetries, retryDelay, timeout, attempt + 1);
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fetchData<T>(url, { timeout });
+    } catch (error) {
+      if (i === maxRetries - 1) {
+        throw error;
+      }
+      logger.warn(`Retry ${i + 1}/${maxRetries} after ${delayMs}ms for ${url}`);
+      await delay(delayMs);
     }
-    throw error;
   }
+  throw new Error("unreachable");
 };

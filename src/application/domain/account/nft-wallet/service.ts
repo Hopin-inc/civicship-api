@@ -61,7 +61,7 @@ export default class NFTWalletService {
     return this.nftWalletRepository.findByUserId(ctx, userId);
   }
 
-  async fetchMetadata(walletAddress: string): Promise<NftMetadata | null> {
+  async fetchMetadata(walletAddress: string): Promise<NftMetadata> {
     try {
       const baseApiUrl =
         process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
@@ -75,8 +75,8 @@ export default class NFTWalletService {
         TIMEOUT
       );
 
-      if (!response.items || response.items.length === 0) {
-        return null;
+      if (!response.items?.length) {
+        return { items: [] };
       }
 
       logger.info(`📥 Fetched ${response.items.length} NFTs from Blockscout`);
@@ -101,9 +101,7 @@ export default class NFTWalletService {
         continue;
       }
 
-      const existingToken = await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
-        return await this.nftTokenRepository.findByAddress(ctx, tokenAddress, tx);
-      });
+      const existingToken = await this.nftTokenRepository.findByAddress(ctx, tokenAddress);
 
       if (existingToken && existingToken.updatedAt && isTokenCacheValid(existingToken.updatedAt)) {
         result[tokenAddress] = {
