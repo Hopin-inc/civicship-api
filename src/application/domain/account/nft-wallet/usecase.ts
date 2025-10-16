@@ -99,11 +99,17 @@ export default class NFTWalletUsecase {
       
       return { success: true, itemsProcessed: metadata.items.length };
     } catch (error) {
-      logger.error("❌ NFT metadata sync failed", {
+      const errorDetails = {
         walletAddress: wallet.walletAddress,
         durationMs: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error),
-      });
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorName: error instanceof Error ? error.name : 'Unknown',
+        errorCode: (error as any).code,
+        errorType: (error as any).type,
+        errorStack: error instanceof Error ? error.stack : undefined,
+      };
+      
+      logger.error("❌ NFT metadata sync failed", errorDetails);
       return {
         success: false,
         itemsProcessed: 0,

@@ -90,11 +90,17 @@ export default class NFTWalletService {
       });
       return response;
     } catch (error) {
-      logger.error("❌ Failed to fetch NFT metadata", {
+      const errorDetails = {
         walletAddress,
         durationMs: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error),
-      });
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorName: error instanceof Error ? error.name : 'Unknown',
+        errorCode: (error as any).code,
+        errorType: (error as any).type,
+        errorStack: error instanceof Error ? error.stack : undefined,
+      };
+      
+      logger.error("❌ Failed to fetch NFT metadata", errorDetails);
       throw error;
     }
   }
