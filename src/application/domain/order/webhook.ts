@@ -21,6 +21,17 @@ type PaymentMetadata = {
   nftInstanceId: string;
 };
 
+export function isPaymentMetadata(obj: any): obj is PaymentMetadata {
+  return (
+    obj &&
+    typeof obj === "object" &&
+    typeof obj.orderId === "string" &&
+    typeof obj.nmkrProjectUid === "string" &&
+    typeof obj.nmkrNftUid === "string" &&
+    typeof obj.nftInstanceId === "string"
+  );
+}
+
 type StripePayload = {
   id: string;
   state: string;

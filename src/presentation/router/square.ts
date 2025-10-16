@@ -1,6 +1,6 @@
 import express from "express";
 import { container } from "tsyringe";
-import OrderWebhook from "@/application/domain/order/webhook";
+import OrderWebhook, { isPaymentMetadata } from "@/application/domain/order/webhook";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
@@ -129,21 +129,28 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     const internalOrderId = squareOrder.referenceId;
     const metadata = squareOrder.metadata;
 
-    if (!internalOrderId || !metadata) {
-      logger.error("Missing referenceId or metadata in Square Order", {
+    if (!internalOrderId) {
+      logger.error("Missing referenceId in Square Order", {
         squareOrderId: orderId,
         paymentId,
-        hasReferenceId: !!internalOrderId,
-        hasMetadata: !!metadata,
       });
-      return res.status(400).json({ error: "Invalid Square Order data" });
+      return res.status(400).json({ error: "Missing referenceId in Square Order" });
+    }
+
+    if (!isPaymentMetadata(metadata)) {
+      logger.error("Invalid metadata in Square Order", {
+        squareOrderId: orderId,
+        paymentId,
+        metadata,
+      });
+      return res.status(400).json({ error: "Invalid metadata in Square Order" });
     }
 
     const ctx = { issuer } as IContext;
     await orderWebhook.processSquareWebhook(ctx, {
       id: paymentId,
       state,
-      metadata: metadata as any,
+      metadata,
     });
 
     logger.info("Successfully processed Square webhook", {

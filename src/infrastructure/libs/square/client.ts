@@ -1,19 +1,11 @@
 import { injectable } from "tsyringe";
-import { SquareClient as Square, SquareEnvironment } from "square";
+import { SquareClient as Square, SquareEnvironment, OrderLineItem } from "square";
 import { validateEnvironmentVariables } from "@/infrastructure/config/validation";
 import type { SquareMetadata } from "./type";
 
 export interface CreatePaymentLinkParams {
   orderId: string;
-  lineItems: Array<{
-    catalogObjectId?: string;
-    name?: string;
-    quantity: string;
-    basePriceMoney?: {
-      amount: bigint;
-      currency: string;
-    };
-  }>;
+  lineItems: OrderLineItem[];
   successUrl: string;
   metadata: SquareMetadata;
 }
@@ -51,7 +43,7 @@ export class SquareClient {
     const response = await this.client.checkout.paymentLinks.create({
       order: {
         locationId: this.config.square.locationId,
-        lineItems: params.lineItems as any,
+        lineItems: params.lineItems,
         referenceId: params.orderId,
         metadata: params.metadata as Record<string, string>,
       },
