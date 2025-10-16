@@ -54,12 +54,13 @@ export default class NFTWalletService {
   }
 
   async fetchMetadata(walletAddress: string): Promise<NftMetadata> {
+    const startTime = Date.now();
     try {
       const baseApiUrl =
         process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
       const apiUrl = `${baseApiUrl}/addresses/${walletAddress}/nft`;
 
-      logger.debug(`🌐 Fetching NFT list from Blockscout: ${walletAddress}`);
+      logger.debug("🌐 Fetching NFT list from Blockscout", { walletAddress });
       const response = await fetchWithRetry<BaseSepoliaNftResponse>(
         apiUrl,
         MAX_RETRIES,
@@ -68,13 +69,25 @@ export default class NFTWalletService {
       );
 
       if (!response.items?.length) {
+        logger.info("📭 No NFTs found", { 
+          walletAddress, 
+          durationMs: Date.now() - startTime 
+        });
         return { items: [] };
       }
 
-      logger.info(`📥 Fetched ${response.items.length} NFTs from Blockscout`);
+      logger.info("📥 Fetched NFTs from Blockscout", {
+        walletAddress,
+        nftCount: response.items.length,
+        durationMs: Date.now() - startTime,
+      });
       return response;
     } catch (error) {
-      logger.error(`❌ Failed to fetch NFT metadata for ${walletAddress}:`, error);
+      logger.error("❌ Failed to fetch NFT metadata", {
+        walletAddress,
+        durationMs: Date.now() - startTime,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -83,6 +96,7 @@ export default class NFTWalletService {
     ctx: IContext,
     metadata: NftMetadata,
   ): Promise<Record<string, BaseSepoliaTokenResponse | null>> {
+    const startTime = Date.now();
     const baseApiUrl =
       process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
     const result: Record<string, BaseSepoliaTokenResponse | null> = {};
@@ -102,6 +116,10 @@ export default class NFTWalletService {
     const existingTokens = await this.nftTokenRepository.findManyByAddresses(ctx, uniqueAddresses);
     const tokenMap = new Map(existingTokens.map((token) => [token.address, token]));
 
+    let cachedCount = 0;
+    let fetchedCount = 0;
+    let failedCount = 0;
+
     for (const address of uniqueAddresses) {
       const existingToken = tokenMap.get(address);
 
@@ -112,11 +130,12 @@ export default class NFTWalletService {
           symbol: existingToken.symbol ?? undefined,
           type: existingToken.type,
         };
-        logger.debug(`📦 Using cached token info for: ${address}`);
+        cachedCount++;
+        logger.debug("📦 Using cached token info", { tokenAddress: address });
       } else {
         try {
           const tokenApiUrl = `${baseApiUrl}/tokens/${address}`;
-          logger.debug(`🌐 Fetching token info: ${address}`);
+          logger.debug("🌐 Fetching token info", { tokenAddress: address });
           const info = await fetchWithRetry<BaseSepoliaTokenResponse>(
             tokenApiUrl,
             MAX_RETRIES,
@@ -124,13 +143,26 @@ export default class NFTWalletService {
             TIMEOUT,
           );
           result[address] = info;
-          logger.debug(`📥 Fetched token info for: ${address}`);
+          fetchedCount++;
+          logger.debug("📥 Fetched token info", { tokenAddress: address });
         } catch (err) {
-          logger.warn(`⚠️ Failed to fetch token info for ${address}:`, err);
+          failedCount++;
+          logger.warn("⚠️ Failed to fetch token info", {
+            tokenAddress: address,
+            error: err instanceof Error ? err.message : String(err),
+          });
           result[address] = null;
         }
       }
     }
+
+    logger.info("✅ Token info fetch completed", {
+      totalTokens: uniqueAddresses.length,
+      cachedCount,
+      fetchedCount,
+      failedCount,
+      durationMs: Date.now() - startTime,
+    });
 
     return result;
   }
@@ -142,10 +174,18 @@ export default class NFTWalletService {
     tokenInfos: Record<string, BaseSepoliaTokenResponse | null>,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
+    const startTime = Date.now();
+    let processedCount = 0;
+    let skippedCount = 0;
+
     for (const item of metadata.items) {
       const tokenAddress = item.token.address ?? item.token.address_hash;
       if (!tokenAddress) {
-        logger.warn(`⚠️ Missing token address, skipping NFT: ${item.id}`);
+        skippedCount++;
+        logger.warn("⚠️ Missing token address, skipping NFT", { 
+          instanceId: item.id,
+          walletAddress: wallet.walletAddress,
+        });
         continue;
       }
 
@@ -179,6 +219,15 @@ export default class NFTWalletService {
         },
         tx,
       );
+
+      processedCount++;
     }
+
+    logger.info("✅ NFT metadata persisted", {
+      walletAddress: wallet.walletAddress,
+      processedCount,
+      skippedCount,
+      durationMs: Date.now() - startTime,
+    });
   }
 }

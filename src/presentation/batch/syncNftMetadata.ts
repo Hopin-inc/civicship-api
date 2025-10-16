@@ -7,7 +7,8 @@ import NFTWalletUsecase from "@/application/domain/account/nft-wallet/usecase";
 import { IContext } from "@/types/server";
 
 export async function syncNftMetadata() {
-  logger.info("🚀 Starting NFT metadata synchronization batch");
+  const batchStartTime = Date.now();
+  logger.info("🚀 Starting NFT metadata synchronization batch", { startTime: new Date().toISOString() });
 
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nftWalletUsecase = container.resolve<NFTWalletUsecase>("NFTWalletUsecase");
@@ -19,9 +20,12 @@ export async function syncNftMetadata() {
     let totalProcessed = 0;
     let totalErrors = 0;
     let totalSkipped = 0;
+    let totalNftsProcessed = 0;
     let hasMore = true;
 
     while (hasMore) {
+      const batchIterationStartTime = Date.now();
+      
       const nftWallets = await issuer.internal(async (tx) => {
         return tx.nftWallet.findMany({
           select: {
@@ -38,7 +42,11 @@ export async function syncNftMetadata() {
         break;
       }
 
-      logger.info(`📦 Processing batch ${Math.floor(skip / BATCH_SIZE) + 1}: ${nftWallets.length} wallets (skip: ${skip})`);
+      logger.info("📦 Processing batch", {
+        batchNumber: Math.floor(skip / BATCH_SIZE) + 1,
+        walletCount: nftWallets.length,
+        skip,
+      });
 
       for (const wallet of nftWallets) {
         const result = await nftWalletUsecase.syncMetadata(ctx, wallet);
@@ -46,14 +54,23 @@ export async function syncNftMetadata() {
         if (result.success) {
           if (result.itemsProcessed > 0) {
             totalProcessed++;
+            totalNftsProcessed += result.itemsProcessed;
           } else {
             totalSkipped++;
           }
         } else {
           totalErrors++;
-          logger.warn(`⚠️ Error processing wallet ${wallet.walletAddress}: ${result.error}`);
+          logger.warn("⚠️ Wallet sync error", {
+            walletAddress: wallet.walletAddress,
+            error: result.error,
+          });
         }
       }
+
+      logger.info("✅ Batch iteration completed", {
+        batchNumber: Math.floor(skip / BATCH_SIZE) + 1,
+        durationMs: Date.now() - batchIterationStartTime,
+      });
 
       skip += BATCH_SIZE;
       if (nftWallets.length < BATCH_SIZE) {
@@ -61,8 +78,18 @@ export async function syncNftMetadata() {
       }
     }
 
-    logger.info(`🎯 NFT metadata sync completed: ${totalProcessed} processed, ${totalSkipped} skipped (no NFTs), ${totalErrors} errors`);
+    logger.info("🎯 NFT metadata sync completed", {
+      totalWalletsProcessed: totalProcessed,
+      totalWalletsSkipped: totalSkipped,
+      totalWalletsErrors: totalErrors,
+      totalNftsProcessed,
+      durationMs: Date.now() - batchStartTime,
+      endTime: new Date().toISOString(),
+    });
   } catch (error) {
-    logger.error("💥 Batch process error:", error);
+    logger.error("💥 Batch process error", {
+      durationMs: Date.now() - batchStartTime,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
