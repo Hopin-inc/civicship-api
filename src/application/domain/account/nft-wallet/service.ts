@@ -31,7 +31,7 @@ export type NftMetadataItem = {
     name?: string;
     description?: string;
     image?: string;
-  };
+  } | null;
 };
 
 export type NftMetadata = {
@@ -232,6 +232,16 @@ export default class NFTWalletService {
         skippedCount++;
         logger.warn("⚠️ Missing token address, skipping NFT", { 
           instanceId: item.id,
+          walletAddress: wallet.walletAddress,
+        });
+        continue;
+      }
+
+      if (!item.metadata) {
+        skippedCount++;
+        logger.warn("⚠️ Missing metadata, skipping NFT", { 
+          instanceId: item.id,
+          tokenAddress,
           walletAddress: wallet.walletAddress,
         });
         continue;
