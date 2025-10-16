@@ -74,6 +74,9 @@ input OpportunityUpdateContentInput {
 
     relatedArticleIds: [ID!]
     placeId: ID
+
+    # for isAdmin
+    createdBy: ID
 }
 
 input OpportunitySetPublishStatusInput {

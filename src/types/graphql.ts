@@ -1409,6 +1409,7 @@ export type GqlOpportunitySortInput = {
 export type GqlOpportunityUpdateContentInput = {
   body?: InputMaybe<Scalars['String']['input']>;
   category: GqlOpportunityCategory;
+  createdBy?: InputMaybe<Scalars['ID']['input']>;
   description: Scalars['String']['input'];
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
