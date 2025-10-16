@@ -87,37 +87,47 @@ export default class NFTWalletService {
       process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
     const result: Record<string, BaseSepoliaTokenResponse | null> = {};
 
-    for (const item of metadata.items) {
-      const tokenAddress = item.token.address ?? item.token.address_hash;
-      if (!tokenAddress) {
-        continue;
-      }
+    const uniqueAddresses = [
+      ...new Set(
+        metadata.items
+          .map((item) => item.token.address ?? item.token.address_hash)
+          .filter((address): address is string => !!address),
+      ),
+    ];
 
-      const existingToken = await this.nftTokenRepository.findByAddress(ctx, tokenAddress);
+    if (uniqueAddresses.length === 0) {
+      return result;
+    }
+
+    const existingTokens = await this.nftTokenRepository.findManyByAddresses(ctx, uniqueAddresses);
+    const tokenMap = new Map(existingTokens.map((token) => [token.address, token]));
+
+    for (const address of uniqueAddresses) {
+      const existingToken = tokenMap.get(address);
 
       if (existingToken && existingToken.updatedAt && isTokenCacheValid(existingToken.updatedAt)) {
-        result[tokenAddress] = {
+        result[address] = {
           address: existingToken.address,
           name: existingToken.name ?? undefined,
           symbol: existingToken.symbol ?? undefined,
           type: existingToken.type,
         };
-        logger.debug(`📦 Using cached token info for: ${tokenAddress}`);
+        logger.debug(`📦 Using cached token info for: ${address}`);
       } else {
         try {
-          const tokenApiUrl = `${baseApiUrl}/tokens/${tokenAddress}`;
-          logger.debug(`🌐 Fetching token info: ${tokenAddress}`);
+          const tokenApiUrl = `${baseApiUrl}/tokens/${address}`;
+          logger.debug(`🌐 Fetching token info: ${address}`);
           const info = await fetchWithRetry<BaseSepoliaTokenResponse>(
             tokenApiUrl,
             MAX_RETRIES,
             RETRY_DELAY,
             TIMEOUT,
           );
-          result[tokenAddress] = info;
-          logger.debug(`📥 Fetched token info for: ${tokenAddress}`);
+          result[address] = info;
+          logger.debug(`📥 Fetched token info for: ${address}`);
         } catch (err) {
-          logger.warn(`⚠️ Failed to fetch token info for ${tokenAddress}:`, err);
-          result[tokenAddress] = null;
+          logger.warn(`⚠️ Failed to fetch token info for ${address}:`, err);
+          result[address] = null;
         }
       }
     }

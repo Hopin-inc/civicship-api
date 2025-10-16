@@ -65,4 +65,27 @@ export default class NftTokenRepository implements INftTokenRepository {
       });
     });
   }
+
+  async findManyByAddresses(
+    ctx: IContext,
+    addresses: string[],
+  ) {
+    if (addresses.length === 0) {
+      return [];
+    }
+
+    return ctx.issuer.internal(async (t) => {
+      return t.nftToken.findMany({
+        where: { address: { in: addresses } },
+        select: {
+          id: true,
+          address: true,
+          name: true,
+          symbol: true,
+          type: true,
+          updatedAt: true,
+        },
+      });
+    });
+  }
 }
