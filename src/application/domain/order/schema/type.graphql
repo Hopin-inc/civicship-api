@@ -23,4 +23,5 @@ enum OrderStatus {
 enum PaymentProvider {
   NMKR
   STRIPE
+  SQUARE
 }

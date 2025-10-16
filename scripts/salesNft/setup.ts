@@ -5,16 +5,47 @@ import { container } from "tsyringe";
 import { NftInstanceStatus, Prisma, ProductType } from "@prisma/client";
 import { NmkrClient } from "../../src/infrastructure/libs/nmkr/api";
 import { StripeClient } from "../../src/infrastructure/libs/stripe/client";
+import { SquareClient } from "../../src/infrastructure/libs/square/client";
 import { CreateProjectRequest, UploadNftRequest } from "../../src/infrastructure/libs/nmkr/type";
 import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
 import logger from "../../src/infrastructure/logging";
 import * as path from "path";
 import * as fs from "fs";
 
+async function createSquareIntegration(
+  squareClient: SquareClient,
+  project: { uid: string; policyId: string },
+  projectName: string,
+  description: string,
+  priceAmount: number,
+  communityId: string,
+) {
+  const squareItem = await squareClient.createCatalogItem({
+    name: projectName,
+    description,
+    priceAmount,
+    metadata: {
+      communityId,
+      projectUid: project.uid,
+      policyId: project.policyId,
+    },
+  });
+
+  logger.info("✅ Square catalog item created", {
+    itemId: squareItem.itemId,
+    variationId: squareItem.variationId,
+  });
+
+  return { provider: "SQUARE" as const, externalRef: squareItem.variationId };
+}
+
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
   const stripeClient = container.resolve(StripeClient);
+  const squareClient = container.resolve(SquareClient);
+
+  const paymentProvider = process.env.PAYMENT_PROVIDER || "STRIPE";
 
   const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts");
 
@@ -116,8 +147,8 @@ async function main() {
   }
 
   const stripeProduct = await stripeClient.createProduct({
-    name: PROJECT_NAME, // 表示名
-    active: true, // 販売可能状態
+    name: PROJECT_NAME,
+    active: true,
     description: DESCRIPTION,
     images: [PROJECT_IMG],
     metadata: {
@@ -148,6 +179,15 @@ async function main() {
     stripePriceId: stripePrice.id,
   });
 
+  const squareIntegration = await createSquareIntegration(
+    squareClient,
+    project,
+    PROJECT_NAME,
+    DESCRIPTION,
+    PER_PRICE,
+    COMMUNITY_ID,
+  );
+
   /**
    * -------------------------------
    * DB 登録
@@ -155,6 +195,15 @@ async function main() {
    */
   // 1) Product, Integration, NftToken, NftProduct を先に作成（DB整備）
   const { nftProduct } = await issuer.internal(async (tx) => {
+    const integrations = [
+      { provider: "STRIPE", externalRef: stripeProduct.id },
+      { provider: "NMKR", externalRef: project.uid },
+    ];
+
+    if (squareIntegration) {
+      integrations.push(squareIntegration);
+    }
+
     const product = await tx.product.create({
       data: {
         name: PROJECT_NAME,
@@ -164,10 +213,7 @@ async function main() {
         maxSupply: MAX_SUPPLY,
         type: ProductType.NFT,
         integrations: {
-          create: [
-            { provider: "STRIPE", externalRef: stripeProduct.id },
-            { provider: "NMKR", externalRef: project.uid },
-          ],
+          create: integrations,
         },
       },
       include: { integrations: true },

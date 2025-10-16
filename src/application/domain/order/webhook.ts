@@ -5,24 +5,46 @@ import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 import NftMintService from "@/application/domain/reward/nft-mint/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderService from "@/application/domain/order/service";
+import OrderRepository from "@/application/domain/order/data/repository";
 import PaymentEventService from "@/application/domain/order/paymentEvent/service";
-import { Prisma } from "@prisma/client";
+import { Prisma, Provider } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import { WebhookMetadataError, PaymentStateTransitionError } from "@/errors/graphql";
 import { OrderWithItems } from "@/application/domain/order/data/type";
 import { PrismaNftMint } from "@/application/domain/reward/nft-mint/data/type";
 
+type PaymentMetadata = {
+  orderId: string;
+  nmkrProjectUid: string;
+  nmkrNftUid: string;
+  nftInstanceId: string;
+};
+
+export function isPaymentMetadata(obj: any): obj is PaymentMetadata {
+  return (
+    obj &&
+    typeof obj === "object" &&
+    typeof obj.orderId === "string" &&
+    typeof obj.nmkrProjectUid === "string" &&
+    typeof obj.nmkrNftUid === "string" &&
+    typeof obj.nftInstanceId === "string"
+  );
+}
+
 type StripePayload = {
   id: string;
   state: string;
-  metadata?: {
-    orderId: string;
-    nmkrProjectUid: string;
-    nmkrNftUid: string;
-    nftInstanceId: string;
-  };
+  metadata?: PaymentMetadata;
 };
+
+type SquarePayload = {
+  id: string;
+  state: string;
+  metadata?: PaymentMetadata;
+};
+
+type PaymentState = "succeeded" | "payment_failed" | "expired" | "canceled";
 
 @injectable()
 export default class OrderWebhook {
@@ -32,6 +54,7 @@ export default class OrderWebhook {
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
     @inject("NftInstanceService") private readonly nftInstanceService: NftInstanceService,
     @inject("PaymentEventService") private readonly paymentEventService: PaymentEventService,
+    @inject("OrderRepository") private readonly orderRepository: OrderRepository,
   ) {}
 
   public async processStripeWebhook(ctx: IContext, payload: StripePayload): Promise<void> {
@@ -46,19 +69,63 @@ export default class OrderWebhook {
     this.validateMetadata(metadata);
     const meta = metadata;
 
+    await this.handlePaymentEvent(
+      ctx,
+      Provider.STRIPE,
+      paymentTransactionUid,
+      state as PaymentState,
+      meta,
+    );
+  }
+
+  public async processSquareWebhook(ctx: IContext, payload: SquarePayload): Promise<void> {
+    const { id: paymentId, state, metadata } = payload;
+
+    logger.info("[OrderWebhook] Square webhook received", {
+      paymentId,
+      state,
+      metadata,
+    });
+
+    this.validateMetadata(metadata);
+    const meta = metadata;
+
+    await this.handlePaymentEvent(
+      ctx,
+      Provider.SQUARE,
+      paymentId,
+      state as PaymentState,
+      meta,
+    );
+  }
+
+  private async handlePaymentEvent(
+    ctx: IContext,
+    provider: Provider,
+    paymentId: string,
+    state: PaymentState,
+    metadata: PaymentMetadata,
+  ): Promise<void> {
+    logger.info("[OrderWebhook] Payment event received", {
+      provider,
+      paymentId,
+      state,
+      metadata,
+    });
+
     await ctx.issuer.internal(async (tx) => {
       const shouldProcess = await this.paymentEventService.ensureEventIdempotency(
         ctx,
-        paymentTransactionUid,
+        paymentId,
         `webhook.${state}`,
-        meta.orderId,
+        metadata.orderId,
         tx,
       );
 
       if (!shouldProcess) {
         logger.info("[OrderWebhook] Event already processed, skipping", {
-          paymentTransactionUid,
-          orderId: meta.orderId,
+          provider,
+          paymentId,
         });
         return;
       }
@@ -66,21 +133,25 @@ export default class OrderWebhook {
       switch (state) {
         case "succeeded":
           await this.processOrderPayment(ctx, {
-            orderId: meta.orderId,
-            paymentTransactionUid,
+            orderId: metadata.orderId,
+            paymentTransactionUid: paymentId,
             tx,
-            meta,
+            meta: metadata,
           });
           break;
 
         case "payment_failed":
         case "expired":
         case "canceled":
-          await this.handleFailedOrder(ctx, meta.orderId, paymentTransactionUid, state, tx);
+          await this.handleFailedOrder(ctx, metadata.orderId, paymentId, state, tx);
           break;
 
         default:
-          logger.info("[OrderWebhook] Unhandled state; no-op", { orderId: meta.orderId, state });
+          logger.info("[OrderWebhook] Unhandled state; no-op", {
+            provider,
+            orderId: metadata.orderId,
+            state,
+          });
       }
     });
   }

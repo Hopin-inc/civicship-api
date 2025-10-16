@@ -1,5 +1,5 @@
 extend type Mutation {
-    productBuy(productId: ID!): ProductBuyPayload!
+    productBuy(productId: ID!, paymentProvider: PaymentProvider): ProductBuyPayload!
     #  @authz(rules: [IsUser])
 }
 
