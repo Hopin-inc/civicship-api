@@ -24,7 +24,6 @@ function getAdminApiKeyFromRequest(req: http.IncomingMessage): string | undefine
 export async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
   const issuer = new PrismaClientIssuer();
   const loaders: Loaders = createLoaders(issuer);
-  const idToken = getIdTokenFromRequest(req);
   const adminApiKey = getAdminApiKeyFromRequest(req);
   const expectedAdminKey = process.env.CIVICSHIP_ADMIN_API_KEY;
 
@@ -36,6 +35,14 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const refreshToken = (req.headers["x-refresh-token"] as string) || "";
   const tokenExpiresAt = (req.headers["x-token-expires-at"] as string) || "";
   const communityId = (req.headers["x-community-id"] as string) || process.env.COMMUNITY_ID;
+
+  let idToken: string | undefined;
+  
+  if (authMode === "session" && (req as any).cookies?.session) {
+    idToken = (req as any).cookies.session;
+  } else {
+    idToken = getIdTokenFromRequest(req);
+  }
 
   if (!communityId) {
     throw new Error("Missing required header: x-community-id");
