@@ -38,13 +38,8 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
 
   let idToken: string | undefined;
   
-  if (authMode === "session") {
-    const sessionCookie = (req as any).cookies?.session;
-    if (sessionCookie) {
-      idToken = sessionCookie;
-    } else {
-      idToken = getIdTokenFromRequest(req);
-    }
+  if (authMode === "session" && (req as any).cookies?.session) {
+    idToken = (req as any).cookies.session;
   } else {
     idToken = getIdTokenFromRequest(req);
   }
