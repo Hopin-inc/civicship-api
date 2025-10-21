@@ -44,6 +44,14 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     idToken = getIdTokenFromRequest(req);
   }
 
+  logger.debug("Auth mode and token source:", {
+    path: req.url || "unknown",
+    authMode,
+    hasSessionCookie: !!(req as any).cookies?.session,
+    hasBearerToken: !!req.headers["authorization"],
+    tokenSource: authMode === "session" && (req as any).cookies?.session ? "session" : "authorization",
+  });
+
   if (!communityId) {
     throw new Error("Missing required header: x-community-id");
   }
@@ -123,6 +131,14 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
         include: userAuthInclude,
       }),
     );
+
+    logger.debug("Current user lookup result:", {
+      path: req.url || "unknown",
+      uid,
+      currentUserId: currentUser?.id || null,
+      currentUserName: currentUser?.name || null,
+      hasCurrentUser: !!currentUser,
+    });
 
     return {
       issuer,
