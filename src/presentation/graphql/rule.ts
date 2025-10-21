@@ -2,6 +2,7 @@ import { postExecRule, preExecRule } from "@graphql-authz/core";
 import { AuthenticationError, AuthorizationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import { GqlUser } from "@/types/graphql";
+import logger from "@/infrastructure/logging";
 
 enum Role {
   OWNER = "OWNER",
@@ -34,7 +35,19 @@ const IsSelf = preExecRule({
 })((context: IContext, args: { permission?: { userId?: string } }) => {
   const user = context.currentUser;
   const permission = args.permission;
-  return !!user && user.id === permission?.userId;
+  const isMatch = !!user && user.id === permission?.userId;
+  
+  logger.debug("IsSelf authorization check:", {
+    hasContextUser: !!user,
+    contextUserId: user?.id || null,
+    permissionUserId: permission?.userId || null,
+    match: isMatch,
+    result: !user ? "FAIL - No authenticated user" : 
+            !isMatch ? "FAIL - User ID mismatch" : 
+            "PASS",
+  });
+  
+  return isMatch;
 });
 
 // 🔐 コミュニティのオーナーか
