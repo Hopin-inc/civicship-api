@@ -251,6 +251,7 @@ export default class IdentityUseCase {
           ctx.uid,
           ctx.platform,
           ctx.communityId,
+          tx,
         );
         logger.debug("Created new identity for user", {
           uid: ctx.uid,
