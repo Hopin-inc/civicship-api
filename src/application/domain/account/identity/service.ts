@@ -26,6 +26,7 @@ export default class IdentityService {
     uid: string,
     platform: IdentityPlatform,
     communityId: string,
+    tx?: Prisma.TransactionClient,
   ) {
     const expiryTime = ctx.phoneTokenExpiresAt
       ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
@@ -42,7 +43,7 @@ export default class IdentityService {
       community: {
         connect: { id: communityId },
       },
-    });
+    }, tx);
   }
 
   async linkPhoneIdentity(
