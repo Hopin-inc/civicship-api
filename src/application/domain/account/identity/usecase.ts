@@ -10,7 +10,6 @@ import {
   GqlPhoneUserStatus,
   GqlUserSignUpInput,
 } from "@/types/graphql";
-import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
@@ -20,7 +19,7 @@ import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
-import { User } from "@prisma/client";
+import { IdentityPlatform as PrismaIdentityPlatform } from "@prisma/client";
 
 @injectable()
 export default class IdentityUseCase {
@@ -103,56 +102,72 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) throw new Error("Authentication required");
     if (!input.phoneAccessToken) throw new Error("Phone authentication required");
 
-    const data = IdentityConverter.create(input, ctx.uid, ctx.platform, ctx.communityId);
     const uploadedImage = input.image
       ? await this.imageService.uploadPublicImage(input.image, "users")
       : undefined;
 
-    const user = await this.identityService.createUserAndIdentity({
-      ...data,
-      image: uploadedImage ? { create: uploadedImage } : undefined,
+    const identities: Array<{
+      uid: string;
+      platform: PrismaIdentityPlatform;
+      communityId: string;
+      authToken?: string;
+      refreshToken?: string;
+      tokenExpiresAt?: Date;
+    }> = [];
+
+    const lineExpiryTime = this.deriveExpiryTime(input.lineTokenExpiresAt);
+    identities.push({
+      uid: ctx.uid,
+      platform: ctx.platform as PrismaIdentityPlatform,
+      communityId: ctx.communityId,
+      authToken: ctx.idToken,
+      refreshToken: input.lineRefreshToken || "",
+      tokenExpiresAt: lineExpiryTime,
     });
 
-    const res = await this.initializeUserAssets(ctx, user.id, ctx.communityId);
-
-    if (!res) {
-      logger.error("[userCreateAccount] User not found after asset initialization");
-      throw new Error("User not found after initialization");
+    if (input.phoneUid) {
+      const phoneExpiryTime = this.deriveExpiryTime(input.phoneTokenExpiresAt);
+      identities.push({
+        uid: input.phoneUid,
+        platform: PrismaIdentityPlatform.PHONE,
+        communityId: ctx.communityId,
+        authToken: input.phoneAccessToken,
+        refreshToken: input.phoneRefreshToken || "",
+        tokenExpiresAt: phoneExpiryTime,
+      });
     }
 
-    await this.storeUserAuthTokens(ctx, input);
-    return IdentityPresenter.create(res);
-  }
+    await ctx.issuer.public(ctx, async (tx) => {
+      const userData = {
+        name: input.name,
+        currentPrefecture: input.currentPrefecture,
+        slug: input.slug || "",
+        phoneNumber: input.phoneNumber,
+        image: uploadedImage ? { create: uploadedImage } : undefined,
+      };
 
-  private async initializeUserAssets(
-    ctx: IContext,
-    userId: string,
-    communityId: string,
-  ): Promise<User | null> {
-    try {
-      await ctx.issuer.public(ctx, async (tx) => {
-        await this.membershipService.joinIfNeeded(ctx, userId, communityId, tx);
-        await this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
-      });
+      const user = await this.identityService.createUserWithIdentities(
+        ctx,
+        userData,
+        identities,
+        tx,
+      );
 
-      if (!ctx.uid) {
-        logger.error("Missing uid in context");
-        return null;
-      }
-      const user = await this.identityService.findUserByIdentity(ctx, ctx.uid);
-      if (!user) {
-        logger.error(`User not found after initialization: userId=${userId}`);
-      }
+      await this.membershipService.joinIfNeeded(ctx, user.id, ctx.communityId, tx);
+      await this.walletService.createMemberWalletIfNeeded(ctx, user.id, ctx.communityId, tx);
 
       return user;
-    } catch (error) {
-      logger.error("Failed to initialize user assets", {
-        userId,
-        communityId,
-        error,
-      });
-      throw error;
+    });
+
+    await this.storeUserAuthTokens(ctx, input);
+
+    const user = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+    if (!user) {
+      logger.error("[userCreateAccount] User not found after creation");
+      throw new Error("User not found after creation");
     }
+
+    return IdentityPresenter.create(user);
   }
 
   private async storeUserAuthTokens(

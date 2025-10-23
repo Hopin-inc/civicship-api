@@ -13,7 +13,7 @@ export interface IUserRepository {
 
   find(ctx: IContext, id: string): Promise<PrismaUserDetail | null>;
 
-  create(data: Prisma.UserCreateInput): Promise<PrismaUserDetail>;
+  create(data: Prisma.UserCreateInput, tx?: Prisma.TransactionClient): Promise<PrismaUserDetail>;
 
   update(
     ctx: IContext,

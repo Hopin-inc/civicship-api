@@ -20,6 +20,44 @@ export default class IdentityService {
     });
   }
 
+  async createUserWithIdentities(
+    ctx: IContext,
+    userData: Omit<Prisma.UserCreateInput, 'identities'>,
+    identities: Array<{
+      uid: string;
+      platform: IdentityPlatform;
+      communityId: string;
+      authToken?: string;
+      refreshToken?: string;
+      tokenExpiresAt?: Date;
+    }>,
+    tx: Prisma.TransactionClient,
+  ): Promise<User> {
+    const user = await this.userRepository.create(userData, tx);
+
+    if (!user) {
+      throw new Error("Failed to create user");
+    }
+
+    for (const identity of identities) {
+      await this.identityRepository.create(ctx, {
+        uid: identity.uid,
+        platform: identity.platform,
+        authToken: identity.authToken,
+        refreshToken: identity.refreshToken,
+        tokenExpiresAt: identity.tokenExpiresAt,
+        user: {
+          connect: { id: user.id },
+        },
+        community: {
+          connect: { id: identity.communityId },
+        },
+      }, tx);
+    }
+
+    return user;
+  }
+
   async addIdentityToUser(
     ctx: IContext,
     userId: string,
