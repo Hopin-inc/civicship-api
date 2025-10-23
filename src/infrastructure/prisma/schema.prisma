@@ -315,8 +315,6 @@ model User {
   articlesWrittenByMe Article[] @relation("t_author_users_on_articles")
   articlesAboutMe     Article[] @relation("t_related_users_on_articles")
 
-  orders Order[]
-
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -1138,6 +1136,7 @@ model NftWallet {
   userId       String        @map("user_id")
   user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   nftInstances NftInstance[]
+  nftMints     NftMint[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1159,28 +1158,12 @@ model NftToken {
   symbol String?
   json   Json?
 
-  nftProducts NftProduct[]
+  nftInstances NftInstance[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_nft_tokens")
-}
-
-model NftProduct {
-  id        String  @id @default(cuid())
-  productId String  @unique @map("product_id")
-  product   Product @relation(fields: [productId], references: [id])
-
-  nftTokenId String   @map("nft_token_id")
-  nftToken   NftToken @relation(fields: [nftTokenId], references: [id], onDelete: Restrict)
-
-  nftInstances NftInstance[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("t_nft_products")
 }
 
 model NftInstance {
@@ -1194,9 +1177,8 @@ model NftInstance {
   imageUrl    String?           @map("image_url")
   json        Json?
 
-  // TODO 既存DB変えてからnull許容しない
-  nftProductId String?     @map("nft_product_id")
-  nftProduct   NftProduct? @relation(fields: [nftProductId], references: [id], onDelete: Restrict)
+  nftTokenId String   @map("nft_token_id")
+  nftToken   NftToken @relation(fields: [nftTokenId], references: [id], onDelete: Restrict)
 
   nftWalletId String?    @map("nft_wallet_id")
   nftWallet   NftWallet? @relation(fields: [nftWalletId], references: [id], onDelete: SetNull)
@@ -1209,7 +1191,7 @@ model NftInstance {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@unique([nftProductId, instanceId])
+  @@unique([nftTokenId, instanceId])
   @@index([instanceId])
   @@index([nftWalletId])
   @@map("t_nft_instances")
@@ -1227,14 +1209,14 @@ model NftMint {
   id     String        @id @default(cuid())
   status NftMintStatus @default(QUEUED)
 
-  txHash     String? @map("tx_hash")
+  txHash     String? @unique @map("tx_hash")
   error      String?
   retryCount Int     @default(0) @map("retry_count")
 
   externalRequestId String? @unique @map("external_request_id")
 
-  orderItemId String    @map("order_item_id")
-  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+  nftWalletId String    @map("nft_wallet_id")
+  nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
 
   nftInstanceId String      @map("nft_instance_id")
   nftInstance   NftInstance @relation(fields: [nftInstanceId], references: [id], onDelete: Restrict)
@@ -1251,119 +1233,6 @@ enum NftMintStatus {
   SUBMITTED
   MINTED
   FAILED
-}
-
-// ------------------------------ Order ------------------------------
-
-model Order {
-  id     String      @id @default(cuid())
-  status OrderStatus @default(PENDING)
-
-  paymentProvider Provider @default(STRIPE) @map("payment_provider")
-  externalRef     String?  @unique @map("external_ref")
-
-  totalAmount Int? @map("total_amount")
-
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id])
-
-  items OrderItem[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("t_orders")
-}
-
-model OrderItem {
-  id String @id @default(cuid())
-
-  priceSnapshot Int @map("price_snapshot")
-  quantity      Int
-
-  orderId String @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id])
-
-  productId String  @map("product_id")
-  product   Product @relation(fields: [productId], references: [id])
-
-  nftMints NftMint[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("t_order_items")
-}
-
-enum Provider {
-  NMKR
-  STRIPE
-}
-
-enum OrderStatus {
-  PENDING
-  PAID
-  CANCELED
-  REFUNDED
-  FAILED
-}
-
-model PaymentEvent {
-  id          String   @id @default(cuid())
-  provider    Provider @default(STRIPE)
-  eventId     String   @map("event_id")
-  eventType   String   @map("event_type")
-  orderId     String?  @map("order_id")
-  processedAt DateTime @default(now()) @map("processed_at")
-
-  @@unique([provider, eventId])
-  @@index([orderId])
-  @@map("t_payment_events")
-}
-
-// ------------------------------ Product (NFTのみ) ------------------------------
-
-model Product {
-  id          String      @id @default(cuid())
-  type        ProductType @default(NFT)
-  name        String
-  description String?
-  imageUrl    String?     @map("image_url")
-
-  price     Int
-  maxSupply Int?      @map("max_supply")
-  startsAt  DateTime? @map("starts_at")
-  endsAt    DateTime? @map("ends_at")
-
-  integrations ProductIntegration[]
-
-  orderItem  OrderItem[]
-  nftProduct NftProduct?
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("t_products")
-}
-
-enum ProductType {
-  NFT
-}
-
-model ProductIntegration {
-  id        String  @id @default(cuid())
-  productId String  @map("product_id")
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  provider    Provider
-  externalRef String   @map("external_ref")
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@unique([productId, provider])
-  @@unique([provider, externalRef])
-  @@map("t_product_integrations")
 }
 
 // ------------------------------ Merkle Extension ------------------------------

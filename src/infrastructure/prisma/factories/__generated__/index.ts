@@ -32,14 +32,10 @@ import type { Transaction } from "@prisma/client";
 import type { ApiKey } from "@prisma/client";
 import type { NftWallet } from "@prisma/client";
 import type { NftToken } from "@prisma/client";
-import type { NftProduct } from "@prisma/client";
 import type { NftInstance } from "@prisma/client";
 import type { NftMint } from "@prisma/client";
-import type { Order } from "@prisma/client";
-import type { OrderItem } from "@prisma/client";
-import type { PaymentEvent } from "@prisma/client";
-import type { Product } from "@prisma/client";
-import type { ProductIntegration } from "@prisma/client";
+import type { MerkleCommit } from "@prisma/client";
+import type { MerkleProof } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -76,9 +72,7 @@ import type { TransactionReason } from "@prisma/client";
 import type { NftWalletType } from "@prisma/client";
 import type { NftInstanceStatus } from "@prisma/client";
 import type { NftMintStatus } from "@prisma/client";
-import type { OrderStatus } from "@prisma/client";
-import type { Provider } from "@prisma/client";
-import type { ProductType } from "@prisma/client";
+import type { Position } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
@@ -352,10 +346,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "articlesAboutMe",
                 type: "Article",
                 relationName: "t_related_users_on_articles"
-            }, {
-                name: "orders",
-                type: "Order",
-                relationName: "OrderToUser"
             }]
     }, {
         name: "Identity",
@@ -767,6 +757,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "createdByUser",
                 type: "User",
                 relationName: "TransactionToUser"
+            }, {
+                name: "merkleProofs",
+                type: "MerkleProof",
+                relationName: "MerkleProofToTransaction"
             }]
     }, {
         name: "ApiKey",
@@ -781,35 +775,24 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "nftInstances",
                 type: "NftInstance",
                 relationName: "NftInstanceToNftWallet"
+            }, {
+                name: "nftMints",
+                type: "NftMint",
+                relationName: "NftMintToNftWallet"
             }]
     }, {
         name: "NftToken",
         fields: [{
-                name: "nftProducts",
-                type: "NftProduct",
-                relationName: "NftProductToNftToken"
-            }]
-    }, {
-        name: "NftProduct",
-        fields: [{
-                name: "product",
-                type: "Product",
-                relationName: "NftProductToProduct"
-            }, {
-                name: "nftToken",
-                type: "NftToken",
-                relationName: "NftProductToNftToken"
-            }, {
                 name: "nftInstances",
                 type: "NftInstance",
-                relationName: "NftInstanceToNftProduct"
+                relationName: "NftInstanceToNftToken"
             }]
     }, {
         name: "NftInstance",
         fields: [{
-                name: "nftProduct",
-                type: "NftProduct",
-                relationName: "NftInstanceToNftProduct"
+                name: "nftToken",
+                type: "NftToken",
+                relationName: "NftInstanceToNftToken"
             }, {
                 name: "nftWallet",
                 type: "NftWallet",
@@ -826,64 +809,31 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "NftMint",
         fields: [{
-                name: "orderItem",
-                type: "OrderItem",
-                relationName: "NftMintToOrderItem"
+                name: "nftWallet",
+                type: "NftWallet",
+                relationName: "NftMintToNftWallet"
             }, {
                 name: "nftInstance",
                 type: "NftInstance",
                 relationName: "NftInstanceToNftMint"
             }]
     }, {
-        name: "Order",
+        name: "MerkleCommit",
         fields: [{
-                name: "user",
-                type: "User",
-                relationName: "OrderToUser"
-            }, {
-                name: "items",
-                type: "OrderItem",
-                relationName: "OrderToOrderItem"
+                name: "proofs",
+                type: "MerkleProof",
+                relationName: "MerkleCommitToMerkleProof"
             }]
     }, {
-        name: "OrderItem",
+        name: "MerkleProof",
         fields: [{
-                name: "order",
-                type: "Order",
-                relationName: "OrderToOrderItem"
+                name: "tx",
+                type: "Transaction",
+                relationName: "MerkleProofToTransaction"
             }, {
-                name: "product",
-                type: "Product",
-                relationName: "OrderItemToProduct"
-            }, {
-                name: "nftMints",
-                type: "NftMint",
-                relationName: "NftMintToOrderItem"
-            }]
-    }, {
-        name: "PaymentEvent",
-        fields: []
-    }, {
-        name: "Product",
-        fields: [{
-                name: "integrations",
-                type: "ProductIntegration",
-                relationName: "ProductToProductIntegration"
-            }, {
-                name: "orderItem",
-                type: "OrderItem",
-                relationName: "OrderItemToProduct"
-            }, {
-                name: "nftProduct",
-                type: "NftProduct",
-                relationName: "NftProductToProduct"
-            }]
-    }, {
-        name: "ProductIntegration",
-        fields: [{
-                name: "product",
-                type: "Product",
-                relationName: "ProductToProductIntegration"
+                name: "commit",
+                type: "MerkleCommit",
+                relationName: "MerkleCommitToMerkleProof"
             }]
     }, {
         name: "PlacePublicOpportunityCountView",
@@ -2533,7 +2483,6 @@ type UserFactoryDefineInput = {
     transactionsCreatedByMe?: Prisma.TransactionCreateNestedManyWithoutCreatedByUserInput;
     articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
     articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
-    orders?: Prisma.OrderCreateNestedManyWithoutUserInput;
 };
 
 type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
@@ -6286,6 +6235,7 @@ type TransactioncreatedByUserFactory = {
 type TransactionFactoryDefineInput = {
     id?: string;
     reason?: TransactionReason;
+    comment?: string | null;
     fromPointChange?: number;
     toPointChange?: number;
     createdAt?: Date;
@@ -6296,6 +6246,7 @@ type TransactionFactoryDefineInput = {
     reservation?: TransactionreservationFactory | Prisma.ReservationCreateNestedOneWithoutTransactionsInput;
     ticketStatusHistory?: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput;
     createdByUser?: TransactioncreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput;
+    merkleProofs?: Prisma.MerkleProofCreateNestedManyWithoutTxInput;
 };
 
 type TransactionTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionFactoryDefineInput, never>>;
@@ -6633,6 +6584,7 @@ type NftWalletFactoryDefineInput = {
     updatedAt?: Date | null;
     user: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletsInput;
     nftInstances?: Prisma.NftInstanceCreateNestedManyWithoutNftWalletInput;
+    nftMints?: Prisma.NftMintCreateNestedManyWithoutNftWalletInput;
 };
 
 type NftWalletTransientFields = Record<string, unknown> & Partial<Record<keyof NftWalletFactoryDefineInput, never>>;
@@ -6786,7 +6738,7 @@ type NftTokenFactoryDefineInput = {
     json?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date | null;
-    nftProducts?: Prisma.NftProductCreateNestedManyWithoutNftTokenInput;
+    nftInstances?: Prisma.NftInstanceCreateNestedManyWithoutNftTokenInput;
 };
 
 type NftTokenTransientFields = Record<string, unknown> & Partial<Record<keyof NftTokenFactoryDefineInput, never>>;
@@ -6919,176 +6871,13 @@ export const defineNftTokenFactory = (<TOptions extends NftTokenFactoryDefineOpt
 
 defineNftTokenFactory.withTransientFields = defaultTransientFieldValues => options => defineNftTokenFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
-type NftProductScalarOrEnumFields = {};
-
-type NftProductproductFactory = {
-    _factoryFor: "Product";
-    build: () => PromiseLike<Prisma.ProductCreateNestedOneWithoutNftProductInput["create"]>;
-};
-
-type NftProductnftTokenFactory = {
-    _factoryFor: "NftToken";
-    build: () => PromiseLike<Prisma.NftTokenCreateNestedOneWithoutNftProductsInput["create"]>;
-};
-
-type NftProductFactoryDefineInput = {
-    id?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-    product: NftProductproductFactory | Prisma.ProductCreateNestedOneWithoutNftProductInput;
-    nftToken: NftProductnftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftProductsInput;
-    nftInstances?: Prisma.NftInstanceCreateNestedManyWithoutNftProductInput;
-};
-
-type NftProductTransientFields = Record<string, unknown> & Partial<Record<keyof NftProductFactoryDefineInput, never>>;
-
-type NftProductFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<NftProductFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<NftProduct, Prisma.NftProductCreateInput, TTransients>;
-
-type NftProductFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<NftProductFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: NftProductFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<NftProduct, Prisma.NftProductCreateInput, TTransients>;
-
-function isNftProductproductFactory(x: NftProductproductFactory | Prisma.ProductCreateNestedOneWithoutNftProductInput | undefined): x is NftProductproductFactory {
-    return (x as any)?._factoryFor === "Product";
-}
-
-function isNftProductnftTokenFactory(x: NftProductnftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftProductsInput | undefined): x is NftProductnftTokenFactory {
-    return (x as any)?._factoryFor === "NftToken";
-}
-
-type NftProductTraitKeys<TOptions extends NftProductFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface NftProductFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "NftProduct";
-    build(inputData?: Partial<Prisma.NftProductCreateInput & TTransients>): PromiseLike<Prisma.NftProductCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.NftProductCreateInput & TTransients>): PromiseLike<Prisma.NftProductCreateInput>;
-    buildList(list: readonly Partial<Prisma.NftProductCreateInput & TTransients>[]): PromiseLike<Prisma.NftProductCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.NftProductCreateInput & TTransients>): PromiseLike<Prisma.NftProductCreateInput[]>;
-    pickForConnect(inputData: NftProduct): Pick<NftProduct, "id">;
-    create(inputData?: Partial<Prisma.NftProductCreateInput & TTransients>): PromiseLike<NftProduct>;
-    createList(list: readonly Partial<Prisma.NftProductCreateInput & TTransients>[]): PromiseLike<NftProduct[]>;
-    createList(count: number, item?: Partial<Prisma.NftProductCreateInput & TTransients>): PromiseLike<NftProduct[]>;
-    createForConnect(inputData?: Partial<Prisma.NftProductCreateInput & TTransients>): PromiseLike<Pick<NftProduct, "id">>;
-}
-
-export interface NftProductFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends NftProductFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): NftProductFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateNftProductScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): NftProductScalarOrEnumFields {
-    return {};
-}
-
-function defineNftProductFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends NftProductFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): NftProductFactoryInterface<TTransients, NftProductTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly NftProductTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("NftProduct", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.NftProductCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateNftProductScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<NftProductFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<NftProductFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                product: isNftProductproductFactory(defaultData.product) ? {
-                    create: await defaultData.product.build()
-                } : defaultData.product,
-                nftToken: isNftProductnftTokenFactory(defaultData.nftToken) ? {
-                    create: await defaultData.nftToken.build()
-                } : defaultData.nftToken
-            } as Prisma.NftProductCreateInput;
-            const data: Prisma.NftProductCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.NftProductCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: NftProduct) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.NftProductCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().nftProduct.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.NftProductCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.NftProductCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "NftProduct" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: NftProductTraitKeys<TOptions>, ...names: readonly NftProductTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface NftProductFactoryBuilder {
-    <TOptions extends NftProductFactoryDefineOptions>(options: TOptions): NftProductFactoryInterface<{}, NftProductTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends NftProductTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends NftProductFactoryDefineOptions<TTransients>>(options: TOptions) => NftProductFactoryInterface<TTransients, NftProductTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link NftProduct} model.
- *
- * @param options
- * @returns factory {@link NftProductFactoryInterface}
- */
-export const defineNftProductFactory = (<TOptions extends NftProductFactoryDefineOptions>(options: TOptions): NftProductFactoryInterface<TOptions> => {
-    return defineNftProductFactoryInternal(options, {});
-}) as NftProductFactoryBuilder;
-
-defineNftProductFactory.withTransientFields = defaultTransientFieldValues => options => defineNftProductFactoryInternal(options, defaultTransientFieldValues);
-
 type NftInstanceScalarOrEnumFields = {
     instanceId: string;
 };
 
-type NftInstancenftProductFactory = {
-    _factoryFor: "NftProduct";
-    build: () => PromiseLike<Prisma.NftProductCreateNestedOneWithoutNftInstancesInput["create"]>;
+type NftInstancenftTokenFactory = {
+    _factoryFor: "NftToken";
+    build: () => PromiseLike<Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput["create"]>;
 };
 
 type NftInstancenftWalletFactory = {
@@ -7112,7 +6901,7 @@ type NftInstanceFactoryDefineInput = {
     json?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date | null;
-    nftProduct?: NftInstancenftProductFactory | Prisma.NftProductCreateNestedOneWithoutNftInstancesInput;
+    nftToken: NftInstancenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput;
     nftWallet?: NftInstancenftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput;
     nftMints?: Prisma.NftMintCreateNestedManyWithoutNftInstanceInput;
     community?: NftInstancecommunityFactory | Prisma.CommunityCreateNestedOneWithoutNftInstanceInput;
@@ -7125,14 +6914,14 @@ type NftInstanceFactoryTrait<TTransients extends Record<string, unknown>> = {
 } & CallbackDefineOptions<NftInstance, Prisma.NftInstanceCreateInput, TTransients>;
 
 type NftInstanceFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<NftInstanceFactoryDefineInput, BuildDataOptions<TTransients>>;
+    defaultData: Resolver<NftInstanceFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: TraitName]: NftInstanceFactoryTrait<TTransients>;
+        [traitName: string | symbol]: NftInstanceFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<NftInstance, Prisma.NftInstanceCreateInput, TTransients>;
 
-function isNftInstancenftProductFactory(x: NftInstancenftProductFactory | Prisma.NftProductCreateNestedOneWithoutNftInstancesInput | undefined): x is NftInstancenftProductFactory {
-    return (x as any)?._factoryFor === "NftProduct";
+function isNftInstancenftTokenFactory(x: NftInstancenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput | undefined): x is NftInstancenftTokenFactory {
+    return (x as any)?._factoryFor === "NftToken";
 }
 
 function isNftInstancenftWalletFactory(x: NftInstancenftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput | undefined): x is NftInstancenftWalletFactory {
@@ -7190,7 +6979,7 @@ function defineNftInstanceFactoryInternal<TTransients extends Record<string, unk
         const build = async (inputData: Partial<Prisma.NftInstanceCreateInput & TTransients> = {}) => {
             const seq = getSeq();
             const requiredScalarData = autoGenerateNftInstanceScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<NftInstanceFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const resolveValue = normalizeResolver<NftInstanceFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
@@ -7203,9 +6992,9 @@ function defineNftInstanceFactoryInternal<TTransients extends Record<string, unk
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                nftProduct: isNftInstancenftProductFactory(defaultData.nftProduct) ? {
-                    create: await defaultData.nftProduct.build()
-                } : defaultData.nftProduct,
+                nftToken: isNftInstancenftTokenFactory(defaultData.nftToken) ? {
+                    create: await defaultData.nftToken.build()
+                } : defaultData.nftToken,
                 nftWallet: isNftInstancenftWalletFactory(defaultData.nftWallet) ? {
                     create: await defaultData.nftWallet.build()
                 } : defaultData.nftWallet,
@@ -7253,8 +7042,8 @@ function defineNftInstanceFactoryInternal<TTransients extends Record<string, unk
 }
 
 interface NftInstanceFactoryBuilder {
-    <TOptions extends NftInstanceFactoryDefineOptions>(options?: TOptions): NftInstanceFactoryInterface<{}, NftInstanceTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends NftInstanceTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends NftInstanceFactoryDefineOptions<TTransients>>(options?: TOptions) => NftInstanceFactoryInterface<TTransients, NftInstanceTraitKeys<TOptions>>;
+    <TOptions extends NftInstanceFactoryDefineOptions>(options: TOptions): NftInstanceFactoryInterface<{}, NftInstanceTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends NftInstanceTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends NftInstanceFactoryDefineOptions<TTransients>>(options: TOptions) => NftInstanceFactoryInterface<TTransients, NftInstanceTraitKeys<TOptions>>;
 }
 
 /**
@@ -7263,17 +7052,17 @@ interface NftInstanceFactoryBuilder {
  * @param options
  * @returns factory {@link NftInstanceFactoryInterface}
  */
-export const defineNftInstanceFactory = (<TOptions extends NftInstanceFactoryDefineOptions>(options?: TOptions): NftInstanceFactoryInterface<TOptions> => {
-    return defineNftInstanceFactoryInternal(options ?? {}, {});
+export const defineNftInstanceFactory = (<TOptions extends NftInstanceFactoryDefineOptions>(options: TOptions): NftInstanceFactoryInterface<TOptions> => {
+    return defineNftInstanceFactoryInternal(options, {});
 }) as NftInstanceFactoryBuilder;
 
-defineNftInstanceFactory.withTransientFields = defaultTransientFieldValues => options => defineNftInstanceFactoryInternal(options ?? {}, defaultTransientFieldValues);
+defineNftInstanceFactory.withTransientFields = defaultTransientFieldValues => options => defineNftInstanceFactoryInternal(options, defaultTransientFieldValues);
 
 type NftMintScalarOrEnumFields = {};
 
-type NftMintorderItemFactory = {
-    _factoryFor: "OrderItem";
-    build: () => PromiseLike<Prisma.OrderItemCreateNestedOneWithoutNftMintsInput["create"]>;
+type NftMintnftWalletFactory = {
+    _factoryFor: "NftWallet";
+    build: () => PromiseLike<Prisma.NftWalletCreateNestedOneWithoutNftMintsInput["create"]>;
 };
 
 type NftMintnftInstanceFactory = {
@@ -7290,7 +7079,7 @@ type NftMintFactoryDefineInput = {
     externalRequestId?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
-    orderItem: NftMintorderItemFactory | Prisma.OrderItemCreateNestedOneWithoutNftMintsInput;
+    nftWallet: NftMintnftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftMintsInput;
     nftInstance: NftMintnftInstanceFactory | Prisma.NftInstanceCreateNestedOneWithoutNftMintsInput;
 };
 
@@ -7307,8 +7096,8 @@ type NftMintFactoryDefineOptions<TTransients extends Record<string, unknown> = R
     };
 } & CallbackDefineOptions<NftMint, Prisma.NftMintCreateInput, TTransients>;
 
-function isNftMintorderItemFactory(x: NftMintorderItemFactory | Prisma.OrderItemCreateNestedOneWithoutNftMintsInput | undefined): x is NftMintorderItemFactory {
-    return (x as any)?._factoryFor === "OrderItem";
+function isNftMintnftWalletFactory(x: NftMintnftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftMintsInput | undefined): x is NftMintnftWalletFactory {
+    return (x as any)?._factoryFor === "NftWallet";
 }
 
 function isNftMintnftInstanceFactory(x: NftMintnftInstanceFactory | Prisma.NftInstanceCreateNestedOneWithoutNftMintsInput | undefined): x is NftMintnftInstanceFactory {
@@ -7373,9 +7162,9 @@ function defineNftMintFactoryInternal<TTransients extends Record<string, unknown
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                orderItem: isNftMintorderItemFactory(defaultData.orderItem) ? {
-                    create: await defaultData.orderItem.build()
-                } : defaultData.orderItem,
+                nftWallet: isNftMintnftWalletFactory(defaultData.nftWallet) ? {
+                    create: await defaultData.nftWallet.build()
+                } : defaultData.nftWallet,
                 nftInstance: isNftMintnftInstanceFactory(defaultData.nftInstance) ? {
                     create: await defaultData.nftInstance.build()
                 } : defaultData.nftInstance
@@ -7436,72 +7225,73 @@ export const defineNftMintFactory = (<TOptions extends NftMintFactoryDefineOptio
 
 defineNftMintFactory.withTransientFields = defaultTransientFieldValues => options => defineNftMintFactoryInternal(options, defaultTransientFieldValues);
 
-type OrderScalarOrEnumFields = {};
-
-type OrderuserFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOrdersInput["create"]>;
+type MerkleCommitScalarOrEnumFields = {
+    id: string;
+    rootHash: string;
+    label: number;
+    periodStart: Date;
+    periodEnd: Date;
 };
 
-type OrderFactoryDefineInput = {
+type MerkleCommitFactoryDefineInput = {
     id?: string;
-    status?: OrderStatus;
-    paymentProvider?: Provider;
-    externalRef?: string | null;
-    totalAmount?: number | null;
-    createdAt?: Date;
-    updatedAt?: Date;
-    user: OrderuserFactory | Prisma.UserCreateNestedOneWithoutOrdersInput;
-    items?: Prisma.OrderItemCreateNestedManyWithoutOrderInput;
+    rootHash?: string;
+    label?: number;
+    periodStart?: Date;
+    periodEnd?: Date;
+    committedAt?: Date;
+    proofs?: Prisma.MerkleProofCreateNestedManyWithoutCommitInput;
 };
 
-type OrderTransientFields = Record<string, unknown> & Partial<Record<keyof OrderFactoryDefineInput, never>>;
+type MerkleCommitTransientFields = Record<string, unknown> & Partial<Record<keyof MerkleCommitFactoryDefineInput, never>>;
 
-type OrderFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<OrderFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Order, Prisma.OrderCreateInput, TTransients>;
+type MerkleCommitFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<MerkleCommitFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<MerkleCommit, Prisma.MerkleCommitCreateInput, TTransients>;
 
-type OrderFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<OrderFactoryDefineInput, BuildDataOptions<TTransients>>;
+type MerkleCommitFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<MerkleCommitFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: OrderFactoryTrait<TTransients>;
+        [traitName: TraitName]: MerkleCommitFactoryTrait<TTransients>;
     };
-} & CallbackDefineOptions<Order, Prisma.OrderCreateInput, TTransients>;
+} & CallbackDefineOptions<MerkleCommit, Prisma.MerkleCommitCreateInput, TTransients>;
 
-function isOrderuserFactory(x: OrderuserFactory | Prisma.UserCreateNestedOneWithoutOrdersInput | undefined): x is OrderuserFactory {
-    return (x as any)?._factoryFor === "User";
+type MerkleCommitTraitKeys<TOptions extends MerkleCommitFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface MerkleCommitFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "MerkleCommit";
+    build(inputData?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<Prisma.MerkleCommitCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<Prisma.MerkleCommitCreateInput>;
+    buildList(list: readonly Partial<Prisma.MerkleCommitCreateInput & TTransients>[]): PromiseLike<Prisma.MerkleCommitCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<Prisma.MerkleCommitCreateInput[]>;
+    pickForConnect(inputData: MerkleCommit): Pick<MerkleCommit, "id">;
+    create(inputData?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<MerkleCommit>;
+    createList(list: readonly Partial<Prisma.MerkleCommitCreateInput & TTransients>[]): PromiseLike<MerkleCommit[]>;
+    createList(count: number, item?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<MerkleCommit[]>;
+    createForConnect(inputData?: Partial<Prisma.MerkleCommitCreateInput & TTransients>): PromiseLike<Pick<MerkleCommit, "id">>;
 }
 
-type OrderTraitKeys<TOptions extends OrderFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface OrderFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Order";
-    build(inputData?: Partial<Prisma.OrderCreateInput & TTransients>): PromiseLike<Prisma.OrderCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.OrderCreateInput & TTransients>): PromiseLike<Prisma.OrderCreateInput>;
-    buildList(list: readonly Partial<Prisma.OrderCreateInput & TTransients>[]): PromiseLike<Prisma.OrderCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.OrderCreateInput & TTransients>): PromiseLike<Prisma.OrderCreateInput[]>;
-    pickForConnect(inputData: Order): Pick<Order, "id">;
-    create(inputData?: Partial<Prisma.OrderCreateInput & TTransients>): PromiseLike<Order>;
-    createList(list: readonly Partial<Prisma.OrderCreateInput & TTransients>[]): PromiseLike<Order[]>;
-    createList(count: number, item?: Partial<Prisma.OrderCreateInput & TTransients>): PromiseLike<Order[]>;
-    createForConnect(inputData?: Partial<Prisma.OrderCreateInput & TTransients>): PromiseLike<Pick<Order, "id">>;
+export interface MerkleCommitFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends MerkleCommitFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): MerkleCommitFactoryInterfaceWithoutTraits<TTransients>;
 }
 
-export interface OrderFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends OrderFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): OrderFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateOrderScalarsOrEnums({ seq }: {
+function autoGenerateMerkleCommitScalarsOrEnums({ seq }: {
     readonly seq: number;
-}): OrderScalarOrEnumFields {
-    return {};
+}): MerkleCommitScalarOrEnumFields {
+    return {
+        id: getScalarFieldValueGenerator().String({ modelName: "MerkleCommit", fieldName: "id", isId: true, isUnique: false, seq }),
+        rootHash: getScalarFieldValueGenerator().String({ modelName: "MerkleCommit", fieldName: "rootHash", isId: false, isUnique: false, seq }),
+        label: getScalarFieldValueGenerator().Int({ modelName: "MerkleCommit", fieldName: "label", isId: false, isUnique: false, seq }),
+        periodStart: getScalarFieldValueGenerator().DateTime({ modelName: "MerkleCommit", fieldName: "periodStart", isId: false, isUnique: false, seq }),
+        periodEnd: getScalarFieldValueGenerator().DateTime({ modelName: "MerkleCommit", fieldName: "periodEnd", isId: false, isUnique: false, seq })
+    };
 }
 
-function defineOrderFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends OrderFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): OrderFactoryInterface<TTransients, OrderTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly OrderTraitKeys<TOptions>[] = []) => {
+function defineMerkleCommitFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends MerkleCommitFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): MerkleCommitFactoryInterface<TTransients, MerkleCommitTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly MerkleCommitTraitKeys<TOptions>[] = []) => {
         const seqKey = {};
         const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Order", modelFieldDefinitions);
+        const screen = createScreener("MerkleCommit", modelFieldDefinitions);
         const handleAfterBuild = createCallbackChain([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -7514,15 +7304,179 @@ function defineOrderFactoryInternal<TTransients extends Record<string, unknown>,
             onAfterCreate,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
         ]);
-        const build = async (inputData: Partial<Prisma.OrderCreateInput & TTransients> = {}) => {
+        const build = async (inputData: Partial<Prisma.MerkleCommitCreateInput & TTransients> = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateOrderScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<OrderFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const requiredScalarData = autoGenerateMerkleCommitScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<MerkleCommitFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
                 const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<OrderFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const resolveTraitValue = normalizeResolver<Partial<MerkleCommitFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.MerkleCommitCreateInput;
+            const data: Prisma.MerkleCommitCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MerkleCommitCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: MerkleCommit) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.MerkleCommitCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().merkleCommit.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MerkleCommitCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.MerkleCommitCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "MerkleCommit" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: MerkleCommitTraitKeys<TOptions>, ...names: readonly MerkleCommitTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface MerkleCommitFactoryBuilder {
+    <TOptions extends MerkleCommitFactoryDefineOptions>(options?: TOptions): MerkleCommitFactoryInterface<{}, MerkleCommitTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends MerkleCommitTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends MerkleCommitFactoryDefineOptions<TTransients>>(options?: TOptions) => MerkleCommitFactoryInterface<TTransients, MerkleCommitTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link MerkleCommit} model.
+ *
+ * @param options
+ * @returns factory {@link MerkleCommitFactoryInterface}
+ */
+export const defineMerkleCommitFactory = (<TOptions extends MerkleCommitFactoryDefineOptions>(options?: TOptions): MerkleCommitFactoryInterface<TOptions> => {
+    return defineMerkleCommitFactoryInternal(options ?? {}, {});
+}) as MerkleCommitFactoryBuilder;
+
+defineMerkleCommitFactory.withTransientFields = defaultTransientFieldValues => options => defineMerkleCommitFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type MerkleProofScalarOrEnumFields = {
+    index: number;
+    sibling: string;
+    position: Position;
+};
+
+type MerkleProoftxFactory = {
+    _factoryFor: "Transaction";
+    build: () => PromiseLike<Prisma.TransactionCreateNestedOneWithoutMerkleProofsInput["create"]>;
+};
+
+type MerkleProofcommitFactory = {
+    _factoryFor: "MerkleCommit";
+    build: () => PromiseLike<Prisma.MerkleCommitCreateNestedOneWithoutProofsInput["create"]>;
+};
+
+type MerkleProofFactoryDefineInput = {
+    id?: string;
+    index?: number;
+    sibling?: string;
+    position?: Position;
+    tx: MerkleProoftxFactory | Prisma.TransactionCreateNestedOneWithoutMerkleProofsInput;
+    commit: MerkleProofcommitFactory | Prisma.MerkleCommitCreateNestedOneWithoutProofsInput;
+};
+
+type MerkleProofTransientFields = Record<string, unknown> & Partial<Record<keyof MerkleProofFactoryDefineInput, never>>;
+
+type MerkleProofFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<MerkleProofFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<MerkleProof, Prisma.MerkleProofCreateInput, TTransients>;
+
+type MerkleProofFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<MerkleProofFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: MerkleProofFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<MerkleProof, Prisma.MerkleProofCreateInput, TTransients>;
+
+function isMerkleProoftxFactory(x: MerkleProoftxFactory | Prisma.TransactionCreateNestedOneWithoutMerkleProofsInput | undefined): x is MerkleProoftxFactory {
+    return (x as any)?._factoryFor === "Transaction";
+}
+
+function isMerkleProofcommitFactory(x: MerkleProofcommitFactory | Prisma.MerkleCommitCreateNestedOneWithoutProofsInput | undefined): x is MerkleProofcommitFactory {
+    return (x as any)?._factoryFor === "MerkleCommit";
+}
+
+type MerkleProofTraitKeys<TOptions extends MerkleProofFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface MerkleProofFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "MerkleProof";
+    build(inputData?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<Prisma.MerkleProofCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<Prisma.MerkleProofCreateInput>;
+    buildList(list: readonly Partial<Prisma.MerkleProofCreateInput & TTransients>[]): PromiseLike<Prisma.MerkleProofCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<Prisma.MerkleProofCreateInput[]>;
+    pickForConnect(inputData: MerkleProof): Pick<MerkleProof, "id">;
+    create(inputData?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<MerkleProof>;
+    createList(list: readonly Partial<Prisma.MerkleProofCreateInput & TTransients>[]): PromiseLike<MerkleProof[]>;
+    createList(count: number, item?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<MerkleProof[]>;
+    createForConnect(inputData?: Partial<Prisma.MerkleProofCreateInput & TTransients>): PromiseLike<Pick<MerkleProof, "id">>;
+}
+
+export interface MerkleProofFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends MerkleProofFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): MerkleProofFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateMerkleProofScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): MerkleProofScalarOrEnumFields {
+    return {
+        index: getScalarFieldValueGenerator().Int({ modelName: "MerkleProof", fieldName: "index", isId: false, isUnique: false, seq }),
+        sibling: getScalarFieldValueGenerator().String({ modelName: "MerkleProof", fieldName: "sibling", isId: false, isUnique: false, seq }),
+        position: "LEFT"
+    };
+}
+
+function defineMerkleProofFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends MerkleProofFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): MerkleProofFactoryInterface<TTransients, MerkleProofTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly MerkleProofTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("MerkleProof", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.MerkleProofCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateMerkleProofScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<MerkleProofFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<MerkleProofFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
                 const traitData = await resolveTraitValue(resolverInput);
                 return {
                     ...acc,
@@ -7530,30 +7484,33 @@ function defineOrderFactoryInternal<TTransients extends Record<string, unknown>,
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                user: isOrderuserFactory(defaultData.user) ? {
-                    create: await defaultData.user.build()
-                } : defaultData.user
-            } as Prisma.OrderCreateInput;
-            const data: Prisma.OrderCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+                tx: isMerkleProoftxFactory(defaultData.tx) ? {
+                    create: await defaultData.tx.build()
+                } : defaultData.tx,
+                commit: isMerkleProofcommitFactory(defaultData.commit) ? {
+                    create: await defaultData.commit.build()
+                } : defaultData.commit
+            } as Prisma.MerkleProofCreateInput;
+            const data: Prisma.MerkleProofCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
         };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.OrderCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Order) => ({
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MerkleProofCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: MerkleProof) => ({
             id: inputData.id
         });
-        const create = async (inputData: Partial<Prisma.OrderCreateInput & TTransients> = {}) => {
+        const create = async (inputData: Partial<Prisma.MerkleProofCreateInput & TTransients> = {}) => {
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = destructure(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().order.create({ data });
+            const createdData = await getClient<PrismaClient>().merkleProof.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.OrderCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.OrderCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MerkleProofCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.MerkleProofCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "Order" as const,
+            _factoryFor: "MerkleProof" as const,
             build,
             buildList,
             buildCreateInput: build,
@@ -7564,7 +7521,7 @@ function defineOrderFactoryInternal<TTransients extends Record<string, unknown>,
         };
     };
     const factory = getFactoryWithTraits();
-    const useTraits = (name: OrderTraitKeys<TOptions>, ...names: readonly OrderTraitKeys<TOptions>[]) => {
+    const useTraits = (name: MerkleProofTraitKeys<TOptions>, ...names: readonly MerkleProofTraitKeys<TOptions>[]) => {
         return getFactoryWithTraits([name, ...names]);
     };
     return {
@@ -7573,659 +7530,22 @@ function defineOrderFactoryInternal<TTransients extends Record<string, unknown>,
     };
 }
 
-interface OrderFactoryBuilder {
-    <TOptions extends OrderFactoryDefineOptions>(options: TOptions): OrderFactoryInterface<{}, OrderTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends OrderTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends OrderFactoryDefineOptions<TTransients>>(options: TOptions) => OrderFactoryInterface<TTransients, OrderTraitKeys<TOptions>>;
+interface MerkleProofFactoryBuilder {
+    <TOptions extends MerkleProofFactoryDefineOptions>(options: TOptions): MerkleProofFactoryInterface<{}, MerkleProofTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends MerkleProofTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends MerkleProofFactoryDefineOptions<TTransients>>(options: TOptions) => MerkleProofFactoryInterface<TTransients, MerkleProofTraitKeys<TOptions>>;
 }
 
 /**
- * Define factory for {@link Order} model.
+ * Define factory for {@link MerkleProof} model.
  *
  * @param options
- * @returns factory {@link OrderFactoryInterface}
+ * @returns factory {@link MerkleProofFactoryInterface}
  */
-export const defineOrderFactory = (<TOptions extends OrderFactoryDefineOptions>(options: TOptions): OrderFactoryInterface<TOptions> => {
-    return defineOrderFactoryInternal(options, {});
-}) as OrderFactoryBuilder;
+export const defineMerkleProofFactory = (<TOptions extends MerkleProofFactoryDefineOptions>(options: TOptions): MerkleProofFactoryInterface<TOptions> => {
+    return defineMerkleProofFactoryInternal(options, {});
+}) as MerkleProofFactoryBuilder;
 
-defineOrderFactory.withTransientFields = defaultTransientFieldValues => options => defineOrderFactoryInternal(options, defaultTransientFieldValues);
-
-type OrderItemScalarOrEnumFields = {
-    priceSnapshot: number;
-    quantity: number;
-};
-
-type OrderItemorderFactory = {
-    _factoryFor: "Order";
-    build: () => PromiseLike<Prisma.OrderCreateNestedOneWithoutItemsInput["create"]>;
-};
-
-type OrderItemproductFactory = {
-    _factoryFor: "Product";
-    build: () => PromiseLike<Prisma.ProductCreateNestedOneWithoutOrderItemInput["create"]>;
-};
-
-type OrderItemFactoryDefineInput = {
-    id?: string;
-    priceSnapshot?: number;
-    quantity?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-    order: OrderItemorderFactory | Prisma.OrderCreateNestedOneWithoutItemsInput;
-    product: OrderItemproductFactory | Prisma.ProductCreateNestedOneWithoutOrderItemInput;
-    nftMints?: Prisma.NftMintCreateNestedManyWithoutOrderItemInput;
-};
-
-type OrderItemTransientFields = Record<string, unknown> & Partial<Record<keyof OrderItemFactoryDefineInput, never>>;
-
-type OrderItemFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<OrderItemFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<OrderItem, Prisma.OrderItemCreateInput, TTransients>;
-
-type OrderItemFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<OrderItemFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: OrderItemFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<OrderItem, Prisma.OrderItemCreateInput, TTransients>;
-
-function isOrderItemorderFactory(x: OrderItemorderFactory | Prisma.OrderCreateNestedOneWithoutItemsInput | undefined): x is OrderItemorderFactory {
-    return (x as any)?._factoryFor === "Order";
-}
-
-function isOrderItemproductFactory(x: OrderItemproductFactory | Prisma.ProductCreateNestedOneWithoutOrderItemInput | undefined): x is OrderItemproductFactory {
-    return (x as any)?._factoryFor === "Product";
-}
-
-type OrderItemTraitKeys<TOptions extends OrderItemFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface OrderItemFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "OrderItem";
-    build(inputData?: Partial<Prisma.OrderItemCreateInput & TTransients>): PromiseLike<Prisma.OrderItemCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.OrderItemCreateInput & TTransients>): PromiseLike<Prisma.OrderItemCreateInput>;
-    buildList(list: readonly Partial<Prisma.OrderItemCreateInput & TTransients>[]): PromiseLike<Prisma.OrderItemCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.OrderItemCreateInput & TTransients>): PromiseLike<Prisma.OrderItemCreateInput[]>;
-    pickForConnect(inputData: OrderItem): Pick<OrderItem, "id">;
-    create(inputData?: Partial<Prisma.OrderItemCreateInput & TTransients>): PromiseLike<OrderItem>;
-    createList(list: readonly Partial<Prisma.OrderItemCreateInput & TTransients>[]): PromiseLike<OrderItem[]>;
-    createList(count: number, item?: Partial<Prisma.OrderItemCreateInput & TTransients>): PromiseLike<OrderItem[]>;
-    createForConnect(inputData?: Partial<Prisma.OrderItemCreateInput & TTransients>): PromiseLike<Pick<OrderItem, "id">>;
-}
-
-export interface OrderItemFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends OrderItemFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): OrderItemFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateOrderItemScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): OrderItemScalarOrEnumFields {
-    return {
-        priceSnapshot: getScalarFieldValueGenerator().Int({ modelName: "OrderItem", fieldName: "priceSnapshot", isId: false, isUnique: false, seq }),
-        quantity: getScalarFieldValueGenerator().Int({ modelName: "OrderItem", fieldName: "quantity", isId: false, isUnique: false, seq })
-    };
-}
-
-function defineOrderItemFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends OrderItemFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): OrderItemFactoryInterface<TTransients, OrderItemTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly OrderItemTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("OrderItem", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.OrderItemCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateOrderItemScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<OrderItemFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<OrderItemFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                order: isOrderItemorderFactory(defaultData.order) ? {
-                    create: await defaultData.order.build()
-                } : defaultData.order,
-                product: isOrderItemproductFactory(defaultData.product) ? {
-                    create: await defaultData.product.build()
-                } : defaultData.product
-            } as Prisma.OrderItemCreateInput;
-            const data: Prisma.OrderItemCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.OrderItemCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: OrderItem) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.OrderItemCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().orderItem.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.OrderItemCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.OrderItemCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "OrderItem" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: OrderItemTraitKeys<TOptions>, ...names: readonly OrderItemTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface OrderItemFactoryBuilder {
-    <TOptions extends OrderItemFactoryDefineOptions>(options: TOptions): OrderItemFactoryInterface<{}, OrderItemTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends OrderItemTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends OrderItemFactoryDefineOptions<TTransients>>(options: TOptions) => OrderItemFactoryInterface<TTransients, OrderItemTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link OrderItem} model.
- *
- * @param options
- * @returns factory {@link OrderItemFactoryInterface}
- */
-export const defineOrderItemFactory = (<TOptions extends OrderItemFactoryDefineOptions>(options: TOptions): OrderItemFactoryInterface<TOptions> => {
-    return defineOrderItemFactoryInternal(options, {});
-}) as OrderItemFactoryBuilder;
-
-defineOrderItemFactory.withTransientFields = defaultTransientFieldValues => options => defineOrderItemFactoryInternal(options, defaultTransientFieldValues);
-
-type PaymentEventScalarOrEnumFields = {
-    eventId: string;
-    eventType: string;
-};
-
-type PaymentEventFactoryDefineInput = {
-    id?: string;
-    provider?: Provider;
-    eventId?: string;
-    eventType?: string;
-    orderId?: string | null;
-    processedAt?: Date;
-};
-
-type PaymentEventTransientFields = Record<string, unknown> & Partial<Record<keyof PaymentEventFactoryDefineInput, never>>;
-
-type PaymentEventFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<PaymentEventFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<PaymentEvent, Prisma.PaymentEventCreateInput, TTransients>;
-
-type PaymentEventFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<PaymentEventFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: TraitName]: PaymentEventFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<PaymentEvent, Prisma.PaymentEventCreateInput, TTransients>;
-
-type PaymentEventTraitKeys<TOptions extends PaymentEventFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface PaymentEventFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "PaymentEvent";
-    build(inputData?: Partial<Prisma.PaymentEventCreateInput & TTransients>): PromiseLike<Prisma.PaymentEventCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.PaymentEventCreateInput & TTransients>): PromiseLike<Prisma.PaymentEventCreateInput>;
-    buildList(list: readonly Partial<Prisma.PaymentEventCreateInput & TTransients>[]): PromiseLike<Prisma.PaymentEventCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.PaymentEventCreateInput & TTransients>): PromiseLike<Prisma.PaymentEventCreateInput[]>;
-    pickForConnect(inputData: PaymentEvent): Pick<PaymentEvent, "id">;
-    create(inputData?: Partial<Prisma.PaymentEventCreateInput & TTransients>): PromiseLike<PaymentEvent>;
-    createList(list: readonly Partial<Prisma.PaymentEventCreateInput & TTransients>[]): PromiseLike<PaymentEvent[]>;
-    createList(count: number, item?: Partial<Prisma.PaymentEventCreateInput & TTransients>): PromiseLike<PaymentEvent[]>;
-    createForConnect(inputData?: Partial<Prisma.PaymentEventCreateInput & TTransients>): PromiseLike<Pick<PaymentEvent, "id">>;
-}
-
-export interface PaymentEventFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends PaymentEventFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): PaymentEventFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGeneratePaymentEventScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): PaymentEventScalarOrEnumFields {
-    return {
-        eventId: getScalarFieldValueGenerator().String({ modelName: "PaymentEvent", fieldName: "eventId", isId: false, isUnique: true, seq }),
-        eventType: getScalarFieldValueGenerator().String({ modelName: "PaymentEvent", fieldName: "eventType", isId: false, isUnique: false, seq })
-    };
-}
-
-function definePaymentEventFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends PaymentEventFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): PaymentEventFactoryInterface<TTransients, PaymentEventTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly PaymentEventTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("PaymentEvent", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.PaymentEventCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGeneratePaymentEventScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<PaymentEventFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<PaymentEventFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.PaymentEventCreateInput;
-            const data: Prisma.PaymentEventCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PaymentEventCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: PaymentEvent) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.PaymentEventCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().paymentEvent.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PaymentEventCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.PaymentEventCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "PaymentEvent" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: PaymentEventTraitKeys<TOptions>, ...names: readonly PaymentEventTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface PaymentEventFactoryBuilder {
-    <TOptions extends PaymentEventFactoryDefineOptions>(options?: TOptions): PaymentEventFactoryInterface<{}, PaymentEventTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends PaymentEventTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends PaymentEventFactoryDefineOptions<TTransients>>(options?: TOptions) => PaymentEventFactoryInterface<TTransients, PaymentEventTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link PaymentEvent} model.
- *
- * @param options
- * @returns factory {@link PaymentEventFactoryInterface}
- */
-export const definePaymentEventFactory = (<TOptions extends PaymentEventFactoryDefineOptions>(options?: TOptions): PaymentEventFactoryInterface<TOptions> => {
-    return definePaymentEventFactoryInternal(options ?? {}, {});
-}) as PaymentEventFactoryBuilder;
-
-definePaymentEventFactory.withTransientFields = defaultTransientFieldValues => options => definePaymentEventFactoryInternal(options ?? {}, defaultTransientFieldValues);
-
-type ProductScalarOrEnumFields = {
-    name: string;
-    price: number;
-};
-
-type ProductnftProductFactory = {
-    _factoryFor: "NftProduct";
-    build: () => PromiseLike<Prisma.NftProductCreateNestedOneWithoutProductInput["create"]>;
-};
-
-type ProductFactoryDefineInput = {
-    id?: string;
-    type?: ProductType;
-    name?: string;
-    description?: string | null;
-    imageUrl?: string | null;
-    price?: number;
-    maxSupply?: number | null;
-    startsAt?: Date | null;
-    endsAt?: Date | null;
-    createdAt?: Date;
-    updatedAt?: Date;
-    integrations?: Prisma.ProductIntegrationCreateNestedManyWithoutProductInput;
-    orderItem?: Prisma.OrderItemCreateNestedManyWithoutProductInput;
-    nftProduct?: ProductnftProductFactory | Prisma.NftProductCreateNestedOneWithoutProductInput;
-};
-
-type ProductTransientFields = Record<string, unknown> & Partial<Record<keyof ProductFactoryDefineInput, never>>;
-
-type ProductFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<ProductFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Product, Prisma.ProductCreateInput, TTransients>;
-
-type ProductFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<ProductFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: TraitName]: ProductFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<Product, Prisma.ProductCreateInput, TTransients>;
-
-function isProductnftProductFactory(x: ProductnftProductFactory | Prisma.NftProductCreateNestedOneWithoutProductInput | undefined): x is ProductnftProductFactory {
-    return (x as any)?._factoryFor === "NftProduct";
-}
-
-type ProductTraitKeys<TOptions extends ProductFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface ProductFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Product";
-    build(inputData?: Partial<Prisma.ProductCreateInput & TTransients>): PromiseLike<Prisma.ProductCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.ProductCreateInput & TTransients>): PromiseLike<Prisma.ProductCreateInput>;
-    buildList(list: readonly Partial<Prisma.ProductCreateInput & TTransients>[]): PromiseLike<Prisma.ProductCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.ProductCreateInput & TTransients>): PromiseLike<Prisma.ProductCreateInput[]>;
-    pickForConnect(inputData: Product): Pick<Product, "id">;
-    create(inputData?: Partial<Prisma.ProductCreateInput & TTransients>): PromiseLike<Product>;
-    createList(list: readonly Partial<Prisma.ProductCreateInput & TTransients>[]): PromiseLike<Product[]>;
-    createList(count: number, item?: Partial<Prisma.ProductCreateInput & TTransients>): PromiseLike<Product[]>;
-    createForConnect(inputData?: Partial<Prisma.ProductCreateInput & TTransients>): PromiseLike<Pick<Product, "id">>;
-}
-
-export interface ProductFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ProductFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): ProductFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateProductScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): ProductScalarOrEnumFields {
-    return {
-        name: getScalarFieldValueGenerator().String({ modelName: "Product", fieldName: "name", isId: false, isUnique: false, seq }),
-        price: getScalarFieldValueGenerator().Int({ modelName: "Product", fieldName: "price", isId: false, isUnique: false, seq })
-    };
-}
-
-function defineProductFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ProductFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ProductFactoryInterface<TTransients, ProductTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly ProductTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Product", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.ProductCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateProductScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<ProductFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<ProductFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                nftProduct: isProductnftProductFactory(defaultData.nftProduct) ? {
-                    create: await defaultData.nftProduct.build()
-                } : defaultData.nftProduct
-            } as Prisma.ProductCreateInput;
-            const data: Prisma.ProductCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ProductCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Product) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.ProductCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().product.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ProductCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.ProductCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Product" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: ProductTraitKeys<TOptions>, ...names: readonly ProductTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface ProductFactoryBuilder {
-    <TOptions extends ProductFactoryDefineOptions>(options?: TOptions): ProductFactoryInterface<{}, ProductTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends ProductTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ProductFactoryDefineOptions<TTransients>>(options?: TOptions) => ProductFactoryInterface<TTransients, ProductTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link Product} model.
- *
- * @param options
- * @returns factory {@link ProductFactoryInterface}
- */
-export const defineProductFactory = (<TOptions extends ProductFactoryDefineOptions>(options?: TOptions): ProductFactoryInterface<TOptions> => {
-    return defineProductFactoryInternal(options ?? {}, {});
-}) as ProductFactoryBuilder;
-
-defineProductFactory.withTransientFields = defaultTransientFieldValues => options => defineProductFactoryInternal(options ?? {}, defaultTransientFieldValues);
-
-type ProductIntegrationScalarOrEnumFields = {
-    provider: Provider;
-    externalRef: string;
-};
-
-type ProductIntegrationproductFactory = {
-    _factoryFor: "Product";
-    build: () => PromiseLike<Prisma.ProductCreateNestedOneWithoutIntegrationsInput["create"]>;
-};
-
-type ProductIntegrationFactoryDefineInput = {
-    id?: string;
-    provider?: Provider;
-    externalRef?: string;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    product: ProductIntegrationproductFactory | Prisma.ProductCreateNestedOneWithoutIntegrationsInput;
-};
-
-type ProductIntegrationTransientFields = Record<string, unknown> & Partial<Record<keyof ProductIntegrationFactoryDefineInput, never>>;
-
-type ProductIntegrationFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<ProductIntegrationFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<ProductIntegration, Prisma.ProductIntegrationCreateInput, TTransients>;
-
-type ProductIntegrationFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<ProductIntegrationFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: ProductIntegrationFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<ProductIntegration, Prisma.ProductIntegrationCreateInput, TTransients>;
-
-function isProductIntegrationproductFactory(x: ProductIntegrationproductFactory | Prisma.ProductCreateNestedOneWithoutIntegrationsInput | undefined): x is ProductIntegrationproductFactory {
-    return (x as any)?._factoryFor === "Product";
-}
-
-type ProductIntegrationTraitKeys<TOptions extends ProductIntegrationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface ProductIntegrationFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "ProductIntegration";
-    build(inputData?: Partial<Prisma.ProductIntegrationCreateInput & TTransients>): PromiseLike<Prisma.ProductIntegrationCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.ProductIntegrationCreateInput & TTransients>): PromiseLike<Prisma.ProductIntegrationCreateInput>;
-    buildList(list: readonly Partial<Prisma.ProductIntegrationCreateInput & TTransients>[]): PromiseLike<Prisma.ProductIntegrationCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.ProductIntegrationCreateInput & TTransients>): PromiseLike<Prisma.ProductIntegrationCreateInput[]>;
-    pickForConnect(inputData: ProductIntegration): Pick<ProductIntegration, "id">;
-    create(inputData?: Partial<Prisma.ProductIntegrationCreateInput & TTransients>): PromiseLike<ProductIntegration>;
-    createList(list: readonly Partial<Prisma.ProductIntegrationCreateInput & TTransients>[]): PromiseLike<ProductIntegration[]>;
-    createList(count: number, item?: Partial<Prisma.ProductIntegrationCreateInput & TTransients>): PromiseLike<ProductIntegration[]>;
-    createForConnect(inputData?: Partial<Prisma.ProductIntegrationCreateInput & TTransients>): PromiseLike<Pick<ProductIntegration, "id">>;
-}
-
-export interface ProductIntegrationFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ProductIntegrationFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): ProductIntegrationFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateProductIntegrationScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): ProductIntegrationScalarOrEnumFields {
-    return {
-        provider: "NMKR",
-        externalRef: getScalarFieldValueGenerator().String({ modelName: "ProductIntegration", fieldName: "externalRef", isId: false, isUnique: true, seq })
-    };
-}
-
-function defineProductIntegrationFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ProductIntegrationFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ProductIntegrationFactoryInterface<TTransients, ProductIntegrationTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly ProductIntegrationTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("ProductIntegration", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.ProductIntegrationCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateProductIntegrationScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<ProductIntegrationFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<ProductIntegrationFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                product: isProductIntegrationproductFactory(defaultData.product) ? {
-                    create: await defaultData.product.build()
-                } : defaultData.product
-            } as Prisma.ProductIntegrationCreateInput;
-            const data: Prisma.ProductIntegrationCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ProductIntegrationCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: ProductIntegration) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.ProductIntegrationCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().productIntegration.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ProductIntegrationCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.ProductIntegrationCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "ProductIntegration" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: ProductIntegrationTraitKeys<TOptions>, ...names: readonly ProductIntegrationTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface ProductIntegrationFactoryBuilder {
-    <TOptions extends ProductIntegrationFactoryDefineOptions>(options: TOptions): ProductIntegrationFactoryInterface<{}, ProductIntegrationTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends ProductIntegrationTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ProductIntegrationFactoryDefineOptions<TTransients>>(options: TOptions) => ProductIntegrationFactoryInterface<TTransients, ProductIntegrationTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link ProductIntegration} model.
- *
- * @param options
- * @returns factory {@link ProductIntegrationFactoryInterface}
- */
-export const defineProductIntegrationFactory = (<TOptions extends ProductIntegrationFactoryDefineOptions>(options: TOptions): ProductIntegrationFactoryInterface<TOptions> => {
-    return defineProductIntegrationFactoryInternal(options, {});
-}) as ProductIntegrationFactoryBuilder;
-
-defineProductIntegrationFactory.withTransientFields = defaultTransientFieldValues => options => defineProductIntegrationFactoryInternal(options, defaultTransientFieldValues);
+defineMerkleProofFactory.withTransientFields = defaultTransientFieldValues => options => defineMerkleProofFactoryInternal(options, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;

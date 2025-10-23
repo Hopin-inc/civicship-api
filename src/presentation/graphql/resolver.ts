@@ -22,7 +22,6 @@ import VCIssuanceRequestResolver from "@/application/domain/experience/evaluatio
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
 import NftInstanceResolver from "@/application/domain/account/nft-instance/controller/resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
-import ProductResolver from "@/application/domain/product/controller/resolver";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
@@ -49,7 +48,6 @@ const ticketIssuer = container.resolve(TicketIssuerResolver);
 const ticketClaimLink = container.resolve(TicketClaimLinkResolver);
 const utility = container.resolve(UtilityResolver);
 const transaction = container.resolve(TransactionResolver);
-const product = container.resolve(ProductResolver);
 
 const resolvers = {
   Query: {
@@ -73,7 +71,6 @@ const resolvers = {
     ...ticketIssuer.Query,
     ...ticketClaimLink.Query,
     ...transaction.Query,
-    ...product.Query,
   },
   Mutation: {
     ...identity.Mutation,
@@ -89,7 +86,6 @@ const resolvers = {
     ...place.Mutation,
     ...utility.Mutation,
     ...transaction.Mutation,
-    ...product.Mutation,
   },
   Identity: identity.Identity,
   User: user.User,

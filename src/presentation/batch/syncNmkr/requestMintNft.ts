@@ -3,16 +3,14 @@ import "@/application/provider";
 import logger from "@/infrastructure/logging";
 import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import NftMintService from "@/application/domain/reward/nft-mint/service";
-import { NftMintStatus, Provider } from "@prisma/client";
-import { IContext } from "@/types/server";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import { NftMintStatus } from "@prisma/client";
 
 export async function processQueuedMints() {
   logger.info("🚀 Starting batch for QUEUED nftMints...");
 
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
-  const mintService = container.resolve(NftMintService);
-  const ctx = { issuer } as IContext;
+  const nmkrClient = container.resolve(NmkrClient);
 
   try {
     const BATCH_SIZE = 20;
@@ -24,17 +22,12 @@ export async function processQueuedMints() {
         tx.nftMint.findMany({
           where: { status: NftMintStatus.QUEUED },
           include: {
+            nftWallet: true,
             nftInstance: {
               include: {
-                nftWallet: true,
-                nftProduct: {
-                  include: {
-                    product: { include: { integrations: true } },
-                  },
-                },
+                nftToken: true,
               },
             },
-            orderItem: true,
           },
           take: BATCH_SIZE,
           skip,
@@ -50,27 +43,25 @@ export async function processQueuedMints() {
 
       for (const mint of mints) {
         try {
-          const nmkrProjectUid =
-            mint.nftInstance?.nftProduct?.product?.integrations.find(
-              (i) => i.provider === Provider.NMKR,
-            )?.externalRef ?? "";
-          const walletAddress = mint.nftInstance?.nftWallet?.walletAddress ?? "";
-          const nftUid = mint.nftInstance?.instanceId ?? "";
-          const orderId = mint.orderItem?.orderId ?? "";
+          const walletAddress = mint.nftWallet?.walletAddress;
+          const nftInstanceId = mint.nftInstance?.instanceId;
+          const nftTokenJson = mint.nftInstance?.nftToken?.json as any;
+          
+          if (!walletAddress || !nftInstanceId) {
+            throw new Error(`Missing required data: walletAddress=${walletAddress}, nftInstanceId=${nftInstanceId}`);
+          }
 
-          // --- NMKR submission 実行 ---
+          const nmkrProjectUid = nftTokenJson?.nmkrProjectUid || nftTokenJson?.projectUid;
+          if (!nmkrProjectUid) {
+            throw new Error(`NMKR project UID not found in nftToken.json`);
+          }
+
           await issuer.internal(async (tx) => {
-            const res = await mintService.mintViaNmkr(
-              ctx,
-              {
-                mintId: mint.id,
-                projectUid: nmkrProjectUid,
-                nftUid,
-                walletAddress,
-                orderId,
-                orderItemId: mint.orderItemId,
-              },
-              tx,
+            const res = await nmkrClient.mintAndSendSpecific(
+              nmkrProjectUid,
+              nftInstanceId,
+              1,
+              walletAddress,
             );
 
             await tx.nftMint.update({
@@ -85,7 +76,6 @@ export async function processQueuedMints() {
 
           logger.info(`✅ Submitted mint ${mint.id}`);
         } catch (err) {
-          // 失敗 → FAILED + retryCount++
           logger.error(`❌ Mint ${mint.id} submission failed: ${(err as Error).message}`);
           await issuer.internal((tx) =>
             tx.nftMint.update({

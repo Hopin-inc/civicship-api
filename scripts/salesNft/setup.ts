@@ -2,9 +2,8 @@ import "reflect-metadata";
 import "@/application/provider";
 import * as process from "node:process";
 import { container } from "tsyringe";
-import { NftInstanceStatus, Prisma, ProductType } from "@prisma/client";
+import { NftInstanceStatus, Prisma } from "@prisma/client";
 import { NmkrClient } from "../../src/infrastructure/libs/nmkr/api";
-import { StripeClient } from "../../src/infrastructure/libs/stripe/client";
 import { CreateProjectRequest, UploadNftRequest } from "../../src/infrastructure/libs/nmkr/type";
 import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
 import logger from "../../src/infrastructure/logging";
@@ -14,7 +13,6 @@ import * as fs from "fs";
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
-  const stripeClient = container.resolve(StripeClient);
 
   const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts");
 
@@ -115,69 +113,18 @@ async function main() {
     process.exit(1); // ここで終了（DBに中途半端に登録しない）
   }
 
-  const stripeProduct = await stripeClient.createProduct({
-    name: PROJECT_NAME, // 表示名
-    active: true, // 販売可能状態
-    description: DESCRIPTION,
-    images: [PROJECT_IMG],
-    metadata: {
-      communityId: COMMUNITY_ID,
-      projectUid: project.uid,
-      policyId: project.policyId,
-    },
-    shippable: false,
-    statement_descriptor: STATEMENT_INVOICE,
-    url: PROJECT_URL,
-  });
-
-  const stripePrice = await stripeClient.createPrice({
-    currency: "jpy",
-    unit_amount: PER_PRICE,
-    product: stripeProduct.id,
-    active: true,
-    tax_behavior: "inclusive",
-    metadata: {
-      communityId: COMMUNITY_ID,
-      projectUid: project.uid,
-      policyId: project.policyId,
-    },
-  });
-
-  logger.info("✅ Stripe product/price created", {
-    stripeProductId: stripeProduct.id,
-    stripePriceId: stripePrice.id,
-  });
-
   /**
    * -------------------------------
    * DB 登録
    * -------------------------------
    */
-  // 1) Product, Integration, NftToken, NftProduct を先に作成（DB整備）
-  const { nftProduct } = await issuer.internal(async (tx) => {
-    const product = await tx.product.create({
-      data: {
-        name: PROJECT_NAME,
-        description: DESCRIPTION,
-        imageUrl: PROJECT_IMG,
-        price: PER_PRICE,
-        maxSupply: MAX_SUPPLY,
-        type: ProductType.NFT,
-        integrations: {
-          create: [
-            { provider: "STRIPE", externalRef: stripeProduct.id },
-            { provider: "NMKR", externalRef: project.uid },
-          ],
-        },
-      },
-      include: { integrations: true },
-    });
-
-    // Policy（nftToken）は connectOrCreate で作成/接続
+  const { nftToken } = await issuer.internal(async (tx) => {
+    // Policy（nftToken）は upsert で作成/更新
     const nftToken = await tx.nftToken.upsert({
       where: { address: project.policyId },
       update: {
         json: {
+          nmkrProjectUid: project.uid,
           policyScript: project.policyScript ? JSON.parse(project.policyScript) : null,
           policyExpiration: project.policyExpiration,
           enabledCoins: project.enabledCoins?.trim().split(/\s+/) ?? [],
@@ -194,6 +141,7 @@ async function main() {
         name: PROJECT_NAME,
         symbol: TOKEN_PREFIX,
         json: {
+          nmkrProjectUid: project.uid,
           policyScript: project.policyScript ? JSON.parse(project.policyScript) : null,
           policyExpiration: project.policyExpiration,
           enabledCoins: project.enabledCoins?.trim().split(/\s+/) ?? [],
@@ -206,11 +154,7 @@ async function main() {
       },
     });
 
-    const nftProduct = await tx.nftProduct.create({
-      data: { productId: product.id, nftTokenId: nftToken.id },
-    });
-
-    return { nftProduct };
+    return { nftToken };
   });
 
   // 2) NMKR へ “全件” アップロード（DBはまだ触らない）
@@ -292,7 +236,7 @@ async function main() {
         description: u.description,
         imageUrl: u.imageUrl,
         json: u.json as Prisma.JsonObject,
-        nftProductId: nftProduct.id,
+        nftTokenId: nftToken.id,
         communityId: COMMUNITY_ID,
       })),
       skipDuplicates: true, // idempotent 実行を許容（再実行に強い）
@@ -300,7 +244,7 @@ async function main() {
 
     logger.info("✅ All NFT instances registered in DB", {
       count: uploadedItems.length,
-      nftProductId: nftProduct.id,
+      nftTokenId: nftToken.id,
     });
   });
 }

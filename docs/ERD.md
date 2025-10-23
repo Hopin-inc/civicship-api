@@ -240,25 +240,9 @@ FAILED FAILED
     
 
 
-        Provider {
-            NMKR NMKR
-STRIPE STRIPE
-        }
-    
-
-
-        OrderStatus {
-            PENDING PENDING
-PAID PAID
-CANCELED CANCELED
-REFUNDED REFUNDED
-FAILED FAILED
-        }
-    
-
-
-        ProductType {
-            NFT NFT
+        Position {
+            LEFT LEFT
+RIGHT RIGHT
         }
     
   "t_images" {
@@ -648,6 +632,7 @@ FAILED FAILED
   "t_transactions" {
     String id "🗝️"
     TransactionReason reason 
+    String comment "❓"
     String from "❓"
     Int from_point_change 
     String to "❓"
@@ -692,15 +677,6 @@ FAILED FAILED
     }
   
 
-  "t_nft_products" {
-    String id "🗝️"
-    String product_id 
-    String nft_token_id 
-    DateTime created_at 
-    DateTime updated_at 
-    }
-  
-
   "t_nft_instances" {
     String id "🗝️"
     String instance_id 
@@ -710,7 +686,7 @@ FAILED FAILED
     String description "❓"
     String image_url "❓"
     Json json "❓"
-    String nft_product_id "❓"
+    String nft_token_id 
     String nft_wallet_id "❓"
     String community_id "❓"
     DateTime created_at 
@@ -725,68 +701,30 @@ FAILED FAILED
     String error "❓"
     Int retry_count 
     String external_request_id "❓"
-    String order_item_id 
+    String nft_wallet_id 
     String nft_instance_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
   
 
-  "t_orders" {
+  "t_merkle_commits" {
     String id "🗝️"
-    OrderStatus status 
-    Provider payment_provider 
-    String external_ref "❓"
-    Int total_amount "❓"
-    String user_id 
-    DateTime created_at 
-    DateTime updated_at 
+    String root_hash 
+    Int label 
+    DateTime period_start 
+    DateTime period_end 
+    DateTime committed_at 
     }
   
 
-  "t_order_items" {
+  "t_merkle_proofs" {
     String id "🗝️"
-    Int price_snapshot 
-    Int quantity 
-    String order_id 
-    String product_id 
-    DateTime created_at 
-    DateTime updated_at 
-    }
-  
-
-  "t_payment_events" {
-    String id "🗝️"
-    Provider provider 
-    String event_id 
-    String event_type 
-    String order_id "❓"
-    DateTime processed_at 
-    }
-  
-
-  "t_products" {
-    String id "🗝️"
-    ProductType type 
-    String name 
-    String description "❓"
-    String image_url "❓"
-    Int price 
-    Int max_supply "❓"
-    DateTime starts_at "❓"
-    DateTime ends_at "❓"
-    DateTime created_at 
-    DateTime updated_at 
-    }
-  
-
-  "t_product_integrations" {
-    String id "🗝️"
-    String product_id 
-    Provider provider 
-    String external_ref 
-    DateTime created_at 
-    DateTime updated_at "❓"
+    String tx_id 
+    String commit_id 
+    Int index 
+    String sibling 
+    Position position 
     }
   
 
@@ -917,7 +855,6 @@ FAILED FAILED
     "t_users" o{--}o "t_transactions" : "transactionsCreatedByMe"
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
-    "t_users" o{--}o "t_orders" : "orders"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_identities" o|--|o "t_communities" : "community"
@@ -1036,35 +973,24 @@ FAILED FAILED
     "t_transactions" o|--|o "t_reservations" : "reservation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "t_transactions" o|--|o "t_users" : "createdByUser"
+    "t_transactions" o{--}o "t_merkle_proofs" : "merkleProofs"
     "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
-    "t_nft_tokens" o{--}o "t_nft_products" : "nftProducts"
-    "t_nft_products" o|--|| "t_products" : "product"
-    "t_nft_products" o|--|| "t_nft_tokens" : "nftToken"
-    "t_nft_products" o{--}o "t_nft_instances" : "nftInstances"
+    "t_nft_wallets" o{--}o "t_nft_mints" : "nftMints"
+    "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_instances" o|--|| "NftInstanceStatus" : "enum:status"
-    "t_nft_instances" o|--|o "t_nft_products" : "nftProduct"
+    "t_nft_instances" o|--|| "t_nft_tokens" : "nftToken"
     "t_nft_instances" o|--|o "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o{--}o "t_nft_mints" : "nftMints"
     "t_nft_instances" o|--|o "t_communities" : "community"
     "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
-    "t_nft_mints" o|--|| "t_order_items" : "orderItem"
+    "t_nft_mints" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_mints" o|--|| "t_nft_instances" : "nftInstance"
-    "t_orders" o|--|| "OrderStatus" : "enum:status"
-    "t_orders" o|--|| "Provider" : "enum:payment_provider"
-    "t_orders" o|--|| "t_users" : "user"
-    "t_orders" o{--}o "t_order_items" : "items"
-    "t_order_items" o|--|| "t_orders" : "order"
-    "t_order_items" o|--|| "t_products" : "product"
-    "t_order_items" o{--}o "t_nft_mints" : "nftMints"
-    "t_payment_events" o|--|| "Provider" : "enum:provider"
-    "t_products" o|--|| "ProductType" : "enum:type"
-    "t_products" o{--}o "t_product_integrations" : "integrations"
-    "t_products" o{--}o "t_order_items" : "orderItem"
-    "t_products" o{--}o "t_nft_products" : "nftProduct"
-    "t_product_integrations" o|--|| "t_products" : "product"
-    "t_product_integrations" o|--|| "Provider" : "enum:provider"
+    "t_merkle_commits" o{--}o "t_merkle_proofs" : "proofs"
+    "t_merkle_proofs" o|--|| "t_transactions" : "tx"
+    "t_merkle_proofs" o|--|| "t_merkle_commits" : "commit"
+    "t_merkle_proofs" o|--|| "Position" : "enum:position"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

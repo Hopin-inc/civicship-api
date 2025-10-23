@@ -18,21 +18,10 @@ import NftInstanceRepository from "@/application/domain/account/nft-instance/dat
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
-import { NftMintRepository } from "@/application/domain/reward/nft-mint/data/repository";
-import NftMintService from "@/application/domain/reward/nft-mint/service";
-import ProductRepository from "@/application/domain/product/data/repository";
-import ProductService from "@/application/domain/product/service";
-import ProductPresenter from "@/application/domain/product/presenter";
-import NftMintConverter from "@/application/domain/reward/nft-mint/data/converter";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
-import OrderRepository from "@/application/domain/order/data/repository";
-import OrderConverter from "@/application/domain/order/data/converter";
-import { OrderItemRepository } from "@/application/domain/order/orderItem/data/repository";
-import { OrderItemService } from "@/application/domain/order/orderItem/service";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
-import { StripeClient } from "@/infrastructure/libs/stripe/client";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
@@ -109,14 +98,6 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
-import OrderItemConverter from "@/application/domain/order/orderItem/data/converter";
-import OrderService from "@/application/domain/order/service";
-import OrderWebhook from "@/application/domain/order/webhook";
-
-import PaymentEventService from "@/application/domain/order/paymentEvent/service";
-import PaymentEventRepository from "@/application/domain/order/paymentEvent/data/repository";
-import ProductResolver from "@/application/domain/product/controller/resolver";
-import ProductUseCase from "@/application/domain/product/usecase";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -158,20 +139,6 @@ export function registerProductionDependencies() {
   container.register("NftInstanceConverter", { useClass: NftInstanceConverter });
   container.register("NftInstanceService", { useClass: NftInstanceService });
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
-  container.register("NftMintRepository", { useClass: NftMintRepository });
-  container.register("NftMintService", { useClass: NftMintService });
-  container.register("NftMintConverter", { useClass: NftMintConverter });
-  container.register("ProductRepository", { useClass: ProductRepository });
-  container.register("ProductService", { useClass: ProductService });
-  container.register("ProductPresenter", { useClass: ProductPresenter });
-
-  container.register("OrderRepository", { useClass: OrderRepository });
-  container.register("OrderConverter", { useClass: OrderConverter });
-  container.register("OrderItemRepository", { useClass: OrderItemRepository });
-  container.register("OrderItemService", { useClass: OrderItemService });
-  container.register("OrderItemConverter", { useClass: OrderItemConverter });
-  container.register("OrderService", { useClass: OrderService });
-  container.register("OrderWebhook", { useClass: OrderWebhook });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });
@@ -306,9 +273,6 @@ export function registerProductionDependencies() {
   // ------------------------------
   // 💸 Transaction
   // ------------------------------
-  container.register("ProductResolver", { useClass: ProductResolver });
-  container.register("ProductUseCase", { useClass: ProductUseCase });
-
   container.register("TransactionUseCase", { useClass: TransactionUseCase });
   container.register("TransactionRepository", { useClass: TransactionRepository });
   container.register("TransactionConverter", { useClass: TransactionConverter });
@@ -324,13 +288,6 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("NmkrClient", { useClass: NmkrClient });
-  container.register("StripeClient", { useClass: StripeClient });
-
-  // ------------------------------
-  // ------------------------------
-
-  container.register("PaymentEventService", { useClass: PaymentEventService });
-  container.register("PaymentEventRepository", { useClass: PaymentEventRepository });
 }
 
 registerProductionDependencies();

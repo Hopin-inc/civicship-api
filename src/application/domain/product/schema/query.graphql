@@ -1,6 +1,0 @@
-# ------------------------------
-# Product Query Definitions
-# ------------------------------
-extend type Query {
-    product(id: ID!): Product
-}
