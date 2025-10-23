@@ -118,12 +118,25 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
 
   try {
+    logger.info("🔍 [auth] Starting authentication", {
+      authMode,
+      hasIdToken: !!idToken,
+      tenantId,
+      communityId,
+    });
+
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     const decoded = await (authMode === "session"
       ? tenantedAuth.verifySessionCookie(idToken, false)
       : tenantedAuth.verifyIdToken(idToken));
     const uid = decoded.uid;
     const platform = decoded.platform;
+
+    logger.info("🔍 [auth] Token verified successfully", {
+      uid,
+      platform,
+      authMode,
+    });
 
     const currentUser = await issuer.internal(async (tx) =>
       tx.user.findFirst({
@@ -138,6 +151,13 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       currentUserId: currentUser?.id || null,
       currentUserName: currentUser?.name || null,
       hasCurrentUser: !!currentUser,
+    });
+
+    logger.info("🔍 [auth] User lookup completed", {
+      uid,
+      hasCurrentUser: !!currentUser,
+      userId: currentUser?.id,
+      identitiesCount: currentUser?.identities?.length ?? 0,
     });
 
     return {
@@ -160,7 +180,12 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       refreshToken,
       tokenExpiresAt,
     };
-  } catch {
+  } catch (error) {
+    logger.error("🔍 [auth] Authentication failed", {
+      error: error instanceof Error ? error.message : String(error),
+      authMode,
+      hasIdToken: !!idToken,
+    });
     return {
       communityId,
       issuer,
