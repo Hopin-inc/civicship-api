@@ -224,13 +224,42 @@ export default class IdentityUseCase {
       if (!ctx.uid || !ctx.platform) {
         throw new AuthenticationError();
       }
-      await this.identityService.addIdentityToUser(
-        ctx,
-        existingUser.id,
-        ctx.uid,
-        ctx.platform,
-        ctx.communityId,
-      );
+
+      const existingIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+
+      if (existingIdentity) {
+        if (existingIdentity.id !== existingUser.id) {
+          logger.error("Identity already linked to another user", {
+            uid: ctx.uid,
+            platform: ctx.platform,
+            existingUserId: existingIdentity.id,
+            attemptedUserId: existingUser.id,
+            communityId: ctx.communityId,
+          });
+          throw new Error("This LINE account is already linked to another user");
+        }
+        logger.info("Identity already exists for this user, skipping creation", {
+          uid: ctx.uid,
+          platform: ctx.platform,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+        });
+      } else {
+        await this.identityService.addIdentityToUser(
+          ctx,
+          existingUser.id,
+          ctx.uid,
+          ctx.platform,
+          ctx.communityId,
+        );
+        logger.debug("Created new identity for user", {
+          uid: ctx.uid,
+          platform: ctx.platform,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+        });
+      }
+
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         existingUser.id,
