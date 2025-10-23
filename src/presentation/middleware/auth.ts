@@ -44,25 +44,9 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     idToken = getIdTokenFromRequest(req);
   }
 
-  logger.debug("Auth mode and token source:", {
-    path: req.url || "unknown",
-    authMode,
-    hasSessionCookie: !!(req as any).cookies?.session,
-    hasBearerToken: !!req.headers["authorization"],
-    tokenSource: authMode === "session" && (req as any).cookies?.session ? "session" : "authorization",
-  });
-
   if (!communityId) {
     throw new Error("Missing required header: x-community-id");
   }
-
-  logger.debug("Request token presence:", {
-    path: req.url || "unknown",
-    hasIdToken: !!idToken,
-    hasRefreshToken: !!refreshToken,
-    hasPhoneToken: !!phoneAuthToken,
-    hasAdminApiKey: !!adminApiKey,
-  });
 
   if (adminApiKey && expectedAdminKey === undefined) {
     logger.warn("Admin API key is present, but expected key is undefined!");
@@ -118,13 +102,6 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
 
   try {
-    logger.info("🔍 [auth] Starting authentication", {
-      authMode,
-      hasIdToken: !!idToken,
-      tenantId,
-      communityId,
-    });
-
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     const decoded = await (authMode === "session"
       ? tenantedAuth.verifySessionCookie(idToken, false)
@@ -132,33 +109,12 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     const uid = decoded.uid;
     const platform = decoded.platform;
 
-    logger.info("🔍 [auth] Token verified successfully", {
-      uid,
-      platform,
-      authMode,
-    });
-
     const currentUser = await issuer.internal(async (tx) =>
       tx.user.findFirst({
         where: { identities: { some: { uid } } },
         include: userAuthInclude,
       }),
     );
-
-    logger.debug("Current user lookup result:", {
-      path: req.url || "unknown",
-      uid,
-      currentUserId: currentUser?.id || null,
-      currentUserName: currentUser?.name || null,
-      hasCurrentUser: !!currentUser,
-    });
-
-    logger.info("🔍 [auth] User lookup completed", {
-      uid,
-      hasCurrentUser: !!currentUser,
-      userId: currentUser?.id,
-      identitiesCount: currentUser?.identities?.length ?? 0,
-    });
 
     return {
       issuer,
@@ -181,10 +137,9 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       tokenExpiresAt,
     };
   } catch (error) {
-    logger.error("🔍 [auth] Authentication failed", {
+    logger.error("Authentication failed", {
       error: error instanceof Error ? error.message : String(error),
       authMode,
-      hasIdToken: !!idToken,
     });
     return {
       communityId,
