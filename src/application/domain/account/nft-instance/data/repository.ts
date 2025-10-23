@@ -113,13 +113,13 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       nftWalletId: string;
       nftTokenId: string;
     },
-    nftProductId: string,
+    nftTokenId: string,
     tx: Prisma.TransactionClient,
   ) {
     return tx.nftInstance.upsert({
       where: {
-        nftProductId_instanceId: {
-          nftProductId,
+        nftTokenId_instanceId: {
+          nftTokenId,
           instanceId: data.instanceId,
         },
       },
@@ -136,6 +136,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         imageUrl: data.imageUrl,
         json: data.json,
         nftWalletId: data.nftWalletId,
+        nftTokenId: data.nftTokenId,
       },
       select: {
         id: true,
@@ -145,13 +146,13 @@ export default class NftInstanceRepository implements INftInstanceRepository {
 
   async findReservedByProduct(
     ctx: IContext,
-    nftProductId: string,
+    nftTokenId: string,
     quantity: number,
     tx: Prisma.TransactionClient,
   ): Promise<NftInstance[]> {
     return tx.nftInstance.findMany({
       where: {
-        nftProductId,
+        nftTokenId,
         status: NftInstanceStatus.RESERVED,
         communityId: ctx.communityId,
       },

@@ -23,20 +23,16 @@ export default class NftInstanceConverter {
 
     if (input.nftTokenAddress?.length) {
       conditions.push({
-        nftProduct: {
-          nftToken: {
-            address: { in: input.nftTokenAddress },
-          },
+        nftToken: {
+          address: { in: input.nftTokenAddress },
         },
       });
     }
 
     if (input.nftTokenType?.length) {
       conditions.push({
-        nftProduct: {
-          nftToken: {
-            type: { in: input.nftTokenType },
-          },
+        nftToken: {
+          type: { in: input.nftTokenType },
         },
       });
     }

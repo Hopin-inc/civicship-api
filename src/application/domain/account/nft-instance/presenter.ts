@@ -4,12 +4,12 @@ import NftTokenPresenter from "@/application/domain/account/nft-token/presenter"
 
 export default class NftInstancePresenter {
   static get(nftInstance: PrismaNftInstance): any {
-    const { nftWallet, nftProduct, ...nftInstanceProps } = nftInstance;
+    const { nftWallet, nftToken, ...nftInstanceProps } = nftInstance;
 
     return {
       __typename: "NftInstance",
       ...nftInstanceProps,
-      nftToken: NftTokenPresenter.get(nftProduct?.nftToken),
+      nftToken: NftTokenPresenter.get(nftToken),
       nftWallet: {
         __typename: "NftWallet",
         ...nftWallet,

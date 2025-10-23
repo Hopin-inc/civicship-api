@@ -39,10 +39,6 @@ export default class TestDataSourceHelper {
     await this.db.transaction.deleteMany();
 
     await this.db.nftMint.deleteMany();
-    await this.db.orderItem.deleteMany();
-    await this.db.order.deleteMany();
-    await this.db.nftProduct.deleteMany();
-    await this.db.product.deleteMany();
 
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
@@ -290,44 +286,13 @@ export default class TestDataSourceHelper {
     return this.db.identity.create({ data });
   }
 
-  // ======== Product =========
-  static async createProduct(data: Prisma.ProductCreateInput) {
-    return this.db.product.create({
-      data,
-      include: {
-        nftProduct: true
-      }
-    });
-  }
-
-  // ======== Order =========
-  static async createOrder(data: Prisma.OrderCreateInput) {
-    return this.db.order.create({
-      data,
-      include: {
-        items: {
-          include: {
-            product: {
-              include: {
-                nftProduct: true
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
   // ======== NftMint =========
   static async createNftMint(data: Prisma.NftMintCreateInput) {
     return this.db.nftMint.create({
       data,
       include: {
-        orderItem: {
-          include: {
-            product: true
-          }
-        }
+        nftWallet: true,
+        nftInstance: true,
       }
     });
   }
@@ -336,11 +301,8 @@ export default class TestDataSourceHelper {
     return this.db.nftMint.findUnique({
       where: { id },
       include: {
-        orderItem: {
-          include: {
-            product: true
-          }
-        }
+        nftWallet: true,
+        nftInstance: true,
       }
     });
   }

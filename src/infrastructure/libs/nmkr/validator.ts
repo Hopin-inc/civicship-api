@@ -4,7 +4,6 @@ import {
   NmkrMintingError,
   NmkrTokenUnavailableError,
 } from "@/errors/graphql";
-import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 
 export function validateMintResponse(resp: MintAndSendSpecificResponse): boolean {
   if (resp.mintAndSendId <= 0) return false;
@@ -31,11 +30,11 @@ export function createValidationError(
   );
 }
 
-export function classifyNmkrError(error: unknown, params: StripeMetadata): NmkrMintingError {
+export function classifyNmkrError(error: unknown, params: { nmkrNftUid?: string; mintId: string }): NmkrMintingError {
   if (error instanceof Error && error.message.includes("404")) {
-    return new NmkrTokenUnavailableError(params.nmkrNftUid, params.orderId, params.orderItemId);
+    return new NmkrTokenUnavailableError(params.nmkrNftUid || "", params.mintId, params.mintId);
   } else if (error instanceof Error && error.message.includes("402")) {
-    return new NmkrInsufficientCreditsError(params.orderId, params.orderItemId);
+    return new NmkrInsufficientCreditsError(params.mintId, params.mintId);
   }
-  return new NmkrMintingError("NMKR minting operation failed", params.orderId, params.orderItemId);
+  return new NmkrMintingError("NMKR minting operation failed", params.mintId, params.mintId);
 }

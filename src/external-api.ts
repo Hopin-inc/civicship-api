@@ -6,7 +6,6 @@ import cors from "cors";
 import logger from "@/infrastructure/logging";
 import walletRouter from "@/presentation/router/wallet";
 import { requestLogger } from "@/presentation/middleware/logger";
-import stripeRouter from "@/presentation/router/stripe";
 
 const port = Number(process.env.PORT ?? 4000);
 
@@ -17,7 +16,6 @@ async function startExternalApiServer() {
   const server = http.createServer(app);
 
   app.use(cors());
-  app.use("/stripe", stripeRouter);
   app.use(express.json({ limit: "10mb" }));
   app.use(requestLogger);
 
