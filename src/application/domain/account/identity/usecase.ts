@@ -137,7 +137,7 @@ export default class IdentityUseCase {
       });
     }
 
-    await ctx.issuer.public(ctx, async (tx) => {
+    const user = await ctx.issuer.public(ctx, async (tx) => {
       const userData = {
         name: input.name,
         currentPrefecture: input.currentPrefecture,
@@ -146,26 +146,25 @@ export default class IdentityUseCase {
         image: uploadedImage ? { create: uploadedImage } : undefined,
       };
 
-      const user = await this.identityService.createUserWithIdentities(
+      const createdUser = await this.identityService.createUserWithIdentities(
         ctx,
         userData,
         identities,
         tx,
       );
 
-      await this.membershipService.joinIfNeeded(ctx, user.id, ctx.communityId, tx);
-      await this.walletService.createMemberWalletIfNeeded(ctx, user.id, ctx.communityId, tx);
+      await this.membershipService.joinIfNeeded(ctx, createdUser.id, ctx.communityId, tx);
+      await this.walletService.createMemberWalletIfNeeded(ctx, createdUser.id, ctx.communityId, tx);
 
-      return user;
+      return createdUser;
     });
 
-    await this.storeUserAuthTokens(ctx, input);
-
-    const user = await this.identityService.findUserByIdentity(ctx, ctx.uid);
     if (!user) {
       logger.error("[userCreateAccount] User not found after creation");
       throw new Error("User not found after creation");
     }
+
+    await this.storeUserAuthTokens(ctx, input);
 
     return IdentityPresenter.create(user);
   }
