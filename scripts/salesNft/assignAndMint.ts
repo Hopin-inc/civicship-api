@@ -33,7 +33,7 @@ async function main() {
   const nftWalletService = container.resolve(NFTWalletService);
 
   const MEMBER_CSV_PATH = path.join(process.cwd(), "scripts/salesNft/member.csv");
-  const COMMUNITY_ID = process.env.COMMUNITY_ID || "neo88";
+  const COMMUNITY_ID = "kibotcha";
 
   const ctx = {
     communityId: COMMUNITY_ID,

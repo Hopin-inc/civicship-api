@@ -38,7 +38,7 @@ async function main() {
    * 基本プロジェクト設定
    * -------------------------------
    */
-  const COMMUNITY_ID = "neo88";
+  const COMMUNITY_ID = "kibotcha";
 
   // const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 13);
   const PROJECT_NAME = `KIBOTCHA SMART ECOVILLAGE MEMBER`; // プロジェクト名
