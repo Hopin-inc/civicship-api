@@ -46,16 +46,6 @@ export default class NftInstanceService {
     return NftInstancePresenter.get(nftInstance);
   }
 
-  async markAsMinting(
-    ctx: IContext,
-    nftInstanceId: string,
-    mintId: string,
-    walletId: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    return this.repository.markAsMinting(ctx, nftInstanceId, mintId, walletId, tx);
-  }
-
   async findReservedInstancesForProduct(
     ctx: IContext,
     productId: string,

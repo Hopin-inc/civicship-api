@@ -149,7 +149,6 @@ async function main() {
         await tx.nftMint.create({
           data: {
             status: NftMintStatus.QUEUED,
-            nftWalletId: wallet.id,
             nftInstanceId: nftInstance.id,
           },
         });

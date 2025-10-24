@@ -62,12 +62,4 @@ export default interface INftInstanceRepository {
     instanceId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<{ id: string } | null>;
-
-  markAsMinting(
-    ctx: IContext,
-    nftInstanceId: string,
-    mintId: string,
-    walletId: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<NftInstance>;
 }

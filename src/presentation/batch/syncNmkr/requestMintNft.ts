@@ -22,10 +22,10 @@ export async function processQueuedMints() {
         tx.nftMint.findMany({
           where: { status: NftMintStatus.QUEUED },
           include: {
-            nftWallet: true,
             nftInstance: {
               include: {
                 nftToken: true,
+                nftWallet: true,
               },
             },
           },
@@ -43,7 +43,7 @@ export async function processQueuedMints() {
 
       for (const mint of mints) {
         try {
-          const walletAddress = mint.nftWallet?.walletAddress;
+          const walletAddress = mint.nftInstance?.nftWallet?.walletAddress;
           const nftInstanceId = mint.nftInstance?.instanceId;
           const nftTokenJson = mint.nftInstance?.nftToken?.json as any;
           

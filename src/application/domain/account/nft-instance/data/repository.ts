@@ -179,23 +179,4 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       }),
     );
   }
-
-  async markAsMinting(
-    ctx: IContext,
-    nftInstanceId: string,
-    mintId: string,
-    walletId: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<NftInstance> {
-    return tx.nftInstance.update({
-      where: { id: nftInstanceId },
-      data: {
-        nftMints: {
-          connect: { id: mintId },
-        },
-        nftWalletId: walletId,
-        status: NftInstanceStatus.MINTING,
-      },
-    });
-  }
 }
