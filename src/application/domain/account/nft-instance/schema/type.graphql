@@ -6,7 +6,7 @@ type NftInstance {
   imageUrl: String
   json: JSON
   nftToken: NftToken
-  nftWallet: NftWallet
+  nftWallet: NftWallet!
   createdAt: Datetime!
   updatedAt: Datetime
 }

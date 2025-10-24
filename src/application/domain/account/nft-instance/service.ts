@@ -33,9 +33,13 @@ export default class NftInstanceService {
     ]);
 
     const hasNextPage = nftInstances.length > take;
-    const nftInstanceNodes = nftInstances.slice(0, take);
+    const nftInstanceNodes = nftInstances
+      .slice(0, take)
+      .map((nftInstance) => NftInstancePresenter.get(nftInstance));
+    const endCursor =
+      nftInstanceNodes.length > 0 ? nftInstanceNodes[nftInstanceNodes.length - 1].id : undefined;
 
-    return NftInstancePresenter.query(nftInstanceNodes, hasNextPage, totalCount, cursor);
+    return NftInstancePresenter.query(nftInstanceNodes, hasNextPage, totalCount, endCursor);
   }
 
   async getNftInstance(id: string, ctx: IContext) {
