@@ -160,10 +160,10 @@ describe("Owner-only mutations - AuthZ", () => {
       [undefined, false],
     ])(`${name} - role %p should be allowed = %p`, async (role, allowed) => {
       const context = {
-        currentUser: role ? { id: "user-1" } : undefined,
-        hasPermissions: {
-          memberships: role ? [{ communityId: "community-1", role }] : [],
-        },
+        currentUser: role ? { 
+          id: "user-1",
+          memberships: [{ communityId: "community-1", role }]
+        } : undefined,
       };
 
       const app = await createApolloTestServer(context);

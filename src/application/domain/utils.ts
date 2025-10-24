@@ -53,7 +53,7 @@ export function getMembershipRolesByCtx(
 }
 
 function getUserMembershipMap(ctx: IContext): Map<string, Role> {
-  return new Map(ctx.hasPermissions?.memberships?.map((m) => [m.communityId, m.role]) || []);
+  return new Map(ctx.currentUser?.memberships?.map((m) => [m.communityId, m.role]) || []);
 }
 
 function determineRoleForCommunity(

@@ -14,6 +14,8 @@ import { requestLogger } from "@/presentation/middleware/logger";
 import { tokenUpdaterMiddleware } from "@/presentation/middleware/token-updater";
 import { customProcessRequest } from "@/presentation/middleware/custom-process-request";
 import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
+import cookieParser from "cookie-parser";
+import { handleSessionLogin } from "@/presentation/middleware/session";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -36,9 +38,18 @@ async function startServer() {
 
   const apolloServer = await createApolloServer(server);
 
+  app.use((req, res, next): void => {
+    if (req.method === "TRACE") {
+      logger.warn(`Blocked TRACE request: ${req.originalUrl}`);
+      res.status(405).send("TRACE method not allowed");
+      return;
+    }
+    next();
+  });
+  app.use(requestLogger);
+
   app.use(corsHandler);
   app.use(express.json({ limit: "50mb" }));
-  app.use(requestLogger);
   app.use(tokenUpdaterMiddleware);
   app.use(
     graphqlUploadExpress({
@@ -55,6 +66,9 @@ async function startServer() {
     });
     res.status(500).json({ error: "Internal Server Error" });
   });
+
+  app.use(cookieParser());
+  app.post("/sessionLogin", handleSessionLogin);
 
   app.use("/graphql", authHandler(apolloServer), tokenUpdaterMiddleware);
   app.use("/line", lineRouter);

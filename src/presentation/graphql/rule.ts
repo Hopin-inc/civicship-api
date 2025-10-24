@@ -2,6 +2,7 @@ import { postExecRule, preExecRule } from "@graphql-authz/core";
 import { AuthenticationError, AuthorizationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import { GqlUser } from "@/types/graphql";
+import logger from "@/infrastructure/logging";
 
 enum Role {
   OWNER = "OWNER",
@@ -34,7 +35,19 @@ const IsSelf = preExecRule({
 })((context: IContext, args: { permission?: { userId?: string } }) => {
   const user = context.currentUser;
   const permission = args.permission;
-  return !!user && user.id === permission?.userId;
+  const isMatch = !!user && user.id === permission?.userId;
+  
+  logger.debug("IsSelf authorization check:", {
+    hasContextUser: !!user,
+    contextUserId: user?.id || null,
+    permissionUserId: permission?.userId || null,
+    match: isMatch,
+    result: !user ? "FAIL - No authenticated user" : 
+            !isMatch ? "FAIL - User ID mismatch" : 
+            "PASS",
+  });
+  
+  return isMatch;
 });
 
 // 🔐 コミュニティのオーナーか
@@ -49,7 +62,7 @@ const IsCommunityOwner = preExecRule({
   if (!user) return false;
   if (!permission?.communityId) return false;
 
-  const membership = context.hasPermissions?.memberships?.find(
+  const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
 
@@ -67,7 +80,7 @@ const IsCommunityManager = preExecRule({
 
   if (!user || !permission?.communityId) return false;
 
-  const membership = context.hasPermissions?.memberships?.find(
+  const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
   return membership?.role === Role.OWNER || membership?.role === Role.MANAGER;
@@ -84,7 +97,7 @@ const IsCommunityMember = preExecRule({
 
   if (!user || !permission?.communityId) return false;
 
-  const membership = context.hasPermissions?.memberships?.find(
+  const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
   return [Role.OWNER, Role.MANAGER, Role.MEMBER].includes(membership?.role as Role);
@@ -102,17 +115,17 @@ const IsOpportunityOwner = preExecRule({
   if (!user || !opportunityId) return false;
 
   return (
-    context.hasPermissions?.opportunitiesCreatedByMe?.some((op) => op.id === opportunityId) ?? false
+    context.currentUser?.opportunitiesCreatedByMe?.some((op) => op.id === opportunityId) ?? false
   );
 });
 
 const CanReadPhoneNumber = postExecRule({
   error: new AuthorizationError("Not authorized to read phone number"),
 })((
-  context: IContext,
-  args: { permission?: Record<string, unknown> },
-  phoneNumber: string | null,
-  user: GqlUser,
+  _context: IContext,
+  _args: { permission?: Record<string, unknown> },
+  _phoneNumber: string | null,
+  _user: GqlUser,
 ) => {
   return true;
 
@@ -128,7 +141,7 @@ const CanReadPhoneNumber = postExecRule({
   //   user?.memberships?.flatMap((m) => (m?.community?.id ? [m.community.id] : [])) ?? [];
   //
   // const isCommunityManager = targetCommunityIds.some((cid) =>
-  //   context.hasPermissions?.memberships?.some(
+  //   context.currentUser?.memberships?.some(
   //     (m) => m.communityId === cid && (m.role === Role.OWNER || m.role === Role.MANAGER),
   //   ),
   // );

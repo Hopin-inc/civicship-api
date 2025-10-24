@@ -3,7 +3,7 @@ import "@/application/provider";
 import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
-import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
+import { OpportunitySlotHostingStatus } from "@prisma/client";
 import { endOfDay } from "date-fns";
 
 /**
@@ -12,7 +12,6 @@ import { endOfDay } from "date-fns";
  * This batch identifies all opportunity slots that:
  * - have `hostingStatus = SCHEDULED`
  * - have `startsAt <= today` (i.e. today or any past date)
- * - have at least one reservation with `status = ACCEPTED`
  *
  * and updates their `hostingStatus` to `COMPLETED`.
  *
@@ -34,16 +33,11 @@ export async function completeOpportunitySlots() {
           startsAt: {
             lte: todayEnd,
           },
-          reservations: {
-            some: {
-              status: ReservationStatus.ACCEPTED,
-            },
-          },
         },
       });
 
       logger.info(
-        `🎯 Found ${targets.length} slots to complete (startsAt <= today & has ACCEPTED reservation)`,
+        `🎯 Found ${targets.length} slots to complete (startsAt <= today)`,
       );
 
       const updates = await Promise.all(
