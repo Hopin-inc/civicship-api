@@ -1136,7 +1136,6 @@ model NftWallet {
   userId       String        @map("user_id")
   user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   nftInstances NftInstance[]
-  nftMints     NftMint[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1214,9 +1213,6 @@ model NftMint {
   retryCount Int     @default(0) @map("retry_count")
 
   externalRequestId String? @unique @map("external_request_id")
-
-  nftWalletId String    @map("nft_wallet_id")
-  nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
 
   nftInstanceId String      @map("nft_instance_id")
   nftInstance   NftInstance @relation(fields: [nftInstanceId], references: [id], onDelete: Restrict)

@@ -701,7 +701,6 @@ RIGHT RIGHT
     String error "❓"
     Int retry_count 
     String external_request_id "❓"
-    String nft_wallet_id 
     String nft_instance_id 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -977,7 +976,6 @@ RIGHT RIGHT
     "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
-    "t_nft_wallets" o{--}o "t_nft_mints" : "nftMints"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_instances" o|--|| "NftInstanceStatus" : "enum:status"
     "t_nft_instances" o|--|| "t_nft_tokens" : "nftToken"
@@ -985,7 +983,6 @@ RIGHT RIGHT
     "t_nft_instances" o{--}o "t_nft_mints" : "nftMints"
     "t_nft_instances" o|--|o "t_communities" : "community"
     "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
-    "t_nft_mints" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_mints" o|--|| "t_nft_instances" : "nftInstance"
     "t_merkle_commits" o{--}o "t_merkle_proofs" : "proofs"
     "t_merkle_proofs" o|--|| "t_transactions" : "tx"
