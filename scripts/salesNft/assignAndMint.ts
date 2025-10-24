@@ -2,7 +2,7 @@ import "reflect-metadata";
 import "@/application/provider";
 import * as process from "node:process";
 import { container } from "tsyringe";
-import { NftInstanceStatus, NftMintStatus, Prisma } from "@prisma/client";
+import { NftInstanceStatus, NftMintStatus } from "@prisma/client";
 import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
 import NFTWalletService from "../../src/application/domain/account/nft-wallet/service";
 import logger from "../../src/infrastructure/logging";
@@ -19,7 +19,12 @@ type ProcessingResult = {
   success: number;
   nftNotFound: number[];
   userNotFound: Array<{ nftNumber: number; phoneNumber: string }>;
-  walletCreationFailed: Array<{ nftNumber: number; phoneNumber: string; userId: string; error: string }>;
+  walletCreationFailed: Array<{
+    nftNumber: number;
+    phoneNumber: string;
+    userId: string;
+    error: string;
+  }>;
   alreadyAssigned: number[];
 };
 
@@ -30,11 +35,10 @@ async function main() {
   const MEMBER_CSV_PATH = path.join(process.cwd(), "scripts/salesNft/member.csv");
   const COMMUNITY_ID = process.env.COMMUNITY_ID || "neo88";
 
-  const ctx: IContext = {
-    userId: "system",
+  const ctx = {
     communityId: COMMUNITY_ID,
     issuer,
-  };
+  } as IContext;
 
   logger.info("🚀 Starting NFT assignment and mint queue creation...");
 
@@ -51,17 +55,20 @@ async function main() {
     process.exit(1);
   }
 
-  const members: MemberRecord[] = lines.slice(1).map((line, index) => {
-    const [nftNumber, phoneNumber] = line.split(",").map((s) => s.trim());
-    if (!nftNumber || !phoneNumber) {
-      logger.warn(`⚠️ Invalid CSV line ${index + 2}: ${line}`);
-      return null;
-    }
-    return {
-      nftNumber: parseInt(nftNumber, 10),
-      phoneNumber,
-    };
-  }).filter((m): m is MemberRecord => m !== null);
+  const members: MemberRecord[] = lines
+    .slice(1)
+    .map((line, index) => {
+      const [nftNumber, phoneNumber] = line.split(",").map((s) => s.trim());
+      if (!nftNumber || !phoneNumber) {
+        logger.warn(`⚠️ Invalid CSV line ${index + 2}: ${line}`);
+        return null;
+      }
+      return {
+        nftNumber: parseInt(nftNumber, 10),
+        phoneNumber,
+      };
+    })
+    .filter((m): m is MemberRecord => m !== null);
 
   logger.info(`📋 Loaded ${members.length} records from member.csv`);
 
@@ -86,7 +93,9 @@ async function main() {
       );
 
       if (!nftInstance) {
-        logger.warn(`⚠️ [nft_number=${member.nftNumber}] NFT instance not found or already assigned`);
+        logger.warn(
+          `⚠️ [nft_number=${member.nftNumber}] NFT instance not found or already assigned`,
+        );
         result.nftNotFound.push(member.nftNumber);
         continue;
       }
@@ -104,7 +113,9 @@ async function main() {
       );
 
       if (!user) {
-        logger.warn(`⚠️ [nft_number=${member.nftNumber}, phone=${member.phoneNumber}] User not found`);
+        logger.warn(
+          `⚠️ [nft_number=${member.nftNumber}, phone=${member.phoneNumber}] User not found`,
+        );
         result.userNotFound.push({
           nftNumber: member.nftNumber,
           phoneNumber: member.phoneNumber,
