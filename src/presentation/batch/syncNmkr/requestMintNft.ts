@@ -4,7 +4,7 @@ import logger from "@/infrastructure/logging";
 import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
-import { NftMintStatus } from "@prisma/client";
+import { NftMintStatus, NftInstanceStatus } from "@prisma/client";
 
 export async function processQueuedMints() {
   logger.info("🚀 Starting batch for QUEUED nftMints...");
@@ -71,6 +71,11 @@ export async function processQueuedMints() {
                 externalRequestId: String(res.mintAndSendId),
                 error: null,
               },
+            });
+
+            await tx.nftInstance.update({
+              where: { id: mint.nftInstanceId },
+              data: { status: NftInstanceStatus.MINTING },
             });
           });
 
