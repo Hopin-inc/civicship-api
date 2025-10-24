@@ -8,7 +8,7 @@ import NFTWalletService from "../../src/application/domain/account/nft-wallet/se
 import logger from "../../src/infrastructure/logging";
 import * as path from "path";
 import * as fs from "fs";
-import { IContext } from "@/types/server";
+import { IContext } from "../../src/types/server";
 
 type MemberRecord = {
   nftNumber: number;
