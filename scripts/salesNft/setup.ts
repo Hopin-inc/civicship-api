@@ -14,11 +14,11 @@ async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
 
-  const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts/test");
+  const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts");
 
   const files = fs
     .readdirSync(NFTS_DIR)
-    .filter((f) => f.endsWith(".png"))
+    .filter((f) => f.endsWith(".jpg"))
     .sort((a, b) => {
       const aNum = parseInt(a.replace(/\D/g, ""), 10);
       const bNum = parseInt(b.replace(/\D/g, ""), 10);
