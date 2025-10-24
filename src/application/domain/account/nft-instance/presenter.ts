@@ -10,10 +10,10 @@ export default class NftInstancePresenter {
       __typename: "NftInstance",
       ...nftInstanceProps,
       nftToken: NftTokenPresenter.get(nftToken),
-      nftWallet: {
+      nftWallet: nftWallet ? {
         __typename: "NftWallet",
         ...nftWallet,
-      },
+      } : null,
     };
   }
 
