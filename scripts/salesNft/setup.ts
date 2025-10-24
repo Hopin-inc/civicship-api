@@ -14,11 +14,11 @@ async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
 
-  const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts");
+  const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts/test");
 
   const files = fs
     .readdirSync(NFTS_DIR)
-    .filter((f) => f.endsWith(".jpg"))
+    .filter((f) => f.endsWith(".png"))
     .sort((a, b) => {
       const aNum = parseInt(a.replace(/\D/g, ""), 10);
       const bNum = parseInt(b.replace(/\D/g, ""), 10);
@@ -40,8 +40,8 @@ async function main() {
    */
   const COMMUNITY_ID = "neo88";
 
-  const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 13);
-  const PROJECT_NAME = `KIBOTCHAスマートエコビレッジDAO-${timestamp}`; // プロジェクト名
+  // const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 13);
+  const PROJECT_NAME = `KIBOTCHA SMART ECOVILLAGE MEMBER`; // プロジェクト名
   const PROJECT_URL = "https://dao.kibotcha.com/"; // 表示用URL
   const TOKEN_PREFIX = "KIBOTCHA"; // NFTのプレフィックス
 
@@ -176,7 +176,7 @@ async function main() {
     const nftPayload: UploadNftRequest = {
       tokenname,
       displayname,
-      description: `NFT ${i + 1} for ${PROJECT_NAME}`,
+      description: `デジタル住民証 #${i + 1}`,
       previewImageNft: { mimetype: "image/png", fileFromBase64: base64 },
       metadataPlaceholder: [{ name: "DESCRIPTION", value: `NFT ${i + 1} metadata` }],
     };
