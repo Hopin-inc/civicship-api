@@ -410,23 +410,12 @@ export const GqlErrorCode = {
   ClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
   Forbidden: 'FORBIDDEN',
   InsufficientBalance: 'INSUFFICIENT_BALANCE',
-  InsufficientInventory: 'INSUFFICIENT_INVENTORY',
   InternalServerError: 'INTERNAL_SERVER_ERROR',
   InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
-  InventoryCalculationError: 'INVENTORY_CALCULATION_ERROR',
-  InventoryUnavailable: 'INVENTORY_UNAVAILABLE',
   MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
-  NmkrInsufficientCredits: 'NMKR_INSUFFICIENT_CREDITS',
-  NmkrMintingFailed: 'NMKR_MINTING_FAILED',
-  NmkrTokenUnavailable: 'NMKR_TOKEN_UNAVAILABLE',
   NotFound: 'NOT_FOUND',
   NoAvailableParticipationSlots: 'NO_AVAILABLE_PARTICIPATION_SLOTS',
-  OrderCancellationFailed: 'ORDER_CANCELLATION_FAILED',
-  OversellDetected: 'OVERSELL_DETECTED',
-  PaymentSessionCreationFailed: 'PAYMENT_SESSION_CREATION_FAILED',
-  PaymentStateTransitionFailed: 'PAYMENT_STATE_TRANSITION_FAILED',
   PersonalRecordOnlyDeletable: 'PERSONAL_RECORD_ONLY_DELETABLE',
-  ProductNotFound: 'PRODUCT_NOT_FOUND',
   RateLimit: 'RATE_LIMIT',
   ReservationAdvanceBookingRequired: 'RESERVATION_ADVANCE_BOOKING_REQUIRED',
   ReservationCancellationTimeout: 'RESERVATION_CANCELLATION_TIMEOUT',
@@ -437,8 +426,7 @@ export const GqlErrorCode = {
   Unauthenticated: 'UNAUTHENTICATED',
   Unknown: 'UNKNOWN',
   UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
-  ValidationError: 'VALIDATION_ERROR',
-  WebhookMetadataInvalid: 'WEBHOOK_METADATA_INVALID'
+  ValidationError: 'VALIDATION_ERROR'
 } as const;
 
 export type GqlErrorCode = typeof GqlErrorCode[keyof typeof GqlErrorCode];
