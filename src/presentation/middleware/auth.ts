@@ -1,8 +1,9 @@
 import http from "http";
+import crypto from "crypto";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
-import { userAuthInclude, userAuthSelect } from "@/application/domain/account/user/data/type";
+import { userAuthInclude } from "@/application/domain/account/user/data/type";
 import { createLoaders, Loaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
@@ -23,10 +24,10 @@ function getAdminApiKeyFromRequest(req: http.IncomingMessage): string | undefine
 export async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
   const issuer = new PrismaClientIssuer();
   const loaders: Loaders = createLoaders(issuer);
-  const idToken = getIdTokenFromRequest(req);
   const adminApiKey = getAdminApiKeyFromRequest(req);
   const expectedAdminKey = process.env.CIVICSHIP_ADMIN_API_KEY;
 
+  const authMode = (req.headers["x-auth-mode"] as string) || "id_token";
   const phoneAuthToken = (req.headers["x-phone-auth-token"] as string) || "";
   const phoneRefreshToken = (req.headers["x-phone-refresh-token"] as string) || "";
   const phoneTokenExpiresAt = (req.headers["x-phone-token-expires-at"] as string) || "";
@@ -34,6 +35,22 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const refreshToken = (req.headers["x-refresh-token"] as string) || "";
   const tokenExpiresAt = (req.headers["x-token-expires-at"] as string) || "";
   const communityId = (req.headers["x-community-id"] as string) || process.env.COMMUNITY_ID;
+
+  let idToken: string | undefined;
+  
+  if (authMode === "session" && (req as any).cookies?.session) {
+    idToken = (req as any).cookies.session;
+  } else {
+    idToken = getIdTokenFromRequest(req);
+  }
+
+  logger.debug("Auth mode and token source:", {
+    path: req.url || "unknown",
+    authMode,
+    hasSessionCookie: !!(req as any).cookies?.session,
+    hasBearerToken: !!req.headers["authorization"],
+    tokenSource: authMode === "session" && (req as any).cookies?.session ? "session" : "authorization",
+  });
 
   if (!communityId) {
     throw new Error("Missing required header: x-community-id");
@@ -52,25 +69,34 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   }
 
   if (adminApiKey) {
-    if (adminApiKey === expectedAdminKey) {
-      logger.info("Admin access via API key");
-      return {
-        issuer,
-        loaders,
-        communityId,
-        isAdmin: true,
+    if (expectedAdminKey) {
+      try {
+        const adminKeyBuffer = Buffer.from(adminApiKey);
+        const expectedKeyBuffer = Buffer.from(expectedAdminKey);
+        
+        if (adminKeyBuffer.length === expectedKeyBuffer.length &&
+            crypto.timingSafeEqual(adminKeyBuffer, expectedKeyBuffer)) {
+          logger.info("Admin access via API key");
+          return {
+            issuer,
+            loaders,
+            communityId,
+            isAdmin: true,
 
-        phoneAuthToken,
-        phoneRefreshToken,
-        phoneTokenExpiresAt,
-        phoneUid,
-        refreshToken,
-        tokenExpiresAt,
-      };
+            phoneAuthToken,
+            phoneRefreshToken,
+            phoneTokenExpiresAt,
+            phoneUid,
+            refreshToken,
+            tokenExpiresAt,
+          };
+        }
+        logger.warn("Admin API key provided but does not match expected value");
+      } catch (error) {
+        logger.warn("Admin API key validation error", { error });
+      }
     } else {
-      logger.warn("Admin API key provided but does not match expected value", {
-        received: adminApiKey,
-      });
+      logger.warn("Admin API key provided but does not match expected value");
     }
   }
 
@@ -93,24 +119,26 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
 
   try {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
-    const decoded = await tenantedAuth.verifyIdToken(idToken);
+    const decoded = await (authMode === "session"
+      ? tenantedAuth.verifySessionCookie(idToken, false)
+      : tenantedAuth.verifyIdToken(idToken));
     const uid = decoded.uid;
     const platform = decoded.platform;
 
-    const [currentUser, hasPermissions] = await Promise.all([
-      issuer.internal(async (tx) =>
-        tx.user.findFirst({
-          where: { identities: { some: { uid } } },
-          include: userAuthInclude,
-        }),
-      ),
-      issuer.internal(async (tx) =>
-        tx.user.findFirst({
-          where: { identities: { some: { uid } } },
-          select: userAuthSelect,
-        }),
-      ),
-    ]);
+    const currentUser = await issuer.internal(async (tx) =>
+      tx.user.findFirst({
+        where: { identities: { some: { uid } } },
+        include: userAuthInclude,
+      }),
+    );
+
+    logger.debug("Current user lookup result:", {
+      path: req.url || "unknown",
+      uid,
+      currentUserId: currentUser?.id || null,
+      currentUserName: currentUser?.name || null,
+      hasCurrentUser: !!currentUser,
+    });
 
     return {
       issuer,
@@ -122,7 +150,6 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       platform,
 
       currentUser,
-      hasPermissions,
 
       phoneUid,
       phoneAuthToken,

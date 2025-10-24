@@ -103,15 +103,16 @@ export default class OpportunityConverter {
     };
   };
 
-  update(input: GqlOpportunityUpdateContentInput): {
+  update(input: GqlOpportunityUpdateContentInput, userId: string): {
     data: Omit<Prisma.OpportunityUpdateInput, "images">;
     images: GqlImageInput[];
   } {
-    const { images, placeId, requiredUtilityIds, relatedArticleIds, ...prop } = input;
+    const { images, placeId, requiredUtilityIds, relatedArticleIds, createdBy, ...prop } = input;
 
     return {
       data: {
         ...prop,
+        createdByUser: { connect: { id: userId } },
         ...(placeId?.trim() && {
           place: { connect: { id: placeId } },
         }),

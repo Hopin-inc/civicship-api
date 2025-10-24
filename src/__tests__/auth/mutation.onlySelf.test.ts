@@ -165,9 +165,6 @@ describe("Self-only mutations - AuthZ", () => {
     ])(`${name} - %s should be allowed = %p`, async (_label, currentUserId, allowed) => {
       const context = {
         currentUser: currentUserId ? { id: currentUserId } : undefined,
-        hasPermissions: {
-          self: [{ userId: "user-1" }],
-        },
         issuer,
       };
 

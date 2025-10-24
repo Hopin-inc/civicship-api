@@ -6,7 +6,8 @@ export interface BaseSepoliaNftItem {
     image?: string;
   };
   token: {
-    address: string;
+    address?: string;
+    address_hash?: string;
     name?: string;
     symbol?: string;
     type: string;
@@ -19,7 +20,8 @@ export interface BaseSepoliaNftResponse {
 }
 
 export interface BaseSepoliaTokenResponse {
-  address: string;
+  address?: string;
+  address_hash?: string;
   name?: string;
   symbol?: string;
   type: string;

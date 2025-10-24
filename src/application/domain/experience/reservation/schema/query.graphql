@@ -42,6 +42,7 @@ input ReservationFilterInput {
     opportunitySlotId: ID
     createdByUserId: ID
     opportunityOwnerId: ID
+    communityId: ID
 
     and: [ReservationFilterInput!]
     or: [ReservationFilterInput!]

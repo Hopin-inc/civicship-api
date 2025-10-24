@@ -554,7 +554,7 @@ export type GqlIdentity = {
 };
 
 export type GqlIdentityCheckPhoneUserInput = {
-  communityId: Scalars['ID']['input'];
+  phoneUid: Scalars['String']['input'];
 };
 
 export type GqlIdentityCheckPhoneUserPayload = {
@@ -1447,6 +1447,7 @@ export type GqlOpportunitySortInput = {
 export type GqlOpportunityUpdateContentInput = {
   body?: InputMaybe<Scalars['String']['input']>;
   category: GqlOpportunityCategory;
+  createdBy?: InputMaybe<Scalars['ID']['input']>;
   description: Scalars['String']['input'];
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
@@ -2263,6 +2264,7 @@ export type GqlReservationEdge = GqlEdge & {
 
 export type GqlReservationFilterInput = {
   and?: InputMaybe<Array<GqlReservationFilterInput>>;
+  communityId?: InputMaybe<Scalars['ID']['input']>;
   createdByUserId?: InputMaybe<Scalars['ID']['input']>;
   evaluationStatus?: InputMaybe<GqlEvaluationStatus>;
   hostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
@@ -2801,13 +2803,15 @@ export type GqlUserFilterInput = {
 };
 
 export type GqlUserSignUpInput = {
-  communityId: Scalars['ID']['input'];
   currentPrefecture: GqlCurrentPrefecture;
   image?: InputMaybe<GqlImageInput>;
   lineRefreshToken?: InputMaybe<Scalars['String']['input']>;
+  lineTokenExpiresAt?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
+  phoneAccessToken?: InputMaybe<Scalars['String']['input']>;
   phoneNumber?: InputMaybe<Scalars['String']['input']>;
   phoneRefreshToken?: InputMaybe<Scalars['String']['input']>;
+  phoneTokenExpiresAt?: InputMaybe<Scalars['String']['input']>;
   phoneUid?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
 };
