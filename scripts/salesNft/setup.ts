@@ -177,7 +177,7 @@ async function main() {
       tokenname,
       displayname,
       description: `デジタル住民証 #${i + 1}`,
-      previewImageNft: { mimetype: "image/png", fileFromBase64: base64 },
+      previewImageNft: { mimetype: "image/jpeg", fileFromBase64: base64 },
       metadataPlaceholder: [{ name: "DESCRIPTION", value: `NFT ${i + 1} metadata` }],
     };
 
