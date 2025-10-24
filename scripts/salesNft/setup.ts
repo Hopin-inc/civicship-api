@@ -42,13 +42,8 @@ async function main() {
 
   const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 13);
   const PROJECT_NAME = `KIBOTCHAスマートエコビレッジDAO-${timestamp}`; // プロジェクト名
-  const PROJECT_IMG =
-    "https://storage.googleapis.com/studio-design-asset-files/projects/BXaxJLbXO7/s-3534x2926_v-frms_webp_f7afab6f-3f7c-4067-8367-0991ab4d1651_small.webp";
   const PROJECT_URL = "https://dao.kibotcha.com/"; // 表示用URL
   const TOKEN_PREFIX = "KIBOTCHA"; // NFTのプレフィックス
-
-  const PER_PRICE = 10000;
-  const STATEMENT_INVOICE = "KIBOTCHA DAO NFT";
 
   const MAX_SUPPLY = files.length; // 最大発行数（デフォルト 50）
   const POLICY_LOCKS = new Date("9999-12-31").toISOString(); // 実質無期限ポリシー
