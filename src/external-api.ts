@@ -7,7 +7,7 @@ import logger from "@/infrastructure/logging";
 import walletRouter from "@/presentation/router/wallet";
 import { requestLogger } from "@/presentation/middleware/logger";
 
-const port = Number(process.env.PORT ?? 4000);
+const port = Number(process.env.PORT ?? 3000);
 
 async function startExternalApiServer() {
   const app = express();
