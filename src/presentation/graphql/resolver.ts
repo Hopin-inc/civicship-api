@@ -47,6 +47,7 @@ const ticket = container.resolve(TicketResolver);
 const ticketIssuer = container.resolve(TicketIssuerResolver);
 const ticketClaimLink = container.resolve(TicketClaimLinkResolver);
 const utility = container.resolve(UtilityResolver);
+
 const transaction = container.resolve(TransactionResolver);
 
 const resolvers = {
@@ -85,6 +86,7 @@ const resolvers = {
     ...evaluation.Mutation,
     ...place.Mutation,
     ...utility.Mutation,
+    ...ticket.Mutation,
     ...transaction.Mutation,
   },
   Identity: identity.Identity,
