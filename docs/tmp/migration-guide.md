@@ -129,7 +129,7 @@ SELECT type, COUNT(*) FROM t_nft_wallets GROUP BY type;
 
 ```bash
 # NFT画像を配置
-# scripts/salesNft/nfts/ ディレクトリに画像ファイル（*.png）を配置
+# scripts/salesNft/nfts/ ディレクトリに画像ファイル（*.jpg）を配置
 
 # セットアップスクリプト実行
 cd /path/to/civicship-api
