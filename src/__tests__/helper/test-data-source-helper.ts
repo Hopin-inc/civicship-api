@@ -274,9 +274,9 @@ export default class TestDataSourceHelper {
   // ======== VcIssuanceRequest =========
   static async findAllVCIssuanceRequests() {
     return this.db.vcIssuanceRequest.findMany({
-      include: { 
-        evaluation: true, 
-        user: true 
+      include: {
+        evaluation: true,
+        user: true,
       },
     });
   }
@@ -287,24 +287,23 @@ export default class TestDataSourceHelper {
   }
 
   // ======== NftMint =========
-  static async createNftMint(data: Prisma.NftMintCreateInput) {
-    return this.db.nftMint.create({
-      data,
-      include: {
-        nftWallet: true,
-        nftInstance: true,
-      }
-    });
-  }
-
-  static async findNftMintById(id: string) {
-    return this.db.nftMint.findUnique({
-      where: { id },
-      include: {
-        nftWallet: true,
-        nftInstance: true,
-      }
-    });
-  }
-
+  // static async createNftMint(data: Prisma.NftMintCreateInput) {
+  //   return this.db.nftMint.create({
+  //     data,
+  //     include: {
+  //       nftWallet: true,
+  //       nftInstance: true,
+  //     }
+  //   });
+  // }
+  //
+  // static async findNftMintById(id: string) {
+  //   return this.db.nftMint.findUnique({
+  //     where: { id },
+  //     include: {
+  //       nftWallet: true,
+  //       nftInstance: true,
+  //     }
+  //   });
+  // }
 }
