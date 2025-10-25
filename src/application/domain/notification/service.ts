@@ -12,6 +12,7 @@ import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/expe
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
+import UserService from "@/application/domain/account/user/service";
 import { createLineClient } from "@/infrastructure/libs/line";
 import logger from "@/infrastructure/logging";
 import dayjs from "dayjs";
@@ -38,6 +39,8 @@ export default class NotificationService {
   constructor(
     @inject("CommunityConfigService")
     private readonly communityConfigService: CommunityConfigService,
+    @inject("UserService")
+    private readonly userService: UserService,
   ) { }
 
   async pushCancelOpportunitySlotMessage(
@@ -371,24 +374,7 @@ export default class NotificationService {
     fromUserName: string,
     toUserId: string,
   ) {
-    const toUser = await ctx.issuer.internal(async (tx) => {
-      return tx.user.findUnique({
-        where: { id: toUserId },
-        include: {
-          identities: {
-            where: {
-              platform: IdentityPlatform.LINE,
-              communityId: ctx.communityId,
-            },
-          },
-        },
-      });
-    });
-
-    const uid = toUser?.identities.find(
-      (identity) =>
-        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
-    )?.uid;
+    const uid = await this.userService.findLineUidForCommunity(ctx, toUserId, ctx.communityId);
 
     if (!uid) {
       logger.warn("pushPointDonationReceivedMessage: lineUid is missing", {
@@ -433,24 +419,7 @@ export default class NotificationService {
     communityName: string,
     toUserId: string,
   ) {
-    const toUser = await ctx.issuer.internal(async (tx) => {
-      return tx.user.findUnique({
-        where: { id: toUserId },
-        include: {
-          identities: {
-            where: {
-              platform: IdentityPlatform.LINE,
-              communityId: ctx.communityId,
-            },
-          },
-        },
-      });
-    });
-
-    const uid = toUser?.identities.find(
-      (identity) =>
-        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
-    )?.uid;
+    const uid = await this.userService.findLineUidForCommunity(ctx, toUserId, ctx.communityId);
 
     if (!uid) {
       logger.warn("pushPointGrantReceivedMessage: lineUid is missing", {
