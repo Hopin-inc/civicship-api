@@ -17,7 +17,7 @@ export async function syncNftMetadata() {
   try {
     const BATCH_SIZE = 50;
     let skip = 0;
-    let totalProcessed = 0;
+    let totalWalletsWithNFTs = 0;
     let totalErrors = 0;
     let totalEmptyWallets = 0;
     let totalNftsProcessed = 0;
@@ -50,7 +50,7 @@ export async function syncNftMetadata() {
 
       if (nftWallets.length === 0) {
         hasMore = false;
-        logger.info("✅ No more wallets to sync (all wallets have been synced at least once)");
+        logger.info("✅ No more wallets to sync (all wallets have associated NFT instances)");
         break;
       }
 
@@ -65,7 +65,7 @@ export async function syncNftMetadata() {
         
         if (result.success) {
           if (result.itemsProcessed > 0) {
-            totalProcessed++;
+            totalWalletsWithNFTs++;
             totalNftsProcessed += result.itemsProcessed;
             logger.info("✅ Wallet synced with NFTs", {
               walletAddress: wallet.walletAddress,
@@ -101,7 +101,7 @@ export async function syncNftMetadata() {
 
     logger.info("🎯 NFT metadata sync completed", {
       totalFetchedFromDB,
-      totalWalletsWithNFTs: totalProcessed,
+      totalWalletsWithNFTs,
       totalEmptyWallets,
       totalWalletsErrors: totalErrors,
       totalNftsProcessed,
