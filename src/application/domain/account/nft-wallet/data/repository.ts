@@ -9,40 +9,30 @@ import {
 
 @injectable()
 export default class NFTWalletRepository implements INFTWalletRepository {
-  async query(ctx: IContext) {
-    return ctx.issuer.public(ctx, (client) => {
-      return client.nftWallet.findMany({
+  async findByWalletAddress(ctx: IContext, walletAddress: string) {
+    return ctx.issuer.public(ctx, (client) =>
+      client.nftWallet.findUnique({
+        where: { walletAddress },
         select: nftWalletSelectDetail,
-      });
-    });
-  }
-
-  async find(ctx: IContext, id: string) {
-    return ctx.issuer.public(ctx, (client) => {
-      return client.nftWallet.findUnique({
-        where: { id },
-        select: nftWalletSelectDetail,
-      });
-    });
+      }),
+    );
   }
 
   async findByUserId(ctx: IContext, userId: string) {
-    return ctx.issuer.public(ctx, (client) => {
-      return client.nftWallet.findUnique({
+    return ctx.issuer.public(ctx, (client) =>
+      client.nftWallet.findFirst({
         where: { userId },
         select: nftWalletSelectDetail,
-      });
-    });
+      }),
+    );
   }
 
-  async create(ctx: IContext, data: Prisma.NftWalletCreateInput, tx: Prisma.TransactionClient) {
-    return tx.nftWallet.create({
-      data,
-      select: nftWalletCreateSelect,
-    });
-  }
-
-  async update(ctx: IContext, id: string, data: Prisma.NftWalletUpdateInput, tx: Prisma.TransactionClient) {
+  async update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.NftWalletUpdateInput,
+    tx: Prisma.TransactionClient,
+  ) {
     return tx.nftWallet.update({
       where: { id },
       data,
@@ -50,27 +40,19 @@ export default class NFTWalletRepository implements INFTWalletRepository {
     });
   }
 
-  async upsertByUserId(ctx: IContext, userId: string, walletAddress: string, tx: Prisma.TransactionClient) {
-    return tx.nftWallet.upsert({
-      where: { userId },
-      update: { walletAddress },
-      create: {
-        userId,
-        walletAddress,
-      },
-      select: nftWalletCreateSelect,
-    });
-  }
+  async create(ctx: IContext, data: Prisma.NftWalletCreateInput, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return tx.nftWallet.create({
+        data,
+        select: nftWalletCreateSelect,
+      });
+    }
 
-  async findByUserIdWithTx(ctx: IContext, userId: string, tx: Prisma.TransactionClient) {
-    return tx.nftWallet.findUnique({
-      where: { userId },
-      select: {
-        id: true,
-        userId: true,
-        walletAddress: true,
-      },
-    });
+    return ctx.issuer.public(ctx, (dbTx) =>
+      dbTx.nftWallet.create({
+        data,
+        select: nftWalletCreateSelect,
+      }),
+    );
   }
-
 }

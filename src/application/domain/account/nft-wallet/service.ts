@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { NftWalletType, Prisma } from "@prisma/client";
 import { injectable, inject } from "tsyringe";
 import { fetchWithRetry } from "@/utils/retry";
 import logger from "@/infrastructure/logging";
@@ -8,6 +8,9 @@ import NftTokenRepository from "@/application/domain/account/nft-token/data/repo
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 import pLimit from "p-limit";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
+import crypto from "crypto";
 
 const TOKEN_CACHE_TTL = 24 * 60 * 60 * 1000;
 const MAX_RETRIES = 3;
@@ -50,6 +53,7 @@ export default class NFTWalletService {
     @inject("NFTWalletRepository") private nftWalletRepository: NFTWalletRepository,
     @inject("NftTokenRepository") private nftTokenRepository: NftTokenRepository,
     @inject("NftInstanceRepository") private nftInstanceRepository: NftInstanceRepository,
+    @inject("NmkrClient") private nmkrClient: NmkrClient,
   ) {}
   async createOrUpdateWalletAddress(
     ctx: IContext,
@@ -57,7 +61,33 @@ export default class NFTWalletService {
     walletAddress: string,
     tx: Prisma.TransactionClient,
   ) {
-    return this.nftWalletRepository.upsertByUserId(ctx, userId, walletAddress, tx);
+    const existing = await this.nftWalletRepository.findByWalletAddress(ctx, walletAddress);
+    if (existing) {
+      if (existing.userId !== userId) {
+        throw new Error("This wallet address is already linked to another user.");
+      }
+      return existing;
+    }
+
+    const userWallet = await this.nftWalletRepository.findByUserId(ctx, userId);
+    if (userWallet) {
+      return await this.nftWalletRepository.update(
+        ctx,
+        userWallet.id,
+        { walletAddress },
+        tx,
+      );
+    }
+
+    return await this.nftWalletRepository.create(
+      ctx,
+      {
+        walletAddress,
+        type: NftWalletType.EXTERNAL,
+        user: { connect: { id: userId } },
+      },
+      tx,
+    );
   }
 
   async fetchMetadata(walletAddress: string): Promise<NftMetadata> {
@@ -276,6 +306,7 @@ export default class NFTWalletService {
           nftWalletId: wallet.id,
           nftTokenId: nftToken.id,
         },
+        nftToken.id,
         tx,
       );
 
@@ -288,5 +319,39 @@ export default class NFTWalletService {
       skippedCount,
       durationMs: Date.now() - startTime,
     });
+  }
+
+  async checkIfExists(ctx: IContext, userId: string, type: NftWalletType = NftWalletType.INTERNAL) {
+    const existing = await this.nftWalletRepository.findByUserId(ctx, userId);
+    if (existing && existing.type === type) {
+      return existing;
+    }
+    return null;
+  }
+
+  async createInternalWallet(ctx: IContext, userId: string, walletAddress: string) {
+    return await this.nftWalletRepository.create(ctx, {
+      walletAddress,
+      type: NftWalletType.INTERNAL,
+      user: { connect: { id: userId } },
+    });
+  }
+
+  async ensureNmkrWallet(ctx: IContext, userId: string): Promise<PrismaNftWalletDetail> {
+    const existing = await this.checkIfExists(ctx, userId, NftWalletType.INTERNAL);
+    if (existing) return existing;
+
+    const walletResponse = await this.nmkrClient.createWallet({
+      walletName: userId,
+      enterpriseaddress: true,
+      walletPassword: crypto.randomBytes(32).toString("hex"),
+    });
+
+    logger.debug("[NFTWalletService] Created NMKR Managed wallet", {
+      userId,
+      address: walletResponse.address,
+    });
+
+    return this.createInternalWallet(ctx, userId, walletResponse.address);
   }
 }

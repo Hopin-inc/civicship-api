@@ -190,6 +190,8 @@ model Community {
   participations Participation[]
   articles       Article[]
 
+  nftInstance NftInstance[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -289,7 +291,7 @@ model User {
   image   Image?  @relation(fields: [imageId], references: [id])
 
   identities          Identity[]
-  nftWallet           NftWallet?
+  nftWallets          NftWallet[]
   didIssuanceRequests DidIssuanceRequest[]
   vcIssuanceRequests  VcIssuanceRequest[]
 
@@ -1123,53 +1125,110 @@ model ApiKey {
   @@map("m_api_keys")
 }
 
+// ------------------------------ NFT Domain ------------------------------
+
 model NftWallet {
-  id            String    @id @default(cuid())
-  userId        String    @unique @map("user_id")
-  walletAddress String    @map("wallet_address")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime? @updatedAt @map("updated_at")
+  id   String        @id @default(cuid())
+  type NftWalletType @default(INTERNAL)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletAddress String @unique @map("wallet_address")
 
+  userId       String        @map("user_id")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   nftInstances NftInstance[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_nft_wallets")
 }
 
+enum NftWalletType {
+  INTERNAL // read and write
+  EXTERNAL // only read
+}
+
 model NftToken {
-  id        String    @id @default(cuid())
-  address   String    @unique
-  name      String?
-  symbol    String?
-  type      String
-  json      Json?
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
+  id      String @id @default(cuid())
+  address String @unique // コントラクト/PolicyId として運用
+  type    String // "ERC-721" など（命名は standard にしてもOK）
+
+  name   String?
+  symbol String?
+  json   Json?
 
   nftInstances NftInstance[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_nft_tokens")
 }
 
 model NftInstance {
-  id          String    @id @default(cuid())
-  instanceId  String    @map("instance_id")
+  id          String @id @default(cuid())
+  instanceId  String @map("instance_id")
+  sequenceNum Int?   @map("sequence_num")
+
+  status      NftInstanceStatus @default(STOCK)
   name        String?
   description String?
-  imageUrl    String?   @map("image_url")
+  imageUrl    String?           @map("image_url")
   json        Json?
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime? @updatedAt @map("updated_at")
 
-  nftWalletId String    @map("nft_wallet_id")
-  nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
+  nftTokenId String   @map("nft_token_id")
+  nftToken   NftToken @relation(fields: [nftTokenId], references: [id], onDelete: Restrict)
 
-  nftTokenId String?   @map("nft_token_id")
-  nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: SetNull)
+  nftWalletId String?    @map("nft_wallet_id")
+  nftWallet   NftWallet? @relation(fields: [nftWalletId], references: [id], onDelete: SetNull)
 
-  @@unique([nftWalletId, instanceId])
+  nftMints NftMint[]
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([nftTokenId, instanceId])
+  @@index([instanceId])
+  @@index([nftWalletId])
   @@map("t_nft_instances")
+}
+
+enum NftInstanceStatus {
+  STOCK
+  RESERVED
+  MINTING
+  OWNED
+  RETIRED
+}
+
+model NftMint {
+  id     String        @id @default(cuid())
+  status NftMintStatus @default(QUEUED)
+
+  txHash     String? @unique @map("tx_hash")
+  error      String?
+  retryCount Int     @default(0) @map("retry_count")
+
+  externalRequestId String? @unique @map("external_request_id")
+
+  nftInstanceId String      @map("nft_instance_id")
+  nftInstance   NftInstance @relation(fields: [nftInstanceId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@index([status, retryCount, createdAt])
+  @@map("t_nft_mints")
+}
+
+enum NftMintStatus {
+  QUEUED
+  SUBMITTED
+  MINTED
+  FAILED
 }
 
 // ------------------------------ Merkle Extension ------------------------------

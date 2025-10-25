@@ -7,7 +7,7 @@ import { INftTokenRepository } from "./interface";
 export default class NftTokenRepository implements INftTokenRepository {
   async upsert(
     ctx: IContext,
-    data: { address: string; name?: string | null; symbol?: string | null; type: string; json?: any },
+    data: { address: string; name?: string | null; symbol?: string | null; type: string; json?: Record<string, unknown> },
     tx: Prisma.TransactionClient,
   ) {
     return tx.nftToken.upsert({
