@@ -47,6 +47,8 @@ function buildTitle(): messagingApi.FlexText {
 }
 
 function buildPointInfo(params: PointDonationReceivedParams): messagingApi.FlexBox {
+  const formattedPoints = new Intl.NumberFormat("ja-JP").format(params.transferPoints);
+
   return {
     type: "box",
     layout: "vertical",
@@ -54,7 +56,7 @@ function buildPointInfo(params: PointDonationReceivedParams): messagingApi.FlexB
     contents: [
       {
         type: "text",
-        text: `${params.transferPoints}pt`,
+        text: `${formattedPoints}pt`,
         size: "xxl",
         weight: "bold",
         wrap: true,
@@ -62,7 +64,7 @@ function buildPointInfo(params: PointDonationReceivedParams): messagingApi.FlexB
       },
       {
         type: "text",
-        text: `${params.fromUserName}さんから`,
+        text: `送付者: ${params.fromUserName}さん`,
         size: "sm",
         color: "#555555",
         margin: "sm",
@@ -78,9 +80,10 @@ function buildCommentSection(comment?: string): messagingApi.FlexBox | null {
   return {
     type: "box",
     layout: "vertical",
-    spacing: "sm",
-    paddingTop: "md",
-    paddingBottom: "md",
+    backgroundColor: "#F7F7F7",
+    cornerRadius: "md",
+    paddingAll: "md",
+    margin: "md",
     contents: [
       {
         type: "text",
