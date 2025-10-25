@@ -30,12 +30,9 @@ function buildBody(params: PointGrantReceivedParams): messagingApi.FlexBox {
     paddingStart: "xl",
     paddingEnd: "xl",
     spacing: "sm",
-    contents: [
-      buildTitle(),
-      buildPointInfo(params),
-      buildDetailTable(params),
-      buildExplainMessage(params),
-    ],
+    contents: [buildTitle(), buildPointInfo(params), buildCommentSection(params.comment)].filter(
+      Boolean,
+    ) as messagingApi.FlexComponent[],
   };
 }
 
@@ -50,6 +47,8 @@ function buildTitle(): messagingApi.FlexText {
 }
 
 function buildPointInfo(params: PointGrantReceivedParams): messagingApi.FlexBox {
+  const formattedPoints = new Intl.NumberFormat("ja-JP").format(params.transferPoints);
+
   return {
     type: "box",
     layout: "vertical",
@@ -57,7 +56,7 @@ function buildPointInfo(params: PointGrantReceivedParams): messagingApi.FlexBox 
     contents: [
       {
         type: "text",
-        text: `${params.transferPoints}ポイント`,
+        text: `${formattedPoints}pt`,
         size: "xxl",
         weight: "bold",
         wrap: true,
@@ -65,7 +64,7 @@ function buildPointInfo(params: PointGrantReceivedParams): messagingApi.FlexBox 
       },
       {
         type: "text",
-        text: `${params.communityName}から`,
+        text: `支給元: ${params.communityName}`,
         size: "sm",
         color: "#555555",
         margin: "sm",
@@ -74,116 +73,23 @@ function buildPointInfo(params: PointGrantReceivedParams): messagingApi.FlexBox 
   };
 }
 
-function buildDetailTable(params: PointGrantReceivedParams): messagingApi.FlexBox {
-  const contents: messagingApi.FlexComponent[] = [
-    {
-      type: "box",
-      layout: "baseline",
-      spacing: "sm",
-      contents: [
-        {
-          type: "text",
-          text: "付与元",
-          color: "#555555",
-          size: "sm",
-          flex: 2,
-        },
-        {
-          type: "text",
-          text: params.communityName,
-          wrap: true,
-          color: "#111111",
-          size: "sm",
-          flex: 5,
-        },
-      ],
-    },
-    {
-      type: "box",
-      layout: "baseline",
-      spacing: "sm",
-      contents: [
-        {
-          type: "text",
-          text: "ポイント",
-          color: "#555555",
-          size: "sm",
-          flex: 2,
-        },
-        {
-          type: "text",
-          text: `${params.transferPoints}pt`,
-          wrap: true,
-          color: "#111111",
-          size: "sm",
-          flex: 5,
-        },
-      ],
-    },
-  ];
-
-  if (params.comment) {
-    contents.push({
-      type: "box",
-      layout: "baseline",
-      spacing: "sm",
-      contents: [
-        {
-          type: "text",
-          text: "メッセージ",
-          color: "#555555",
-          size: "sm",
-          flex: 2,
-        },
-        {
-          type: "text",
-          text: params.comment,
-          wrap: true,
-          color: "#111111",
-          size: "sm",
-          flex: 5,
-        },
-      ],
-    });
-  }
+function buildCommentSection(comment?: string): messagingApi.FlexBox | null {
+  const safeComment = typeof comment === "string" ? comment.trim() : "";
+  if (safeComment.length === 0) return null; // コメントなし → 非表示
 
   return {
     type: "box",
     layout: "vertical",
-    margin: "lg",
-    spacing: "md",
     backgroundColor: "#F7F7F7",
     cornerRadius: "md",
-    paddingAll: "xl",
-    contents,
-  };
-}
-
-function buildExplainMessage(params: PointGrantReceivedParams): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "vertical",
-    spacing: "sm",
-    paddingTop: "xl",
-    paddingBottom: "xl",
+    paddingAll: "md",
+    margin: "md",
     contents: [
       {
         type: "text",
-        contents: [
-          {
-            type: "span",
-            text: `${params.communityName}からポイントが付与されました`,
-            color: "#111111",
-          },
-        ],
+        text: safeComment,
         size: "sm",
-        wrap: true,
-      },
-      {
-        type: "text",
-        text: "※「ウォレットを見る」ボタンから詳細を確認できます。",
-        size: "xs",
-        color: "#999999",
+        color: "#111111",
         wrap: true,
       },
     ],
