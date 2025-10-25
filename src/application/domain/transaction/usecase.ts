@@ -95,7 +95,7 @@ export default class TransactionUseCase {
       permission.communityId,
     );
 
-    const result = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+    const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.membershipService.joinIfNeeded(
         ctx,
         currentUserId,
@@ -112,7 +112,7 @@ export default class TransactionUseCase {
         TransactionReason.GRANT,
       );
 
-      const transaction = await this.transactionService.grantCommunityPoint(
+      return await this.transactionService.grantCommunityPoint(
         ctx,
         transferPoints,
         communityWallet.id,
@@ -120,34 +120,33 @@ export default class TransactionUseCase {
         tx,
         comment,
       );
+    });
 
-      const community = await tx.community.findUnique({
+    const community = await ctx.issuer.internal(async (tx) => {
+      return tx.community.findUnique({
         where: { id: permission.communityId },
         select: { name: true },
       });
-
-      return { transaction, communityName: community?.name };
     });
 
-    if (result.communityName) {
-      this.notificationService
-        .pushPointGrantReceivedMessage(
-          ctx,
-          result.transaction.id,
-          result.transaction.toPointChange,
-          result.transaction.comment,
-          result.communityName,
-          toUserId,
-        )
-        .catch((error) => {
-          logger.error("Failed to send point grant notification", {
-            transactionId: result.transaction.id,
-            error,
-          });
+    const communityName = community?.name ?? "コミュニティ";
+    this.notificationService
+      .pushPointGrantReceivedMessage(
+        ctx,
+        transaction.id,
+        transaction.toPointChange,
+        transaction.comment,
+        communityName,
+        toUserId,
+      )
+      .catch((error) => {
+        logger.error("Failed to send point grant notification", {
+          transactionId: transaction.id,
+          error,
         });
-    }
+      });
 
-    return TransactionPresenter.grantCommunityPoint(result.transaction);
+    return TransactionPresenter.grantCommunityPoint(transaction);
   }
 
   async userDonateSelfPointToAnother(
@@ -162,7 +161,7 @@ export default class TransactionUseCase {
       communityId,
     );
 
-    const result = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+    const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       const toWallet = await this.walletService.findMemberWalletOrThrow(
         ctx,
         toUserId,
@@ -175,7 +174,7 @@ export default class TransactionUseCase {
         transferPoints,
       );
 
-      const transaction = await this.transactionService.donateSelfPoint(
+      return await this.transactionService.donateSelfPoint(
         ctx,
         fromWallet.id,
         toWalletId,
@@ -183,33 +182,25 @@ export default class TransactionUseCase {
         tx,
         comment,
       );
-
-      const fromUser = await tx.user.findUnique({
-        where: { id: currentUserId },
-        select: { name: true },
-      });
-
-      return { transaction, fromUserName: fromUser?.name };
     });
 
-    if (result.fromUserName) {
-      this.notificationService
-        .pushPointDonationReceivedMessage(
-          ctx,
-          result.transaction.id,
-          result.transaction.toPointChange,
-          result.transaction.comment,
-          result.fromUserName,
-          toUserId,
-        )
-        .catch((error) => {
-          logger.error("Failed to send point donation notification", {
-            transactionId: result.transaction.id,
-            error,
-          });
+    const fromUserName = ctx.currentUser?.name ?? "ユーザー";
+    this.notificationService
+      .pushPointDonationReceivedMessage(
+        ctx,
+        transaction.id,
+        transaction.toPointChange,
+        transaction.comment,
+        fromUserName,
+        toUserId,
+      )
+      .catch((error) => {
+        logger.error("Failed to send point donation notification", {
+          transactionId: transaction.id,
+          error,
         });
-    }
+      });
 
-    return TransactionPresenter.giveUserPoint(result.transaction);
+    return TransactionPresenter.giveUserPoint(transaction);
   }
 }
