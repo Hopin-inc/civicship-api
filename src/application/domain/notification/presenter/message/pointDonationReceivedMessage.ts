@@ -30,12 +30,9 @@ function buildBody(params: PointDonationReceivedParams): messagingApi.FlexBox {
     paddingStart: "xl",
     paddingEnd: "xl",
     spacing: "sm",
-    contents: [
-      buildTitle(),
-      buildPointInfo(params),
-      buildCommentSection(params.comment),
-      buildExplainMessage(params),
-    ].filter(Boolean) as messagingApi.FlexComponent[],
+    contents: [buildTitle(), buildPointInfo(params), buildCommentSection(params.comment)].filter(
+      Boolean,
+    ) as messagingApi.FlexComponent[],
   };
 }
 
@@ -58,7 +55,7 @@ function buildPointInfo(params: PointDonationReceivedParams): messagingApi.FlexB
       {
         type: "text",
         text: `${params.transferPoints}pt`,
-        size: "xl",
+        size: "xxl",
         weight: "bold",
         wrap: true,
         color: "#333333",
@@ -90,37 +87,6 @@ function buildCommentSection(comment?: string): messagingApi.FlexBox | null {
         text: safeComment,
         size: "sm",
         color: "#111111",
-        wrap: true,
-      },
-    ],
-  };
-}
-
-function buildExplainMessage(params: PointDonationReceivedParams): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "vertical",
-    spacing: "sm",
-    paddingTop: "xl",
-    paddingBottom: "xl",
-    contents: [
-      {
-        type: "text",
-        contents: [
-          {
-            type: "span",
-            text: `${params.fromUserName}さんからポイントが送られました`,
-            color: "#111111",
-          },
-        ],
-        size: "sm",
-        wrap: true,
-      },
-      {
-        type: "text",
-        text: "※「ウォレットを見る」ボタンから詳細を確認できます。",
-        size: "xs",
-        color: "#999999",
         wrap: true,
       },
     ],
