@@ -32,9 +32,9 @@ function buildBody(params: PointDonationReceivedParams): messagingApi.FlexBox {
     spacing: "sm",
     contents: [
       buildTitle(),
-      buildDetailTable(params),
+      buildPointInfo(params),
       buildCommentSection(params.comment),
-      buildExplainMessage(),
+      buildExplainMessage(params),
     ].filter(Boolean) as messagingApi.FlexComponent[],
   };
 }
@@ -49,63 +49,28 @@ function buildTitle(): messagingApi.FlexText {
   };
 }
 
-function buildDetailTable(params: PointDonationReceivedParams): messagingApi.FlexBox {
-  const contents: messagingApi.FlexComponent[] = [
-    {
-      type: "box",
-      layout: "baseline",
-      spacing: "sm",
-      contents: [
-        {
-          type: "text",
-          text: "送信者",
-          color: "#555555",
-          size: "sm",
-          flex: 2,
-        },
-        {
-          type: "text",
-          text: params.fromUserName,
-          wrap: true,
-          color: "#111111",
-          size: "sm",
-          flex: 5,
-        },
-      ],
-    },
-    {
-      type: "box",
-      layout: "baseline",
-      spacing: "sm",
-      contents: [
-        {
-          type: "text",
-          text: "ポイント",
-          color: "#555555",
-          size: "sm",
-          flex: 2,
-        },
-        {
-          type: "text",
-          text: `${params.transferPoints}pt`,
-          wrap: true,
-          color: "#111111",
-          size: "sm",
-          flex: 5,
-        },
-      ],
-    },
-  ];
-
+function buildPointInfo(params: PointDonationReceivedParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
-    margin: "lg",
-    spacing: "md",
-    backgroundColor: "#F7F7F7",
-    cornerRadius: "md",
-    paddingAll: "xl",
-    contents,
+    margin: "md",
+    contents: [
+      {
+        type: "text",
+        text: `${params.transferPoints}pt`,
+        size: "xl",
+        weight: "bold",
+        wrap: true,
+        color: "#333333",
+      },
+      {
+        type: "text",
+        text: `${params.fromUserName}さんから`,
+        size: "sm",
+        color: "#555555",
+        margin: "sm",
+      },
+    ],
   };
 }
 
@@ -131,7 +96,7 @@ function buildCommentSection(comment?: string): messagingApi.FlexBox | null {
   };
 }
 
-function buildExplainMessage(): messagingApi.FlexBox {
+function buildExplainMessage(params: PointDonationReceivedParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -139,6 +104,18 @@ function buildExplainMessage(): messagingApi.FlexBox {
     paddingTop: "xl",
     paddingBottom: "xl",
     contents: [
+      {
+        type: "text",
+        contents: [
+          {
+            type: "span",
+            text: `${params.fromUserName}さんからポイントが送られました`,
+            color: "#111111",
+          },
+        ],
+        size: "sm",
+        wrap: true,
+      },
       {
         type: "text",
         text: "※「ウォレットを見る」ボタンから詳細を確認できます。",
