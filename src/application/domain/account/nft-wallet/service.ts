@@ -100,7 +100,7 @@ export default class NFTWalletService {
         errorStack: error instanceof Error ? error.stack : undefined,
       };
       
-      logger.error("❌ Failed to fetch NFT metadata", errorDetails);
+      logger.warn("⚠️ Failed to fetch NFT metadata", errorDetails);
       throw error;
     }
   }

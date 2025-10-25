@@ -71,6 +71,7 @@ export default class NFTWalletUsecase {
         logger.info("📭 No NFTs found for wallet", { 
           walletAddress: wallet.walletAddress,
           durationMs: Date.now() - startTime,
+          note: "This wallet will be re-processed in future runs",
         });
         return { success: true, itemsProcessed: 0 };
       }
@@ -109,7 +110,7 @@ export default class NFTWalletUsecase {
         errorStack: error instanceof Error ? error.stack : undefined,
       };
       
-      logger.error("❌ NFT metadata sync failed", errorDetails);
+      logger.warn("⚠️ NFT metadata sync failed", errorDetails);
       return {
         success: false,
         itemsProcessed: 0,
