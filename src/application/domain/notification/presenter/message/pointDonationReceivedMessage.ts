@@ -18,7 +18,7 @@ export function buildPointDonationReceivedMessage(
 
   return {
     type: "flex",
-    altText: `${params.fromUserName}さんから${params.transferPoints}ポイントが送られました🎁`,
+    altText: `${params.fromUserName}さんから${new Intl.NumberFormat("ja-JP").format(params.transferPoints)}ポイントが送られました🎁`,
     contents: bubble,
   };
 }
