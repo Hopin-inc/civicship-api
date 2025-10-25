@@ -17,10 +17,11 @@ export async function syncNftMetadata() {
   try {
     const BATCH_SIZE = 50;
     let skip = 0;
-    let totalProcessed = 0;
+    let totalWalletsWithNFTs = 0;
     let totalErrors = 0;
-    let totalSkipped = 0;
+    let totalEmptyWallets = 0;
     let totalNftsProcessed = 0;
+    let totalFetchedFromDB = 0;
     let hasMore = true;
 
     while (hasMore) {
@@ -28,17 +29,28 @@ export async function syncNftMetadata() {
       
       const nftWallets = await issuer.internal(async (tx) => {
         return tx.nftWallet.findMany({
+          where: {
+            nftInstances: {
+              none: {}
+            }
+          },
           select: {
             id: true,
             walletAddress: true,
           },
+          orderBy: [
+            { id: 'asc' }
+          ],
           take: BATCH_SIZE,
           skip: skip,
         });
       });
 
+      totalFetchedFromDB += nftWallets.length;
+
       if (nftWallets.length === 0) {
         hasMore = false;
+        logger.info("✅ No more wallets to sync (all wallets have associated NFT instances)");
         break;
       }
 
@@ -53,10 +65,18 @@ export async function syncNftMetadata() {
         
         if (result.success) {
           if (result.itemsProcessed > 0) {
-            totalProcessed++;
+            totalWalletsWithNFTs++;
             totalNftsProcessed += result.itemsProcessed;
+            logger.info("✅ Wallet synced with NFTs", {
+              walletAddress: wallet.walletAddress,
+              nftCount: result.itemsProcessed,
+            });
           } else {
-            totalSkipped++;
+            totalEmptyWallets++;
+            logger.info("📭 Wallet synced (empty)", {
+              walletAddress: wallet.walletAddress,
+              note: "This wallet will be re-processed in future runs",
+            });
           }
         } else {
           totalErrors++;
@@ -69,6 +89,7 @@ export async function syncNftMetadata() {
 
       logger.info("✅ Batch iteration completed", {
         batchNumber: Math.floor(skip / BATCH_SIZE) + 1,
+        processedInIteration: nftWallets.length,
         durationMs: Date.now() - batchIterationStartTime,
       });
 
@@ -79,8 +100,9 @@ export async function syncNftMetadata() {
     }
 
     logger.info("🎯 NFT metadata sync completed", {
-      totalWalletsProcessed: totalProcessed,
-      totalWalletsSkipped: totalSkipped,
+      totalFetchedFromDB,
+      totalWalletsWithNFTs,
+      totalEmptyWallets,
       totalWalletsErrors: totalErrors,
       totalNftsProcessed,
       durationMs: Date.now() - batchStartTime,
