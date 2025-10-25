@@ -32,10 +32,10 @@ function buildBody(params: PointDonationReceivedParams): messagingApi.FlexBox {
     spacing: "sm",
     contents: [
       buildTitle(),
-      buildPointInfo(params),
       buildDetailTable(params),
-      buildExplainMessage(params),
-    ],
+      buildCommentSection(params.comment),
+      buildExplainMessage(),
+    ].filter(Boolean) as messagingApi.FlexComponent[],
   };
 }
 
@@ -46,31 +46,6 @@ function buildTitle(): messagingApi.FlexText {
     size: "xs",
     color: "#1DB446",
     weight: "bold",
-  };
-}
-
-function buildPointInfo(params: PointDonationReceivedParams): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "vertical",
-    margin: "md",
-    contents: [
-      {
-        type: "text",
-        text: `${params.transferPoints}ポイント`,
-        size: "xxl",
-        weight: "bold",
-        wrap: true,
-        color: "#333333",
-      },
-      {
-        type: "text",
-        text: `${params.fromUserName}さんから`,
-        size: "sm",
-        color: "#555555",
-        margin: "sm",
-      },
-    ],
   };
 }
 
@@ -122,31 +97,6 @@ function buildDetailTable(params: PointDonationReceivedParams): messagingApi.Fle
     },
   ];
 
-  if (params.comment) {
-    contents.push({
-      type: "box",
-      layout: "baseline",
-      spacing: "sm",
-      contents: [
-        {
-          type: "text",
-          text: "メッセージ",
-          color: "#555555",
-          size: "sm",
-          flex: 2,
-        },
-        {
-          type: "text",
-          text: params.comment,
-          wrap: true,
-          color: "#111111",
-          size: "sm",
-          flex: 5,
-        },
-      ],
-    });
-  }
-
   return {
     type: "box",
     layout: "vertical",
@@ -159,7 +109,29 @@ function buildDetailTable(params: PointDonationReceivedParams): messagingApi.Fle
   };
 }
 
-function buildExplainMessage(params: PointDonationReceivedParams): messagingApi.FlexBox {
+function buildCommentSection(comment?: string): messagingApi.FlexBox | null {
+  const safeComment = typeof comment === "string" ? comment.trim() : "";
+  if (safeComment.length === 0) return null; // コメントなし → 非表示
+
+  return {
+    type: "box",
+    layout: "vertical",
+    spacing: "sm",
+    paddingTop: "md",
+    paddingBottom: "md",
+    contents: [
+      {
+        type: "text",
+        text: safeComment,
+        size: "sm",
+        color: "#111111",
+        wrap: true,
+      },
+    ],
+  };
+}
+
+function buildExplainMessage(): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -167,18 +139,6 @@ function buildExplainMessage(params: PointDonationReceivedParams): messagingApi.
     paddingTop: "xl",
     paddingBottom: "xl",
     contents: [
-      {
-        type: "text",
-        contents: [
-          {
-            type: "span",
-            text: `${params.fromUserName}さんからポイントが送られました`,
-            color: "#111111",
-          },
-        ],
-        size: "sm",
-        wrap: true,
-      },
       {
         type: "text",
         text: "※「ウォレットを見る」ボタンから詳細を確認できます。",
