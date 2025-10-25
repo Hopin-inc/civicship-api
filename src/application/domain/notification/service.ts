@@ -374,31 +374,18 @@ export default class NotificationService {
     fromUserName: string,
     toUserId: string,
   ) {
-    const uid = await this.userService.findLineUidForCommunity(ctx, toUserId, ctx.communityId);
+    const preparedData = await this.prepareLinePush(
+      ctx,
+      toUserId,
+      transactionId,
+      "pushPointDonationReceivedMessage",
+    );
 
-    if (!uid) {
-      logger.warn("pushPointDonationReceivedMessage: lineUid is missing", {
-        transactionId,
-        toUserId,
-        communityId: ctx.communityId,
-      });
+    if (!preparedData) {
       return;
     }
 
-    let liffBaseUrl: string;
-    try {
-      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
-      liffBaseUrl = liffConfig.liffBaseUrl;
-    } catch (error) {
-      logger.error("pushPointDonationReceivedMessage: failed to get LIFF config", {
-        transactionId,
-        communityId: ctx.communityId,
-        err: error,
-      });
-      return;
-    }
-
-    const client = await createLineClient(ctx.communityId);
+    const { uid, liffBaseUrl, client } = preparedData;
     const redirectUrl = `${liffBaseUrl}/wallets`;
 
     const message = buildPointDonationReceivedMessage({
@@ -419,31 +406,18 @@ export default class NotificationService {
     communityName: string,
     toUserId: string,
   ) {
-    const uid = await this.userService.findLineUidForCommunity(ctx, toUserId, ctx.communityId);
+    const preparedData = await this.prepareLinePush(
+      ctx,
+      toUserId,
+      transactionId,
+      "pushPointGrantReceivedMessage",
+    );
 
-    if (!uid) {
-      logger.warn("pushPointGrantReceivedMessage: lineUid is missing", {
-        transactionId,
-        toUserId,
-        communityId: ctx.communityId,
-      });
+    if (!preparedData) {
       return;
     }
 
-    let liffBaseUrl: string;
-    try {
-      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
-      liffBaseUrl = liffConfig.liffBaseUrl;
-    } catch (error) {
-      logger.error("pushPointGrantReceivedMessage: failed to get LIFF config", {
-        transactionId,
-        communityId: ctx.communityId,
-        err: error,
-      });
-      return;
-    }
-
-    const client = await createLineClient(ctx.communityId);
+    const { uid, liffBaseUrl, client } = preparedData;
     const redirectUrl = `${liffBaseUrl}/wallets`;
 
     const message = buildPointGrantReceivedMessage({
@@ -523,6 +497,41 @@ export default class NotificationService {
   }
 
   // --- 共通化したプライベートユーティリティ ---
+
+  private async prepareLinePush(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient } | null> {
+    const uid = await this.userService.findLineUidForCommunity(ctx, userId, ctx.communityId);
+
+    if (!uid) {
+      logger.warn(`${logContext}: lineUid is missing`, {
+        transactionId,
+        userId,
+        communityId: ctx.communityId,
+      });
+      return null;
+    }
+
+    let liffBaseUrl: string;
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error(`${logContext}: failed to get LIFF config`, {
+        transactionId,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return null;
+    }
+
+    const client = await createLineClient(ctx.communityId);
+
+    return { uid, liffBaseUrl, client };
+  }
 
   private extractLineUidsFromParticipations(
     participations: {

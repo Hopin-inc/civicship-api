@@ -78,10 +78,7 @@ export default class UserService {
       });
     });
 
-    return user?.identities.find(
-      (identity) =>
-        identity.platform === IdentityPlatform.LINE && identity.communityId === communityId,
-    )?.uid;
+    return user?.identities[0]?.uid;
   }
 
 }

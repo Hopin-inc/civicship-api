@@ -18,7 +18,7 @@ export function buildPointGrantReceivedMessage(
 
   return {
     type: "flex",
-    altText: `${params.communityName}から${params.transferPoints}ポイントが付与されました🎁`,
+    altText: `${params.communityName}から${new Intl.NumberFormat("ja-JP").format(params.transferPoints)}ポイントが付与されました🎁`,
     contents: bubble,
   };
 }
