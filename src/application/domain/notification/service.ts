@@ -20,6 +20,8 @@ import timezone from "dayjs/plugin/timezone.js";
 import "dayjs/locale/ja.js";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
+import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
+import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
 import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -355,6 +357,130 @@ export default class NotificationService {
       year,
       issueDate,
       issuerName,
+      redirectUrl,
+    });
+
+    await safePushMessage(client, { to: uid, messages: [message] });
+  }
+
+  async pushPointDonationReceivedMessage(
+    ctx: IContext,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    fromUserName: string,
+    toUserId: string,
+  ) {
+    const toUser = await ctx.issuer.internal(async (tx) => {
+      return tx.user.findUnique({
+        where: { id: toUserId },
+        include: {
+          identities: {
+            where: {
+              platform: IdentityPlatform.LINE,
+              communityId: ctx.communityId,
+            },
+          },
+        },
+      });
+    });
+
+    const uid = toUser?.identities.find(
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
+    )?.uid;
+
+    if (!uid) {
+      logger.warn("pushPointDonationReceivedMessage: lineUid is missing", {
+        transactionId,
+        toUserId,
+        communityId: ctx.communityId,
+      });
+      return;
+    }
+
+    let liffBaseUrl: string;
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error("pushPointDonationReceivedMessage: failed to get LIFF config", {
+        transactionId,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return;
+    }
+
+    const client = await createLineClient(ctx.communityId);
+    const redirectUrl = `${liffBaseUrl}/wallets`;
+
+    const message = buildPointDonationReceivedMessage({
+      fromUserName,
+      transferPoints: toPointChange,
+      comment: comment ?? undefined,
+      redirectUrl,
+    });
+
+    await safePushMessage(client, { to: uid, messages: [message] });
+  }
+
+  async pushPointGrantReceivedMessage(
+    ctx: IContext,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    communityName: string,
+    toUserId: string,
+  ) {
+    const toUser = await ctx.issuer.internal(async (tx) => {
+      return tx.user.findUnique({
+        where: { id: toUserId },
+        include: {
+          identities: {
+            where: {
+              platform: IdentityPlatform.LINE,
+              communityId: ctx.communityId,
+            },
+          },
+        },
+      });
+    });
+
+    const uid = toUser?.identities.find(
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
+    )?.uid;
+
+    if (!uid) {
+      logger.warn("pushPointGrantReceivedMessage: lineUid is missing", {
+        transactionId,
+        toUserId,
+        communityId: ctx.communityId,
+      });
+      return;
+    }
+
+    let liffBaseUrl: string;
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error("pushPointGrantReceivedMessage: failed to get LIFF config", {
+        transactionId,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return;
+    }
+
+    const client = await createLineClient(ctx.communityId);
+    const redirectUrl = `${liffBaseUrl}/wallets`;
+
+    const message = buildPointGrantReceivedMessage({
+      communityName,
+      transferPoints: toPointChange,
+      comment: comment ?? undefined,
       redirectUrl,
     });
 

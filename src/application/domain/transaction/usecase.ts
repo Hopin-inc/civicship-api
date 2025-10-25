@@ -4,8 +4,10 @@ import TransactionPresenter from "@/application/domain/transaction/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import WalletService from "@/application/domain/account/wallet/service";
+import NotificationService from "@/application/domain/notification/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import logger from "@/infrastructure/logging";
 import {
   GqlMutationTransactionDonateSelfPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
@@ -27,6 +29,7 @@ export default class TransactionUseCase {
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
+    @inject("NotificationService") private readonly notificationService: NotificationService,
   ) { }
 
   async visitorBrowseTransactions(
@@ -92,7 +95,7 @@ export default class TransactionUseCase {
       permission.communityId,
     );
 
-    return await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+    const result = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.membershipService.joinIfNeeded(
         ctx,
         currentUserId,
@@ -117,8 +120,34 @@ export default class TransactionUseCase {
         tx,
         comment,
       );
-      return TransactionPresenter.grantCommunityPoint(transaction);
+
+      const community = await tx.community.findUnique({
+        where: { id: permission.communityId },
+        select: { name: true },
+      });
+
+      return { transaction, communityName: community?.name };
     });
+
+    if (result.communityName) {
+      this.notificationService
+        .pushPointGrantReceivedMessage(
+          ctx,
+          result.transaction.id,
+          result.transaction.toPointChange,
+          result.transaction.comment,
+          result.communityName,
+          toUserId,
+        )
+        .catch((error) => {
+          logger.error("Failed to send point grant notification", {
+            transactionId: result.transaction.id,
+            error,
+          });
+        });
+    }
+
+    return TransactionPresenter.grantCommunityPoint(result.transaction);
   }
 
   async userDonateSelfPointToAnother(
@@ -133,7 +162,7 @@ export default class TransactionUseCase {
       communityId,
     );
 
-    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+    const result = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       const toWallet = await this.walletService.findMemberWalletOrThrow(
         ctx,
         toUserId,
@@ -155,7 +184,32 @@ export default class TransactionUseCase {
         comment,
       );
 
-      return TransactionPresenter.giveUserPoint(transaction);
+      const fromUser = await tx.user.findUnique({
+        where: { id: currentUserId },
+        select: { name: true },
+      });
+
+      return { transaction, fromUserName: fromUser?.name };
     });
+
+    if (result.fromUserName) {
+      this.notificationService
+        .pushPointDonationReceivedMessage(
+          ctx,
+          result.transaction.id,
+          result.transaction.toPointChange,
+          result.transaction.comment,
+          result.fromUserName,
+          toUserId,
+        )
+        .catch((error) => {
+          logger.error("Failed to send point donation notification", {
+            transactionId: result.transaction.id,
+            error,
+          });
+        });
+    }
+
+    return TransactionPresenter.giveUserPoint(result.transaction);
   }
 }
