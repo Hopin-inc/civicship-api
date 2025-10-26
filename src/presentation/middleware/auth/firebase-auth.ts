@@ -37,6 +37,8 @@ export async function handleFirebaseAuth(
     const decoded = await (authMode === "session"
       ? tenantedAuth.verifySessionCookie(idToken, false)
       : tenantedAuth.verifyIdToken(idToken));
+    const uid = decoded.uid;
+    const platform = decoded.platform;
 
     const provider = (decoded as any).firebase?.sign_in_provider;
     const decodedTenant = (decoded as any).firebase?.tenant;
@@ -60,7 +62,7 @@ export async function handleFirebaseAuth(
       membershipsCount: currentUser?.memberships?.length || 0,
     });
 
-    return { issuer, loaders, uid: decoded.uid, tenantId, communityId, currentUser };
+    return { issuer, loaders, uid, platform, tenantId, communityId, currentUser };
   } catch (err) {
     const error = err as any;
     logger.error("🔥 Firebase verification failed", {
