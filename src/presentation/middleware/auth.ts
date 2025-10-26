@@ -122,8 +122,28 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     const decoded = await (authMode === "session"
       ? tenantedAuth.verifySessionCookie(idToken, false)
       : tenantedAuth.verifyIdToken(idToken));
+    
+    logger.debug("Decoded token details:", {
+      path: req.url || "unknown",
+      uid: decoded.uid,
+      platform: (decoded as any).platform,
+      hasPlatform: "platform" in decoded,
+      provider: (decoded as any).provider,
+      firebaseProvider: decoded.firebase?.sign_in_provider,
+      firebaseTenant: decoded.firebase?.tenant,
+      customClaims: Object.keys(decoded).filter(k => !['iss', 'aud', 'auth_time', 'user_id', 'sub', 'iat', 'exp', 'firebase', 'name', 'picture', 'email'].includes(k)),
+    });
+    
     const uid = decoded.uid;
-    const platform = decoded.platform;
+    const platform = (decoded as any).platform;
+
+    logger.debug("Extracted uid and platform:", {
+      path: req.url || "unknown",
+      uid,
+      platform,
+      hasUid: !!uid,
+      hasPlatform: !!platform,
+    });
 
     const currentUser = await issuer.internal(async (tx) =>
       tx.user.findFirst({
@@ -135,6 +155,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     logger.debug("Current user lookup result:", {
       path: req.url || "unknown",
       uid,
+      platform,
       currentUserId: currentUser?.id || null,
       currentUserName: currentUser?.name || null,
       hasCurrentUser: !!currentUser,
