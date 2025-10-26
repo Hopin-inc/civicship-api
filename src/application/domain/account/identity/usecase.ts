@@ -32,6 +32,19 @@ export default class IdentityUseCase {
   ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
+    const flowId = (context as any).flowId || "no-flow-id";
+    
+    logger.info("📋 [currentUser] Query executed", {
+      flowId,
+      uid: context.uid?.slice(-6),
+      tenantId: context.tenantId,
+      communityId: context.communityId,
+      platform: context.platform,
+      hasCurrentUser: !!context.currentUser,
+      userId: context.currentUser?.id?.slice(-6),
+      membershipsCount: context.currentUser?.memberships?.length || 0,
+    });
+
     return {
       user: context.currentUser,
     };

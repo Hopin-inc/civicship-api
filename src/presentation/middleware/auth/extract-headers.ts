@@ -21,10 +21,19 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
     phoneUid: getHeader("x-phone-uid"),
   };
 
+  const hasCookie = !!(req.headers.cookie);
+  const flowId = getHeader("x-flow-id");
+
   logger.debug("🪶 Extracted auth headers", {
+    flowId,
+    authMode,
     hasIdToken: !!headers.idToken,
+    hasCookie,
     hasAdminKey: !!headers.adminApiKey,
     communityId: headers.communityId,
+    communityIdSource: getHeader("x-community-id") ? "header" : "env",
+    hasPhoneAuthToken: !!headers.phoneAuthToken,
+    hasPhoneUid: !!headers.phoneUid,
   });
 
   return headers;
