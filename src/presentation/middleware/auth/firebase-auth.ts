@@ -16,16 +16,30 @@ export async function handleFirebaseAuth(
   if (!communityId) throw new Error("Missing x-community-id header");
 
   const loaders = createLoaders(issuer);
-  if (!idToken) return { issuer, loaders, communityId };
+  if (!idToken) {
+    logger.debug("🔓 Anonymous request - no idToken", { communityId });
+    return { issuer, loaders, communityId };
+  }
 
   const configService = container.resolve(CommunityConfigService);
   const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
+
+  const verificationMethod = authMode === "session" ? "verifySessionCookie" : "verifyIdToken";
+  logger.debug("🔐 Starting Firebase verification", {
+    method: verificationMethod,
+    tenantId,
+    communityId,
+    tokenLength: idToken.length,
+  });
 
   try {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     const decoded = await (authMode === "session"
       ? tenantedAuth.verifySessionCookie(idToken, false)
       : tenantedAuth.verifyIdToken(idToken));
+
+    const provider = (decoded as any).firebase?.sign_in_provider;
+    const decodedTenant = (decoded as any).firebase?.tenant;
 
     const currentUser = await issuer.internal((tx) =>
       tx.user.findFirst({
@@ -34,10 +48,29 @@ export async function handleFirebaseAuth(
       }),
     );
 
-    logger.info("✅ Firebase user verified", { uid: decoded.uid, tenantId });
+    logger.info("✅ Firebase user verified", {
+      method: verificationMethod,
+      uid: decoded.uid.slice(-6),
+      tenantId,
+      decodedTenant,
+      provider,
+      communityId,
+      hasCurrentUser: !!currentUser,
+      userId: currentUser?.id?.slice(-6),
+      membershipsCount: currentUser?.memberships?.length || 0,
+    });
+
     return { issuer, loaders, uid: decoded.uid, tenantId, communityId, currentUser };
   } catch (err) {
-    logger.error("🔥 Firebase verification failed", { message: (err as Error).message });
+    const error = err as any;
+    logger.error("🔥 Firebase verification failed", {
+      method: verificationMethod,
+      tenantId,
+      communityId,
+      errorCode: error.code || "unknown",
+      errorMessage: error.message,
+      tokenLength: idToken.length,
+    });
     throw err;
   }
 }
