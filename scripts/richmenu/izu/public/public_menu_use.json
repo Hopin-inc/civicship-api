@@ -69,7 +69,7 @@
       "action": {
         "type": "uri",
         "label": "使い方を見る",
-        "uri": "https://www.google.com/"
+        "uri": "https://docs.google.com/spreadsheets/d/14gpaK_MPjOT0kulmVNPsEnCJ7-Nl0BwsS8hE4eEX-bE/edit?gid=111057636#gid=111057636"
       }
     },
     {
@@ -82,7 +82,7 @@
       "action": {
         "type": "uri",
         "label": "MAPで見る",
-        "uri": "https://www.google.com/"
+        "uri": "https://maps.app.goo.gl/AoY4jRUQHCsS2iRU8?g_st=ac"
       }
     }
   ]
