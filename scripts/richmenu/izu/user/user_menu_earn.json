@@ -56,7 +56,7 @@
       "action": {
         "type": "uri",
         "label": "お手伝いリストを見る",
-        "uri": "https://www.google.com/"
+        "uri": "https://docs.google.com/spreadsheets/d/14gpaK_MPjOT0kulmVNPsEnCJ7-Nl0BwsS8hE4eEX-bE/edit?gid=657688156#gid=657688156"
       }
     },
     {
@@ -69,7 +69,7 @@
       "action": {
         "type": "uri",
         "label": "お手伝い終了報告をする",
-        "uri": "https://www.google.com/"
+        "uri": "https://docs.google.com/forms/d/e/1FAIpQLSdNXGVjkcdUTqfnvdAni2kCDezLctzuo8MQk13ZV4e3QXTFIA/viewform"
       }
     }
   ]
