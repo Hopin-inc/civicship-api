@@ -1759,6 +1759,7 @@ export type GqlQuery = {
   evaluations: GqlEvaluationsConnection;
   membership?: Maybe<GqlMembership>;
   memberships: GqlMembershipsConnection;
+  myWallet?: Maybe<GqlWallet>;
   nftInstance?: Maybe<GqlNftInstance>;
   nftInstances: GqlNftInstancesConnection;
   opportunities: GqlOpportunitiesConnection;
@@ -4503,6 +4504,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   evaluations?: Resolver<GqlResolversTypes['EvaluationsConnection'], ParentType, ContextType, Partial<GqlQueryEvaluationsArgs>>;
   membership?: Resolver<Maybe<GqlResolversTypes['Membership']>, ParentType, ContextType, RequireFields<GqlQueryMembershipArgs, 'communityId' | 'userId'>>;
   memberships?: Resolver<GqlResolversTypes['MembershipsConnection'], ParentType, ContextType, Partial<GqlQueryMembershipsArgs>>;
+  myWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
   nftInstance?: Resolver<Maybe<GqlResolversTypes['NftInstance']>, ParentType, ContextType, RequireFields<GqlQueryNftInstanceArgs, 'id'>>;
   nftInstances?: Resolver<GqlResolversTypes['NftInstancesConnection'], ParentType, ContextType, Partial<GqlQueryNftInstancesArgs>>;
   opportunities?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesArgs>>;
