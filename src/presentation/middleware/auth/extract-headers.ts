@@ -12,26 +12,17 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
     authMode,
     idToken: getHeader("authorization")?.replace(/^Bearer\s+/, ""),
     adminApiKey: getHeader("x-civicship-admin-api-key"),
-    communityId: getHeader("x-community-id") || process.env.COMMUNITY_ID,
-    refreshToken: getHeader("x-refresh-token"),
-    tokenExpiresAt: getHeader("x-token-expires-at"),
-    phoneAuthToken: getHeader("x-phone-auth-token"),
-    phoneRefreshToken: getHeader("x-phone-refresh-token"),
-    phoneTokenExpiresAt: getHeader("x-phone-token-expires-at"),
-    phoneUid: getHeader("x-phone-uid"),
+    communityId: getHeader("x-community-id"),
   };
 
-  const hasCookie = !!(req.headers.cookie);
-  const flowId = getHeader("x-flow-id");
+  const hasCookie = !!req.headers.cookie;
 
   logger.debug("🪶 Extracted auth headers", {
-    flowId,
     authMode,
     hasIdToken: !!headers.idToken,
     hasCookie,
     hasAdminKey: !!headers.adminApiKey,
     communityId: headers.communityId,
-    communityIdSource: getHeader("x-community-id") ? "header" : "env",
     hasPhoneAuthToken: !!headers.phoneAuthToken,
     hasPhoneUid: !!headers.phoneUid,
   });

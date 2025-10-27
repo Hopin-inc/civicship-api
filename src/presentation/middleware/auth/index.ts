@@ -10,27 +10,15 @@ import logger from "@/infrastructure/logging";
 
 async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
   const issuer = new PrismaClientIssuer();
-  const flowId = (req.headers["x-flow-id"] as string) || "no-flow-id";
-
-  logger.debug("🎯 Creating auth context", { flowId });
 
   const headers = extractAuthHeaders(req);
   const adminResult = await handleAdminAccess(headers);
   if (adminResult) {
-    logger.debug("🎯 Auth context created", { flowId, authBranch: "admin" });
+    logger.debug("🎯 Auth context created", { authBranch: "admin" });
     return adminResult;
   }
 
-  const firebaseResult = await handleFirebaseAuth(headers, issuer);
-  const authBranch = firebaseResult.uid ? "firebase" : "anonymous";
-  logger.debug("🎯 Auth context created", {
-    flowId,
-    authBranch,
-    hasUid: !!firebaseResult.uid,
-    hasCurrentUser: !!firebaseResult.currentUser,
-  });
-
-  return firebaseResult;
+  return await handleFirebaseAuth(headers, issuer);
 }
 
 export function authHandler(server: ApolloServer<IContext>) {
