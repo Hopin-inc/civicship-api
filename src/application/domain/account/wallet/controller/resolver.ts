@@ -14,7 +14,10 @@ export default class WalletResolver {
       return this.walletUseCase.visitorBrowseWallets(args, ctx);
     },
     wallet: (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
-      return ctx.loaders.wallet.load(args.id);
+      return this.walletUseCase.userViewWallet(args, ctx);
+    },
+    myWallet: (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
+      return this.walletUseCase.userViewMyWallet(args, ctx);
     },
   };
 

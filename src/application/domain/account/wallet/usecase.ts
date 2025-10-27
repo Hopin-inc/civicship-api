@@ -14,7 +14,7 @@ import { inject, injectable } from "tsyringe";
 export default class WalletUseCase {
   constructor(
     @inject("WalletService")
-    private readonly service: Pick<WalletService, "fetchWallets" | "findWallet">,
+    private readonly service: WalletService,
   ) {}
 
   async visitorBrowseWallets(
@@ -35,6 +35,12 @@ export default class WalletUseCase {
 
   async userViewWallet({ id }: GqlQueryWalletArgs, ctx: IContext): Promise<GqlWallet | null> {
     const wallet = await this.service.findWallet(ctx, id);
+    return wallet ? WalletPresenter.get(wallet) : null;
+  }
+
+  async userViewMyWallet(_, ctx: IContext): Promise<GqlWallet | null> {
+    if (!ctx.currentUser?.id) return null;
+    const wallet = await this.service.findMemberWallet(ctx, ctx.communityId, ctx.currentUser?.id);
     return wallet ? WalletPresenter.get(wallet) : null;
   }
 }
