@@ -23,14 +23,7 @@ export async function handleFirebaseAuth(
 
   const configService = container.resolve(CommunityConfigService);
   const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
-
   const verificationMethod = authMode === "session" ? "verifySessionCookie" : "verifyIdToken";
-  logger.debug("🔐 Starting Firebase verification", {
-    method: verificationMethod,
-    tenantId,
-    communityId,
-    tokenLength: idToken.length,
-  });
 
   try {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);

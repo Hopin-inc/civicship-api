@@ -23,7 +23,6 @@ export async function handleAdminAccess(headers: AuthHeaders): Promise<AuthResul
 
   const issuer = new PrismaClientIssuer();
   const loaders = createLoaders(issuer);
-  logger.info(`👑 Admin access granted for community ${communityId}`);
 
   return { issuer, loaders, communityId, isAdmin: true };
 }
