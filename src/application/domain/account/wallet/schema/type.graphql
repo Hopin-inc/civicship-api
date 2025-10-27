@@ -13,7 +13,12 @@ type Wallet {
 
     tickets: [Ticket!]
 
-    transactions: [Transaction!]
+    transactions: [Transaction!] @deprecated(reason: "Use transactionsConnection for pagination support")
+    transactionsConnection(
+        first: Int
+        cursor: String
+        sort: TransactionSortInput
+    ): TransactionsConnection
 
     createdAt: Datetime
     updatedAt: Datetime
