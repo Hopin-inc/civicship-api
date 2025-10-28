@@ -22,7 +22,7 @@ export default class IdentityService {
 
   async createUserWithIdentities(
     ctx: IContext,
-    userData: Omit<Prisma.UserCreateInput, 'identities'>,
+    userData: Omit<Prisma.UserCreateInput, "identities">,
     identities: Array<{
       uid: string;
       platform: IdentityPlatform;
@@ -35,24 +35,24 @@ export default class IdentityService {
   ): Promise<User> {
     const user = await this.userRepository.create(userData, tx);
 
-    if (!user) {
-      throw new Error("Failed to create user");
-    }
-
     for (const identity of identities) {
-      await this.identityRepository.create(ctx, {
-        uid: identity.uid,
-        platform: identity.platform,
-        authToken: identity.authToken,
-        refreshToken: identity.refreshToken,
-        tokenExpiresAt: identity.tokenExpiresAt,
-        user: {
-          connect: { id: user.id },
+      await this.identityRepository.create(
+        ctx,
+        {
+          uid: identity.uid,
+          platform: identity.platform,
+          authToken: identity.authToken,
+          refreshToken: identity.refreshToken,
+          tokenExpiresAt: identity.tokenExpiresAt,
+          user: {
+            connect: { id: user.id },
+          },
+          community: {
+            connect: { id: identity.communityId },
+          },
         },
-        community: {
-          connect: { id: identity.communityId },
-        },
-      }, tx);
+        tx,
+      );
     }
 
     return user;
@@ -69,19 +69,23 @@ export default class IdentityService {
     const expiryTime = ctx.phoneTokenExpiresAt
       ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
       : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
-    await this.identityRepository.create(ctx, {
-      uid,
-      platform,
-      authToken: ctx.idToken,
-      refreshToken: ctx.refreshToken,
-      tokenExpiresAt: expiryTime,
-      user: {
-        connect: { id: userId },
+    await this.identityRepository.create(
+      ctx,
+      {
+        uid,
+        platform,
+        authToken: ctx.idToken,
+        refreshToken: ctx.refreshToken,
+        tokenExpiresAt: expiryTime,
+        user: {
+          connect: { id: userId },
+        },
+        community: {
+          connect: { id: communityId },
+        },
       },
-      community: {
-        connect: { id: communityId },
-      },
-    }, tx);
+      tx,
+    );
   }
 
   async linkPhoneIdentity(

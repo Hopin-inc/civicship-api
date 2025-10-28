@@ -102,9 +102,11 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) throw new Error("Authentication required");
     if (!input.phoneAccessToken) throw new Error("Phone authentication required");
 
-    const uploadedImage = input.image
+    const uploadedImagePromise = input.image
       ? await this.imageService.uploadPublicImage(input.image, "users")
       : undefined;
+
+    const deriveExpiry = this.deriveExpiryTime.bind(this);
 
     const identities: Array<{
       uid: string;
@@ -113,42 +115,39 @@ export default class IdentityUseCase {
       authToken?: string;
       refreshToken?: string;
       tokenExpiresAt?: Date;
-    }> = [];
-
-    const lineExpiryTime = this.deriveExpiryTime(input.lineTokenExpiresAt);
-    identities.push({
-      uid: ctx.uid,
-      platform: ctx.platform as PrismaIdentityPlatform,
-      communityId: ctx.communityId,
-      authToken: ctx.idToken,
-      refreshToken: input.lineRefreshToken || "",
-      tokenExpiresAt: lineExpiryTime,
-    });
-
-    if (input.phoneUid) {
-      const phoneExpiryTime = this.deriveExpiryTime(input.phoneTokenExpiresAt);
-      identities.push({
-        uid: input.phoneUid,
-        platform: PrismaIdentityPlatform.PHONE,
+    }> = [
+      {
+        uid: ctx.uid,
+        platform: ctx.platform,
         communityId: ctx.communityId,
-        authToken: input.phoneAccessToken,
-        refreshToken: input.phoneRefreshToken || "",
-        tokenExpiresAt: phoneExpiryTime,
-      });
-    }
+        authToken: ctx.idToken,
+        refreshToken: input.lineRefreshToken ?? "",
+        tokenExpiresAt: deriveExpiry(input.lineTokenExpiresAt),
+      },
+      ...(input.phoneUid
+        ? [
+            {
+              uid: input.phoneUid,
+              platform: PrismaIdentityPlatform.PHONE,
+              communityId: ctx.communityId,
+              authToken: input.phoneAccessToken,
+              refreshToken: input.phoneRefreshToken ?? "",
+              tokenExpiresAt: deriveExpiry(input.phoneTokenExpiresAt),
+            },
+          ]
+        : []),
+    ];
 
     const user = await ctx.issuer.public(ctx, async (tx) => {
-      const userData = {
-        name: input.name,
-        currentPrefecture: input.currentPrefecture,
-        slug: input.slug || "",
-        phoneNumber: input.phoneNumber,
-        image: uploadedImage ? { create: uploadedImage } : undefined,
-      };
-
       const createdUser = await this.identityService.createUserWithIdentities(
         ctx,
-        userData,
+        {
+          name: input.name,
+          currentPrefecture: input.currentPrefecture,
+          slug: input.slug ?? "",
+          phoneNumber: input.phoneNumber,
+          image: uploadedImagePromise ? { create: uploadedImagePromise } : undefined,
+        },
         identities,
         tx,
       );
@@ -159,13 +158,7 @@ export default class IdentityUseCase {
       return createdUser;
     });
 
-    if (!user) {
-      logger.error("[userCreateAccount] User not found after creation");
-      throw new Error("User not found after creation");
-    }
-
     await this.storeUserAuthTokens(ctx, input);
-
     return IdentityPresenter.create(user);
   }
 
