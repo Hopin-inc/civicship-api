@@ -11,7 +11,6 @@ import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
 import { requestLogger } from "@/presentation/middleware/logger";
-import { tokenUpdaterMiddleware } from "@/presentation/middleware/token-updater";
 import { customProcessRequest } from "@/presentation/middleware/custom-process-request";
 import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import cookieParser from "cookie-parser";
@@ -50,7 +49,6 @@ async function startServer() {
 
   app.use(corsHandler);
   app.use(express.json({ limit: "50mb" }));
-  app.use(tokenUpdaterMiddleware);
   app.use(
     graphqlUploadExpress({
       maxFileSize: 10_000_000,
@@ -70,7 +68,7 @@ async function startServer() {
   app.use(cookieParser());
   app.post("/sessionLogin", handleSessionLogin);
 
-  app.use("/graphql", authHandler(apolloServer), tokenUpdaterMiddleware);
+  app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);
 
   app.get("/health", (req, res) => {
