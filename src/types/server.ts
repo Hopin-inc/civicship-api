@@ -11,6 +11,7 @@ export type LoggedInUserInfo = {
   communityId: string;
   platform?: IdentityPlatform;
   uid?: string;
+  idToken?: string;
 
   currentUser?: PrismaAuthUser | null;
   isAdmin?: boolean;
