@@ -37,8 +37,9 @@ export default class UserRepository implements IUserRepository {
     });
   }
 
-  async create(data: Prisma.UserCreateInput) {
-    return this.db.user.create({
+  async create(data: Prisma.UserCreateInput, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.db;
+    return client.user.create({
       data,
       select: userSelectDetail,
     });
