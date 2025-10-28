@@ -42,11 +42,10 @@ describe("End-to-End User Journey Integration Tests", () => {
     const signupCtx: IContext = {
       uid: `uid-${uniqueId}`,
       platform: GqlIdentityPlatform.Line,
-      phoneAuthToken: "test-phone-auth-token",
       communityId: community.id,
       issuer,
     } as IContext;
-//
+    //
     const signupResult = await identityUseCase.userCreateAccount(signupCtx, {
       input: {
         name: "Test User",
