@@ -28,13 +28,12 @@ export default class IdentityService {
     communityId: string,
     tx?: Prisma.TransactionClient,
   ) {
-    // PHONE以外のrefresh tokenは不要
+    // PHONE以外のtokenは不要
     await this.identityRepository.create(
       ctx,
       {
         uid,
         platform,
-        authToken: ctx.idToken,
         user: {
           connect: { id: userId },
         },
