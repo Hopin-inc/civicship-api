@@ -55,7 +55,7 @@ export async function handleFirebaseAuth(
       membershipsCount: currentUser?.memberships?.length || 0,
     });
 
-    return { issuer, loaders, uid, platform, tenantId, communityId, currentUser };
+    return { issuer, loaders, uid, idToken, platform, tenantId, communityId, currentUser };
   } catch (err) {
     const error = err as any;
     logger.error("🔥 Firebase verification failed", {
