@@ -38,7 +38,7 @@ export default class WalletUseCase {
     return wallet ? WalletPresenter.get(wallet) : null;
   }
 
-  async userViewMyWallet(_, ctx: IContext): Promise<GqlWallet | null> {
+  async userViewMyWallet(ctx: IContext): Promise<GqlWallet | null> {
     if (!ctx.currentUser?.id) return null;
     const wallet = await this.service.findMemberWallet(ctx, ctx.currentUser.id, ctx.communityId);
     return wallet ? WalletPresenter.get(wallet) : null;
