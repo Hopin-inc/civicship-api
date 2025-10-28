@@ -1,4 +1,8 @@
-import { GqlQueryWalletsArgs, GqlQueryWalletArgs, GqlWalletTransactionsConnectionArgs } from "@/types/graphql";
+import {
+  GqlQueryWalletsArgs,
+  GqlQueryWalletArgs,
+  GqlWalletTransactionsConnectionArgs,
+} from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 
@@ -20,8 +24,8 @@ export default class WalletResolver {
     wallet: (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
       return this.walletUseCase.userViewWallet(args, ctx);
     },
-    myWallet: (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
-      return this.walletUseCase.userViewMyWallet(args, ctx);
+    myWallet: (_: unknown, _args: unknown, ctx: IContext) => {
+      return this.walletUseCase.userViewMyWallet(ctx);
     },
   };
 
@@ -42,21 +46,22 @@ export default class WalletResolver {
       return ctx.loaders.transactionsByWallet.load(parent.id);
     },
 
-    transactionsConnection: async (parent: PrismaWalletDetail, args: GqlWalletTransactionsConnectionArgs, ctx: IContext) => {
+    transactionsConnection: async (
+      parent: PrismaWalletDetail,
+      args: GqlWalletTransactionsConnectionArgs,
+      ctx: IContext,
+    ) => {
       return this.transactionUseCase.visitorBrowseTransactions(
         {
           filter: {
             communityId: parent.communityId,
-            or: [
-              { fromWalletId: parent.id },
-              { toWalletId: parent.id },
-            ],
+            or: [{ fromWalletId: parent.id }, { toWalletId: parent.id }],
           },
-          sort: args.sort || { createdAt: 'desc' },
+          sort: args.sort ?? { createdAt: "desc" },
           cursor: args.cursor,
-          first: args.first || 20,
+          first: args.first ?? 20,
         },
-        ctx
+        ctx,
       );
     },
   };
