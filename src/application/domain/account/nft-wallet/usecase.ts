@@ -111,6 +111,14 @@ export default class NFTWalletUsecase {
       
       return { success: true, itemsProcessed: metadata.items.length };
     } catch (error) {
+      // Update updatedAt even on error to prevent infinite retry loop
+      await this.issuer.internal(async (tx) => {
+        await tx.nftWallet.update({
+          where: { id: wallet.id },
+          data: { updatedAt: new Date() }
+        });
+      });
+
       const errorDetails = {
         walletAddress: wallet.walletAddress,
         durationMs: Date.now() - startTime,
@@ -120,8 +128,15 @@ export default class NFTWalletUsecase {
         errorType: (error as any).type,
         errorStack: error instanceof Error ? error.stack : undefined,
       };
-      
-      logger.error("❌ NFT metadata sync failed", errorDetails);
+
+      // Use warn level for timeout errors (temporary network issues)
+      const isTimeout = (error as any).code === 'ETIMEDOUT';
+      if (isTimeout) {
+        logger.warn("⚠️ NFT metadata sync timeout", errorDetails);
+      } else {
+        logger.error("❌ NFT metadata sync failed", errorDetails);
+      }
+
       return {
         success: false,
         itemsProcessed: 0,
