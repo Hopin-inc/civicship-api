@@ -122,23 +122,23 @@ export default class NFTWalletUsecase {
       } catch (updateError) {
         logger.error("🚨 Failed to update wallet updatedAt on sync error", {
           walletAddress: wallet.walletAddress,
-          originalErrorMessage: error instanceof Error ? error.message : String(error),
-          updateErrorMessage: updateError instanceof Error ? updateError.message : String(updateError),
+          originalErrorMessage: error instanceof Error ? error.message : JSON.stringify(error),
+          updateErrorMessage: updateError instanceof Error ? updateError.message : JSON.stringify(updateError),
         });
       }
 
       const errorDetails = {
         walletAddress: wallet.walletAddress,
         durationMs: Date.now() - startTime,
-        errorMessage: error instanceof Error ? error.message : String(error),
+        errorMessage: error instanceof Error ? error.message : JSON.stringify(error),
         errorName: error instanceof Error ? error.name : 'Unknown',
-        errorCode: (error as any).code,
-        errorType: (error as any).type,
+        errorCode: (error as any)?.code,
+        errorType: (error as any)?.type,
         errorStack: error instanceof Error ? error.stack : undefined,
       };
 
       // Use warn level for timeout errors (temporary network issues)
-      const isTimeout = (error as any).code === 'ETIMEDOUT';
+      const isTimeout = !!error && (error as any).code === 'ETIMEDOUT';
       if (isTimeout) {
         logger.warn("⚠️ NFT metadata sync timeout", errorDetails);
       } else {
@@ -148,7 +148,7 @@ export default class NFTWalletUsecase {
       return {
         success: false,
         itemsProcessed: 0,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       };
     }
   }
