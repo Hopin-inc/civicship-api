@@ -5,10 +5,13 @@ import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import NFTWalletUsecase from "@/application/domain/account/nft-wallet/usecase";
 import { IContext } from "@/types/server";
+import { NftWalletType } from "@prisma/client";
 
 export async function syncNftMetadata() {
   const batchStartTime = Date.now();
-  logger.info("🚀 Starting NFT metadata synchronization batch", { startTime: new Date().toISOString() });
+  logger.info("🚀 Starting NFT metadata synchronization batch", {
+    startTime: new Date().toISOString(),
+  });
 
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nftWalletUsecase = container.resolve<NFTWalletUsecase>("NFTWalletUsecase");
@@ -25,9 +28,10 @@ export async function syncNftMetadata() {
 
     while (hasMore) {
       const batchIterationStartTime = Date.now();
-      
+
       const nftWallets = await issuer.internal(async (tx) => {
         return tx.nftWallet.findMany({
+          where: { type: NftWalletType.EXTERNAL },
           select: {
             id: true,
             walletAddress: true,
@@ -50,7 +54,7 @@ export async function syncNftMetadata() {
 
       for (const wallet of nftWallets) {
         const result = await nftWalletUsecase.syncMetadata(ctx, wallet);
-        
+
         if (result.success) {
           if (result.itemsProcessed > 0) {
             totalProcessed++;
