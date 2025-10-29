@@ -129,8 +129,15 @@ export default class NFTWalletService {
         errorType: (error as any).type,
         errorStack: error instanceof Error ? error.stack : undefined,
       };
-      
-      logger.error("❌ Failed to fetch NFT metadata", errorDetails);
+
+      // Use warn level for timeout errors (temporary network issues)
+      const isTimeout = (error as any).code === 'ETIMEDOUT';
+      if (isTimeout) {
+        logger.warn("⚠️ Failed to fetch NFT metadata (timeout)", errorDetails);
+      } else {
+        logger.error("❌ Failed to fetch NFT metadata", errorDetails);
+      }
+
       throw error;
     }
   }
