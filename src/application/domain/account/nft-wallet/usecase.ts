@@ -66,9 +66,16 @@ export default class NFTWalletUsecase {
       logger.info("🔄 Starting NFT metadata sync", { walletAddress: wallet.walletAddress });
       
       const metadata = await this.nftWalletService.fetchMetadata(wallet.walletAddress);
-      
+
       if (metadata.items.length === 0) {
-        logger.info("📭 No NFTs found for wallet", { 
+        await this.issuer.internal(async (tx) => {
+          await tx.nftWallet.update({
+            where: { id: wallet.id },
+            data: { updatedAt: new Date() }
+          });
+        });
+
+        logger.info("📭 No NFTs found for wallet", {
           walletAddress: wallet.walletAddress,
           durationMs: Date.now() - startTime,
         });
@@ -89,6 +96,11 @@ export default class NFTWalletUsecase {
 
       await this.issuer.internal(async (tx) => {
         await this.nftWalletService.persistMetadata(ctx, wallet, metadata, tokenInfos, tx);
+
+        await tx.nftWallet.update({
+          where: { id: wallet.id },
+          data: { updatedAt: new Date() }
+        });
       });
 
       logger.info("✅ NFT metadata sync completed", {

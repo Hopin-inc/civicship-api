@@ -19,6 +19,9 @@ export async function syncNftMetadata() {
 
   try {
     const BATCH_SIZE = 50;
+    const SYNC_INTERVAL_HOURS = 24;
+    const RATE_LIMIT_DELAY_MS = 100;
+
     let skip = 0;
     let totalProcessed = 0;
     let totalErrors = 0;
@@ -26,12 +29,20 @@ export async function syncNftMetadata() {
     let totalNftsProcessed = 0;
     let hasMore = true;
 
+    const syncCutoffTime = new Date(Date.now() - SYNC_INTERVAL_HOURS * 60 * 60 * 1000);
+
     while (hasMore) {
       const batchIterationStartTime = Date.now();
 
       const nftWallets = await issuer.internal(async (tx) => {
         return tx.nftWallet.findMany({
-          where: { type: NftWalletType.EXTERNAL },
+          where: {
+            type: NftWalletType.EXTERNAL,
+            OR: [
+              { updatedAt: null },
+              { updatedAt: { lt: syncCutoffTime } }
+            ]
+          },
           select: {
             id: true,
             walletAddress: true,
@@ -69,6 +80,8 @@ export async function syncNftMetadata() {
             error: result.error,
           });
         }
+
+        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
       }
 
       logger.info("✅ Batch iteration completed", {
@@ -87,6 +100,7 @@ export async function syncNftMetadata() {
       totalWalletsSkipped: totalSkipped,
       totalWalletsErrors: totalErrors,
       totalNftsProcessed,
+      syncIntervalHours: SYNC_INTERVAL_HOURS,
       durationMs: Date.now() - batchStartTime,
       endTime: new Date().toISOString(),
     });
