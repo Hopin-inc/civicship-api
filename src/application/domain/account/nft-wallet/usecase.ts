@@ -112,12 +112,20 @@ export default class NFTWalletUsecase {
       return { success: true, itemsProcessed: metadata.items.length };
     } catch (error) {
       // Update updatedAt even on error to prevent infinite retry loop
-      await this.issuer.internal(async (tx) => {
-        await tx.nftWallet.update({
-          where: { id: wallet.id },
-          data: { updatedAt: new Date() }
+      try {
+        await this.issuer.internal(async (tx) => {
+          await tx.nftWallet.update({
+            where: { id: wallet.id },
+            data: { updatedAt: new Date() }
+          });
         });
-      });
+      } catch (updateError) {
+        logger.error("🚨 Failed to update wallet updatedAt on sync error", {
+          walletAddress: wallet.walletAddress,
+          originalErrorMessage: error instanceof Error ? error.message : String(error),
+          updateErrorMessage: updateError instanceof Error ? updateError.message : String(updateError),
+        });
+      }
 
       const errorDetails = {
         walletAddress: wallet.walletAddress,
