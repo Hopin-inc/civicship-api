@@ -2,7 +2,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IdentityPlatform, VcIssuanceStatus } from "@prisma/client";
 import logger from "@/infrastructure/logging";
-import { markExpiredRequests } from "@/presentation/batch/syncDIDVC/utils";
+import { markExpiredVCRequests } from "@/presentation/batch/syncDIDVC/utils";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import NotificationService from "@/application/domain/notification/service";
 import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
@@ -101,12 +101,21 @@ export async function processVCRequests(
       }
     } catch (error) {
       // Service層で処理されなかった予期しないエラー
-      logger.error(`Unexpected error in VC sync for ${request.id}:`, error);
+      logger.error(`Unexpected error in VC sync for request ${request.id}:`, {
+        requestId: request.id,
+        userId: request.userId,
+        evaluationId: request.evaluationId,
+        jobId: request.jobId,
+        status: request.status,
+        retryCount: request.retryCount,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       failureCount++;
     }
   }
 
-  await markExpiredRequests(issuer, "vcIssuanceRequest", {
+  await markExpiredVCRequests(issuer, {
     pending: VcIssuanceStatus.PENDING,
     processing: VcIssuanceStatus.PROCESSING,
     failed: VcIssuanceStatus.FAILED,

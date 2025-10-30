@@ -68,7 +68,7 @@ export class DIDIssuanceService {
       logger.warn(`No authentication token available for user ${userId}, skipping DID issuance`);
       await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
         errorMessage: "No authentication token available",
-        retryCount: didRequest.retryCount + 1,
+        retryCount: { increment: 1 },
       });
       return { success: true, requestId: didRequest.id };
     }
@@ -85,7 +85,7 @@ export class DIDIssuanceService {
         logger.warn(`DID issuance failed: no jobId returned for user ${userId}`);
         await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
           errorMessage: "External API call returned no jobId",
-          retryCount: didRequest.retryCount + 1,
+          retryCount: { increment: 1 },
         });
         return { success: false, requestId: didRequest.id };
       }
@@ -201,9 +201,11 @@ export class DIDIssuanceService {
         token = refreshed.authToken;
         isValid = true;
       } else {
-        logger.warn(`Token refresh failed for ${phoneIdentity.uid}`);
+        logger.warn(
+          `Token refresh failed for ${phoneIdentity.uid}, marking request ${request.id} for retry`,
+        );
         await this.didIssuanceRequestRepository.update(ctx, request.id, {
-          retryCount: request.retryCount + 1,
+          retryCount: { increment: 1 },
           errorMessage: "Token refresh failed",
         });
         return { success: false, status: "retrying" };
@@ -226,7 +228,7 @@ export class DIDIssuanceService {
         logger.warn(`External API returned null for job ${request.jobId}`);
         await this.didIssuanceRequestRepository.update(ctx, request.id, {
           errorMessage: "External API call failed during sync",
-          retryCount: request.retryCount + 1,
+          retryCount: { increment: 1 },
         });
         return { success: false, status: "retrying" };
       }
@@ -253,7 +255,7 @@ export class DIDIssuanceService {
 
       // Still processing
       await this.didIssuanceRequestRepository.update(ctx, request.id, {
-        retryCount: request.retryCount + 1,
+        retryCount: { increment: 1 },
       });
       return { success: true, status: "retrying" };
     } catch (error) {
@@ -291,14 +293,9 @@ export class DIDIssuanceService {
         // エラーメッセージには必要最小限の情報のみを保存（DBサイズ制限対策）
         // 詳細なrequestData/responseDataは上記のlogger.errorで出力済み
         const errorMessage = classified.requestDetails
-          ? JSON.stringify({
-              category: classified.category,
-              status: classified.httpStatus,
-              message: classified.message,
-              url: classified.requestDetails.url,
-              method: classified.requestDetails.method,
-              hasToken: classified.requestDetails.hasToken,
-            })
+          ? `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} | ` +
+            `URL: ${classified.requestDetails.url} | Method: ${classified.requestDetails.method} | ` +
+            `Token: ${classified.requestDetails.hasToken ? "yes" : "no"}`
           : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
 
         await this.didIssuanceRequestRepository.update(ctx, request.id, {
@@ -324,7 +321,7 @@ export class DIDIssuanceService {
 
       // まだリトライ可能
       await this.didIssuanceRequestRepository.update(ctx, request.id, {
-        retryCount: newRetryCount,
+        retryCount: { increment: 1 },
         errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`,
       });
       return { success: false, status: "retrying" };

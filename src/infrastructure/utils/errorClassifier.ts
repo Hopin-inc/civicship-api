@@ -1,8 +1,7 @@
 import axios, { AxiosError } from "axios";
 
 /**
- * リトライを永久に防止するためのretryCount値。
- * リトライ不要なエラー（404, 400系など）が発生した場合、この値を設定する。
+ * リトライ不要なエラーが発生した場合に設定するretryCountの値
  */
 export const PERMANENTLY_FAILED_RETRY_COUNT = 999;
 
@@ -43,16 +42,6 @@ export function classifyError(error: unknown, hasToken: boolean = false): Classi
 
   const axiosError = error as AxiosError;
   const status = axiosError.response?.status;
-  const config = axiosError.config;
-
-  // リクエスト詳細（400系エラー用）
-  const requestDetails = {
-    url: config?.url,
-    method: config?.method?.toUpperCase(),
-    hasToken,
-    requestData: config?.data,
-    responseData: axiosError.response?.data,
-  };
 
   if (!status) {
     // ネットワークエラー（タイムアウト、接続拒否等）
@@ -97,24 +86,38 @@ export function classifyError(error: unknown, hasToken: boolean = false): Classi
 
   if (status >= 400 && status < 500) {
     // その他の400系エラー → リクエスト詳細を含める
+    const config = axiosError.config;
     return {
       category: ErrorCategory.CLIENT_ERROR,
       shouldRetry: false,
       maxRetries: 0,
       httpStatus: status,
       message: `Client error (HTTP ${status})`,
-      requestDetails,
+      requestDetails: {
+        url: config?.url,
+        method: config?.method?.toUpperCase(),
+        hasToken,
+        requestData: config?.data,
+        responseData: axiosError.response?.data,
+      },
     };
   }
 
   if (status >= 500) {
+    const config = axiosError.config;
     return {
       category: ErrorCategory.SERVER_ERROR,
       shouldRetry: true,
       maxRetries: 5,
       httpStatus: status,
       message: `Server error (HTTP ${status})`,
-      requestDetails,
+      requestDetails: {
+        url: config?.url,
+        method: config?.method?.toUpperCase(),
+        hasToken,
+        requestData: config?.data,
+        responseData: axiosError.response?.data,
+      },
     };
   }
 
