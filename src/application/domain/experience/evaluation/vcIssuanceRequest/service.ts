@@ -277,7 +277,7 @@ export class VCIssuanceRequestService {
       } else {
         logger.warn(`Token refresh failed for ${phoneIdentity.uid}, marking for retry`);
         await this.vcIssuanceRequestRepository.update(ctx, request.id, {
-          retryCount: request.retryCount + 1,
+          retryCount: { increment: 1 },
           errorMessage: "Token refresh failed",
         });
         return { success: false, status: "retrying" };
@@ -303,7 +303,7 @@ export class VCIssuanceRequestService {
         logger.warn(`External API returned null for job ${request.jobId}`);
         await this.vcIssuanceRequestRepository.update(ctx, request.id, {
           errorMessage: "External API call failed during sync",
-          retryCount: request.retryCount + 1,
+          retryCount: { increment: 1 },
         });
         return { success: false, status: "retrying" };
       }
@@ -330,7 +330,7 @@ export class VCIssuanceRequestService {
 
       // Still processing
       await this.vcIssuanceRequestRepository.update(ctx, request.id, {
-        retryCount: request.retryCount + 1,
+        retryCount: { increment: 1 },
       });
       return { success: true, status: "retrying" };
     } catch (error) {
@@ -401,7 +401,7 @@ export class VCIssuanceRequestService {
 
       // まだリトライ可能
       await this.vcIssuanceRequestRepository.update(ctx, request.id, {
-        retryCount: newRetryCount,
+        retryCount: { increment: 1 },
         errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`,
       });
       return { success: false, status: "retrying" };

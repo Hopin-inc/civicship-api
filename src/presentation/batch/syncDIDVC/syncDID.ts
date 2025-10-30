@@ -2,7 +2,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DidIssuanceStatus, IdentityPlatform } from "@prisma/client";
 import logger from "@/infrastructure/logging";
-import { markExpiredRequests } from "@/presentation/batch/syncDIDVC/utils";
+import { markExpiredDIDRequests } from "@/presentation/batch/syncDIDVC/utils";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { IContext } from "@/types/server";
 
@@ -72,7 +72,7 @@ export async function processDIDRequests(
     }
   }
 
-  await markExpiredRequests(issuer, "didIssuanceRequest", {
+  await markExpiredDIDRequests(issuer, {
     pending: DidIssuanceStatus.PENDING,
     processing: DidIssuanceStatus.PROCESSING,
     failed: DidIssuanceStatus.FAILED,
