@@ -140,6 +140,7 @@ export class VCIssuanceRequestService {
         await this.vcIssuanceRequestRepository.update(ctx, vcIssuanceRequest.id, {
           status: VcIssuanceStatus.PROCESSING,
           jobId: response.jobId,
+          processedAt: new Date(),
         });
 
         return { success: true, requestId: vcIssuanceRequest.id, jobId: response.jobId };
