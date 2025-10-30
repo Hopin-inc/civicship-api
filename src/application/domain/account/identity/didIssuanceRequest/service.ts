@@ -5,7 +5,14 @@ import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IDIDIssuanceRequestRepository } from "@/application/domain/account/identity/didIssuanceRequest/data/interface";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
-import { DidIssuanceRequest, DidIssuanceStatus, Identity } from "@prisma/client";
+import { DidIssuanceRequest, DidIssuanceStatus, Identity, User } from "@prisma/client";
+import { classifyError } from "@/presentation/batch/syncDIDVC/errorClassifier";
+
+type DidIssuanceRequestWithUser = DidIssuanceRequest & {
+  user: User & {
+    identities: Identity[];
+  };
+};
 
 @injectable()
 export class DIDIssuanceService {
@@ -162,6 +169,165 @@ export class DIDIssuanceService {
         error,
       );
       return null;
+    }
+  }
+
+  async syncJobStatus(
+    request: DidIssuanceRequestWithUser,
+    ctx: IContext,
+  ): Promise<{
+    success: boolean;
+    status: "completed" | "failed" | "retrying" | "skipped";
+  }> {
+    const phoneIdentity = request.user.identities.find(
+      (identity) => identity.platform === "PHONE",
+    );
+
+    if (!phoneIdentity) {
+      logger.warn(`⚠️ No phone identity for user ${request.userId}`);
+      return { success: false, status: "skipped" };
+    }
+
+    // トークン検証と更新
+    let { token, isValid } = this.evaluateTokenValidity(phoneIdentity);
+
+    if (!isValid && phoneIdentity.refreshToken) {
+      const refreshed = await this.refreshAuthToken(
+        phoneIdentity.uid,
+        phoneIdentity.refreshToken,
+      );
+
+      if (refreshed) {
+        token = refreshed.authToken;
+        isValid = true;
+      } else {
+        logger.warn(`Token refresh failed for ${phoneIdentity.uid}`);
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          retryCount: { increment: 1 },
+          errorMessage: "Token refresh failed",
+        });
+        return { success: false, status: "failed" };
+      }
+    }
+
+    if (!token || !isValid) {
+      logger.warn(`❌ No valid token for user ${request.userId}`);
+      return { success: false, status: "skipped" };
+    }
+
+    // 外部API呼び出し
+    try {
+      const jobStatus = await this.client.call<{
+        status: string;
+        result?: { did: string };
+      }>(phoneIdentity.uid, token, `/did/job/${request.jobId}`, "GET");
+
+      if (!jobStatus) {
+        logger.warn(`External API returned null for job ${request.jobId}`);
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          errorMessage: "External API call failed during sync",
+          retryCount: { increment: 1 },
+        });
+        return { success: false, status: "retrying" };
+      }
+
+      if (jobStatus.status === "completed" && jobStatus.result?.did) {
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.COMPLETED,
+          didValue: jobStatus.result.did,
+          completedAt: new Date(),
+        });
+        logger.info(`✅ DID completed: ${request.id}`);
+        return { success: true, status: "completed" };
+      }
+
+      if (jobStatus.status === "failed") {
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.FAILED,
+          errorMessage: "DID issuance failed on server",
+        });
+        logger.error(`❌ DID failed: ${request.id}`);
+        return { success: false, status: "failed" };
+      }
+
+      // Still processing
+      await this.didIssuanceRequestRepository.update(ctx, request.id, {
+        retryCount: { increment: 1 },
+      });
+      return { success: true, status: "retrying" };
+    } catch (error) {
+      // エラー分類
+      const classified = classifyError(error, !!token);
+
+      // 詳細ログ（400系エラーの場合はリクエスト詳細も含める）
+      if (classified.requestDetails) {
+        logger.error(`💥 Error in DID request ${request.id} with request details:`, {
+          requestId: request.id,
+          userId: request.userId,
+          jobId: request.jobId,
+          category: classified.category,
+          httpStatus: classified.httpStatus,
+          message: classified.message,
+          url: classified.requestDetails.url,
+          method: classified.requestDetails.method,
+          hasToken: classified.requestDetails.hasToken,
+          requestData: classified.requestDetails.requestData,
+          responseData: classified.requestDetails.responseData,
+        });
+      } else {
+        logger.error(`💥 Error in DID request ${request.id}:`, {
+          requestId: request.id,
+          userId: request.userId,
+          jobId: request.jobId,
+          category: classified.category,
+          httpStatus: classified.httpStatus,
+          message: classified.message,
+        });
+      }
+
+      if (!classified.shouldRetry) {
+        // リトライ不要なエラー → 即座にFAILED
+        const errorMessage = classified.requestDetails
+          ? JSON.stringify({
+              category: classified.category,
+              status: classified.httpStatus,
+              message: classified.message,
+              url: classified.requestDetails.url,
+              method: classified.requestDetails.method,
+              hasToken: classified.requestDetails.hasToken,
+              requestData: classified.requestDetails.requestData,
+              responseData: classified.requestDetails.responseData,
+              timestamp: new Date().toISOString(),
+            })
+          : `${classified.category} (HTTP ${classified.httpStatus}): ${classified.message}`;
+
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.FAILED,
+          errorMessage,
+          retryCount: 999, // 最大値を超える値を設定
+        });
+        return { success: false, status: "failed" };
+      }
+
+      // リトライ可能なエラー
+      const newRetryCount = request.retryCount + 1;
+
+      if (newRetryCount >= classified.maxRetries) {
+        // リトライ回数超過 → FAILED
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.FAILED,
+          errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} (max retries exceeded)`,
+          retryCount: newRetryCount,
+        });
+        return { success: false, status: "failed" };
+      }
+
+      // まだリトライ可能
+      await this.didIssuanceRequestRepository.update(ctx, request.id, {
+        retryCount: { increment: 1 },
+        errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`,
+      });
+      return { success: false, status: "retrying" };
     }
   }
 }
