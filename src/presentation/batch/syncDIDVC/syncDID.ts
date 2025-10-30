@@ -2,7 +2,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DidIssuanceStatus, IdentityPlatform } from "@prisma/client";
 import logger from "@/infrastructure/logging";
-import { markExpiredRequests } from "@/presentation/batch/syncDIDVC/utils";
+import { markExpiredDIDRequests } from "@/presentation/batch/syncDIDVC/utils";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { IContext } from "@/types/server";
 
@@ -67,12 +67,20 @@ export async function processDIDRequests(
       }
     } catch (error) {
       // Service層で処理されなかった予期しないエラー
-      logger.error(`Unexpected error in DID sync for ${request.id}:`, error);
+      logger.error(`Unexpected error in DID sync for request ${request.id}:`, {
+        requestId: request.id,
+        userId: request.userId,
+        jobId: request.jobId,
+        status: request.status,
+        retryCount: request.retryCount,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       failureCount++;
     }
   }
 
-  await markExpiredRequests(issuer, "didIssuanceRequest", {
+  await markExpiredDIDRequests(issuer, {
     pending: DidIssuanceStatus.PENDING,
     processing: DidIssuanceStatus.PROCESSING,
     failed: DidIssuanceStatus.FAILED,
