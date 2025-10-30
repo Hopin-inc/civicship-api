@@ -39,9 +39,10 @@ export async function markExpiredRequests(
   issuer: PrismaClientIssuer,
   table: string,
   failedStatus: DidIssuanceStatus | VcIssuanceStatus,
-  maxAgeDays: number = 7,
+  maxAgeDays?: number,
 ) {
-  const cutoffDate = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000);
+  const maxAge = maxAgeDays ?? 7;
+  const cutoffDate = new Date(Date.now() - maxAge * 24 * 60 * 60 * 1000);
 
   const expiredRequests = await issuer.internal(async (tx) => {
     return tx[table].findMany({

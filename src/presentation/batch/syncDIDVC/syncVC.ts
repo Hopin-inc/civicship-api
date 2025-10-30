@@ -263,7 +263,7 @@ export async function processVCRequests(
   }
 
   await markFailedRequests(issuer, "vcIssuanceRequest", VcIssuanceStatus.FAILED);
-  await markExpiredRequests(issuer, "vcIssuanceRequest", VcIssuanceStatus.FAILED, 7);
+  await markExpiredRequests(issuer, "vcIssuanceRequest", VcIssuanceStatus.FAILED);
 
   return {
     total: requests.length,
