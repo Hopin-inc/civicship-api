@@ -299,7 +299,7 @@ export class DIDIssuanceService {
               method: classified.requestDetails.method,
               hasToken: classified.requestDetails.hasToken,
             })
-          : `${classified.category} (HTTP ${classified.httpStatus}): ${classified.message}`;
+          : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
 
         await this.didIssuanceRequestRepository.update(ctx, request.id, {
           status: DidIssuanceStatus.FAILED,
