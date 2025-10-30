@@ -10,7 +10,7 @@ type StatusSet<T> = {
 
 export async function markExpiredRequests<T extends DidIssuanceStatus | VcIssuanceStatus>(
   issuer: PrismaClientIssuer,
-  table: string,
+  table: "didIssuanceRequest" | "vcIssuanceRequest",
   statuses: StatusSet<T>,
   maxAgeDays?: number,
 ) {
