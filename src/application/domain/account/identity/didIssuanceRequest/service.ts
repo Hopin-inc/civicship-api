@@ -245,6 +245,7 @@ export class DIDIssuanceService {
         await this.didIssuanceRequestRepository.update(ctx, request.id, {
           status: DidIssuanceStatus.FAILED,
           errorMessage: "DID issuance failed on server",
+          retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
         });
         logger.error(`❌ DID failed: ${request.id}`);
         return { success: false, status: "failed" };

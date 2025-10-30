@@ -322,6 +322,7 @@ export class VCIssuanceRequestService {
         await this.vcIssuanceRequestRepository.update(ctx, request.id, {
           status: VcIssuanceStatus.FAILED,
           errorMessage: "VC issuance failed on server",
+          retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
         });
         logger.error(`❌ VC failed: ${request.id}`);
         return { success: false, status: "failed" };

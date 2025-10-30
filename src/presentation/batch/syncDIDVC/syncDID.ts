@@ -72,7 +72,11 @@ export async function processDIDRequests(
     }
   }
 
-  await markExpiredRequests(issuer, "didIssuanceRequest", DidIssuanceStatus.FAILED);
+  await markExpiredRequests(issuer, "didIssuanceRequest", {
+    pending: DidIssuanceStatus.PENDING,
+    processing: DidIssuanceStatus.PROCESSING,
+    failed: DidIssuanceStatus.FAILED,
+  });
 
   return {
     total: requests.length,

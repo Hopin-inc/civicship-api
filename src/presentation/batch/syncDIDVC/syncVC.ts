@@ -102,7 +102,11 @@ export async function processVCRequests(
     }
   }
 
-  await markExpiredRequests(issuer, "vcIssuanceRequest", VcIssuanceStatus.FAILED);
+  await markExpiredRequests(issuer, "vcIssuanceRequest", {
+    pending: VcIssuanceStatus.PENDING,
+    processing: VcIssuanceStatus.PROCESSING,
+    failed: VcIssuanceStatus.FAILED,
+  });
 
   return {
     total: requests.length,

@@ -2,10 +2,16 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DidIssuanceStatus, VcIssuanceStatus } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 
-export async function markExpiredRequests(
+type StatusSet<T> = {
+  pending: T;
+  processing: T;
+  failed: T;
+};
+
+export async function markExpiredRequests<T extends DidIssuanceStatus | VcIssuanceStatus>(
   issuer: PrismaClientIssuer,
   table: string,
-  failedStatus: DidIssuanceStatus | VcIssuanceStatus,
+  statuses: StatusSet<T>,
   maxAgeDays?: number,
 ) {
   const maxAge = maxAgeDays ?? 7;
@@ -17,26 +23,17 @@ export async function markExpiredRequests(
         OR: [
           // パターン1: PROCESSING状態で processedAt から7日経過
           {
-            status:
-              table === "didIssuanceRequest"
-                ? DidIssuanceStatus.PROCESSING
-                : VcIssuanceStatus.PROCESSING,
+            status: statuses.processing,
             processedAt: { lt: cutoffDate, not: null },
           },
           // パターン2: PENDING状態で requestedAt から7日経過
           {
-            status:
-              table === "didIssuanceRequest"
-                ? DidIssuanceStatus.PENDING
-                : VcIssuanceStatus.PENDING,
+            status: statuses.pending,
             requestedAt: { lt: cutoffDate },
           },
           // パターン3: リトライ回数超過
           {
-            status:
-              table === "didIssuanceRequest"
-                ? { in: [DidIssuanceStatus.PENDING, DidIssuanceStatus.PROCESSING] }
-                : { in: [VcIssuanceStatus.PENDING, VcIssuanceStatus.PROCESSING] },
+            status: { in: [statuses.pending, statuses.processing] },
             retryCount: { gte: 5 },
           },
         ],
@@ -64,7 +61,7 @@ export async function markExpiredRequests(
           id: { in: expiredRequests.map((req) => req.id) },
         },
         data: {
-          status: failedStatus,
+          status: statuses.failed,
           errorMessage: "Request expired or exceeded retry limit",
         },
       });
