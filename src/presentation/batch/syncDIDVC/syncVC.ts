@@ -101,7 +101,16 @@ export async function processVCRequests(
       }
     } catch (error) {
       // Service層で処理されなかった予期しないエラー
-      logger.error(`Unexpected error in VC sync for ${request.id}:`, error);
+      logger.error(`Unexpected error in VC sync for request ${request.id}:`, {
+        requestId: request.id,
+        userId: request.userId,
+        evaluationId: request.evaluationId,
+        jobId: request.jobId,
+        status: request.status,
+        retryCount: request.retryCount,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       failureCount++;
     }
   }

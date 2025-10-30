@@ -99,7 +99,9 @@ export class VCIssuanceRequestService {
         token = refreshed.authToken;
         isValid = true;
       } else {
-        logger.warn("VCIssuanceService: Token refresh failed, marking as failed");
+        logger.warn(
+          `Token refresh failed for ${phoneUid}, calling markIssuanceStatus for request ${vcIssuanceRequest.id}`,
+        );
         return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, "Token refresh failed");
       }
     }
@@ -275,7 +277,9 @@ export class VCIssuanceRequestService {
         token = refreshed.authToken;
         isValid = true;
       } else {
-        logger.warn(`Token refresh failed for ${phoneIdentity.uid}, marking for retry`);
+        logger.warn(
+          `Token refresh failed for ${phoneIdentity.uid}, marking request ${request.id} for retry`,
+        );
         await this.vcIssuanceRequestRepository.update(ctx, request.id, {
           retryCount: { increment: 1 },
           errorMessage: "Token refresh failed",
@@ -368,14 +372,9 @@ export class VCIssuanceRequestService {
         // エラーメッセージには必要最小限の情報のみを保存（DBサイズ制限対策）
         // 詳細なrequestData/responseDataは上記のlogger.errorで出力済み
         const errorMessage = classified.requestDetails
-          ? JSON.stringify({
-              category: classified.category,
-              status: classified.httpStatus,
-              message: classified.message,
-              url: classified.requestDetails.url,
-              method: classified.requestDetails.method,
-              hasToken: classified.requestDetails.hasToken,
-            })
+          ? `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} | ` +
+            `URL: ${classified.requestDetails.url} | Method: ${classified.requestDetails.method} | ` +
+            `Token: ${classified.requestDetails.hasToken ? "yes" : "no"}`
           : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
 
         await this.vcIssuanceRequestRepository.update(ctx, request.id, {

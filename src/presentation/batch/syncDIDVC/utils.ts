@@ -40,16 +40,18 @@ export async function markExpiredDIDRequests(
 
   if (expiredRequests.length > 0) {
     logger.warn(
-      `Marking ${expiredRequests.length} DID issuance requests as failed (expired or retry limit exceeded)`,
+      `Marking ${expiredRequests.length} DID requests as failed (expired or retry limit exceeded)`,
     );
 
     // 詳細ログ
     expiredRequests.forEach((req) => {
-      logger.info(
-        `Expiring DID request ${req.id}: jobId=${req.jobId}, ` +
-          `processedAt=${req.processedAt}, requestedAt=${req.requestedAt}, ` +
-          `retryCount=${req.retryCount}`,
-      );
+      logger.debug(`Expiring DID request`, {
+        requestId: req.id,
+        jobId: req.jobId,
+        processedAt: req.processedAt,
+        requestedAt: req.requestedAt,
+        retryCount: req.retryCount,
+      });
     });
 
     await issuer.internal(async (tx) => {
@@ -104,16 +106,18 @@ export async function markExpiredVCRequests(
 
   if (expiredRequests.length > 0) {
     logger.warn(
-      `Marking ${expiredRequests.length} VC issuance requests as failed (expired or retry limit exceeded)`,
+      `Marking ${expiredRequests.length} VC requests as failed (expired or retry limit exceeded)`,
     );
 
     // 詳細ログ
     expiredRequests.forEach((req) => {
-      logger.info(
-        `Expiring VC request ${req.id}: jobId=${req.jobId}, ` +
-          `processedAt=${req.processedAt}, requestedAt=${req.requestedAt}, ` +
-          `retryCount=${req.retryCount}`,
-      );
+      logger.debug(`Expiring VC request`, {
+        requestId: req.id,
+        jobId: req.jobId,
+        processedAt: req.processedAt,
+        requestedAt: req.requestedAt,
+        retryCount: req.retryCount,
+      });
     });
 
     await issuer.internal(async (tx) => {
