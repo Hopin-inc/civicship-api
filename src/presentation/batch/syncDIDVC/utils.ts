@@ -21,12 +21,12 @@ export async function markExpiredRequests<T extends DidIssuanceStatus | VcIssuan
     return tx[table].findMany({
       where: {
         OR: [
-          // パターン1: PROCESSING状態で processedAt から7日経過
+          // パターン1: PROCESSING状態で processedAt から指定日数経過
           {
             status: statuses.processing,
             processedAt: { lt: cutoffDate, not: null },
           },
-          // パターン2: PENDING状態で requestedAt から7日経過
+          // パターン2: PENDING状態で requestedAt から指定日数経過
           {
             status: statuses.pending,
             requestedAt: { lt: cutoffDate },

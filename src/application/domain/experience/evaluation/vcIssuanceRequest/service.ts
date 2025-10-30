@@ -376,7 +376,7 @@ export class VCIssuanceRequestService {
               method: classified.requestDetails.method,
               hasToken: classified.requestDetails.hasToken,
             })
-          : `${classified.category} (HTTP ${classified.httpStatus}): ${classified.message}`;
+          : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
 
         await this.vcIssuanceRequestRepository.update(ctx, request.id, {
           status: VcIssuanceStatus.FAILED,
