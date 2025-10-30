@@ -86,6 +86,7 @@ export class DIDIssuanceService {
       await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
         status: DidIssuanceStatus.PROCESSING,
         jobId: response.jobId,
+        processedAt: new Date(),
       });
 
       return { success: true, requestId: didRequest.id, jobId: response.jobId };
