@@ -206,7 +206,7 @@ export class DIDIssuanceService {
           retryCount: { increment: 1 },
           errorMessage: "Token refresh failed",
         });
-        return { success: false, status: "failed" };
+        return { success: false, status: "retrying" };
       }
     }
 
