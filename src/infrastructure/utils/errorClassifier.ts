@@ -1,5 +1,11 @@
 import axios, { AxiosError } from "axios";
 
+/**
+ * リトライを永久に防止するためのretryCount値。
+ * リトライ不要なエラー（404, 400系など）が発生した場合、この値を設定する。
+ */
+export const PERMANENTLY_FAILED_RETRY_COUNT = 999;
+
 export enum ErrorCategory {
   NOT_FOUND = "NOT_FOUND", // 404: リトライ不要
   UNAUTHORIZED = "UNAUTHORIZED", // 401/403: トークン更新後リトライ
@@ -59,12 +65,13 @@ export function classifyError(error: unknown, hasToken: boolean = false): Classi
   }
 
   if (status === 404) {
+    const detail = (axiosError.response?.data as { detail?: string })?.detail;
     return {
       category: ErrorCategory.NOT_FOUND,
       shouldRetry: false,
       maxRetries: 0,
       httpStatus: status,
-      message: "Resource not found (HTTP 404)",
+      message: detail || "Resource not found on external API",
     };
   }
 
@@ -107,6 +114,7 @@ export function classifyError(error: unknown, hasToken: boolean = false): Classi
       maxRetries: 5,
       httpStatus: status,
       message: `Server error (HTTP ${status})`,
+      requestDetails,
     };
   }
 
