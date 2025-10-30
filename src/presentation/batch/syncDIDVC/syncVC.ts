@@ -66,7 +66,11 @@ export async function processVCRequests(
           });
         });
 
-        if (evaluation && evaluation.participation.communityId) {
+        if (!evaluation) {
+          logger.warn(
+            `⚠️ Evaluation not found for completed VC request: ${request.id}, evaluationId: ${request.evaluationId}`,
+          );
+        } else if (evaluation.participation.communityId) {
           const notificationCtx = {
             communityId: evaluation.participation.communityId,
             issuer,
