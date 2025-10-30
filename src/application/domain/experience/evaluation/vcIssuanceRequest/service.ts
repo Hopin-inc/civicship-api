@@ -10,7 +10,7 @@ import IdentityRepository from "@/application/domain/account/identity/data/repos
 import logger from "@/infrastructure/logging";
 import { GqlQueryVcIssuanceRequestsArgs } from "@/types/graphql";
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
-import { classifyError } from "@/presentation/batch/syncDIDVC/errorClassifier";
+import { classifyError } from "@/infrastructure/utils/errorClassifier";
 
 type VcIssuanceRequestWithUser = VcIssuanceRequest & {
   user: User & {
@@ -188,9 +188,14 @@ export class VCIssuanceRequestService {
   async refreshAuthToken(
     uid: string,
     refreshToken: string,
-  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
+  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date } | null> {
     try {
       const response = await this.identityService.fetchNewIdToken(refreshToken);
+
+      if (!response) {
+        logger.warn(`Token refresh failed for uid ${uid}, continuing without refresh`);
+        return null;
+      }
 
       const expiryTime = new Date(Date.now() + response.expiresIn * 1000);
 
@@ -207,8 +212,11 @@ export class VCIssuanceRequestService {
         expiryTime,
       };
     } catch (error) {
-      logger.error(`VCIssuanceService.refreshAuthToken failed for uid ${uid}:`, error);
-      throw error;
+      logger.warn(
+        `VCIssuanceService.refreshAuthToken failed for uid ${uid} (non-blocking):`,
+        error,
+      );
+      return null;
     }
   }
 

@@ -6,7 +6,7 @@ import { IDIDIssuanceRequestRepository } from "@/application/domain/account/iden
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import { DidIssuanceRequest, DidIssuanceStatus, Identity, User } from "@prisma/client";
-import { classifyError } from "@/presentation/batch/syncDIDVC/errorClassifier";
+import { classifyError } from "@/infrastructure/utils/errorClassifier";
 
 type DidIssuanceRequestWithUser = DidIssuanceRequest & {
   user: User & {
