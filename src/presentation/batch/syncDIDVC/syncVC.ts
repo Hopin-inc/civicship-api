@@ -54,7 +54,7 @@ export async function processVCRequests(
   // 簡潔なループ: Service層に委譲
   for (const request of requests) {
     try {
-      const ctx: IContext = { issuer, userId: request.userId };
+      const ctx: IContext = { issuer } as IContext;
       const result = await vcService.syncJobStatus(request, ctx);
 
       // VC完了時は通知を送信

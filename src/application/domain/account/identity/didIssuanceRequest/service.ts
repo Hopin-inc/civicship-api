@@ -324,7 +324,7 @@ export class DIDIssuanceService {
 
       // まだリトライ可能
       await this.didIssuanceRequestRepository.update(ctx, request.id, {
-        retryCount: { increment: 1 },
+        retryCount: newRetryCount,
         errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`,
       });
       return { success: false, status: "retrying" };

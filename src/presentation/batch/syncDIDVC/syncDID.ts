@@ -50,7 +50,7 @@ export async function processDIDRequests(
   // 簡潔なループ: Service層に委譲
   for (const request of requests) {
     try {
-      const ctx: IContext = { issuer, userId: request.userId };
+      const ctx: IContext = { issuer } as IContext;
       const result = await didService.syncJobStatus(request, ctx);
 
       switch (result.status) {
