@@ -233,7 +233,7 @@ export async function processDIDRequests(
   }
 
   await markFailedRequests(issuer, "didIssuanceRequest", DidIssuanceStatus.FAILED);
-  await markExpiredRequests(issuer, "didIssuanceRequest", DidIssuanceStatus.FAILED, 7);
+  await markExpiredRequests(issuer, "didIssuanceRequest", DidIssuanceStatus.FAILED);
 
   return {
     total: requests.length,
