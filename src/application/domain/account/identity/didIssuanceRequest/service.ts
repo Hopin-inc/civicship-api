@@ -6,7 +6,7 @@ import { IDIDIssuanceRequestRepository } from "@/application/domain/account/iden
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import { DidIssuanceRequest, DidIssuanceStatus, Identity, User } from "@prisma/client";
-import { classifyError } from "@/infrastructure/utils/errorClassifier";
+import { classifyError, PERMANENTLY_FAILED_RETRY_COUNT } from "@/infrastructure/utils/errorClassifier";
 
 type DidIssuanceRequestWithUser = DidIssuanceRequest & {
   user: User & {
@@ -287,6 +287,8 @@ export class DIDIssuanceService {
 
       if (!classified.shouldRetry) {
         // リトライ不要なエラー → 即座にFAILED
+        // エラーメッセージには必要最小限の情報のみを保存（DBサイズ制限対策）
+        // 詳細なrequestData/responseDataは上記のlogger.errorで出力済み
         const errorMessage = classified.requestDetails
           ? JSON.stringify({
               category: classified.category,
@@ -295,16 +297,13 @@ export class DIDIssuanceService {
               url: classified.requestDetails.url,
               method: classified.requestDetails.method,
               hasToken: classified.requestDetails.hasToken,
-              requestData: classified.requestDetails.requestData,
-              responseData: classified.requestDetails.responseData,
-              timestamp: new Date().toISOString(),
             })
           : `${classified.category} (HTTP ${classified.httpStatus}): ${classified.message}`;
 
         await this.didIssuanceRequestRepository.update(ctx, request.id, {
           status: DidIssuanceStatus.FAILED,
           errorMessage,
-          retryCount: 999, // 最大値を超える値を設定
+          retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
         });
         return { success: false, status: "failed" };
       }

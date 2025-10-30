@@ -10,7 +10,7 @@ import IdentityRepository from "@/application/domain/account/identity/data/repos
 import logger from "@/infrastructure/logging";
 import { GqlQueryVcIssuanceRequestsArgs } from "@/types/graphql";
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
-import { classifyError } from "@/infrastructure/utils/errorClassifier";
+import { classifyError, PERMANENTLY_FAILED_RETRY_COUNT } from "@/infrastructure/utils/errorClassifier";
 
 type VcIssuanceRequestWithUser = VcIssuanceRequest & {
   user: User & {
@@ -94,22 +94,25 @@ export class VCIssuanceRequestService {
     let { token, isValid } = this.evaluateTokenValidity(identity);
 
     if (!isValid && identity.refreshToken) {
-      try {
-        const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
+      const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
+      if (refreshed) {
         token = refreshed.authToken;
         isValid = true;
-      } catch (error) {
-        logger.error("VCIssuanceService.refreshAuthToken failed", error);
-        return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, error);
+      } else {
+        logger.warn("VCIssuanceService: Token refresh failed, marking as failed");
+        return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, "Token refresh failed");
       }
     }
 
     if (!token || !isValid) {
-      logger.warn("No valid authentication token available");
+      const reason = !identity.refreshToken
+        ? "no refresh token available"
+        : "token invalid and refresh failed";
+      logger.warn(`No valid authentication token available: ${reason}`);
       return this.markIssuanceStatus(
         ctx,
         vcIssuanceRequest.id,
-        "No valid authentication token available",
+        `No valid authentication token: ${reason}`,
       );
     }
 
@@ -264,15 +267,15 @@ export class VCIssuanceRequestService {
     let { token, isValid } = this.evaluateTokenValidity(phoneIdentity);
 
     if (!isValid && phoneIdentity.refreshToken) {
-      try {
-        const refreshed = await this.refreshAuthToken(
-          phoneIdentity.uid,
-          phoneIdentity.refreshToken,
-        );
+      const refreshed = await this.refreshAuthToken(
+        phoneIdentity.uid,
+        phoneIdentity.refreshToken,
+      );
+      if (refreshed) {
         token = refreshed.authToken;
         isValid = true;
-      } catch (error) {
-        logger.warn(`Token refresh failed for ${phoneIdentity.uid}`);
+      } else {
+        logger.warn(`Token refresh failed for ${phoneIdentity.uid}, marking for retry`);
         await this.vcIssuanceRequestRepository.update(ctx, request.id, {
           retryCount: { increment: 1 },
           errorMessage: "Token refresh failed",
@@ -282,7 +285,10 @@ export class VCIssuanceRequestService {
     }
 
     if (!token || !isValid) {
-      logger.warn(`❌ No valid token for user ${request.userId}`);
+      const reason = !phoneIdentity.refreshToken
+        ? "no refresh token available"
+        : "token invalid and refresh failed";
+      logger.warn(`❌ No valid token for user ${request.userId}: ${reason}`);
       return { success: false, status: "skipped" };
     }
 
@@ -358,6 +364,8 @@ export class VCIssuanceRequestService {
 
       if (!classified.shouldRetry) {
         // リトライ不要なエラー → 即座にFAILED
+        // エラーメッセージには必要最小限の情報のみを保存（DBサイズ制限対策）
+        // 詳細なrequestData/responseDataは上記のlogger.errorで出力済み
         const errorMessage = classified.requestDetails
           ? JSON.stringify({
               category: classified.category,
@@ -366,16 +374,13 @@ export class VCIssuanceRequestService {
               url: classified.requestDetails.url,
               method: classified.requestDetails.method,
               hasToken: classified.requestDetails.hasToken,
-              requestData: classified.requestDetails.requestData,
-              responseData: classified.requestDetails.responseData,
-              timestamp: new Date().toISOString(),
             })
           : `${classified.category} (HTTP ${classified.httpStatus}): ${classified.message}`;
 
         await this.vcIssuanceRequestRepository.update(ctx, request.id, {
           status: VcIssuanceStatus.FAILED,
           errorMessage,
-          retryCount: 999, // 最大値を超える値を設定
+          retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
         });
         return { success: false, status: "failed" };
       }
