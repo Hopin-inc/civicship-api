@@ -2,7 +2,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IdentityPlatform, VcIssuanceStatus } from "@prisma/client";
 import logger from "@/infrastructure/logging";
-import { markFailedRequests, markExpiredRequests } from "@/presentation/batch/syncDIDVC/utils";
+import { markExpiredRequests } from "@/presentation/batch/syncDIDVC/utils";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import NotificationService from "@/application/domain/notification/service";
 import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
@@ -102,7 +102,6 @@ export async function processVCRequests(
     }
   }
 
-  await markFailedRequests(issuer, "vcIssuanceRequest", VcIssuanceStatus.FAILED);
   await markExpiredRequests(issuer, "vcIssuanceRequest", VcIssuanceStatus.FAILED);
 
   return {
