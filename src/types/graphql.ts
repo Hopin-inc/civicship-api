@@ -2710,6 +2710,7 @@ export type GqlUserSignUpInput = {
   phoneRefreshToken?: InputMaybe<Scalars['String']['input']>;
   phoneTokenExpiresAt?: InputMaybe<Scalars['String']['input']>;
   phoneUid?: InputMaybe<Scalars['String']['input']>;
+  preferredLanguage?: InputMaybe<GqlLanguage>;
   slug?: InputMaybe<Scalars['String']['input']>;
 };
 

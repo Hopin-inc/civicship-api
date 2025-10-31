@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { auth } from "@/infrastructure/libs/firebase";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
-import { Language } from "@prisma/client";
 
 export async function validateFirebasePhoneAuth(req: Request, res: Response, next: NextFunction) {
   const idToken = req.headers["authorization"]?.replace(/^Bearer\s+/, "");
@@ -29,15 +28,11 @@ export async function validateFirebasePhoneAuth(req: Request, res: Response, nex
 
       logger.info(`🆕 Creating new user for uid=${uid}`);
       
-      const acceptLanguage = req.headers["accept-language"] as string | undefined;
-      const preferredLanguage = /^en\b/i.test(acceptLanguage ?? "") ? Language.EN : Language.JA;
-      
       const newUser = await tx.user.create({
         data: {
           name: "名前未設定",
           slug: "名前未設定",
           currentPrefecture: "UNKNOWN",
-          preferredLanguage,
           identities: {
             create: [
               {
@@ -49,7 +44,7 @@ export async function validateFirebasePhoneAuth(req: Request, res: Response, nex
         },
       });
 
-      logger.info(`✅ New user created: userId=${newUser.id}, preferredLanguage=${preferredLanguage}`);
+      logger.info(`✅ New user created: userId=${newUser.id}`);
       return newUser;
     });
 
