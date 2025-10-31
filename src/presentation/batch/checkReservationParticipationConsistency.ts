@@ -18,19 +18,14 @@ type Participation = {
 };
 
 /**
- * Mapping of participation status reasons to their expected reservation statuses.
- * Used for validating consistency between reservation and participation states.
- */
-const REASON_STATUS_MAP: Partial<Record<ParticipationStatusReason, ReservationStatus>> = {
-  [ParticipationStatusReason.RESERVATION_APPLIED]: ReservationStatus.APPLIED,
-  [ParticipationStatusReason.RESERVATION_ACCEPTED]: ReservationStatus.ACCEPTED,
-  [ParticipationStatusReason.RESERVATION_REJECTED]: ReservationStatus.REJECTED,
-  [ParticipationStatusReason.RESERVATION_CANCELED]: ReservationStatus.CANCELED,
-};
-
-/**
  * Validates the consistency between reservation and participation states.
  * Returns an array of validation error messages (empty if valid).
+ * 
+ * Validation rules:
+ * 1. OPPORTUNITY_CANCELED must always have NOT_PARTICIPATING status
+ * 2. PERSONAL_RECORD participations are not tied to reservations (handled separately)
+ * 3. Evaluation invariants: evaluationId exists only for ACCEPTED reservations with PARTICIPATED status
+ * 4. Each reservation status has specific allowed participation status and reason combinations
  */
 function validateConsistency(
   reservation: Reservation,
@@ -39,26 +34,36 @@ function validateConsistency(
   const errors: string[] = [];
   const hasEvaluation = !!participation.evaluationId;
 
-  // Rule 1: Validate reason-reservationStatus consistency
-  const expectedReservationStatus = REASON_STATUS_MAP[participation.reason];
-  if (
-    expectedReservationStatus &&
-    expectedReservationStatus !== reservation.status &&
-    participation.reason !== ParticipationStatusReason.OPPORTUNITY_CANCELED
-  ) {
-    errors.push(
-      `Reason ${participation.reason} conflicts with reservation status ${reservation.status} (expected ${expectedReservationStatus})`,
-    );
+  // Rule 1: OPPORTUNITY_CANCELED must always have NOT_PARTICIPATING status
+  if (participation.reason === ParticipationStatusReason.OPPORTUNITY_CANCELED) {
+    if (participation.status !== ParticipationStatus.NOT_PARTICIPATING) {
+      errors.push(
+        `OPPORTUNITY_CANCELED requires NOT_PARTICIPATING status, got ${participation.status}`,
+      );
+    }
+    return errors; // Skip other validations for canceled opportunities
   }
 
-  // Rule 2: Evaluated participations cannot be PENDING or PARTICIPATING
-  if (hasEvaluation && [ParticipationStatus.PENDING, ParticipationStatus.PARTICIPATING].includes(participation.status)) {
-    errors.push(
-      `Evaluated participation cannot be ${participation.status}`,
-    );
+  // Rule 2: PERSONAL_RECORD participations should not be validated against reservations
+  if (participation.reason === ParticipationStatusReason.PERSONAL_RECORD) {
+    return errors; // No validation needed for personal records in this context
   }
 
-  // Rules 3-5: Validate states based on reservation status
+  if (hasEvaluation) {
+    if (reservation.status !== ReservationStatus.ACCEPTED) {
+      errors.push(
+        `Evaluation exists but reservation status is ${reservation.status} (expected ACCEPTED)`,
+      );
+    }
+    // Evaluated participations must be PARTICIPATED
+    if (participation.status !== ParticipationStatus.PARTICIPATED) {
+      errors.push(
+        `Evaluation exists but participation status is ${participation.status} (expected PARTICIPATED)`,
+      );
+    }
+  }
+
+  // Rule 4: Validate states based on reservation status
   switch (reservation.status) {
     case ReservationStatus.ACCEPTED: {
       if (participation.reason === ParticipationStatusReason.RESERVATION_ACCEPTED) {
@@ -73,7 +78,7 @@ function validateConsistency(
             `ACCEPTED reservation ${evaluationText} evaluation expects ${expectedStatus} or NOT_PARTICIPATING, got ${participation.status}`,
           );
         }
-      } else if (participation.reason !== ParticipationStatusReason.OPPORTUNITY_CANCELED) {
+      } else {
         errors.push(
           `ACCEPTED reservation expects RESERVATION_ACCEPTED reason, got ${participation.reason}`,
         );
@@ -92,7 +97,7 @@ function validateConsistency(
             `APPLIED reservation expects PENDING or NOT_PARTICIPATING, got ${participation.status}`,
           );
         }
-      } else if (participation.reason !== ParticipationStatusReason.OPPORTUNITY_CANCELED) {
+      } else {
         errors.push(
           `APPLIED reservation expects RESERVATION_APPLIED reason, got ${participation.reason}`,
         );
@@ -107,10 +112,7 @@ function validateConsistency(
           ? ParticipationStatusReason.RESERVATION_REJECTED
           : ParticipationStatusReason.RESERVATION_CANCELED;
 
-      if (
-        participation.reason !== expectedReason &&
-        participation.reason !== ParticipationStatusReason.OPPORTUNITY_CANCELED
-      ) {
+      if (participation.reason !== expectedReason) {
         errors.push(
           `${reservation.status} reservation expects ${expectedReason} reason, got ${participation.reason}`,
         );
@@ -136,6 +138,16 @@ export async function checkReservationParticipationConsistency() {
   try {
     await issuer.internal(async (tx) => {
       const reservations = await tx.reservation.findMany({
+        where: {
+          status: {
+            in: [
+              ReservationStatus.APPLIED,
+              ReservationStatus.ACCEPTED,
+              ReservationStatus.REJECTED,
+              ReservationStatus.CANCELED,
+            ],
+          },
+        },
         include: {
           participations: true,
         },
