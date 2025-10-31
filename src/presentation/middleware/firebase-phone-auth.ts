@@ -27,6 +27,7 @@ export async function validateFirebasePhoneAuth(req: Request, res: Response, nex
       }
 
       logger.info(`🆕 Creating new user for uid=${uid}`);
+      
       const newUser = await tx.user.create({
         data: {
           name: "名前未設定",

@@ -1,12 +1,14 @@
 import "reflect-metadata";
 import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
 import { messagingApi } from "@line/bot-sdk";
+import { Language } from "@prisma/client";
 
 describe("buildPointDonationReceivedMessage", () => {
   const baseParams = {
     fromUserName: "田中太郎",
     transferPoints: 100,
     redirectUrl: "https://example.com/wallets",
+    language: Language.JA,
   };
 
   it("should build a valid LINE Flex Message", () => {
