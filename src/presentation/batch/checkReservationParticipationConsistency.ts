@@ -87,9 +87,8 @@ function validateConsistency(
     case ReservationStatus.APPLIED: {
       if (participation.reason === ParticipationStatusReason.RESERVATION_APPLIED) {
         if (
-          ![ParticipationStatus.PENDING, ParticipationStatus.NOT_PARTICIPATING].includes(
-            participation.status,
-          )
+          participation.status !== ParticipationStatus.PENDING &&
+          participation.status !== ParticipationStatus.NOT_PARTICIPATING
         ) {
           errors.push(
             `APPLIED reservation expects PENDING or NOT_PARTICIPATING, got ${participation.status}`,
