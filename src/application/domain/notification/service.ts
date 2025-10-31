@@ -24,6 +24,7 @@ import { buildCertificateIssuedMessage } from "@/application/domain/notification
 import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
 import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
 import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
+import { Language } from "@prisma/client";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.locale("ja");
@@ -374,7 +375,7 @@ export default class NotificationService {
     fromUserName: string,
     toUserId: string,
   ) {
-    const preparedData = await this.prepareLinePush(
+    const preparedData = await this.prepareLinePushWithLanguage(
       ctx,
       toUserId,
       transactionId,
@@ -385,7 +386,7 @@ export default class NotificationService {
       return;
     }
 
-    const { uid, liffBaseUrl, client } = preparedData;
+    const { uid, liffBaseUrl, client, language } = preparedData;
     const redirectUrl = `${liffBaseUrl}/wallets`;
 
     const message = buildPointDonationReceivedMessage({
@@ -393,6 +394,7 @@ export default class NotificationService {
       transferPoints: toPointChange,
       comment: comment ?? undefined,
       redirectUrl,
+      language,
     });
 
     await safePushMessage(client, { to: uid, messages: [message] });
@@ -406,7 +408,7 @@ export default class NotificationService {
     communityName: string,
     toUserId: string,
   ) {
-    const preparedData = await this.prepareLinePush(
+    const preparedData = await this.prepareLinePushWithLanguage(
       ctx,
       toUserId,
       transactionId,
@@ -417,7 +419,7 @@ export default class NotificationService {
       return;
     }
 
-    const { uid, liffBaseUrl, client } = preparedData;
+    const { uid, liffBaseUrl, client, language } = preparedData;
     const redirectUrl = `${liffBaseUrl}/wallets`;
 
     const message = buildPointGrantReceivedMessage({
@@ -425,11 +427,11 @@ export default class NotificationService {
       transferPoints: toPointChange,
       comment: comment ?? undefined,
       redirectUrl,
+      language,
     });
 
     await safePushMessage(client, { to: uid, messages: [message] });
   }
-
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
       (identity) =>
@@ -531,6 +533,71 @@ export default class NotificationService {
     const client = await createLineClient(ctx.communityId);
 
     return { uid, liffBaseUrl, client };
+  }
+
+  private async prepareLinePushWithLanguage(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language: Language } | null> {
+    const toUser = await ctx.issuer.internal(async (tx) => {
+      return tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          preferredLanguage: true,
+          identities: {
+            select: {
+              platform: true,
+              uid: true,
+              communityId: true,
+            },
+          },
+        },
+      });
+    });
+
+    if (!toUser) {
+      logger.warn(`${logContext}: user not found`, {
+        transactionId,
+        userId,
+        communityId: ctx.communityId,
+      });
+      return null;
+    }
+
+    const uid = toUser.identities.find(
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
+    )?.uid;
+
+    if (!uid) {
+      logger.warn(`${logContext}: lineUid is missing`, {
+        transactionId,
+        userId,
+        communityId: ctx.communityId,
+      });
+      return null;
+    }
+
+    const language = toUser.preferredLanguage || Language.JA;
+
+    let liffBaseUrl: string;
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error(`${logContext}: failed to get LIFF config`, {
+        transactionId,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return null;
+    }
+
+    const client = await createLineClient(ctx.communityId);
+
+    return { uid, liffBaseUrl, client, language };
   }
 
   private extractLineUidsFromParticipations(

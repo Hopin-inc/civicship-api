@@ -565,6 +565,12 @@ export type GqlImageInput = {
   file?: InputMaybe<Scalars['Upload']['input']>;
 };
 
+export const GqlLanguage = {
+  En: 'EN',
+  Ja: 'JA'
+} as const;
+
+export type GqlLanguage = typeof GqlLanguage[keyof typeof GqlLanguage];
 export const GqlLineRichMenuType = {
   Admin: 'ADMIN',
   Public: 'PUBLIC',
@@ -2644,6 +2650,7 @@ export type GqlUser = {
   participations?: Maybe<Array<GqlParticipation>>;
   phoneNumber?: Maybe<Scalars['String']['output']>;
   portfolios?: Maybe<Array<GqlPortfolio>>;
+  preferredLanguage: GqlLanguage;
   reservationStatusChangedByMe?: Maybe<Array<GqlReservationHistory>>;
   reservations?: Maybe<Array<GqlReservation>>;
   slug?: Maybe<Scalars['String']['output']>;
@@ -2715,6 +2722,7 @@ export type GqlUserUpdateProfileInput = {
   currentPrefecture?: InputMaybe<GqlCurrentPrefecture>;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
+  preferredLanguage?: InputMaybe<GqlLanguage>;
   slug: Scalars['String']['input'];
   urlFacebook?: InputMaybe<Scalars['String']['input']>;
   urlInstagram?: InputMaybe<Scalars['String']['input']>;
@@ -3136,6 +3144,7 @@ export type GqlResolversTypes = ResolversObject<{
   ImageInput: GqlImageInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
+  Language: GqlLanguage;
   LineRichMenuType: GqlLineRichMenuType;
   LinkPhoneAuthInput: GqlLinkPhoneAuthInput;
   LinkPhoneAuthPayload: ResolverTypeWrapper<Omit<GqlLinkPhoneAuthPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
@@ -4872,6 +4881,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   phoneNumber?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   portfolios?: Resolver<Maybe<Array<GqlResolversTypes['Portfolio']>>, ParentType, ContextType, Partial<GqlUserPortfoliosArgs>>;
+  preferredLanguage?: Resolver<GqlResolversTypes['Language'], ParentType, ContextType>;
   reservationStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;
   reservations?: Resolver<Maybe<Array<GqlResolversTypes['Reservation']>>, ParentType, ContextType>;
   slug?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
