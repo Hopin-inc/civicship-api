@@ -18,6 +18,17 @@ type Participation = {
 };
 
 /**
+ * Mapping of participation status reasons to their expected reservation statuses.
+ * Used for validating consistency between reservation and participation states.
+ */
+const REASON_STATUS_MAP: Record<string, ReservationStatus> = {
+  [ParticipationStatusReason.RESERVATION_APPLIED]: ReservationStatus.APPLIED,
+  [ParticipationStatusReason.RESERVATION_ACCEPTED]: ReservationStatus.ACCEPTED,
+  [ParticipationStatusReason.RESERVATION_REJECTED]: ReservationStatus.REJECTED,
+  [ParticipationStatusReason.RESERVATION_CANCELED]: ReservationStatus.CANCELED,
+};
+
+/**
  * Validates the consistency between reservation and participation states.
  * Returns an array of validation error messages (empty if valid).
  */
@@ -29,14 +40,7 @@ function validateConsistency(
   const hasEvaluation = !!participation.evaluationId;
 
   // Rule 1: Validate reason-reservationStatus consistency
-  const reasonStatusMap: Record<string, ReservationStatus> = {
-    [ParticipationStatusReason.RESERVATION_APPLIED]: ReservationStatus.APPLIED,
-    [ParticipationStatusReason.RESERVATION_ACCEPTED]: ReservationStatus.ACCEPTED,
-    [ParticipationStatusReason.RESERVATION_REJECTED]: ReservationStatus.REJECTED,
-    [ParticipationStatusReason.RESERVATION_CANCELED]: ReservationStatus.CANCELED,
-  };
-
-  const expectedReservationStatus = reasonStatusMap[participation.reason];
+  const expectedReservationStatus = REASON_STATUS_MAP[participation.reason];
   if (
     expectedReservationStatus &&
     expectedReservationStatus !== reservation.status &&
@@ -61,15 +65,15 @@ function validateConsistency(
         break;
       }
 
-      const allowedStatuses = hasEvaluation
-        ? [ParticipationStatus.PARTICIPATED, ParticipationStatus.NOT_PARTICIPATING]
-        : [ParticipationStatus.PARTICIPATING, ParticipationStatus.NOT_PARTICIPATING];
+      const expectedStatus = hasEvaluation
+        ? ParticipationStatus.PARTICIPATED
+        : ParticipationStatus.PARTICIPATING;
+      const allowedStatuses = [expectedStatus, ParticipationStatus.NOT_PARTICIPATING];
 
       if (!allowedStatuses.includes(participation.status)) {
         const evaluationText = hasEvaluation ? "with" : "without";
-        const expectedStatusText = hasEvaluation ? "PARTICIPATED" : "PARTICIPATING";
         errors.push(
-          `ACCEPTED reservation ${evaluationText} evaluation expects ${expectedStatusText} or NOT_PARTICIPATING, got ${participation.status}`,
+          `ACCEPTED reservation ${evaluationText} evaluation expects ${expectedStatus} or NOT_PARTICIPATING, got ${participation.status}`,
         );
       }
       break;
