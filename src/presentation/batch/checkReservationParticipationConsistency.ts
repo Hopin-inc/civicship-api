@@ -21,7 +21,7 @@ type Participation = {
  * Mapping of participation status reasons to their expected reservation statuses.
  * Used for validating consistency between reservation and participation states.
  */
-const REASON_STATUS_MAP: Record<string, ReservationStatus> = {
+const REASON_STATUS_MAP: Partial<Record<ParticipationStatusReason, ReservationStatus>> = {
   [ParticipationStatusReason.RESERVATION_APPLIED]: ReservationStatus.APPLIED,
   [ParticipationStatusReason.RESERVATION_ACCEPTED]: ReservationStatus.ACCEPTED,
   [ParticipationStatusReason.RESERVATION_REJECTED]: ReservationStatus.REJECTED,
@@ -61,33 +61,40 @@ function validateConsistency(
   // Rules 3-5: Validate states based on reservation status
   switch (reservation.status) {
     case ReservationStatus.ACCEPTED: {
-      if (participation.reason !== ParticipationStatusReason.RESERVATION_ACCEPTED) {
-        break;
-      }
+      if (participation.reason === ParticipationStatusReason.RESERVATION_ACCEPTED) {
+        const expectedStatus = hasEvaluation
+          ? ParticipationStatus.PARTICIPATED
+          : ParticipationStatus.PARTICIPATING;
+        const allowedStatuses = [expectedStatus, ParticipationStatus.NOT_PARTICIPATING];
 
-      const expectedStatus = hasEvaluation
-        ? ParticipationStatus.PARTICIPATED
-        : ParticipationStatus.PARTICIPATING;
-      const allowedStatuses = [expectedStatus, ParticipationStatus.NOT_PARTICIPATING];
-
-      if (!allowedStatuses.includes(participation.status)) {
-        const evaluationText = hasEvaluation ? "with" : "without";
+        if (!allowedStatuses.includes(participation.status)) {
+          const evaluationText = hasEvaluation ? "with" : "without";
+          errors.push(
+            `ACCEPTED reservation ${evaluationText} evaluation expects ${expectedStatus} or NOT_PARTICIPATING, got ${participation.status}`,
+          );
+        }
+      } else if (participation.reason !== ParticipationStatusReason.OPPORTUNITY_CANCELED) {
         errors.push(
-          `ACCEPTED reservation ${evaluationText} evaluation expects ${expectedStatus} or NOT_PARTICIPATING, got ${participation.status}`,
+          `ACCEPTED reservation expects RESERVATION_ACCEPTED reason, got ${participation.reason}`,
         );
       }
       break;
     }
 
     case ReservationStatus.APPLIED: {
-      if (
-        participation.reason === ParticipationStatusReason.RESERVATION_APPLIED &&
-        ![ParticipationStatus.PENDING, ParticipationStatus.NOT_PARTICIPATING].includes(
-          participation.status,
-        )
-      ) {
+      if (participation.reason === ParticipationStatusReason.RESERVATION_APPLIED) {
+        if (
+          ![ParticipationStatus.PENDING, ParticipationStatus.NOT_PARTICIPATING].includes(
+            participation.status,
+          )
+        ) {
+          errors.push(
+            `APPLIED reservation expects PENDING or NOT_PARTICIPATING, got ${participation.status}`,
+          );
+        }
+      } else if (participation.reason !== ParticipationStatusReason.OPPORTUNITY_CANCELED) {
         errors.push(
-          `APPLIED reservation expects PENDING or NOT_PARTICIPATING, got ${participation.status}`,
+          `APPLIED reservation expects RESERVATION_APPLIED reason, got ${participation.reason}`,
         );
       }
       break;
@@ -95,6 +102,20 @@ function validateConsistency(
 
     case ReservationStatus.REJECTED:
     case ReservationStatus.CANCELED: {
+      const expectedReason =
+        reservation.status === ReservationStatus.REJECTED
+          ? ParticipationStatusReason.RESERVATION_REJECTED
+          : ParticipationStatusReason.RESERVATION_CANCELED;
+
+      if (
+        participation.reason !== expectedReason &&
+        participation.reason !== ParticipationStatusReason.OPPORTUNITY_CANCELED
+      ) {
+        errors.push(
+          `${reservation.status} reservation expects ${expectedReason} reason, got ${participation.reason}`,
+        );
+      }
+
       if (participation.status !== ParticipationStatus.NOT_PARTICIPATING) {
         errors.push(
           `${reservation.status} reservation must have NOT_PARTICIPATING status, got ${participation.status}`,
@@ -125,10 +146,20 @@ export async function checkReservationParticipationConsistency() {
 
       reservations.forEach((r) => {
         if (!r.participations || r.participations.length === 0) {
-          logger.warn("⚠️ Reservation has no participations", {
-            reservationId: r.id,
-            reservationStatus: r.status,
-          });
+          // ACCEPTED reservations should always have participations - treat as error
+          if (r.status === ReservationStatus.ACCEPTED) {
+            totalErrors++;
+            reservationsWithErrors++;
+            logger.error("❌ ACCEPTED reservation has no participations", {
+              reservationId: r.id,
+              reservationStatus: r.status,
+            });
+          } else {
+            logger.warn("⚠️ Reservation has no participations", {
+              reservationId: r.id,
+              reservationStatus: r.status,
+            });
+          }
           return;
         }
 
