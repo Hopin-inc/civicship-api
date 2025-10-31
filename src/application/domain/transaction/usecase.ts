@@ -162,9 +162,7 @@ export default class TransactionUseCase {
     );
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      await this.membershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
-
-      const toWallet = await this.walletService.createMemberWalletIfNeeded(
+      const toWallet = await this.walletService.findMemberWalletOrThrow(
         ctx,
         toUserId,
         communityId,
@@ -186,9 +184,7 @@ export default class TransactionUseCase {
       );
     });
 
-    const fromUser = await ctx.loaders.user.load(currentUserId);
-    const fromUserName = fromUser?.name ?? "ユーザー";
-
+    const fromUserName = ctx.currentUser?.name ?? "ユーザー";
     this.notificationService
       .pushPointDonationReceivedMessage(
         ctx,
