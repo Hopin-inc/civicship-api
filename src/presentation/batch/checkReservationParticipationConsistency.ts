@@ -54,58 +54,49 @@ function validateConsistency(
     );
   }
 
-  // Rule 3: Validate ACCEPTED reservation states
-  if (
-    reservation.status === ReservationStatus.ACCEPTED &&
-    participation.reason === ParticipationStatusReason.RESERVATION_ACCEPTED
-  ) {
-    if (hasEvaluation) {
-      // After evaluation: PARTICIPATED or NOT_PARTICIPATING (if canceled) is allowed
+  // Rules 3-5: Validate states based on reservation status
+  switch (reservation.status) {
+    case ReservationStatus.ACCEPTED: {
+      if (participation.reason !== ParticipationStatusReason.RESERVATION_ACCEPTED) {
+        break;
+      }
+
+      const allowedStatuses = hasEvaluation
+        ? [ParticipationStatus.PARTICIPATED, ParticipationStatus.NOT_PARTICIPATING]
+        : [ParticipationStatus.PARTICIPATING, ParticipationStatus.NOT_PARTICIPATING];
+
+      if (!allowedStatuses.includes(participation.status)) {
+        const evaluationText = hasEvaluation ? "with" : "without";
+        const expectedStatusText = hasEvaluation ? "PARTICIPATED" : "PARTICIPATING";
+        errors.push(
+          `ACCEPTED reservation ${evaluationText} evaluation expects ${expectedStatusText} or NOT_PARTICIPATING, got ${participation.status}`,
+        );
+      }
+      break;
+    }
+
+    case ReservationStatus.APPLIED: {
       if (
-        ![ParticipationStatus.PARTICIPATED, ParticipationStatus.NOT_PARTICIPATING].includes(
+        participation.reason === ParticipationStatusReason.RESERVATION_APPLIED &&
+        ![ParticipationStatus.PENDING, ParticipationStatus.NOT_PARTICIPATING].includes(
           participation.status,
         )
       ) {
         errors.push(
-          `ACCEPTED reservation with evaluation expects PARTICIPATED or NOT_PARTICIPATING, got ${participation.status}`,
+          `APPLIED reservation expects PENDING or NOT_PARTICIPATING, got ${participation.status}`,
         );
       }
-    } else {
-      // Before evaluation: PARTICIPATING or NOT_PARTICIPATING (if canceled) is allowed
-      if (
-        ![ParticipationStatus.PARTICIPATING, ParticipationStatus.NOT_PARTICIPATING].includes(
-          participation.status,
-        )
-      ) {
+      break;
+    }
+
+    case ReservationStatus.REJECTED:
+    case ReservationStatus.CANCELED: {
+      if (participation.status !== ParticipationStatus.NOT_PARTICIPATING) {
         errors.push(
-          `ACCEPTED reservation without evaluation expects PARTICIPATING or NOT_PARTICIPATING, got ${participation.status}`,
+          `${reservation.status} reservation must have NOT_PARTICIPATING status, got ${participation.status}`,
         );
       }
-    }
-  }
-
-  // Rule 4: APPLIED reservations should have PENDING or NOT_PARTICIPATING status
-  if (
-    reservation.status === ReservationStatus.APPLIED &&
-    participation.reason === ParticipationStatusReason.RESERVATION_APPLIED
-  ) {
-    if (
-      ![ParticipationStatus.PENDING, ParticipationStatus.NOT_PARTICIPATING].includes(
-        participation.status,
-      )
-    ) {
-      errors.push(
-        `APPLIED reservation expects PENDING or NOT_PARTICIPATING, got ${participation.status}`,
-      );
-    }
-  }
-
-  // Rule 5: REJECTED/CANCELED reservations must have NOT_PARTICIPATING status
-  if ([ReservationStatus.REJECTED, ReservationStatus.CANCELED].includes(reservation.status)) {
-    if (participation.status !== ParticipationStatus.NOT_PARTICIPATING) {
-      errors.push(
-        `${reservation.status} reservation must have NOT_PARTICIPATING status, got ${participation.status}`,
-      );
+      break;
     }
   }
 
