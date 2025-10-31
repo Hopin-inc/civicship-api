@@ -67,15 +67,13 @@ function validateConsistency(
   switch (reservation.status) {
     case ReservationStatus.ACCEPTED: {
       if (participation.reason === ParticipationStatusReason.RESERVATION_ACCEPTED) {
-        const expectedStatus = hasEvaluation
-          ? ParticipationStatus.PARTICIPATED
-          : ParticipationStatus.PARTICIPATING;
-        const allowedStatuses = [expectedStatus, ParticipationStatus.NOT_PARTICIPATING];
-
-        if (!allowedStatuses.includes(participation.status)) {
-          const evaluationText = hasEvaluation ? "with" : "without";
+        if (
+          !hasEvaluation &&
+          participation.status !== ParticipationStatus.PARTICIPATING &&
+          participation.status !== ParticipationStatus.NOT_PARTICIPATING
+        ) {
           errors.push(
-            `ACCEPTED reservation ${evaluationText} evaluation expects ${expectedStatus} or NOT_PARTICIPATING, got ${participation.status}`,
+            `ACCEPTED reservation without evaluation expects PARTICIPATING or NOT_PARTICIPATING, got ${participation.status}`,
           );
         }
       } else {
