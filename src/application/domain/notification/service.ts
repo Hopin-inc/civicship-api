@@ -375,11 +375,12 @@ export default class NotificationService {
     fromUserName: string,
     toUserId: string,
   ) {
-    const preparedData = await this.prepareLinePushWithLanguage(
+    const preparedData = await this.prepareLinePush(
       ctx,
       toUserId,
       transactionId,
       "pushPointDonationReceivedMessage",
+      { includeLanguage: true },
     );
 
     if (!preparedData) {
@@ -408,11 +409,12 @@ export default class NotificationService {
     communityName: string,
     toUserId: string,
   ) {
-    const preparedData = await this.prepareLinePushWithLanguage(
+    const preparedData = await this.prepareLinePush(
       ctx,
       toUserId,
       transactionId,
       "pushPointGrantReceivedMessage",
+      { includeLanguage: true },
     );
 
     if (!preparedData) {
@@ -505,82 +507,52 @@ export default class NotificationService {
     userId: string,
     transactionId: string,
     logContext: string,
-  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient } | null> {
-    const uid = await this.userService.findLineUidForCommunity(ctx, userId, ctx.communityId);
-
-    if (!uid) {
-      logger.warn(`${logContext}: lineUid is missing`, {
-        transactionId,
-        userId,
-        communityId: ctx.communityId,
-      });
-      return null;
-    }
-
-    let liffBaseUrl: string;
-    try {
-      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
-      liffBaseUrl = liffConfig.liffBaseUrl;
-    } catch (error) {
-      logger.error(`${logContext}: failed to get LIFF config`, {
-        transactionId,
-        communityId: ctx.communityId,
-        err: error,
-      });
-      return null;
-    }
-
-    const client = await createLineClient(ctx.communityId);
-
-    return { uid, liffBaseUrl, client };
-  }
-
-  private async prepareLinePushWithLanguage(
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient } | null>;
+  private async prepareLinePush(
     ctx: IContext,
     userId: string,
     transactionId: string,
     logContext: string,
-  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language: Language } | null> {
-    const toUser = await ctx.issuer.internal(async (tx) => {
-      return tx.user.findUnique({
-        where: { id: userId },
-        select: {
-          preferredLanguage: true,
-          identities: {
-            select: {
-              platform: true,
-              uid: true,
-              communityId: true,
-            },
-          },
-        },
-      });
-    });
+    options: { includeLanguage: true },
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language: Language } | null>;
+  private async prepareLinePush(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+    options?: { includeLanguage?: boolean },
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language?: Language } | null> {
+    let uid: string;
+    let language: Language | undefined;
 
-    if (!toUser) {
-      logger.warn(`${logContext}: user not found`, {
-        transactionId,
+    if (options?.includeLanguage) {
+      const result = await this.userService.findLineUidAndLanguageForCommunity(
+        ctx,
         userId,
-        communityId: ctx.communityId,
-      });
-      return null;
+        ctx.communityId,
+      );
+      if (!result) {
+        logger.warn(`${logContext}: lineUid is missing`, {
+          transactionId,
+          userId,
+          communityId: ctx.communityId,
+        });
+        return null;
+      }
+      uid = result.uid;
+      language = result.language;
+    } else {
+      const foundUid = await this.userService.findLineUidForCommunity(ctx, userId, ctx.communityId);
+      if (!foundUid) {
+        logger.warn(`${logContext}: lineUid is missing`, {
+          transactionId,
+          userId,
+          communityId: ctx.communityId,
+        });
+        return null;
+      }
+      uid = foundUid;
     }
-
-    const uid = toUser.identities.find(
-      (identity) =>
-        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
-    )?.uid;
-
-    if (!uid) {
-      logger.warn(`${logContext}: lineUid is missing`, {
-        transactionId,
-        userId,
-        communityId: ctx.communityId,
-      });
-      return null;
-    }
-
-    const language = toUser.preferredLanguage || Language.JA;
 
     let liffBaseUrl: string;
     try {
@@ -597,7 +569,10 @@ export default class NotificationService {
 
     const client = await createLineClient(ctx.communityId);
 
-    return { uid, liffBaseUrl, client, language };
+    if (options?.includeLanguage && language) {
+      return { uid, liffBaseUrl, client, language };
+    }
+    return { uid, liffBaseUrl, client };
   }
 
   private extractLineUidsFromParticipations(
