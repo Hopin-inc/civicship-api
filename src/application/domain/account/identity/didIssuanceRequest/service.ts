@@ -264,7 +264,8 @@ export class DIDIssuanceService {
         return "completed";
       }
     } catch (checkError) {
-      logger.warn(`Failed to check existing DID for recovery`, { checkError });
+      logger.warn(`Failed to check existing DID for recovery, re-throwing`, { checkError });
+      throw checkError;
     }
 
     logger.info(`Resetting DID request ${request.id} for retry due to job expiration`);
