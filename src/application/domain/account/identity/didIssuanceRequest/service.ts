@@ -59,12 +59,16 @@ export class DIDIssuanceService {
     }
 
     let { token, isValid } = this.evaluateTokenValidity(identity);
+    let refreshAttempted = false;
+    let refreshSucceeded = false;
 
     if (!isValid && identity.refreshToken) {
+      refreshAttempted = true;
       const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
       if (refreshed) {
         token = refreshed.authToken;
         isValid = true;
+        refreshSucceeded = true;
       } else {
         logger.warn("Token refresh failed, proceeding with existing token");
       }
@@ -105,7 +109,16 @@ export class DIDIssuanceService {
       return { success: true, requestId: didRequest.id, jobId: response.jobId };
     } catch (error) {
       const classified = classifyError(error, !!token);
-      const errorContext = this.buildErrorContext(classified, token, isValid, identity, didRequest.id, userId);
+      const errorContext = this.buildErrorContext(
+        classified,
+        token,
+        isValid,
+        identity,
+        didRequest.id,
+        userId,
+        refreshAttempted,
+        refreshSucceeded,
+      );
       logger.error(`💥 Error in DID request:`, errorContext);
 
       await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
@@ -137,20 +150,6 @@ export class DIDIssuanceService {
       token: identity.authToken,
       isValid: !isExpired,
     };
-  }
-
-  private async markIssuanceFailed(
-    ctx: IContext,
-    requestId: string,
-    error: unknown,
-  ): Promise<{ success: false; requestId: string }> {
-    await this.didIssuanceRequestRepository.update(ctx, requestId, {
-      status: DidIssuanceStatus.FAILED,
-      errorMessage: error instanceof Error ? error.message : "Unknown error",
-    });
-
-    logger.error("DIDIssuanceService.requestDIDIssuance: failed", error);
-    return { success: false, requestId };
   }
 
   async refreshAuthToken(
@@ -195,11 +194,12 @@ export class DIDIssuanceService {
     identity: Identity,
     requestId: string,
     userId: string,
+    refreshAttempted: boolean,
+    refreshSucceeded: boolean,
   ) {
     const tokenStatus = !token ? "MISSING" : !isValid ? "EXPIRED" : "VALID";
-    const refreshAttempted = !isValid && identity.refreshToken ? "YES" : "NO";
-    const refreshResult =
-      refreshAttempted === "YES" && isValid ? "SUCCESS" : refreshAttempted === "YES" ? "FAILED" : "N/A";
+    const refreshAttemptedStr = refreshAttempted ? "YES" : "NO";
+    const refreshResult = !refreshAttempted ? "N/A" : refreshSucceeded ? "SUCCESS" : "FAILED";
 
     return {
       requestId,
@@ -208,7 +208,7 @@ export class DIDIssuanceService {
       httpStatus: classified.httpStatus,
       message: classified.message,
       tokenStatus,
-      refreshAttempted,
+      refreshAttempted: refreshAttemptedStr,
       refreshResult,
       ...(classified.requestDetails && {
         url: classified.requestDetails.url,
@@ -230,7 +230,7 @@ export class DIDIssuanceService {
   async resetRequestForRetry(ctx: IContext, requestId: string, reason: string): Promise<void> {
     await this.didIssuanceRequestRepository.update(ctx, requestId, {
       status: DidIssuanceStatus.PENDING,
-      jobId: null,
+      jobId: undefined,
       retryCount: 0,
       errorMessage: `Auto-reset: ${reason}`,
     });
@@ -290,8 +290,11 @@ export class DIDIssuanceService {
 
     // トークン検証と更新
     let { token, isValid } = this.evaluateTokenValidity(phoneIdentity);
+    let refreshAttempted = false;
+    let refreshSucceeded = false;
 
     if (!isValid && phoneIdentity.refreshToken) {
+      refreshAttempted = true;
       const refreshed = await this.refreshAuthToken(
         phoneIdentity.uid,
         phoneIdentity.refreshToken,
@@ -300,6 +303,7 @@ export class DIDIssuanceService {
       if (refreshed) {
         token = refreshed.authToken;
         isValid = true;
+        refreshSucceeded = true;
       } else {
         logger.warn(
           `Token refresh failed for ${phoneIdentity.uid}, marking request ${request.id} for retry`,
@@ -376,6 +380,8 @@ export class DIDIssuanceService {
         phoneIdentity,
         request.id,
         request.userId,
+        refreshAttempted,
+        refreshSucceeded,
       );
       logger.error(`💥 Error in DID sync:`, errorContext);
 
