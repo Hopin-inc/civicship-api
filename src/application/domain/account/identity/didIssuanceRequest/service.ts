@@ -6,7 +6,13 @@ import { IDIDIssuanceRequestRepository } from "@/application/domain/account/iden
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import { DidIssuanceRequest, DidIssuanceStatus, Identity, User } from "@prisma/client";
-import { classifyError, PERMANENTLY_FAILED_RETRY_COUNT } from "@/infrastructure/utils/errorClassifier";
+import {
+  classifyError,
+  ClassifiedError,
+  ErrorCategory,
+  PERMANENTLY_FAILED_RETRY_COUNT,
+} from "@/infrastructure/utils/errorClassifier";
+import { maskSensitiveData } from "@/infrastructure/utils/maskSensitiveData";
 
 type DidIssuanceRequestWithUser = DidIssuanceRequest & {
   user: User & {
@@ -98,7 +104,17 @@ export class DIDIssuanceService {
 
       return { success: true, requestId: didRequest.id, jobId: response.jobId };
     } catch (error) {
-      return this.markIssuanceFailed(ctx, didRequest.id, error);
+      const classified = classifyError(error, !!token);
+      const errorContext = this.buildErrorContext(classified, token, isValid, identity, didRequest.id, userId);
+      logger.error(`💥 Error in DID request:`, errorContext);
+
+      await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
+        status: DidIssuanceStatus.FAILED,
+        errorMessage: this.buildDbErrorMessage(classified),
+        retryCount: { increment: 1 },
+      });
+
+      return { success: false, requestId: didRequest.id };
     }
   }
 
@@ -170,6 +186,90 @@ export class DIDIssuanceService {
       );
       return null;
     }
+  }
+
+  private buildErrorContext(
+    classified: ClassifiedError,
+    token: string | null,
+    isValid: boolean,
+    identity: Identity,
+    requestId: string,
+    userId: string,
+  ) {
+    const tokenStatus = !token ? "MISSING" : !isValid ? "EXPIRED" : "VALID";
+    const refreshAttempted = !isValid && identity.refreshToken ? "YES" : "NO";
+    const refreshResult =
+      refreshAttempted === "YES" && isValid ? "SUCCESS" : refreshAttempted === "YES" ? "FAILED" : "N/A";
+
+    return {
+      requestId,
+      userId,
+      category: classified.category,
+      httpStatus: classified.httpStatus,
+      message: classified.message,
+      tokenStatus,
+      refreshAttempted,
+      refreshResult,
+      ...(classified.requestDetails && {
+        url: classified.requestDetails.url,
+        method: classified.requestDetails.method,
+        hasToken: classified.requestDetails.hasToken,
+        requestData: maskSensitiveData(classified.requestDetails.requestData),
+        responseData: classified.requestDetails.responseData,
+      }),
+    };
+  }
+
+  private buildDbErrorMessage(classified: ClassifiedError): string {
+    return classified.requestDetails
+      ? `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} | ` +
+          `URL: ${classified.requestDetails.url} | Token: ${classified.requestDetails.hasToken ? "yes" : "no"}`
+      : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
+  }
+
+  private async resetRequestForRetry(ctx: IContext, requestId: string, reason: string): Promise<void> {
+    await this.didIssuanceRequestRepository.update(ctx, requestId, {
+      status: DidIssuanceStatus.PENDING,
+      jobId: null,
+      retryCount: 0,
+      errorMessage: `Auto-reset: ${reason}`,
+    });
+    logger.info(`🔄 Reset request ${requestId} for retry: ${reason}`);
+  }
+
+  private async attemptDidJob404Recovery(
+    ctx: IContext,
+    request: DidIssuanceRequest,
+    phoneIdentity: Identity,
+    token: string,
+  ): Promise<"completed" | "reset" | "not-applicable"> {
+    logger.warn(`Job ${request.jobId} not found, attempting recovery for request ${request.id}`);
+
+    try {
+      const existingDid = await this.client.call<{ status: string; did: string }>(
+        phoneIdentity.uid,
+        token,
+        "/did",
+        "GET",
+      );
+
+      if (existingDid?.status === "PUBLISHED" && existingDid.did) {
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.COMPLETED,
+          didValue: existingDid.did,
+          completedAt: new Date(),
+          errorMessage: "Recovered: Job expired but DID was already published",
+        });
+        logger.info(`✅ DID recovered as completed: ${request.id}, didValue: ${existingDid.did}`);
+        return "completed";
+      }
+    } catch (checkError) {
+      logger.warn(`Failed to check existing DID for recovery: ${checkError}`);
+    }
+
+    logger.info(`Resetting DID request ${request.id} for retry due to job expiration`);
+    await this.resetRequestForRetry(ctx, request.id, "Job expired in Redis");
+    return "reset";
   }
 
   async syncJobStatus(
@@ -259,48 +359,31 @@ export class DIDIssuanceService {
       });
       return { success: true, status: "retrying" };
     } catch (error) {
-      // エラー分類
       const classified = classifyError(error, !!token);
 
-      // 詳細ログ（400系エラーの場合はリクエスト詳細も含める）
-      if (classified.requestDetails) {
-        logger.error(`💥 Error in DID request ${request.id} with request details:`, {
-          requestId: request.id,
-          userId: request.userId,
-          jobId: request.jobId,
-          category: classified.category,
-          httpStatus: classified.httpStatus,
-          message: classified.message,
-          url: classified.requestDetails.url,
-          method: classified.requestDetails.method,
-          hasToken: classified.requestDetails.hasToken,
-          requestData: classified.requestDetails.requestData,
-          responseData: classified.requestDetails.responseData,
-        });
-      } else {
-        logger.error(`💥 Error in DID request ${request.id}:`, {
-          requestId: request.id,
-          userId: request.userId,
-          jobId: request.jobId,
-          category: classified.category,
-          httpStatus: classified.httpStatus,
-          message: classified.message,
-        });
+      if (classified.category === ErrorCategory.NOT_FOUND && classified.httpStatus === 404) {
+        const outcome = await this.attemptDidJob404Recovery(ctx, request, phoneIdentity, token);
+        return {
+          success: outcome === "completed",
+          status: outcome === "completed" ? "completed" : "retrying",
+        };
       }
 
-      if (!classified.shouldRetry) {
-        // リトライ不要なエラー → 即座にFAILED
-        // エラーメッセージには必要最小限の情報のみを保存（DBサイズ制限対策）
-        // 詳細なrequestData/responseDataは上記のlogger.errorで出力済み
-        const errorMessage = classified.requestDetails
-          ? `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} | ` +
-            `URL: ${classified.requestDetails.url} | Method: ${classified.requestDetails.method} | ` +
-            `Token: ${classified.requestDetails.hasToken ? "yes" : "no"}`
-          : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
+      const errorContext = this.buildErrorContext(
+        classified,
+        token,
+        isValid,
+        phoneIdentity,
+        request.id,
+        request.userId,
+      );
+      logger.error(`💥 Error in DID sync:`, errorContext);
 
+      // リトライ不要なエラー → 即座にFAILED
+      if (!classified.shouldRetry) {
         await this.didIssuanceRequestRepository.update(ctx, request.id, {
           status: DidIssuanceStatus.FAILED,
-          errorMessage,
+          errorMessage: this.buildDbErrorMessage(classified),
           retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
         });
         return { success: false, status: "failed" };
@@ -313,7 +396,7 @@ export class DIDIssuanceService {
         // リトライ回数超過 → FAILED
         await this.didIssuanceRequestRepository.update(ctx, request.id, {
           status: DidIssuanceStatus.FAILED,
-          errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} (max retries exceeded)`,
+          errorMessage: `${this.buildDbErrorMessage(classified)} (max retries exceeded)`,
           retryCount: newRetryCount,
         });
         return { success: false, status: "failed" };
@@ -322,7 +405,7 @@ export class DIDIssuanceService {
       // まだリトライ可能
       await this.didIssuanceRequestRepository.update(ctx, request.id, {
         retryCount: { increment: 1 },
-        errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`,
+        errorMessage: this.buildDbErrorMessage(classified),
       });
       return { success: false, status: "retrying" };
     }
