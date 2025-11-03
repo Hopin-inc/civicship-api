@@ -230,7 +230,7 @@ export class DIDIssuanceService {
   async resetRequestForRetry(ctx: IContext, requestId: string, reason: string): Promise<void> {
     await this.didIssuanceRequestRepository.update(ctx, requestId, {
       status: DidIssuanceStatus.PENDING,
-      jobId: undefined,
+      jobId: null,
       retryCount: 0,
       errorMessage: `Auto-reset: ${reason}`,
     });
@@ -264,7 +264,7 @@ export class DIDIssuanceService {
         return "completed";
       }
     } catch (checkError) {
-      logger.warn(`Failed to check existing DID for recovery: ${checkError}`);
+      logger.warn(`Failed to check existing DID for recovery`, { checkError });
     }
 
     logger.info(`Resetting DID request ${request.id} for retry due to job expiration`);
