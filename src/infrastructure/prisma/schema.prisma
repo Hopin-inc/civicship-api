@@ -823,6 +823,7 @@ model Participation {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@index([userId])
+  @@index([reservationId])
   @@map("t_participations")
 }
 

@@ -1,9 +1,15 @@
 import DataLoader from "dataloader";
 import stringify from "json-stable-stringify";
 import logger from "@/infrastructure/logging";
+import { instrumentBatchFn } from "./instrumentation";
 
 type RecordWithKey<K extends string> = Record<K, string | null>; // nullableの外部キーに対応（e.g. transaction.participation.id）
 type RequestWithFilterAndSort<F, S> = { key: string; filter: F; sort: S };
+
+type DataLoaderOptions = {
+  name?: string;
+  instrument?: boolean;
+};
 
 //
 // 単一リソース取得用の汎用DataLoader（id → 1件）
@@ -12,8 +18,9 @@ type RequestWithFilterAndSort<F, S> = { key: string; filter: F; sort: S };
 export function createLoaderById<R extends { id: string }, G>(
   fetch: (ids: readonly string[]) => Promise<R[]>,
   format: (record: R) => G,
+  options?: DataLoaderOptions,
 ): DataLoader<string, G | null> {
-  return new DataLoader<string, G | null>(async (ids) => {
+  const batchFn = async (ids: readonly string[]) => {
     const records = await fetch(ids);
     const map = new Map<string, G>();
 
@@ -22,7 +29,13 @@ export function createLoaderById<R extends { id: string }, G>(
     }
 
     return ids.map((id) => map.get(id) ?? null);
-  });
+  };
+
+  const finalBatchFn = options?.instrument && options?.name
+    ? instrumentBatchFn(options.name, batchFn)
+    : batchFn;
+
+  return new DataLoader<string, G | null>(finalBatchFn);
 }
 
 //
@@ -33,22 +46,29 @@ export function createLoaderByCompositeKey<K extends object, R, G>(
   fetch: (keys: readonly K[]) => Promise<R[]>,
   keyFn: (record: R) => K,
   format: (record: R) => G,
+  options?: DataLoaderOptions,
 ): DataLoader<K, G | null, string> {
+  const batchFn = async (keys: readonly K[]) => {
+    const records = await fetch(keys);
+    const map = new Map<string, G>();
+
+    for (const record of records) {
+      const key = stringify(keyFn(record)) ?? "invalid";
+      map.set(key, format(record));
+    }
+
+    return keys.map((key) => {
+      const cacheKey = stringify(key) ?? "invalid";
+      return map.get(cacheKey) ?? null;
+    });
+  };
+
+  const finalBatchFn = options?.instrument && options?.name
+    ? instrumentBatchFn(options.name, batchFn)
+    : batchFn;
+
   return new DataLoader<K, G | null, string>(
-    async (keys) => {
-      const records = await fetch(keys);
-      const map = new Map<string, G>();
-
-      for (const record of records) {
-        const key = stringify(keyFn(record)) ?? "invalid";
-        map.set(key, format(record));
-      }
-
-      return keys.map((key) => {
-        const cacheKey = stringify(key) ?? "invalid";
-        return map.get(cacheKey) ?? null;
-      });
-    },
+    finalBatchFn,
     {
       cacheKeyFn: (key) => stringify(key) ?? "invalid",
     },
@@ -62,13 +82,20 @@ export function createLoaderByCompositeKey<K extends object, R, G>(
 export function createNullableLoaderById<R extends { id: string }, G>(
   fetch: (ids: readonly string[]) => Promise<R[]>,
   format: (record: R) => G,
+  options?: DataLoaderOptions,
 ): DataLoader<string | null | undefined, G | null> {
-  return new DataLoader(async (keys) => {
+  const batchFn = async (keys: readonly (string | null | undefined)[]) => {
     const validKeys = keys.filter((k): k is string => !!k);
     const records = await fetch(validKeys);
     const map = new Map(records.map((r) => [r.id, format(r)]));
     return keys.map((k) => (k ? (map.get(k) ?? null) : null));
-  });
+  };
+
+  const finalBatchFn = options?.instrument && options?.name
+    ? instrumentBatchFn(options.name, batchFn)
+    : batchFn;
+
+  return new DataLoader(finalBatchFn);
 }
 
 //
@@ -79,8 +106,9 @@ export function createHasManyLoaderByKey<K extends string, R extends RecordWithK
   key: K,
   fetch: (keys: readonly string[]) => Promise<R[]>,
   format: (record: R) => G,
+  options?: DataLoaderOptions,
 ): DataLoader<string, G[]> {
-  return new DataLoader<string, G[]>(async (keys) => {
+  const batchFn = async (keys: readonly string[]) => {
     const records = await fetch(keys);
     const grouped = new Map<string, G[]>();
 
@@ -95,7 +123,13 @@ export function createHasManyLoaderByKey<K extends string, R extends RecordWithK
     }
 
     return keys.map((k) => grouped.get(k) ?? []);
-  });
+  };
+
+  const finalBatchFn = options?.instrument && options?.name
+    ? instrumentBatchFn(options.name, batchFn)
+    : batchFn;
+
+  return new DataLoader<string, G[]>(finalBatchFn);
 }
 
 //
@@ -106,8 +140,9 @@ export function createHasManyLoaderViaJoin<K extends string, R, G>(
   keyField: K,
   fetch: (keys: readonly string[]) => Promise<Array<{ [key in K]: string } & { record: R }>>,
   format: (record: R) => G,
+  options?: DataLoaderOptions,
 ): DataLoader<string, G[]> {
-  return new DataLoader<string, G[]>(async (keys) => {
+  const batchFn = async (keys: readonly string[]) => {
     const joinedRecords = await fetch(keys);
     const grouped = new Map<string, G[]>();
 
@@ -120,7 +155,13 @@ export function createHasManyLoaderViaJoin<K extends string, R, G>(
     }
 
     return keys.map((k) => grouped.get(k) ?? []);
-  });
+  };
+
+  const finalBatchFn = options?.instrument && options?.name
+    ? instrumentBatchFn(options.name, batchFn)
+    : batchFn;
+
+  return new DataLoader<string, G[]>(finalBatchFn);
 }
 
 //
@@ -137,37 +178,44 @@ export function createFilterSortAwareHasManyLoaderByKey<
   keyField: K,
   fetch: (keyValue: string, filter: F, sort: S) => Promise<R[]>,
   format: (record: R) => G,
+  options?: DataLoaderOptions,
 ): DataLoader<RequestWithFilterAndSort<F, S>, G[], string> {
+  const batchFn = async (requests: readonly RequestWithFilterAndSort<F, S>[]) => {
+    const grouped = new Map<string, RequestWithFilterAndSort<F, S>[]>();
+
+    for (const request of requests) {
+      const maybeKey = stringify(request);
+      if (!maybeKey) continue;
+      if (!grouped.has(maybeKey)) grouped.set(maybeKey, []);
+      grouped.get(maybeKey)!.push(request);
+    }
+
+    const results = new Map<string, G[]>();
+
+    for (const [cacheKey, group] of grouped.entries()) {
+      if (!group.length || !group[0].key) {
+        results.set(cacheKey, []);
+        continue;
+      }
+
+      const { key: keyValue, filter, sort } = group[0];
+      const records = await fetch(keyValue, filter, sort);
+      results.set(cacheKey, records.map(format));
+    }
+
+    return requests.map((req) => {
+      const cacheKey = stringify(req);
+      if (!cacheKey) return [];
+      return results.get(cacheKey) ?? [];
+    });
+  };
+
+  const finalBatchFn = options?.instrument && options?.name
+    ? instrumentBatchFn(options.name, batchFn)
+    : batchFn;
+
   return new DataLoader<RequestWithFilterAndSort<F, S>, G[], string>(
-    async (requests) => {
-      const grouped = new Map<string, RequestWithFilterAndSort<F, S>[]>();
-
-      for (const request of requests) {
-        const maybeKey = stringify(request);
-        if (!maybeKey) continue;
-        if (!grouped.has(maybeKey)) grouped.set(maybeKey, []);
-        grouped.get(maybeKey)!.push(request);
-      }
-
-      const results = new Map<string, G[]>();
-
-      for (const [cacheKey, group] of grouped.entries()) {
-        if (!group.length || !group[0].key) {
-          results.set(cacheKey, []);
-          continue;
-        }
-
-        const { key: keyValue, filter, sort } = group[0];
-        const records = await fetch(keyValue, filter, sort);
-        results.set(cacheKey, records.map(format));
-      }
-
-      return requests.map((req) => {
-        const cacheKey = stringify(req);
-        if (!cacheKey) return [];
-        return results.get(cacheKey) ?? [];
-      });
-    },
+    finalBatchFn,
     {
       cacheKeyFn: (key) => stringify(key) ?? "invalid",
     },

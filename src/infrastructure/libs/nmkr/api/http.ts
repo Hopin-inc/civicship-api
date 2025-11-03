@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from "axios";
+import { AxiosInstance, AxiosError, AxiosRequestConfig } from "axios";
+import { createHttpClient } from "@/infrastructure/http/client";
 
 export class NmkrApiError extends Error {
   constructor(
@@ -82,27 +83,29 @@ export const createNmkrHttpClient = (): AxiosInstance => {
   const baseURL = process.env.NMKR_BASE_URL!;
   const apiKey = process.env.NMKR_API_KEY!;
 
-  const client = axios.create({
+  const client = createHttpClient({
     baseURL,
-    timeout: 15_000,
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "text/plain",
-    },
-    transformResponse: [
-      (data) => {
-        if (typeof data === "string") {
-          try {
-            return JSON.parse(data);
-          } catch {
-            return data;
-          }
-        }
-        return data;
-      },
-    ],
+    timeoutMs: 15_000,
+    keepAlive: true,
+    label: "nmkr",
   });
+
+  client.defaults.headers.common["Authorization"] = `Bearer ${apiKey}`;
+  client.defaults.headers.common["Content-Type"] = "application/json";
+  client.defaults.headers.common["Accept"] = "text/plain";
+
+  client.defaults.transformResponse = [
+    (data) => {
+      if (typeof data === "string") {
+        try {
+          return JSON.parse(data);
+        } catch {
+          return data;
+        }
+      }
+      return data;
+    },
+  ];
 
   client.interceptors.request.use(
     (config) => {
