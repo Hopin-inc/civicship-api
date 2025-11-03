@@ -88,25 +88,16 @@ export async function createDIDRequests(
       continue;
     }
 
-    const existingRequest = user.didIssuanceRequests?.[0];
+    const requestToReset = user.didIssuanceRequests?.find(needsReset);
+    const pendingRequest = user.didIssuanceRequests?.find((r) => r.jobId === null);
+    const existingRequest = requestToReset || pendingRequest;
 
     if (existingRequest && needsReset(existingRequest)) {
-      logger.info(
-        `🔄 Resetting request ${existingRequest.id} for user ${user.id} ` +
-          `(status: ${existingRequest.status}, retryCount: ${existingRequest.retryCount})`,
+      await didService.resetRequestForRetry(
+        ctx,
+        existingRequest.id,
+        `Previous status=${existingRequest.status}, retryCount=${existingRequest.retryCount}`,
       );
-
-      await issuer.public(ctx, async (tx) => {
-        await tx.didIssuanceRequest.update({
-          where: { id: existingRequest.id },
-          data: {
-            status: DidIssuanceStatus.PENDING,
-            jobId: null,
-            retryCount: 0,
-            errorMessage: `Auto-reset: Previous status=${existingRequest.status}, retryCount=${existingRequest.retryCount}`,
-          },
-        });
-      });
     }
 
     try {
