@@ -223,7 +223,7 @@ export class DIDIssuanceService {
   private buildDbErrorMessage(classified: ClassifiedError): string {
     return classified.requestDetails
       ? `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} | ` +
-          `URL: ${classified.requestDetails.url} | Token: ${classified.requestDetails.hasToken ? "yes" : "no"}`
+          `URL: ${classified.requestDetails.url} | Method: ${classified.requestDetails.method} | Token: ${classified.requestDetails.hasToken ? "yes" : "no"}`
       : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
   }
 
