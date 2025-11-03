@@ -14,7 +14,7 @@ type Participation = {
   id: string;
   status: ParticipationStatus;
   reason: ParticipationStatusReason;
-  evaluationId: string | null;
+  evaluation: { id: string } | null;
 };
 
 /**
@@ -32,7 +32,7 @@ function validateConsistency(
   participation: Participation,
 ): string[] {
   const errors: string[] = [];
-  const hasEvaluation = !!participation.evaluationId;
+  const hasEvaluation = !!participation.evaluation;
 
   // Rule 1: OPPORTUNITY_CANCELED must always have NOT_PARTICIPATING status
   if (participation.reason === ParticipationStatusReason.OPPORTUNITY_CANCELED) {
@@ -146,7 +146,13 @@ export async function checkReservationParticipationConsistency() {
           },
         },
         include: {
-          participations: true,
+          participations: {
+            include: {
+              evaluation: {
+                select: { id: true },
+              },
+            },
+          },
         },
       });
 
@@ -187,7 +193,8 @@ export async function checkReservationParticipationConsistency() {
               participationId: p.id,
               participationStatus: p.status,
               participationReason: p.reason,
-              hasEvaluation: !!p.evaluationId,
+              hasEvaluation: !!p.evaluation,
+              evaluationId: p.evaluation?.id ?? null,
               violations: validationErrors,
             });
           }
