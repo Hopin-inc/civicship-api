@@ -40,7 +40,7 @@ export function maskSensitiveData(data: unknown): unknown {
     for (const [key, value] of Object.entries(data)) {
       const lowerKey = key.toLowerCase();
       if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
-        if (typeof value === "string" && value.length > 0) {
+        if (typeof value === "string" && value.length > 8) {
           masked[key] = `${value.substring(0, 4)}...${value.substring(value.length - 4)}`;
         } else {
           masked[key] = "***MASKED***";

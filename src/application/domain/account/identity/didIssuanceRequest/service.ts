@@ -227,7 +227,7 @@ export class DIDIssuanceService {
       : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
   }
 
-  private async resetRequestForRetry(ctx: IContext, requestId: string, reason: string): Promise<void> {
+  async resetRequestForRetry(ctx: IContext, requestId: string, reason: string): Promise<void> {
     await this.didIssuanceRequestRepository.update(ctx, requestId, {
       status: DidIssuanceStatus.PENDING,
       jobId: null,
@@ -242,7 +242,7 @@ export class DIDIssuanceService {
     request: DidIssuanceRequest,
     phoneIdentity: Identity,
     token: string,
-  ): Promise<"completed" | "reset" | "not-applicable"> {
+  ): Promise<"completed" | "reset"> {
     logger.warn(`Job ${request.jobId} not found, attempting recovery for request ${request.id}`);
 
     try {
