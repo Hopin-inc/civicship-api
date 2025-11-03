@@ -98,6 +98,9 @@ export default class EvaluationUseCase {
           communityId,
         );
       });
+      await ctx.issuer.internal(async (tx) => {
+        await this.transactionService.refreshCurrentPoint(ctx, tx);
+      });
     } catch (error) {
       logger.warn("Point transfer failed for evaluation", {
         evaluationId: evaluation.id,
