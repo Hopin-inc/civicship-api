@@ -89,16 +89,15 @@ export async function createDIDRequests(
     }
 
     const requestToReset = user.didIssuanceRequests?.find(needsReset);
-    const pendingRequest = user.didIssuanceRequests?.find((r) => r.jobId === null);
-    const existingRequest = requestToReset || pendingRequest;
-
-    if (existingRequest && needsReset(existingRequest)) {
+    if (requestToReset) {
       await didService.resetRequestForRetry(
         ctx,
-        existingRequest.id,
-        `Previous status=${existingRequest.status}, retryCount=${existingRequest.retryCount}`,
+        requestToReset.id,
+        `Previous status=${requestToReset.status}, retryCount=${requestToReset.retryCount}`,
       );
     }
+
+    const existingRequest = requestToReset || user.didIssuanceRequests?.find((r) => r.jobId === null);
 
     try {
       const result = await didService.requestDIDIssuance(
