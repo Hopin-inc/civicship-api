@@ -16,6 +16,8 @@ import { correlationMiddleware } from "@/presentation/middleware/correlation";
 import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import cookieParser from "cookie-parser";
 import { handleSessionLogin } from "@/presentation/middleware/session";
+import { warmUpPrisma, checkDatabaseHealth } from "@/infrastructure/prisma/warmup";
+import { setupGracefulShutdown } from "@/infrastructure/prisma/shutdown";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -35,6 +37,8 @@ async function startServer() {
   } else {
     server = http.createServer(app);
   }
+
+  await warmUpPrisma();
 
   const apolloServer = await createApolloServer(server);
 
@@ -73,8 +77,13 @@ async function startServer() {
   app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);
 
-  app.get("/health", (req, res) => {
-    res.status(200).json({ status: "healthy", service: "internal-api" });
+  app.get("/health", async (req, res) => {
+    const isHealthy = await checkDatabaseHealth();
+    if (isHealthy) {
+      res.status(200).json({ status: "healthy", service: "internal-api", db: "connected" });
+    } else {
+      res.status(503).json({ status: "unhealthy", service: "internal-api", db: "disconnected" });
+    }
   });
 
   server.listen(port, () => {
@@ -84,6 +93,8 @@ async function startServer() {
 
     logger.info(`🚀 Server ready at ${url}`);
   });
+
+  setupGracefulShutdown(server);
 }
 
 async function main() {
