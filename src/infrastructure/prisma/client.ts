@@ -4,6 +4,7 @@ import { ITXClientDenyList } from "@prisma/client/runtime/library";
 import { AuthorizationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import { injectable } from "tsyringe";
+import { getPerfAggregator } from "@/infrastructure/observability/als";
 
 type Transaction = Omit<PrismaClient, ITXClientDenyList>;
 type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
@@ -17,6 +18,14 @@ export const prismaClient = new PrismaClient({
   ],
 });
 prismaClient.$on("query", async ({ query, params, duration }) => {
+  const aggregator = getPerfAggregator();
+  if (aggregator) {
+    aggregator.add("db.query", duration, {
+      query: query.substring(0, 100),
+      duration,
+    });
+  }
+
   logger.debug("Prisma query executed", {
     query,
     params,
@@ -33,6 +42,23 @@ prismaClient.$on("query", async ({ query, params, duration }) => {
 });
 prismaClient.$on("error", async ({ message, target }) => {
   logger.error("Prisma: Error occurred.", { message, target });
+});
+
+prismaClient.$use(async (params, next) => {
+  const start = performance.now();
+  const result = await next(params);
+  const duration = performance.now() - start;
+
+  const aggregator = getPerfAggregator();
+  if (aggregator) {
+    aggregator.add("db.operation", duration, {
+      model: params.model,
+      action: params.action,
+      durationMs: Number(duration.toFixed(2)),
+    });
+  }
+
+  return result;
 });
 
 @injectable()

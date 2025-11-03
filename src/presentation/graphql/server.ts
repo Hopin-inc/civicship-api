@@ -6,6 +6,7 @@ import schema from "@/presentation/graphql/schema";
 import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
 import { rules } from "@/presentation/graphql/rule";
 import { armorProtection } from "@/presentation/graphql/plugins/armor";
+import { createPerfPlugin } from "@/presentation/graphql/plugins/perfPlugin";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -14,6 +15,7 @@ export async function createApolloServer(httpServer: http.Server) {
     schema,
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
+      createPerfPlugin(),
       ...armorProtection.plugins,
       authZApolloPlugin({
         rules,

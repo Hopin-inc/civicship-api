@@ -12,6 +12,7 @@ import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
 import { requestLogger } from "@/presentation/middleware/logger";
 import { customProcessRequest } from "@/presentation/middleware/custom-process-request";
+import { correlationMiddleware } from "@/presentation/middleware/correlation";
 import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import cookieParser from "cookie-parser";
 import { handleSessionLogin } from "@/presentation/middleware/session";
@@ -46,6 +47,7 @@ async function startServer() {
     next();
   });
   app.use(requestLogger);
+  app.use(correlationMiddleware);
 
   app.use(corsHandler);
   app.use(express.json({ limit: "50mb" }));
