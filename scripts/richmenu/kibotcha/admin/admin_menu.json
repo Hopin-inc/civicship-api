@@ -9,10 +9,10 @@
   "areas": [
     {
       "bounds": {
-        "x": 95,
-        "y": 146,
-        "width": 980,
-        "height": 318
+        "x": 135,
+        "y": 95,
+        "width": 687,
+        "height": 250
       },
       "action": {
         "type": "richmenuswitch",
@@ -22,23 +22,10 @@
     },
     {
       "bounds": {
-        "x": 0,
-        "y": 0,
-        "width": 2500,
-        "height": 843
-      },
-      "action": {
-        "type": "uri",
-        "label": "管理者ホーム",
-        "uri": "${LIFF_BASE_URL}/admin/wallet"
-      }
-    },
-    {
-      "bounds": {
-        "x": 0,
-        "y": 843,
-        "width": 1250,
-        "height": 843
+        "x": 324,
+        "y": 787,
+        "width": 740,
+        "height": 428
       },
       "action": {
         "type": "uri",
@@ -48,10 +35,10 @@
     },
     {
       "bounds": {
-        "x": 1250,
-        "y": 843,
-        "width": 1250,
-        "height": 843
+        "x": 1436,
+        "y": 787,
+        "width": 740,
+        "height": 428
       },
       "action": {
         "type": "uri",
