@@ -1093,6 +1093,8 @@ model Transaction {
 
   merkleProofs MerkleProof[]
 
+  @@index([from, createdAt(sort: Desc), id])
+  @@index([to, createdAt(sort: Desc), id])
   @@map("t_transactions")
 }
 

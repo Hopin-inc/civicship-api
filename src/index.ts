@@ -18,6 +18,8 @@ import cookieParser from "cookie-parser";
 import { handleSessionLogin } from "@/presentation/middleware/session";
 import { warmUpPrisma, checkDatabaseHealth } from "@/infrastructure/prisma/warmup";
 import { setupGracefulShutdown } from "@/infrastructure/prisma/shutdown";
+import compression from "compression";
+import { filter as defaultCompressionFilter } from "compression";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -54,6 +56,28 @@ async function startServer() {
   app.use(correlationMiddleware);
 
   app.use(corsHandler);
+  
+  app.use(compression({
+    threshold: 1024,
+    level: 6,
+    filter: (req, res) => {
+      const contentType = String(res.getHeader('Content-Type') || '');
+      
+      if (req.headers.accept?.includes('text/event-stream')) {
+        return false;
+      }
+      
+      if (/^(image|audio|video)\//i.test(contentType)) {
+        return false;
+      }
+      if (/^application\/octet-stream/i.test(contentType)) {
+        return false;
+      }
+      
+      return defaultCompressionFilter(req, res);
+    },
+  }));
+  
   app.use(express.json({ limit: "50mb" }));
   app.use(
     graphqlUploadExpress({
@@ -87,6 +111,10 @@ async function startServer() {
   });
 
   server.listen(port, () => {
+    server.keepAliveTimeout = 65_000;  // 65 seconds (Portal's undici uses 60s)
+    server.headersTimeout = 66_000;    // Must be > keepAliveTimeout
+    server.requestTimeout = 30_000;    // 30 seconds
+
     const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
     const host = "localhost";
     const url = `${protocol}://${host}:${port}/graphql`;
