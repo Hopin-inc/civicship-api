@@ -13,9 +13,6 @@ type BatchResult = {
   skippedCount: number;
 };
 
-/**
- * 未リクエストユーザーを検索し、DIDリクエストを作成・送信するバッチ処理
- */
 export async function createDIDRequests(
   issuer: PrismaClientIssuer,
   didService: DIDIssuanceService,
@@ -75,7 +72,8 @@ export async function createDIDRequests(
   const needsReset = (request: DidIssuanceRequest) => {
     return (
       (request.status === DidIssuanceStatus.FAILED && request.didValue === null) ||
-      (request.status === DidIssuanceStatus.PROCESSING && request.retryCount >= STUCK_RETRY_THRESHOLD)
+      (request.status === DidIssuanceStatus.PROCESSING &&
+        request.retryCount >= STUCK_RETRY_THRESHOLD)
     );
   };
 
@@ -97,7 +95,8 @@ export async function createDIDRequests(
       );
     }
 
-    const existingRequest = requestToReset || user.didIssuanceRequests?.find((r) => r.jobId === null);
+    const existingRequest =
+      requestToReset || user.didIssuanceRequests?.find((r) => r.jobId === null);
 
     try {
       const result = await didService.requestDIDIssuance(
