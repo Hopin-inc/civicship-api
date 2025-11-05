@@ -10,7 +10,7 @@ import logger from "../../src/infrastructure/logging";
 import * as path from "path";
 import * as fs from "fs";
 import { pipeline } from "stream/promises";
-import { storage, gcsBucketName } from "../../src/infrastructure/libs/storage";
+import { storage, gcsBucketName, getPublicUrl } from "../../src/infrastructure/libs/storage";
 
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
@@ -194,7 +194,8 @@ async function main() {
 
       const filePath = path.join(NFTS_DIR, file);
       const gcsFileName = `${uploaded.nftUid}.jpg`;
-      const gcsFilePath = `nfts/${COMMUNITY_ID}/${gcsFileName}`;
+      const gcsFolderPath = `nfts/${COMMUNITY_ID}`;
+      const gcsFilePath = `${gcsFolderPath}/${gcsFileName}`;
       const gcsFile = storage.bucket(gcsBucketName).file(gcsFilePath);
 
       await pipeline(
@@ -205,7 +206,7 @@ async function main() {
         })
       );
 
-      const gcsUrl = `https://storage.googleapis.com/${gcsBucketName}/${gcsFilePath}`;
+      const gcsUrl = getPublicUrl(gcsFileName, gcsFolderPath);
 
       logger.info("✅ NFT uploaded to GCS", {
         file,
@@ -219,19 +220,22 @@ async function main() {
         description: nftPayload.description!,
         imageUrl: gcsUrl,
         json: (() => {
-          try {
-            const parsedMetadata = uploaded.metadata ? JSON.parse(uploaded.metadata) : {};
-            return {
-              ...parsedMetadata,
-              ipfsUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
-              ipfsHash: uploaded.ipfsHashMainnft,
-            };
-          } catch {
-            return {
-              ipfsUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
-              ipfsHash: uploaded.ipfsHashMainnft,
-            };
+          let parsedMetadata = {};
+          if (uploaded.metadata) {
+            try {
+              parsedMetadata = JSON.parse(uploaded.metadata);
+            } catch (e) {
+              logger.warn("Failed to parse NMKR metadata. It will be ignored.", {
+                nftUid: uploaded.nftUid,
+                error: e instanceof Error ? e.message : String(e),
+              });
+            }
           }
+          return {
+            ...parsedMetadata,
+            ipfsUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
+            ipfsHash: uploaded.ipfsHashMainnft,
+          };
         })(),
       });
     } catch (err) {
