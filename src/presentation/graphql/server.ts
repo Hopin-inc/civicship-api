@@ -7,17 +7,13 @@ import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
 import { rules } from "@/presentation/graphql/rule";
 import { armorProtection } from "@/presentation/graphql/plugins/armor";
 import { createPerfPlugin } from "@/presentation/graphql/plugins/perfPlugin";
-import { createApolloCache } from "@/presentation/graphql/cache";
 import { createResponseCachePlugin } from "@/presentation/graphql/plugins/responseCachePlugin";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 export async function createApolloServer(httpServer: http.Server) {
-  const cache = createApolloCache();
-
   const server = new ApolloServer({
     schema,
-    cache,
     plugins: [
       ApolloServerPluginDrainHttpServer({ httpServer }),
       createPerfPlugin(),

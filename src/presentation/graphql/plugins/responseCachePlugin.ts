@@ -1,6 +1,7 @@
 import responseCachePlugin from '@apollo/server-plugin-response-cache';
 import type { IContext } from '@/types/server';
 import logger from '@/infrastructure/logging';
+import { getCorrelationId } from '@/infrastructure/observability/als';
 
 const CACHEABLE_OPERATIONS = new Set([
   'getTransactions',
@@ -8,28 +9,18 @@ const CACHEABLE_OPERATIONS = new Set([
 
 const CACHE_SAMPLE_RATE = 1.0;
 
-const DEFAULT_TTL = 2;
-
-let cacheHits = 0;
-let cacheMisses = 0;
-let cacheWrites = 0;
+let cacheEligible = 0;
 let cacheBypasses = 0;
 
 setInterval(() => {
-  const total = cacheHits + cacheMisses + cacheBypasses;
+  const total = cacheEligible + cacheBypasses;
   if (total > 0) {
-    const hitRate = total > 0 ? (cacheHits / (cacheHits + cacheMisses) * 100).toFixed(2) : '0.00';
     logger.info('[apollo-cache] Metrics', {
-      hits: cacheHits,
-      misses: cacheMisses,
+      eligible: cacheEligible,
       bypasses: cacheBypasses,
-      writes: cacheWrites,
-      hitRate: `${hitRate}%`,
       sampleRate: CACHE_SAMPLE_RATE,
     });
-    cacheHits = 0;
-    cacheMisses = 0;
-    cacheWrites = 0;
+    cacheEligible = 0;
     cacheBypasses = 0;
   }
 }, 60_000);
@@ -52,8 +43,7 @@ function shouldCacheRequest(requestContext: any): boolean {
   }
 
   if (CACHE_SAMPLE_RATE < 1.0) {
-    const ctx = requestContext.contextValue as IContext;
-    const correlationId = ctx?.correlationId || '';
+    const correlationId = getCorrelationId() || '';
     const lastChar = correlationId.slice(-1);
     const hash = parseInt(lastChar, 16) || 0;
     if (hash / 16 > CACHE_SAMPLE_RATE) {
@@ -66,30 +56,22 @@ function shouldCacheRequest(requestContext: any): boolean {
 
 export function createResponseCachePlugin() {
   return responseCachePlugin({
-    defaultMaxAge: DEFAULT_TTL,
-    
-    sessionId: (requestContext) => {
+    sessionId: async (requestContext) => {
       const ctx = requestContext.contextValue as IContext;
-      const communityId = ctx?.communityId ?? 'public';
-      const uid = ctx?.uid ?? 'anon';
-      return `${communityId}:${uid}`;
+      if ('communityId' in ctx && 'uid' in ctx) {
+        const communityId = ctx.communityId ?? 'public';
+        const uid = ctx.uid ?? 'anon';
+        return `${communityId}:${uid}`;
+      }
+      return 'public:anon';
     },
 
     shouldReadFromCache: async (requestContext) => {
-      if (!shouldCacheRequest(requestContext)) {
-        return false;
+      const shouldCache = shouldCacheRequest(requestContext);
+      if (shouldCache) {
+        cacheEligible++;
       }
-
-      const cacheKey = requestContext.cache.keyFor(requestContext.request);
-      const cached = await requestContext.cache.get(cacheKey);
-      
-      if (cached) {
-        cacheHits++;
-      } else {
-        cacheMisses++;
-      }
-
-      return true;
+      return shouldCache;
     },
 
     shouldWriteToCache: async (requestContext) => {
@@ -106,35 +88,7 @@ export function createResponseCachePlugin() {
         return false;
       }
 
-      cacheWrites++;
       return true;
-    },
-
-    async willSendResponse(requestContext) {
-      if (process.env.NODE_ENV === 'development') {
-        const ctx = requestContext.contextValue as IContext;
-        const bypassHeader = requestContext.request.http?.headers.get('x-bypass-response-cache');
-        
-        let cacheStatus = 'MISS';
-        if (bypassHeader === '1') {
-          cacheStatus = 'BYPASS';
-        } else if (shouldCacheRequest(requestContext)) {
-          const cacheKey = requestContext.cache.keyFor(requestContext.request);
-          const cached = await requestContext.cache.get(cacheKey);
-          if (cached) {
-            cacheStatus = 'HIT';
-          }
-        }
-
-        requestContext.response.http?.headers.set(
-          'X-Apollo-Response-Cache',
-          cacheStatus
-        );
-        requestContext.response.http?.headers.set(
-          'X-Apollo-Cache-Key',
-          `${ctx?.communityId}:${ctx?.uid}`
-        );
-      }
     },
   });
 }
