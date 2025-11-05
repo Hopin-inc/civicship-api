@@ -17,6 +17,7 @@ import {
 } from "@/infrastructure/prisma/factories/factory";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { processInBatches } from "@/utils/array";
+import { seedNfts } from "./nft";
 import {
   Opportunity,
   OpportunitySlot,
@@ -106,7 +107,7 @@ export async function seedUsecase() {
   await createTransactions(wallets);
 
   console.info("🎨 Creating NFTs (tokens, instances, wallets)...");
-  await createNfts(users, imagePool);
+  await seedNfts(users);
 
   console.info("🎉 All seeding steps completed!");
 }
@@ -304,99 +305,4 @@ async function createTransactions(wallets: Wallet[]) {
       });
     },
   );
-}
-
-async function createNfts(users: User[], imagePool: { id: string }[]) {
-  const ethToken = await prismaClient.nftToken.create({
-    data: {
-      id: "tok_eth_1",
-      address: "0x0000000000000000000000000000000000000000",
-      type: "ERC-721",
-      name: "Local ETH NFT",
-      symbol: "LNFT",
-      json: {},
-    },
-  });
-
-  const adaToken = await prismaClient.nftToken.create({
-    data: {
-      id: "tok_ada_1",
-      address: "aabbccddeeff00112233445566778899aabbccddeeff001122334455",
-      type: "CIP-25",
-      name: "Local ADA NFT",
-      symbol: "LANFT",
-      json: {},
-    },
-  });
-
-  for (let i = 0; i < users.length; i++) {
-    const user = users[i];
-    const userIndex = i + 1;
-
-    const externalWallet = await prismaClient.nftWallet.create({
-      data: {
-        id: `nft_wallet_ext_${userIndex}`,
-        type: "EXTERNAL",
-        walletAddress: `0x${userIndex.toString(16).padStart(40, "0")}`,
-        userId: user.id,
-      },
-    });
-
-    const internalWallet = await prismaClient.nftWallet.create({
-      data: {
-        id: `nft_wallet_int_${userIndex}`,
-        type: "INTERNAL",
-        walletAddress: `cs-internal-${user.id}`,
-        userId: user.id,
-      },
-    });
-
-    await prismaClient.nftInstance.create({
-      data: {
-        id: `ins_eth_${userIndex}`,
-        instanceId: `local-eth-${userIndex}`,
-        name: `Local ETH NFT #${userIndex}`,
-        description: `For local test - User ${userIndex}`,
-        imageUrl: `https://picsum.photos/seed/civicship-eth-${userIndex}/800/450`,
-        json: {},
-        nftTokenId: ethToken.id,
-        nftWalletId: externalWallet.id,
-        status: "OWNED",
-      },
-    });
-
-    const assetNameHex = (0x434f4f4c4e4654 + i).toString(16).toUpperCase();
-    await prismaClient.nftInstance.create({
-      data: {
-        id: `ins_ada_${userIndex}`,
-        instanceId: `local-ada-${userIndex}`,
-        name: `Local ADA NFT #${userIndex}`,
-        description: `For local test - User ${userIndex}`,
-        imageUrl: `https://picsum.photos/seed/civicship-ada-${userIndex}/800/450`,
-        json: {
-          "721": {
-            "aabbccddeeff00112233445566778899aabbccddeeff001122334455": {
-              [assetNameHex]: { name: `COOLNFT${userIndex}` },
-            },
-          },
-        },
-        nftTokenId: adaToken.id,
-        nftWalletId: internalWallet.id,
-        status: "OWNED",
-      },
-    });
-  }
-
-  await prismaClient.nftInstance.create({
-    data: {
-      id: "ins_ada_policy",
-      instanceId: "local-ada-policy",
-      name: "Local ADA NFT (Policy Only)",
-      description: "For local test - Policy page demo",
-      imageUrl: "https://picsum.photos/seed/civicship-ada-policy/800/450",
-      json: {},
-      nftTokenId: adaToken.id,
-      status: "STOCK",
-    },
-  });
 }
