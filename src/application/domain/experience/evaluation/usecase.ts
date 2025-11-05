@@ -78,6 +78,9 @@ export default class EvaluationUseCase {
     );
 
     await this.processPassedEvaluationEffects(ctx, createdEvaluations, currentUserId, communityId);
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
 
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
@@ -97,9 +100,6 @@ export default class EvaluationUseCase {
           currentUserId,
           communityId,
         );
-      });
-      await ctx.issuer.internal(async (tx) => {
-        await this.transactionService.refreshCurrentPoint(ctx, tx);
       });
     } catch (error) {
       logger.warn("Point transfer failed for evaluation", {
