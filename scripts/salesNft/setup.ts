@@ -9,6 +9,8 @@ import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
 import logger from "../../src/infrastructure/logging";
 import * as path from "path";
 import * as fs from "fs";
+import { pipeline } from "stream/promises";
+import { storage, gcsBucketName } from "../../src/infrastructure/libs/storage";
 
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
@@ -184,10 +186,30 @@ async function main() {
     try {
       const uploaded = await nmkrClient.uploadNft(project.uid, nftPayload);
 
-      logger.info("✅ NFT uploaded", {
+      logger.info("✅ NFT uploaded to NMKR", {
         file,
         nftUid: uploaded.nftUid,
         assetId: uploaded.assetId,
+      });
+
+      const filePath = path.join(NFTS_DIR, file);
+      const gcsFileName = `${uploaded.nftUid}.jpg`;
+      const gcsFilePath = `nfts/${COMMUNITY_ID}/${gcsFileName}`;
+      const gcsFile = storage.bucket(gcsBucketName).file(gcsFilePath);
+
+      await pipeline(
+        fs.createReadStream(filePath),
+        gcsFile.createWriteStream({
+          metadata: { contentType: "image/jpeg" },
+          resumable: false,
+        })
+      );
+
+      const gcsUrl = `https://storage.googleapis.com/${gcsBucketName}/${gcsFilePath}`;
+
+      logger.info("✅ NFT uploaded to GCS", {
+        file,
+        gcsUrl,
       });
 
       uploadedItems.push({
@@ -195,19 +217,27 @@ async function main() {
         sequenceNum: i + 1,
         name: displayname,
         description: nftPayload.description!,
-        imageUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
+        imageUrl: gcsUrl,
         json: (() => {
           try {
-            return uploaded.metadata ? JSON.parse(uploaded.metadata) : {};
+            const parsedMetadata = uploaded.metadata ? JSON.parse(uploaded.metadata) : {};
+            return {
+              ...parsedMetadata,
+              ipfsUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
+              ipfsHash: uploaded.ipfsHashMainnft,
+            };
           } catch {
-            return {};
+            return {
+              ipfsUrl: `https://ipfs.io/ipfs/${uploaded.ipfsHashMainnft}`,
+              ipfsHash: uploaded.ipfsHashMainnft,
+            };
           }
         })(),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       failures.push({ file, error: message });
-      logger.error("❌ Failed to upload NFT to NMKR", { file, error: message });
+      logger.error("❌ Failed to upload NFT", { file, error: message });
     }
   }
 
