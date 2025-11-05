@@ -2,6 +2,7 @@ import {
   ArticleFactory,
   CommunityConfigFactory,
   CommunityFactory,
+  ImageFactory,
   MembershipFactory,
   OpportunityFactory,
   OpportunitySlotFactory,
@@ -34,10 +35,16 @@ import {
 
 const BATCH_SIZE = 10; // edit this ONLY when seeding is slow to the extent database connections are established properly
 const NUM_UTILITIES = 3;
-const NUM_SLOTS_PER_OPPORTUNITY = 3;
+const NUM_SLOTS_PER_OPPORTUNITY = 2;
 const NUM_RESERVATIONS_PER_SLOT = 1;
 const NUM_TRANSACTIONS = 5;
-const NUM_PLACES = 100;
+const NUM_PLACES = 10;
+const NUM_USERS = 5;
+const NUM_IMAGE_POOL = 10;
+
+function pickRandomImage(images: { id: string }[]) {
+  return images[Math.floor(Math.random() * images.length)];
+}
 
 export async function seedUsecase() {
   // await prismaClient.opportunity.updateMany({
@@ -67,44 +74,55 @@ export async function seedUsecase() {
         t_utilities,
         t_transactions,
         t_wallets,
+        t_nft_wallets,
+        t_nft_instances,
+        t_nft_tokens,
         t_membership_histories,
         t_memberships,
         t_articles,
         t_places,
-        m_cities,
-        m_states,
         t_users,
         t_communities
       RESTART IDENTITY CASCADE;
     `);
   });
 
+  console.info("🖼️  Creating image pool...");
+  const imagePool = await ImageFactory.createList(NUM_IMAGE_POOL);
+
   console.info("🧱 Creating base User, Community, Wallet, Membership...");
-  const { users, community, wallets } = await createBaseEntitiesForUsers();
+  const { users, community, wallets } = await createBaseEntitiesForUsers(imagePool);
 
   console.info("📍 Creating Places...");
-  const places = await createPlaces(community);
-
-  console.info("🎫 Creating Utilities & Tickets...");
-  await createUtilitiesAndTickets(users, community, wallets);
+  const places = await createPlaces(community, imagePool);
 
   console.info("📣 Creating Opportunities...");
-  const opportunities = await createOpportunities(users, community, places);
+  const opportunities = await createOpportunities(users, community, places, imagePool);
 
   console.info("🧩 Creating Slots, Reservations, Participations, Evaluations, and Articles...");
-  await createNestedEntities(users, community, opportunities);
+  await createNestedEntities(users, community, opportunities, imagePool);
 
   console.info("💸 Creating Transactions...");
   await createTransactions(wallets);
+
+  console.info("🎨 Creating NFTs (tokens, instances, wallets)...");
+  await createNfts(users, imagePool);
 
   console.info("🎉 All seeding steps completed!");
 }
 
 // STEP 1
-async function createBaseEntitiesForUsers() {
+async function createBaseEntitiesForUsers(imagePool: { id: string }[]) {
   const community = await CommunityFactory.create({ id: "neo88" });
   await CommunityConfigFactory.create({ transientCommunity: community });
-  const users = await UserFactory.createList(10);
+  
+  const users = [];
+  for (let i = 0; i < NUM_USERS; i++) {
+    const user = await UserFactory.create({
+      transientImage: pickRandomImage(imagePool),
+    });
+    users.push(user);
+  }
 
   const membershipsAndWallets = await processInBatches(users, BATCH_SIZE, async (user) => {
     const wallet = await WalletFactory.create({
@@ -140,26 +158,41 @@ async function createUtilitiesAndTickets(users: User[], community: Community, wa
 }
 
 // 💡 STEP 1.5 を追加：Placeを複数作成
-async function createPlaces(community: Community) {
-  const results: Place[] = [];
-  for (let i = 0; i < NUM_PLACES / BATCH_SIZE; i++) {
-    results.push(
-      ...(await PlaceFactory.createList(BATCH_SIZE, {
-        transientCommunity: community,
-      })),
+async function createPlaces(community: Community, imagePool: { id: string }[]) {
+  const cities = await prismaClient.city.findMany({
+    select: { code: true },
+    take: NUM_PLACES,
+  });
+
+  if (cities.length === 0) {
+    throw new Error(
+      "No cities found in master data. Please run 'pnpm db:seed-master' first.",
     );
+  }
+
+  const results: Place[] = [];
+  for (let i = 0; i < NUM_PLACES; i++) {
+    const city = cities[i % cities.length];
+    const place = await PlaceFactory.create({
+      transientCommunity: community,
+      transientCity: { code: city.code },
+      transientImage: pickRandomImage(imagePool),
+    });
+    results.push(place);
   }
   return results;
 }
 
 // STEP 3
-async function createOpportunities(users: User[], community: Community, places: Place[]) {
+async function createOpportunities(users: User[], community: Community, places: Place[], imagePool: { id: string }[]) {
   const results: Opportunity[] = [];
   for (let i = 0; i < places.length; i++) {
     const opportunity = await OpportunityFactory.create({
-      transientUser: users[i % users.length], // ラウンドロビン
+      transientUser: users[i % users.length],
       transientCommunity: community,
       transientPlace: places[i],
+      transientUtilities: [],
+      transientImages: [pickRandomImage(imagePool)],
     });
     results.push(opportunity);
   }
@@ -171,6 +204,7 @@ async function createNestedEntities(
   users: User[],
   community: Community,
   opportunities: Opportunity[],
+  imagePool: { id: string }[],
 ) {
   await processInBatches(opportunities, BATCH_SIZE, async (opportunity) => {
     const user = users[opportunities.indexOf(opportunity) % users.length];
@@ -189,27 +223,26 @@ async function createNestedEntities(
         let reservationStatus: ReservationStatus;
 
         if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Scheduled) {
-          // 予定のスロットは申込（未承認）またはキャンセル状態
           reservationStatus =
             Math.random() > 0.5
-              ? GqlReservationStatus.Applied // 50%の確率で未承認
-              : GqlReservationStatus.Canceled; // 50%の確率でキャンセル
+              ? GqlReservationStatus.Applied
+              : GqlReservationStatus.Canceled;
         } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed) {
           reservationStatus =
             Math.random() > 0.5
-              ? GqlReservationStatus.Accepted // 50%の確率で未承認
-              : GqlReservationStatus.Canceled; // 50%の確率でキャンセル
+              ? GqlReservationStatus.Accepted
+              : GqlReservationStatus.Canceled;
         } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Cancelled) {
-          reservationStatus = GqlReservationStatus.Rejected; // キャンセル済み
+          reservationStatus = GqlReservationStatus.Rejected;
         } else {
-          reservationStatus = GqlReservationStatus.Applied; // 他の状態（予期しない場合）は保留状態
+          reservationStatus = GqlReservationStatus.Applied;
         }
 
         reservations.push(
           ...(await ReservationFactory.createList(1, {
             transientUser: user,
             transientSlot: slot,
-            transientStatus: reservationStatus, // 状態を設定
+            transientStatus: reservationStatus,
           })),
         );
       }
@@ -226,12 +259,11 @@ async function createNestedEntities(
         let participationStatus: GqlParticipationStatus;
 
         if (isApplied) {
-          participationStatus = GqlParticipationStatus.Participating; // 未承認は常に未対応
+          participationStatus = GqlParticipationStatus.Participating;
         } else if (!isFuture && isCompleted && isAccepted) {
-          // 過去 + 開催済 + 承認済 のときだけ、未対応に振り分ける
           participationStatus = GqlParticipationStatus.Participating;
         } else {
-          participationStatus = GqlParticipationStatus.Participating; // その他は全て未対応
+          participationStatus = GqlParticipationStatus.Participating;
         }
 
         return ParticipationFactory.create({
@@ -239,6 +271,7 @@ async function createNestedEntities(
           transientReservation: reservation,
           transientCommunity: community,
           transientStatus: participationStatus,
+          transientImages: [pickRandomImage(imagePool)],
         });
       });
 
@@ -256,13 +289,6 @@ async function createNestedEntities(
       //   return evaluation;
       // });
     }
-
-    await ArticleFactory.create({
-      transientCommunity: community,
-      transientAuthor: user,
-      transientRelatedUsers: [user],
-      transientOpportunity: opportunity,
-    });
   });
 }
 
@@ -278,4 +304,99 @@ async function createTransactions(wallets: Wallet[]) {
       });
     },
   );
+}
+
+async function createNfts(users: User[], imagePool: { id: string }[]) {
+  const ethToken = await prismaClient.nftToken.create({
+    data: {
+      id: "tok_eth_1",
+      address: "0x0000000000000000000000000000000000000000",
+      type: "ERC-721",
+      name: "Local ETH NFT",
+      symbol: "LNFT",
+      json: {},
+    },
+  });
+
+  const adaToken = await prismaClient.nftToken.create({
+    data: {
+      id: "tok_ada_1",
+      address: "aabbccddeeff00112233445566778899aabbccddeeff001122334455",
+      type: "CIP-25",
+      name: "Local ADA NFT",
+      symbol: "LANFT",
+      json: {},
+    },
+  });
+
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+    const userIndex = i + 1;
+
+    const externalWallet = await prismaClient.nftWallet.create({
+      data: {
+        id: `nft_wallet_ext_${userIndex}`,
+        type: "EXTERNAL",
+        walletAddress: `0x${userIndex.toString(16).padStart(40, "0")}`,
+        userId: user.id,
+      },
+    });
+
+    const internalWallet = await prismaClient.nftWallet.create({
+      data: {
+        id: `nft_wallet_int_${userIndex}`,
+        type: "INTERNAL",
+        walletAddress: `cs-internal-${user.id}`,
+        userId: user.id,
+      },
+    });
+
+    await prismaClient.nftInstance.create({
+      data: {
+        id: `ins_eth_${userIndex}`,
+        instanceId: `local-eth-${userIndex}`,
+        name: `Local ETH NFT #${userIndex}`,
+        description: `For local test - User ${userIndex}`,
+        imageUrl: `https://picsum.photos/seed/civicship-eth-${userIndex}/800/450`,
+        json: {},
+        nftTokenId: ethToken.id,
+        nftWalletId: externalWallet.id,
+        status: "OWNED",
+      },
+    });
+
+    const assetNameHex = (0x434f4f4c4e4654 + i).toString(16).toUpperCase();
+    await prismaClient.nftInstance.create({
+      data: {
+        id: `ins_ada_${userIndex}`,
+        instanceId: `local-ada-${userIndex}`,
+        name: `Local ADA NFT #${userIndex}`,
+        description: `For local test - User ${userIndex}`,
+        imageUrl: `https://picsum.photos/seed/civicship-ada-${userIndex}/800/450`,
+        json: {
+          "721": {
+            "aabbccddeeff00112233445566778899aabbccddeeff001122334455": {
+              [assetNameHex]: { name: `COOLNFT${userIndex}` },
+            },
+          },
+        },
+        nftTokenId: adaToken.id,
+        nftWalletId: internalWallet.id,
+        status: "OWNED",
+      },
+    });
+  }
+
+  await prismaClient.nftInstance.create({
+    data: {
+      id: "ins_ada_policy",
+      instanceId: "local-ada-policy",
+      name: "Local ADA NFT (Policy Only)",
+      description: "For local test - Policy page demo",
+      imageUrl: "https://picsum.photos/seed/civicship-ada-policy/800/450",
+      json: {},
+      nftTokenId: adaToken.id,
+      status: "STOCK",
+    },
+  });
 }
