@@ -1,5 +1,4 @@
 import {
-  ArticleFactory,
   CommunityConfigFactory,
   CommunityFactory,
   ImageFactory,
@@ -9,15 +8,14 @@ import {
   ParticipationFactory,
   PlaceFactory,
   ReservationFactory,
-  TicketFactory,
   TransactionFactory,
   UserFactory,
-  UtilityFactory,
   WalletFactory,
 } from "@/infrastructure/prisma/factories/factory";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { processInBatches } from "@/utils/array";
 import {
+  NftInstanceStatus,
   Opportunity,
   OpportunitySlot,
   Place,
@@ -33,8 +31,7 @@ import {
   GqlReservationStatus,
 } from "@/types/graphql";
 
-const BATCH_SIZE = 10; // edit this ONLY when seeding is slow to the extent database connections are established properly
-const NUM_UTILITIES = 3;
+const BATCH_SIZE = 10;
 const NUM_SLOTS_PER_OPPORTUNITY = 2;
 const NUM_RESERVATIONS_PER_SLOT = 1;
 const NUM_TRANSACTIONS = 5;
@@ -129,7 +126,7 @@ async function createBaseEntitiesForUsers(imagePool: { id: string }[]) {
   const community = await CommunityFactory.create({ id: "neo88" });
   await CommunityConfigFactory.create({ transientCommunity: community });
   
-  const users = [];
+  const users: User[] = [];
   for (let i = 0; i < NUM_USERS; i++) {
     const user = await UserFactory.create({
       transientImage: pickRandomImage(imagePool),
@@ -154,23 +151,6 @@ async function createBaseEntitiesForUsers(imagePool: { id: string }[]) {
 }
 
 // STEP 2
-async function createUtilitiesAndTickets(users: User[], community: Community, wallets: Wallet[]) {
-  const utilities = await UtilityFactory.createList(NUM_UTILITIES, {
-    transientCommunity: community,
-  });
-
-  await processInBatches(utilities, BATCH_SIZE, async (utility) => {
-    for (let i = 0; i < users.length; i++) {
-      await TicketFactory.create({
-        transientUser: users[i],
-        transientWallet: wallets[i],
-        transientUtility: utility,
-      });
-    }
-  });
-}
-
-// 💡 STEP 1.5 を追加：Placeを複数作成
 async function createPlaces(community: Community, imagePool: { id: string }[]) {
   const cities = await prismaClient.city.findMany({
     select: { code: true },
@@ -382,7 +362,7 @@ async function createNfts(users: User[]) {
               json: {},
               nftTokenId: ETH_TOKEN_ID,
               nftWalletId: `nft_wallet_ext_${userIndex}`,
-              status: "OWNED",
+              status: NftInstanceStatus.OWNED,
             },
             {
               id: `ins_ada_${userIndex}`,
@@ -393,7 +373,7 @@ async function createNfts(users: User[]) {
               json: ada721Json(ADA_POLICY_ID, assetNameHex(i), `COOLNFT${userIndex}`),
               nftTokenId: ADA_TOKEN_ID,
               nftWalletId: `nft_wallet_int_${userIndex}`,
-              status: "OWNED",
+              status: NftInstanceStatus.OWNED,
             },
           ];
         }),
@@ -405,7 +385,7 @@ async function createNfts(users: User[]) {
           imageUrl: "https://picsum.photos/seed/civicship-ada-policy/800/450",
           json: {},
           nftTokenId: ADA_TOKEN_ID,
-          status: "STOCK",
+          status: NftInstanceStatus.STOCK,
         },
       ],
       skipDuplicates: true,
