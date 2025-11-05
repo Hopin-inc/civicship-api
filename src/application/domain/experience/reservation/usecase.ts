@@ -138,6 +138,10 @@ export default class ReservationUseCase {
       return reservation;
     });
 
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
     await this.notificationService.pushReservationAppliedMessage(ctx, reservation);
     if (!requireApproval) {
       await this.notificationService.pushReservationAcceptedMessage(ctx, reservation);
@@ -193,6 +197,10 @@ export default class ReservationUseCase {
       } else {
         throw new ValidationError("Cannot process reservation refund: opportunity community information is missing");
       }
+    });
+
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
     await this.notificationService.pushReservationCanceledMessage(ctx, reservation);
@@ -308,6 +316,10 @@ export default class ReservationUseCase {
 
       rejectedReservation = res;
       return res;
+    });
+
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
     if (rejectedReservation) {
