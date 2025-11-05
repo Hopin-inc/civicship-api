@@ -106,7 +106,7 @@ const IsCommunityMember = preExecRule({
 // 🔐 Opportunity 作成者
 const IsOpportunityOwner = preExecRule({
   error: new AuthorizationError("User must be opportunity owner"),
-})((context: IContext, args: { permission?: { opportunityId?: string } }) => {
+})(async (context: IContext, args: { permission?: { opportunityId?: string } }) => {
   if (context.isAdmin) return true;
 
   const user = context.currentUser;
@@ -114,9 +114,14 @@ const IsOpportunityOwner = preExecRule({
 
   if (!user || !opportunityId) return false;
 
-  return (
-    context.currentUser?.opportunitiesCreatedByMe?.some((op) => op.id === opportunityId) ?? false
+  const opportunity = await context.issuer.internal((tx) =>
+    tx.opportunity.findUnique({
+      where: { id: opportunityId },
+      select: { createdBy: true },
+    }),
   );
+
+  return opportunity?.createdBy === user.id;
 });
 
 const CanReadPhoneNumber = postExecRule({
