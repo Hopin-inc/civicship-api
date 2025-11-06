@@ -34,7 +34,13 @@ export default class ReservationRepository implements IReservationRepository {
     });
   }
 
-  async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return tx.reservation.findUnique({
+        where: { id },
+        include: reservationInclude,
+      });
+    }
     return ctx.issuer.public(ctx, (tx) => {
       return tx.reservation.findUnique({
         where: { id },

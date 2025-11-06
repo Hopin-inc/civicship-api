@@ -214,7 +214,7 @@ export default class ReservationUseCase {
     const currentUserId = getCurrentUserId(ctx);
 
     const reservation = await ctx.issuer.public(ctx, async (tx) => {
-      const res = await this.reservationService.findReservationOrThrow(ctx, id);
+      const res = await this.reservationService.findReservationOrThrow(ctx, id, tx);
 
       const { availableParticipationId } = this.reservationValidator.validateJoinable(
         res,
@@ -356,11 +356,13 @@ export default class ReservationUseCase {
       ctx,
       fromUserId,
       communityId,
+      tx,
     );
     const toWallet = await this.walletService.findMemberWalletOrThrow(
       ctx,
       toUserId,
       communityId,
+      tx,
     );
 
     const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
