@@ -62,6 +62,9 @@ importers:
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
+      '@opentelemetry/core':
+        specifier: ^2.2.0
+        version: 2.2.0(@opentelemetry/api@1.9.0)
       '@opentelemetry/instrumentation-express':
         specifier: ^0.56.0
         version: 0.56.0(@opentelemetry/api@1.9.0)
