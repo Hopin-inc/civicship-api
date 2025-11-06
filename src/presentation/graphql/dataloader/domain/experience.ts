@@ -37,7 +37,7 @@ export function createExperienceLoaders(prisma: PrismaClient) {
       ParticipationStatusHistoryLoaders.createParticipationStatusHistoryLoader(prisma),
     participationStatusHistoriesByParticipation:
       ParticipationStatusHistoryLoaders.createParticipationStatusHistoriesByParticipationLoader(
-        issuer,
+        prisma,
       ),
 
     evaluation: EvaluationLoaders.createEvaluationLoader(prisma),
@@ -49,6 +49,7 @@ export function createExperienceLoaders(prisma: PrismaClient) {
     evaluationHistoriesCreatedByUser:
       EvaluationHistoryLoaders.createEvaluationHistoriesCreatedByUserLoader(prisma),
 
-    vcIssuanceRequestByEvaluation: VcIssuanceRequestLoaders.createVcIssuanceRequestByEvaluationLoader(prisma),
+    vcIssuanceRequestByEvaluation:
+      VcIssuanceRequestLoaders.createVcIssuanceRequestByEvaluationLoader(prisma),
   };
 }
