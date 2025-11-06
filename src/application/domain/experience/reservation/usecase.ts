@@ -173,7 +173,7 @@ export default class ReservationUseCase {
 
       await this.updateManyParticipationByReservationStatusChanged(
         ctx,
-        reservation.participations,
+        res.participations,
         ParticipationStatus.NOT_PARTICIPATING,
         ParticipationStatusReason.RESERVATION_CANCELED,
         tx,
