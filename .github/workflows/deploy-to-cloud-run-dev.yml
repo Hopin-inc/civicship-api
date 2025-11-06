@@ -111,6 +111,7 @@ jobs:
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
         region: ${{ env.GCP_REGION }}
         flags: >
+          --cpu=2
           --cpu-boost
           --concurrency=80
           --min-instances=1
