@@ -12,22 +12,22 @@ const isProduction = process.env.NODE_ENV === "production";
 
 export const prismaClient = new PrismaClient({
   log: [
-    { level: "query", emit: isProduction ? "stdout" : "event" },
+    { level: "query", emit: "event" },
     { level: "error", emit: "event" },
     { level: "info", emit: "stdout" },
     { level: "warn", emit: "stdout" },
   ],
 });
 
-if (!isProduction) {
-  prismaClient.$on("query", async (e) => {
+prismaClient.$on("query", async (e) => {
+  if (!isProduction) {
     logger.debug("Prisma query executed", {
       query: e.query,
       params: e.params,
       duration: e.duration,
     });
-  });
-}
+  }
+});
 
 prismaClient.$use(async (params, next) => {
   const start = Date.now();
