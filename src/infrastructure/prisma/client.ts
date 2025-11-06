@@ -16,18 +16,20 @@ export const prismaClient = new PrismaClient({
     { level: "warn", emit: "stdout" },
   ],
 });
-prismaClient.$on("query", async ({ query, params, duration }) => {
+prismaClient.$on("query", async (e) => {
   logger.debug("Prisma query executed", {
-    query,
-    params,
-    duration,
+    query: e.query,
+    params: e.params,
+    duration: e.duration,
   });
 
-  if (duration > 1000) {
+  if (e.duration > 300) {
+    const isProduction = process.env.NODE_ENV === "production";
     logger.warn("Slow query detected", {
-      query,
-      params,
-      duration,
+      model: e.model ?? "raw",
+      action: e.action ?? "raw",
+      duration: e.duration,
+      query: isProduction ? undefined : e.query,
     });
   }
 });
