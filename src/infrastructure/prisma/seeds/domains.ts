@@ -3,6 +3,9 @@ import {
   CommunityFactory,
   ImageFactory,
   MembershipFactory,
+  NftInstanceFactory,
+  NftTokenFactory,
+  NftWalletFactory,
   OpportunityFactory,
   OpportunitySlotFactory,
   ParticipationFactory,
@@ -16,6 +19,7 @@ import { prismaClient } from "@/infrastructure/prisma/client";
 import { processInBatches } from "@/utils/array";
 import {
   NftInstanceStatus,
+  NftWalletType,
   Opportunity,
   OpportunitySlot,
   Place,
@@ -300,95 +304,77 @@ async function createTransactions(wallets: Wallet[]) {
 }
 
 async function createNfts(users: User[]) {
-  const ETH_TOKEN_ID = "tok_eth_1";
-  const ADA_TOKEN_ID = "tok_ada_1";
   const ADA_POLICY_ID = "aabbccddeeff00112233445566778899aabbccddeeff001122334455";
 
-  await prismaClient.$transaction([
-    prismaClient.nftToken.createMany({
-      data: [
-        {
-          id: ETH_TOKEN_ID,
-          address: "0x0000000000000000000000000000000000000000",
-          type: "ERC-721",
-          name: "Local ETH NFT",
-          symbol: "LNFT",
-          json: {},
-        },
-        {
-          id: ADA_TOKEN_ID,
-          address: ADA_POLICY_ID,
-          type: "CIP-25",
-          name: "Local ADA NFT",
-          symbol: "LANFT",
-          json: {},
-        },
-      ],
-      skipDuplicates: true,
-    }),
+  const ethToken = await NftTokenFactory.create({
+    id: "tok_eth_1",
+    address: "0x0000000000000000000000000000000000000000",
+    type: "ERC-721",
+    name: "Local ETH NFT",
+    symbol: "LNFT",
+    json: {},
+  });
 
-    prismaClient.nftWallet.createMany({
-      data: users.flatMap((user, i) => {
-        const userIndex = i + 1;
-        return [
-          {
-            id: `nft_wallet_ext_${userIndex}`,
-            type: "EXTERNAL",
-            walletAddress: externalAddress(userIndex),
-            userId: user.id,
-          },
-          {
-            id: `nft_wallet_int_${userIndex}`,
-            type: "INTERNAL",
-            walletAddress: internalAddress(user.id),
-            userId: user.id,
-          },
-        ];
-      }),
-      skipDuplicates: true,
-    }),
+  const adaToken = await NftTokenFactory.create({
+    id: "tok_ada_1",
+    address: ADA_POLICY_ID,
+    type: "CIP-25",
+    name: "Local ADA NFT",
+    symbol: "LANFT",
+    json: {},
+  });
 
-    prismaClient.nftInstance.createMany({
-      data: [
-        ...users.flatMap((user, i) => {
-          const userIndex = i + 1;
-          return [
-            {
-              id: `ins_eth_${userIndex}`,
-              instanceId: `local-eth-${userIndex}`,
-              name: `Local ETH NFT #${userIndex}`,
-              description: `For local test - User ${userIndex}`,
-              imageUrl: ethImageUrl(userIndex),
-              json: {},
-              nftTokenId: ETH_TOKEN_ID,
-              nftWalletId: `nft_wallet_ext_${userIndex}`,
-              status: NftInstanceStatus.OWNED,
-            },
-            {
-              id: `ins_ada_${userIndex}`,
-              instanceId: `local-ada-${userIndex}`,
-              name: `Local ADA NFT #${userIndex}`,
-              description: `For local test - User ${userIndex}`,
-              imageUrl: adaImageUrl(userIndex),
-              json: ada721Json(ADA_POLICY_ID, assetNameHex(i), `COOLNFT${userIndex}`),
-              nftTokenId: ADA_TOKEN_ID,
-              nftWalletId: `nft_wallet_int_${userIndex}`,
-              status: NftInstanceStatus.OWNED,
-            },
-          ];
-        }),
-        {
-          id: "ins_ada_policy",
-          instanceId: "local-ada-policy",
-          name: "Local ADA NFT (Policy Only)",
-          description: "For local test - Policy page demo",
-          imageUrl: "https://picsum.photos/seed/civicship-ada-policy/800/450",
-          json: {},
-          nftTokenId: ADA_TOKEN_ID,
-          status: NftInstanceStatus.STOCK,
-        },
-      ],
-      skipDuplicates: true,
-    }),
-  ]);
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+    const userIndex = i + 1;
+
+    const externalWallet = await NftWalletFactory.create({
+      id: `nft_wallet_ext_${userIndex}`,
+      type: NftWalletType.EXTERNAL,
+      walletAddress: externalAddress(userIndex),
+      transientUser: { id: user.id },
+    });
+
+    const internalWallet = await NftWalletFactory.create({
+      id: `nft_wallet_int_${userIndex}`,
+      type: NftWalletType.INTERNAL,
+      walletAddress: internalAddress(user.id),
+      transientUser: { id: user.id },
+    });
+
+    await NftInstanceFactory.create({
+      id: `ins_eth_${userIndex}`,
+      instanceId: `local-eth-${userIndex}`,
+      name: `Local ETH NFT #${userIndex}`,
+      description: `For local test - User ${userIndex}`,
+      imageUrl: ethImageUrl(userIndex),
+      json: {},
+      status: NftInstanceStatus.OWNED,
+      transientNftToken: { id: ethToken.id },
+      transientNftWallet: { id: externalWallet.id },
+    });
+
+    await NftInstanceFactory.create({
+      id: `ins_ada_${userIndex}`,
+      instanceId: `local-ada-${userIndex}`,
+      name: `Local ADA NFT #${userIndex}`,
+      description: `For local test - User ${userIndex}`,
+      imageUrl: adaImageUrl(userIndex),
+      json: ada721Json(ADA_POLICY_ID, assetNameHex(i), `COOLNFT${userIndex}`),
+      status: NftInstanceStatus.OWNED,
+      transientNftToken: { id: adaToken.id },
+      transientNftWallet: { id: internalWallet.id },
+    });
+  }
+
+  await NftInstanceFactory.create({
+    id: "ins_ada_policy",
+    instanceId: "local-ada-policy",
+    name: "Local ADA NFT (Policy Only)",
+    description: "For local test - Policy page demo",
+    imageUrl: "https://picsum.photos/seed/civicship-ada-policy/800/450",
+    json: {},
+    status: NftInstanceStatus.STOCK,
+    transientNftToken: { id: adaToken.id },
+  });
 }
