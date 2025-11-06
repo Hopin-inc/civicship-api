@@ -21,7 +21,12 @@ const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID;
 
 let sdk: NodeSDK | undefined;
 
-if (NODE_ENV !== 'test') {
+export const tracingReady = (async () => {
+  if (NODE_ENV === 'test') {
+    logger.info('Tracing disabled in test environment');
+    return;
+  }
+
   if (ENV === 'LOCAL') {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
   }
@@ -72,7 +77,7 @@ if (NODE_ENV !== 'test') {
     }),
   });
 
-  sdk.start();
+  await sdk.start();
   logger.info(`OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
 
   const handleShutdown = async () => {
@@ -88,9 +93,7 @@ if (NODE_ENV !== 'test') {
 
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);
-} else {
-  logger.info('Tracing disabled in test environment');
-}
+})();
 
 export const shutdown = async () => {
   if (sdk) {
