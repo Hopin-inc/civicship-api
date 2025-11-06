@@ -672,12 +672,11 @@ export const TransactionFactory = defineTransactionFactory.withTransientFields<{
       reason: transientReason ?? randomEnum(TransactionReason),
       fromWallet: { connect: { id: fromWallet.id } },
       toWallet: { connect: { id: toWallet.id } },
-      fromPointChange: -10,
+      fromPointChange: 10,
       toPointChange: 10,
     };
   },
 });
-
 
 export const NftTokenFactory = defineNftTokenFactory({
   defaultData: () => ({
