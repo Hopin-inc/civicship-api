@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import "@/infrastructure/logging/tracing";
 import "@/application/provider";
 import http from "http";
 import express from "express";

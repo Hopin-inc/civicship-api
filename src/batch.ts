@@ -1,3 +1,4 @@
+import "@/infrastructure/logging/tracing";
 import logger from "@/infrastructure/logging";
 import { resizeImages } from "@/presentation/batch/resizeImages";
 import { checkReservationParticipationConsistency } from "@/presentation/batch/checkReservationParticipationConsistency";
