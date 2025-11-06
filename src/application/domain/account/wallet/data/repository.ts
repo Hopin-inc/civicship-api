@@ -34,7 +34,13 @@ export default class WalletRepository implements IWalletRepository {
     });
   }
 
-  async findCommunityWallet(ctx: IContext, communityId: string) {
+  async findCommunityWallet(ctx: IContext, communityId: string, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return tx.wallet.findFirst({
+        where: { communityId, type: WalletType.COMMUNITY },
+        select: walletSelectDetail,
+      });
+    }
     return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, type: WalletType.COMMUNITY },

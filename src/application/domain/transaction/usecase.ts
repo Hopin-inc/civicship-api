@@ -174,6 +174,7 @@ export default class TransactionUseCase {
         ctx,
         toUserId,
         communityId,
+        tx,
       );
 
       const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(

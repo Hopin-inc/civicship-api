@@ -42,8 +42,8 @@ export default class WalletService {
       : wallet;
   }
 
-  async findCommunityWalletOrThrow(ctx: IContext, communityId: string) {
-    const wallet = await this.repository.findCommunityWallet(ctx, communityId);
+  async findCommunityWalletOrThrow(ctx: IContext, communityId: string, tx?: Prisma.TransactionClient) {
+    const wallet = await this.repository.findCommunityWallet(ctx, communityId, tx);
     if (!wallet?.id) {
       throw new NotFoundError("Community wallet", { communityId });
     }

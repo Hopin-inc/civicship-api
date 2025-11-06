@@ -281,7 +281,7 @@ export default class EvaluationUseCase {
 
     if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
       const [fromWallet, toWallet] = await Promise.all([
-        this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
+        this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId, tx),
         this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
       ]);
 
