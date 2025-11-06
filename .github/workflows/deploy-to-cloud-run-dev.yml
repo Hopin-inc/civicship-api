@@ -85,16 +85,13 @@ jobs:
     - name: pnpm gql:generate
       run: pnpm gql:generate
 
-    - name: Install Rover CLI
-      run: |
-        curl -sSL https://rover.apollo.dev/nix/latest | sh
-        echo "${HOME}/.rover/bin" >> $GITHUB_PATH
-
-    - name: Publish GraphQL Schema to Apollo GraphOS
+    - name: Install and Publish via Rover CLI
       env:
         APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
         APOLLO_GRAPH_REF: ${{ secrets.APOLLO_GRAPH_REF }}
       run: |
+        curl -sSL https://rover.apollo.dev/nix/latest | sh
+        export PATH="$HOME/.rover/bin:$PATH"
         rover graph publish --schema ./docs/schema.graphql
 
     - name: pnpm build
