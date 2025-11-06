@@ -13,7 +13,7 @@ export interface IWalletRepository {
 
   find(ctx: IContext, id: string): Promise<PrismaWallet | null>;
 
-  findCommunityWallet(ctx: IContext, communityId: string): Promise<PrismaWalletDetail | null>;
+  findCommunityWallet(ctx: IContext, communityId: string, tx?: Prisma.TransactionClient): Promise<PrismaWalletDetail | null>;
 
   findFirstExistingMemberWallet(
     ctx: IContext,
