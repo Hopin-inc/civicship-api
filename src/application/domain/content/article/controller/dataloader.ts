@@ -1,5 +1,5 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlArticle } from "@/types/graphql";
 import {
   articleSelectDetail,
@@ -11,25 +11,21 @@ import {
   createLoaderById,
 } from "@/presentation/graphql/dataloader/utils";
 
-export function createArticleLoader(issuer: PrismaClientIssuer) {
+export function createArticleLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaArticleDetail, GqlArticle>(async (ids) => {
-    return issuer.internal((tx) =>
-      tx.article.findMany({
-        where: { id: { in: [...ids] } },
-        select: articleSelectDetail,
-      }),
-    );
+    return prisma.article.findMany({
+      where: { id: { in: [...ids] } },
+      select: articleSelectDetail,
+    });
   }, ArticlePresenter.get);
 }
 
-export function createArticlesByOpportunityLoader(issuer: PrismaClientIssuer) {
+export function createArticlesByOpportunityLoader(prisma: PrismaClient) {
   return new DataLoader<string, GqlArticle[]>(async (opportunityIds) => {
-    const opportunities = await issuer.internal((tx) =>
-      tx.opportunity.findMany({
-        where: { id: { in: [...opportunityIds] } },
-        include: { articles: true },
-      }),
-    );
+    const opportunities = await prisma.opportunity.findMany({
+      where: { id: { in: [...opportunityIds] } },
+      include: { articles: true },
+    });
 
     const map = new Map<string, GqlArticle[]>();
     for (const o of opportunities) {
@@ -40,14 +36,12 @@ export function createArticlesByOpportunityLoader(issuer: PrismaClientIssuer) {
   });
 }
 
-export function createArticlesWrittenByMeLoader(issuer: PrismaClientIssuer) {
+export function createArticlesWrittenByMeLoader(prisma: PrismaClient) {
   return new DataLoader<string, GqlArticle[]>(async (userIds) => {
-    const users = await issuer.internal((tx) =>
-      tx.user.findMany({
-        where: { id: { in: [...userIds] } },
-        include: { articlesWrittenByMe: true },
-      }),
-    );
+    const users = await prisma.user.findMany({
+      where: { id: { in: [...userIds] } },
+      include: { articlesWrittenByMe: true },
+    });
 
     const map = new Map<string, GqlArticle[]>();
     for (const user of users) {
@@ -58,14 +52,12 @@ export function createArticlesWrittenByMeLoader(issuer: PrismaClientIssuer) {
   });
 }
 
-export function createArticlesAboutMeLoader(issuer: PrismaClientIssuer) {
+export function createArticlesAboutMeLoader(prisma: PrismaClient) {
   return new DataLoader<string, GqlArticle[]>(async (userIds) => {
-    const users = await issuer.internal((tx) =>
-      tx.user.findMany({
-        where: { id: { in: [...userIds] } },
-        include: { articlesAboutMe: true },
-      }),
-    );
+    const users = await prisma.user.findMany({
+      where: { id: { in: [...userIds] } },
+      include: { articlesAboutMe: true },
+    });
 
     const map = new Map<string, GqlArticle[]>();
     for (const user of users) {
@@ -76,15 +68,13 @@ export function createArticlesAboutMeLoader(issuer: PrismaClientIssuer) {
   });
 }
 
-export function createArticlesByCommunityLoader(issuer: PrismaClientIssuer) {
+export function createArticlesByCommunityLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"communityId", PrismaArticleDetail, GqlArticle>(
     "communityId",
     async (communityIds) => {
-      return issuer.internal((tx) =>
-        tx.article.findMany({
-          where: { communityId: { in: [...communityIds] } },
-        }),
-      );
+      return prisma.article.findMany({
+        where: { communityId: { in: [...communityIds] } },
+      });
     },
     ArticlePresenter.get,
   );

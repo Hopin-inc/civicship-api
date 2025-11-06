@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import {
   PrismaReservationDetail,
   reservationSelectDetail,
@@ -10,58 +10,52 @@ import {
   createLoaderById,
 } from "@/presentation/graphql/dataloader/utils";
 
-export function createReservationLoader(issuer: PrismaClientIssuer) {
+export function createReservationLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaReservationDetail, GqlReservation>(
     async (ids) =>
-      issuer.internal((tx) =>
-        tx.reservation.findMany({
-          where: { id: { in: [...ids] } },
-          select: reservationSelectDetail,
-        }),
-      ),
+      prisma.reservation.findMany({
+        where: { id: { in: [...ids] } },
+        select: reservationSelectDetail,
+      }),
     ReservationPresenter.get,
   );
 }
 
-export function createReservationsByOpportunitySlotLoader(issuer: PrismaClientIssuer) {
+export function createReservationsByOpportunitySlotLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"opportunitySlotId", PrismaReservationDetail, GqlReservation>(
     "opportunitySlotId",
     async (opportunitySlotIds) => {
-      return issuer.internal((tx) =>
-        tx.reservation.findMany({
-          where: {
-            opportunitySlotId: { in: [...opportunitySlotIds] },
-          },
-          include: {
-            participations: {
-              include: {
-                evaluation: true
-              }
+      return prisma.reservation.findMany({
+        where: {
+          opportunitySlotId: { in: [...opportunitySlotIds] },
+        },
+        include: {
+          participations: {
+            include: {
+              evaluation: true
             }
           }
-        }),
-      );
+        }
+      });
     },
     ReservationPresenter.get,
   );
 }
 
-export function createReservationsCreatedByUserLoader(issuer: PrismaClientIssuer) {
+export function createReservationsCreatedByUserLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"createdBy", PrismaReservationDetail, GqlReservation>(
     "createdBy",
     async (userIds) => {
-      return issuer.internal((tx) =>
-        tx.reservation.findMany({
-          where: {
-            createdBy: { in: [...userIds] },
-          },
-          include: {
-            participations: {
-              include: { evaluation: true },
-            }
+      return prisma.reservation.findMany({
+        where: {
+          createdBy: { in: [...userIds] },
+        },
+        include: {
+          participations: {
+            include: { evaluation: true },
           }
-        }),
-      );
+        }
+      });
     },
     ReservationPresenter.get,
   );

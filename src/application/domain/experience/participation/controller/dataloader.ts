@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlParticipation } from "@/types/graphql";
 import {
   participationSelectDetail,
@@ -11,61 +11,53 @@ import {
 } from "@/presentation/graphql/dataloader/utils";
 import ParticipationPresenter from "@/application/domain/experience/participation/presenter";
 
-export function createParticipationLoader(issuer: PrismaClientIssuer) {
+export function createParticipationLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaParticipationDetail, GqlParticipation>(
     async (ids) =>
-      issuer.internal((tx) =>
-        tx.participation.findMany({
-          where: { id: { in: [...ids] } },
-          select: participationSelectDetail,
-        }),
-      ),
+      prisma.participation.findMany({
+        where: { id: { in: [...ids] } },
+        select: participationSelectDetail,
+      }),
     ParticipationOutputFormat.get,
   );
 }
 
-export function createParticipationsByReservationLoader(issuer: PrismaClientIssuer) {
+export function createParticipationsByReservationLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"reservationId", PrismaParticipationDetail, GqlParticipation>(
     "reservationId",
     async (reservationIds) => {
-      return issuer.internal((tx) =>
-        tx.participation.findMany({
-          where: {
-            reservationId: { in: [...reservationIds] },
-          },
-          include: {
-            evaluation: true
-          }
-        }),
-      );
+      return prisma.participation.findMany({
+        where: {
+          reservationId: { in: [...reservationIds] },
+        },
+        include: {
+          evaluation: true
+        }
+      });
     },
     ParticipationPresenter.get,
   );
 }
 
-export function createParticipationsByUserLoader(issuer: PrismaClientIssuer) {
+export function createParticipationsByUserLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"userId", PrismaParticipationDetail, GqlParticipation>(
     "userId",
     async (userIds) => {
-      return issuer.internal((tx) =>
-        tx.participation.findMany({
-          where: { userId: { in: [...userIds] } },
-        }),
-      );
+      return prisma.participation.findMany({
+        where: { userId: { in: [...userIds] } },
+      });
     },
     ParticipationPresenter.get,
   );
 }
 
-export function createParticipationsByCommunityLoader(issuer: PrismaClientIssuer) {
+export function createParticipationsByCommunityLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"communityId", PrismaParticipationDetail, GqlParticipation>(
     "communityId",
     async (communityIds) => {
-      return issuer.internal((tx) =>
-        tx.participation.findMany({
-          where: { communityId: { in: [...communityIds] } },
-        }),
-      );
+      return prisma.participation.findMany({
+        where: { communityId: { in: [...communityIds] } },
+      });
     },
     ParticipationPresenter.get,
   );

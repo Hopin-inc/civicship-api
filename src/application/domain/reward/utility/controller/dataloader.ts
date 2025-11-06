@@ -1,5 +1,5 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlUtility } from "@/types/graphql";
 import UtilityPresenter from "@/application/domain/reward/utility/presenter";
 import {
@@ -11,27 +11,23 @@ import {
   createLoaderById,
 } from "@/presentation/graphql/dataloader/utils";
 
-export function createUtilityLoader(issuer: PrismaClientIssuer) {
+export function createUtilityLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaUtilityDetail, GqlUtility>(
     async (ids) =>
-      issuer.internal((tx) =>
-        tx.utility.findMany({
-          where: { id: { in: [...ids] } },
-          select: utilitySelectDetail,
-        }),
-      ),
+      prisma.utility.findMany({
+        where: { id: { in: [...ids] } },
+        select: utilitySelectDetail,
+      }),
     UtilityPresenter.get,
   );
 }
 
-export function createRequiredUtilitiesByOpportunityLoader(issuer: PrismaClientIssuer) {
+export function createRequiredUtilitiesByOpportunityLoader(prisma: PrismaClient) {
   return new DataLoader<string, GqlUtility[]>(async (opportunityIds) => {
-    const opportunities = await issuer.internal((tx) =>
-      tx.opportunity.findMany({
-        where: { id: { in: [...opportunityIds] } },
-        include: { requiredUtilities: true },
-      }),
-    );
+    const opportunities = await prisma.opportunity.findMany({
+      where: { id: { in: [...opportunityIds] } },
+      include: { requiredUtilities: true },
+    });
 
     const map = new Map<string, GqlUtility[]>();
     for (const o of opportunities) {
@@ -42,15 +38,13 @@ export function createRequiredUtilitiesByOpportunityLoader(issuer: PrismaClientI
   });
 }
 
-export function createUtilitiesByCommunityLoader(issuer: PrismaClientIssuer) {
+export function createUtilitiesByCommunityLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"communityId", PrismaUtilityDetail, GqlUtility>(
     "communityId",
     async (communityIds) => {
-      return issuer.internal((tx) =>
-        tx.utility.findMany({
-          where: { communityId: { in: [...communityIds] } },
-        }),
-      );
+      return prisma.utility.findMany({
+        where: { communityId: { in: [...communityIds] } },
+      });
     },
     UtilityPresenter.get,
   );

@@ -3,28 +3,28 @@ import * as TicketIssuerLoaders from "@/application/domain/reward/ticketIssuer/c
 import * as TicketClaimLinkLoaders from "@/application/domain/reward/ticketClaimLink/controller/dataloader";
 import * as TicketStatusHistoryLoaders from "@/application/domain/reward/ticket/statusHistory/controller/dataloader";
 import * as UtilityLoaders from "@/application/domain/reward/utility/controller/dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-export function createRewardLoaders(issuer: PrismaClientIssuer) {
+export function createRewardLoaders(prisma: PrismaClient) {
   return {
-    ticket: TicketLoaders.createTicketLoader(issuer),
-    ticketsByUtility: TicketLoaders.createTicketsByUtilityLoader(issuer),
-    ticketsByWallet: TicketLoaders.createTicketsByWalletLoader(issuer),
-    ticketsByClaimLink: TicketLoaders.createTicketsByTicketClaimLinkLoader(issuer),
+    ticket: TicketLoaders.createTicketLoader(prisma),
+    ticketsByUtility: TicketLoaders.createTicketsByUtilityLoader(prisma),
+    ticketsByWallet: TicketLoaders.createTicketsByWalletLoader(prisma),
+    ticketsByClaimLink: TicketLoaders.createTicketsByTicketClaimLinkLoader(prisma),
 
-    ticketIssuer: TicketIssuerLoaders.createTicketIssuerLoader(issuer),
-    ticketClaimLink: TicketClaimLinkLoaders.createTicketClaimLinkLoader(issuer),
+    ticketIssuer: TicketIssuerLoaders.createTicketIssuerLoader(prisma),
+    ticketClaimLink: TicketClaimLinkLoaders.createTicketClaimLinkLoader(prisma),
 
-    ticketStatusHistory: TicketStatusHistoryLoaders.createTicketStatusHistoryLoader(issuer),
+    ticketStatusHistory: TicketStatusHistoryLoaders.createTicketStatusHistoryLoader(prisma),
     ticketStatusHistoriesByTicket:
-      TicketStatusHistoryLoaders.createTicketStatusHistoriesByTicketLoader(issuer),
+      TicketStatusHistoryLoaders.createTicketStatusHistoriesByTicketLoader(prisma),
     ticketStatusHistoriesByTransaction:
-      TicketStatusHistoryLoaders.createTicketStatusHistoriesByTransactionLoader(issuer),
+      TicketStatusHistoryLoaders.createTicketStatusHistoriesByTransactionLoader(prisma),
     ticketStatusHistoriesByParticipation:
-      TicketStatusHistoryLoaders.createTicketStatusHistoriesByParticipationLoader(issuer),
+      TicketStatusHistoryLoaders.createTicketStatusHistoriesByParticipationLoader(prisma),
 
-    utility: UtilityLoaders.createUtilityLoader(issuer),
-    utilitiesByOpportunity: UtilityLoaders.createRequiredUtilitiesByOpportunityLoader(issuer),
-    utilitiesByCommunity: UtilityLoaders.createUtilitiesByCommunityLoader(issuer),
+    utility: UtilityLoaders.createUtilityLoader(prisma),
+    utilitiesByOpportunity: UtilityLoaders.createRequiredUtilitiesByOpportunityLoader(prisma),
+    utilitiesByCommunity: UtilityLoaders.createUtilitiesByCommunityLoader(prisma),
   };
 }
