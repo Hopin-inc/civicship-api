@@ -8,31 +8,43 @@ import { injectable } from "tsyringe";
 type Transaction = Omit<PrismaClient, ITXClientDenyList>;
 type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const prismaClient = new PrismaClient({
   log: [
-    { level: "query", emit: "event" },
+    { level: "query", emit: isProduction ? "stdout" : "event" },
     { level: "error", emit: "event" },
     { level: "info", emit: "stdout" },
     { level: "warn", emit: "stdout" },
   ],
 });
-prismaClient.$on("query", async (e) => {
-  logger.debug("Prisma query executed", {
-    query: e.query,
-    params: e.params,
-    duration: e.duration,
-  });
 
-  if (e.duration > 300) {
-    const isProduction = process.env.NODE_ENV === "production";
-    logger.warn("Slow query detected", {
-      model: e.model ?? "raw",
-      action: e.action ?? "raw",
+if (!isProduction) {
+  prismaClient.$on("query", async (e) => {
+    logger.debug("Prisma query executed", {
+      query: e.query,
+      params: e.params,
       duration: e.duration,
-      query: isProduction ? undefined : e.query,
+    });
+  });
+}
+
+prismaClient.$use(async (params, next) => {
+  const start = Date.now();
+  const result = await next(params);
+  const duration = Date.now() - start;
+
+  if (duration > 300) {
+    logger.warn("Slow Prisma operation", {
+      model: params.model ?? "raw",
+      action: params.action,
+      duration,
     });
   }
+
+  return result;
 });
+
 prismaClient.$on("error", async ({ message, target }) => {
   logger.error("Prisma: Error occurred.", { message, target });
 });

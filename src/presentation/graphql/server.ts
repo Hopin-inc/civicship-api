@@ -31,7 +31,7 @@ export async function createApolloServer(httpServer: http.Server) {
       ApolloServerPluginUsageReporting({
         fieldLevelInstrumentation: isProduction ? 0.05 : 1.0,
         sendReportsImmediately: !isProduction,
-        sendVariableValues: { all: false },
+        sendVariableValues: { none: true },
       }),
     );
   }
