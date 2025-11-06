@@ -29,8 +29,9 @@ export async function createApolloServer(httpServer: http.Server) {
   if (!isLocal) {
     plugins.unshift(
       ApolloServerPluginUsageReporting({
-        fieldLevelInstrumentation: isProduction ? 0.02 : 1.0,
+        fieldLevelInstrumentation: isProduction ? 0.05 : 1.0,
         sendReportsImmediately: !isProduction,
+        sendVariableValues: { all: false },
       }),
     );
   }
