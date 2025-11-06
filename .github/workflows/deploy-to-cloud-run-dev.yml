@@ -36,7 +36,6 @@ jobs:
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
       # Apollo studio
       APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
-      APOLLO_GRAPH_REF: ${{ secrets.APOLLO_GRAPH_REF }}
 
     steps:
     - name: Checkout code
