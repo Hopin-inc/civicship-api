@@ -110,6 +110,11 @@ jobs:
         service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
         region: ${{ env.GCP_REGION }}
+        flags: >
+          --cpu-boost
+          --concurrency=80
+          --min-instances=1
+          --max-instances=10
 
     - name: Build Docker image for batch job
       run: |
