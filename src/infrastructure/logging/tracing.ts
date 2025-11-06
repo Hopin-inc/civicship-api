@@ -9,6 +9,7 @@ import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { PrismaInstrumentation } from '@prisma/instrumentation';
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-node';
 import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+import logger from './index';
 
 const ENV = process.env.ENV || 'LOCAL';
 const NODE_ENV = process.env.NODE_ENV;
@@ -63,15 +64,15 @@ if (NODE_ENV !== 'test') {
   });
 
   sdk.start();
-  console.log(`🔍 OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
+  logger.info(`OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
 
   const handleShutdown = async () => {
     if (sdk) {
       try {
         await sdk.shutdown();
-        console.log('🔍 OpenTelemetry tracing shut down successfully');
+        logger.info('OpenTelemetry tracing shut down successfully');
       } catch (error) {
-        console.error('Error shutting down OpenTelemetry:', error);
+        logger.error('Error shutting down OpenTelemetry:', error);
       }
     }
   };
@@ -79,16 +80,16 @@ if (NODE_ENV !== 'test') {
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);
 } else {
-  console.log('Tracing disabled in test environment');
+  logger.info('Tracing disabled in test environment');
 }
 
 export const shutdown = async () => {
   if (sdk) {
     try {
       await sdk.shutdown();
-      console.log('🔍 OpenTelemetry tracing shut down successfully');
+      logger.info('OpenTelemetry tracing shut down successfully');
     } catch (error) {
-      console.error('Error shutting down OpenTelemetry:', error);
+      logger.error('Error shutting down OpenTelemetry:', error);
     }
   }
 };
