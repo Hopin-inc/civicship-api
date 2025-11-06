@@ -34,6 +34,9 @@ jobs:
       # Jumpbox settings
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+      # Apollo studio
+      APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
+      APOLLO_GRAPH_REF: ${{ secrets.APOLLO_GRAPH_REF }}
 
     steps:
     - name: Checkout code
@@ -89,8 +92,8 @@ jobs:
 
     - name: Publish GraphQL Schema to Apollo GraphOS
       env:
-        APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
-        APOLLO_GRAPH_REF: ${{ secrets.APOLLO_GRAPH_REF }}
+        APOLLO_KEY: ${{ env.APOLLO_KEY }}
+        APOLLO_GRAPH_REF: ${{ env.APOLLO_GRAPH_REF }}
       run: |
         rover graph publish --schema ./docs/schema.graphql
 
