@@ -6,6 +6,7 @@ import {
   W3CTraceContextPropagator,
   W3CBaggagePropagator,
 } from "@opentelemetry/core";
+import { AsyncLocalStorageContextManager } from "@opentelemetry/context-async-hooks";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
@@ -58,8 +59,8 @@ export const tracingReady = (async () => {
 
     new GraphQLInstrumentation({
       allowValues: false,
-      depth: 2,
-      ignoreTrivialResolveSpans: true,
+      depth: 2, // 🧠 GraphQLのfieldレベルも見たいなら2でOK
+      ignoreTrivialResolveSpans: false, // ← Field-levelスパンを有効に
     }),
 
     new UndiciInstrumentation(),
@@ -71,6 +72,7 @@ export const tracingReady = (async () => {
     resource,
     traceExporter: new TraceExporter(),
     sampler,
+    contextManager: new AsyncLocalStorageContextManager(), // 🧩 ← 非同期コンテキスト維持
     instrumentations,
     textMapPropagator: new CompositePropagator({
       propagators: [
@@ -81,14 +83,14 @@ export const tracingReady = (async () => {
     }),
   });
 
-  await sdk.start();
-  logger.info(`OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
+  sdk.start();
+  logger.info(`✅ OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
 
   const handleShutdown = async () => {
     if (sdk) {
       try {
         await sdk.shutdown();
-        logger.info("OpenTelemetry tracing shut down successfully");
+        logger.info("🔍 OpenTelemetry tracing shut down successfully");
       } catch (error) {
         logger.error("Error shutting down OpenTelemetry:", error);
       }
@@ -103,7 +105,7 @@ export const shutdown = async () => {
   if (sdk) {
     try {
       await sdk.shutdown();
-      logger.info("OpenTelemetry tracing shut down successfully");
+      logger.info("🔍 OpenTelemetry tracing shut down successfully");
     } catch (error) {
       logger.error("Error shutting down OpenTelemetry:", error);
     }
