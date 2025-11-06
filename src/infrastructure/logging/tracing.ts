@@ -1,6 +1,7 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import { CloudPropagator } from '@google-cloud/opentelemetry-cloud-trace-propagator';
+import { CompositePropagator, W3CTraceContextPropagator, W3CBaggagePropagator } from '@opentelemetry/core';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
@@ -62,7 +63,13 @@ if (NODE_ENV !== 'test') {
     traceExporter: new TraceExporter(),
     sampler,
     instrumentations,
-    textMapPropagator: new CloudPropagator(),
+    textMapPropagator: new CompositePropagator({
+      propagators: [
+        new CloudPropagator(),
+        new W3CTraceContextPropagator(),
+        new W3CBaggagePropagator(),
+      ],
+    }),
   });
 
   sdk.start();
