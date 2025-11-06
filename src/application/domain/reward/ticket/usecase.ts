@@ -86,7 +86,7 @@ export default class TicketUseCase {
     const tickets = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       const [ownerWallet, claimerWallet] = await Promise.all([
-        this.walletService.findMemberWalletOrThrow(ctx, ticketOwnerId, communityId),
+        this.walletService.findMemberWalletOrThrow(ctx, ticketOwnerId, communityId, tx),
         this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx),
       ]);
 

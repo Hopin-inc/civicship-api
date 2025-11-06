@@ -27,18 +27,18 @@ export default class WalletService {
     return this.repository.find(ctx, id);
   }
 
-  async findMemberWallet(ctx: IContext, userId: string, communityId: string) {
-    return this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
+  async findMemberWallet(ctx: IContext, userId: string, communityId: string, tx?: Prisma.TransactionClient) {
+    return this.repository.findFirstExistingMemberWallet(ctx, communityId, userId, tx);
   }
 
-  async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string, retried: boolean = false) {
-    const wallet = await this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
+  async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string, tx?: Prisma.TransactionClient, retried: boolean = false) {
+    const wallet = await this.repository.findFirstExistingMemberWallet(ctx, communityId, userId, tx);
     if (!wallet) {
       throw new NotFoundError("Member wallet", { userId, communityId });
     }
     const refreshed = await this.refreshCurrentPointViewIfNotExist(ctx, wallet);
     return refreshed && !retried
-      ? await this.findMemberWalletOrThrow(ctx, userId, communityId, true)
+      ? await this.findMemberWalletOrThrow(ctx, userId, communityId, tx, true)
       : wallet;
   }
 
@@ -75,6 +75,7 @@ export default class WalletService {
       ctx,
       communityId,
       userId,
+      tx,
     );
     if (existingWallet) {
       return existingWallet;
