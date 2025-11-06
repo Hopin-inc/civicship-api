@@ -1,6 +1,7 @@
 import { ApolloServer } from "@apollo/server";
 import logger from "@/infrastructure/logging";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import { ApolloServerPluginUsageReporting } from "@apollo/server/plugin/usageReporting";
 import http from "http";
 import schema from "@/presentation/graphql/schema";
 import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
@@ -13,6 +14,10 @@ export async function createApolloServer(httpServer: http.Server) {
   const server = new ApolloServer({
     schema,
     plugins: [
+      ApolloServerPluginUsageReporting({
+        fieldLevelInstrumentation: isProduction ? 0.02 : 1.0,
+        sendReportsImmediately: !isProduction,
+      }),
       ApolloServerPluginDrainHttpServer({ httpServer }),
       ...armorProtection.plugins,
       authZApolloPlugin({
