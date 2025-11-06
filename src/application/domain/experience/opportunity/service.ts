@@ -97,7 +97,9 @@ export default class OpportunityService {
   ) {
     await this.findOpportunityOrThrow(ctx, id);
 
-    const { data, images } = this.converter.update(input);
+    const currentUserId = getCurrentUserId(ctx, input.createdBy);
+
+    const { data, images } = this.converter.update(input, currentUserId);
 
     const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = (
       await Promise.all(

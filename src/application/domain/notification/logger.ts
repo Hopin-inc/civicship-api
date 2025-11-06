@@ -51,5 +51,11 @@ export function logLineApiError(
       rawResponseBody: error.body,
       requestBody: requestBody ? JSON.stringify(requestBody) : undefined,
     });
+  } else {
+    logger.error(`LINE ${operationName} failed`, {
+      ...baseLogFields(endpoint, uid, retryCount),
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }

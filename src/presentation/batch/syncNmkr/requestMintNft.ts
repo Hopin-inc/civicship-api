@@ -1,0 +1,109 @@
+import "reflect-metadata";
+import "@/application/provider";
+import logger from "@/infrastructure/logging";
+import { container } from "tsyringe";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import { NftMintStatus, NftInstanceStatus } from "@prisma/client";
+
+export async function processQueuedMints() {
+  logger.info("🚀 Starting batch for QUEUED nftMints...");
+
+  const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
+  const nmkrClient = container.resolve(NmkrClient);
+
+  try {
+    const BATCH_SIZE = 20;
+    let skip = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const mints = await issuer.internal((tx) =>
+        tx.nftMint.findMany({
+          where: { status: NftMintStatus.QUEUED },
+          include: {
+            nftInstance: {
+              include: {
+                nftToken: true,
+                nftWallet: true,
+              },
+            },
+          },
+          take: BATCH_SIZE,
+          skip,
+        }),
+      );
+
+      if (mints.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      logger.info(`📦 Processing ${mints.length} QUEUED mints`);
+
+      for (const mint of mints) {
+        try {
+          const walletAddress = mint.nftInstance?.nftWallet?.walletAddress;
+          const nftInstanceId = mint.nftInstance?.instanceId;
+          const nftTokenJson = mint.nftInstance?.nftToken?.json as any;
+          
+          if (!walletAddress || !nftInstanceId) {
+            throw new Error(`Missing required data: walletAddress=${walletAddress}, nftInstanceId=${nftInstanceId}`);
+          }
+
+          const nmkrProjectUid = nftTokenJson?.nmkrProjectUid || nftTokenJson?.projectUid;
+          if (!nmkrProjectUid) {
+            throw new Error(`NMKR project UID not found in nftToken.json`);
+          }
+
+          await issuer.internal(async (tx) => {
+            const res = await nmkrClient.mintAndSendSpecific(
+              nmkrProjectUid,
+              nftInstanceId,
+              1,
+              walletAddress,
+            );
+
+            await tx.nftMint.update({
+              where: { id: mint.id },
+              data: {
+                status: NftMintStatus.SUBMITTED,
+                externalRequestId: String(res.mintAndSendId),
+                error: null,
+              },
+            });
+
+            await tx.nftInstance.update({
+              where: { id: mint.nftInstanceId },
+              data: { status: NftInstanceStatus.MINTING },
+            });
+          });
+
+          logger.info(`✅ Submitted mint ${mint.id}`);
+        } catch (err) {
+          logger.error(`❌ Mint ${mint.id} submission failed: ${(err as Error).message}`);
+          await issuer.internal((tx) =>
+            tx.nftMint.update({
+              where: { id: mint.id },
+              data: {
+                status: NftMintStatus.FAILED,
+                retryCount: { increment: 1 },
+                error: (err as Error).message,
+              },
+            }),
+          );
+        }
+      }
+
+      skip += BATCH_SIZE;
+      if (mints.length < BATCH_SIZE) hasMore = false;
+    }
+
+    logger.info("🎯 Batch completed");
+  } catch (error) {
+    logger.error("💥 Batch process error:", error);
+    throw error;
+  }
+}
+
+processQueuedMints();

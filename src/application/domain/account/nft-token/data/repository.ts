@@ -7,7 +7,7 @@ import { INftTokenRepository } from "./interface";
 export default class NftTokenRepository implements INftTokenRepository {
   async upsert(
     ctx: IContext,
-    data: { address: string; name?: string | null; symbol?: string | null; type: string; json?: any },
+    data: { address: string; name?: string | null; symbol?: string | null; type: string; json?: Record<string, unknown> },
     tx: Prisma.TransactionClient,
   ) {
     return tx.nftToken.upsert({
@@ -29,6 +29,63 @@ export default class NftTokenRepository implements INftTokenRepository {
         id: true,
         address: true,
       },
+    });
+  }
+
+  async findByAddress(
+    ctx: IContext,
+    address: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
+      return tx.nftToken.findUnique({
+        where: { address },
+        select: {
+          id: true,
+          address: true,
+          name: true,
+          symbol: true,
+          type: true,
+          updatedAt: true,
+        },
+      });
+    }
+
+    return ctx.issuer.internal(async (t) => {
+      return t.nftToken.findUnique({
+        where: { address },
+        select: {
+          id: true,
+          address: true,
+          name: true,
+          symbol: true,
+          type: true,
+          updatedAt: true,
+        },
+      });
+    });
+  }
+
+  async findManyByAddresses(
+    ctx: IContext,
+    addresses: string[],
+  ) {
+    if (addresses.length === 0) {
+      return [];
+    }
+
+    return ctx.issuer.internal(async (t) => {
+      return t.nftToken.findMany({
+        where: { address: { in: addresses } },
+        select: {
+          id: true,
+          address: true,
+          name: true,
+          symbol: true,
+          type: true,
+          updatedAt: true,
+        },
+      });
     });
   }
 }

@@ -1128,7 +1128,7 @@ export type GqlNftInstance = {
   json?: Maybe<Scalars['JSON']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   nftToken?: Maybe<GqlNftToken>;
-  nftWallet: GqlNftWallet;
+  nftWallet?: Maybe<GqlNftWallet>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -1409,6 +1409,7 @@ export type GqlOpportunitySortInput = {
 export type GqlOpportunityUpdateContentInput = {
   body?: InputMaybe<Scalars['String']['input']>;
   category: GqlOpportunityCategory;
+  createdBy?: InputMaybe<Scalars['ID']['input']>;
   description: Scalars['String']['input'];
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
@@ -3157,7 +3158,7 @@ export type GqlResolversTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  NftInstance: ResolverTypeWrapper<Omit<GqlNftInstance, 'nftWallet'> & { nftWallet: GqlResolversTypes['NftWallet'] }>;
+  NftInstance: ResolverTypeWrapper<Omit<GqlNftInstance, 'nftWallet'> & { nftWallet?: Maybe<GqlResolversTypes['NftWallet']> }>;
   NftInstanceEdge: ResolverTypeWrapper<Omit<GqlNftInstanceEdge, 'node'> & { node: GqlResolversTypes['NftInstance'] }>;
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
@@ -3474,7 +3475,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  NftInstance: Omit<GqlNftInstance, 'nftWallet'> & { nftWallet: GqlResolversParentTypes['NftWallet'] };
+  NftInstance: Omit<GqlNftInstance, 'nftWallet'> & { nftWallet?: Maybe<GqlResolversParentTypes['NftWallet']> };
   NftInstanceEdge: Omit<GqlNftInstanceEdge, 'node'> & { node: GqlResolversParentTypes['NftInstance'] };
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
@@ -4131,7 +4132,7 @@ export type GqlNftInstanceResolvers<ContextType = any, ParentType extends GqlRes
   json?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   nftToken?: Resolver<Maybe<GqlResolversTypes['NftToken']>, ParentType, ContextType>;
-  nftWallet?: Resolver<GqlResolversTypes['NftWallet'], ParentType, ContextType>;
+  nftWallet?: Resolver<Maybe<GqlResolversTypes['NftWallet']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

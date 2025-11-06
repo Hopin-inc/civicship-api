@@ -16,13 +16,20 @@ export default class IdentityRepository implements IIdentityRepository {
     });
   }
 
-  async create(ctx: IContext, data: Prisma.IdentityCreateInput) {
-    return ctx.issuer.internal(async tx => {
+  async create(ctx: IContext, data: Prisma.IdentityCreateInput, tx?: Prisma.TransactionClient) {
+    if (tx) {
       return tx.identity.create({
         data,
         select: identitySelectDetail,
       });
-    });
+    } else {
+      return ctx.issuer.internal(async (tx) => {
+        return tx.identity.create({
+          data,
+          select: identitySelectDetail,
+        });
+      });
+    }
   }
 
   async update(uid: string, data: Prisma.IdentityUpdateInput) {

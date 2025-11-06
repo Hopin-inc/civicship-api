@@ -1,6 +1,6 @@
 import { GqlMutationUserUpdateMyProfileArgs, GqlQueryUsersArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { IdentityPlatform, Prisma } from "@prisma/client";
 import UserConverter from "@/application/domain/account/user/data/converter";
 import ImageService from "@/application/domain/content/image/service";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
@@ -57,6 +57,28 @@ export default class UserService {
     }
 
     return this.repository.update(ctx, ctx.currentUser.id, userUpdateInput, tx);
+  }
+
+  async findLineUidForCommunity(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+  ): Promise<string | undefined> {
+    const user = await ctx.issuer.internal(async (tx) => {
+      return tx.user.findUnique({
+        where: { id: userId },
+        include: {
+          identities: {
+            where: {
+              platform: IdentityPlatform.LINE,
+              communityId: communityId,
+            },
+          },
+        },
+      });
+    });
+
+    return user?.identities[0]?.uid;
   }
 
 }

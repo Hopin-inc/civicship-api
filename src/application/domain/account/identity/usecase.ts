@@ -196,9 +196,27 @@ export default class IdentityUseCase {
   ): Promise<GqlIdentityCheckPhoneUserPayload> {
     const { phoneUid } = args.input;
 
+    logger.info("[checkPhoneUser] Starting phone user check", {
+      phoneUid,
+      communityId: ctx.communityId,
+      uid: ctx.uid,
+      platform: ctx.platform,
+    });
+
     const existingUser = await this.identityService.findUserByIdentity(ctx, phoneUid);
 
+    logger.info("[checkPhoneUser] User lookup result", {
+      phoneUid,
+      existingUserId: existingUser?.id,
+      existingUserFound: !!existingUser,
+      communityId: ctx.communityId,
+    });
+
     if (!existingUser) {
+      logger.info("[checkPhoneUser] Returning NEW_USER status", {
+        phoneUid,
+        communityId: ctx.communityId,
+      });
       return {
         status: GqlPhoneUserStatus.NewUser,
         user: null,
@@ -212,7 +230,23 @@ export default class IdentityUseCase {
       ctx.communityId,
     );
 
+    logger.info("[checkPhoneUser] Membership lookup result", {
+      phoneUid,
+      userId: existingUser.id,
+      communityId: ctx.communityId,
+      membershipFound: !!existingMembership,
+      membershipUserId: existingMembership?.userId,
+      membershipCommunityId: existingMembership?.communityId,
+    });
+
     if (existingMembership) {
+      logger.info("[checkPhoneUser] Returning EXISTING_SAME_COMMUNITY status", {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+        membershipUserId: existingMembership.userId,
+        membershipCommunityId: existingMembership.communityId,
+      });
       return {
         status: GqlPhoneUserStatus.ExistingSameCommunity,
         user: existingUser,
@@ -220,30 +254,124 @@ export default class IdentityUseCase {
       };
     }
 
+    logger.info(
+      "[checkPhoneUser] User exists but no membership in current community, proceeding with EXISTING_DIFFERENT_COMMUNITY flow",
+      {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+        currentUid: ctx.uid,
+        currentPlatform: ctx.platform,
+      },
+    );
+
     const membership = await ctx.issuer.public(ctx, async (tx) => {
       if (!ctx.uid || !ctx.platform) {
+        logger.error("[checkPhoneUser] Missing uid or platform in context", {
+          phoneUid,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+          hasUid: !!ctx.uid,
+          hasPlatform: !!ctx.platform,
+        });
         throw new AuthenticationError();
       }
-      await this.identityService.addIdentityToUser(
-        ctx,
-        existingUser.id,
-        ctx.uid,
-        ctx.platform,
-        ctx.communityId,
-      );
+
+      const existingIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+
+      logger.info("[checkPhoneUser] Checking if current LINE identity exists", {
+        phoneUid,
+        currentUid: ctx.uid,
+        currentPlatform: ctx.platform,
+        existingIdentityUserId: existingIdentity?.id,
+        targetUserId: existingUser.id,
+        communityId: ctx.communityId,
+      });
+
+      if (existingIdentity) {
+        if (existingIdentity.id !== existingUser.id) {
+          logger.error("Identity already linked to another user", {
+            uid: ctx.uid,
+            platform: ctx.platform,
+            existingUserId: existingIdentity.id,
+            attemptedUserId: existingUser.id,
+            communityId: ctx.communityId,
+          });
+          throw new Error("This LINE account is already linked to another user");
+        }
+        logger.info("Identity already exists for this user, skipping creation", {
+          uid: ctx.uid,
+          platform: ctx.platform,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+        });
+      } else {
+        logger.info("[checkPhoneUser] Creating new LINE identity for existing user", {
+          phoneUid,
+          currentUid: ctx.uid,
+          currentPlatform: ctx.platform,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+        });
+        await this.identityService.addIdentityToUser(
+          ctx,
+          existingUser.id,
+          ctx.uid,
+          ctx.platform,
+          ctx.communityId,
+          tx,
+        );
+        logger.info("[checkPhoneUser] Successfully created new identity for user", {
+          uid: ctx.uid,
+          platform: ctx.platform,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+        });
+      }
+
+      logger.info("[checkPhoneUser] Creating membership for user in new community", {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+      });
+
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         existingUser.id,
         ctx.communityId,
         tx,
       );
+
+      logger.info("[checkPhoneUser] Membership created, creating wallet", {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+        membershipUserId: membership?.userId,
+        membershipCommunityId: membership?.communityId,
+      });
+
       await this.walletService.createMemberWalletIfNeeded(
         ctx,
         existingUser.id,
         ctx.communityId,
         tx,
       );
+
+      logger.info("[checkPhoneUser] Wallet created successfully", {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+      });
+
       return membership;
+    });
+
+    logger.info("[checkPhoneUser] Returning EXISTING_DIFFERENT_COMMUNITY status", {
+      phoneUid,
+      userId: existingUser.id,
+      communityId: ctx.communityId,
+      membershipUserId: membership?.userId,
+      membershipCommunityId: membership?.communityId,
     });
 
     return {

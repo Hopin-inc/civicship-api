@@ -214,6 +214,32 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
     
 
 
+        NftWalletType {
+            INTERNAL INTERNAL
+EXTERNAL EXTERNAL
+        }
+    
+
+
+        NftInstanceStatus {
+            STOCK STOCK
+RESERVED RESERVED
+MINTING MINTING
+OWNED OWNED
+RETIRED RETIRED
+        }
+    
+
+
+        NftMintStatus {
+            QUEUED QUEUED
+SUBMITTED SUBMITTED
+MINTED MINTED
+FAILED FAILED
+        }
+    
+
+
         Position {
             LEFT LEFT
 RIGHT RIGHT
@@ -631,8 +657,9 @@ RIGHT RIGHT
 
   "t_nft_wallets" {
     String id "🗝️"
-    String user_id 
+    NftWalletType type 
     String wallet_address 
+    String user_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -641,9 +668,9 @@ RIGHT RIGHT
   "t_nft_tokens" {
     String id "🗝️"
     String address 
+    String type 
     String name "❓"
     String symbol "❓"
-    String type 
     Json json "❓"
     DateTime created_at 
     DateTime updated_at "❓"
@@ -653,14 +680,30 @@ RIGHT RIGHT
   "t_nft_instances" {
     String id "🗝️"
     String instance_id 
+    Int sequence_num "❓"
+    NftInstanceStatus status 
     String name "❓"
     String description "❓"
     String image_url "❓"
     Json json "❓"
+    String nft_token_id 
+    String nft_wallet_id "❓"
+    String community_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
-    String nft_wallet_id 
-    String nft_token_id "❓"
+    }
+  
+
+  "t_nft_mints" {
+    String id "🗝️"
+    NftMintStatus status 
+    String tx_hash "❓"
+    String error "❓"
+    Int retry_count 
+    String external_request_id "❓"
+    String nft_instance_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
     }
   
 
@@ -779,6 +822,7 @@ RIGHT RIGHT
     "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
+    "t_communities" o{--}o "t_nft_instances" : "nftInstance"
     "t_community_configs" o|--|| "t_communities" : "community"
     "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
     "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
@@ -791,7 +835,7 @@ RIGHT RIGHT
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
-    "t_users" o{--}o "t_nft_wallets" : "nftWallet"
+    "t_users" o{--}o "t_nft_wallets" : "nftWallets"
     "t_users" o{--}o "t_did_issuance_requests" : "didIssuanceRequests"
     "t_users" o{--}o "t_vc_issuance_requests" : "vcIssuanceRequests"
     "t_users" o{--}o "t_memberships" : "memberships"
@@ -929,11 +973,17 @@ RIGHT RIGHT
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "t_transactions" o|--|o "t_users" : "createdByUser"
     "t_transactions" o{--}o "t_merkle_proofs" : "merkleProofs"
+    "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
-    "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
-    "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
+    "t_nft_instances" o|--|| "NftInstanceStatus" : "enum:status"
+    "t_nft_instances" o|--|| "t_nft_tokens" : "nftToken"
+    "t_nft_instances" o|--|o "t_nft_wallets" : "nftWallet"
+    "t_nft_instances" o{--}o "t_nft_mints" : "nftMints"
+    "t_nft_instances" o|--|o "t_communities" : "community"
+    "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
+    "t_nft_mints" o|--|| "t_nft_instances" : "nftInstance"
     "t_merkle_commits" o{--}o "t_merkle_proofs" : "proofs"
     "t_merkle_proofs" o|--|| "t_transactions" : "tx"
     "t_merkle_proofs" o|--|| "t_merkle_commits" : "commit"

@@ -18,7 +18,7 @@ describe("ReservationValidator", () => {
     it("should pass when slot is valid and no conflicts and enough capacity", () => {
       const slot = {
         hostingStatus: "SCHEDULED" as any,
-        startsAt: futureDate(8), // 8 days in future to avoid advance booking error (default is 7 days)
+        startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as any;
       const participantCount = 2;
@@ -55,7 +55,7 @@ describe("ReservationValidator", () => {
     it("should throw if there are conflicting reservations", () => {
       const slot = {
         hostingStatus: "SCHEDULED" as any,
-        startsAt: futureDate(8), // 8 days in future to avoid advance booking error (default is 7 days)
+        startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as any;
 
@@ -67,7 +67,7 @@ describe("ReservationValidator", () => {
     it("should throw if participant count exceeds capacity", () => {
       const slot = {
         hostingStatus: "SCHEDULED" as any,
-        startsAt: futureDate(8), // 8 days in future to avoid advance booking error (default is 7 days)
+        startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as any;
 
@@ -77,10 +77,10 @@ describe("ReservationValidator", () => {
     });
 
     it("should throw if booking is within the default advance booking period", () => {
-      // Mock current time to be after the deadline (23:59 of 7 days before the event)
-      const eventDate = futureDate(5); // Event is 5 days in future
+      // Mock current time to be after the deadline (23:59 of 1 day before the event)
+      const eventDate = futureDate(0.5); // Event is 0.5 days in future
       const mockNow = new Date(eventDate);
-      mockNow.setDate(mockNow.getDate() - 7); // 7 days before event (default advance booking days)
+      mockNow.setDate(mockNow.getDate() - 1); // 1 day before event (default advance booking days)
       mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
       mockNow.setMilliseconds(mockNow.getMilliseconds() + 1); // Just past the deadline
       
@@ -109,7 +109,7 @@ describe("ReservationValidator", () => {
           if (activityId === 'zero-days-activity-id') {
             return 0;
           }
-          return 7; // Default
+          return 1; // Default
         });
       });
 

@@ -1,8 +1,11 @@
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { NftInstance, NftInstanceStatus, Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
-import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
+import {
+  nftInstanceInclude,
+  PrismaNftInstance,
+} from "@/application/domain/account/nft-instance/data/type";
 
 @injectable()
 export default class NftInstanceRepository implements INftInstanceRepository {
@@ -11,27 +14,78 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     where: Prisma.NftInstanceWhereInput,
     orderBy: Prisma.NftInstanceOrderByWithRelationInput[],
     take: number,
-    cursor?: string
-  ): Promise<NftInstanceWithRelations[]> {
+    cursor?: string,
+  ): Promise<PrismaNftInstance[]> {
     return ctx.issuer.public(ctx, async (tx) => {
-      const result = await tx.nftInstance.findMany({
+      return tx.nftInstance.findMany({
         where,
-        include: {
-          nftToken: true,
-          nftWallet: true,
-        },
+        include: nftInstanceInclude,
         orderBy,
         take,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
-      return result as NftInstanceWithRelations[];
     });
   }
 
-  async count(
+  async findAndReserveInstance(
     ctx: IContext,
-    where: Prisma.NftInstanceWhereInput
-  ): Promise<number> {
+    communityId: string,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<NftInstance | null> {
+    const rows = await tx.$queryRaw<NftInstance[]>`
+      UPDATE t_nft_instances
+      SET status = 'RESERVED'::"NftInstanceStatus"
+      WHERE id = (
+        SELECT ni.id
+        FROM t_nft_instances ni
+        JOIN t_nft_products np ON np.id = ni.nft_product_id
+        WHERE ni.community_id = ${communityId}
+        AND np.product_id = ${productId}
+        AND ni.status = 'STOCK'::"NftInstanceStatus"
+        ORDER BY ni.sequence_num ASC
+        FOR UPDATE SKIP LOCKED
+        LIMIT 1
+        )
+        RETURNING *
+    `;
+
+    return rows[0] ?? null;
+  }
+
+  async releaseReservation(
+    ctx: IContext,
+    instanceId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await tx.nftInstance.update({
+      where: { id: instanceId },
+      data: { status: NftInstanceStatus.STOCK },
+    });
+  }
+
+  async updateStatus(
+    ctx: IContext,
+    instanceId: string,
+    status: NftInstanceStatus,
+    tx?: Prisma.TransactionClient,
+  ): Promise<NftInstance> {
+    if (tx) {
+      return tx.nftInstance.update({
+        where: { id: instanceId },
+        data: { status },
+      });
+    }
+
+    return ctx.issuer.internal((prisma) =>
+      prisma.nftInstance.update({
+        where: { id: instanceId },
+        data: { status },
+      }),
+    );
+  }
+
+  async count(ctx: IContext, where: Prisma.NftInstanceWhereInput): Promise<number> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.nftInstance.count({
         where,
@@ -39,28 +93,33 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
-  async findById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null> {
+  async findById(ctx: IContext, id: string): Promise<PrismaNftInstance | null> {
     return ctx.issuer.public(ctx, async (tx) => {
-      const result = await tx.nftInstance.findUnique({
+      return tx.nftInstance.findUnique({
         where: { id },
-        include: {
-          nftToken: true,
-          nftWallet: true,
-        },
+        include: nftInstanceInclude,
       });
-      return result as NftInstanceWithRelations | null;
     });
   }
 
   async upsert(
     ctx: IContext,
-    data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: unknown; nftWalletId: string; nftTokenId: string },
+    data: {
+      instanceId: string;
+      name?: string | null;
+      description?: string | null;
+      imageUrl?: string | null;
+      json: unknown;
+      nftWalletId: string;
+      nftTokenId: string;
+    },
+    nftTokenId: string,
     tx: Prisma.TransactionClient,
   ) {
     return tx.nftInstance.upsert({
       where: {
-        nftWalletId_instanceId: {
-          nftWalletId: data.nftWalletId,
+        nftTokenId_instanceId: {
+          nftTokenId,
           instanceId: data.instanceId,
         },
       },
@@ -69,7 +128,6 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         description: data.description,
         imageUrl: data.imageUrl,
         json: data.json,
-        nftTokenId: data.nftTokenId,
       },
       create: {
         instanceId: data.instanceId,
@@ -84,5 +142,41 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         id: true,
       },
     });
+  }
+
+  async findReservedByProduct(
+    ctx: IContext,
+    nftTokenId: string,
+    quantity: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<NftInstance[]> {
+    return tx.nftInstance.findMany({
+      where: {
+        nftTokenId,
+        status: NftInstanceStatus.RESERVED,
+        communityId: ctx.communityId,
+      },
+      take: quantity,
+      orderBy: { sequenceNum: "asc" },
+    });
+  }
+
+  async findByIdWithTransaction(
+    ctx: IContext,
+    instanceId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ id: string } | null> {
+    if (tx) {
+      return tx.nftInstance.findFirst({
+        where: { id: instanceId },
+        select: { id: true },
+      });
+    }
+    return ctx.issuer.public(ctx, (prisma) =>
+      prisma.nftInstance.findFirst({
+        where: { id: instanceId },
+        select: { id: true },
+      }),
+    );
   }
 }

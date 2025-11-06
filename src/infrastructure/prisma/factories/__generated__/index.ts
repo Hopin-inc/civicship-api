@@ -33,6 +33,7 @@ import type { ApiKey } from "@prisma/client";
 import type { NftWallet } from "@prisma/client";
 import type { NftToken } from "@prisma/client";
 import type { NftInstance } from "@prisma/client";
+import type { NftMint } from "@prisma/client";
 import type { MerkleCommit } from "@prisma/client";
 import type { MerkleProof } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
@@ -68,6 +69,9 @@ import type { ClaimLinkStatus } from "@prisma/client";
 import type { TicketStatus } from "@prisma/client";
 import type { TicketStatusReason } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
+import type { NftWalletType } from "@prisma/client";
+import type { NftInstanceStatus } from "@prisma/client";
+import type { NftMintStatus } from "@prisma/client";
 import type { Position } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
@@ -211,6 +215,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "articles",
                 type: "Article",
                 relationName: "ArticleToCommunity"
+            }, {
+                name: "nftInstance",
+                type: "NftInstance",
+                relationName: "CommunityToNftInstance"
             }]
     }, {
         name: "CommunityConfig",
@@ -263,7 +271,7 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Identity",
                 relationName: "IdentityToUser"
             }, {
-                name: "nftWallet",
+                name: "nftWallets",
                 type: "NftWallet",
                 relationName: "NftWalletToUser"
             }, {
@@ -778,13 +786,28 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "NftInstance",
         fields: [{
+                name: "nftToken",
+                type: "NftToken",
+                relationName: "NftInstanceToNftToken"
+            }, {
                 name: "nftWallet",
                 type: "NftWallet",
                 relationName: "NftInstanceToNftWallet"
             }, {
-                name: "nftToken",
-                type: "NftToken",
-                relationName: "NftInstanceToNftToken"
+                name: "nftMints",
+                type: "NftMint",
+                relationName: "NftInstanceToNftMint"
+            }, {
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToNftInstance"
+            }]
+    }, {
+        name: "NftMint",
+        fields: [{
+                name: "nftInstance",
+                type: "NftInstance",
+                relationName: "NftInstanceToNftMint"
             }]
     }, {
         name: "MerkleCommit",
@@ -1603,6 +1626,7 @@ type CommunityFactoryDefineInput = {
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutCommunityInput;
+    nftInstance?: Prisma.NftInstanceCreateNestedManyWithoutCommunityInput;
 };
 
 type CommunityTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFactoryDefineInput, never>>;
@@ -2414,11 +2438,6 @@ type UserimageFactory = {
     build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutUsersInput["create"]>;
 };
 
-type UsernftWalletFactory = {
-    _factoryFor: "NftWallet";
-    build: () => PromiseLike<Prisma.NftWalletCreateNestedOneWithoutUserInput["create"]>;
-};
-
 type UserFactoryDefineInput = {
     id?: string;
     name?: string;
@@ -2437,7 +2456,7 @@ type UserFactoryDefineInput = {
     updatedAt?: Date | null;
     image?: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
-    nftWallet?: UsernftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutUserInput;
+    nftWallets?: Prisma.NftWalletCreateNestedManyWithoutUserInput;
     didIssuanceRequests?: Prisma.DidIssuanceRequestCreateNestedManyWithoutUserInput;
     vcIssuanceRequests?: Prisma.VcIssuanceRequestCreateNestedManyWithoutUserInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
@@ -2473,10 +2492,6 @@ type UserFactoryDefineOptions<TTransients extends Record<string, unknown> = Reco
 
 function isUserimageFactory(x: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput | undefined): x is UserimageFactory {
     return (x as any)?._factoryFor === "Image";
-}
-
-function isUsernftWalletFactory(x: UsernftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutUserInput | undefined): x is UsernftWalletFactory {
-    return (x as any)?._factoryFor === "NftWallet";
 }
 
 type UserTraitKeys<TOptions extends UserFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -2543,10 +2558,7 @@ function defineUserFactoryInternal<TTransients extends Record<string, unknown>, 
             const defaultAssociations = {
                 image: isUserimageFactory(defaultData.image) ? {
                     create: await defaultData.image.build()
-                } : defaultData.image,
-                nftWallet: isUsernftWalletFactory(defaultData.nftWallet) ? {
-                    create: await defaultData.nftWallet.build()
-                } : defaultData.nftWallet
+                } : defaultData.image
             } as Prisma.UserCreateInput;
             const data: Prisma.UserCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -6553,15 +6565,16 @@ type NftWalletScalarOrEnumFields = {
 
 type NftWalletuserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutNftWalletInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutNftWalletsInput["create"]>;
 };
 
 type NftWalletFactoryDefineInput = {
     id?: string;
+    type?: NftWalletType;
     walletAddress?: string;
     createdAt?: Date;
     updatedAt?: Date | null;
-    user: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletInput;
+    user: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletsInput;
     nftInstances?: Prisma.NftInstanceCreateNestedManyWithoutNftWalletInput;
 };
 
@@ -6578,7 +6591,7 @@ type NftWalletFactoryDefineOptions<TTransients extends Record<string, unknown> =
     };
 } & CallbackDefineOptions<NftWallet, Prisma.NftWalletCreateInput, TTransients>;
 
-function isNftWalletuserFactory(x: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletInput | undefined): x is NftWalletuserFactory {
+function isNftWalletuserFactory(x: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletsInput | undefined): x is NftWalletuserFactory {
     return (x as any)?._factoryFor === "User";
 }
 
@@ -6605,7 +6618,7 @@ function autoGenerateNftWalletScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): NftWalletScalarOrEnumFields {
     return {
-        walletAddress: getScalarFieldValueGenerator().String({ modelName: "NftWallet", fieldName: "walletAddress", isId: false, isUnique: false, seq })
+        walletAddress: getScalarFieldValueGenerator().String({ modelName: "NftWallet", fieldName: "walletAddress", isId: false, isUnique: true, seq })
     };
 }
 
@@ -6710,9 +6723,9 @@ type NftTokenScalarOrEnumFields = {
 type NftTokenFactoryDefineInput = {
     id?: string;
     address?: string;
+    type?: string;
     name?: string | null;
     symbol?: string | null;
-    type?: string;
     json?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date | null;
@@ -6853,27 +6866,36 @@ type NftInstanceScalarOrEnumFields = {
     instanceId: string;
 };
 
-type NftInstancenftWalletFactory = {
-    _factoryFor: "NftWallet";
-    build: () => PromiseLike<Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput["create"]>;
-};
-
 type NftInstancenftTokenFactory = {
     _factoryFor: "NftToken";
     build: () => PromiseLike<Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput["create"]>;
 };
 
+type NftInstancenftWalletFactory = {
+    _factoryFor: "NftWallet";
+    build: () => PromiseLike<Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput["create"]>;
+};
+
+type NftInstancecommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutNftInstanceInput["create"]>;
+};
+
 type NftInstanceFactoryDefineInput = {
     id?: string;
     instanceId?: string;
+    sequenceNum?: number | null;
+    status?: NftInstanceStatus;
     name?: string | null;
     description?: string | null;
     imageUrl?: string | null;
     json?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date | null;
-    nftWallet: NftInstancenftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput;
-    nftToken?: NftInstancenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput;
+    nftToken: NftInstancenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput;
+    nftWallet?: NftInstancenftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput;
+    nftMints?: Prisma.NftMintCreateNestedManyWithoutNftInstanceInput;
+    community?: NftInstancecommunityFactory | Prisma.CommunityCreateNestedOneWithoutNftInstanceInput;
 };
 
 type NftInstanceTransientFields = Record<string, unknown> & Partial<Record<keyof NftInstanceFactoryDefineInput, never>>;
@@ -6889,12 +6911,16 @@ type NftInstanceFactoryDefineOptions<TTransients extends Record<string, unknown>
     };
 } & CallbackDefineOptions<NftInstance, Prisma.NftInstanceCreateInput, TTransients>;
 
+function isNftInstancenftTokenFactory(x: NftInstancenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput | undefined): x is NftInstancenftTokenFactory {
+    return (x as any)?._factoryFor === "NftToken";
+}
+
 function isNftInstancenftWalletFactory(x: NftInstancenftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput | undefined): x is NftInstancenftWalletFactory {
     return (x as any)?._factoryFor === "NftWallet";
 }
 
-function isNftInstancenftTokenFactory(x: NftInstancenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput | undefined): x is NftInstancenftTokenFactory {
-    return (x as any)?._factoryFor === "NftToken";
+function isNftInstancecommunityFactory(x: NftInstancecommunityFactory | Prisma.CommunityCreateNestedOneWithoutNftInstanceInput | undefined): x is NftInstancecommunityFactory {
+    return (x as any)?._factoryFor === "Community";
 }
 
 type NftInstanceTraitKeys<TOptions extends NftInstanceFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -6957,12 +6983,15 @@ function defineNftInstanceFactoryInternal<TTransients extends Record<string, unk
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
+                nftToken: isNftInstancenftTokenFactory(defaultData.nftToken) ? {
+                    create: await defaultData.nftToken.build()
+                } : defaultData.nftToken,
                 nftWallet: isNftInstancenftWalletFactory(defaultData.nftWallet) ? {
                     create: await defaultData.nftWallet.build()
                 } : defaultData.nftWallet,
-                nftToken: isNftInstancenftTokenFactory(defaultData.nftToken) ? {
-                    create: await defaultData.nftToken.build()
-                } : defaultData.nftToken
+                community: isNftInstancecommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
             } as Prisma.NftInstanceCreateInput;
             const data: Prisma.NftInstanceCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -7019,6 +7048,160 @@ export const defineNftInstanceFactory = (<TOptions extends NftInstanceFactoryDef
 }) as NftInstanceFactoryBuilder;
 
 defineNftInstanceFactory.withTransientFields = defaultTransientFieldValues => options => defineNftInstanceFactoryInternal(options, defaultTransientFieldValues);
+
+type NftMintScalarOrEnumFields = {};
+
+type NftMintnftInstanceFactory = {
+    _factoryFor: "NftInstance";
+    build: () => PromiseLike<Prisma.NftInstanceCreateNestedOneWithoutNftMintsInput["create"]>;
+};
+
+type NftMintFactoryDefineInput = {
+    id?: string;
+    status?: NftMintStatus;
+    txHash?: string | null;
+    error?: string | null;
+    retryCount?: number;
+    externalRequestId?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    nftInstance: NftMintnftInstanceFactory | Prisma.NftInstanceCreateNestedOneWithoutNftMintsInput;
+};
+
+type NftMintTransientFields = Record<string, unknown> & Partial<Record<keyof NftMintFactoryDefineInput, never>>;
+
+type NftMintFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<NftMintFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<NftMint, Prisma.NftMintCreateInput, TTransients>;
+
+type NftMintFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<NftMintFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: NftMintFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<NftMint, Prisma.NftMintCreateInput, TTransients>;
+
+function isNftMintnftInstanceFactory(x: NftMintnftInstanceFactory | Prisma.NftInstanceCreateNestedOneWithoutNftMintsInput | undefined): x is NftMintnftInstanceFactory {
+    return (x as any)?._factoryFor === "NftInstance";
+}
+
+type NftMintTraitKeys<TOptions extends NftMintFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface NftMintFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "NftMint";
+    build(inputData?: Partial<Prisma.NftMintCreateInput & TTransients>): PromiseLike<Prisma.NftMintCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.NftMintCreateInput & TTransients>): PromiseLike<Prisma.NftMintCreateInput>;
+    buildList(list: readonly Partial<Prisma.NftMintCreateInput & TTransients>[]): PromiseLike<Prisma.NftMintCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.NftMintCreateInput & TTransients>): PromiseLike<Prisma.NftMintCreateInput[]>;
+    pickForConnect(inputData: NftMint): Pick<NftMint, "id">;
+    create(inputData?: Partial<Prisma.NftMintCreateInput & TTransients>): PromiseLike<NftMint>;
+    createList(list: readonly Partial<Prisma.NftMintCreateInput & TTransients>[]): PromiseLike<NftMint[]>;
+    createList(count: number, item?: Partial<Prisma.NftMintCreateInput & TTransients>): PromiseLike<NftMint[]>;
+    createForConnect(inputData?: Partial<Prisma.NftMintCreateInput & TTransients>): PromiseLike<Pick<NftMint, "id">>;
+}
+
+export interface NftMintFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends NftMintFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): NftMintFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateNftMintScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): NftMintScalarOrEnumFields {
+    return {};
+}
+
+function defineNftMintFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends NftMintFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): NftMintFactoryInterface<TTransients, NftMintTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly NftMintTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("NftMint", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.NftMintCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateNftMintScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<NftMintFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<NftMintFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                nftInstance: isNftMintnftInstanceFactory(defaultData.nftInstance) ? {
+                    create: await defaultData.nftInstance.build()
+                } : defaultData.nftInstance
+            } as Prisma.NftMintCreateInput;
+            const data: Prisma.NftMintCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.NftMintCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: NftMint) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.NftMintCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().nftMint.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.NftMintCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.NftMintCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "NftMint" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: NftMintTraitKeys<TOptions>, ...names: readonly NftMintTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface NftMintFactoryBuilder {
+    <TOptions extends NftMintFactoryDefineOptions>(options: TOptions): NftMintFactoryInterface<{}, NftMintTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends NftMintTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends NftMintFactoryDefineOptions<TTransients>>(options: TOptions) => NftMintFactoryInterface<TTransients, NftMintTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link NftMint} model.
+ *
+ * @param options
+ * @returns factory {@link NftMintFactoryInterface}
+ */
+export const defineNftMintFactory = (<TOptions extends NftMintFactoryDefineOptions>(options: TOptions): NftMintFactoryInterface<TOptions> => {
+    return defineNftMintFactoryInternal(options, {});
+}) as NftMintFactoryBuilder;
+
+defineNftMintFactory.withTransientFields = defaultTransientFieldValues => options => defineNftMintFactoryInternal(options, defaultTransientFieldValues);
 
 type MerkleCommitScalarOrEnumFields = {
     id: string;

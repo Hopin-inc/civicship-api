@@ -12,6 +12,7 @@ import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/expe
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
+import UserService from "@/application/domain/account/user/service";
 import { createLineClient } from "@/infrastructure/libs/line";
 import logger from "@/infrastructure/logging";
 import dayjs from "dayjs";
@@ -20,6 +21,8 @@ import timezone from "dayjs/plugin/timezone.js";
 import "dayjs/locale/ja.js";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
+import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
+import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
 import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -36,6 +39,8 @@ export default class NotificationService {
   constructor(
     @inject("CommunityConfigService")
     private readonly communityConfigService: CommunityConfigService,
+    @inject("UserService")
+    private readonly userService: UserService,
   ) { }
 
   async pushCancelOpportunitySlotMessage(
@@ -361,6 +366,70 @@ export default class NotificationService {
     await safePushMessage(client, { to: uid, messages: [message] });
   }
 
+  async pushPointDonationReceivedMessage(
+    ctx: IContext,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    fromUserName: string,
+    toUserId: string,
+  ) {
+    const preparedData = await this.prepareLinePush(
+      ctx,
+      toUserId,
+      transactionId,
+      "pushPointDonationReceivedMessage",
+    );
+
+    if (!preparedData) {
+      return;
+    }
+
+    const { uid, liffBaseUrl, client } = preparedData;
+    const redirectUrl = `${liffBaseUrl}/wallets`;
+
+    const message = buildPointDonationReceivedMessage({
+      fromUserName,
+      transferPoints: toPointChange,
+      comment: comment ?? undefined,
+      redirectUrl,
+    });
+
+    await safePushMessage(client, { to: uid, messages: [message] });
+  }
+
+  async pushPointGrantReceivedMessage(
+    ctx: IContext,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    communityName: string,
+    toUserId: string,
+  ) {
+    const preparedData = await this.prepareLinePush(
+      ctx,
+      toUserId,
+      transactionId,
+      "pushPointGrantReceivedMessage",
+    );
+
+    if (!preparedData) {
+      return;
+    }
+
+    const { uid, liffBaseUrl, client } = preparedData;
+    const redirectUrl = `${liffBaseUrl}/wallets`;
+
+    const message = buildPointGrantReceivedMessage({
+      communityName,
+      transferPoints: toPointChange,
+      comment: comment ?? undefined,
+      redirectUrl,
+    });
+
+    await safePushMessage(client, { to: uid, messages: [message] });
+  }
+
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
       (identity) =>
@@ -428,6 +497,41 @@ export default class NotificationService {
   }
 
   // --- 共通化したプライベートユーティリティ ---
+
+  private async prepareLinePush(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient } | null> {
+    const uid = await this.userService.findLineUidForCommunity(ctx, userId, ctx.communityId);
+
+    if (!uid) {
+      logger.warn(`${logContext}: lineUid is missing`, {
+        transactionId,
+        userId,
+        communityId: ctx.communityId,
+      });
+      return null;
+    }
+
+    let liffBaseUrl: string;
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error(`${logContext}: failed to get LIFF config`, {
+        transactionId,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return null;
+    }
+
+    const client = await createLineClient(ctx.communityId);
+
+    return { uid, liffBaseUrl, client };
+  }
 
   private extractLineUidsFromParticipations(
     participations: {
