@@ -40,7 +40,6 @@ describe("IdentityUseCase.userCreateAccount", () => {
     const ctx: IContext = {
       uid: `uid-${uniqueId}`,
       platform: GqlIdentityPlatform.Line,
-      phoneAuthToken: "test-phone-auth-token",
       communityId: community.id,
       issuer,
     } as IContext;

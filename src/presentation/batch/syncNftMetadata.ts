@@ -5,10 +5,13 @@ import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import NFTWalletUsecase from "@/application/domain/account/nft-wallet/usecase";
 import { IContext } from "@/types/server";
+import { NftWalletType } from "@prisma/client";
 
 export async function syncNftMetadata() {
   const batchStartTime = Date.now();
-  logger.info("🚀 Starting NFT metadata synchronization batch", { startTime: new Date().toISOString() });
+  logger.info("🚀 Starting NFT metadata synchronization batch", {
+    startTime: new Date().toISOString(),
+  });
 
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nftWalletUsecase = container.resolve<NFTWalletUsecase>("NFTWalletUsecase");
@@ -16,6 +19,9 @@ export async function syncNftMetadata() {
 
   try {
     const BATCH_SIZE = 50;
+    const SYNC_INTERVAL_HOURS = 24;
+    const RATE_LIMIT_DELAY_MS = 100;
+
     let skip = 0;
     let totalProcessed = 0;
     let totalErrors = 0;
@@ -23,11 +29,20 @@ export async function syncNftMetadata() {
     let totalNftsProcessed = 0;
     let hasMore = true;
 
+    const syncCutoffTime = new Date(Date.now() - SYNC_INTERVAL_HOURS * 60 * 60 * 1000);
+
     while (hasMore) {
       const batchIterationStartTime = Date.now();
-      
+
       const nftWallets = await issuer.internal(async (tx) => {
         return tx.nftWallet.findMany({
+          where: {
+            type: NftWalletType.EXTERNAL,
+            OR: [
+              { updatedAt: null },
+              { updatedAt: { lt: syncCutoffTime } }
+            ]
+          },
           select: {
             id: true,
             walletAddress: true,
@@ -50,7 +65,7 @@ export async function syncNftMetadata() {
 
       for (const wallet of nftWallets) {
         const result = await nftWalletUsecase.syncMetadata(ctx, wallet);
-        
+
         if (result.success) {
           if (result.itemsProcessed > 0) {
             totalProcessed++;
@@ -65,6 +80,8 @@ export async function syncNftMetadata() {
             error: result.error,
           });
         }
+
+        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
       }
 
       logger.info("✅ Batch iteration completed", {
@@ -83,6 +100,7 @@ export async function syncNftMetadata() {
       totalWalletsSkipped: totalSkipped,
       totalWalletsErrors: totalErrors,
       totalNftsProcessed,
+      syncIntervalHours: SYNC_INTERVAL_HOURS,
       durationMs: Date.now() - batchStartTime,
       endTime: new Date().toISOString(),
     });

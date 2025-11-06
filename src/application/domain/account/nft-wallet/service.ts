@@ -123,14 +123,21 @@ export default class NFTWalletService {
       const errorDetails = {
         walletAddress,
         durationMs: Date.now() - startTime,
-        errorMessage: error instanceof Error ? error.message : String(error),
+        errorMessage: error instanceof Error ? error.message : JSON.stringify(error),
         errorName: error instanceof Error ? error.name : 'Unknown',
-        errorCode: (error as any).code,
-        errorType: (error as any).type,
+        errorCode: (error as any)?.code,
+        errorType: (error as any)?.type,
         errorStack: error instanceof Error ? error.stack : undefined,
       };
-      
-      logger.error("❌ Failed to fetch NFT metadata", errorDetails);
+
+      // Use warn level for timeout errors (temporary network issues)
+      const isTimeout = !!error && (error as any).code === 'ETIMEDOUT';
+      if (isTimeout) {
+        logger.warn("⚠️ Failed to fetch NFT metadata (timeout)", errorDetails);
+      } else {
+        logger.error("❌ Failed to fetch NFT metadata", errorDetails);
+      }
+
       throw error;
     }
   }

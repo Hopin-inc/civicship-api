@@ -1759,6 +1759,7 @@ export type GqlQuery = {
   evaluations: GqlEvaluationsConnection;
   membership?: Maybe<GqlMembership>;
   memberships: GqlMembershipsConnection;
+  myWallet?: Maybe<GqlWallet>;
   nftInstance?: Maybe<GqlNftInstance>;
   nftInstances: GqlNftInstancesConnection;
   opportunities: GqlOpportunitiesConnection;
@@ -2887,10 +2888,19 @@ export type GqlWallet = {
   currentPointView?: Maybe<GqlCurrentPointView>;
   id: Scalars['ID']['output'];
   tickets?: Maybe<Array<GqlTicket>>;
+  /** @deprecated Use transactionsConnection for pagination support */
   transactions?: Maybe<Array<GqlTransaction>>;
+  transactionsConnection?: Maybe<GqlTransactionsConnection>;
   type: GqlWalletType;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user?: Maybe<GqlUser>;
+};
+
+
+export type GqlWalletTransactionsConnectionArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlTransactionSortInput>;
 };
 
 export type GqlWalletEdge = GqlEdge & {
@@ -4503,6 +4513,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   evaluations?: Resolver<GqlResolversTypes['EvaluationsConnection'], ParentType, ContextType, Partial<GqlQueryEvaluationsArgs>>;
   membership?: Resolver<Maybe<GqlResolversTypes['Membership']>, ParentType, ContextType, RequireFields<GqlQueryMembershipArgs, 'communityId' | 'userId'>>;
   memberships?: Resolver<GqlResolversTypes['MembershipsConnection'], ParentType, ContextType, Partial<GqlQueryMembershipsArgs>>;
+  myWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
   nftInstance?: Resolver<Maybe<GqlResolversTypes['NftInstance']>, ParentType, ContextType, RequireFields<GqlQueryNftInstanceArgs, 'id'>>;
   nftInstances?: Resolver<GqlResolversTypes['NftInstancesConnection'], ParentType, ContextType, Partial<GqlQueryNftInstancesArgs>>;
   opportunities?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesArgs>>;
@@ -5004,6 +5015,7 @@ export type GqlWalletResolvers<ContextType = any, ParentType extends GqlResolver
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   tickets?: Resolver<Maybe<Array<GqlResolversTypes['Ticket']>>, ParentType, ContextType>;
   transactions?: Resolver<Maybe<Array<GqlResolversTypes['Transaction']>>, ParentType, ContextType>;
+  transactionsConnection?: Resolver<Maybe<GqlResolversTypes['TransactionsConnection']>, ParentType, ContextType, Partial<GqlWalletTransactionsConnectionArgs>>;
   type?: Resolver<GqlResolversTypes['WalletType'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;

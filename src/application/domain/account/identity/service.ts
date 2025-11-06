@@ -28,22 +28,21 @@ export default class IdentityService {
     communityId: string,
     tx?: Prisma.TransactionClient,
   ) {
-    const expiryTime = ctx.phoneTokenExpiresAt
-      ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
-      : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
-    await this.identityRepository.create(ctx, {
-      uid,
-      platform,
-      authToken: ctx.idToken,
-      refreshToken: ctx.refreshToken,
-      tokenExpiresAt: expiryTime,
-      user: {
-        connect: { id: userId },
+    // PHONE以外のtokenは不要
+    await this.identityRepository.create(
+      ctx,
+      {
+        uid,
+        platform,
+        user: {
+          connect: { id: userId },
+        },
+        community: {
+          connect: { id: communityId },
+        },
       },
-      community: {
-        connect: { id: communityId },
-      },
-    }, tx);
+      tx,
+    );
   }
 
   async linkPhoneIdentity(

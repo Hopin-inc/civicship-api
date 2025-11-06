@@ -61,10 +61,10 @@ for i in "${!ALIASES[@]}"; do
   # 画像アップロード
   curl -s -X POST https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content \
     -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" \
-    -H "Content-Type: image/png" \
-    -T "${SCRIPT_DIR}/${dir}/${baseName}.png"
+    -H "Content-Type: image/jpeg" \
+    -T "${SCRIPT_DIR}/${dir}/${baseName}.jpg"
 
-  echo "🖼️ Uploaded image: ${baseName}.png"
+  echo "🖼️ Uploaded image: ${baseName}.jpg"
 
   # エイリアス削除＆再作成
   curl -s -X DELETE https://api.line.me/v2/bot/richmenu/alias/${alias} \
@@ -108,7 +108,7 @@ elif [ "$DEFAULT_ALIAS" = "public-menu" ]; then
 fi
 
 if [ -n "$defaultKey" ]; then
-  defaultRichMenuId=$(grep "$defaultKey" "$CONSTANT_FILE_PATH" | cut -d '=' -f2)
+  defaultRichMenuId=$(grep "RICH_MENU_ID_${defaultKey}=" "$CONSTANT_FILE_PATH" | tail -n1 | cut -d '=' -f2)
 
   if [ -n "$defaultRichMenuId" ]; then
     curl -s -X POST "https://api.line.me/v2/bot/user/all/richmenu/${defaultRichMenuId}" \

@@ -195,7 +195,7 @@ export default class NotificationService {
     );
 
     if (!lineUid) {
-      logger.warn("pushReservationAppliedMessage: lineUid is missing", {
+      logger.warn("pushReservationCanceledMessage: lineUid is missing", {
         reservationId: reservation.id,
         createdByUser: reservation.opportunitySlot.opportunity.createdByUser,
       });
@@ -437,7 +437,7 @@ export default class NotificationService {
     )?.uid;
 
     if (!lineUid) {
-      logger.warn("pushReservationAppliedMessage: lineUid is missing", {
+      logger.warn("switchRichMenuByRole: lineUid is missing", {
         userId: membership.user.id,
         communityId: ctx.communityId,
       });

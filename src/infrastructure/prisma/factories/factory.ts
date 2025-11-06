@@ -5,6 +5,8 @@ import {
   IdentityPlatform,
   MembershipStatus,
   MembershipStatusReason,
+  NftInstanceStatus,
+  NftWalletType,
   OpportunityCategory,
   OpportunitySlotHostingStatus,
   ParticipationStatus,
@@ -44,6 +46,9 @@ import {
   defineEvaluationFactory,
   defineImageFactory,
   defineMembershipFactory,
+  defineNftInstanceFactory,
+  defineNftTokenFactory,
+  defineNftWalletFactory,
   defineOpportunityFactory,
   defineOpportunitySlotFactory,
   defineParticipationFactory,
@@ -669,6 +674,56 @@ export const TransactionFactory = defineTransactionFactory.withTransientFields<{
       toWallet: { connect: { id: toWallet.id } },
       fromPointChange: -10,
       toPointChange: 10,
+    };
+  },
+});
+
+
+export const NftTokenFactory = defineNftTokenFactory({
+  defaultData: () => ({
+    address: `0x${randUuid().replace(/-/g, "").substring(0, 40)}`,
+    type: "ERC-721",
+    name: `NFT Token ${randSlug()}`,
+    symbol: randSlug().substring(0, 5).toUpperCase(),
+    json: {},
+  }),
+});
+
+export const NftWalletFactory = defineNftWalletFactory.withTransientFields<{
+  transientUser?: { id: string };
+}>({
+  transientUser: undefined,
+})({
+  defaultData: async ({ transientUser }) => {
+    const user = transientUser ?? (await UserFactory.create());
+    return {
+      type: NftWalletType.EXTERNAL,
+      walletAddress: `0x${randUuid().replace(/-/g, "").substring(0, 40)}`,
+      user: { connect: { id: user.id } },
+    };
+  },
+});
+
+export const NftInstanceFactory = defineNftInstanceFactory.withTransientFields<{
+  transientNftToken?: { id: string };
+  transientNftWallet?: { id: string };
+}>({
+  transientNftToken: undefined,
+  transientNftWallet: undefined,
+})({
+  defaultData: async ({ transientNftToken, transientNftWallet }) => {
+    const token = transientNftToken ?? (await NftTokenFactory.create());
+    return {
+      instanceId: randUuid(),
+      status: NftInstanceStatus.OWNED,
+      name: `NFT Instance ${randSlug()}`,
+      description: randParagraph(),
+      imageUrl: `https://picsum.photos/seed/${randSlug()}/800/450`,
+      json: {},
+      nftToken: { connect: { id: token.id } },
+      ...(transientNftWallet && {
+        nftWallet: { connect: { id: transientNftWallet.id } },
+      }),
     };
   },
 });

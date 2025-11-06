@@ -1,20 +1,31 @@
-import { GqlQueryWalletsArgs, GqlQueryWalletArgs } from "@/types/graphql";
+import {
+  GqlQueryWalletsArgs,
+  GqlQueryWalletArgs,
+  GqlWalletTransactionsConnectionArgs,
+} from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 
 import WalletUseCase from "@/application/domain/account/wallet/usecase";
+import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { PrismaWalletDetail } from "@/application/domain/account/wallet/data/type";
 
 @injectable()
 export default class WalletResolver {
-  constructor(@inject("WalletUseCase") private readonly walletUseCase: WalletUseCase) {}
+  constructor(
+    @inject("WalletUseCase") private readonly walletUseCase: WalletUseCase,
+    @inject("TransactionUseCase") private readonly transactionUseCase: TransactionUseCase,
+  ) {}
 
   Query = {
     wallets: (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) => {
       return this.walletUseCase.visitorBrowseWallets(args, ctx);
     },
     wallet: (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
-      return ctx.loaders.wallet.load(args.id);
+      return this.walletUseCase.userViewWallet(args, ctx);
+    },
+    myWallet: (_: unknown, _args: unknown, ctx: IContext) => {
+      return this.walletUseCase.userViewMyWallet(ctx);
     },
   };
 
@@ -33,6 +44,25 @@ export default class WalletResolver {
 
     transactions: async (parent: PrismaWalletDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.transactionsByWallet.load(parent.id);
+    },
+
+    transactionsConnection: async (
+      parent: PrismaWalletDetail,
+      args: GqlWalletTransactionsConnectionArgs,
+      ctx: IContext,
+    ) => {
+      return this.transactionUseCase.visitorBrowseTransactions(
+        {
+          filter: {
+            communityId: parent.communityId,
+            or: [{ fromWalletId: parent.id }, { toWalletId: parent.id }],
+          },
+          sort: args.sort ?? { createdAt: "desc" },
+          cursor: args.cursor,
+          first: args.first ?? 20,
+        },
+        ctx,
+      );
     },
   };
 }
