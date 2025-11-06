@@ -64,7 +64,7 @@ export default class MembershipService {
   ) {
     let membership = await this.repository.find(ctx, {
       userId_communityId: { userId: joinedUserId ?? currentUserId, communityId },
-    });
+    }, tx);
 
     if (!membership) {
       const data = this.converter.join(currentUserId, communityId, joinedUserId);
