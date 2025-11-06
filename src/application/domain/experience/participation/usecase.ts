@@ -87,7 +87,7 @@ export default class ParticipationUseCase {
     ctx: IContext,
   ): Promise<GqlParticipationDeletePayload> {
     const deleted = await ctx.issuer.public(ctx, async (tx) => {
-      const participation = await this.service.findParticipationOrThrow(ctx, id);
+      const participation = await this.service.findParticipationOrThrow(ctx, id, tx);
       this.service.validateDeletable(participation);
 
       return await this.service.deleteParticipation(ctx, id, tx);

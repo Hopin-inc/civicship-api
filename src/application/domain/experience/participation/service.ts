@@ -34,12 +34,12 @@ export default class ParticipationService implements IParticipationService {
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  async findParticipation(ctx: IContext, id: string) {
-    return await this.repository.find(ctx, id);
+  async findParticipation(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    return await this.repository.find(ctx, id, tx);
   }
 
-  async findParticipationOrThrow(ctx: IContext, id: string) {
-    const participation = await this.repository.find(ctx, id);
+  async findParticipationOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    const participation = await this.repository.find(ctx, id, tx);
     if (!participation) {
       throw new NotFoundError(`ParticipationNotFound: ID=${id}`);
     }
