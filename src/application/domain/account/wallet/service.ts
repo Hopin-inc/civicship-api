@@ -94,7 +94,7 @@ export default class WalletService {
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId);
+    const memberWallet = await this.findMemberWalletOrThrow(ctx, userId, communityId, tx);
     return this.repository.delete(ctx, memberWallet.id, tx);
   }
 

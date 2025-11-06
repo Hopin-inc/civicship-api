@@ -19,6 +19,7 @@ export interface IWalletRepository {
     ctx: IContext,
     communityId: string,
     userId: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PrismaWallet | null>;
 
   create(
