@@ -26,6 +26,9 @@ importers:
       '@google-cloud/opentelemetry-cloud-trace-exporter':
         specifier: ^3.0.0
         version: 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))
+      '@google-cloud/opentelemetry-cloud-trace-propagator':
+        specifier: ^0.21.0
+        version: 0.21.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))
       '@google-cloud/storage':
         specifier: ^7.16.0
         version: 7.16.0
@@ -1706,6 +1709,13 @@ packages:
       '@opentelemetry/core': ^2.0.0
       '@opentelemetry/resources': ^2.0.0
       '@opentelemetry/sdk-trace-base': ^2.0.0
+
+  '@google-cloud/opentelemetry-cloud-trace-propagator@0.21.0':
+    resolution: {integrity: sha512-Uw+co/tfYAkXFgMFsHdr5xQbxkLG/mRtHu4LL/ffrNj7TYi5UIU0tG+nGKxo4P2Oj8AJLT2D8iGaXYy9vUkSAA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.0.0
+      '@opentelemetry/core': ^2.0.0
 
   '@google-cloud/opentelemetry-resource-util@3.0.0':
     resolution: {integrity: sha512-CGR/lNzIfTKlZoZFfS6CkVzx+nsC9gzy6S8VcyaLegfEJbiPjxbMLP7csyhJTvZe/iRRcQJxSk0q8gfrGqD3/Q==}
@@ -5412,6 +5422,9 @@ packages:
 
   header-case@2.0.4:
     resolution: {integrity: sha512-H/vuk5TEEVZwrR0lp2zed9OCo1uAILMlx0JEMgC26rzyJJ3N1v6XkwHHXJQdR2doSjcGPM6OKPYoJgf0plJ11Q==}
+
+  hex2dec@1.1.2:
+    resolution: {integrity: sha512-Yu+q/XWr2fFQ11tHxPq4p4EiNkb2y+lAacJNhAdRXVfRIcDH6gi7htWFnnlIzvqHMHoWeIsfXlNAjZInpAOJDA==}
 
   highlight.js@10.7.3:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
@@ -10571,6 +10584,12 @@ snapshots:
       - encoding
       - supports-color
 
+  '@google-cloud/opentelemetry-cloud-trace-propagator@0.21.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))':
+    dependencies:
+      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/core': 2.2.0(@opentelemetry/api@1.9.0)
+      hex2dec: 1.1.2
+
   '@google-cloud/opentelemetry-resource-util@3.0.0(@opentelemetry/core@2.2.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.2.0(@opentelemetry/api@1.9.0))':
     dependencies:
       '@opentelemetry/core': 2.2.0(@opentelemetry/api@1.9.0)
@@ -15491,6 +15510,8 @@ snapshots:
     dependencies:
       capital-case: 1.0.4
       tslib: 2.8.1
+
+  hex2dec@1.1.2: {}
 
   highlight.js@10.7.3: {}
 
