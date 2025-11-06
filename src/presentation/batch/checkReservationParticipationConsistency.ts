@@ -158,8 +158,9 @@ export async function checkReservationParticipationConsistency() {
 
       let totalErrors = 0;
       let reservationsWithErrors = 0;
+      let autoFixedCount = 0;
 
-      reservations.forEach((r) => {
+      for (const r of reservations) {
         if (!r.participations || r.participations.length === 0) {
           // ACCEPTED reservations should always have participations - treat as error
           if (r.status === ReservationStatus.ACCEPTED) {
@@ -175,41 +176,106 @@ export async function checkReservationParticipationConsistency() {
               reservationStatus: r.status,
             });
           }
-          return;
+          continue;
         }
 
-        let hasErrors = false;
+        let hasUnfixableErrors = false;
 
-        r.participations.forEach((p) => {
+        for (const p of r.participations) {
           const validationErrors = validateConsistency(r, p);
 
           if (validationErrors.length > 0) {
-            hasErrors = true;
-            totalErrors += validationErrors.length;
+            // Check if this is the specific pattern observed in production
+            let isAutoFixable = false;
+            let expectedStatus: ParticipationStatus | null = null;
+            let expectedReason: ParticipationStatusReason | null = null;
 
-            logger.error("❌ Inconsistent reservation-participation pair", {
-              reservationId: r.id,
-              reservationStatus: r.status,
-              participationId: p.id,
-              participationStatus: p.status,
-              participationReason: p.reason,
-              hasEvaluation: !!p.evaluation,
-              evaluationId: p.evaluation?.id ?? null,
-              violations: validationErrors,
-            });
+            // Pattern 1: CANCELED/REJECTED reservation with PARTICIPATING status and RESERVATION_ACCEPTED reason
+            if (
+              (r.status === ReservationStatus.CANCELED || r.status === ReservationStatus.REJECTED) &&
+              p.status === ParticipationStatus.PARTICIPATING &&
+              p.reason === ParticipationStatusReason.RESERVATION_ACCEPTED &&
+              !p.evaluation
+            ) {
+              isAutoFixable = true;
+              expectedStatus = ParticipationStatus.NOT_PARTICIPATING;
+              expectedReason =
+                r.status === ReservationStatus.CANCELED
+                  ? ParticipationStatusReason.RESERVATION_CANCELED
+                  : ParticipationStatusReason.RESERVATION_REJECTED;
+            }
+
+            // Pattern 2: OPPORTUNITY_CANCELED reason with PARTICIPATING status
+            // This occurs when opportunity slot is canceled but participation status wasn't updated
+            if (
+              p.reason === ParticipationStatusReason.OPPORTUNITY_CANCELED &&
+              p.status === ParticipationStatus.PARTICIPATING
+            ) {
+              isAutoFixable = true;
+              expectedStatus = ParticipationStatus.NOT_PARTICIPATING;
+              expectedReason = ParticipationStatusReason.OPPORTUNITY_CANCELED;
+            }
+
+            if (isAutoFixable && expectedStatus && expectedReason) {
+
+              logger.info("🔧 Auto-fixing inconsistent participation", {
+                reservationId: r.id,
+                reservationStatus: r.status,
+                participationId: p.id,
+                from: {
+                  status: p.status,
+                  reason: p.reason,
+                },
+                to: {
+                  status: expectedStatus,
+                  reason: expectedReason,
+                },
+              });
+
+              await tx.participation.update({
+                where: { id: p.id },
+                data: {
+                  status: expectedStatus,
+                  reason: expectedReason,
+                },
+              });
+
+              autoFixedCount++;
+              logger.info("✅ Fixed participation", {
+                participationId: p.id,
+                newStatus: expectedStatus,
+                newReason: expectedReason,
+              });
+            } else {
+              // Cannot auto-fix, log as error
+              hasUnfixableErrors = true;
+              totalErrors += validationErrors.length;
+
+              logger.error("❌ Inconsistent reservation-participation pair (cannot auto-fix)", {
+                reservationId: r.id,
+                reservationStatus: r.status,
+                participationId: p.id,
+                participationStatus: p.status,
+                participationReason: p.reason,
+                hasEvaluation: !!p.evaluation,
+                evaluationId: p.evaluation?.id ?? null,
+                violations: validationErrors,
+              });
+            }
           }
-        });
+        }
 
-        if (hasErrors) {
+        if (hasUnfixableErrors) {
           reservationsWithErrors++;
         }
-      });
+      }
 
       logger.info(
-        `🔎 Checked ${reservations.length} reservations. Found ${totalErrors} violations in ${reservationsWithErrors} reservations.`,
+        `🔎 Checked ${reservations.length} reservations. Auto-fixed ${autoFixedCount} participations. Found ${totalErrors} unfixable violations in ${reservationsWithErrors} reservations.`,
       );
     });
   } catch (err) {
     logger.error("❌ Error while checking consistency", err);
   }
 }
+
