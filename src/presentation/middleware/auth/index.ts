@@ -7,8 +7,30 @@ import { extractAuthHeaders } from "@/presentation/middleware/auth/extract-heade
 import { handleAdminAccess } from "@/presentation/middleware/auth/admin-access";
 import { handleFirebaseAuth } from "@/presentation/middleware/auth/firebase-auth";
 import logger from "@/infrastructure/logging";
+import { trace, context } from "@opentelemetry/api";
 
 async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
+  const currentSpan = trace.getSpan(context.active());
+  const traceId = currentSpan?.spanContext().traceId;
+  
+  if (currentSpan) {
+    const body = (req as any).body;
+    if (body?.operationName) {
+      currentSpan.setAttribute("app.graphql.operation.name", body.operationName);
+    }
+    if (body?.query) {
+      const operationType = body.query.trim().split(/\s+/)[0].toLowerCase();
+      if (["query", "mutation", "subscription"].includes(operationType)) {
+        currentSpan.setAttribute("app.graphql.operation.type", operationType);
+      }
+    }
+  }
+  
+  logger.debug("🔍 [TRACE] GraphQL context creation (Express entry)", { 
+    traceId,
+    path: (req as any).url 
+  });
+
   const issuer = new PrismaClientIssuer();
 
   const headers = extractAuthHeaders(req);
