@@ -10,7 +10,7 @@ import { AsyncLocalStorageContextManager } from "@opentelemetry/context-async-ho
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
-import { ExpressInstrumentation } from "@opentelemetry/instrumentation-express";
+import { ExpressInstrumentation, ExpressLayerType } from "@opentelemetry/instrumentation-express";
 import { GraphQLInstrumentation } from "@opentelemetry/instrumentation-graphql";
 import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
 import { PrismaInstrumentation } from "@prisma/instrumentation";
@@ -33,7 +33,7 @@ export const tracingReady = (async () => {
   }
 
   if (ENV === "LOCAL") {
-    diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
+    diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   }
 
   const resource = resourceFromAttributes({
@@ -53,14 +53,22 @@ export const tracingReady = (async () => {
         const url = req.url || "";
         return url.includes("/health") || req.method === "OPTIONS";
       },
+      requestHook: (span, request) => {
+        const communityId = (request as any).headers?.["x-community-id"];
+        if (communityId) {
+          span.setAttribute("app.community_id", communityId);
+        }
+      },
     }),
 
-    new ExpressInstrumentation(),
+    new ExpressInstrumentation({
+      ignoreLayersType: [ExpressLayerType.MIDDLEWARE, ExpressLayerType.ROUTER],
+    }),
 
     new GraphQLInstrumentation({
       allowValues: false,
-      depth: 2, // 🧠 GraphQLのfieldレベルも見たいなら2でOK
-      ignoreTrivialResolveSpans: false, // ← Field-levelスパンを有効に
+      depth: 1, // Reduce depth to minimize noise (0=operation only, 1=top-level fields)
+      ignoreTrivialResolveSpans: true, // Ignore trivial resolvers to reduce noise
     }),
 
     new UndiciInstrumentation(),
