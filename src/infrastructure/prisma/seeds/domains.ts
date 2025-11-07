@@ -11,7 +11,6 @@ import {
   ParticipationFactory,
   PlaceFactory,
   ReservationFactory,
-  TransactionFactory,
   UserFactory,
   WalletFactory,
 } from "@/infrastructure/prisma/factories/factory";
@@ -26,7 +25,6 @@ import {
   Reservation,
   ReservationStatus,
   User,
-  Wallet,
 } from "@prisma/client";
 import { Community } from "@prisma/client/index.d";
 import {
@@ -38,7 +36,7 @@ import {
 const BATCH_SIZE = 10;
 const NUM_SLOTS_PER_OPPORTUNITY = 2;
 const NUM_RESERVATIONS_PER_SLOT = 1;
-const NUM_TRANSACTIONS = 5;
+// const NUM_TRANSACTIONS = 5;
 const NUM_PLACES = 10;
 const NUM_USERS = 5;
 const NUM_IMAGE_POOL = 10;
@@ -105,7 +103,7 @@ export async function seedUsecase() {
   const imagePool = await ImageFactory.createList(NUM_IMAGE_POOL);
 
   console.info("🧱 Creating base User, Community, Wallet, Membership...");
-  const { users, community, wallets } = await createBaseEntitiesForUsers(imagePool);
+  const { users, community } = await createBaseEntitiesForUsers(imagePool);
 
   console.info("📍 Creating Places...");
   const places = await createPlaces(community, imagePool);
@@ -116,8 +114,8 @@ export async function seedUsecase() {
   console.info("🧩 Creating Slots, Reservations, Participations, Evaluations, and Articles...");
   await createNestedEntities(users, community, opportunities, imagePool);
 
-  console.info("💸 Creating Transactions...");
-  await createTransactions(wallets);
+  // console.info("💸 Creating Transactions...");
+  // await createTransactions(wallets);
 
   console.info("🎨 Creating NFTs (tokens, instances, wallets)...");
   await createNfts(users);
@@ -129,7 +127,7 @@ export async function seedUsecase() {
 async function createBaseEntitiesForUsers(imagePool: { id: string }[]) {
   const community = await CommunityFactory.create({ id: "neo88" });
   await CommunityConfigFactory.create({ transientCommunity: community });
-  
+
   const users: User[] = [];
   for (let i = 0; i < NUM_USERS; i++) {
     const user = await UserFactory.create({
@@ -162,9 +160,7 @@ async function createPlaces(community: Community, imagePool: { id: string }[]) {
   });
 
   if (cities.length === 0) {
-    throw new Error(
-      "No cities found in master data. Please run 'pnpm db:seed-master' first.",
-    );
+    throw new Error("No cities found in master data. Please run 'pnpm db:seed-master' first.");
   }
 
   const results: Place[] = [];
@@ -181,7 +177,12 @@ async function createPlaces(community: Community, imagePool: { id: string }[]) {
 }
 
 // STEP 3
-async function createOpportunities(users: User[], community: Community, places: Place[], imagePool: { id: string }[]) {
+async function createOpportunities(
+  users: User[],
+  community: Community,
+  places: Place[],
+  imagePool: { id: string }[],
+) {
   const results: Opportunity[] = [];
   for (let i = 0; i < places.length; i++) {
     const opportunity = await OpportunityFactory.create({
@@ -221,14 +222,10 @@ async function createNestedEntities(
 
         if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Scheduled) {
           reservationStatus =
-            Math.random() > 0.5
-              ? GqlReservationStatus.Applied
-              : GqlReservationStatus.Canceled;
+            Math.random() > 0.5 ? GqlReservationStatus.Applied : GqlReservationStatus.Canceled;
         } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed) {
           reservationStatus =
-            Math.random() > 0.5
-              ? GqlReservationStatus.Accepted
-              : GqlReservationStatus.Canceled;
+            Math.random() > 0.5 ? GqlReservationStatus.Accepted : GqlReservationStatus.Canceled;
         } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Cancelled) {
           reservationStatus = GqlReservationStatus.Rejected;
         } else {
@@ -289,19 +286,19 @@ async function createNestedEntities(
   });
 }
 
-// STEP 5
-async function createTransactions(wallets: Wallet[]) {
-  await processInBatches(
-    [...Array(NUM_TRANSACTIONS)].map((_, i) => i),
-    BATCH_SIZE,
-    async (i) => {
-      return TransactionFactory.create({
-        transientFromWallet: wallets[i % wallets.length],
-        transientToWallet: wallets[(i + 1) % wallets.length],
-      });
-    },
-  );
-}
+// // STEP 5
+// async function createTransactions(wallets: Wallet[]) {
+//   await processInBatches(
+//     [...Array(NUM_TRANSACTIONS)].map((_, i) => i),
+//     BATCH_SIZE,
+//     async (i) => {
+//       return TransactionFactory.create({
+//         transientFromWallet: wallets[i % wallets.length],
+//         transientToWallet: wallets[(i + 1) % wallets.length],
+//       });
+//     },
+//   );
+// }
 
 async function createNfts(users: User[]) {
   const ADA_POLICY_ID = "aabbccddeeff00112233445566778899aabbccddeeff001122334455";

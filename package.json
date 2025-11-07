@@ -15,6 +15,7 @@
     "test": "jest --runInBand",
     "test:coverage": "jest --coverage --runInBand",
     "db:pull": "prisma db pull --schema src/infrastructure/prisma/schema.prisma",
+    "db:seed": "pnpm db:seed-master && pnpm db:seed-domain",
     "db:seed-master": "tsx src/infrastructure/prisma/seeds/index.ts -- --master",
     "db:seed-domain": "tsx src/infrastructure/prisma/seeds/index.ts -- --domain",
     "db:generate": "prisma-case-format --file src/infrastructure/prisma/schema.prisma && prisma format --schema src/infrastructure/prisma/schema.prisma && prisma generate --sql --schema src/infrastructure/prisma/schema.prisma",
