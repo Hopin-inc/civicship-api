@@ -39,6 +39,8 @@ export default class TestDataSourceHelper {
     await this.db.transaction.deleteMany();
 
     await this.db.nftMint.deleteMany();
+    await this.db.nftInstance.deleteMany();
+    await this.db.nftWallet.deleteMany();
 
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
