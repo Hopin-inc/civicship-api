@@ -9,27 +9,36 @@ import { rules } from "@/presentation/graphql/rule";
 import { armorProtection } from "@/presentation/graphql/plugins/armor";
 
 const isProduction = process.env.NODE_ENV === "production";
+const isLocal = process.env.ENV === "LOCAL";
 
 export async function createApolloServer(httpServer: http.Server) {
+  const plugins = [
+    ApolloServerPluginDrainHttpServer({ httpServer }),
+    ...armorProtection.plugins,
+    authZApolloPlugin({
+      rules,
+      processError: (error: unknown): never => {
+        if (!isProduction) {
+          throw error;
+        }
+        throw new Error("Internal Server Error");
+      },
+    }),
+  ];
+
+  if (!isLocal) {
+    plugins.unshift(
+      ApolloServerPluginUsageReporting({
+        fieldLevelInstrumentation: isProduction ? 0.05 : 1.0,
+        sendReportsImmediately: !isProduction,
+        sendVariableValues: { none: true },
+      }),
+    );
+  }
+
   const server = new ApolloServer({
     schema,
-    plugins: [
-      ApolloServerPluginUsageReporting({
-        fieldLevelInstrumentation: isProduction ? 0.02 : 1.0,
-        sendReportsImmediately: !isProduction,
-      }),
-      ApolloServerPluginDrainHttpServer({ httpServer }),
-      ...armorProtection.plugins,
-      authZApolloPlugin({
-        rules,
-        processError: (error: unknown): never => {
-          if (!isProduction) {
-            throw error;
-          }
-          throw new Error("Internal Server Error");
-        },
-      }),
-    ],
+    plugins,
     validationRules: [...armorProtection.validationRules],
     formatError: (err) => {
       const { message, locations, path, extensions } = err;
