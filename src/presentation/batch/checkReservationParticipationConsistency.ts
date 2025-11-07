@@ -18,9 +18,57 @@ type Participation = {
 };
 
 /**
+ * Determines if a participation can be auto-fixed and returns the expected status/reason.
+ * Returns null if the participation cannot be auto-fixed.
+ *
+ * Auto-fixable patterns (observed in production):
+ * 1. CANCELED/REJECTED reservation + PARTICIPATING status + RESERVATION_ACCEPTED reason
+ * 2. OPPORTUNITY_CANCELED reason + PARTICIPATING status
+ *
+ * All patterns require: no evaluation exists
+ */
+function getAutoFixDetails(
+  reservation: Reservation,
+  participation: Participation,
+): { status: ParticipationStatus; reason: ParticipationStatusReason } | null {
+  // Skip if has evaluation (never auto-fix)
+  if (participation.evaluation) {
+    return null;
+  }
+
+  // Pattern 1: CANCELED/REJECTED reservation with PARTICIPATING status and RESERVATION_ACCEPTED reason
+  if (
+    (reservation.status === ReservationStatus.CANCELED || reservation.status === ReservationStatus.REJECTED) &&
+    participation.status === ParticipationStatus.PARTICIPATING &&
+    participation.reason === ParticipationStatusReason.RESERVATION_ACCEPTED
+  ) {
+    return {
+      status: ParticipationStatus.NOT_PARTICIPATING,
+      reason:
+        reservation.status === ReservationStatus.CANCELED
+          ? ParticipationStatusReason.RESERVATION_CANCELED
+          : ParticipationStatusReason.RESERVATION_REJECTED,
+    };
+  }
+
+  // Pattern 2: OPPORTUNITY_CANCELED reason with PARTICIPATING status
+  if (
+    participation.reason === ParticipationStatusReason.OPPORTUNITY_CANCELED &&
+    participation.status === ParticipationStatus.PARTICIPATING
+  ) {
+    return {
+      status: ParticipationStatus.NOT_PARTICIPATING,
+      reason: ParticipationStatusReason.OPPORTUNITY_CANCELED,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Validates the consistency between reservation and participation states.
  * Returns an array of validation error messages (empty if valid).
- * 
+ *
  * Validation rules:
  * 1. OPPORTUNITY_CANCELED must always have NOT_PARTICIPATING status
  * 2. PERSONAL_RECORD participations are not tied to reservations (handled separately)
@@ -185,18 +233,10 @@ export async function checkReservationParticipationConsistency() {
           const validationErrors = validateConsistency(r, p);
 
           if (validationErrors.length > 0) {
-            // Check if this is the specific pattern observed in production:
-            // CANCELED reservation with PARTICIPATING status and RESERVATION_ACCEPTED reason
-            const isAutoFixable =
-              r.status === ReservationStatus.CANCELED &&
-              p.status === ParticipationStatus.PARTICIPATING &&
-              p.reason === ParticipationStatusReason.RESERVATION_ACCEPTED &&
-              !p.evaluation;
+            const fixDetails = getAutoFixDetails(r, p);
 
-            if (isAutoFixable) {
-              const expectedStatus = ParticipationStatus.NOT_PARTICIPATING;
-              const expectedReason = ParticipationStatusReason.RESERVATION_CANCELED;
-
+            if (fixDetails) {
+              // Auto-fixable pattern detected
               logger.info("🔧 Auto-fixing inconsistent participation", {
                 reservationId: r.id,
                 reservationStatus: r.status,
@@ -206,24 +246,24 @@ export async function checkReservationParticipationConsistency() {
                   reason: p.reason,
                 },
                 to: {
-                  status: expectedStatus,
-                  reason: expectedReason,
+                  status: fixDetails.status,
+                  reason: fixDetails.reason,
                 },
               });
 
               await tx.participation.update({
                 where: { id: p.id },
                 data: {
-                  status: expectedStatus,
-                  reason: expectedReason,
+                  status: fixDetails.status,
+                  reason: fixDetails.reason,
                 },
               });
 
               autoFixedCount++;
               logger.info("✅ Fixed participation", {
                 participationId: p.id,
-                newStatus: expectedStatus,
-                newReason: expectedReason,
+                newStatus: fixDetails.status,
+                newReason: fixDetails.reason,
               });
             } else {
               // Cannot auto-fix, log as error
