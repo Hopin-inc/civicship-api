@@ -254,6 +254,13 @@ export default class TestDataSourceHelper {
     return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
+  static async getCurrentPoints(walletId: string): Promise<number | null> {
+    const result = await this.db.currentPointView.findUnique({
+      where: { walletId },
+    });
+    return result?.currentPoint ? Number(result.currentPoint) : null;
+  }
+
   // ========== Participation関連 (不要になれば削除) =========
   static async createParticipation(data: Prisma.ParticipationCreateInput) {
     return this.db.participation.create({
