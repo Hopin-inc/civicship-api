@@ -1,5 +1,5 @@
 import { auth } from "@/infrastructure/libs/firebase";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { userAuthInclude } from "@/application/domain/account/user/data/type";
 import { createLoaders } from "@/presentation/graphql/dataloader";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
@@ -15,7 +15,7 @@ export async function handleFirebaseAuth(
   const { idToken, authMode, communityId } = headers;
   if (!communityId) throw new Error("Missing x-community-id header");
 
-  const loaders = createLoaders(issuer);
+  const loaders = createLoaders(prismaClient);
   if (!idToken) {
     logger.debug("🔓 Anonymous request - no idToken", { communityId });
     return { issuer, loaders, communityId };

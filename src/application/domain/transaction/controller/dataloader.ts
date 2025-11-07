@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlTransaction } from "@/types/graphql";
 import {
   transactionSelectDetail,
@@ -11,37 +11,33 @@ import {
 } from "@/presentation/graphql/dataloader/utils";
 import { Transaction } from "@prisma/client";
 
-export function createTransactionLoader(issuer: PrismaClientIssuer) {
+export function createTransactionLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaTransactionDetail, GqlTransaction>(
     async (ids) =>
-      issuer.internal((tx) =>
-        tx.transaction.findMany({
-          where: { id: { in: [...ids] } },
-          select: transactionSelectDetail,
-        }),
-      ),
+      prisma.transaction.findMany({
+        where: { id: { in: [...ids] } },
+        select: transactionSelectDetail,
+      }),
     TransactionPresenter.get,
   );
 }
 
-export function createTransactionsByParticipationLoader(issuer: PrismaClientIssuer) {
+export function createTransactionsByParticipationLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"participationId", Transaction, GqlTransaction>(
     "participationId",
     async (participationIds) => {
-      return issuer.internal((tx) =>
-        tx.transaction.findMany({
-          where: {
-            participationId: { in: [...participationIds] },
-          },
-          select: transactionSelectDetail,
-        }),
-      );
+      return prisma.transaction.findMany({
+        where: {
+          participationId: { in: [...participationIds] },
+        },
+        select: transactionSelectDetail,
+      });
     },
     TransactionPresenter.get,
   );
 }
 
-export function createTransactionsByWalletLoader(issuer: PrismaClientIssuer) {
+export function createTransactionsByWalletLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<
     "walletId",
     { walletId: string } & PrismaTransactionDetail,
@@ -49,13 +45,11 @@ export function createTransactionsByWalletLoader(issuer: PrismaClientIssuer) {
   >(
     "walletId",
     async (walletIds) => {
-      const transactions = await issuer.internal((tx) =>
-        tx.transaction.findMany({
-          where: {
-            OR: [{ from: { in: [...walletIds] } }, { to: { in: [...walletIds] } }],
-          },
-        }),
-      );
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          OR: [{ from: { in: [...walletIds] } }, { to: { in: [...walletIds] } }],
+        },
+      });
 
       const deduped: Array<{ walletId: string } & (typeof transactions)[number]> = [];
       const seen = new Map<string, Set<string>>();

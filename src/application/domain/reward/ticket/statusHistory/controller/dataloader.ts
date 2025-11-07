@@ -1,5 +1,5 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlTicketStatusHistory } from "@/types/graphql";
 import {
   ticketStatusHistorySelectDetail,
@@ -9,30 +9,28 @@ import TicketStatusHistoryPresenter from "@/application/domain/reward/ticket/sta
 import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
 
 async function batchTicketStatusHistoriesById(
-  issuer: PrismaClientIssuer,
+  prisma: PrismaClient,
   historyIds: readonly string[],
 ): Promise<(GqlTicketStatusHistory | null)[]> {
-  const records = (await issuer.internal(async (tx) => {
-    return tx.ticketStatusHistory.findMany({
-      where: { id: { in: [...historyIds] } },
-      select: ticketStatusHistorySelectDetail,
-    });
+  const records = (await prisma.ticketStatusHistory.findMany({
+    where: { id: { in: [...historyIds] } },
+    select: ticketStatusHistorySelectDetail,
   })) as PrismaTicketStatusHistoryDetail[];
 
   const map = new Map(
-    records.map((record) => [record.id, TicketStatusHistoryPresenter.get(record)]),
+    records.map((record) => [record.id, TicketStatusHistoryPresenter.get(record)])
   );
 
   return historyIds.map((id) => map.get(id) ?? null);
 }
 
-export function createTicketStatusHistoryLoader(issuer: PrismaClientIssuer) {
+export function createTicketStatusHistoryLoader(prisma: PrismaClient) {
   return new DataLoader<string, GqlTicketStatusHistory | null>((keys) =>
-    batchTicketStatusHistoriesById(issuer, keys),
+    batchTicketStatusHistoriesById(prisma, keys)
   );
 }
 
-export function createTicketStatusHistoriesByTicketLoader(issuer: PrismaClientIssuer) {
+export function createTicketStatusHistoriesByTicketLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<
     "ticketId",
     PrismaTicketStatusHistoryDetail,
@@ -40,18 +38,16 @@ export function createTicketStatusHistoriesByTicketLoader(issuer: PrismaClientIs
   >(
     "ticketId",
     async (ticketIds) => {
-      return issuer.internal((tx) =>
-        tx.ticketStatusHistory.findMany({
-          where: { ticketId: { in: [...ticketIds] } },
-          select: ticketStatusHistorySelectDetail,
-        }),
-      );
+      return prisma.ticketStatusHistory.findMany({
+        where: { ticketId: { in: [...ticketIds] } },
+        select: ticketStatusHistorySelectDetail,
+      });
     },
     TicketStatusHistoryPresenter.get,
   );
 }
 
-export function createTicketStatusHistoriesByTransactionLoader(issuer: PrismaClientIssuer) {
+export function createTicketStatusHistoriesByTransactionLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<
     "transactionId",
     PrismaTicketStatusHistoryDetail,
@@ -59,20 +55,18 @@ export function createTicketStatusHistoriesByTransactionLoader(issuer: PrismaCli
   >(
     "transactionId",
     async (transactionIds) => {
-      return issuer.internal((tx) =>
-        tx.ticketStatusHistory.findMany({
-          where: {
-            transactionId: { in: [...transactionIds] },
-          },
-          select: ticketStatusHistorySelectDetail,
-        }),
-      );
+      return prisma.ticketStatusHistory.findMany({
+        where: {
+          transactionId: { in: [...transactionIds] },
+        },
+        select: ticketStatusHistorySelectDetail,
+      });
     },
     TicketStatusHistoryPresenter.get,
   );
 }
 
-export function createTicketStatusHistoriesByParticipationLoader(issuer: PrismaClientIssuer) {
+export function createTicketStatusHistoriesByParticipationLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<
     "participationId",
     PrismaTicketStatusHistoryDetail,
@@ -80,12 +74,10 @@ export function createTicketStatusHistoriesByParticipationLoader(issuer: PrismaC
   >(
     "participationId",
     async (participationIds) => {
-      return issuer.internal((tx) =>
-        tx.ticketStatusHistory.findMany({
-          where: { participationId: { in: [...participationIds] } },
-          select: ticketStatusHistorySelectDetail,
-        }),
-      );
+      return prisma.ticketStatusHistory.findMany({
+        where: { participationId: { in: [...participationIds] } },
+        select: ticketStatusHistorySelectDetail,
+      });
     },
     TicketStatusHistoryPresenter.get,
   );

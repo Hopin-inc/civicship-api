@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlTicketClaimLink } from "@/types/graphql";
 import TicketClaimLinkPresenter from "@/application/domain/reward/ticketClaimLink/presenter";
 import {
@@ -7,15 +7,13 @@ import {
 } from "@/application/domain/reward/ticketClaimLink/data/type";
 import { createLoaderById } from "@/presentation/graphql/dataloader/utils";
 
-export function createTicketClaimLinkLoader(issuer: PrismaClientIssuer) {
+export function createTicketClaimLinkLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaTicketClaimLink, GqlTicketClaimLink>(
     async (ids) =>
-      issuer.internal((tx) =>
-        tx.ticketClaimLink.findMany({
-          where: { id: { in: [...ids] } },
-          include: ticketClaimLinkInclude,
-        }),
-      ),
+      prisma.ticketClaimLink.findMany({
+        where: { id: { in: [...ids] } },
+        include: ticketClaimLinkInclude,
+      }),
     TicketClaimLinkPresenter.get,
   );
 }

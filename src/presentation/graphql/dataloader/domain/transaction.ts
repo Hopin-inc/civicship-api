@@ -1,10 +1,10 @@
 import * as TransactionLoaders from "@/application/domain/transaction/controller/dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-export function createTransactionLoaders(issuer: PrismaClientIssuer) {
+export function createTransactionLoaders(prisma: PrismaClient) {
   return {
-    transaction: TransactionLoaders.createTransactionLoader(issuer),
-    transactionsByParticipation: TransactionLoaders.createTransactionsByParticipationLoader(issuer),
-    transactionsByWallet: TransactionLoaders.createTransactionsByWalletLoader(issuer),
+    transaction: TransactionLoaders.createTransactionLoader(prisma),
+    transactionsByParticipation: TransactionLoaders.createTransactionsByParticipationLoader(prisma),
+    transactionsByWallet: TransactionLoaders.createTransactionsByWalletLoader(prisma),
   };
 }

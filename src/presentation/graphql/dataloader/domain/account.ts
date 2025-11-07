@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import * as UserLoaders from "@/application/domain/account/user/controller/dataloader";
 import * as WalletLoaders from "@/application/domain/account/wallet/controller/dataloader";
 import * as CommunityLoaders from "@/application/domain/account/community/controller/dataloader";
@@ -8,32 +8,32 @@ import * as MembershipHistoryLoaders from "@/application/domain/account/membersh
 import { createDidIssuanceRequestsByUserIdLoader } from "@/application/domain/account/identity/didIssuanceRequest/controller/dataloader";
 import { createNftWalletByUserIdLoader } from "@/application/domain/account/nft-wallet/controller/dataloader";
 
-export function createAccountLoaders(issuer: PrismaClientIssuer) {
+export function createAccountLoaders(prisma: PrismaClient) {
   return {
-    user: UserLoaders.createUserLoader(issuer),
-    authorsByArticle: UserLoaders.createAuthorsByArticleLoader(issuer),
-    relatedUsersByArticle: UserLoaders.createRelatedUsersByArticleLoader(issuer),
+    user: UserLoaders.createUserLoader(prisma),
+    authorsByArticle: UserLoaders.createAuthorsByArticleLoader(prisma),
+    relatedUsersByArticle: UserLoaders.createRelatedUsersByArticleLoader(prisma),
 
-    identity: IdentityLoaders.createIdentityLoader(issuer),
-    identitiesByUser: IdentityLoaders.createIdentitiesByUserLoader(issuer),
+    identity: IdentityLoaders.createIdentityLoader(prisma),
+    identitiesByUser: IdentityLoaders.createIdentitiesByUserLoader(prisma),
 
-    didIssuanceRequestsByUser: createDidIssuanceRequestsByUserIdLoader(issuer),
+    didIssuanceRequestsByUser: createDidIssuanceRequestsByUserIdLoader(prisma),
 
-    community: CommunityLoaders.createCommunityLoader(issuer),
+    community: CommunityLoaders.createCommunityLoader(prisma),
 
-    wallet: WalletLoaders.createWalletLoader(issuer),
-    walletsByUser: WalletLoaders.createWalletsByUserLoader(issuer),
-    walletsByCommunity: WalletLoaders.createWalletsByCommunityLoader(issuer),
+    wallet: WalletLoaders.createWalletLoader(prisma),
+    walletsByUser: WalletLoaders.createWalletsByUserLoader(prisma),
+    walletsByCommunity: WalletLoaders.createWalletsByCommunityLoader(prisma),
 
-    membership: MembershipLoaders.createMembershipLoader(issuer),
-    membershipsByUser: MembershipLoaders.createMembershipsByUserLoader(issuer),
-    membershipsByCommunity: MembershipLoaders.createMembershipsByCommunityLoader(issuer),
+    membership: MembershipLoaders.createMembershipLoader(prisma),
+    membershipsByUser: MembershipLoaders.createMembershipsByUserLoader(prisma),
+    membershipsByCommunity: MembershipLoaders.createMembershipsByCommunityLoader(prisma),
 
     membershipHistoriesByUser:
-      MembershipHistoryLoaders.createMembershipHistoriesCreatedByUserLoader(issuer),
+      MembershipHistoryLoaders.createMembershipHistoriesCreatedByUserLoader(prisma),
     membershipHistoriesByMembership:
-      MembershipHistoryLoaders.createMembershipStatusHistoriesByMembershipLoader(issuer),
+      MembershipHistoryLoaders.createMembershipStatusHistoriesByMembershipLoader(prisma),
 
-    nftWalletByUserId: createNftWalletByUserIdLoader(issuer),
+    nftWalletByUserId: createNftWalletByUserIdLoader(prisma),
   };
 }
