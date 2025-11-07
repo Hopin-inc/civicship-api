@@ -4,6 +4,7 @@ import { ITXClientDenyList } from "@prisma/client/runtime/library";
 import { AuthorizationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import { injectable } from "tsyringe";
+import { trace, context } from "@opentelemetry/api";
 
 type Transaction = Omit<PrismaClient, ITXClientDenyList>;
 type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
@@ -52,7 +53,10 @@ export class PrismaClientIssuer {
   }
 
   public async onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    logger.debug("onlyBelongingCommunity invoked", {
+    const currentSpan = trace.getSpan(context.active());
+    const traceId = currentSpan?.spanContext().traceId;
+    logger.debug("🔍 [TRACE] onlyBelongingCommunity invoked", {
+      traceId,
       isAdmin: ctx.isAdmin,
       hasCurrentUser: !!ctx.currentUser,
     });
@@ -67,6 +71,10 @@ export class PrismaClientIssuer {
       try {
         return await this.client.$transaction(
           async (tx) => {
+            const txSpan = trace.getSpan(context.active());
+            const txTraceId = txSpan?.spanContext().traceId;
+            logger.debug("🔍 [TRACE] Inside $transaction", { traceId: txTraceId });
+            
             await this.setRls(tx);
             await this.setRlsConfigUserId(tx, user.id);
             return await callback(tx);
@@ -97,10 +105,18 @@ export class PrismaClientIssuer {
   }
 
   private async bypassRls<T>(callback: CallbackFn<T>): Promise<T> {
+    const currentSpan = trace.getSpan(context.active());
+    const traceId = currentSpan?.spanContext().traceId;
+    logger.debug("🔍 [TRACE] bypassRls invoked", { traceId });
+
     const startedAt = Date.now();
     try {
       return await this.client.$transaction(
         async (tx) => {
+          const txSpan = trace.getSpan(context.active());
+          const txTraceId = txSpan?.spanContext().traceId;
+          logger.debug("🔍 [TRACE] Inside $transaction (bypassRls)", { traceId: txTraceId });
+          
           await this.setRls(tx, true);
           await this.setRlsConfigUserId(tx, null);
           return await callback(tx);
