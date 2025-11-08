@@ -9,6 +9,8 @@ import { trace, context } from "@opentelemetry/api";
 type Transaction = Omit<PrismaClient, ITXClientDenyList>;
 type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const prismaClient = new PrismaClient({
   log: [
     { level: "query", emit: "event" },
@@ -17,21 +19,33 @@ export const prismaClient = new PrismaClient({
     { level: "warn", emit: "stdout" },
   ],
 });
-prismaClient.$on("query", async ({ query, params, duration }) => {
-  logger.debug("Prisma query executed", {
-    query,
-    params,
-    duration,
-  });
 
-  if (duration > 1000) {
-    logger.warn("Slow query detected", {
-      query,
-      params,
-      duration,
+prismaClient.$on("query", async (e) => {
+  if (!isProduction) {
+    logger.debug("Prisma query executed", {
+      query: e.query,
+      params: e.params,
+      duration: e.duration,
     });
   }
 });
+
+prismaClient.$use(async (params, next) => {
+  const start = Date.now();
+  const result = await next(params);
+  const duration = Date.now() - start;
+
+  if (duration > 300) {
+    logger.warn("Slow Prisma operation", {
+      model: params.model ?? "raw",
+      action: params.action,
+      duration,
+    });
+  }
+
+  return result;
+});
+
 prismaClient.$on("error", async ({ message, target }) => {
   logger.error("Prisma: Error occurred.", { message, target });
 });
