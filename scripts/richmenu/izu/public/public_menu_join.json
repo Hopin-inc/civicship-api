@@ -48,19 +48,6 @@
     },
     {
       "bounds": {
-        "x": 104,
-        "y": 427,
-        "width": 732,
-        "height": 1192
-      },
-      "action": {
-        "type": "uri",
-        "label": "投票",
-        "uri": "https://www.google.com/"
-      }
-    },
-    {
-      "bounds": {
         "x": 886,
         "y": 427,
         "width": 1500,
@@ -69,20 +56,7 @@
       "action": {
         "type": "uri",
         "label": "IZUとDAO",
-        "uri": "https://www.google.com/"
-      }
-    },
-    {
-      "bounds": {
-        "x": 886,
-        "y": 1044,
-        "width": 1500,
-        "height": 576
-      },
-      "action": {
-        "type": "uri",
-        "label": "社員権NFT購入",
-        "uri": "https://www.google.com/"
+        "uri": "https://drive.google.com/file/d/1DAZ2IEdApt-X8SolJ2CKAE6mpw6bHxyk/view?usp=sharing"
       }
     }
   ]
