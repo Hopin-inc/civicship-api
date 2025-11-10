@@ -46,6 +46,9 @@ import type { AccumulatedPointView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { OpportunityAccumulatedParticipantsView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
+import type { CommunityPointFlowStat } from "@prisma/client";
+import type { CommunityPointFlowStatMonthly } from "@prisma/client";
+import type { CommunityPointFlowStatWeekly } from "@prisma/client";
 import type { LineRichMenuType } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { CurrentPrefecture } from "@prisma/client";
@@ -897,6 +900,15 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "OpportunitySlot",
                 relationName: "OpportunitySlotToRemainingCapacityView"
             }]
+    }, {
+        name: "CommunityPointFlowStat",
+        fields: []
+    }, {
+        name: "CommunityPointFlowStatMonthly",
+        fields: []
+    }, {
+        name: "CommunityPointFlowStatWeekly",
+        fields: []
     }];
 
 type ImageScalarOrEnumFields = {
@@ -9048,3 +9060,458 @@ export const defineRemainingCapacityViewFactory = (<TOptions extends RemainingCa
 }) as RemainingCapacityViewFactoryBuilder;
 
 defineRemainingCapacityViewFactory.withTransientFields = defaultTransientFieldValues => options => defineRemainingCapacityViewFactoryInternal(options, defaultTransientFieldValues);
+
+type CommunityPointFlowStatScalarOrEnumFields = {
+    communityId: string;
+    issuedPoints: number;
+    grantedPoints: number;
+    transferredPoints: number;
+    updatedAt: Date;
+};
+
+type CommunityPointFlowStatFactoryDefineInput = {
+    communityId?: string;
+    issuedPoints?: number;
+    grantedPoints?: number;
+    transferredPoints?: number;
+    updatedAt?: Date;
+};
+
+type CommunityPointFlowStatTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityPointFlowStatFactoryDefineInput, never>>;
+
+type CommunityPointFlowStatFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityPointFlowStatFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityPointFlowStat, Prisma.CommunityPointFlowStatCreateInput, TTransients>;
+
+type CommunityPointFlowStatFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<CommunityPointFlowStatFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: CommunityPointFlowStatFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityPointFlowStat, Prisma.CommunityPointFlowStatCreateInput, TTransients>;
+
+type CommunityPointFlowStatTraitKeys<TOptions extends CommunityPointFlowStatFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityPointFlowStatFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityPointFlowStat";
+    build(inputData?: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityPointFlowStatCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatCreateInput[]>;
+    pickForConnect(inputData: CommunityPointFlowStat): Pick<CommunityPointFlowStat, "communityId">;
+    create(inputData?: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>): PromiseLike<CommunityPointFlowStat>;
+    createList(list: readonly Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>[]): PromiseLike<CommunityPointFlowStat[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>): PromiseLike<CommunityPointFlowStat[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>): PromiseLike<Pick<CommunityPointFlowStat, "communityId">>;
+}
+
+export interface CommunityPointFlowStatFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityPointFlowStatFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityPointFlowStatFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityPointFlowStatScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityPointFlowStatScalarOrEnumFields {
+    return {
+        communityId: getScalarFieldValueGenerator().String({ modelName: "CommunityPointFlowStat", fieldName: "communityId", isId: true, isUnique: false, seq }),
+        issuedPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStat", fieldName: "issuedPoints", isId: false, isUnique: false, seq }),
+        grantedPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStat", fieldName: "grantedPoints", isId: false, isUnique: false, seq }),
+        transferredPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStat", fieldName: "transferredPoints", isId: false, isUnique: false, seq }),
+        updatedAt: getScalarFieldValueGenerator().DateTime({ modelName: "CommunityPointFlowStat", fieldName: "updatedAt", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityPointFlowStatFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityPointFlowStatFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityPointFlowStatFactoryInterface<TTransients, CommunityPointFlowStatTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityPointFlowStatTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityPointFlowStat", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityPointFlowStatScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityPointFlowStatFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityPointFlowStatFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.CommunityPointFlowStatCreateInput;
+            const data: Prisma.CommunityPointFlowStatCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityPointFlowStat) => ({
+            communityId: inputData.communityId
+        });
+        const create = async (inputData: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityPointFlowStat.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityPointFlowStatCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityPointFlowStat" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityPointFlowStatTraitKeys<TOptions>, ...names: readonly CommunityPointFlowStatTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityPointFlowStatFactoryBuilder {
+    <TOptions extends CommunityPointFlowStatFactoryDefineOptions>(options?: TOptions): CommunityPointFlowStatFactoryInterface<{}, CommunityPointFlowStatTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityPointFlowStatTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityPointFlowStatFactoryDefineOptions<TTransients>>(options?: TOptions) => CommunityPointFlowStatFactoryInterface<TTransients, CommunityPointFlowStatTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityPointFlowStat} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityPointFlowStatFactoryInterface}
+ */
+export const defineCommunityPointFlowStatFactory = (<TOptions extends CommunityPointFlowStatFactoryDefineOptions>(options?: TOptions): CommunityPointFlowStatFactoryInterface<TOptions> => {
+    return defineCommunityPointFlowStatFactoryInternal(options ?? {}, {});
+}) as CommunityPointFlowStatFactoryBuilder;
+
+defineCommunityPointFlowStatFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityPointFlowStatFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type CommunityPointFlowStatMonthlyScalarOrEnumFields = {
+    communityId: string;
+    month: Date;
+    issuedPoints: number;
+    grantedPoints: number;
+    transferredPoints: number;
+    updatedAt: Date;
+};
+
+type CommunityPointFlowStatMonthlyFactoryDefineInput = {
+    communityId?: string;
+    month?: Date;
+    issuedPoints?: number;
+    grantedPoints?: number;
+    transferredPoints?: number;
+    updatedAt?: Date;
+};
+
+type CommunityPointFlowStatMonthlyTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityPointFlowStatMonthlyFactoryDefineInput, never>>;
+
+type CommunityPointFlowStatMonthlyFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityPointFlowStatMonthlyFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityPointFlowStatMonthly, Prisma.CommunityPointFlowStatMonthlyCreateInput, TTransients>;
+
+type CommunityPointFlowStatMonthlyFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<CommunityPointFlowStatMonthlyFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: CommunityPointFlowStatMonthlyFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityPointFlowStatMonthly, Prisma.CommunityPointFlowStatMonthlyCreateInput, TTransients>;
+
+type CommunityPointFlowStatMonthlyTraitKeys<TOptions extends CommunityPointFlowStatMonthlyFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityPointFlowStatMonthlyFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityPointFlowStatMonthly";
+    build(inputData?: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatMonthlyCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatMonthlyCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityPointFlowStatMonthlyCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatMonthlyCreateInput[]>;
+    pickForConnect(inputData: CommunityPointFlowStatMonthly): Pick<CommunityPointFlowStatMonthly, "communityId" | "month">;
+    create(inputData?: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>): PromiseLike<CommunityPointFlowStatMonthly>;
+    createList(list: readonly Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>[]): PromiseLike<CommunityPointFlowStatMonthly[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>): PromiseLike<CommunityPointFlowStatMonthly[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>): PromiseLike<Pick<CommunityPointFlowStatMonthly, "communityId" | "month">>;
+}
+
+export interface CommunityPointFlowStatMonthlyFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityPointFlowStatMonthlyFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityPointFlowStatMonthlyFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityPointFlowStatMonthlyScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityPointFlowStatMonthlyScalarOrEnumFields {
+    return {
+        communityId: getScalarFieldValueGenerator().String({ modelName: "CommunityPointFlowStatMonthly", fieldName: "communityId", isId: false, isUnique: true, seq }),
+        month: getScalarFieldValueGenerator().DateTime({ modelName: "CommunityPointFlowStatMonthly", fieldName: "month", isId: false, isUnique: true, seq }),
+        issuedPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStatMonthly", fieldName: "issuedPoints", isId: false, isUnique: false, seq }),
+        grantedPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStatMonthly", fieldName: "grantedPoints", isId: false, isUnique: false, seq }),
+        transferredPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStatMonthly", fieldName: "transferredPoints", isId: false, isUnique: false, seq }),
+        updatedAt: getScalarFieldValueGenerator().DateTime({ modelName: "CommunityPointFlowStatMonthly", fieldName: "updatedAt", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityPointFlowStatMonthlyFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityPointFlowStatMonthlyFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityPointFlowStatMonthlyFactoryInterface<TTransients, CommunityPointFlowStatMonthlyTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityPointFlowStatMonthlyTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityPointFlowStatMonthly", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityPointFlowStatMonthlyScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityPointFlowStatMonthlyFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityPointFlowStatMonthlyFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.CommunityPointFlowStatMonthlyCreateInput;
+            const data: Prisma.CommunityPointFlowStatMonthlyCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityPointFlowStatMonthly) => ({
+            communityId: inputData.communityId,
+            month: inputData.month
+        });
+        const create = async (inputData: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityPointFlowStatMonthly.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityPointFlowStatMonthlyCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityPointFlowStatMonthly" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityPointFlowStatMonthlyTraitKeys<TOptions>, ...names: readonly CommunityPointFlowStatMonthlyTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityPointFlowStatMonthlyFactoryBuilder {
+    <TOptions extends CommunityPointFlowStatMonthlyFactoryDefineOptions>(options?: TOptions): CommunityPointFlowStatMonthlyFactoryInterface<{}, CommunityPointFlowStatMonthlyTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityPointFlowStatMonthlyTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityPointFlowStatMonthlyFactoryDefineOptions<TTransients>>(options?: TOptions) => CommunityPointFlowStatMonthlyFactoryInterface<TTransients, CommunityPointFlowStatMonthlyTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityPointFlowStatMonthly} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityPointFlowStatMonthlyFactoryInterface}
+ */
+export const defineCommunityPointFlowStatMonthlyFactory = (<TOptions extends CommunityPointFlowStatMonthlyFactoryDefineOptions>(options?: TOptions): CommunityPointFlowStatMonthlyFactoryInterface<TOptions> => {
+    return defineCommunityPointFlowStatMonthlyFactoryInternal(options ?? {}, {});
+}) as CommunityPointFlowStatMonthlyFactoryBuilder;
+
+defineCommunityPointFlowStatMonthlyFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityPointFlowStatMonthlyFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type CommunityPointFlowStatWeeklyScalarOrEnumFields = {
+    communityId: string;
+    week: Date;
+    issuedPoints: number;
+    grantedPoints: number;
+    transferredPoints: number;
+    updatedAt: Date;
+};
+
+type CommunityPointFlowStatWeeklyFactoryDefineInput = {
+    communityId?: string;
+    week?: Date;
+    issuedPoints?: number;
+    grantedPoints?: number;
+    transferredPoints?: number;
+    updatedAt?: Date;
+};
+
+type CommunityPointFlowStatWeeklyTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityPointFlowStatWeeklyFactoryDefineInput, never>>;
+
+type CommunityPointFlowStatWeeklyFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityPointFlowStatWeeklyFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityPointFlowStatWeekly, Prisma.CommunityPointFlowStatWeeklyCreateInput, TTransients>;
+
+type CommunityPointFlowStatWeeklyFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<CommunityPointFlowStatWeeklyFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: CommunityPointFlowStatWeeklyFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityPointFlowStatWeekly, Prisma.CommunityPointFlowStatWeeklyCreateInput, TTransients>;
+
+type CommunityPointFlowStatWeeklyTraitKeys<TOptions extends CommunityPointFlowStatWeeklyFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityPointFlowStatWeeklyFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityPointFlowStatWeekly";
+    build(inputData?: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatWeeklyCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatWeeklyCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityPointFlowStatWeeklyCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>): PromiseLike<Prisma.CommunityPointFlowStatWeeklyCreateInput[]>;
+    pickForConnect(inputData: CommunityPointFlowStatWeekly): Pick<CommunityPointFlowStatWeekly, "communityId" | "week">;
+    create(inputData?: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>): PromiseLike<CommunityPointFlowStatWeekly>;
+    createList(list: readonly Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>[]): PromiseLike<CommunityPointFlowStatWeekly[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>): PromiseLike<CommunityPointFlowStatWeekly[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>): PromiseLike<Pick<CommunityPointFlowStatWeekly, "communityId" | "week">>;
+}
+
+export interface CommunityPointFlowStatWeeklyFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityPointFlowStatWeeklyFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityPointFlowStatWeeklyFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityPointFlowStatWeeklyScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityPointFlowStatWeeklyScalarOrEnumFields {
+    return {
+        communityId: getScalarFieldValueGenerator().String({ modelName: "CommunityPointFlowStatWeekly", fieldName: "communityId", isId: false, isUnique: true, seq }),
+        week: getScalarFieldValueGenerator().DateTime({ modelName: "CommunityPointFlowStatWeekly", fieldName: "week", isId: false, isUnique: true, seq }),
+        issuedPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStatWeekly", fieldName: "issuedPoints", isId: false, isUnique: false, seq }),
+        grantedPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStatWeekly", fieldName: "grantedPoints", isId: false, isUnique: false, seq }),
+        transferredPoints: getScalarFieldValueGenerator().Int({ modelName: "CommunityPointFlowStatWeekly", fieldName: "transferredPoints", isId: false, isUnique: false, seq }),
+        updatedAt: getScalarFieldValueGenerator().DateTime({ modelName: "CommunityPointFlowStatWeekly", fieldName: "updatedAt", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityPointFlowStatWeeklyFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityPointFlowStatWeeklyFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityPointFlowStatWeeklyFactoryInterface<TTransients, CommunityPointFlowStatWeeklyTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityPointFlowStatWeeklyTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityPointFlowStatWeekly", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityPointFlowStatWeeklyScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityPointFlowStatWeeklyFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityPointFlowStatWeeklyFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.CommunityPointFlowStatWeeklyCreateInput;
+            const data: Prisma.CommunityPointFlowStatWeeklyCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityPointFlowStatWeekly) => ({
+            communityId: inputData.communityId,
+            week: inputData.week
+        });
+        const create = async (inputData: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityPointFlowStatWeekly.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityPointFlowStatWeeklyCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityPointFlowStatWeekly" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityPointFlowStatWeeklyTraitKeys<TOptions>, ...names: readonly CommunityPointFlowStatWeeklyTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityPointFlowStatWeeklyFactoryBuilder {
+    <TOptions extends CommunityPointFlowStatWeeklyFactoryDefineOptions>(options?: TOptions): CommunityPointFlowStatWeeklyFactoryInterface<{}, CommunityPointFlowStatWeeklyTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityPointFlowStatWeeklyTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityPointFlowStatWeeklyFactoryDefineOptions<TTransients>>(options?: TOptions) => CommunityPointFlowStatWeeklyFactoryInterface<TTransients, CommunityPointFlowStatWeeklyTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityPointFlowStatWeekly} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityPointFlowStatWeeklyFactoryInterface}
+ */
+export const defineCommunityPointFlowStatWeeklyFactory = (<TOptions extends CommunityPointFlowStatWeeklyFactoryDefineOptions>(options?: TOptions): CommunityPointFlowStatWeeklyFactoryInterface<TOptions> => {
+    return defineCommunityPointFlowStatWeeklyFactoryInternal(options ?? {}, {});
+}) as CommunityPointFlowStatWeeklyFactoryBuilder;
+
+defineCommunityPointFlowStatWeeklyFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityPointFlowStatWeeklyFactoryInternal(options ?? {}, defaultTransientFieldValues);

@@ -698,6 +698,40 @@ Table v_slot_remaining_capacity {
   remainingCapacity Int
 }
 
+Table v_community_point_flow_stats {
+  communityId String [pk]
+  issuedPoints Int [not null]
+  grantedPoints Int [not null]
+  transferredPoints Int [not null]
+  updatedAt DateTime [not null]
+}
+
+Table v_community_point_flow_stats_monthly {
+  communityId String [not null]
+  month DateTime [not null]
+  issuedPoints Int [not null]
+  grantedPoints Int [not null]
+  transferredPoints Int [not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (communityId, month) [unique]
+  }
+}
+
+Table v_community_point_flow_stats_weekly {
+  communityId String [not null]
+  week DateTime [not null]
+  issuedPoints Int [not null]
+  grantedPoints Int [not null]
+  transferredPoints Int [not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (communityId, week) [unique]
+  }
+}
+
 Table t_images_on_opportunities {
   opportunitiesId String [ref: > t_opportunities.id]
   imagesId String [ref: > t_images.id]

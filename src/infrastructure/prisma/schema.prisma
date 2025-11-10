@@ -1112,6 +1112,40 @@ enum TransactionReason {
   OPPORTUNITY_RESERVATION_REJECTED
 }
 
+view CommunityPointFlowStat {
+  communityId       String   @id @map("community_id")
+  issuedPoints      Int      @map("issued_points")
+  grantedPoints     Int      @map("granted_points")
+  transferredPoints Int      @map("transferred_points")
+  updatedAt         DateTime @map("updated_at")
+
+  @@map("v_community_point_flow_stats")
+}
+
+view CommunityPointFlowStatMonthly {
+  communityId       String   @map("community_id")
+  month             DateTime
+  issuedPoints      Int      @map("issued_points")
+  grantedPoints     Int      @map("granted_points")
+  transferredPoints Int      @map("transferred_points")
+  updatedAt         DateTime @map("updated_at")
+
+  @@unique([communityId, month])
+  @@map("v_community_point_flow_stats_monthly")
+}
+
+view CommunityPointFlowStatWeekly {
+  communityId       String   @map("community_id")
+  week              DateTime
+  issuedPoints      Int      @map("issued_points")
+  grantedPoints     Int      @map("granted_points")
+  transferredPoints Int      @map("transferred_points")
+  updatedAt         DateTime @map("updated_at")
+
+  @@unique([communityId, week])
+  @@map("v_community_point_flow_stats_weekly")
+}
+
 // ------------------------------ API Key Domain ------------------------------
 
 model ApiKey {

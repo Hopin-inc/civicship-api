@@ -630,7 +630,7 @@ RIGHT RIGHT
   
 
   "t_transactions" {
-    String id "🗝️"
+    String community_id "🗝️"
     TransactionReason reason 
     String comment "❓"
     String from "❓"
@@ -794,6 +794,35 @@ RIGHT RIGHT
   "v_slot_remaining_capacity" {
     String slotId "🗝️"
     Int remainingCapacity "❓"
+    }
+  
+
+  "v_community_point_flow_stats" {
+    String communityId "🗝️"
+    Int issuedPoints 
+    Int grantedPoints 
+    Int transferredPoints 
+    DateTime updatedAt 
+    }
+  
+
+  "v_community_point_flow_stats_monthly" {
+    String communityId 
+    DateTime month 
+    Int issuedPoints 
+    Int grantedPoints 
+    Int transferredPoints 
+    DateTime updatedAt 
+    }
+  
+
+  "v_community_point_flow_stats_weekly" {
+    String communityId 
+    DateTime week 
+    Int issuedPoints 
+    Int grantedPoints 
+    Int transferredPoints 
+    DateTime updatedAt 
     }
   
     "t_images" o{--}o "t_users" : "users"
