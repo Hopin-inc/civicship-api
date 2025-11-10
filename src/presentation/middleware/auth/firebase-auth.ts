@@ -13,12 +13,23 @@ function extractRequestInfo(req: http.IncomingMessage) {
   const getHeader = (key: string) => req.headers[key.toLowerCase()];
 
   // Extract client IP from various possible headers
+  // x-forwarded-for can be: "ip1, ip2" or ["ip1, ip2"] or ["ip1", "ip2"]
   const forwardedFor = getHeader("x-forwarded-for");
   const realIp = getHeader("x-real-ip");
-  const clientIp = forwardedFor || realIp || req.socket.remoteAddress || "unknown";
+
+  let clientIp: string | undefined;
+  if (forwardedFor) {
+    const forwardedIp = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+    clientIp = forwardedIp.split(",")[0].trim();
+  } else if (realIp) {
+    const realIpValue = Array.isArray(realIp) ? realIp[0] : realIp;
+    clientIp = realIpValue.split(",")[0].trim();
+  } else {
+    clientIp = req.socket.remoteAddress;
+  }
 
   return {
-    clientIp: Array.isArray(clientIp) ? clientIp[0] : typeof clientIp === "string" ? clientIp.split(",")[0].trim() : clientIp,
+    clientIp: clientIp || "unknown",
     userAgent: getHeader("user-agent") || "unknown",
     referer: getHeader("referer") || getHeader("referrer") || "none",
     origin: getHeader("origin") || "none",
