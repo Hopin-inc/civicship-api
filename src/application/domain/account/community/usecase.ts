@@ -85,14 +85,6 @@ export default class CommunityUseCase {
     return CommunityPresenter.update(res);
   }
 
-  async userViewPointFlowStat(communityId: string, ctx: IContext) {
-    return ctx.issuer.public(ctx, (tx) => {
-      return tx.communityPointFlowStat.findUnique({
-        where: { communityId },
-      });
-    });
-  }
-
   async userBrowsePointFlowStatsMonthly(
     communityId: string,
     args: { limit?: number | null; from?: Date | null; to?: Date | null },
