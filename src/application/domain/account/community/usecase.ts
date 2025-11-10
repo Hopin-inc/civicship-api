@@ -16,6 +16,7 @@ import CommunityPresenter from "@/application/domain/account/community/presenter
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
+import { prismaClient } from "@/infrastructure/prisma/client";
 
 @injectable()
 export default class CommunityUseCase {
@@ -82,5 +83,57 @@ export default class CommunityUseCase {
       return await this.communityService.updateCommunityProfile(ctx, id, input, tx);
     });
     return CommunityPresenter.update(res);
+  }
+
+  async userViewPointFlowStat(communityId: string, ctx: IContext) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.communityPointFlowStat.findUnique({
+        where: { communityId },
+      });
+    });
+  }
+
+  async userBrowsePointFlowStatsMonthly(
+    communityId: string,
+    args: { limit?: number | null; from?: Date | null; to?: Date | null },
+    _ctx: IContext,
+  ) {
+    return prismaClient.communityPointFlowStatMonthly.findMany({
+      where: {
+        communityId,
+        ...(args.from || args.to
+          ? {
+              month: {
+                ...(args.from ? { gte: args.from } : {}),
+                ...(args.to ? { lte: args.to } : {}),
+              },
+            }
+          : {}),
+      },
+      orderBy: { month: "desc" },
+      ...(args.limit ? { take: args.limit } : {}),
+    });
+  }
+
+  async userBrowsePointFlowStatsWeekly(
+    communityId: string,
+    args: { limit?: number | null; from?: Date | null; to?: Date | null },
+    _ctx: IContext,
+  ) {
+    return prismaClient.communityPointFlowStatWeekly.findMany({
+      where: {
+        communityId,
+        ...(args.from || args.to
+          ? {
+              week: {
+                ...(args.from ? { gte: args.from } : {}),
+                ...(args.to ? { lte: args.to } : {}),
+              },
+            }
+          : {}),
+      },
+      orderBy: { week: "desc" },
+      ...(args.limit ? { take: args.limit } : {}),
+    });
   }
 }

@@ -194,6 +194,9 @@ type Community {
   opportunities: [Opportunity!]
   participations: [Participation!]
   places: [Place!]
+  pointFlowStat: CommunityPointFlowStat
+  pointFlowStatsMonthly(from: Datetime, limit: Int, to: Datetime): [CommunityPointFlowStatMonthly!]
+  pointFlowStatsWeekly(from: Datetime, limit: Int, to: Datetime): [CommunityPointFlowStatWeekly!]
   pointName: String
   updatedAt: Datetime
   utilities: [Utility!]
@@ -280,6 +283,32 @@ type CommunityLineRichMenuConfig {
 input CommunityLineRichMenuConfigInput {
   richMenuId: String!
   type: LineRichMenuType!
+}
+
+type CommunityPointFlowStat {
+  communityId: ID!
+  grantedPoints: Int!
+  issuedPoints: Int!
+  transferredPoints: Int!
+  updatedAt: Datetime!
+}
+
+type CommunityPointFlowStatMonthly {
+  communityId: ID!
+  grantedPoints: Int!
+  issuedPoints: Int!
+  month: Datetime!
+  transferredPoints: Int!
+  updatedAt: Datetime!
+}
+
+type CommunityPointFlowStatWeekly {
+  communityId: ID!
+  grantedPoints: Int!
+  issuedPoints: Int!
+  transferredPoints: Int!
+  updatedAt: Datetime!
+  week: Datetime!
 }
 
 input CommunitySortInput {

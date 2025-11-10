@@ -29,25 +29,20 @@ export default class CommunityPresenter {
   }
 
   static get(r: PrismaCommunityDetail): GqlCommunity {
+    const { memberships, wallets, opportunities, places, participations, utilities, articles, ...rest } = r;
     return {
       __typename: "Community",
-      ...r,
-      memberships: [],
-      wallets: [],
-
-      opportunities: [],
-      places: [],
-      participations: [],
-      utilities: [],
-
-      articles: [],
+      ...rest,
     };
   }
 
   static create(r: PrismaCommunityCreateDetail): GqlCommunityCreateSuccess {
     return {
       __typename: "CommunityCreateSuccess",
-      community: r,
+      community: {
+        __typename: "Community",
+        ...r,
+      },
     };
   }
 

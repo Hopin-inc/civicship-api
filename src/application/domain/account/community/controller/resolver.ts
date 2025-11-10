@@ -91,5 +91,17 @@ export default class CommunityResolver {
     articles: (parent, _: unknown, ctx: IContext) => {
       return ctx.loaders.articlesByCommunity.load(parent.id);
     },
+
+    pointFlowStat: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.communityPointFlowStat.load(parent.id);
+    },
+
+    pointFlowStatsMonthly: async (parent, args, ctx: IContext) => {
+      return this.communityUseCase.userBrowsePointFlowStatsMonthly(parent.id, args, ctx);
+    },
+
+    pointFlowStatsWeekly: async (parent, args, ctx: IContext) => {
+      return this.communityUseCase.userBrowsePointFlowStatsWeekly(parent.id, args, ctx);
+    },
   };
 }

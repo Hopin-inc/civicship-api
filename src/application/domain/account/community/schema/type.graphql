@@ -21,6 +21,47 @@ type Community {
     utilities: [Utility!]
     articles: [Article!]
 
+    pointFlowStat: CommunityPointFlowStat
+    pointFlowStatsMonthly(
+        limit: Int
+        from: Datetime
+        to: Datetime
+    ): [CommunityPointFlowStatMonthly!]
+    pointFlowStatsWeekly(
+        limit: Int
+        from: Datetime
+        to: Datetime
+    ): [CommunityPointFlowStatWeekly!]
+
     createdAt: Datetime
     updatedAt: Datetime
+}
+
+# ------------------------------
+# Community Point Flow Statistics Type Definitions
+# ------------------------------
+type CommunityPointFlowStat {
+    communityId: ID!
+    issuedPoints: Int!
+    grantedPoints: Int!
+    transferredPoints: Int!
+    updatedAt: Datetime!
+}
+
+type CommunityPointFlowStatMonthly {
+    communityId: ID!
+    month: Datetime!
+    issuedPoints: Int!
+    grantedPoints: Int!
+    transferredPoints: Int!
+    updatedAt: Datetime!
+}
+
+type CommunityPointFlowStatWeekly {
+    communityId: ID!
+    week: Datetime!
+    issuedPoints: Int!
+    grantedPoints: Int!
+    transferredPoints: Int!
+    updatedAt: Datetime!
 }

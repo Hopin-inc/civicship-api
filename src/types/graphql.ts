@@ -228,11 +228,28 @@ export type GqlCommunity = {
   opportunities?: Maybe<Array<GqlOpportunity>>;
   participations?: Maybe<Array<GqlParticipation>>;
   places?: Maybe<Array<GqlPlace>>;
+  pointFlowStat?: Maybe<GqlCommunityPointFlowStat>;
+  pointFlowStatsMonthly?: Maybe<Array<GqlCommunityPointFlowStatMonthly>>;
+  pointFlowStatsWeekly?: Maybe<Array<GqlCommunityPointFlowStatWeekly>>;
   pointName?: Maybe<Scalars['String']['output']>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   utilities?: Maybe<Array<GqlUtility>>;
   wallets?: Maybe<Array<GqlWallet>>;
   website?: Maybe<Scalars['String']['output']>;
+};
+
+
+export type GqlCommunityPointFlowStatsMonthlyArgs = {
+  from?: InputMaybe<Scalars['Datetime']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  to?: InputMaybe<Scalars['Datetime']['input']>;
+};
+
+
+export type GqlCommunityPointFlowStatsWeeklyArgs = {
+  from?: InputMaybe<Scalars['Datetime']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  to?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
 export type GqlCommunityConfig = {
@@ -321,6 +338,35 @@ export type GqlCommunityLineRichMenuConfig = {
 export type GqlCommunityLineRichMenuConfigInput = {
   richMenuId: Scalars['String']['input'];
   type: GqlLineRichMenuType;
+};
+
+export type GqlCommunityPointFlowStat = {
+  __typename?: 'CommunityPointFlowStat';
+  communityId: Scalars['ID']['output'];
+  grantedPoints: Scalars['Int']['output'];
+  issuedPoints: Scalars['Int']['output'];
+  transferredPoints: Scalars['Int']['output'];
+  updatedAt: Scalars['Datetime']['output'];
+};
+
+export type GqlCommunityPointFlowStatMonthly = {
+  __typename?: 'CommunityPointFlowStatMonthly';
+  communityId: Scalars['ID']['output'];
+  grantedPoints: Scalars['Int']['output'];
+  issuedPoints: Scalars['Int']['output'];
+  month: Scalars['Datetime']['output'];
+  transferredPoints: Scalars['Int']['output'];
+  updatedAt: Scalars['Datetime']['output'];
+};
+
+export type GqlCommunityPointFlowStatWeekly = {
+  __typename?: 'CommunityPointFlowStatWeekly';
+  communityId: Scalars['ID']['output'];
+  grantedPoints: Scalars['Int']['output'];
+  issuedPoints: Scalars['Int']['output'];
+  transferredPoints: Scalars['Int']['output'];
+  updatedAt: Scalars['Datetime']['output'];
+  week: Scalars['Datetime']['output'];
 };
 
 export type GqlCommunitySortInput = {
@@ -3097,6 +3143,9 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityLineConfigInput: GqlCommunityLineConfigInput;
   CommunityLineRichMenuConfig: ResolverTypeWrapper<GqlCommunityLineRichMenuConfig>;
   CommunityLineRichMenuConfigInput: GqlCommunityLineRichMenuConfigInput;
+  CommunityPointFlowStat: ResolverTypeWrapper<GqlCommunityPointFlowStat>;
+  CommunityPointFlowStatMonthly: ResolverTypeWrapper<GqlCommunityPointFlowStatMonthly>;
+  CommunityPointFlowStatWeekly: ResolverTypeWrapper<GqlCommunityPointFlowStatWeekly>;
   CommunitySortInput: GqlCommunitySortInput;
   CommunityUpdateProfileInput: GqlCommunityUpdateProfileInput;
   CommunityUpdateProfilePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityUpdateProfilePayload']>;
@@ -3422,6 +3471,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityLineConfigInput: GqlCommunityLineConfigInput;
   CommunityLineRichMenuConfig: GqlCommunityLineRichMenuConfig;
   CommunityLineRichMenuConfigInput: GqlCommunityLineRichMenuConfigInput;
+  CommunityPointFlowStat: GqlCommunityPointFlowStat;
+  CommunityPointFlowStatMonthly: GqlCommunityPointFlowStatMonthly;
+  CommunityPointFlowStatWeekly: GqlCommunityPointFlowStatWeekly;
   CommunitySortInput: GqlCommunitySortInput;
   CommunityUpdateProfileInput: GqlCommunityUpdateProfileInput;
   CommunityUpdateProfilePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityUpdateProfilePayload'];
@@ -3795,6 +3847,9 @@ export type GqlCommunityResolvers<ContextType = any, ParentType extends GqlResol
   opportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
   participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   places?: Resolver<Maybe<Array<GqlResolversTypes['Place']>>, ParentType, ContextType>;
+  pointFlowStat?: Resolver<Maybe<GqlResolversTypes['CommunityPointFlowStat']>, ParentType, ContextType>;
+  pointFlowStatsMonthly?: Resolver<Maybe<Array<GqlResolversTypes['CommunityPointFlowStatMonthly']>>, ParentType, ContextType, Partial<GqlCommunityPointFlowStatsMonthlyArgs>>;
+  pointFlowStatsWeekly?: Resolver<Maybe<Array<GqlResolversTypes['CommunityPointFlowStatWeekly']>>, ParentType, ContextType, Partial<GqlCommunityPointFlowStatsWeeklyArgs>>;
   pointName?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   utilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
@@ -3851,6 +3906,35 @@ export type GqlCommunityLineConfigResolvers<ContextType = any, ParentType extend
 export type GqlCommunityLineRichMenuConfigResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityLineRichMenuConfig'] = GqlResolversParentTypes['CommunityLineRichMenuConfig']> = ResolversObject<{
   richMenuId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   type?: Resolver<GqlResolversTypes['LineRichMenuType'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlCommunityPointFlowStatResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityPointFlowStat'] = GqlResolversParentTypes['CommunityPointFlowStat']> = ResolversObject<{
+  communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  grantedPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  issuedPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  transferredPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlCommunityPointFlowStatMonthlyResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityPointFlowStatMonthly'] = GqlResolversParentTypes['CommunityPointFlowStatMonthly']> = ResolversObject<{
+  communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  grantedPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  issuedPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  month?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  transferredPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlCommunityPointFlowStatWeeklyResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityPointFlowStatWeekly'] = GqlResolversParentTypes['CommunityPointFlowStatWeekly']> = ResolversObject<{
+  communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  grantedPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  issuedPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  transferredPoints?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  week?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5061,6 +5145,9 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   CommunityFirebaseConfig?: GqlCommunityFirebaseConfigResolvers<ContextType>;
   CommunityLineConfig?: GqlCommunityLineConfigResolvers<ContextType>;
   CommunityLineRichMenuConfig?: GqlCommunityLineRichMenuConfigResolvers<ContextType>;
+  CommunityPointFlowStat?: GqlCommunityPointFlowStatResolvers<ContextType>;
+  CommunityPointFlowStatMonthly?: GqlCommunityPointFlowStatMonthlyResolvers<ContextType>;
+  CommunityPointFlowStatWeekly?: GqlCommunityPointFlowStatWeeklyResolvers<ContextType>;
   CommunityUpdateProfilePayload?: GqlCommunityUpdateProfilePayloadResolvers<ContextType>;
   CommunityUpdateProfileSuccess?: GqlCommunityUpdateProfileSuccessResolvers<ContextType>;
   CurrentPointView?: GqlCurrentPointViewResolvers<ContextType>;
