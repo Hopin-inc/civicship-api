@@ -14,7 +14,11 @@ import { ExpressInstrumentation, ExpressLayerType } from "@opentelemetry/instrum
 import { GraphQLInstrumentation } from "@opentelemetry/instrumentation-graphql";
 import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
 import { PrismaInstrumentation } from "@prisma/instrumentation";
-import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-node";
+import {
+  ConsoleSpanExporter,
+  ParentBasedSampler,
+  TraceIdRatioBasedSampler,
+} from "@opentelemetry/sdk-trace-node";
 import { diag, DiagConsoleLogger, DiagLogLevel } from "@opentelemetry/api";
 import logger from "./index";
 
@@ -76,9 +80,14 @@ export const tracingReady = (async () => {
     new PrismaInstrumentation(),
   ];
 
+  const exporter =
+    ENV === "LOCAL"
+      ? new ConsoleSpanExporter() // ローカルでは GCP に送信せずコンソール出力
+      : new TraceExporter(); // 本番・ステージングでは Cloud Trace に送信
+
   sdk = new NodeSDK({
     resource,
-    traceExporter: new TraceExporter(),
+    traceExporter: exporter,
     sampler,
     contextManager: new AsyncLocalStorageContextManager(), // 🧩 ← 非同期コンテキスト維持
     instrumentations,
