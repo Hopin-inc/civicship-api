@@ -40,7 +40,7 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
     return adminResult;
   }
 
-  return await handleFirebaseAuth(headers, issuer);
+  return await handleFirebaseAuth(headers, issuer, req);
 }
 
 export function authHandler(server: ApolloServer<IContext>) {

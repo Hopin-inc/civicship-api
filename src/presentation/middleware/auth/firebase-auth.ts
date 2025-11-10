@@ -1,3 +1,4 @@
+import http from "http";
 import { auth } from "@/infrastructure/libs/firebase";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { userAuthInclude } from "@/application/domain/account/user/data/type";
@@ -8,12 +9,47 @@ import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { IContext } from "@/types/server";
 
+function extractRequestInfo(req: http.IncomingMessage) {
+  const getHeader = (key: string) => req.headers[key.toLowerCase()];
+
+  // Extract client IP from various possible headers
+  const forwardedFor = getHeader("x-forwarded-for");
+  const realIp = getHeader("x-real-ip");
+  const clientIp = forwardedFor || realIp || req.socket.remoteAddress || "unknown";
+
+  return {
+    clientIp: Array.isArray(clientIp) ? clientIp[0] : typeof clientIp === "string" ? clientIp.split(",")[0].trim() : clientIp,
+    userAgent: getHeader("user-agent") || "unknown",
+    referer: getHeader("referer") || getHeader("referrer") || "none",
+    origin: getHeader("origin") || "none",
+    method: req.method || "unknown",
+    url: req.url || "unknown",
+    // Include all headers except sensitive ones
+    headers: Object.fromEntries(
+      Object.entries(req.headers).filter(([key]) =>
+        !["authorization", "cookie", "x-civicship-admin-api-key"].includes(key.toLowerCase())
+      )
+    ),
+  };
+}
+
 export async function handleFirebaseAuth(
   headers: AuthHeaders,
   issuer: PrismaClientIssuer,
+  req: http.IncomingMessage,
 ): Promise<AuthResult> {
   const { idToken, authMode, communityId } = headers;
-  if (!communityId) throw new Error("Missing x-community-id header");
+
+  if (!communityId) {
+    const requestInfo = extractRequestInfo(req);
+    logger.error("❌ Missing x-community-id header", {
+      ...requestInfo,
+      authMode,
+      hasIdToken: !!idToken,
+      hasAdminKey: !!headers.adminApiKey,
+    });
+    throw new Error("Missing x-community-id header");
+  }
 
   const loaders = createLoaders(prismaClient);
   if (!idToken) {
