@@ -27,12 +27,14 @@ const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID;
 let sdk: NodeSDK | undefined;
 
 export const tracingReady = (async () => {
-  if (NODE_ENV === "test") {
-    logger.info("Tracing disabled in test environment");
+  // ✅ 1. ローカルなら完全スキップ
+  if (ENV === "LOCAL" || NODE_ENV === "test") {
+    logger.info("🟡 OpenTelemetry disabled in local/test environment");
     return;
   }
 
-  if (ENV === "LOCAL") {
+  // ✅ 2. 非ローカルのみ初期化
+  if (ENV !== "LOCAL") {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   }
 
@@ -60,19 +62,15 @@ export const tracingReady = (async () => {
         }
       },
     }),
-
     new ExpressInstrumentation({
       ignoreLayersType: [ExpressLayerType.MIDDLEWARE, ExpressLayerType.ROUTER],
     }),
-
     new GraphQLInstrumentation({
       allowValues: false,
-      depth: 1, // Reduce depth to minimize noise (0=operation only, 1=top-level fields)
-      ignoreTrivialResolveSpans: true, // Ignore trivial resolvers to reduce noise
+      depth: 1,
+      ignoreTrivialResolveSpans: true,
     }),
-
     new UndiciInstrumentation(),
-
     new PrismaInstrumentation(),
   ];
 
@@ -80,7 +78,7 @@ export const tracingReady = (async () => {
     resource,
     traceExporter: new TraceExporter(),
     sampler,
-    contextManager: new AsyncLocalStorageContextManager(), // 🧩 ← 非同期コンテキスト維持
+    contextManager: new AsyncLocalStorageContextManager(),
     instrumentations,
     textMapPropagator: new CompositePropagator({
       propagators: [
@@ -91,7 +89,7 @@ export const tracingReady = (async () => {
     }),
   });
 
-  sdk.start();
+  await sdk.start();
   logger.info(`✅ OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
 
   const handleShutdown = async () => {
