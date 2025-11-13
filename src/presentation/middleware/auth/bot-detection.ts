@@ -56,30 +56,32 @@ export function isBot(userAgent: string | undefined): boolean {
 }
 
 /**
+ * Bot name patterns for identifying specific bots
+ */
+const BOT_NAME_PATTERNS = [
+  { pattern: /bingbot/i, name: "Bingbot" },
+  { pattern: /googlebot/i, name: "Googlebot" },
+  { pattern: /baiduspider/i, name: "Baiduspider" },
+  { pattern: /yandexbot/i, name: "YandexBot" },
+  { pattern: /slurp/i, name: "Yahoo Slurp" },
+  { pattern: /duckduckbot/i, name: "DuckDuckBot" },
+  { pattern: /facebookexternalhit/i, name: "Facebook Bot" },
+  { pattern: /twitterbot/i, name: "Twitterbot" },
+  { pattern: /linkedinbot/i, name: "LinkedInBot" },
+  { pattern: /slackbot/i, name: "Slackbot" },
+  { pattern: /discordbot/i, name: "Discordbot" },
+  { pattern: /telegrambot/i, name: "TelegramBot" },
+  { pattern: /applebot/i, name: "Applebot" },
+  { pattern: /chrome-lighthouse/i, name: "Lighthouse" },
+] as const;
+
+/**
  * Extracts bot name from user agent
  * @param userAgent - The user agent string from request headers (must be a bot user agent)
  * @returns The bot name (returns "Unknown Bot" if specific bot cannot be identified)
  */
 export function getBotName(userAgent: string): string {
-  // Extract common bot names
-  const botNamePatterns = [
-    { pattern: /bingbot/i, name: "Bingbot" },
-    { pattern: /googlebot/i, name: "Googlebot" },
-    { pattern: /baiduspider/i, name: "Baiduspider" },
-    { pattern: /yandexbot/i, name: "YandexBot" },
-    { pattern: /slurp/i, name: "Yahoo Slurp" },
-    { pattern: /duckduckbot/i, name: "DuckDuckBot" },
-    { pattern: /facebookexternalhit/i, name: "Facebook Bot" },
-    { pattern: /twitterbot/i, name: "Twitterbot" },
-    { pattern: /linkedinbot/i, name: "LinkedInBot" },
-    { pattern: /slackbot/i, name: "Slackbot" },
-    { pattern: /discordbot/i, name: "Discordbot" },
-    { pattern: /telegrambot/i, name: "TelegramBot" },
-    { pattern: /applebot/i, name: "Applebot" },
-    { pattern: /chrome-lighthouse/i, name: "Lighthouse" },
-  ];
-
-  for (const { pattern, name } of botNamePatterns) {
+  for (const { pattern, name } of BOT_NAME_PATTERNS) {
     if (pattern.test(userAgent)) {
       return name;
     }
