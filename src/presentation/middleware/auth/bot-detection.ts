@@ -44,21 +44,8 @@ const BOT_USER_AGENT_PATTERNS = [
   /telegrambot/i,
 ];
 
-/**
- * Checks if a user agent string belongs to a known bot/crawler
- * @param userAgent - The user agent string from request headers
- * @returns true if the user agent matches known bot patterns
- */
-export function isBot(userAgent: string | undefined): boolean {
-  if (!userAgent) return false;
-
-  return BOT_USER_AGENT_PATTERNS.some((pattern) => pattern.test(userAgent));
-}
-
-/**
- * Bot name patterns for identifying specific bots
- */
-const BOT_NAME_PATTERNS = [
+// Extract common bot names
+const botNamePatterns = [
   { pattern: /bingbot/i, name: "Bingbot" },
   { pattern: /googlebot/i, name: "Googlebot" },
   { pattern: /baiduspider/i, name: "Baiduspider" },
@@ -73,15 +60,28 @@ const BOT_NAME_PATTERNS = [
   { pattern: /telegrambot/i, name: "TelegramBot" },
   { pattern: /applebot/i, name: "Applebot" },
   { pattern: /chrome-lighthouse/i, name: "Lighthouse" },
-] as const;
+];
 
 /**
- * Extracts bot name from user agent
- * @param userAgent - The user agent string from request headers (must be a bot user agent)
- * @returns The bot name (returns "Unknown Bot" if specific bot cannot be identified)
+ * Checks if a user agent string belongs to a known bot/crawler
+ * @param userAgent - The user agent string from request headers
+ * @returns true if the user agent matches known bot patterns
  */
-export function getBotName(userAgent: string): string {
-  for (const { pattern, name } of BOT_NAME_PATTERNS) {
+export function isBot(userAgent: string | undefined): boolean {
+  if (!userAgent) return false;
+
+  return BOT_USER_AGENT_PATTERNS.some((pattern) => pattern.test(userAgent));
+}
+
+/**
+ * Extracts bot name from user agent if it's a bot
+ * @param userAgent - The user agent string from request headers
+ * @returns The bot name if detected, "Unknown Bot" if a specific name isn't found, or undefined if not a bot.
+ */
+export function getBotName(userAgent: string | undefined): string | undefined {
+  if (!userAgent || !isBot(userAgent)) return undefined;
+
+  for (const { pattern, name } of botNamePatterns) {
     if (pattern.test(userAgent)) {
       return name;
     }
