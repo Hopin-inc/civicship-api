@@ -4,7 +4,6 @@ import { HTTPFetchError, LINE_REQUEST_ID_HTTP_HEADER_NAME } from "@line/bot-sdk"
 function baseLogFields(endpoint: string, uid?: string, retryCount?: number) {
   return {
     endpoint,
-    method: "POST",
     ...(uid ? { uid } : {}),
     ...(retryCount !== undefined ? { retryCount } : {}),
   };
@@ -42,7 +41,7 @@ export function logLineApiError(
       parsedBody = error.body; // パースできなければそのまま
     }
 
-    logger.error(`LINE ${operationName} failed`, {
+    const logData = {
       ...baseLogFields(endpoint, uid, retryCount),
       requestId: error.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
       statusCode: error.status,
@@ -50,7 +49,16 @@ export function logLineApiError(
       responseDetails: typeof parsedBody === 'string' ? undefined : parsedBody?.details as Record<string, unknown>,
       rawResponseBody: error.body,
       requestBody: requestBody ? JSON.stringify(requestBody) : undefined,
-    });
+    };
+
+    if (operationName === "getProfile" && error.status === 404) {
+      logger.warn(`LINE ${operationName} failed`, {
+        ...logData,
+        reason: "User not visible to this channel (not a friend/blocked or channel mismatch)",
+      });
+    } else {
+      logger.error(`LINE ${operationName} failed`, logData);
+    }
   } else {
     logger.error(`LINE ${operationName} failed`, {
       ...baseLogFields(endpoint, uid, retryCount),
