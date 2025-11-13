@@ -1,7 +1,6 @@
 import http from "http";
 import { auth } from "@/infrastructure/libs/firebase";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
-import { userAuthInclude } from "@/application/domain/account/user/data/type";
 import { createLoaders } from "@/presentation/graphql/dataloader";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import { container } from "tsyringe";
@@ -101,7 +100,19 @@ export async function handleFirebaseAuth(
     const currentUser = await issuer.internal((tx) =>
       tx.user.findFirst({
         where: { identities: { some: { uid: decoded.uid } } },
-        include: userAuthInclude,
+        include: {
+          identities: {
+            where: {
+              OR: [
+                { platform: "PHONE" },
+                { communityId },
+              ],
+            },
+          },
+          memberships: {
+            where: { communityId },
+          },
+        },
       }),
     );
 
