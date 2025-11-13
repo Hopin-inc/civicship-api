@@ -146,4 +146,19 @@ export default class OpportunityService {
       );
     }
   }
+
+  async isOwnedByUser(
+    ctx: IContext,
+    opportunityId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const opportunity = await ctx.issuer.public(ctx, (tx) => {
+      return tx.opportunity.findUnique({
+        where: { id: opportunityId },
+        select: { createdBy: true },
+      });
+    });
+
+    return opportunity?.createdBy === userId;
+  }
 }
