@@ -8,6 +8,7 @@ import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { IContext } from "@/types/server";
+import { isBot, getBotName } from "./bot-detection";
 
 function extractRequestInfo(req: http.IncomingMessage) {
   const getHeader = (key: string) => req.headers[key.toLowerCase()];
@@ -53,12 +54,26 @@ export async function handleFirebaseAuth(
 
   if (!communityId) {
     const requestInfo = extractRequestInfo(req);
-    logger.error("❌ Missing x-community-id header", {
-      ...requestInfo,
-      authMode,
-      hasIdToken: !!idToken,
-      hasAdminKey: !!headers.adminApiKey,
-    });
+    const botDetected = isBot(requestInfo.userAgent);
+
+    if (botDetected) {
+      const botName = getBotName(requestInfo.userAgent);
+      logger.debug("🤖 Bot request without x-community-id header (expected behavior)", {
+        botName,
+        userAgent: requestInfo.userAgent,
+        clientIp: requestInfo.clientIp,
+        method: requestInfo.method,
+        url: requestInfo.url,
+      });
+    } else {
+      logger.error("❌ Missing x-community-id header", {
+        ...requestInfo,
+        authMode,
+        hasIdToken: !!idToken,
+        hasAdminKey: !!headers.adminApiKey,
+      });
+    }
+
     throw new Error("Missing x-community-id header");
   }
 
