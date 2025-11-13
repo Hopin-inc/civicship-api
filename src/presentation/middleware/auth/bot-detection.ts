@@ -44,6 +44,24 @@ const BOT_USER_AGENT_PATTERNS = [
   /telegrambot/i,
 ];
 
+// Extract common bot names
+const botNamePatterns = [
+  { pattern: /bingbot/i, name: "Bingbot" },
+  { pattern: /googlebot/i, name: "Googlebot" },
+  { pattern: /baiduspider/i, name: "Baiduspider" },
+  { pattern: /yandexbot/i, name: "YandexBot" },
+  { pattern: /slurp/i, name: "Yahoo Slurp" },
+  { pattern: /duckduckbot/i, name: "DuckDuckBot" },
+  { pattern: /facebookexternalhit/i, name: "Facebook Bot" },
+  { pattern: /twitterbot/i, name: "Twitterbot" },
+  { pattern: /linkedinbot/i, name: "LinkedInBot" },
+  { pattern: /slackbot/i, name: "Slackbot" },
+  { pattern: /discordbot/i, name: "Discordbot" },
+  { pattern: /telegrambot/i, name: "TelegramBot" },
+  { pattern: /applebot/i, name: "Applebot" },
+  { pattern: /chrome-lighthouse/i, name: "Lighthouse" },
+];
+
 /**
  * Checks if a user agent string belongs to a known bot/crawler
  * @param userAgent - The user agent string from request headers
@@ -62,24 +80,6 @@ export function isBot(userAgent: string | undefined): boolean {
  */
 export function getBotName(userAgent: string | undefined): string | undefined {
   if (!userAgent || !isBot(userAgent)) return undefined;
-
-  // Extract common bot names
-  const botNamePatterns = [
-    { pattern: /bingbot/i, name: "Bingbot" },
-    { pattern: /googlebot/i, name: "Googlebot" },
-    { pattern: /baiduspider/i, name: "Baiduspider" },
-    { pattern: /yandexbot/i, name: "YandexBot" },
-    { pattern: /slurp/i, name: "Yahoo Slurp" },
-    { pattern: /duckduckbot/i, name: "DuckDuckBot" },
-    { pattern: /facebookexternalhit/i, name: "Facebook Bot" },
-    { pattern: /twitterbot/i, name: "Twitterbot" },
-    { pattern: /linkedinbot/i, name: "LinkedInBot" },
-    { pattern: /slackbot/i, name: "Slackbot" },
-    { pattern: /discordbot/i, name: "Discordbot" },
-    { pattern: /telegrambot/i, name: "TelegramBot" },
-    { pattern: /applebot/i, name: "Applebot" },
-    { pattern: /chrome-lighthouse/i, name: "Lighthouse" },
-  ];
 
   for (const { pattern, name } of botNamePatterns) {
     if (pattern.test(userAgent)) {
