@@ -56,13 +56,11 @@ export function isBot(userAgent: string | undefined): boolean {
 }
 
 /**
- * Extracts bot name from user agent if it's a bot
- * @param userAgent - The user agent string from request headers
- * @returns The bot name if detected, undefined otherwise
+ * Extracts bot name from user agent
+ * @param userAgent - The user agent string from request headers (must be a bot user agent)
+ * @returns The bot name (returns "Unknown Bot" if specific bot cannot be identified)
  */
-export function getBotName(userAgent: string | undefined): string | undefined {
-  if (!userAgent || !isBot(userAgent)) return undefined;
-
+export function getBotName(userAgent: string): string {
   // Extract common bot names
   const botNamePatterns = [
     { pattern: /bingbot/i, name: "Bingbot" },
