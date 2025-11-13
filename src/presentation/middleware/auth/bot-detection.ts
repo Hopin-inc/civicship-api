@@ -76,7 +76,7 @@ export function isBot(userAgent: string | undefined): boolean {
 /**
  * Extracts bot name from user agent if it's a bot
  * @param userAgent - The user agent string from request headers
- * @returns The bot name if detected, undefined otherwise
+ * @returns The bot name if detected, "Unknown Bot" if a specific name isn't found, or undefined if not a bot.
  */
 export function getBotName(userAgent: string | undefined): string | undefined {
   if (!userAgent || !isBot(userAgent)) return undefined;
