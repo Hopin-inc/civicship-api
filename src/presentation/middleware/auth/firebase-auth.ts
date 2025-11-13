@@ -29,9 +29,13 @@ function extractRequestInfo(req: http.IncomingMessage) {
     clientIp = req.socket.remoteAddress;
   }
 
+  // Extract user agent and normalize to string
+  const userAgentHeader = getHeader("user-agent");
+  const userAgent = Array.isArray(userAgentHeader) ? userAgentHeader[0] : userAgentHeader;
+
   return {
     clientIp: clientIp || "unknown",
-    userAgent: getHeader("user-agent") || "unknown",
+    userAgent: userAgent || "unknown",
     referer: getHeader("referer") || getHeader("referrer") || "none",
     origin: getHeader("origin") || "none",
     method: req.method || "unknown",
