@@ -32,6 +32,10 @@ export async function createApolloServer(httpServer: http.Server) {
         fieldLevelInstrumentation: isProduction ? 0.05 : 1.0,
         sendReportsImmediately: !isProduction,
         sendVariableValues: { none: true },
+        includeRequest: async (requestContext) => {
+          const headerValue = requestContext.request.http?.headers.get("x-no-report");
+          return headerValue !== "true";
+        },
       }),
     );
   }
