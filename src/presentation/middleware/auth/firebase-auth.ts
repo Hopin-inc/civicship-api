@@ -54,13 +54,13 @@ export async function handleFirebaseAuth(
 
   if (!communityId) {
     const requestInfo = extractRequestInfo(req);
-    const botDetected = isBot(requestInfo.userAgent);
+    const userAgent = requestInfo.userAgent;
 
-    if (botDetected) {
-      const botName = getBotName(requestInfo.userAgent);
+    if (userAgent && isBot(userAgent)) {
+      const botName = getBotName(userAgent);
       logger.debug("🤖 Bot request without x-community-id header (expected behavior)", {
         botName,
-        userAgent: requestInfo.userAgent,
+        userAgent,
         clientIp: requestInfo.clientIp,
         method: requestInfo.method,
         url: requestInfo.url,
