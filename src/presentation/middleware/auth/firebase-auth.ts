@@ -60,7 +60,7 @@ export async function handleFirebaseAuth(
     const requestInfo = extractRequestInfo(req);
     const userAgent = requestInfo.userAgent;
 
-    if (userAgent && isBot(userAgent)) {
+    if (isBot(userAgent)) {
       const botName = getBotName(userAgent);
       logger.debug("🤖 Bot request without x-community-id header (expected behavior)", {
         botName,
@@ -69,15 +69,23 @@ export async function handleFirebaseAuth(
         method: requestInfo.method,
         url: requestInfo.url,
       });
-    } else {
-      logger.error("❌ Missing x-community-id header", {
-        ...requestInfo,
-        authMode,
-        hasIdToken: !!idToken,
-        hasAdminKey: !!headers.adminApiKey,
+
+      // Allow bots to proceed with a default community ID for SEO purposes
+      const loaders = createLoaders(prismaClient);
+      const botCommunityId = process.env.BOT_DEFAULT_COMMUNITY_ID || "public";
+      logger.debug("🤖 Using default community ID for bot request", {
+        botName,
+        communityId: botCommunityId
       });
+      return { issuer, loaders, communityId: botCommunityId };
     }
 
+    logger.error("❌ Missing x-community-id header", {
+      ...requestInfo,
+      authMode,
+      hasIdToken: !!idToken,
+      hasAdminKey: !!headers.adminApiKey,
+    });
     throw new Error("Missing x-community-id header");
   }
 

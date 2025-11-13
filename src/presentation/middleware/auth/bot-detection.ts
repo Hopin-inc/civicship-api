@@ -45,6 +45,15 @@ const BOT_USER_AGENT_PATTERNS = [
 ];
 
 /**
+ * Combined regex pattern for efficient bot detection
+ * Combines all bot patterns into a single regex to avoid loop overhead
+ */
+const COMBINED_BOT_PATTERN = new RegExp(
+  BOT_USER_AGENT_PATTERNS.map((pattern) => pattern.source).join("|"),
+  "i"
+);
+
+/**
  * Checks if a user agent string belongs to a known bot/crawler
  * @param userAgent - The user agent string from request headers
  * @returns true if the user agent matches known bot patterns
@@ -52,7 +61,7 @@ const BOT_USER_AGENT_PATTERNS = [
 export function isBot(userAgent: string | undefined): boolean {
   if (!userAgent) return false;
 
-  return BOT_USER_AGENT_PATTERNS.some((pattern) => pattern.test(userAgent));
+  return COMBINED_BOT_PATTERN.test(userAgent);
 }
 
 /**
