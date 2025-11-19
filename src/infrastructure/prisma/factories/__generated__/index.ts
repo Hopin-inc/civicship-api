@@ -49,6 +49,7 @@ import type { RemainingCapacityView } from "@prisma/client";
 import type { LineRichMenuType } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { CurrentPrefecture } from "@prisma/client";
+import type { Language } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
 import type { DidIssuanceStatus } from "@prisma/client";
 import type { VcIssuanceStatus } from "@prisma/client";
@@ -2446,6 +2447,7 @@ type UserFactoryDefineInput = {
     sysRole?: SysRole;
     currentPrefecture?: CurrentPrefecture;
     phoneNumber?: string | null;
+    preferredLanguage?: Language;
     urlWebsite?: string | null;
     urlX?: string | null;
     urlFacebook?: string | null;

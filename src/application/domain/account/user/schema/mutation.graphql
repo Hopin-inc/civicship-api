@@ -25,6 +25,7 @@ input UserUpdateProfileInput {
     urlTiktok: String
 
     currentPrefecture: CurrentPrefecture
+    preferredLanguage: Language
 }
 
 # ------------------------------

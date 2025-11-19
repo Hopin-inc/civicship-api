@@ -81,4 +81,36 @@ export default class UserService {
     return user?.identities[0]?.uid;
   }
 
+  async findLineUidAndLanguageForCommunity(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+  ): Promise<{ uid: string; language: import("@prisma/client").Language } | undefined> {
+    const user = await ctx.issuer.internal(async (tx) => {
+      return tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          preferredLanguage: true,
+          identities: {
+            where: {
+              platform: IdentityPlatform.LINE,
+              communityId: communityId,
+            },
+            select: {
+              uid: true,
+            },
+          },
+        },
+      });
+    });
+
+    const uid = user?.identities[0]?.uid;
+    if (!uid) return undefined;
+
+    return {
+      uid,
+      language: user.preferredLanguage,
+    };
+  }
+
 }
