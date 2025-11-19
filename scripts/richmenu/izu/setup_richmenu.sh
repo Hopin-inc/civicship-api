@@ -45,8 +45,27 @@ create_and_bind() {
   local json="$2"
   local img="$3"
 
+  # ① 先に alias が指している古い richmenu を取得
+  local oldId
+  oldId=$(curl -s \
+    -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" \
+    "https://api.line.me/v2/bot/richmenu/alias/${alias}" 2>/dev/null \
+    | jq -r '.richMenuId' || echo "null")
+
+  # ② alias を先に削除（oldIdとの参照を断つ）
+  curl -s -X DELETE "https://api.line.me/v2/bot/richmenu/alias/${alias}" \
+    -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" >/dev/null || true
+  echo "🔻 Alias deleted: ${alias}"
+
+  # ③ 古い richmenu 本体を削除（ここが重要）
+  if [ -n "$oldId" ] && [ "$oldId" != "null" ]; then
+    curl -s -X DELETE "https://api.line.me/v2/bot/richmenu/${oldId}" \
+      -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" >/dev/null || true
+    echo "🗑️ Deleted old rich menu: ${oldId}"
+  fi
+
+  # ④ JSON を一時ファイルに展開
   tmp_json=$(mktemp "$SCRIPT_DIR/tmp_XXXXXX.json")
-  # optional envsubst
   if grep -q '\${LIFF_BASE_URL}' "$json"; then
     envsubst '${LIFF_BASE_URL}' < "$json" > "$tmp_json"
   else
@@ -59,6 +78,7 @@ create_and_bind() {
     return
   fi
 
+  # ⑤ 新しい richmenu 作成（ここで初めて作る！）
   richMenuId=$(curl -s -X POST "https://api.line.me/v2/bot/richmenu" \
     -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
@@ -72,6 +92,7 @@ create_and_bind() {
 
   echo "✅ Created: ${alias} → ${richMenuId}"
 
+  # ⑥ 画像アップロード
   if [ -n "$img" ] && [ -f "$img" ]; then
     mt=$(mime_type "$img")
     curl -s -X POST "https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content" \
@@ -79,21 +100,15 @@ create_and_bind() {
       -H "Content-Type: ${mt}" \
       --data-binary @"$img" >/dev/null
     echo "🖼️ Uploaded: $(basename "$img")"
-  else
-    echo "⚠️ image not found for ${alias} (skip upload)"
   fi
 
-  # re-create alias
-  curl -s -X DELETE "https://api.line.me/v2/bot/richmenu/alias/${alias}" \
-    -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" >/dev/null || true
-
+  # ⑦ alias を新 richmenu に張り直す
   curl -s -X POST "https://api.line.me/v2/bot/richmenu/alias" \
     -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"richMenuAliasId\":\"${alias}\",\"richMenuId\":\"${richMenuId}\"}" >/dev/null
   echo "🔗 Alias created: ${alias}"
 
-  # stdout の最後に ID を特殊行で出力（呼び出し側で抽出用）
   echo "__ID__ ${richMenuId}"
 }
 
