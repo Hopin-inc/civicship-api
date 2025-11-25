@@ -36,7 +36,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
     });
 
     // 🔥 Cookie 名を Firebase 準拠に変更
-    res.cookie("__session", sessionCookie, {
+    res.cookie("session", sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: true,
@@ -45,7 +45,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
     });
 
     logger.debug("🍪 [handleSessionLogin] Cookie set on response", {
-      cookieName: "__session",
+      cookieName: "session",
       secure: true,
       sameSite: "none",
       path: "/",
