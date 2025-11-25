@@ -14,7 +14,7 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
       .split(";")
       .map((v) => {
         const parts = v.trim().split("=");
-        return [parts.shift() || "", parts.join("=")];
+        return [(parts.shift() || "").trim(), parts.join("=")];
       })
       .map(([k, v]) => [k, decodeURIComponent(v || "")]),
   );
