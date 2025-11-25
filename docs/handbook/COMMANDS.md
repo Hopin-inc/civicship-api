@@ -1,348 +1,348 @@
-# コマンドリファレンス
+# Command Reference
 
-このドキュメントでは、civicship-apiプロジェクトで使用可能な全てのコマンドを包括的に説明します。
+This document provides a comprehensive description of all commands available in the civicship-api project.
 
-## 利用可能なpnpmコマンド
+## Available pnpm Commands
 
-### 開発・ビルド
+### Development/Build
 
 ```bash
-# 開発サーバー
-pnpm dev              # HTTP開発サーバー（ポート3000）
-pnpm dev:https        # HTTPS開発サーバー（ポート3000、SSL証明書付き）
-pnpm dev:external     # 外部API開発サーバー（ウォレット操作用）
+# Development Server
+pnpm dev # HTTP Development Server (Port 3000)
+pnpm dev:https # HTTPS Development Server (Port 3000, with SSL Certificate)
+pnpm dev:external # External API Development Server (for Wallet Operations)
 
-# ビルド・起動
-pnpm build            # TypeScriptコンパイル + GraphQLスキーマファイルコピー
-pnpm start            # プロダクション環境でのアプリケーション起動
-pnpm copy-graphql     # GraphQLスキーマファイルのみをdist/にコピー
+# Build/Run
+pnpm build # TypeScript Compilation + Copy GraphQL Schema File
+pnpm start # Start Application in Production Environment
+pnpm copy-graphql # Copy Only GraphQL Schema File to dist/
 ```
 
-### コード品質
+### Code Quality
 
 ```bash
-# リンティング・フォーマット
-pnpm lint             # ESLint + Prettier実行（自動修正付き）
+# Linting/Formatting
+pnpm lint # Run ESLint + Prettier (with Auto-Fix)
 
-# テスト
-pnpm test             # Jest テストスイート実行
-pnpm test:coverage    # カバレッジレポート付きテスト実行
+# Testing
+pnpm test # Run Jest Test Suite
+pnpm test:coverage # Run Tests with Coverage Report
 ```
 
-### データベース操作
+### Database Operations
 
 ```bash
-# Prisma基本操作
-pnpm db:pull          # データベーススキーマをPrismaスキーマに反映
-pnpm db:generate      # Prismaクライアント生成（スキーマフォーマット含む）
-pnpm db:studio        # Prisma Studio起動（データベースGUI）
+# Prisma Basic Operations
+pnpm db:pull # Reflect database schema to Prisma schema
+pnpm db:generate # Generate Prisma client (including schema format)
+pnpm db:studio # Launch Prisma Studio (Database GUI)
 
-# マイグレーション
-pnpm db:migrate       # 新しいマイグレーションファイル作成
-pnpm db:deploy        # マイグレーションをデータベースに適用
-pnpm db:migrate-reset # データベース完全リセット（全データ削除）
-pnpm db:mark-rolled-back # マイグレーション巻き戻しマーク
+# Migration
+pnpm db:migrate # Create new migration file
+pnpm db:deploy # Apply migration to database
+pnpm db:migrate-reset # Complete database reset (delete all data)
+pnpm db:mark-rolled-back # Mark migration for rollback
 
-# データシード
-pnpm db:seed-master   # マスターデータ投入（都市・州データ）
-pnpm db:seed-domain   # ドメインデータ投入（ユーザー・コミュニティデータ）
+# Data Seed
+pnpm db:seed-master # Populate master data (city and state data)
+pnpm db:seed-domain # Populate domain data (user and community data)
 ```
 
-### GraphQL操作
+### GraphQL Operations
 
 ```bash
-# GraphQL型生成
-pnpm gql:generate     # GraphQL型定義生成（codegen.yamlに基づく）
+# Generate GraphQL types
+pnpm gql:generate # Generate GraphQL type definitions (based on codegen.yaml)
 ```
 
-### Docker操作
+### Docker operations
 
 ```bash
-# コンテナ管理
-pnpm container:up     # PostgreSQLコンテナ起動（ポート15432）
-pnpm container:down   # コンテナ停止・削除
+# Container management
+pnpm container:up # Start a PostgreSQL container (port 15432)
+pnpm container:down # Stop and delete a container
 ```
 
-## 利用できないコマンド（注意）
+## Unavailable commands (Note)
 
-以下のコマンドは現在package.jsonに存在しません。代替手段を使用してください：
+The following commands are not currently included in package.json. Please use an alternative:
 
 ```bash
-# 存在しないコマンド
-pnpm lint:graphql     # → pnpm gql:generate でエラーチェック
-pnpm gql:validate     # → 開発サーバー起動時の検証を利用
-pnpm gql:diff         # → 手動でスキーマ比較
-pnpm type-check       # → npx tsc --noEmit
+# Non-existent command
+pnpm lint:graphql # → Error checking with pnpm gql:generate
+pnpm gql:validate # → Use validation during development server startup
+pnpm gql:diff # → Manual schema comparison
+pnpm type-check # → npx tsc --noEmit
 pnpm test:integration # → pnpm test -- --testPathPattern=integration
-pnpm test:watch       # → npx jest --watch
-pnpm db:reset         # → pnpm db:migrate-reset
+pnpm test:watch # → npx jest --watch
+pnpm db:reset # → pnpm db:migrate-reset
 ```
 
-## 代替コマンド・手動実行
+## Alternative commands/Manual execution
 
-### TypeScript型チェック
+### TypeScript type checking
 
 ```bash
-# 手動型チェック
+# Manual type checking
 npx tsc --noEmit
 
-# ビルド時の型チェック
+# Type checking during build
 pnpm build
 ```
 
-### GraphQLスキーマ検証
+### GraphQL schema validation
 
 ```bash
-# コード生成でのエラーチェック
+# Error checking during code generation
 pnpm gql:generate
 
-# 開発サーバー起動時の検証
+# Testing when starting the development server
 pnpm dev:https
-# エラーがあればコンソールに表示される
+# Errors, if any, are displayed on the console
 ```
 
-### テストのパターンマッチング
+### Test pattern matching
 
 ```bash
-# 統合テスト実行
+# Running integration tests
 pnpm test -- --testPathPattern=integration
 
-# ユニットテスト実行
+# Running unit tests
 pnpm test -- --testPathPattern=unit
 
-# 認証テスト実行
+# Running authentication tests
 pnpm test -- --testPathPattern=auth
 
-# 特定のファイルテスト
+# Testing specific files
 pnpm test -- __tests__/unit/account/user.service.test.ts
 
-# ウォッチモード
+# Watch mode
 npx jest --watch
 ```
 
-## 環境別コマンド実行
+## Executing commands by environment
 
-### 開発環境
+### Development environment
 
 ```bash
-# 開発環境設定
+# Development environment settings
 NODE_ENV=development pnpm dev:https
 
-# デバッグモード
+# Debug mode
 DEBUG=prisma:query,graphql:* pnpm dev:https
 
-# ログレベル設定
+# Log Level Settings
 LOG_LEVEL=debug pnpm dev:https
 ```
 
-### テスト環境
+### Test Environment
 
 ```bash
-# テスト環境でのコマンド実行
+# Execute Commands in the Test Environment
 NODE_ENV=test pnpm test
 
-# テストデータベース使用
+# Use Test Database
 DATABASE_URL=postgresql://test:test@localhost:15432/civicship_test pnpm db:migrate
 ```
 
-### 本番環境
+### Production Environment
 
 ```bash
-# 本番ビルド
+# Production Build
 NODE_ENV=production pnpm build
 
-# 本番起動
+# Production Start
 NODE_ENV=production pnpm start
 
-# 本番テスト
+# Production Test
 NODE_ENV=production pnpm test
 ```
 
-## デバッグ・監視コマンド
+## Debugging and Monitoring Commands
 
-### アプリケーションデバッグ
+### Application Debugging
 
 ```bash
-# Node.jsデバッガー
+# Node.js Debugger
 node --inspect-brk dist/index.js
 
-# デバッグログ有効化
+# Enable Debug Log
 DEBUG=* pnpm dev:https
 
-# 特定のモジュールのデバッグ
+# Debugging a Specific Module
 DEBUG=prisma:query pnpm dev:https
 DEBUG=graphql:* pnpm dev:https
 ```
 
-### データベースデバッグ
+### Database Debugging
 
 ```bash
-# Prismaクエリログ
+# Prisma Query Log
 DEBUG=prisma:query pnpm dev:https
 
-# データベース接続確認
+# Database Connection Check
 pnpm db:studio
 ```
 
-### パフォーマンス監視
+### Performance Monitoring
 
 ```bash
-# メモリ使用量監視
+# Memory Usage Monitoring
 node --inspect pnpm dev:https
-# chrome://inspect でプロファイリング
+# Profiling with chrome://inspect
 
-# ログファイル監視
+# Log File Monitoring
 tail -f logs/app.log
 ```
 
-## Git・GitHub操作
+## Git and GitHub Operations
 
-### ブランチ操作
+### Branch Operations
 
 ```bash
-# 機能ブランチ作成
+# Creating a Feature Branch
 git checkout develop
 git pull origin develop
 git checkout -b feature/your-feature-name
 
-# バグ修正ブランチ作成
+# Creating a Bug Fix Branch
 git checkout -b fix/your-bug-fix-name
 ```
 
-### コミット・プッシュ
+### Commit and push
 
 ```bash
-# 変更をステージング
+# Stage changes
 git add src/specific/file.ts
 git add docs/
 
-# コミット
+# Commit
 git commit -m "feat: add new feature description"
 
-# リモートにプッシュ
+# Push to remote
 git push origin feature/your-feature-name
 ```
 
-### プルリクエスト
+### Pull request
 
 ```bash
-# GitHub CLIでPR作成
+# Create a PR using GitHub CLI
 gh pr create --title "Add new feature" --body "Description of changes"
 
-# PR確認
+# Check PR
 gh pr view
 
-# PR一覧
+# List PRs
 gh pr list
 ```
 
-## Docker・コンテナ操作
+## Docker and container operations
 
-### PostgreSQLコンテナ
+### PostgreSQL container
 
 ```bash
-# コンテナ起動
+# Start container
 pnpm container:up
-# または
+# or
 docker-compose up -d
 
-# コンテナ停止
+# Stop container
 pnpm container:down
-# または
+# or
 docker-compose down
 
-# コンテナ状態確認
+# Check container status
 docker ps
 
-# コンテナログ確認
+# Check container logs
 docker-compose logs postgres
 ```
 
-### データベース直接接続
+### Direct database connection
 
 ```bash
-# PostgreSQLに直接接続
+# Connect directly to PostgreSQL
 psql postgresql://username:password@localhost:15432/civicship_dev
 
-# Docker経由での接続
+# Connect via Docker
 docker exec -it civicship-api-postgres-1 psql -U username -d civicship_dev
 ```
 
-## ビルド・デプロイ関連
+## Build and deployment related
 
-### ローカルビルド
+### Local build
 
 ```bash
-# クリーンビルド
+# Clean build
 rm -rf dist/
 pnpm build
 
-# ビルド成果物確認
+# Check build artifacts
 ls -la dist/
 
-# 本番ビルドテスト
+# Production build test
 NODE_ENV=production node dist/index.js
 ```
 
-### デプロイ準備
+### Prepare for deployment
 
 ```bash
-# 全チェック実行
+# Run all checks
 pnpm lint
 pnpm test
 npx tsc --noEmit
 pnpm build
 
-# 環境変数確認
+# Check environment variables
 echo $DATABASE_URL
 echo $FIREBASE_PROJECT_ID
 ```
 
-## トラブルシューティングコマンド
+## Troubleshooting commands
 
-### 依存関係の問題
+### Dependency issues
 
 ```bash
-# node_modules再インストール
+# Reinstall node_modules
 rm -rf node_modules/
 rm pnpm-lock.yaml
 pnpm install
 
-# キャッシュクリア
+# Clear cache
 pnpm store prune
 ```
 
-### データベースの問題
+### Database issues
 
 ```bash
-# データベース接続テスト
+# Test database connection
 pnpm db:studio
 
-# マイグレーション状態確認
+# Check migration status
 npx prisma migrate status
 
-# データベースリセット
+# Reset database
 pnpm db:migrate-reset
 pnpm db:seed-master
 pnpm db:seed-domain
 ```
 
-### GraphQLの問題
+### GraphQL issues
 
 ```bash
-# スキーマ再生成
+# Regenerate schema
 pnpm gql:generate
 
-# GraphQLエンドポイント確認
+# Check GraphQL endpoint
 curl -X POST https://localhost:3000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query":"{ __schema { types { name } } }"}'
+-H "Content-Type: application/json" \
+-d '{"query":"{ __schema { types { name } } }"}'
 ```
 
-## 関連ドキュメント
+## Related Documentation
 
-- [開発ワークフロー](DEVELOPMENT.md) - 日常的な開発手順
-- [テストガイド](../TESTING.md) - テスト戦略と実行
-- [実装パターン](../PATTERNS.md) - コード実装パターン
-- [セットアップガイド](../SETUP.md) - 初期環境構築
-- [トラブルシューティング](../TROUBLESHOOTING.md) - 問題解決ガイド
+- [Development Workflow](DEVELOPMENT.md) - Daily development procedures
+- [Testing Guide](../TESTING.md) - Testing strategy and execution
+- [Implementation Patterns](../PATTERNS.md) - Code implementation patterns
+- [Setup Guide](../SETUP.md) - Initial environment setup
+- [Troubleshooting](../TROUBLESHOOTING.md) - Problem-solving guide

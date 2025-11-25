@@ -1,410 +1,404 @@
-# セキュリティアーキテクチャ
+# Security Architecture
 
-このドキュメントでは、civicship-apiのセキュリティアーキテクチャ、認証フロー、認可システム、およびセキュリティベストプラクティスについて説明します。
+This document describes civicship-api's security architecture, authentication flow, authorization system, and security best practices.
 
-## セキュリティアーキテクチャ概要
+## Security Architecture Overview
 
-civicship-apiは4層のセキュリティアーキテクチャを採用しています：
+civicship-api employs a four-tier security architecture:
 
-1. **認証層** - ユーザーアイデンティティの検証
-2. **GraphQL認可層** - API レベルの権限チェック
-3. **Row-Level Security (RLS)** - データベースレベルの自動フィルタリング
-4. **ビジネスロジック層** - ドメイン固有のアクセス制御
+1. **Authentication Layer** - User Identity Verification
+2. **GraphQL Authorization Layer** - API-level Permission Checks
+3. **Row-Level Security (RLS)** - Database-level Automatic Filtering
+4. **Business Logic Layer** - Domain-specific Access Control
 
-## 認証フロー
+## Authentication Flow
 
-### 1. トークン検証
+### 1. Token Validation
 
-**実装ファイル:** `src/presentation/middleware/auth.ts`
+**Implementation File:** `src/presentation/middleware/auth.ts`
 
 ```typescript
 export async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
-  const issuer = new PrismaClientIssuer();
-  const loaders: Loaders = createLoaders(issuer);
-  const idToken = getIdTokenFromRequest(req);
-  const communityId = (req.headers["x-community-id"] as string) || process.env.COMMUNITY_ID;
+const issuer = new PrismaClientIssuer();
+const loaders: Loaders = createLoaders(issuer);
+const idToken = getIdTokenFromRequest(req);
+const communityId = (req.headers["x-community-id"] as string) || process.env.COMMUNITY_ID; 
 
-  if (!communityId) {
-    throw new Error("Missing required header: x-community-id");
-  }
+if (!communityId) { 
+throw new Error("Missing required header: x-community-id"); 
+} 
 
-  if (!idToken) {
-    return { issuer, loaders, communityId };
-  }
+if (!idToken) { 
+return { issuer, loaders, communityId }; 
+} 
 
-  const configService = container.resolve(CommunityConfigService);
-  const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
+const configService = container.resolve(CommunityConfigService); 
+const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId); 
 
-  try {
-    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
-    const decoded = await tenantedAuth.verifyIdToken(idToken);
-    const uid = decoded.uid;
+try { 
+const tenantedAuth = auth.tenantManager().authForTenant(tenantId); 
+const decoded = await tenantedAuth.verifyIdToken(idToken); 
+const uid = decoded.uid; 
 
-    const [currentUser, hasPermissions] = await Promise.all([
-      issuer.internal(async (tx) =>
-        tx.user.findFirst({
-          where: { identities: { some: { uid } } },
-          include: userAuthInclude,
-        }),
-      ),
-      issuer.internal(async (tx) =>
-        tx.user.findFirst({
-          where: { identities: { some: { uid } } },
-          select: userAuthSelect,
-        }),
-      ),
-    ]);
+const [currentUser, hasPermissions] = await Promise.all([ 
+issuer.internal(async (tx) => tx.user.findFirst({
+where: { identities: { some: { uid } } },
+include: userAuthInclude,
+}),
+),
+issuer.internal(async (tx) =>
+tx.user.findFirst({
+where: { identities: { some: { uid } } },
+select: userAuthSelect,
+}),
+),
+]);
 
-    return {
-      issuer,
-      loaders,
-      uid,
-      tenantId,
-      communityId,
-      currentUser,
-      hasPermissions,
-      idToken,
-    };
-  } catch {
-    return { communityId, issuer, loaders };
-  }
+return {
+issuer,
+loaders,
+uid,
+tenantId,
+communityId,
+currentUser,
+hasPermissions,
+idToken,
+};
+} catch {
+return { communityId, issuer, loaders };
+}
 }
 ```
 
-**機能:**
-- Firebase JWT トークン検証
-- コミュニティ向けマルチテナントサポート
-- トークン有効期限と更新処理
-- カスタムクレーム検証
+**Features**
+- Firebase JWT token validation
+- Multi-tenant support for communities
+- Token expiration and renewal handling
+- Custom claim validation
 
-### 2. ユーザーコンテキスト作成
+### 2. Creating a user context
 
 ```typescript
-// データベースユーザー検索とコンテキスト作成
+// Database User Search and Context Creation
 const createUserContext = async (decodedToken: DecodedIdToken): Promise<IContext> => {
-  const user = await prisma.user.findUnique({
-    where: { firebaseUid: decodedToken.uid },
-    include: {
-      memberships: {
-        include: { community: true }
-      }
-    }
-  });
-  
-  return {
-    currentUser: user,
-    uid: decodedToken.uid,
-    isAdmin: checkAdminPermissions(user),
-    hasPermissions: calculateUserPermissions(user),
-    dataloaders: createDataLoaders(prismaClientIssuer),
-    prisma: prismaClientIssuer
-  };
+const user = await prisma.user.findUnique({
+where: { firebaseUid: decodedToken.uid },
+include: {
+memberships: {
+include: { community: true }
+}
+}
+});
+
+return {
+currentUser: user,
+uid: decodedToken.uid,
+isAdmin: checkAdminPermissions(user),
+hasPermissions: calculateUserPermissions(user),
+dataloaders: createDataLoaders(prismaClientIssuer),
+prisma: prismaClientIssuer
+};
 };
 ```
 
-### 3. 権限割り当て
+### 3. Permission Assignment
 
 ```typescript
-// ロールベース権限計算
+// Role-Based Permission Calculation
 const calculateUserPermissions = (user: User) => {
-  const permissions = {
-    memberships: user.memberships.map(membership => ({
-      communityId: membership.communityId,
-      role: membership.role,
-      status: membership.status
-    })),
-    isSystemAdmin: user.isSystemAdmin || false,
-    canAccessAdmin: checkAdminAccess(user)
-  };
-  
-  return permissions;
+const permissions = {
+memberships: user.memberships.map(membership => ({
+communityId: membership.communityId,
+role: membership.role,
+status: membership.status
+})),
+isSystemAdmin: user.isSystemAdmin || false,
+canAccessAdmin: checkAdminAccess(user)
+};
+
+return permissions;
 };
 ```
 
 ## Row-Level Security (RLS)
 
-**実装ファイル:** `src/infrastructure/prisma/client.ts`
+**Implementation file:** `src/infrastructure/prisma/client.ts`
 
-### PrismaClientIssuer実装
+### PrismaClientIssuer implementation
 
-```typescript
+``` typescript
 export class PrismaClientIssuer {
-  // コミュニティメンバーのみアクセス可能
-  public async onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    if (ctx.isAdmin) {
-      return this.public(ctx, callback);
-    }
-    
-    const user = ctx.currentUser;
-    if (user) {
-      return await this.client.$transaction(async (tx) => {
-        await this.setRls(tx);
-        await this.setRlsConfigUserId(tx, user.id);
-        return await callback(tx);
-      });
-    }
-    throw new AuthorizationError("Not authenticated");
-  }
-  
-  // RLS設定の適用
-  private async setRls(tx: Transaction) {
-    await tx.$executeRawUnsafe(`SET row_security = on;`);
-  }
-  
-  // ユーザーIDをRLS設定に設定
-  private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
-    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
-      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', FALSE) as value;`,
-    );
-    return value;
-  }
+// Accessible only to community members
+public async onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
+if (ctx.isAdmin) {
+return this.public(ctx, callback);
+}
 
-  // 管理者用バイパス
-  public async admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    return await this.client.$transaction(async (tx) => {
-      await this.setRlsBypass(tx, true);
-      return await callback(tx);
-    });
-  }
-  
-  // RLSバイパス設定
-  private async setRlsBypass(tx: Transaction, bypass: boolean) {
-    await tx.$queryRawUnsafe(
-      `SELECT set_config('app.rls_bypass', '${bypass}', FALSE);`
-    );
-  }
+const user = ctx.currentUser;
+if (user) {
+return await this.client.$transaction(async (tx) => {
+await this.setRls(tx);
+await this.setRlsConfigUserId(tx, user.id);
+return await callback(tx);
+});
+}
+throw new AuthorizationError("Not authenticated");
+}
+
+/ Apply RLS configuration
+private async setRls(tx: Transaction) {
+await tx.$executeRawUnsafe(`SET row_security = on;`);
+}
+
+/ Set user ID to RLS configuration
+private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
+const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
+`SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', FALSE) as value;`,
+);
+return value;
+}
+
+// Admin bypass
+public async admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
+return await this.client.$transaction(async (tx) => {
+await this.setRlsBypass(tx, true);
+return await callback(tx);
+});
+}
+
+// RLS bypass configuration
+private async setRlsBypass(tx: Transaction, bypass: boolean) {
+await tx.$queryRawUnsafe(
+`SELECT set_config('app.rls_bypass', '${bypass}', FALSE);`
+);
+}
 }
 ```
 
-### RLS使用例
+### RLS Usage Example
 
-```typescript
-// 使用例: ユーザーコンテキストに基づく自動フィルタリング
+``` typescript
+// Usage Example: Automatic filtering based on user context
 const issuer = new PrismaClientIssuer();
 
-// ユーザーがアクセス可能なコミュニティのみ取得
-const communities = await issuer.onlyBelongingCommunity(context, (tx) => 
-  tx.community.findMany()
+// Retrieve only communities accessible to the user
+const communities = await issuer.onlyBelongingCommunity(context, (tx) =>
+tx.community.findMany()
 );
 
-// 管理者として全データにアクセス
-const allCommunities = await issuer.admin(context, (tx) => 
-  tx.community.findMany()
+// Access all data as an administrator
+const allCommunities = await issuer.admin(context, (tx) =>
+tx.community.findMany()
 );
 ```
 
-**利点:**
-- ユーザーコンテキストに基づく自動データフィルタリング
-- 不正なデータアクセスの防止
-- 認可ロジックの簡素化
-- 全クエリでの一貫したセキュリティ
+**Benefits**
+- Automatic data filtering based on user context
+- Prevention of unauthorized data access
+- Simplified authorization logic
+- Consistent security across all queries
 
-## GraphQL認可ルール
+## GraphQL Authorization Rules
 
-**実装ファイル:** `src/presentation/graphql/rule.ts`
+**Implementation File:** `src/presentation/graphql/rule.ts`
 
-### 認可ルール実装
+### Authorization Rule Implementation
 
-```typescript
+``` typescript
 import { preExecRule } from '@graphql-authz/core';
 
-// 基本認証ルール
+// Basic authentication rule
 const IsUser = preExecRule({
-  error: new AuthenticationError("User must be logged in"),
+error: new AuthenticationError("User must be logged in"),
 })((context: IContext) => {
-  if (context.isAdmin) return true;
-  return !!context.currentUser;
+if (context.isAdmin) return true;
+return !!context.currentUser;
 });
 
-// システム管理者ルール
+// System administrator rule
 const IsAdmin = preExecRule({
-  error: new AuthorizationError("Admin access required"),
+error: new AuthorizationError("Admin access required"),
 })((context: IContext) => {
-  return context.isAdmin || context.currentUser?.isSystemAdmin;
+return context.isAdmin || context.currentUser?.isSystemAdmin;
 });
 
-// コミュニティオーナールール
+// Community owner rule
 const IsCommunityOwner = preExecRule({
-  error: new AuthorizationError("User must be community owner"),
+error: new AuthorizationError("User must be community owner"),
 })((context: IContext, args: { permission?: { communityId?: string } }) => {
-  if (context.isAdmin) return true;
-  
-  const user = context.currentUser;
-  const permission = args.permission;
-  
-  if (!user || !permission?.communityId) return false;
-  
-  const membership = context.hasPermissions?.memberships?.find(
-    (m) => m.communityId === permission.communityId,
-  );
-  
-  return membership?.role === Role.OWNER;
+if (context.isAdmin) return true; 
+
+const user = context.currentUser; 
+const permission = args.permission; 
+
+if (!user || !permission?.communityId) return false; 
+
+const membership = context.hasPermissions?.memberships?.find( 
+(m) => m.communityId === permission.communityId, 
+); 
+
+return membership?.role === Role.OWNER;
 });
 
-// 自分自身の操作ルール
-const IsSelf = preExecRule({
-  error: new AuthorizationError("User can only access their own data"),
-})((context: IContext, args: { permission?: { userId?: string } }) => {
-  if (context.isAdmin) return true;
-  
-  const user = context.currentUser;
-  const permission = args.permission;
-  
-  return user?.id === permission?.userId;
+// own operating rules
+const IsSelf = preExecRule({ 
+error: new AuthorizationError("User can only access their own data"),
+})((context: IContext, args: { permission?: { userId?: string } }) => { 
+if (context.isAdmin) return true; 
+
+const user = context.currentUser; 
+const permission = args.permission; 
+
+return user?.id === permission?.userId;
 });
 ```
 
-### GraphQLスキーマでの適用
+### Application in GraphQL Schema
 
-```typescript
-// GraphQLリゾルバーでの認可ルール適用
+``` typescript
+// Applying Authorization Rules in GraphQL Resolver
 export const permissions = shield({
-  Query: {
-    communities: IsUser,
-    adminUsers: IsAdmin,
-    userProfile: IsSelf,
-  },
-  Mutation: {
-    createCommunity: IsUser,
-    updateCommunity: IsCommunityOwner,
-    deleteCommunity: IsCommunityOwner,
-    promoteUser: IsCommunityOwner,
-  }
+Query: {
+communities: IsUser,
+adminUsers: IsAdmin,
+userProfile: IsSelf,
+},
+Mutation: {
+createCommunity: IsUser,
+updateCommunity: IsCommunityOwner,
+deleteCommunity: IsCommunityOwner,
+promoteUser: IsCommunityOwner,
+}
 });
 ```
 
-### 利用可能な認可ルール
+### Available Authorization Rules
 
-```typescript
+``` typescript
 export const rules = {
-  IsUser,                 // ログイン済みユーザー
-  IsAdmin,                // システム管理者
-  IsSelf,                 // 自分自身の操作
-  IsCommunityOwner,       // コミュニティオーナー
-  IsCommunityManager,     // コミュニティマネージャー
-  IsCommunityMember,      // コミュニティメンバー
-  IsOpportunityOwner,     // 機会作成者
-  CanReadPhoneNumber,     // 電話番号読み取り権限
+IsUser, // Logged-in User
+IsAdmin, // System Administrator
+IsSelf, // Self Operations
+IsCommunityOwner, // Community Owner
+IsCommunityManager, // Community Manager
+IsCommunityMember, // Community Member
+IsOpportunityOwner, // Opportunity creator
+CanReadPhoneNumber, // Permission to read phone numbers
 } as const;
 ```
 
-## APIキー認証
+## API Key Authentication
 
-### 管理者エンドポイント保護
+### Admin Endpoint Protection
 
-```typescript
-// 管理者エンドポイント用APIキー認証
+``` typescript
+// API Key Authentication for Administrator Endpoint
 export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
-  const apiKey = req.headers['x-api-key'];
-  
-  if (!apiKey || apiKey !== process.env.CIVICSHIP_ADMIN_API_KEY) {
-    return res.status(401).json({ 
-      error: 'Unauthorized',
-      message: 'Valid API key required' 
-    });
-  }
-  
-  // 管理者コンテキストを設定
-  req.isAdmin = true;
-  next();
-};
+const apiKey = req.headers['x-api-key'];
 
-// 使用例
+if (!apiKey || apiKey !== process.env.CIVICSHIP_ADMIN_API_KEY) {
+return res.status(401).json({
+error: 'Unauthorized',
+message: 'Valid API key required'
+});
+}
+
+// Example
 app.use('/admin', adminAuth);
 app.post('/admin/users', adminController.createUser);
 ```
 
-## セキュリティベストプラクティス
+## Security Best Practices
 
-### 認証
+### Authentication
 
-- **JWTトークンを常に検証**
-  - Firebase Admin SDKを使用した厳密な検証
-  - トークンの有効期限チェック
-  - 発行者 (issuer) の検証
+- **Always validate JWT tokens**
+- Strict validation using the Firebase Admin SDK
+- Token expiration checks
+- Issuer validation
 
-- **トークンリフレッシュの適切な処理**
-  - 自動トークン更新メカニズム
-  - リフレッシュトークンの安全な保存
-  - トークン有効期限の監視
+- **Proper handling of token refreshes**
+- Automatic token refresh mechanism
+- Securely storing refresh tokens
+- Token expiration monitoring
 
-- **マルチテナント認証**
-  - テナント固有のトークン検証
-  - テナント間のデータ分離
-  - テナント設定の検証
+- **Multi-tenant authentication**
+- Tenant-specific token validation
+- Data isolation between tenants
+- Tenant configuration validation
 
-### 認可
+### Authorization
 
-- **ロールベースアクセス制御 (RBAC)**
-  - 明確なロール定義 (OWNER, MANAGER, MEMBER)
-  - 最小権限の原則
-  - 権限の継承と委譲
+- **Role-based access control (RBAC)**
+- Clear role definitions (OWNER, MANAGER, MEMBER)
+- Principle of least privilege
+- Privilege inheritance and delegation
 
-- **宣言的ルールにGraphQL shieldを使用**
-  - 実行前・実行後の権限チェック
-  - 組み合わせ可能な認可ルール
-  - パフォーマンス向上のためのキャッシュ
+- **Use GraphQL shield for declarative rules**
+- Pre-execution and post-execution permission checks
+- Combinable authorization rules
+- Caching for improved performance
 
-- **行レベルセキュリティの適用**
-  - データベースレベルでの自動フィルタリング
-  - ユーザーコンテキストに基づくアクセス制御
-  - 管理者バイパス機能
+- **Applying Row-Level Security**
+- Automatic Filtering at the Database Level
+- Access Control Based on User Context
+- Admin Bypass Feature
 
-### データ保護
+### Data Protection
 
-- **機密データをログに記録しない**
-  - パスワード、トークン、APIキーの除外
-  - 個人識別情報 (PII) の保護
-  - 構造化ログでの機密データフィルタリング
+- **Don't Log Sensitive Data**
+- Exclude Passwords, Tokens, and API Keys
+- Protect Personally Identifiable Information (PII)
+- Filter Sensitive Data in Structured Logs
 
-- **ユーザー入力のサニタイズ**
-  - GraphQL入力検証
-  - SQLインジェクション防止
-  - XSS攻撃対策
+- **Sanitizing User Input**
+- GraphQL Input Validation
+- Preventing SQL Injection
+- XSS Attack Prevention
 
-- **パラメータ化クエリの使用**
-  - Prisma ORMによる自動パラメータ化
-  - 生のSQLクエリの制限
-  - 入力値の適切なエスケープ
+- **Using Parameterized Queries**
+- Automatic Parameterization with Prisma ORM
+- Restricting Raw SQL Queries
+- Properly Escaping Input Values
 
-### APIセキュリティ
+### API Security
 
-- **全入力の検証**
-  - GraphQLスキーマレベルの型チェック
-  - ビジネスルールの検証
-  - 入力サイズ制限
+- **Validating All Input**
+- GraphQL Schema-Level Type Checking
+- Validating Business Rules
+- Input Size Limits
 
-- **CORSの適切な実装**
-  - 許可されたオリジンの明示的な設定
-  - プリフライトリクエストの処理
-  - 認証情報を含むリクエストの制御
+- **Properly Implementing CORS**
+- Explicitly Setting Allowed Origins
+- Handling Preflight Requests
+- Controlling Requests Containing Credentials
 
-- **本番環境でのHTTPS使用**
-  - 全通信の暗号化
-  - HSTS (HTTP Strict Transport Security) の有効化
-  - セキュアクッキーの使用
+- **Using HTTPS in Production**
+- Encrypting All Communications
+- Enabling HSTS (HTTP Strict Transport Security)
+- Using Secure Cookies
 
-- **レート制限の実装**
-  - API呼び出し頻度の制限
-  - DDoS攻撃の防止
-  - ユーザー別・エンドポイント別の制限
+- Implementing Rate Limiting
+- Limiting API Call Frequency
+- Preventing DDoS Attacks
+- User and Endpoint Limits
 
-### 監視とアラート
+### Monitoring and Alerting
 
-- **不審な活動の監視**
-  - 失敗した認証試行の追跡
-  - 異常なAPIアクセスパターンの検出
-  - 権限昇格の試行監視
+- **Monitoring Suspicious Activity**
+- Tracking Failed Authentication Attempts
+- Detecting Anomalous API Access Patterns
+- Monitoring Privilege Escalation Attempts
 
-- **セキュリティログの記録**
-  - 認証・認可イベントのログ
-  - 管理者操作の監査ログ
-  - セキュリティ違反の詳細記録
+- **Security Log Recording**
+- Logging Authentication and Authorization Events
+- Auditing Administrator Actions
+- Recording Security Violations
 
-## 関連ドキュメント
+## Related Documentation
 
-- [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要
-- [インフラストラクチャガイド](./INFRASTRUCTURE.md) - 外部システム統合
-- [実装パターン](./PATTERNS.md) - セキュリティパターンの実装例
-- [環境変数ガイド](./ENVIRONMENT.md) - セキュリティ関連の環境設定
-- [トラブルシューティング](TROUBLESHOOTING.md) - 認証・認可問題の解決
+- [Architecture Guide](./ARCHITECTURE.md) - System Design Overview
+- [Infrastructure Guide](./INFRASTRUCTURE.md) - External System Integration
+- [Implementation Patterns](./PATTERNS.md) - Security Pattern Implementation Examples
+- [Environment Variable Guide](./ENVIRONMENT.md) - Security-Related Environment Settings
+- [Troubleshooting](TROUBLESHOOTING.md) - Solving authentication and authorization issues
