@@ -126,7 +126,7 @@ return permissions;
 
 ### PrismaClientIssuer implementation
 
-``` typescript
+```typescript
 export class PrismaClientIssuer {
 // Accessible only to community members
 public async onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
@@ -145,12 +145,12 @@ return await callback(tx);
 throw new AuthorizationError("Not authenticated");
 }
 
-/ Apply RLS configuration
+// Apply RLS configuration
 private async setRls(tx: Transaction) {
 await tx.$executeRawUnsafe(`SET row_security = on;`);
 }
 
-/ Set user ID to RLS configuration
+// Set user ID to RLS configuration
 private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
 const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
 `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', FALSE) as value;`,
@@ -177,7 +177,7 @@ await tx.$queryRawUnsafe(
 
 ### RLS Usage Example
 
-``` typescript
+```typescript
 // Usage Example: Automatic filtering based on user context
 const issuer = new PrismaClientIssuer();
 
@@ -204,7 +204,7 @@ tx.community.findMany()
 
 ### Authorization Rule Implementation
 
-``` typescript
+```typescript
 import { preExecRule } from '@graphql-authz/core';
 
 // Basic authentication rule
@@ -255,7 +255,7 @@ return user?.id === permission?.userId;
 
 ### Application in GraphQL Schema
 
-``` typescript
+```typescript
 // Applying Authorization Rules in GraphQL Resolver
 export const permissions = shield({
 Query: {
@@ -274,7 +274,7 @@ promoteUser: IsCommunityOwner,
 
 ### Available Authorization Rules
 
-``` typescript
+```typescript
 export const rules = {
 IsUser, // Logged-in User
 IsAdmin, // System Administrator
@@ -291,7 +291,7 @@ CanReadPhoneNumber, // Permission to read phone numbers
 
 ### Admin Endpoint Protection
 
-``` typescript
+```typescript
 // API Key Authentication for Administrator Endpoint
 export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
 const apiKey = req.headers['x-api-key'];

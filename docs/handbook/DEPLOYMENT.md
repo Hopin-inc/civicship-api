@@ -302,7 +302,7 @@ DATABASE_URL: postgresql://user:pass@localhost:5432/civicship
 
 #### Production Database Connection
 
-``` typescript
+```typescript
 // Connection Pooling in a Production Environment
 const prisma = new PrismaClient({
 datasources: {
@@ -321,7 +321,7 @@ log: ['query', 'info', 'warn', 'error'],
 
 #### Google Secret Manager
 
-``` bash
+```bash
 # Create a Secret
 gcloud secrets create database-url --data-file=database-url.txt
 gcloud secrets create firebase-private-key --data-file=firebase-key.json

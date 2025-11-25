@@ -71,7 +71,7 @@ git checkout -b fix/your-bug-fix-name
 - Write Tests as You Develop
 
 3. **Test the Change:**
-   ``bash
+```bash
 # Run Relevant Tests
 pnpm test -- --testPathPattern=your-feature
 

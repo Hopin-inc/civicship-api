@@ -26,7 +26,7 @@ src/application/domain/your-domain/
 
 ### Dependency Injection Pattern
 
-``` typescript
+```typescript
 // src/application/provider.ts
 import { container } from "tsyringe";
 
@@ -56,7 +56,7 @@ constructor(
 
 Implementing DataLoader to solve the N+1 query problem:
 
-``` typescript
+```typescript
 // src/application/domain/your-domain/controller/dataloader.ts
 import DataLoader from 'dataloader';
 
@@ -196,7 +196,7 @@ updateCommunity: and(isAuthenticated, isCommunityOwner),
 
 ### Service Layer Error Handling
 
-``` typescript
+```typescript
 export class UserService {
 async createUser(data: CreateUserInput): Promise<User> {
 try {
@@ -222,7 +222,7 @@ throw new InternalServerError('User creation failed');
 
 ### GraphQL Resolver Error Handling
 
-``` typescript
+```typescript
 export const userResolver = {
 Mutation: {
 createUser: async (parent, args, context) => {
@@ -242,7 +242,7 @@ throw error;
 
 ### Structured Logging
 
-``` typescript
+```typescript
 import { logger } from '../infrastructure/logger';
 
 // Different Log Levels
@@ -261,7 +261,7 @@ logger.error('Database connection failed', { error });
 
 ### Request Tracing Pattern
 
-``` typescript
+```typescript
 // Request Timing Middleware
 app.use((req, res, next) => {
 const start = Date.now();
@@ -282,7 +282,7 @@ next();
 
 ### Field-Level Caching
 
-``` typescript
+```typescript
 const resolvers = {
 User: {
 communities: async (user, args, context) => {
@@ -294,7 +294,7 @@ return context.dataloaders.userCommunities.load(user.id);
 
 ### Query Complexity Analysis
 
-``` typescript
+```typescript
 const server = new ApolloServer({
 typeDefs,
 resolvers,
@@ -332,7 +332,7 @@ costAnalysis({ maximumCost: 1000 })
 
 ### Firebase Authentication Integration
 
-``` typescript
+```typescript
 // Verify Firebase Authentication
 const verifyFirebaseToken = async (token: string) => {
 try {
@@ -346,7 +346,7 @@ throw new AuthenticationError('Invalid token');
 
 ### Multi-tenant authentication
 
-``` typescript
+```typescript
 // Tenant-specific authentication
 const verifyTenantToken = async (token: string, tenantId: string) => {
 const auth = admin.auth().tenantManager().authForTenant(tenantId);
@@ -358,7 +358,7 @@ return await auth.verifyIdToken(token);
 
 ### GraphQL ↔ Prisma conversion
 
-``` typescript
+```typescript
 // src/application/domain/user/data/converter.ts
 export class UserConverter {
 static toGraphQL(prismaUser: PrismaUser): GraphQLUser {
@@ -384,7 +384,7 @@ email: graphqlInput.email,
 
 ### Performance Monitoring
 
-``` typescript
+```typescript
 // Database Query Monitoring
 const queryMiddleware = async (params, next) => {
 const start = Date.now();
@@ -405,7 +405,7 @@ return result;
 
 ### Memory Usage Monitoring
 
-``` bash
+```bash
 # Monitor Memory Usage
 node --inspect pnpm dev:https
 # Open chrome://inspect
