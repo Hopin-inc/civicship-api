@@ -22,7 +22,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
     return res.status(400).json({ error: "Missing idToken" });
   }
 
-  const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+  const expiresIn = 60 * 60 * 24 * 14 * 1000; // 14 days
 
   try {
     logger.debug("🧩 [handleSessionLogin] Creating session cookie from Firebase idToken", {
@@ -35,7 +35,8 @@ export async function handleSessionLogin(req: Request, res: Response) {
       expiresAt: new Date(Date.now() + expiresIn).toISOString(),
     });
 
-    res.cookie("session", sessionCookie, {
+    // 🔥 Cookie 名を Firebase 準拠に変更
+    res.cookie("__session", sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: true,
@@ -44,10 +45,11 @@ export async function handleSessionLogin(req: Request, res: Response) {
     });
 
     logger.debug("🍪 [handleSessionLogin] Cookie set on response", {
-      cookieName: "session",
+      cookieName: "__session",
       secure: true,
       sameSite: "none",
       path: "/",
+      maxAge: expiresIn,
     });
 
     return res.json({ status: "success" });
