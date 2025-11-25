@@ -17,7 +17,7 @@ For detailed implementation information, see the "DataLoader Pattern" section in
 export const createUserDataLoader = (issuer: PrismaClientIssuer) => {
 return new DataLoader<string, PrismaUser | null>(
 async (userIds: readonly string[]) => {
-/ Retrieve multiple users in a single query
+// Retrieve multiple users in a single query
 const users = await issuer.internal((tx) =>
 tx.user.findMany({
 where: { id: { in: [...userIds] } },
@@ -29,11 +29,11 @@ include: { community: true }
 }),
 );
 
-/ Mapping while preserving ID order
+// Mapping while preserving ID order
 return userIds.map(id => users.find(user => user.id === id) || null);
 },
 {
-/ Caching within the request lifecycle
+// Caching within the request lifecycle
 cache: true,
 maxBatchSize: 100,
 batchScheduleFn: callback => setTimeout(callback, 10)
@@ -90,7 +90,7 @@ WHERE transaction_type = 'CREDIT'
 AND status = 'COMPLETED' 
 AND reason IN ('POINT_ISSUED', 'GRANT', 'REWARD')
 GROUP BY wallet_id;
-````
+```
 
 #### Opportunity Participation Statistics View
 
@@ -358,7 +358,7 @@ args: JSON.stringify(params.args)
 });
 }
 
-/ Metric Collection
+// Metric Collection
 logger.info('Database query executed', {
 model: params.model,
 action: params.action,
@@ -417,7 +417,7 @@ userAgent: req.get('User-Agent'),
 ip: req.ip
 });
 
-/ Slow Request Alert
+// Slow Request Alert
 if (duration > 5000) {
 logger.warn('Slow request detected', {
 method: req.method,

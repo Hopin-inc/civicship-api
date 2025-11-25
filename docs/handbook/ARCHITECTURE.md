@@ -271,7 +271,7 @@ const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
 return value;
 }
 
-/ Admin Bypass
+// Admin Bypass
 public async admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
 return await this.client.$transaction(async (tx) => {
 await this.setRlsBypass(tx, true);
@@ -507,7 +507,7 @@ return res.status(401).json({ error: 'Unauthorized' });
 } 
 next();
 };
-````
+```
 
 ## Test Architecture
 

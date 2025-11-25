@@ -145,12 +145,12 @@ return await callback(tx);
 throw new AuthorizationError("Not authenticated");
 }
 
-/ Apply RLS configuration
+// Apply RLS configuration
 private async setRls(tx: Transaction) {
 await tx.$executeRawUnsafe(`SET row_security = on;`);
 }
 
-/ Set user ID to RLS configuration
+// Set user ID to RLS configuration
 private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
 const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
 `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', FALSE) as value;`,

@@ -163,7 +163,7 @@ tokenPreview: accessToken.slice(0, 10),
 
 return new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
 }
-````
+```
 
 **Features**
 - Sending push messages

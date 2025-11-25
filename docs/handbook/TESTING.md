@@ -189,12 +189,12 @@ transientStatus: MembershipStatus.JOINED
 return { 
 owner, 
 community, 
-members, 
-ownerMembership, 
-memberMemberships 
+members,
+ownerMembership,
+memberMemberships
 };
 };
-````
+```
 
 ## Test environment settings
 
@@ -296,12 +296,12 @@ variables: { id: user.id }
 }); 
 
 expect(data.user).toMatchObject({ 
-id: user.id, 
-name: user.name, 
-email: user.email 
+id: user.id,
+name: user.name,
+email: user.email
 });
 });
-````
+```
 
 ## Troubleshooting
 
