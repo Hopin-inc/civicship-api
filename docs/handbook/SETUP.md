@@ -1,58 +1,58 @@
-# 詳細セットアップガイド
+# Detailed Setup Guide
 
-このガイドでは、civicship-api の開発環境をゼロから設定するための手順を提供します。
+This guide provides instructions for setting up a civicship-api development environment from scratch.
 
-## 前提条件
+## Prerequisites
 
-### 必要なソフトウェア
+### Required Software
 
-開始前に、以下がインストールされていることを確認してください：
+Before you begin, make sure the following are installed:
 
-- **Node.js 20+** - JavaScript ランタイム ([ダウンロード](https://nodejs.org/))
-- **pnpm** - パッケージマネージャー（npm/yarn より高速）
-  ```bash
-  npm install -g pnpm
-  ```
-- **Docker** - PostgreSQL コンテナ用 ([ダウンロード](https://www.docker.com/))
-- **Git** - バージョン管理 ([ダウンロード](https://git-scm.com/))
+- **Node.js 20+** - JavaScript runtime ([Download](https://nodejs.org/))
+- **pnpm** - Package manager (faster than npm/yarn)
+```bash
+npm install -g pnpm
+```
+- **Docker** - For PostgreSQL containers ([Download](https://www.docker.com/))
+- **Git** - Version control ([Download](https://git-scm.com/))
 
-### システム要件
-- **オペレーティングシステム:** Linux、macOS、または WSL2 付き Windows
-- **メモリ:** 最低 4GB RAM、推奨 8GB
-- **ストレージ:** 依存関係とデータベース用に 2GB の空き容量
+### System Requirements
+- **Operating System:** Linux, macOS, or Windows with WSL2
+- **Memory:** Minimum 4GB RAM, 8GB recommended
+- **Storage:** 2GB free space for dependencies and the database
 
-## ステップバイステップセットアップ
+## Step-by-Step Setup
 
-### 1. プロジェクトのインストール
+### 1. Installing the Project
 
 ```bash
-# リポジトリをクローン（まだ行っていない場合）
+# Clone the repository (if not already done)
 git clone https://github.com/Hopin-inc/civicship-api.git
 cd civicship-api
 
-# develop ブランチに切り替え
+# Switch to the develop branch
 git checkout develop
 
-# すべての依存関係をインストール
+# Install all dependencies
 pnpm install
 ```
 
-**期待される出力:**
-- 依存関係が正常にインストールされる
-- セキュリティ脆弱性が報告されない
-- `node_modules/` ディレクトリが作成される
+**Expected output:**
+- Dependencies are installed successfully
+- No security vulnerabilities reported
+- The `node_modules/` directory is created
 
-### 2. 環境設定
+### 2. Environment Setup
 
 ```bash
-# 環境ファイルを作成
+# Create an environment file
 cp .env.example .env
 ```
 
-**必要な設定:**
-完全な変数リストと値については、[環境変数ガイド](./ENVIRONMENT.md) を参照してください。
+**Required Settings:**
+For a complete list of variables and values, see the [Environment Variables Guide](./ENVIRONMENT.md).
 
-**最低限必要な変数:**
+**Minimum required variables**
 ```env
 DATABASE_URL=postgresql://user:password@host:15432/civicship_dev
 FIREBASE_PROJECT_ID=your_project_id
@@ -63,284 +63,283 @@ GCS_BUCKET_NAME=your_bucket_name
 GCP_PROJECT_ID=your_gcp_project_id
 ```
 
-### 3. データベースセットアップ
+### 3. Database Setup
 
 ```bash
-# PostgreSQL 16.4 コンテナを起動（ポート 15432）
+# Start the PostgreSQL 16.4 container (port 15432)
 pnpm container:up
 
-# コンテナが実行中であることを確認
+# Verify that the container is running.
 docker ps | grep postgres
 ```
 
-**期待される出力:**
+**Expected Output:**
 ```
-CONTAINER ID   IMAGE         COMMAND                  CREATED         STATUS         PORTS                     NAMES
-abc123def456   postgres:16.4 "docker-entrypoint.s…"   2 minutes ago   Up 2 minutes   0.0.0.0:15432->5432/tcp   civicship-db
+CONTAINER ID IMAGE COMMAND CREATED STATUS PORTS NAMES
+abc123def456 postgres:16.4 "docker-entrypoint.s…" 2 minutes ago Up 2 minutes 0.0.0.0:15432->5432/tcp civicship-db
 ```
 
 ```bash
-# スキーマから Prisma クライアントを生成
+# Generate a Prisma client from the schema
 pnpm db:generate
 ```
 
-**期待される出力:**
-- Prisma クライアントが正常に生成される
-- 型定義が `node_modules/.prisma/client/` に作成される
+**Expected Output:**
+- Prisma client successfully generated
+- Type definitions created in `node_modules/.prisma/client/`
 
-### 4. データベースシーディング（2段階プロセス）
+### 4. Database Seeding (Two-Step Process)
 
-データベースシーディングプロセスは、適切なデータ関係を確保するために2つのステップに分かれています：
+The database seeding process is divided into two steps to ensure proper data relationships:
 
 ```bash
-# ステップ1: マスターデータをシード（都市、州、国）
+# Step 1: Seed master data (city, state, country)
 pnpm db:seed-master
 ```
 
 ```bash
-# ステップ2: ドメインデータをシード（ユーザー、コミュニティ、機会）
+# Step 2: Seed domain data (users, communities, opportunities)
 pnpm db:seed-domain
 ```
 
-**シーディングの確認:**
+**Verify seeding:**
 ```bash
-# Prisma Studio を開いてデータベース内容を表示
+# Open Prisma Studio and view database contents
 pnpm db:studio
 ```
 
-### 5. GraphQL 型生成
+### 5. Generate GraphQL types
 
 ```bash
-# GraphQL スキーマから TypeScript 型を生成
+# Generate TypeScript types from GraphQL schema
 pnpm gql:generate
 ```
 
-**期待される出力:**
-- GraphQL 型が `src/types/` に生成される
-- スキーマファイルが正常に処理される
+**Expected output:**
+- GraphQL types are generated in `src/types/`
+- Schema file is processed successfully
 
-### 6. ビルドと開発サーバーの起動
+### 6. Build and start development server
 
 ```bash
-# TypeScript を JavaScript にコンパイル
+# Compile TypeScript to JavaScript
 pnpm build
 ```
 
-**期待される出力:**
-- TypeScript コンパイルが成功
-- JavaScript ファイルが `dist/` ディレクトリに作成される
+**Expected output:**
+- TypeScript Compilation successful
+- JavaScript files are created in the `dist/` directory
 
 ```bash
-# HTTPS 開発サーバーを起動
+# Start the HTTPS development server
 pnpm dev:https
 ```
 
-**期待される出力:**
+**Expected output:**
 ```
 🚀 GraphQL Playground: https://localhost:3000/graphql
-🔍 ヘルスチェック: https://localhost:3000/health
+🔍 Health check: https://localhost:3000/health
 ```
 
-## 検証手順
+## Verification Steps
 
-### 1. データベース接続
+### 1. Database Connection
 
 ```bash
-# PostgreSQL コンテナが実行中かチェック
+# Check if the PostgreSQL container is running
 docker ps | grep civicship
 
-# データベース接続をテスト
+# Test the Database Connection
 pnpm db:studio
 ```
 
-**成功の指標:**
-- コンテナが "Up" ステータスを表示
-- Prisma Studio がブラウザで開く
-- データベーステーブルがシードデータと共に表示される
+**Success Indicators**
+- The container displays an "Up" status
+- Prisma Studio opens in your browser
+- The database table appears with seed data
 
 ### 2. GraphQL API
 
 ```bash
-# サーバーを起動（まだ実行していない場合）
+# Start the server (if not already running)
 pnpm dev:https
 
-# GraphQL エンドポイントをテスト
+# Test the GraphQL Endpoint
 curl -X POST https://localhost:3000/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query":"query { __typename }"}'
+-H "Content-Type: application/json" \
+-d '{"query":"query { __typename }"}'
 ```
 
-**期待されるレスポンス:**
+**Expected response:**
 ```json
 {"data":{"__typename":"Query"}}
 ```
 
-### 3. 認証
+### 3. Authentication
 
 ```bash
-# Firebase 初期化のサーバーログをチェック
-# 以下のようなメッセージを探す:
+# Check the server log for Firebase initialization
+# Look for messages like:
 # "Firebase Admin initialized successfully"
 # "Authentication middleware loaded"
 ```
 
-### 4. ファイルアップロード（GCS）
+### 4. File Upload (GCS)
 
-GraphQL Playground を通じてファイルアップロード機能をテスト:
-1. https://localhost:3000/graphql を開く
-2. 画像アップロードミューテーションを実行
-3. ファイルが GCS バケットに表示されることを確認
+Test the file upload function through the GraphQL Playground:
+1. Open https://localhost:3000/graphql
+2. Run the image upload mutation
+3. Verify that the file appears in the GCS bucket
 
-## 開発ワークフロー
+## Development Workflow
 
-### 日常的な開発コマンド
+### Everyday Development Commands
 
 ```bash
-# ホットリロード付き開発サーバーを起動
+# Start a development server with hot reloading
 pnpm dev:https
 
-# テストを実行
+# Run tests
 pnpm test
 
-# リンティングを実行
+# Run linting
 pnpm lint
 pnpm lint:graphql
 
-# データベース操作
-pnpm db:studio     # データベースブラウザを開く
-pnpm db:reset      # データベースをリセット（注意！）
-pnpm db:migrate    # 新しいマイグレーションを適用
+# Database operations
+pnpm db:studio # Open the database browser
+pnpm db:reset # Reset the database (Caution!)
+pnpm db:migrate # Apply a new migration
 ```
 
-### コード生成コマンド
+### Code generation commands
 
 ```bash
-# GraphQL スキーマ変更後
+# After GraphQL schema changes
 pnpm gql:generate
 
-# Prisma スキーマ変更後
+# After Prisma schema changes
 pnpm db:generate
 pnpm db:migrate
 ```
 
-### コンテナ管理
+### Container management
 
 ```bash
-# コンテナを起動
+# Start a container
 pnpm container:up
 
-# コンテナを停止
+# Stop a container
 pnpm container:down
 
-# コンテナログを表示
+# View container logs
 docker logs civicship-db
 
-# PostgreSQL に直接アクセス
+# Access PostgreSQL directly
 docker exec -it civicship-db psql -U postgres -d civicship_dev
 ```
 
-## よくあるセットアップ問題
+## Common setup issues
 
-### ポート競合
+### Port conflict
 
-**問題:** ポート 15432 が既に使用中
+**Problem:** Port 15432 is already in use
 ```bash
-# ポートを使用しているプロセスを見つける
+# Find the process using the port
 lsof -i :15432
 
-# 必要に応じてプロセスを終了
+# Terminate the process if necessary
 kill -9 <PID>
 
-# または docker-compose.yaml で異なるポートを使用
+# Or use a different port in docker-compose.yaml
 ```
 
-### 権限の問題
+### Permission Issues
 
-**問題:** Docker の権限が拒否される
+**Problem:** Docker Permission Denied
 ```bash
-# ユーザーを docker グループに追加（Linux）
+# Add user to docker group (Linux)
 sudo usermod -aG docker $USER
 newgrp docker
 
-# または sudo で実行（開発には推奨されない）
+# Or run with sudo (not recommended for development)
 sudo pnpm container:up
 ```
 
-### 環境変数の問題
+### Environment Variable Issues
 
-**問題:** Firebase 認証が失敗する
-- FIREBASE_PRIVATE_KEY に適切な改行（`\n`）があることを確認
-- サービスアカウントに正しい権限があることを確認
-- Firebase プロジェクトで認証が有効になっていることを確認
+**Problem:** Firebase Authentication Fails
+- Ensure FIREBASE_PRIVATE_KEY has the appropriate line breaks (`\n`)
+- Ensure the service account has the correct permissions
+- Ensure authentication is enabled in your Firebase project
 
-**問題:** データベース接続が失敗する
-- DATABASE_URL の形式を確認
-- PostgreSQL コンテナが実行中であることを確認
-- データベースが存在することを確認
+**Problem:** Database Connection Fails
+- Verify the DATABASE_URL Format
+- PostgreSQL Verify that the container is running
+- Verify that the database exists
 
-### メモリの問題
+### Memory Issues
 
-**問題:** ビルド中にメモリ不足
+**Problem:** Out of memory during build
 ```bash
-# Node.js メモリ制限を増加
+# Increase Node.js memory limit
 export NODE_OPTIONS="--max-old-space-size=4096"
 pnpm build
 ```
 
-## パフォーマンス最適化
+## Performance Optimization
 
-### 開発サーバー
+### Development Server
 
 ```bash
-# より高速なビルドのために開発モードを使用
+# Use development mode for faster builds
 NODE_ENV=development pnpm dev:https
 
-# TypeScript インクリメンタルコンパイルを有効化
-# （tsconfig.json で既に設定済み）
+# Enable TypeScript incremental compilation
+# (Already configured in tsconfig.json)
 ```
 
-### データベースパフォーマンス
+### Database Performance
 
 ```bash
-# データベースパフォーマンスを監視
+# Monitor database performance
 pnpm db:studio
 
-# 遅いクエリを表示（必要に応じて）
+# Show slow queries (optional)
 docker exec -it civicship-db psql -U postgres -d civicship_dev \
-  -c "SELECT query, mean_time, calls FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;"
+-c "SELECT query, mean_time, calls FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;"
 ```
 
-## 次のステップ
+## Next Steps
 
-セットアップ成功後:
+After successful setup:
 
-1. **コードベースを探索:**
-   - [アーキテクチャガイド](./ARCHITECTURE.md) を読む
-   - [ドメイン詳細](./DOMAINS.md) を確認
-   - [実装パターン](./PATTERNS.md) を学習
+1. **Explore the code base:**
+- Read the [Architecture Guide](./ARCHITECTURE.md)
+- Study the [Implementation Patterns](./PATTERNS.md)
 
-2. **開発を開始:**
-   - [開発ワークフロー](./DEVELOPMENT.md) に従う
-   - `pnpm test` でテストを実行
-   - `pnpm lint` でコード品質をチェック
+2. **Start Development:**
+- Follow the [Development Workflow](./DEVELOPMENT.md)
+- Run tests with `pnpm test`
+- Check code quality with `pnpm lint`
 
-3. **API を学習:**
-   - GraphQL Playground を探索
-   - 既存のクエリとミューテーションを確認
-   - 認証フローをテスト
+3. **Learn the API:**
+- Explore the GraphQL Playground
+- Review existing queries and mutations
+- Test the authentication flow
 
-## ヘルプの取得
+## Getting Help
 
-このガイドでカバーされていない問題が発生した場合:
+If you encounter an issue not covered in this guide:
 
-1. [トラブルシューティングガイド](TROUBLESHOOTING.md) を確認
-2. エラーメッセージのサーバーログを確認
-3. すべての環境変数が正しく設定されていることを確認
-4. すべての前提条件が適切にインストールされていることを確認
+1. [Troubleshooting Guide](TROUBLESHOOTING.md) Check the server log for error messages.
+2. Check the server log for error messages.
+3. Ensure all environment variables are set correctly.
+4. Ensure all prerequisites are properly installed.
 
-## 関連ドキュメント
+## Related Documentation
 
-- [環境変数](./ENVIRONMENT.md) - 設定リファレンス
-- [トラブルシューティング](TROUBLESHOOTING.md) - 問題解決
-- [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計
-- [開発ワークフロー](./DEVELOPMENT.md) - 日常的な手順
+- [Environment Variables](./ENVIRONMENT.md) - Configuration Reference
+- [Troubleshooting](TROUBLESHOOTING.md) - Problem Resolution
+- [Architecture Guide](./ARCHITECTURE.md) - System Design
+- [Development Workflow](./DEVELOPMENT.md) - Daily Procedures

@@ -1,67 +1,67 @@
-# インフラストラクチャガイド
+# Infrastructure Guide
 
-このドキュメントでは、civicship-apiの外部システム統合、データベース設定、およびインフラストラクチャコンポーネントについて説明します。
+This document describes civicship-api's external system integration, database configuration, and infrastructure components.
 
-## インフラストラクチャ層 (`src/infrastructure/`)
+## Infrastructure Layer (`src/infrastructure/`)
 
-**目的:** 外部システムとの統合、データ永続化、技術的関心事
+**Purpose:** Integration with external systems, data persistence, and technical concerns
 
 ```
 infrastructure/
-├── prisma/              # データベースORM
-│   ├── schema.prisma   # データベーススキーマ定義
-│   ├── migrations/     # データベースマイグレーション
-│   ├── seeds/          # 開発・テスト用データ
-│   └── factories/      # テストデータファクトリー
-└── libs/               # 外部サービス統合
-    ├── firebase.ts     # Firebase Admin SDK
-    ├── storage.ts      # Google Cloud Storage
-    ├── line.ts         # LINE Messaging API
-    └── did.ts          # IDENTUS DID/VC統合
+├── prisma/ # Database ORM
+│ ├── schema.prisma # Database schema definition
+│ ├── migrations/ # Database migrations
+│ ├── seeds/ # Development and test data
+│ └── factories/ # Test data factory
+└── libs/ # External service integration
+├── firebase.ts # Firebase Admin SDK
+├── storage.ts # Google Cloud Storage
+├── line.ts # LINE Messaging API
+└── did.ts # IDENTUS DID/VC integration
 ```
 
-## データベース設定
+## Database configuration
 
-### Prisma ORM設定
+### Prisma ORM configuration
 
-**設定ファイル:** `src/infrastructure/prisma/schema.prisma`
+**Configuration files:** `src/infrastructure/prisma/schema.prisma`
 
 ```prisma
 generator client {
-  provider = "prisma-client-js"
+provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+provider = "postgresql"
+url = env("DATABASE_URL")
 }
 ```
 
-**主要機能:**
-- PostgreSQL 16.4との統合
-- 型安全なデータベースアクセス
-- 自動マイグレーション管理
-- Row-Level Security (RLS) サポート
+**Key Features:**
+- Integration with PostgreSQL 16.4
+- Type-safe database access
+- Automatic migration management
+- Row-Level Security (RLS) support
 
-### データベース接続
+### Database connection
 
-**開発環境:**
+**Development environment:**
 ```bash
-# Docker Compose経由でPostgreSQL 16.4を起動
+# Launch PostgreSQL 16.4 via Docker Compose
 DATABASE_URL=postgresql://civicship:civicship@localhost:15432/civicship
 ```
 
-**本番環境:**
+**Production environment:**
 - Google Cloud SQL PostgreSQL
-- SSL/TLS暗号化接続
-- コネクションプーリング
-- 自動バックアップ
+- SSL/TLS encrypted connections
+- Connection pooling
+- Automatic backups
 
-## 外部システム統合
+## External system integration
 
 ### Firebase Authentication
 
-**実装ファイル:** `src/infrastructure/libs/firebase.ts`
+**Implementation File:** `src/infrastructure/libs/firebase.ts`
 
 ```typescript
 import admin from "firebase-admin";
@@ -69,27 +69,27 @@ import { App } from "firebase-admin/lib/app";
 
 let app: App | undefined = undefined;
 if (!admin.apps.length) {
-  app = admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
-  });
+app = admin.initializeApp({
+credential: admin.credential.cert({
+projectId: process.env.FIREBASE_PROJECT_ID,
+clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+}),
+});
 }
 
 export const auth = admin.auth(app);
 ```
 
-**機能:**
-- JWT トークン検証
-- マルチテナント認証
-- カスタムクレーム管理
-- ユーザー管理API
+**Features:**
+- JWT token validation
+- Multi-Tenant Authentication
+- Custom Claims Management
+- User Management API
 
 ### Google Cloud Storage
 
-**実装ファイル:** `src/infrastructure/libs/storage.ts`
+**Implementation file:** `src/infrastructure/libs/storage.ts`
 
 ```typescript
 import { Storage } from "@google-cloud/storage";
@@ -97,47 +97,47 @@ import logger from "@/infrastructure/logging";
 
 const base64Encoded = process.env.GCS_SERVICE_ACCOUNT_BASE64;
 const credentials = base64Encoded
-  ? JSON.parse(Buffer.from(base64Encoded, "base64").toString("utf-8"))
-  : undefined;
+? JSON.parse(Buffer.from(base64Encoded, "base64").toString("utf-8"))
+: undefined;
 
 export const gcsBucketName = process.env.GCS_BUCKET_NAME!;
 export const storage = new Storage({
-  projectId: process.env.GCP_PROJECT_ID,
-  credentials,
+projectId: process.env.GCP_PROJECT_ID,
+credentials,
 });
 
 export async function generateSignedUrl(
-  fileName: string,
-  folderPath?: string,
-  bucketName?: string,
+fileName: string,
+folderPath?: string,
+bucketName?: string,
 ): Promise<string> {
-  try {
-    bucketName = bucketName ?? gcsBucketName;
-    const filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
-    const options = {
-      version: "v4" as const,
-      action: "read" as const,
-      expires: Date.now() + 15 * 60 * 1000, // 15分間有効
-    };
+try {
+bucketName = bucketName ?? gcsBucketName;
+const filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
+const options = {
+version: "v4" as const,
+action: "read" as const,
+expires: Date.now() + 15 * 60 * 1000, // Valid for 15 minutes
+};
 
-    const [url] = await storage.bucket(bucketName).file(filePath).getSignedUrl(options);
-    return url;
-  } catch (e) {
-    logger.warn(e);
-    return "";
-  }
+const [url] = await storage.bucket(bucketName).file(filePath).getSignedUrl(options);
+return url;
+} catch (e) {
+logger.warn(e);
+return "";
+}
 }
 ```
 
-**機能:**
-- 画像・ファイルアップロード
-- 公開URL生成
-- メタデータ管理
-- アクセス制御
+**Features**
+- Image and file upload
+- Public URL generation
+- Metadata management
+- Access control
 
 ### LINE Messaging API
 
-**実装ファイル:** `src/infrastructure/libs/line.ts`
+**Implementation file:** `src/infrastructure/libs/line.ts`
 
 ```typescript
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -147,33 +147,33 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import { messagingApi } from "@line/bot-sdk";
 import logger from "@/infrastructure/logging";
 
-export async function createLineClient(
-  communityId: string,
-): Promise<messagingApi.MessagingApiClient> {
-  const issuer = new PrismaClientIssuer();
-  const ctx = { issuer } as IContext;
+export async function createLineClient( 
+communityId: string,
+): Promise<messagingApi.MessagingApiClient> { 
+const issuer = new PrismaClientIssuer(); 
+const ctx = { issuer } as IContext; 
 
-  const configService = container.resolve(CommunityConfigService);
-  const { accessToken } = await configService.getLineMessagingConfig(ctx, communityId);
+const configService = container.resolve(CommunityConfigService); 
+const { accessToken } = await configService.getLineMessagingConfig(ctx, communityId); 
 
-  logger.info("LINE client created", {
-    communityId,
-    tokenPreview: accessToken.slice(0, 10),
-  });
+logger.info("LINE client created", { 
+communityId, 
+tokenPreview: accessToken.slice(0, 10), 
+}); 
 
-  return new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
+return new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
 }
 ```
 
-**機能:**
-- プッシュメッセージ送信
-- リッチメニュー管理
-- LIFF (LINE Front-end Framework) 統合
-- ユーザープロファイル取得
+**Features**
+- Sending push messages
+- Rich menu management
+- LIFF (LINE Front-end Framework) integration
+- Getting user profiles
 
-### IDENTUS DID/VC統合
+### IDENTUS DID/VC integration
 
-**実装ファイル:** `src/infrastructure/libs/did.ts`
+**Implementation file:** `src/infrastructure/libs/did.ts`
 
 ```typescript
 import axios from "axios";
@@ -183,62 +183,63 @@ import logger from "@/infrastructure/logging";
 
 @injectable()
 export class DIDVCServerClient {
-  async call<T>(
-    uid: string,
-    token: string,
-    endpoint: string,
-    method: "GET" | "POST" | "PUT" | "DELETE",
-    data?: Record<string, unknown>,
-  ): Promise<T> {
-    const url = `${IDENTUS_API_URL}${endpoint}`;
-    const headers = {
-      "x-api-key": process.env.API_KEY,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    };
+async call<T>(
+uid: string,
+token: string,
+endpoint: string,
+method: "GET" | "POST" | "PUT" | "DELETE",
+data?: Record<string, unknown>,
+): Promise<T> {
+const url = `${IDENTUS_API_URL}${endpoint}`; 
+const headers = { 
+"x-api-key": process.env.API_KEY, 
+Authorization: `Bearer ${token}`, 
+"Content-Type": "application/json", 
+}; 
 
-    logger.debug(`[DIDVCClient] ${method} ${url} for uid=${uid}`);
+logger.debug(`[DIDVClient] ${method} ${url} for uid=${uid}`); 
 
-    try {
-      let response;
-      switch (method) {
-        case "GET":
-          response = await axios.get(url, { headers });
-          break;
-        case "POST":
-          response = await axios.post(url, data, { headers });
-          break;
-        case "PUT":
-          response = await axios.put(url, data, { headers });
-          break;
-        case "DELETE":
-          response = await axios.delete(url, { headers });
-          break;
-      }
+try { 
+let response; 
+switch (method) { 
+case "GET": 
+response = await axios.get(url, { headers }); 
+break; 
+case "POST": 
+response = await axios.post(url, data, { headers }); 
+break; 
+case "PUT": 
+response = await axios.put(url, data, { headers }); 
+break; 
+case "DELETE": 
+response = await axios.delete(url, { headers });
+break;
+}
 
-      return response?.data as T;
-    } catch (error) {
-      logger.error(`Error calling DID/VC server at ${endpoint}:`, error);
-      throw error;
-    }
-  }
+return response?.data as T;
+} catch (error) {
+logger.error(`Error calling DID/VC server at ${endpoint}:`, error);
+throw error;
+}
+}
+}
 }
 ```
 
-**機能:**
-- 分散ID (DID) 作成
-- 検証可能クレデンシャル (VC) 発行
-- ブロックチェーン統合
-- デジタルアイデンティティ管理
+**Features**
+- Decentralized Identity (DID) Creation
+- Verifiable Credential (VC) Issuance
+- Blockchain Integration
+- Digital Identity Management
 
-## 環境変数設定
+## Environment Variable Settings
 
-詳細な環境変数設定については、[環境変数ガイド](./ENVIRONMENT.md) を参照してください。
+For detailed environment variable settings, see the [Environment Variable Guide](./ENVIRONMENT.md).
 
-### 必須インフラ変数
+### Required Infrastructure Variables
 
 ```env
-# データベース
+# Database
 DATABASE_URL=postgresql://user:password@localhost:15432/civicship
 
 # Firebase
@@ -251,7 +252,7 @@ GCP_PROJECT_ID=your-gcp-project
 GCS_BUCKET_NAME=your-bucket-name
 GCS_SERVICE_ACCOUNT_BASE64=base64-encoded-service-account
 
-# LINE API（開発・テスト用のデフォルト値）
+# LINE API (default values ​​for development and testing)
 LINE_MESSAGING_CHANNEL_ACCESS_TOKEN=your-default-channel-access-token
 LINE_MESSAGING_CHANNEL_SECRET=your-default-channel-secret
 LIFF_ID=your-default-liff-id
@@ -261,88 +262,88 @@ IDENTUS_API_URL=https://your-identus-instance.com
 IDENTUS_API_SALT=your-api-salt
 ```
 
-## データベースマイグレーション
+## Database Migration
 
-### マイグレーション管理
+### Migration Management
 
 ```bash
-# 新しいマイグレーション作成
+# Create a new migration
 pnpm db:migrate
 
-# マイグレーション適用
+# Apply migration
 pnpm db:migrate deploy
 
-# マイグレーション状態確認
+# Check migration status
 pnpm db:migrate status
 ```
 
-### シード データ
+### Seed Data
 
 ```bash
-# マスターデータ投入（都市・州データ）
+# Import master data (city and state data)
 pnpm db:seed-master
 
-# ドメインデータ投入（ユーザー・コミュニティ）
+# Domain data input (user/community)
 pnpm db:seed-domain
 ```
 
-## 監視とログ
+## Monitoring and Logging
 
-### アプリケーションログ
+### Application Logging
 
 ```typescript
 import logger from "@/infrastructure/logging";
 
-// 構造化ログ記録
+// Structured Logging
 logger.info('Database connection established', {
-  host: 'localhost',
-  port: 15432,
-  database: 'civicship'
+host: 'localhost',
+port: 15432,
+database: 'civicship'
 });
 
 logger.error('External API call failed', {
-  service: 'firebase',
-  error: error.message,
-  userId: context.currentUser?.id
+service: 'firebase',
+error: error.message,
+userId: context.currentUser?.id
 });
 ```
 
-### パフォーマンス監視
+### Performance Monitoring
 
-- データベースクエリ実行時間
-- 外部API応答時間
-- メモリ使用量
-- エラー率とアラート
+- Database Query Execution Time
+- External API Response Time
+- Memory Usage
+- Error Rates and Alerts
 
-## トラブルシューティング
+## Troubleshooting
 
-よくあるインフラ問題の解決方法については、[トラブルシューティングガイド](../TROUBLESHOOTING.md) を参照してください。
+See the [Troubleshooting Guide](./TROUBLESHOOTING.md) for solutions to common infrastructure issues.
 
-### データベース接続問題
+### Database connection issues
 
 ```bash
-# PostgreSQLコンテナ状態確認
+# Check PostgreSQL container status
 docker ps | grep postgres
 
-# データベース接続テスト
+# Database connection test
 pnpm db:studio
 ```
 
-### Firebase認証問題
+### Firebase authentication issues
 
 ```bash
-# Firebase設定確認
+# Check Firebase settings
 echo $FIREBASE_PROJECT_ID
 echo $FIREBASE_CLIENT_EMAIL
 
-# 秘密鍵フォーマット確認（改行が正しく含まれているか）
+# Check private key format (line breaks included correctly)
 echo $FIREBASE_PRIVATE_KEY | grep "BEGIN PRIVATE KEY"
 ```
 
-## 関連ドキュメント
+## Related documentation
 
-- [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要
-- [セキュリティガイド](../SECURITY.md) - 認証・認可アーキテクチャ
-- [デプロイメントガイド](./DEPLOYMENT.md) - 本番環境構成
-- [環境変数ガイド](./ENVIRONMENT.md) - 詳細な環境設定
-- [セットアップガイド](../SETUP.md) - 開発環境構築
+- [Architecture Guide](./ARCHITECTURE.md) - System design overview
+- [Security Guide](./SECURITY.md) - Authentication and authorization architecture
+- [Deployment Guide](./DEPLOYMENT.md) - Production environment configuration
+- [Environment Variable Guide](./ENVIRONMENT.md) - Detailed environment settings
+- [Setup Guide](./SETUP.md) - Building a development environment

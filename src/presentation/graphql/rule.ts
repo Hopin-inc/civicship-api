@@ -18,7 +18,18 @@ const IsUser = preExecRule({
 })((context: IContext) => {
   if (context.isAdmin) return true;
 
-  return !!context.currentUser;
+  const isAuthenticated = !!context.currentUser;
+
+  if (!isAuthenticated) {
+    logger.error("IsUser authorization FAILED", {
+      rule: "IsUser",
+      hasContextUser: false,
+      communityId: context.communityId ?? null,
+      reason: "no_authenticated_user",
+    });
+  }
+
+  return isAuthenticated;
 });
 
 // 🔐 システム管理者か
@@ -28,7 +39,20 @@ const IsAdmin = preExecRule({
   if (context.isAdmin) return true;
 
   const user = context.currentUser;
-  return !!user && user.sysRole === "SYS_ADMIN";
+  const isAdmin = !!user && user.sysRole === "SYS_ADMIN";
+
+  if (!isAdmin) {
+    logger.error("IsAdmin authorization FAILED", {
+      rule: "IsAdmin",
+      hasContextUser: !!user,
+      contextUserId: user?.id ?? null,
+      userSysRole: user?.sysRole ?? null,
+      communityId: context.communityId ?? null,
+      reason: !user ? "no_authenticated_user" : "not_sys_admin",
+    });
+  }
+
+  return isAdmin;
 });
 
 // 🔐 自分自身の操作か
@@ -38,17 +62,18 @@ const IsSelf = preExecRule({
   const user = context.currentUser;
   const permission = args.permission;
   const isMatch = !!user && user.id === permission?.userId;
-  
-  logger.debug("IsSelf authorization check:", {
-    hasContextUser: !!user,
-    contextUserId: user?.id || null,
-    permissionUserId: permission?.userId || null,
-    match: isMatch,
-    result: !user ? "FAIL - No authenticated user" : 
-            !isMatch ? "FAIL - User ID mismatch" : 
-            "PASS",
-  });
-  
+
+  if (!isMatch) {
+    logger.error("IsSelf authorization FAILED", {
+      rule: "IsSelf",
+      hasContextUser: !!user,
+      contextUserId: user?.id ?? null,
+      permissionUserId: permission?.userId ?? null,
+      communityId: context.communityId ?? null,
+      reason: !user ? "no_authenticated_user" : "user_id_mismatch",
+    });
+  }
+
   return isMatch;
 });
 
@@ -61,14 +86,48 @@ const IsCommunityOwner = preExecRule({
   const user = context.currentUser;
   const permission = args.permission;
 
-  if (!user) return false;
-  if (!permission?.communityId) return false;
+  if (!user) {
+    logger.error("IsCommunityOwner authorization FAILED", {
+      rule: "IsCommunityOwner",
+      hasContextUser: false,
+      permissionCommunityId: permission?.communityId ?? null,
+      communityId: context.communityId ?? null,
+      reason: "no_authenticated_user",
+    });
+    return false;
+  }
+
+  if (!permission?.communityId) {
+    logger.error("IsCommunityOwner authorization FAILED", {
+      rule: "IsCommunityOwner",
+      hasContextUser: true,
+      contextUserId: user.id,
+      permissionCommunityId: null,
+      communityId: context.communityId ?? null,
+      reason: "no_community_id_in_permission",
+    });
+    return false;
+  }
 
   const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
 
-  return membership?.role === Role.OWNER;
+  const isOwner = membership?.role === Role.OWNER;
+
+  if (!isOwner) {
+    logger.error("IsCommunityOwner authorization FAILED", {
+      rule: "IsCommunityOwner",
+      hasContextUser: true,
+      contextUserId: user.id,
+      permissionCommunityId: permission.communityId,
+      communityId: context.communityId ?? null,
+      membershipRole: membership?.role ?? null,
+      reason: !membership ? "no_membership" : "not_owner",
+    });
+  }
+
+  return isOwner;
 });
 
 // 🔐 コミュニティマネージャー（OWNER または MANAGER）
@@ -80,12 +139,48 @@ const IsCommunityManager = preExecRule({
   const user = context.currentUser;
   const permission = args.permission;
 
-  if (!user || !permission?.communityId) return false;
+  if (!user) {
+    logger.error("IsCommunityManager authorization FAILED", {
+      rule: "IsCommunityManager",
+      hasContextUser: false,
+      permissionCommunityId: permission?.communityId ?? null,
+      communityId: context.communityId ?? null,
+      reason: "no_authenticated_user",
+    });
+    return false;
+  }
+
+  if (!permission?.communityId) {
+    logger.error("IsCommunityManager authorization FAILED", {
+      rule: "IsCommunityManager",
+      hasContextUser: true,
+      contextUserId: user.id,
+      permissionCommunityId: null,
+      communityId: context.communityId ?? null,
+      reason: "no_community_id_in_permission",
+    });
+    return false;
+  }
 
   const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
-  return membership?.role === Role.OWNER || membership?.role === Role.MANAGER;
+
+  const isManager = membership?.role === Role.OWNER || membership?.role === Role.MANAGER;
+
+  if (!isManager) {
+    logger.error("IsCommunityManager authorization FAILED", {
+      rule: "IsCommunityManager",
+      hasContextUser: true,
+      contextUserId: user.id,
+      permissionCommunityId: permission.communityId,
+      communityId: context.communityId ?? null,
+      membershipRole: membership?.role ?? null,
+      reason: !membership ? "no_membership" : "not_manager_or_owner",
+    });
+  }
+
+  return isManager;
 });
 
 // 🔐 コミュニティメンバー（OWNER / MANAGER / MEMBER）
@@ -97,12 +192,48 @@ const IsCommunityMember = preExecRule({
   const user = context.currentUser;
   const permission = args.permission;
 
-  if (!user || !permission?.communityId) return false;
+  if (!user) {
+    logger.error("IsCommunityMember authorization FAILED", {
+      rule: "IsCommunityMember",
+      hasContextUser: false,
+      permissionCommunityId: permission?.communityId ?? null,
+      communityId: context.communityId ?? null,
+      reason: "no_authenticated_user",
+    });
+    return false;
+  }
+
+  if (!permission?.communityId) {
+    logger.error("IsCommunityMember authorization FAILED", {
+      rule: "IsCommunityMember",
+      hasContextUser: true,
+      contextUserId: user.id,
+      permissionCommunityId: null,
+      communityId: context.communityId ?? null,
+      reason: "no_community_id_in_permission",
+    });
+    return false;
+  }
 
   const membership = context.currentUser?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
-  return [Role.OWNER, Role.MANAGER, Role.MEMBER].includes(membership?.role as Role);
+
+  const isMember = [Role.OWNER, Role.MANAGER, Role.MEMBER].includes(membership?.role as Role);
+
+  if (!isMember) {
+    logger.error("IsCommunityMember authorization FAILED", {
+      rule: "IsCommunityMember",
+      hasContextUser: true,
+      contextUserId: user.id,
+      permissionCommunityId: permission.communityId,
+      communityId: context.communityId ?? null,
+      membershipRole: membership?.role ?? null,
+      reason: !membership ? "no_membership" : "invalid_role",
+    });
+  }
+
+  return isMember;
 });
 
 // 🔐 Opportunity 作成者
@@ -114,11 +245,45 @@ const IsOpportunityOwner = preExecRule({
   const user = context.currentUser;
   const opportunityId = args?.permission?.opportunityId;
 
-  if (!user || !opportunityId) return false;
+  if (!user) {
+    logger.error("IsOpportunityOwner authorization FAILED", {
+      rule: "IsOpportunityOwner",
+      hasContextUser: false,
+      permissionOpportunityId: opportunityId ?? null,
+      communityId: context.communityId ?? null,
+      reason: "no_authenticated_user",
+    });
+    return false;
+  }
+
+  if (!opportunityId) {
+    logger.error("IsOpportunityOwner authorization FAILED", {
+      rule: "IsOpportunityOwner",
+      hasContextUser: true,
+      contextUserId: user.id,
+      permissionOpportunityId: null,
+      communityId: context.communityId ?? null,
+      reason: "no_opportunity_id_in_permission",
+    });
+    return false;
+  }
 
   // Lazy check: verify ownership only when needed
   const opportunityService = container.resolve<OpportunityService>("OpportunityService");
-  return await opportunityService.isOwnedByUser(context, opportunityId, user.id);
+  const isOwner = await opportunityService.isOwnedByUser(context, opportunityId, user.id);
+
+  if (!isOwner) {
+    logger.error("IsOpportunityOwner authorization FAILED", {
+      rule: "IsOpportunityOwner",
+      hasContextUser: true,
+      contextUserId: user.id,
+      permissionOpportunityId: opportunityId,
+      communityId: context.communityId ?? null,
+      reason: "not_opportunity_owner",
+    });
+  }
+
+  return isOwner;
 });
 
 const CanReadPhoneNumber = postExecRule({
