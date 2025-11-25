@@ -1,6 +1,7 @@
 import http from "http";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders } from "./types";
+import { SESSION_COOKIE_NAME } from "@/config/constants";
 
 export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
   const getHeader = (key: string) => (req.headers[key.toLowerCase()] as string) || "";
@@ -11,12 +12,15 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
   const cookies = Object.fromEntries(
     (req.headers.cookie || "")
       .split(";")
-      .map((v) => v.trim().split("="))
+      .map((v) => {
+        const parts = v.trim().split("=");
+        return [parts.shift() || "", parts.join("=")];
+      })
       .map(([k, v]) => [k, decodeURIComponent(v || "")]),
   );
 
-  // Support both "session" and "__session" cookie names for compatibility
-  const sessionCookie = cookies["session"] || cookies["__session"];
+  // Prefer canonical "__session" cookie, fall back to legacy "session" for backward compatibility
+  const sessionCookie = cookies[SESSION_COOKIE_NAME] || cookies["session"];
 
   const bearer = getHeader("authorization")?.replace(/^Bearer\s+/, "");
 
