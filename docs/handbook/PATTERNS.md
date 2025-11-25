@@ -444,6 +444,6 @@ node --inspect pnpm dev:https
 ## Related Documentation
 
 - [Development Workflow](./DEVELOPMENT.md) - Daily development procedures
-- [Testing Guide](../TESTING.md) - Testing strategy and execution
+- [Testing Guide](./TESTING.md) - Testing strategy and execution
 - [Command Reference](./COMMANDS.md) - Complete command list
 - [Architecture Guide](./ARCHITECTURE.md) - System design overview

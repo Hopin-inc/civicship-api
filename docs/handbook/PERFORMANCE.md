@@ -90,7 +90,7 @@ WHERE transaction_type = 'CREDIT'
 AND status = 'COMPLETED' 
 AND reason IN ('POINT_ISSUED', 'GRANT', 'REWARD')
 GROUP BY wallet_id;
-````
+```
 
 #### Opportunity Participation Statistics View
 
@@ -342,7 +342,7 @@ timestamp: new Date().toISOString()
 
 ### 2. Database Monitoring
 
-```Typescript
+```typescript
 // Database Query Performance Monitoring
 const queryMiddleware = async (params: any, next: any) => {
 const start = Date.now();

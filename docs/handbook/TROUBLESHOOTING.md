@@ -69,7 +69,7 @@ docker exec -it <container_name> psql -U postgres -d civicship_dev
 pnpm db:reset
 pnpm db:seed-master 
 pnpm db:seed-domain 
-````
+```
 
 ### Migration Issues
 

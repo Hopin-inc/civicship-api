@@ -194,7 +194,7 @@ ownerMembership,
 memberMemberships 
 };
 };
-````
+```
 
 ## Test environment settings
 
@@ -301,7 +301,7 @@ name: user.name,
 email: user.email 
 });
 });
-````
+```
 
 ## Troubleshooting
 

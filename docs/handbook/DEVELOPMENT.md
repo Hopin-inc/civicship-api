@@ -108,11 +108,11 @@ Basic Flow:
 
 ### 3. GraphQL Schema Changes
 
-For information on GraphQL schema changes and best practices, see the "GraphQL Optimization Patterns" section in [Implementation Patterns](../PATTERNS.md).
+For information on GraphQL schema changes and best practices, see the "GraphQL Optimization Patterns" section in [Implementation Patterns](./PATTERNS.md).
 
 ### 4. Testing Strategy
 
-For information on writing tests and using the factory pattern, see the [Testing Guide](../TESTING.md).
+For information on writing tests and using the factory pattern, see the [Testing Guide](./TESTING.md).
 
 ### 5. Code Review Process
 
@@ -146,7 +146,7 @@ gh pr create --title "Add new feature" --body "Description of changes"
 
 ## Implementation Patterns and Best Practices
 
-For code organization patterns, naming conventions, error handling, logging, performance optimization, and security best practices, see [Implementation Patterns](../PATTERNS.md).
+For code organization patterns, naming conventions, error handling, logging, performance optimization, and security best practices, see [Implementation Patterns](./PATTERNS.md).
 
 ## Debugging and Monitoring
 
@@ -155,16 +155,16 @@ For debugging, performance monitoring, and log review, see the "Debugging and Mo
 ## Related Documentation
 
 ### 📚 Detailed Guide
-- **[Testing Guide](../TESTING.md)** - Testing strategy, factory pattern, test data management
-- **[Implementation Pattern](../PATTERNS.md)** - DataLoader, DI, RLS, error handling, security patterns
+- **[Testing Guide](./TESTING.md)** - Testing strategy, factory pattern, test data management
+- **[Implementation Pattern](./PATTERNS.md)** - DataLoader, DI, RLS, error handling, security patterns
 - **[Command Reference](COMMANDS.md)** - All pnpm commands, debugging, and environment-specific execution methods
 
 ### 🔧 Setup and Operation
-- **[Setup Guide](../SETUP.md)** - Initial environment setup procedure
+- **[Setup Guide](./SETUP.md)** - Initial environment setup procedure
 - **[Environment Variable Settings](ENVIRONMENT.md)** - Detailed environment variable settings
-- **[Troubleshooting](../TROUBLESHOOTING.md)** - Common problems and solutions
+- **[Troubleshooting](./TROUBLESHOOTING.md)** - Common problems and solutions
 
 ### 🏗️ Architecture and Design
 - **[Architecture Guide](ARCHITECTURE.md)** - System design and domain structure
-- **[Feature List](../FEATURES.md)** - Business feature details
+- **[Feature List](./FEATURES.md)** - Business feature details
 - **[Database Design](../ERD.md)** - Entity-Relationship Diagram

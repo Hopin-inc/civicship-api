@@ -63,7 +63,7 @@ DATABASE_URL=postgresql://civicship:civicship@localhost:15432/civicship
 
 **Implementation File:** `src/infrastructure/libs/firebase.ts`
 
-```Typescript
+```typescript
 import admin from "firebase-admin";
 import { App } from "firebase-admin/lib/app";
 
@@ -163,7 +163,7 @@ tokenPreview: accessToken.slice(0, 10),
 
 return new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
 }
-````
+```
 
 **Features**
 - Sending push messages
@@ -317,7 +317,7 @@ userId: context.currentUser?.id
 
 ## Troubleshooting
 
-See the [Troubleshooting Guide](../TROUBLESHOOTING.md) for solutions to common infrastructure issues.
+See the [Troubleshooting Guide](./TROUBLESHOOTING.md) for solutions to common infrastructure issues.
 
 ### Database connection issues
 
@@ -343,7 +343,7 @@ echo $FIREBASE_PRIVATE_KEY | grep "BEGIN PRIVATE KEY"
 ## Related documentation
 
 - [Architecture Guide](./ARCHITECTURE.md) - System design overview
-- [Security Guide](../SECURITY.md) - Authentication and authorization architecture
+- [Security Guide](./SECURITY.md) - Authentication and authorization architecture
 - [Deployment Guide](./DEPLOYMENT.md) - Production environment configuration
 - [Environment Variable Guide](./ENVIRONMENT.md) - Detailed environment settings
-- [Setup Guide](../SETUP.md) - Building a development environment
+- [Setup Guide](./SETUP.md) - Building a development environment
