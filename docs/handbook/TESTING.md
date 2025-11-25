@@ -30,7 +30,7 @@ pnpm test -- --testPathPattern=auth
 
 ### 1. Service Test
 
-``` typescript
+```typescript
 // __tests__/unit/services/user.service.test.ts
 describe('UserService', () => {
 let userService: UserService;
@@ -51,7 +51,7 @@ expect(result).toBeDefined();
 
 ### 2. GraphQL Test
 
-``` typescript
+```typescript
 // __tests__/integration/graphql/user.test.ts
 describe('User GraphQL', () => {
 it('should query user by id', async () => {
@@ -83,7 +83,7 @@ name: user.name
 
 ### Using Prisma Fabbrica Factories
 
-``` typescript
+```typescript
 // Use actual factories from src/infrastructure/prisma/factories/factory.ts
 import {
 UserFactory,
@@ -112,7 +112,7 @@ const users = await UserFactory.createList(5);
 
 ### Clean up test data
 
-``` typescript
+```typescript
 // Configured in jest.setup.ts
 // - Mock Firebase authentication
 // - Initialize Prisma Fabbrica
@@ -134,7 +134,7 @@ const app = await createApolloTestServer(mockContext);
 
 ### Basic Usage
 
-``` typescript
+```typescript
 // Basic Entity Creation
 const user = await UserFactory.create();
 const community = await CommunityFactory.create();
@@ -156,7 +156,7 @@ transientStatus: MembershipStatus.JOINED
 
 ### Complex Test Scenarios
 
-``` typescript
+```typescript
 // Complete Test Data Including Community and Membership
 const setupCommunityWithMembers = async () => {
 const owner = await UserFactory.create();
@@ -244,7 +244,7 @@ pnpm test -- __tests__/unit/account/user.service.test.ts
 
 ### 2. Mocks and Stubs
 
-``` typescript
+```typescript
 // Mock a Repository
 const mockUserRepository = {
 findById: jest.fn(),
@@ -259,7 +259,7 @@ const userService = new UserService(mockUserRepository);
 
 ### 3. Asynchronous Tests
 
-``` typescript
+```typescript
 // Promise-Based Tests
 it('should handle async operations', async () => {
 const result = await userService.createUser(userData);

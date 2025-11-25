@@ -245,7 +245,7 @@ constructor(
 **Implementation file:** `src/infrastructure/prisma/client.ts`
 
 **Implementation:**
-``` typescript
+```typescript
 // Actual RLS implementation
 export class PrismaClientIssuer {
 public async onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> { 
@@ -271,7 +271,7 @@ const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
 return value;
 }
 
-/ Admin Bypass
+// Admin Bypass
 public async admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
 return await this.client.$transaction(async (tx) => {
 await this.setRlsBypass(tx, true);
@@ -426,7 +426,7 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points";
 - Significantly reduced database load
 
 #### Efficient Pagination
-``` typescript
+```typescript
 // Cursor-based pagination for large datasets
 const opportunities = await prisma.opportunity.findMany({
 take: limit,
@@ -464,7 +464,7 @@ orderBy: { createdAt: 'desc' }
 ### Authorization layer
 
 #### 1. GraphQL rules (pre- and post-execution)
-``` typescript
+```typescript
 // Pre-execution permission check
 export const permissions = shield({
 Query: {
@@ -479,18 +479,18 @@ updateCommunity: IsCommunityOwner,
 ```
 
 #### 2. RLS (Database Level)
-``` typescript
+```typescript
 // Automatic data filtering based on user context
 const issuer = new PrismaClientIssuer(context.currentUser);
 const communities = await issuer.onlyBelongingCommunity.community.findMany(); // Only accessible communities
 ```
 
 #### 3. Business Logic (Domain-Specific)
-``` typescript
+```typescript
 // Domain-Specific Access Control
 export class CommunityService {
 async updateCommunity(id: string, data: UpdateCommunityInput) {
-/ // Check if the user has permission to update this community
+// Check if the user has permission to update this community
 await this.validateUpdatePermission(id);
 return this.repository.update(id, data);
 }
@@ -498,7 +498,7 @@ return this.repository.update(id, data);
 ```
 
 #### 4. API Key Authentication (Admin Endpoint)
-``` typescript
+```typescript
 // Admin Endpoint Protection
 export const adminAuth = (req: Request, res: Response, next: NextFunction) => { 
 const apiKey = req.headers['x-api-key']; 
@@ -534,7 +534,7 @@ __tests__/
 ### Test Patterns
 
 #### Factory Pattern (Test Data Generation)
-``` typescript
+```typescript
 // Example: User factory for consistent test data
 export const createUser = (overrides?: Partial<User>): User => ({
 id: faker.datatype.uuid(),
@@ -546,7 +546,7 @@ createdAt: new Date(),
 ```
 
 #### Repository Mock (Unit Test Isolation)
-``` typescript
+```typescript
 // Example: Mock repository for service testing
 const mockUserRepository = {
 findById: jest.fn(),
@@ -557,7 +557,7 @@ delete: jest.fn()
 ```
 
 #### Database Transactions (Test Data Cleanup)
-``` typescript
+```typescript
 // Example: Automatic test data cleanup
 beforeEach(async () => {
 await prisma.$transaction(async (tx) => {
@@ -573,7 +573,7 @@ await prisma.$transaction(async (tx) => {
 ```
 
 #### GraphQL Testing (End-to-End API Validation)
-``` typescript
+```typescript
 // Example: GraphQL Mutation Test
 const CREATE_COMMUNITY = gql`
 mutation CreateCommunity($input: CreateCommunityInput!) {

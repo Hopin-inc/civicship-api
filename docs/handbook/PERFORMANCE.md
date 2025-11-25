@@ -12,12 +12,12 @@ For detailed implementation information, see the "DataLoader Pattern" section in
 
 #### Key Optimization Points
 
-``` typescript
+```typescript
 // Efficient batch processing
 export const createUserDataLoader = (issuer: PrismaClientIssuer) => {
 return new DataLoader<string, PrismaUser | null>(
 async (userIds: readonly string[]) => {
-/ Retrieve multiple users in a single query
+// Retrieve multiple users in a single query
 const users = await issuer.internal((tx) =>
 tx.user.findMany({
 where: { id: { in: [...userIds] } },
@@ -29,11 +29,11 @@ include: { community: true }
 }),
 );
 
-/ Mapping while preserving ID order
+// Mapping while preserving ID order
 return userIds.map(id => users.find(user => user.id === id) || null);
 },
 {
-/ Caching within the request lifecycle
+// Caching within the request lifecycle
 cache: true,
 maxBatchSize: 100,
 batchScheduleFn: callback => setTimeout(callback, 10)
@@ -217,7 +217,7 @@ user: true
 
 ### 2. Selective Field Retrieval
 
-``` typescript
+```typescript
 // Select only the fields you need
 const users = await prisma.user.findMany({
 select: {
@@ -231,7 +231,7 @@ email: true,
 
 ### 3. Pagination
 
-``` typescript
+```typescript
 // Cursor-based pagination
 const getOpportunities = async (cursor?: string, limit = 20) => {
 return prisma.opportunity.findMany({
@@ -247,7 +247,7 @@ orderBy: { createdAt: 'desc' }
 
 ### 1. Request-Level Caching
 
-``` typescript
+```typescript
 // In-Request Caching with DataLoader
 export const createDataLoaders = (issuer: PrismaClientIssuer) => ({
 user: createUserDataLoader(issuer),
@@ -259,7 +259,7 @@ wallet: createWalletDataLoader(issuer),
 
 ### 2. Application-Level Caching
 
-``` typescript
+```typescript
 // Session Caching Using Redis
 import Redis from 'ioredis';
 
@@ -289,7 +289,7 @@ SET pg_stat_statements.track = all;
 
 ### 4. CDN Caching
 
-``` typescript
+```typescript
 // Serving Static Assets with Google Cloud Storage
 export const uploadWithCacheHeaders = async (file: Buffer, fileName: string) => {
 const fileUpload = bucket.file(fileName);
@@ -309,7 +309,7 @@ return fileUpload.publicUrl();
 
 ### 1. Application Metrics
 
-``` typescript
+```typescript
 // Custom Metric Collection
 export const trackBusinessMetrics = {
 communityCreated: () => {
@@ -358,7 +358,7 @@ args: JSON.stringify(params.args)
 });
 }
 
-/ Metric Collection
+// Metric Collection
 logger.info('Database query executed', {
 model: params.model,
 action: params.action,
@@ -374,7 +374,7 @@ prisma.$use(queryMiddleware);
 
 ### 3. Error Tracking
 
-``` typescript
+```typescript
 // Comprehensive Error Logging and Alerting
 export const errorTracker = {
 logError: (error: Error, context: any) => {
@@ -400,7 +400,7 @@ severity: 'warning'
 
 ### 4. Performance Monitoring
 
-``` typescript
+```typescript
 // Request Latency and Throughput Tracking
 export const performanceTracker = (req: Request, res: Response, next: NextFunction) => {
 const start = Date.now();
@@ -417,7 +417,7 @@ userAgent: req.get('User-Agent'),
 ip: req.ip
 });
 
-/ Slow Request Alert
+// Slow Request Alert
 if (duration > 5000) {
 logger.warn('Slow request detected', {
 method: req.method,

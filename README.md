@@ -100,7 +100,7 @@ src/
 
 ### 📊 Reference & Operations
 - ✨ [Features](./docs/handbook/FEATURES.md) - Complete feature overview
-- 🗄️ [Database Schema](./docs/handbook/ERD.md) - Entity relationship diagram
+- 🗄️ [Database Schema](./docs/ERD.md) - Entity relationship diagram
 - 🧪 [Testing](./docs/handbook/TESTING.md) - Test strategy & execution
 - 🚀 [Deployment](./docs/handbook/DEPLOYMENT.md) - Production deployment guide
 - 💻 [Commands Reference](./docs/handbook/COMMANDS.md) - All available commands
@@ -118,7 +118,7 @@ src/
 3. [Environment Variables](./docs/handbook/ENVIRONMENT.md) → [Troubleshooting](./docs/handbook/TROUBLESHOOTING.md)
 
 ### For API Users
-1. [Features](./docs/handbook/FEATURES.md) → [Database Schema](./docs/handbook/ERD.md)
+1. [Features](./docs/handbook/FEATURES.md) → [Database Schema](./docs/ERD.md)
 2. [Commands Reference](./docs/handbook/COMMANDS.md) → [Testing](./docs/handbook/TESTING.md)
 
 ## License

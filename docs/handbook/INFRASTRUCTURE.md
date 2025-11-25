@@ -291,7 +291,7 @@ pnpm db:seed-domain
 
 ### Application Logging
 
-``` typescript
+```typescript
 import logger from "@/infrastructure/logging";
 
 // Structured Logging
@@ -321,7 +321,7 @@ See the [Troubleshooting Guide](./TROUBLESHOOTING.md) for solutions to common in
 
 ### Database connection issues
 
-``` bash
+```bash
 # Check PostgreSQL container status
 docker ps | grep postgres
 
@@ -331,7 +331,7 @@ pnpm db:studio
 
 ### Firebase authentication issues
 
-``` bash
+```bash
 # Check Firebase settings
 echo $FIREBASE_PROJECT_ID
 echo $FIREBASE_CLIENT_EMAIL
