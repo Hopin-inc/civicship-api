@@ -2,6 +2,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { PrismaAuthUser } from "@/application/domain/account/user/data/type";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import { Loaders } from "@/presentation/graphql/dataloader";
+import { AuthMeta } from "@/types/server";
 
 /**
  * クライアントから送られてくる認証関連ヘッダ
@@ -17,6 +18,7 @@ export interface AuthHeaders {
   phoneRefreshToken?: string;
   phoneTokenExpiresAt?: string;
   phoneUid?: string;
+  hasCookie?: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export interface AuthResultBase {
   phoneUid?: string;
   currentUser?: PrismaAuthUser | null;
   isAdmin?: boolean;
+  authMeta?: AuthMeta;
 
   phoneAuthToken?: string;
   phoneRefreshToken?: string;
