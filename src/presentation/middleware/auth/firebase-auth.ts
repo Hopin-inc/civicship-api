@@ -86,7 +86,7 @@ export async function handleFirebaseAuth(
   const authMeta: AuthMeta = {
     authMode: idToken ? authMode : "anonymous",
     hasIdToken: !!idToken,
-    hasCookie: !!headers.hasCookie,
+    hasCookie: headers.hasCookie ?? false,
   };
 
   if (!idToken) {
