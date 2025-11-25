@@ -342,7 +342,7 @@ curl -X POST https://localhost:3000/graphql \
 ## Related Documentation
 
 - [Development Workflow](DEVELOPMENT.md) - Daily development procedures
-- [Testing Guide](../TESTING.md) - Testing strategy and execution
-- [Implementation Patterns](../PATTERNS.md) - Code implementation patterns
-- [Setup Guide](../SETUP.md) - Initial environment setup
-- [Troubleshooting](../TROUBLESHOOTING.md) - Problem-solving guide
+- [Testing Guide](./TESTING.md) - Testing strategy and execution
+- [Implementation Patterns](./PATTERNS.md) - Code implementation patterns
+- [Setup Guide](./SETUP.md) - Initial environment setup
+- [Troubleshooting](./TROUBLESHOOTING.md) - Problem-solving guide

@@ -316,7 +316,6 @@ After successful setup:
 
 1. **Explore the code base:**
 - Read the [Architecture Guide](./ARCHITECTURE.md)
-- Review the [Domain Details](./DOMAINS.md)
 - Study the [Implementation Patterns](./PATTERNS.md)
 
 2. **Start Development:**

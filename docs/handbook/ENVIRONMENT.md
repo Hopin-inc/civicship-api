@@ -198,7 +198,7 @@ node -e "console.log(process.env.DATABASE_URL ? 'DB OK' : 'DB Missing')"
 
 ## Related documentation
 
-- [Setup Guide](../SETUP.md) - Overall installation instructions
-- [Troubleshooting](../TROUBLESHOOTING.md) - Detailed troubleshooting
+- [Setup Guide](./SETUP.md) - Overall installation instructions
+- [Troubleshooting](./TROUBLESHOOTING.md) - Detailed troubleshooting
 - [Development Flow](DEVELOPMENT.md) - Daily development procedures
 - [Architecture Guide](ARCHITECTURE.md) - System design overview
