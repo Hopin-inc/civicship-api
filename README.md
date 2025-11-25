@@ -1,5 +1,5 @@
 # civicship-api
-![logo.svg](./docs/handbook/asset/logo.svg)
+![logo.svg](./docs/asset/logo.svg)
 
 ## Overview
 
@@ -12,7 +12,7 @@
 - 📱 LINE Integration & Notifications
 - 📝 Content & Media Management
 
-For detailed features, see [FEATURES.md](./docs/handbook/handbook/FEATURES.md).
+For detailed features, see [FEATURES.md](./docs/handbook/FEATURES.md).
 
 ## Quick Start
 
