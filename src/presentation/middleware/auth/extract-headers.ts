@@ -15,10 +15,13 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
       .map(([k, v]) => [k, decodeURIComponent(v || "")]),
   );
 
-  const sessionCookie = cookies["__session"];
+  // Support both "session" and "__session" cookie names for compatibility
+  const sessionCookie = cookies["session"] || cookies["__session"];
 
-  const idToken =
-    authMode === "session" ? sessionCookie : getHeader("authorization")?.replace(/^Bearer\s+/, "");
+  const bearer = getHeader("authorization")?.replace(/^Bearer\s+/, "");
+
+  // In session mode, use only the session cookie; in id_token mode, use only Authorization header
+  const idToken = authMode === "session" ? sessionCookie : bearer;
 
   const headers: AuthHeaders = {
     authMode,
