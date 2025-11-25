@@ -32,6 +32,7 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
     idToken,
     adminApiKey: getHeader("x-civicship-admin-api-key"),
     communityId: getHeader("x-community-id"),
+    hasCookie: !!req.headers.cookie,
   };
 
   logger.debug("🪶 Extracted auth headers", {

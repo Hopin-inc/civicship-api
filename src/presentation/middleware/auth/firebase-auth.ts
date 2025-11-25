@@ -6,7 +6,7 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
-import { IContext } from "@/types/server";
+import { AuthMeta, IContext } from "@/types/server";
 import { isBot, getBotName } from "./bot-detection";
 
 function extractRequestInfo(req: http.IncomingMessage) {
@@ -83,9 +83,15 @@ export async function handleFirebaseAuth(
   }
 
   const loaders = createLoaders(prismaClient);
+  const authMeta: AuthMeta = {
+    authMode: idToken ? authMode : "anonymous",
+    hasIdToken: !!idToken,
+    hasCookie: !!headers.hasCookie,
+  };
+
   if (!idToken) {
-    logger.debug("🔓 Anonymous request - no idToken", { communityId });
-    return { issuer, loaders, communityId };
+    logger.debug("🔓 Anonymous request - no idToken", { communityId, authMeta });
+    return { issuer, loaders, communityId, authMeta };
   }
 
   const configService = container.resolve(CommunityConfigService);
@@ -134,7 +140,7 @@ export async function handleFirebaseAuth(
       membershipsCount: currentUser?.memberships?.length || 0,
     });
 
-    return { issuer, loaders, uid, idToken, platform, tenantId, communityId, currentUser };
+    return { issuer, loaders, uid, idToken, platform, tenantId, communityId, currentUser, authMeta };
   } catch (err) {
     const error = err as any;
     logger.error("🔥 Firebase verification failed", {

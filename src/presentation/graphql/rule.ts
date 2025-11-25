@@ -71,6 +71,7 @@ const IsSelf = preExecRule({
       permissionUserId: permission?.userId ?? null,
       communityId: context.communityId ?? null,
       reason: !user ? "no_authenticated_user" : "user_id_mismatch",
+      authMeta: context.authMeta ?? null,
     });
   }
 
@@ -93,6 +94,7 @@ const IsCommunityOwner = preExecRule({
       permissionCommunityId: permission?.communityId ?? null,
       communityId: context.communityId ?? null,
       reason: "no_authenticated_user",
+      authMeta: context.authMeta ?? null,
     });
     return false;
   }
