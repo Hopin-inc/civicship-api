@@ -24,6 +24,13 @@ PUBLIC PUBLIC
     
 
 
+        Language {
+            JA JA
+EN EN
+        }
+    
+
+
         SysRole {
             SYS_ADMIN SYS_ADMIN
 USER USER
@@ -359,6 +366,7 @@ RIGHT RIGHT
     SysRole sys_role 
     CurrentPrefecture current_prefecture 
     String phone_number "❓"
+    Language preferred_language 
     String url_website "❓"
     String url_x "❓"
     String url_facebook "❓"
@@ -833,6 +841,7 @@ RIGHT RIGHT
     "t_community_line_rich_menus" o|--|| "LineRichMenuType" : "enum:type"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
+    "t_users" o|--|| "Language" : "enum:preferred_language"
     "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_nft_wallets" : "nftWallets"

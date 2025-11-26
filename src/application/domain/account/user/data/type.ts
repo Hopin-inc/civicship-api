@@ -24,6 +24,7 @@ export const userSelectDetail = Prisma.validator<Prisma.UserSelect>()({
   urlYoutube: true,
   urlTiktok: true,
   phoneNumber: true,
+  preferredLanguage: true,
 
   imageId: true,
 
