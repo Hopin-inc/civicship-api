@@ -22,8 +22,12 @@ export class LIFFAuthUseCase {
 
     const ctx = { issuer } as IContext;
 
+    const { channelId } = await configService.getLineMessagingConfig(ctx, request.communityId);
     const { liffId } = await configService.getLiffConfig(ctx, request.communityId);
-    const verifyResult = await LIFFService.verifyAccessToken(request.accessToken, liffId);
+
+    // 🔽 communityId による切り替え
+    const verifierId = request.communityId === "himeji-ymca" ? channelId : liffId;
+    const verifyResult = await LIFFService.verifyAccessToken(request.accessToken, verifierId);
 
     const profile = await LIFFService.getProfile(request.accessToken);
 
