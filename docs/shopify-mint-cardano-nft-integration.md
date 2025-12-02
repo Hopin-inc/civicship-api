@@ -339,7 +339,7 @@ export interface MintCompletedPayload {
     image: string;
     [key: string]: unknown;
   };
-  // デバッグ・監査用（Civicshipは解釈しない）
+  // デバッグ・監査用（Civicshipはビジネスロジックとして解釈しない）
   productId: string;
   communityId: string;
   mintedAt: string;
@@ -732,6 +732,10 @@ NEXT_PUBLIC_SHOPIFY_PRODUCT_URL=https://shop.myshopify.com/products/community-nf
 ---
 
 ## 注意事項
+
+### 0. 責務境界の明確化
+
+Civicship API は `productId` / `communityId` をビジネスロジックとして解釈せず、これらは MintService 側のトレース・監査目的としてのみ扱う。NFTミントの意味付け（どの商品か、どのコミュニティか）は MintService の責務である。
 
 ### 1. Firebase UID の一致
 
