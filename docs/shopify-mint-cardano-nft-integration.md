@@ -146,7 +146,9 @@ name            - 商品名
 description     - 商品説明
 policyId        - Cardano Policy ID
 metadataTemplate - CIP-25テンプレート（JSON）
-imageUrl        - IPFS URL
+imageMode       - 画像モード: "template" | "sequence"
+imageUrl        - IPFS URL（templateモード用）
+imageUrlPattern - IPFS URLパターン（sequenceモード用、例: "ipfs://xxx/{sequence}.png"）
 shopifyProductId - 連携するShopify商品ID
 shopifyCheckoutUrl - Shopifyチェックアウトベース URL
 maxSupply       - 最大発行数
@@ -156,6 +158,41 @@ price           - 価格
 currency        - 通貨
 createdAt, updatedAt
 ```
+
+#### 画像モードについて
+
+NFT商品には2つの画像モードがある:
+
+| モード | 説明 | 用途 |
+|--------|------|------|
+| `template` | 全NFTで同じ画像を使用 | メンバーシップ証、参加証明など |
+| `sequence` | 連番ごとに異なる画像を使用 | コレクティブル、ジェネラティブアートなど |
+
+**templateモード例:**
+```json
+{
+  "imageMode": "template",
+  "imageUrl": "ipfs://QmXxx.../membership.png",
+  "metadataTemplate": {
+    "name": "Community Member #{sequence}",
+    "image": "ipfs://QmXxx.../membership.png"
+  }
+}
+```
+
+**sequenceモード例:**
+```json
+{
+  "imageMode": "sequence",
+  "imageUrlPattern": "ipfs://QmXxx.../{sequence}.png",
+  "metadataTemplate": {
+    "name": "Collectible #{sequence}",
+    "image": "{imageUrl}"
+  }
+}
+```
+
+sequenceモードでは、MintServiceがミント時に `{sequence}` を実際の連番に、`{imageUrl}` を `imageUrlPattern` から生成したURLに置換する。
 
 ### CustodialWallet（カストディアルウォレット）
 
