@@ -14,6 +14,219 @@ MintService（外部サービス）と連携し、Shopify経由でのCardano NFT
 
 ---
 
+## Civicshipが使用するMintService API
+
+Civicshipが使用するエンドポイントと、期待するリクエスト/レスポンスを以下に定義する。
+
+### 1. GET /api/products - 商品一覧取得
+
+**用途**: Portal が販売可能なNFT商品一覧を取得
+
+**リクエスト**:
+```http
+GET /api/products?communityId=community_xxx
+Authorization: Bearer <api_key>
+```
+
+**レスポンス**:
+```json
+{
+  "products": [
+    {
+      "id": "product_xxx",
+      "communityId": "community_xxx",
+      "name": "Community NFT",
+      "description": "コミュニティメンバー証",
+      "imageUrl": "ipfs://QmXxx.../image.png",
+      "price": 1000,
+      "currency": "JPY",
+      "isForSale": true,
+      "shopifyCheckoutUrl": "https://shop.myshopify.com/cart/add?id=xxx",
+      "maxSupply": 100,
+      "currentSupply": 25,
+      "imageMode": "template"
+    }
+  ]
+}
+```
+
+**レスポンスフィールド説明**:
+
+| フィールド | 型 | 説明 |
+|-----------|-----|------|
+| `id` | string | productId（Shopifyチェックアウトに渡す） |
+| `communityId` | string | コミュニティ識別子 |
+| `name` | string | 商品名 |
+| `description` | string | 商品説明 |
+| `imageUrl` | string | 表示用画像URL（IPFS） |
+| `price` | number | 価格 |
+| `currency` | string | 通貨（JPY等） |
+| `isForSale` | boolean | 販売中フラグ |
+| `shopifyCheckoutUrl` | string | Shopifyチェックアウトベース URL |
+| `maxSupply` | number | 最大発行数 |
+| `currentSupply` | number | 現在の発行数 |
+| `imageMode` | string | 画像モード: "template" \| "sequence" |
+
+---
+
+### 2. POST /api/mint - 直接NFT発行
+
+**用途**: ローカルスクリプトから直接NFTを発行（Shopify非経由）
+
+**リクエスト**:
+```http
+POST /api/mint
+Authorization: Bearer <api_key>
+Content-Type: application/json
+```
+
+```json
+{
+  "productId": "product_xxx",
+  "firebaseUid": "abc123"
+}
+```
+
+**リクエストフィールド説明**:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `productId` | string | Yes | MintService内のNFT商品ID |
+| `firebaseUid` | string | Yes* | Firebase UID（カストディアルウォレット用） |
+| `walletAddress` | string | Yes* | 外部ウォレットアドレス（直接指定の場合） |
+
+*`firebaseUid` または `walletAddress` のいずれかが必須
+
+**レスポンス**:
+```json
+{
+  "orderId": "order_xxx",
+  "status": "QUEUED"
+}
+```
+
+**レスポンスフィールド説明**:
+
+| フィールド | 型 | 説明 |
+|-----------|-----|------|
+| `orderId` | string | ミント注文ID |
+| `status` | string | ステータス: "QUEUED" |
+
+---
+
+### 3. POST /api/products - 商品作成
+
+**用途**: ローカルスクリプトからNFT商品を登録
+
+**リクエスト**:
+```http
+POST /api/products
+Authorization: Bearer <api_key>
+Content-Type: application/json
+```
+
+```json
+{
+  "communityId": "community_xxx",
+  "name": "Community NFT",
+  "description": "コミュニティメンバー証",
+  "price": 1000,
+  "currency": "JPY",
+  "maxSupply": 100,
+  "imageMode": "template",
+  "metadataTemplate": {
+    "name": "Community NFT #{sequence}",
+    "description": "コミュニティメンバー証",
+    "image": "ipfs://QmXxx.../image.png"
+  }
+}
+```
+
+**リクエストフィールド説明**:
+
+| フィールド | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| `communityId` | string | Yes | コミュニティ識別子 |
+| `name` | string | Yes | 商品名 |
+| `description` | string | No | 商品説明 |
+| `price` | number | Yes | 価格 |
+| `currency` | string | Yes | 通貨 |
+| `maxSupply` | number | Yes | 最大発行数 |
+| `imageMode` | string | Yes | "template" \| "sequence" |
+| `metadataTemplate` | object | Yes | CIP-25メタデータテンプレート |
+
+**レスポンス**:
+```json
+{
+  "id": "product_xxx",
+  "shopifyProductId": "shopify_xxx",
+  "shopifyCheckoutUrl": "https://shop.myshopify.com/cart/add?id=xxx"
+}
+```
+
+---
+
+## Civicshipが受信するWebhook
+
+### POST /webhooks/shopify-mint-cardano-nft/completed
+
+**用途**: MintServiceからミント完了通知を受信
+
+**リクエスト（MintService → Civicship）**:
+```http
+POST /webhooks/shopify-mint-cardano-nft/completed
+Content-Type: application/json
+X-Webhook-Signature: <hmac_signature>
+```
+
+```json
+{
+  "orderId": "order_xxx",
+  "firebaseUid": "abc123",
+  "walletAddress": "addr1qxxx...",
+  "policyId": "policy_xxx",
+  "assetNameHex": "436f6d6d756e6974794e465430303031",
+  "txHash": "tx_xxx",
+  "nftMetadata721": {
+    "name": "Community NFT #1",
+    "description": "コミュニティメンバー証",
+    "image": "ipfs://QmXxx.../image.png"
+  },
+  "productId": "product_xxx",
+  "communityId": "community_xxx",
+  "mintedAt": "2025-01-01T00:00:00Z"
+}
+```
+
+**ペイロードフィールド説明**:
+
+| フィールド | 型 | 説明 |
+|-----------|-----|------|
+| `orderId` | string | ミント注文ID |
+| `firebaseUid` | string \| null | Firebase UID（カストディアルの場合） |
+| `walletAddress` | string | ミント先ウォレットアドレス |
+| `policyId` | string | Cardano Policy ID |
+| `assetNameHex` | string | NFTのasset name（hex） |
+| `txHash` | string | ミントトランザクションハッシュ |
+| `nftMetadata721` | object | CIP-25メタデータ |
+| `productId` | string | MintService内の商品ID（監査用） |
+| `communityId` | string | コミュニティID（監査用） |
+| `mintedAt` | string | ミント日時（ISO 8601） |
+
+**レスポンス（Civicship → MintService）**:
+```json
+{
+  "success": true
+}
+```
+
+**署名検証**:
+```
+HMAC-SHA256(request_body, webhook_secret) == X-Webhook-Signature
+```
+
+---
+
 ## Portal → Shopify 遷移要件
 
 ### 渡すべき3パラメータ
@@ -26,10 +239,16 @@ Portal から Shopify チェックアウトに遷移する際、以下の3つの
 | `communityId` | コミュニティ識別子 | MintServiceが「どのコミュニティのNFTか」を判定 |
 | `productId` | MintService内部のNFT商品ID | MintServiceが「どのNFT商品をミントするか」を決定 |
 
+### チェックアウトURL例
+
+```
+https://shop.myshopify.com/cart/add?id=xxx&uid=abc123&communityId=community_xxx&productId=product_xxx
+```
+
 ### Portalの責務
 
 1. MintService API (`GET /api/products?communityId=xxx`) で販売可能なNFT商品一覧を取得
-2. 販売中の商品のみを表示
+2. 販売中の商品のみを表示（`isForSale: true`）
 3. ユーザーが商品を選択したら、Shopifyチェックアウトに遷移（3パラメータ付き）
 4. **Portalは商品の意味（policyId、metadata等）を解釈しない**
 
@@ -130,6 +349,34 @@ sequenceDiagram
     CivicshipAPI->>DB: NftInstance upsert
     CivicshipAPI-->>Script: 完了
 ```
+
+---
+
+## MintService側への依頼事項
+
+### 1. Shopifyチェックアウトパラメータ対応
+
+Shopifyチェックアウトへのアクセス時、URLパラメータを読み取り、Cart Attributeに設定する実装が必要。
+
+```
+https://shop.myshopify.com/cart/add?id=xxx&uid=abc123&communityId=xxx&productId=xxx
+→ Cart Attribute: { "uid": "abc123", "communityId": "xxx", "productId": "xxx" }
+```
+
+### 2. mint.completed Webhook送信
+
+ミント完了時、Civicshipに対して上記「Civicshipが受信するWebhook」の形式でWebhookを送信。
+
+### 3. 認証方式
+
+| 用途 | 方式 |
+|------|------|
+| Webhook | HMAC-SHA256署名（共有シークレット） |
+| API | Bearer Token（API Key） |
+
+### 4. 商品一覧APIのcommunityIdフィルタ
+
+`GET /api/products?communityId=xxx` でコミュニティ別にフィルタできること。
 
 ---
 
@@ -238,63 +485,7 @@ network         - cardano-mainnet / cardano-preprod
 
 ---
 
-## MintService Products API 仕様
-
-### GET /api/products
-
-コミュニティ別のNFT商品一覧を取得。
-
-**リクエスト**:
-```
-GET /api/products?communityId=xxx
-Authorization: Bearer <api_key>
-```
-
-**レスポンス**:
-```json
-{
-  "products": [
-    {
-      "id": "product_xxx",
-      "communityId": "community_xxx",
-      "name": "Community NFT",
-      "description": "コミュニティメンバー証",
-      "imageUrl": "ipfs://...",
-      "price": 1000,
-      "currency": "JPY",
-      "isForSale": true,
-      "shopifyCheckoutUrl": "https://shop.myshopify.com/cart/add?id=xxx",
-      "maxSupply": 100,
-      "currentSupply": 25
-    }
-  ]
-}
-```
-
-### POST /api/products
-
-商品作成（communityId必須）。
-
-**リクエスト**:
-```json
-{
-  "communityId": "community_xxx",
-  "name": "Community NFT",
-  "description": "コミュニティメンバー証",
-  "price": 1000,
-  "currency": "JPY",
-  "maxSupply": 100,
-  "metadataTemplate": {
-    "name": "Community NFT #{sequence}",
-    "description": "...",
-    "image": "ipfs://..."
-  }
-}
-```
-
----
-
-## civicship-api 実装
+## civicship-api 内部実装
 
 ### 1. ディレクトリ構成
 
@@ -607,7 +798,7 @@ async function main() {
 
 ---
 
-## civicship-portal 実装
+## civicship-portal 内部実装
 
 ### 1. NFT商品一覧・購入コンポーネント
 
@@ -699,56 +890,6 @@ NEXT_PUBLIC_COMMUNITY_ID=community_xxx
 
 ---
 
-## MintService側への前提・依頼事項
-
-### 1. Shopifyチェックアウトパラメータ対応
-
-Shopifyチェックアウトへのアクセス時、URLパラメータを読み取り、Cart Attributeに設定する実装が必要。
-
-```
-https://shop.myshopify.com/cart/add?id=xxx&uid=abc123&communityId=xxx&productId=xxx
-→ Cart Attribute: { "uid": "abc123", "communityId": "xxx", "productId": "xxx" }
-```
-
-### 2. mint.completed Webhook
-
-以下のフィールドを含むWebhookを送信:
-
-```json
-{
-  "orderId": "order_xxx",
-  "firebaseUid": "abc123",
-  "walletAddress": "addr1...",
-  "policyId": "policy_xxx",
-  "assetNameHex": "asset_xxx",
-  "txHash": "tx_xxx",
-  "nftMetadata721": {
-    "name": "Community NFT #1",
-    "description": "...",
-    "image": "ipfs://..."
-  },
-  "productId": "product_xxx",
-  "communityId": "community_xxx",
-  "mintedAt": "2025-01-01T00:00:00Z"
-}
-```
-
-### 3. 認証
-
-- Webhook: HMAC署名（共有シークレット）
-- API: Bearer Token（API Key）
-
-### 4. API エンドポイント
-
-| エンドポイント | 用途 |
-|---------------|------|
-| `GET /api/products?communityId=xxx` | コミュニティ別商品一覧取得 |
-| `POST /api/products` | 商品登録（communityId必須） |
-| `POST /api/mint` | 直接NFT発行 |
-| `POST /api/mint/orders` | 注文作成 |
-
----
-
 ## 環境変数
 
 ### civicship-api
@@ -763,7 +904,8 @@ SHOPIFY_MINT_CARDANO_NFT_WEBHOOK_SECRET=xxx
 ### civicship-portal
 
 ```env
-NEXT_PUBLIC_SHOPIFY_PRODUCT_URL=https://shop.myshopify.com/products/community-nft
+NEXT_PUBLIC_MINT_SERVICE_URL=https://mint-service.example.com
+NEXT_PUBLIC_COMMUNITY_ID=community_xxx
 ```
 
 ---
