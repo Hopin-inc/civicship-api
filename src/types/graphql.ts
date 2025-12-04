@@ -1339,10 +1339,13 @@ export type GqlOpportunitySlotEdge = GqlEdge & {
 };
 
 export type GqlOpportunitySlotFilterInput = {
+  category?: InputMaybe<GqlOpportunityCategory>;
+  communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   dateRange?: InputMaybe<GqlDateTimeRangeFilter>;
   hostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
   opportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   ownerId?: InputMaybe<Scalars['ID']['input']>;
+  publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
 };
 
 export const GqlOpportunitySlotHostingStatus = {

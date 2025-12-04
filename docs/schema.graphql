@@ -935,10 +935,13 @@ type OpportunitySlotEdge implements Edge {
 }
 
 input OpportunitySlotFilterInput {
+  category: OpportunityCategory
+  communityIds: [ID!]
   dateRange: DateTimeRangeFilter
   hostingStatus: [OpportunitySlotHostingStatus!]
   opportunityIds: [ID!]
   ownerId: ID
+  publishStatus: [PublishStatus!]
 }
 
 enum OpportunitySlotHostingStatus {

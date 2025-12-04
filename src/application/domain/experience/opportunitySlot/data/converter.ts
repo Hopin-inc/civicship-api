@@ -43,6 +43,25 @@ export default class OpportunitySlotConverter {
       }
     }
 
+    // Filters through related opportunity
+    const opportunityConditions: Prisma.OpportunityWhereInput[] = [];
+
+    if (filter?.communityIds?.length) {
+      opportunityConditions.push({ communityId: { in: filter.communityIds } });
+    }
+
+    if (filter?.category) {
+      opportunityConditions.push({ category: filter.category });
+    }
+
+    if (filter?.publishStatus?.length) {
+      opportunityConditions.push({ publishStatus: { in: filter.publishStatus } });
+    }
+
+    if (opportunityConditions.length > 0) {
+      slotConditions.push({ opportunity: { AND: opportunityConditions } });
+    }
+
     return {
       AND: slotConditions,
     };

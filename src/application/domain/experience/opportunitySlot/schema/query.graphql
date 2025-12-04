@@ -33,6 +33,10 @@ input OpportunitySlotFilterInput {
     ownerId: ID
     hostingStatus: [OpportunitySlotHostingStatus!]
     dateRange: DateTimeRangeFilter
+    # Filters through related opportunity
+    communityIds: [ID!]
+    category: OpportunityCategory
+    publishStatus: [PublishStatus!]
 }
 
 input OpportunitySlotSortInput {
