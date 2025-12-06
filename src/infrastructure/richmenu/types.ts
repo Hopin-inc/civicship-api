@@ -64,16 +64,3 @@ export interface DeployRichMenuContext {
   liffBaseUrl: string;
   configId: string;
 }
-
-export interface DeployMenuResult {
-  alias: string;
-  richMenuId: string;
-  dbSaved: boolean;
-  isDefault: boolean;
-}
-
-export interface DeploySummary {
-  community: string;
-  menus: DeployMenuResult[];
-  timestamp: string;
-}

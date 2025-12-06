@@ -104,13 +104,6 @@ jobs:
           echo "--- Killing SSH tunnel ---"
           kill $SSH_PID || true
 
-      - name: Upload deployment result
-        uses: actions/upload-artifact@v4
-        with:
-          name: richmenu-deploy-result
-          path: richmenu-deploy-result.json
-          retention-days: 30
-
       - name: Cleanup SSH Key
         if: always()
         run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub

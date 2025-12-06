@@ -3,7 +3,7 @@ import path from "path";
 import { PrismaClient } from "@prisma/client";
 import { messagingApi } from "@line/bot-sdk";
 import { getCommunityConfig, getAllCommunityIds } from "./index";
-import { deployRichMenus, writeSummary } from "./deployer";
+import { deployRichMenus } from "./deployer";
 import { DeployRichMenuContext } from "./types";
 import logger from "@/infrastructure/logging";
 
@@ -101,10 +101,7 @@ async function deployCommunity(
 
   logger.info(`Deploying ${config.menus.length} menus for ${communityId}...`);
 
-  const results = await deployRichMenus(ctx, config.menus);
-
-  const outputPath = path.resolve(process.cwd(), "richmenu-deploy-result.json");
-  writeSummary(communityId, results, outputPath);
+  await deployRichMenus(ctx, config.menus);
 
   logger.info(`Deployment complete for ${communityId}`);
 }

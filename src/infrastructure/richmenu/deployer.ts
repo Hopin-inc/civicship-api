@@ -1,12 +1,7 @@
 import path from "path";
 import fs from "fs";
 import { messagingApi } from "@line/bot-sdk";
-import {
-  DeployRichMenuContext,
-  DeployMenuResult,
-  DeploySummary,
-  RichMenuDefinition,
-} from "./types";
+import { DeployRichMenuContext, RichMenuDefinition } from "./types";
 import {
   resolvePlaceholders,
   safeDeleteAlias,
@@ -116,28 +111,8 @@ export async function deployRichMenu(
 export async function deployRichMenus(
   ctx: DeployRichMenuContext,
   menus: RichMenuDefinition[],
-): Promise<DeployMenuResult[]> {
-  const results: DeployMenuResult[] = [];
-
+): Promise<void> {
   for (const menu of menus) {
-    const result = await deployRichMenu(ctx, menu);
-    results.push(result);
+    await deployRichMenu(ctx, menu);
   }
-
-  return results;
-}
-
-export function writeSummary(
-  community: string,
-  results: DeployMenuResult[],
-  outputPath: string,
-): void {
-  const summary: DeploySummary = {
-    community,
-    menus: results,
-    timestamp: new Date().toISOString(),
-  };
-
-  fs.writeFileSync(outputPath, JSON.stringify(summary, null, 2));
-  logger.info(`Written summary to ${outputPath}`);
 }
