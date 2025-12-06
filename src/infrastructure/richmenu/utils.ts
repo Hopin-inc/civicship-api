@@ -26,10 +26,9 @@ export function resolvePlaceholders(
 }
 
 function isNotFoundError(error: unknown): boolean {
-  if (error && typeof error === "object" && "statusCode" in error) {
-    return (error as { statusCode: number }).statusCode === 404;
-  }
-  return false;
+  if (!error || typeof error !== "object") return false;
+  const e = error as { status?: number; statusCode?: number };
+  return e.status === 404 || e.statusCode === 404;
 }
 
 export async function safeDeleteAlias(
