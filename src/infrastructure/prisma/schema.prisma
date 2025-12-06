@@ -270,6 +270,11 @@ enum LineRichMenuType {
 
 // ------------------------------ User Domain ------------------------------
 
+enum Language {
+  JA
+  EN
+}
+
 model User {
   id String @id @default(cuid())
 
@@ -279,6 +284,7 @@ model User {
   sysRole           SysRole           @default(USER) @map("sys_role")
   currentPrefecture CurrentPrefecture @map("current_prefecture")
   phoneNumber       String?           @map("phone_number")
+  preferredLanguage Language          @default(JA) @map("preferred_language")
 
   urlWebsite   String? @map("url_website")
   urlX         String? @map("url_x")

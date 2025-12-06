@@ -33,6 +33,7 @@ input UserSignUpInput {
     slug: String
     currentPrefecture: CurrentPrefecture!
     image: ImageInput
+    preferredLanguage: Language
 
     phoneUid: String
     phoneNumber: String
