@@ -1,0 +1,69 @@
+import { RichMenuDefinition } from "../../types";
+import { LineRichMenuType } from "@prisma/client";
+
+export const adminMenu: RichMenuDefinition = {
+  size: {
+    width: 2500,
+    height: 1686,
+  },
+  selected: true,
+  name: "管理者メニュー",
+  chatBarText: "メニューを開く",
+  areas: [
+    {
+      bounds: {
+        x: 95,
+        y: 146,
+        width: 980,
+        height: 318,
+      },
+      action: {
+        type: "richmenuswitch",
+        richMenuAliasId: "user-use",
+        data: "switch:user-use",
+      },
+    },
+    {
+      bounds: {
+        x: 0,
+        y: 0,
+        width: 2500,
+        height: 843,
+      },
+      action: {
+        type: "uri",
+        label: "管理者ホーム",
+        uri: "${LIFF_BASE_URL}/admin/wallet",
+      },
+    },
+    {
+      bounds: {
+        x: 0,
+        y: 843,
+        width: 1250,
+        height: 843,
+      },
+      action: {
+        type: "uri",
+        label: "ウォレット",
+        uri: "${LIFF_BASE_URL}/admin/wallet",
+      },
+    },
+    {
+      bounds: {
+        x: 1250,
+        y: 843,
+        width: 1250,
+        height: 843,
+      },
+      action: {
+        type: "uri",
+        label: "権限管理",
+        uri: "${LIFF_BASE_URL}/admin/members",
+      },
+    },
+  ],
+  alias: "admin-menu",
+  imagePath: "images/admin_menu.png",
+  roleEntryFor: LineRichMenuType.ADMIN,
+};
