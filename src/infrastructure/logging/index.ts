@@ -3,6 +3,7 @@ import { LoggingWinston } from "@google-cloud/logging-winston";
 import { severity, errorReport } from "./formats/severity";
 import { axiosNormalizer } from "./formats/axios";
 import { sizeGuard } from "./formats/sizeGuard";
+import { traceContext } from "./formats/traceContext";
 
 const isLocal = process.env.ENV === "LOCAL";
 
@@ -14,6 +15,7 @@ const baseFormats: winston.Logform.Format[] = [
   errorReport(),
   axiosNormalizer(), // まず Axios を構造化
   sizeGuard(),       // 次にサイズ制御
+  traceContext(),    // トレース情報を追加
 ];
 
 if (!isLocal) {

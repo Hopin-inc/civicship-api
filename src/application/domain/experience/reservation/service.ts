@@ -37,12 +37,12 @@ export default class ReservationService implements IReservationService {
     return this.repository.checkConflict(ctx, where);
   }
 
-  async findReservation(ctx: IContext, id: string) {
-    return this.repository.find(ctx, id);
+  async findReservation(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    return this.repository.find(ctx, id, tx);
   }
 
-  async findReservationOrThrow(ctx: IContext, id: string) {
-    const reservation = await this.repository.find(ctx, id);
+  async findReservationOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    const reservation = await this.repository.find(ctx, id, tx);
 
     if (!reservation) {
       throw new NotFoundError("Reservation not found", { id });

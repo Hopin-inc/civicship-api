@@ -1,27 +1,27 @@
-# デプロイメントガイド
+# Deployment Guide
 
-このドキュメントでは、civicship-apiのデプロイメントアーキテクチャ、CI/CDパイプライン、インフラストラクチャコンポーネント、および本番環境の設定について説明します。
+This document describes the civicship-api deployment architecture, CI/CD pipeline, infrastructure components, and production environment configuration.
 
-## デプロイメントアーキテクチャ
+## Deployment Architecture
 
-### マルチサービスデプロイメント
+### Multi-Service Deployment
 
-civicship-apiは複数のデプロイメント構成をサポートし、異なる責務を持つサービスに分離されています：
+civicship-api supports multiple deployment configurations, separating different responsibilities into services:
 
-#### 1. 内部API（メインサービス）
+#### 1. Internal API (Main Service)
 
-**設定:**
-- **エントリーポイント:** `src/index.ts`
-- **目的:** メインGraphQL APIサーバー
+**Configuration:**
+- **Entry Point:** `src/index.ts`
+- **Purpose:** Main GraphQL API server
 - **Dockerfile:** `Dockerfile`
-- **デプロイメント:** Google Cloud Run
-- **ポート:** 3000 (HTTPS)
+- **Deployment:** Google Cloud Run
+- **Port:** 3000 (HTTPS)
 
-**機能:**
-- GraphQL API エンドポイント
-- 認証・認可処理
-- ビジネスロジック実行
-- データベースアクセス
+**Function:**
+- GraphQL API endpoint
+- Authentication and authorization processing
+- Business logic execution
+- Database access
 
 ```dockerfile
 # Dockerfile
@@ -38,20 +38,20 @@ EXPOSE 3000
 CMD ["pnpm", "start"]
 ```
 
-#### 2. 外部API（パブリックウォレット操作）
+#### 2. External API (Public Wallet Operations)
 
-**設定:**
-- **エントリーポイント:** `src/external-api.ts`
-- **目的:** パブリックウォレット操作と外部統合
+**Configuration:**
+- **Entry Point:** `src/external-api.ts`
+- **Purpose:** Public wallet operations and external integration
 - **Dockerfile:** `Dockerfile.external`
-- **デプロイメント:** Google Cloud Run（別サービス）
-- **ポート:** 8080
+- **Deployment:** Google Cloud Run (separate service)
+- **Port:** 8080
 
-**機能:**
-- 外部システムからのウォレット操作
-- パブリックAPI エンドポイント
-- 外部パートナー統合
-- 軽量認証
+**Function:**
+- Wallet operations from external systems
+- Public API endpoint
+- External partner integration
+- Lightweight authentication
 
 ```dockerfile
 # Dockerfile.external
@@ -68,20 +68,20 @@ EXPOSE 8080
 CMD ["node", "dist/external-api.js"]
 ```
 
-#### 3. バッチ処理（バックグラウンドジョブ）
+#### 3. Batch Processing (Background Jobs)
 
-**設定:**
-- **エントリーポイント:** `src/batch.ts`
-- **目的:** バックグラウンドジョブ処理
+**Configuration:**
+- **Entry Point:** `src/batch.ts`
+- **Purpose:** Background job processing
 - **Dockerfile:** `Dockerfile.batch`
-- **デプロイメント:** Google Cloud Run Jobs
-- **実行:** スケジュール実行
+- **Deployment:** Google Cloud Run Jobs
+- **Execution:** Scheduled execution
 
-**機能:**
-- マテリアライズドビューの更新
-- データ集計処理
-- 定期的なクリーンアップ
-- 通知送信
+**Function:**
+- Materialized view updates
+- Data aggregation
+- Periodic cleanup
+- Notification sending
 
 ```dockerfile
 # Dockerfile.batch
@@ -97,262 +97,261 @@ RUN pnpm build
 CMD ["node", "dist/batch.js"]
 ```
 
-## Google Cloud Run設定
+## Google Cloud Run Settings
 
-### サービス設定
+### Service Settings
 
-#### 内部API設定
+#### Internal API Settings
 
 ```yaml
 # cloud-run-internal.yaml
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: civicship-api-internal
-  annotations:
-    run.googleapis.com/ingress: all
+name: civicship-api-internal
+annotations:
+run.googleapis.com/ingress: all
 spec:
-  template:
-    metadata:
-      annotations:
-        run.googleapis.com/cpu-throttling: "false"
-        run.googleapis.com/memory: "2Gi"
-        run.googleapis.com/cpu: "1000m"
-    spec:
-      containerConcurrency: 100
-      containers:
-      - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: database-url
-              key: url
+template:
+metadata:
+annotations:
+run.googleapis.com/cpu-throttling: "false"
+run.googleapis.com/memory: "2Gi"
+run.googleapis.com/cpu: "1000m"
+spec:
+containerConcurrency: 100
+containers:
+- image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api:latest
+ports:
+- containerPort: 3000
+env:
+- name: NODE_ENV
+value: "production"
+- name: DATABASE_URL
+valueFrom:
+secretKeyRef:
+name: database-url
+key: url
 ```
 
-#### 外部API設定
+#### External API Settings
 
 ```yaml
 # cloud-run-external.yaml
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: civicship-api-external
+name: civicship-api-external
 spec:
-  template:
-    spec:
-      containers:
-      - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api-external:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: NODE_ENV
-          value: "production"
+template:
+spec:
+containers:
+- image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api-external:latest
+ports:
+- containerPort: 8080
+env:
+- name: NODE_ENV
+value: "production"
 ```
 
-### 自動スケーリング
+### Autoscaling
 
 ```yaml
-# スケーリング設定
+# Scaling Settings
 metadata:
-  annotations:
-    run.googleapis.com/execution-environment: gen2
-    autoscaling.knative.dev/minScale: "1"
-    autoscaling.knative.dev/maxScale: "100"
-    run.googleapis.com/cpu-throttling: "false"
+annotations:
+run.googleapis.com/execution-environment: gen2
+autoscaling.knative.dev/minScale: "1"
+autoscaling.knative.dev/maxScale: "100"
+run.googleapis.com/cpu-throttling: "false"
 ```
 
-**特徴:**
-- **リクエスト量に基づく自動スケーリング**
-- **最小1インスタンス、最大100インスタンス**
-- **コールドスタート最適化**
-- **CPU スロットリング無効化**
+Features:
+- Automatic scaling based on request volume
+- Minimum 1 instance, maximum 100 instances
+- Cold start optimization
+- Disabled CPU throttling
 
-## CI/CDパイプライン
+## CI/CD Pipeline
 
-### GitHub Actions ワークフロー
+### GitHub Actions Workflow
 
-**設定ファイル:** `.github/workflows/deploy-to-cloud-run-dev.yml`
+**Configuration File:** `.github/workflows/deploy-to-cloud-run-dev.yml`
 
 ```yaml
 name: Deploy to Cloud Run (Development)
 
 on:
-  push:
-    branches: [ develop ]
-  pull_request:
-    branches: [ develop ]
+push:
+branches: [ develop ]
+pull_request:
+branches: [ develop ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Setup Node.js 20
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'pnpm'
-    
-    - name: Install dependencies
-      run: pnpm install
-    
-    - name: Run tests
-      run: pnpm test
-    
-    - name: Run lint
-      run: pnpm lint
+test:
+runs-on: ubuntu-latest
+steps:
+- uses: actions/checkout@v4
+- name: Setup Node.js 20
+uses: actions/setup-node@v4
+with:
+node-version: '20'
+cache: 'pnpm'
 
-  build-and-deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Google Cloud CLI
-      uses: google-github-actions/setup-gcloud@v1
-      with:
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
-    
-    - name: Configure Docker
-      run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev
-    
-    - name: Build Docker images
-      run: |
-        docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} .
-        docker build -f Dockerfile.external -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-external:${{ github.sha }} .
-        docker build -f Dockerfile.batch -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-batch:${{ github.sha }} .
-    
-    - name: Push to Container Registry
-      run: |
-        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }}
-        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-external:${{ github.sha }}
-        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-batch:${{ github.sha }}
-    
-    - name: Deploy to Cloud Run
-      run: |
-        gcloud run deploy civicship-api-internal \
-          --image asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} \
-          --platform managed \
-          --region asia-northeast1 \
-          --allow-unauthenticated
+- name: Install dependencies
+run: pnpm install
+
+- name: Run tests
+run: pnpm test
+
+- name: Run lint
+run: pnpm lint
+
+build-and-deploy:
+needs: test
+runs-on: ubuntu-latest 
+if: github.ref == 'refs/heads/develop' 
+
+steps: 
+- uses: actions/checkout@v4 
+
+- name: Setup Google Cloud CLI 
+uses: google-github-actions/setup-gcloud@v1 
+with: 
+service_account_key: ${{ secrets.GCP_SA_KEY }} 
+project_id: ${{ secrets.GCP_PROJECT_ID }} 
+
+- name: Configure Docker 
+run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev 
+
+- name: Build Docker images 
+run: | 
+docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} . 
+docker build -f Dockerfile.external -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-external:${{ github.sha }} . 
+docker build -f Dockerfile.batch -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-batch:${{ github.sha }} . 
+
+- name: Push to Container Registry 
+run: | 
+docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} 
+docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-external:${{ github.sha }} 
+docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-batch:${{ github.sha }} 
+
+- name: Deploy to Cloud Run 
+run: | 
+gcloud run deploy civicship-api-internal \ 
+--image asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} \ 
+--platform managed \ 
+--region asia-northeast1 \ --allow-unauthenticated
 ```
 
-### マルチ環境デプロイメント
+### Multi-Environment Deployment
 
-#### 開発環境 (Development)
-- **ブランチ:** `develop`
-- **自動デプロイ:** プッシュ時
-- **データベース:** 開発用PostgreSQL
-- **ドメイン:** `dev-api.civicship.com`
+#### Development Environment
+- **Branch:** `develop`
+- **Automatic Deployment:** On Push
+- **Database:** Development PostgreSQL
+- **Domain:** `dev-api.civicship.com`
 
-#### ステージング環境 (Staging)
-- **ブランチ:** `staging`
-- **手動承認:** 必要
-- **データベース:** ステージング用PostgreSQL
-- **ドメイン:** `staging-api.civicship.com`
+#### Staging Environment
+- **Branch:** `staging`
+- **Manual Approval:** Required
+- **Database:** Staging PostgreSQL
+- **Domain:** `staging-api.civicship.com`
 
-#### 本番環境 (Production)
-- **ブランチ:** `main`
-- **手動承認:** 必要
-- **データベース:** 本番用PostgreSQL
-- **ドメイン:** `api.civicship.com`
+#### Production Environment
+- **Branch:** `main`
+- **Manual Approval:** Required
+- **Database:** Production PostgreSQL
+- **Domain:** `api.civicship.com`
 
-## インフラストラクチャコンポーネント
+## Infrastructure Components
 
 ### Artifact Registry
 
 ```bash
-# コンテナレジストリ設定
+# Container Registry Configuration
 gcloud artifacts repositories create civicship-api \
-  --repository-format=docker \
-  --location=asia-northeast1 \
-  --description="Civicship API container images"
+--repository-format=docker \
+--location=asia-northeast1 \
+--description="Civicship API container images"
 ```
 
-**機能:**
-- **Dockerイメージの安全な保存**
-- **バージョン管理とタグ付け**
-- **脆弱性スキャン**
-- **アクセス制御**
+**Features**
+- **Secure storage of Docker images**
+- **Version control and tagging**
+- **Vulnerability scanning**
+- **Access control**
 
-### データベースアクセス
+### Database access
 
-#### SSHトンネル（ビルド時）
+#### SSH tunnel (build time)
 
 ```yaml
-# GitHub Actions でのセキュアデータベースアクセス
+# Secure database access with GitHub Actions
 - name: Setup SSH tunnel
-  run: |
-    echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
-    ssh -f -N -L 5432:localhost:5432 user@jumpbox.example.com
-    
+run: |
+echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+chmod 600 ~/.ssh/id_rsa
+ssh -f -N -L 5432:localhost:5432 user@jumpbox.example.com
+
 - name: Run database migrations
-  run: pnpm db:migrate deploy
-  env:
-    DATABASE_URL: postgresql://user:pass@localhost:5432/civicship
+run: pnpm db:migrate deploy
+env:
+DATABASE_URL: postgresql://user:pass@localhost:5432/civicship
 ```
 
-#### 本番データベース接続
+#### Production Database Connection
 
 ```typescript
-// 本番環境でのコネクションプーリング
+// Connection Pooling in a Production Environment
 const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-  log: ['query', 'info', 'warn', 'error'],
+datasources: {
+db: {
+url: process.env.DATABASE_URL,
+},
+},
+log: ['query', 'info', 'warn', 'error'],
 });
 
-// 接続プール設定
+// Connection Pool Configuration
 // DATABASE_URL=postgresql://user:pass@host:5432/db?connection_limit=20&pool_timeout=20
 ```
 
-### 環境変数管理
+### Environment Variable Management
 
 #### Google Secret Manager
 
 ```bash
-# シークレット作成
+# Create a Secret
 gcloud secrets create database-url --data-file=database-url.txt
 gcloud secrets create firebase-private-key --data-file=firebase-key.json
 
-# Cloud Run でのシークレット使用
+# Using secrets with Cloud Run
 gcloud run deploy civicship-api \
-  --set-secrets="DATABASE_URL=database-url:latest,FIREBASE_PRIVATE_KEY=firebase-private-key:latest"
+--set-secrets="DATABASE_URL=database-url:latest,FIREBASE_PRIVATE_KEY=firebase-private-key:latest"
 ```
 
-#### 環境別設定
+#### Environment-Specific Settings
 
 ```yaml
-# 開発環境
+# Development Environment
 env:
-  - name: NODE_ENV
-    value: "development"
-  - name: LOG_LEVEL
-    value: "debug"
+- name: NODE_ENV
+value: "development"
+- name: LOG_LEVEL
+value: "debug"
 
-# 本番環境
+# Production Environment
 env:
-  - name: NODE_ENV
-    value: "production"
-  - name: LOG_LEVEL
-    value: "info"
+- name: NODE_ENV
+value: "production"
+- name: LOG_LEVEL
+value: "info"
 ```
 
-## 監視とヘルスチェック
+## Monitoring and Health Checks
 
-### ヘルスチェックエンドポイント
+### Health Check Endpoint
 
 ```typescript
 // src/presentation/router/health.ts
@@ -365,127 +364,127 @@ app.get('/health', (req, res) => {
   });
 });
 
-// データベース接続チェック
+// Check database connection
 app.get('/health/db', async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.status(200).json({ status: 'healthy', database: 'connected' });
+    res.status(200).json({status: 'healthy', database: 'connected' });
   } catch (error) {
-    res.status(503).json({ status: 'unhealthy', database: 'disconnected' });
+    res.status(503).json({status: 'unhealthy', database: 'disconnected' });
   }
 });
 ```
 
-### Cloud Run ヘルス監視
+### Cloud Run Health Monitoring
 
 ```yaml
-# ヘルスチェック設定
+# Health Check Configuration
 spec:
-  template:
-    spec:
-      containers:
-      - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api:latest
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health/db
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
+template:
+spec:
+containers:
+- image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api:latest
+livenessProbe:
+httpGet:
+path: /health
+port: 3000
+initialDelaySeconds: 30
+periodSeconds: 10
+readinessProbe:
+httpGet:
+path: /health/db
+port: 3000
+initialDelaySeconds: 5
+periodSeconds: 5
 ```
 
-### ログ監視
+### Log Monitoring
 
 ```typescript
-// 構造化ログ出力
+// Structured Log Output
 import { logger } from '../infrastructure/logger';
 
 logger.info('Service started', {
-  service: 'civicship-api',
-  version: process.env.npm_package_version,
-  environment: process.env.NODE_ENV,
-  port: process.env.PORT || 3000
+service: 'civicship-api',
+version: process.env.npm_package_version,
+environment: process.env.NODE_ENV,
+port: process.env.PORT || 3000
 });
 
-// エラー追跡
+// Error Tracking
 logger.error('Database connection failed', {
-  error: error.message,
-  stack: error.stack,
-  service: 'civicship-api'
+error: error.message,
+stack: error.stack,
+service: 'civicship-api'
 });
 ```
 
-## セキュリティ考慮事項
+## Security Considerations
 
-### コンテナセキュリティ
+### Container Security
 
 ```dockerfile
-# セキュリティ強化されたDockerfile
+# Security-Enhanced Dockerfile
 FROM node:20-alpine
 
-# 非rootユーザーの作成
+# Create a Non-Root User
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
-# 依存関係のインストール
+# Install Dependencies
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-# アプリケーションファイルのコピー
+# Copy Application Files
 COPY --chown=nextjs:nodejs . .
 
-# 非rootユーザーに切り替え
+# Switch to non-root user
 USER nextjs
 
 EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
-### ネットワークセキュリティ
+### Network security
 
 ```yaml
-# VPC設定
+# VPC configuration
 metadata:
-  annotations:
-    run.googleapis.com/vpc-access-connector: projects/PROJECT_ID/locations/REGION/connectors/CONNECTOR_NAME
-    run.googleapis.com/vpc-access-egress: private-ranges-only
+annotations:
+run.googleapis.com/vpc-access-connector: projects/PROJECT_ID/locations/REGION/connectors/CONNECTOR_NAME
+run.googleapis.com/vpc-access-egress: private-ranges-only
 ```
 
-## トラブルシューティング
+## Troubleshooting
 
-### デプロイメント問題
+### Deployment issues
 
 ```bash
-# Cloud Run ログ確認
+# Check Cloud Run logs
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=civicship-api" --limit=50
 
-# サービス状態確認
+# Check service status
 gcloud run services describe civicship-api --region=asia-northeast1
 
-# リビジョン履歴確認
+# Check revision history
 gcloud run revisions list --service=civicship-api --region=asia-northeast1
 ```
 
-### パフォーマンス監視
+### Performance Monitoring
 
 ```bash
-# メトリクス確認
+# Check Metrics
 gcloud monitoring metrics list --filter="resource.type=cloud_run_revision"
 
-# アラート設定
+# Alerting Settings
 gcloud alpha monitoring policies create --policy-from-file=alerting-policy.yaml
 ```
 
-## 関連ドキュメント
+## Related Documentation
 
-- [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要
-- [インフラストラクチャガイド](./INFRASTRUCTURE.md) - 外部システム統合
-- [セキュリティガイド](./SECURITY.md) - セキュリティアーキテクチャ
-- [パフォーマンスガイド](./PERFORMANCE.md) - 最適化戦略
-- [環境変数ガイド](./ENVIRONMENT.md) - 環境設定
-- [トラブルシューティング](./TROUBLESHOOTING.md) - 問題解決ガイド
+- [Architecture Guide](./ARCHITECTURE.md) - System Design Overview
+- [Infrastructure Guide](./INFRASTRUCTURE.md) - External System Integration
+- [Security Guide](./SECURITY.md) - Security Architecture
+- [Performance Guide](./PERFORMANCE.md) - Optimization Strategies
+- [Environment Variable Guide](./ENVIRONMENT.md) - Environment Settings
+- [Troubleshooting](./TROUBLESHOOTING.md) - Problem Resolution Guide

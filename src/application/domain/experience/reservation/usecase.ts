@@ -138,6 +138,10 @@ export default class ReservationUseCase {
       return reservation;
     });
 
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
     await this.notificationService.pushReservationAppliedMessage(ctx, reservation);
     if (!requireApproval) {
       await this.notificationService.pushReservationAcceptedMessage(ctx, reservation);
@@ -169,7 +173,7 @@ export default class ReservationUseCase {
 
       await this.updateManyParticipationByReservationStatusChanged(
         ctx,
-        reservation.participations,
+        res.participations,
         ParticipationStatus.NOT_PARTICIPATING,
         ParticipationStatusReason.RESERVATION_CANCELED,
         tx,
@@ -195,6 +199,10 @@ export default class ReservationUseCase {
       }
     });
 
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
     await this.notificationService.pushReservationCanceledMessage(ctx, reservation);
     return ReservationPresenter.setStatus(reservation);
   }
@@ -206,7 +214,7 @@ export default class ReservationUseCase {
     const currentUserId = getCurrentUserId(ctx);
 
     const reservation = await ctx.issuer.public(ctx, async (tx) => {
-      const res = await this.reservationService.findReservationOrThrow(ctx, id);
+      const res = await this.reservationService.findReservationOrThrow(ctx, id, tx);
 
       const { availableParticipationId } = this.reservationValidator.validateJoinable(
         res,
@@ -310,6 +318,10 @@ export default class ReservationUseCase {
       return res;
     });
 
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
     if (rejectedReservation) {
       await this.notificationService.pushReservationRejectedMessage(
         ctx,
@@ -344,11 +356,13 @@ export default class ReservationUseCase {
       ctx,
       fromUserId,
       communityId,
+      tx,
     );
     const toWallet = await this.walletService.findMemberWalletOrThrow(
       ctx,
       toUserId,
       communityId,
+      tx,
     );
 
     const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(

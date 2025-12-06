@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import {
   evaluationHistoryInclude,
   PrismaEvaluationHistory,
@@ -9,53 +9,47 @@ import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/util
 import DataLoader from "dataloader";
 
 async function batchEvaluationHistoriesById(
-  issuer: PrismaClientIssuer,
+  prisma: PrismaClient,
   ids: readonly string[],
 ): Promise<(GqlEvaluationHistory | null)[]> {
-  const records = await issuer.internal((tx) =>
-    tx.evaluationHistory.findMany({
-      where: { id: { in: [...ids] } },
-      include: evaluationHistoryInclude,
-    }),
-  );
+  const records = await prisma.evaluationHistory.findMany({
+    where: { id: { in: [...ids] } },
+    include: evaluationHistoryInclude,
+  });
 
   const map = new Map(records.map((r) => [r.id, EvaluationHistoryPresenter.get(r)]));
   return ids.map((id) => map.get(id) ?? null);
 }
 
-export function createEvaluationHistoryLoader(issuer: PrismaClientIssuer) {
+export function createEvaluationHistoryLoader(prisma: PrismaClient) {
   return new DataLoader<string, GqlEvaluationHistory | null>((keys) =>
-    batchEvaluationHistoriesById(issuer, keys),
+    batchEvaluationHistoriesById(prisma, keys)
   );
 }
 
-export function createEvaluationHistoriesByEvaluationLoader(issuer: PrismaClientIssuer) {
+export function createEvaluationHistoriesByEvaluationLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"evaluationId", PrismaEvaluationHistory, GqlEvaluationHistory>(
     "evaluationId",
     async (evaluationIds) => {
-      return issuer.internal((tx) =>
-        tx.evaluationHistory.findMany({
-          where: {
-            evaluationId: { in: [...evaluationIds] },
-          },
-          include: evaluationHistoryInclude,
-        }),
-      );
+      return prisma.evaluationHistory.findMany({
+        where: {
+          evaluationId: { in: [...evaluationIds] },
+        },
+        include: evaluationHistoryInclude,
+      });
     },
     EvaluationHistoryPresenter.get,
   );
 }
 
-export function createEvaluationHistoriesCreatedByUserLoader(issuer: PrismaClientIssuer) {
+export function createEvaluationHistoriesCreatedByUserLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"createdBy", PrismaEvaluationHistory, GqlEvaluationHistory>(
     "createdBy",
     async (userIds) => {
-      return issuer.internal((tx) =>
-        tx.evaluationHistory.findMany({
-          where: { createdBy: { in: [...userIds] } },
-          include: evaluationHistoryInclude,
-        }),
-      );
+      return prisma.evaluationHistory.findMany({
+        where: { createdBy: { in: [...userIds] } },
+        include: evaluationHistoryInclude,
+      });
     },
     EvaluationHistoryPresenter.get,
   );

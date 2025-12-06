@@ -1,15 +1,13 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-export const createVcIssuanceRequestByEvaluationLoader = (issuer: PrismaClientIssuer) => {
+export const createVcIssuanceRequestByEvaluationLoader = (prisma: PrismaClient) => {
     return new DataLoader(async (evaluationIds: readonly string[]) => {
-        const vcIssuanceRequests = await issuer.internal((tx) =>
-            tx.vcIssuanceRequest.findMany({
-                where: {
-                    evaluationId: { in: evaluationIds as string[] }
-                }
-            })
-        );
+        const vcIssuanceRequests = await prisma.vcIssuanceRequest.findMany({
+            where: {
+                evaluationId: { in: evaluationIds as string[] }
+            }
+        });
 
         return evaluationIds.map(id =>
             vcIssuanceRequests.find(request => request.evaluationId === id) || null
@@ -17,26 +15,24 @@ export const createVcIssuanceRequestByEvaluationLoader = (issuer: PrismaClientIs
     });
 };
 
-export const createVcIssuanceRequestsByOpportunitySlotLoader = (issuer: PrismaClientIssuer) => {
+export const createVcIssuanceRequestsByOpportunitySlotLoader = (prisma: PrismaClient) => {
     return new DataLoader(async (opportunitySlotIds: readonly string[]) => {
-        const vcRequests = await issuer.internal((tx) =>
-            tx.vcIssuanceRequest.findMany({
-                where: {
-                    evaluation: {
-                        participation: {
-                            opportunitySlotId: { in: opportunitySlotIds as string[] }
-                        }
-                    }
-                },
-                include: {
-                    evaluation: {
-                        include: {
-                            participation: true
-                        }
+        const vcRequests = await prisma.vcIssuanceRequest.findMany({
+            where: {
+                evaluation: {
+                    participation: {
+                        opportunitySlotId: { in: opportunitySlotIds as string[] }
                     }
                 }
-            })
-        );
+            },
+            include: {
+                evaluation: {
+                    include: {
+                        participation: true
+                    }
+                }
+            }
+        });
 
         // opportunitySlotIdごとにグループ化
         const grouped = vcRequests.reduce((acc, request) => {

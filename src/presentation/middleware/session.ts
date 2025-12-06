@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { auth } from "@/infrastructure/libs/firebase";
 import logger from "@/infrastructure/logging";
+import { SESSION_EXPIRATION_MS, SESSION_COOKIE_NAME } from "@/config/constants";
 
 export async function handleSessionLogin(req: Request, res: Response) {
   const { idToken } = req.body;
@@ -22,7 +23,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
     return res.status(400).json({ error: "Missing idToken" });
   }
 
-  const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+  const expiresIn = SESSION_EXPIRATION_MS;
 
   try {
     logger.debug("🧩 [handleSessionLogin] Creating session cookie from Firebase idToken", {
@@ -35,7 +36,11 @@ export async function handleSessionLogin(req: Request, res: Response) {
       expiresAt: new Date(Date.now() + expiresIn).toISOString(),
     });
 
-    res.cookie("session", sessionCookie, {
+    // Clear legacy "session" cookie to migrate clients to "__session"
+    res.clearCookie("session", { path: "/" });
+
+    // Set canonical "__session" cookie for Firebase Hosting compliance
+    res.cookie(SESSION_COOKIE_NAME, sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: true,
@@ -44,10 +49,11 @@ export async function handleSessionLogin(req: Request, res: Response) {
     });
 
     logger.debug("🍪 [handleSessionLogin] Cookie set on response", {
-      cookieName: "session",
+      cookieName: SESSION_COOKIE_NAME,
       secure: true,
       sameSite: "none",
       path: "/",
+      maxAge: expiresIn,
     });
 
     return res.json({ status: "success" });

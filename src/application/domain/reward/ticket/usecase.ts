@@ -86,7 +86,7 @@ export default class TicketUseCase {
     const tickets = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       const [ownerWallet, claimerWallet] = await Promise.all([
-        this.walletService.findMemberWalletOrThrow(ctx, ticketOwnerId, communityId),
+        this.walletService.findMemberWalletOrThrow(ctx, ticketOwnerId, communityId, tx),
         this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx),
       ]);
 
@@ -125,6 +125,10 @@ export default class TicketUseCase {
       );
     });
 
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
     return TicketPresenter.claim(tickets);
   }
 
@@ -138,7 +142,7 @@ export default class TicketUseCase {
       input.communityId,
     );
 
-    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+    const result = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.walletValidator.validateTransfer(
         input.pointsRequired,
         memberWallet,
@@ -162,6 +166,12 @@ export default class TicketUseCase {
       );
       return TicketPresenter.purchase(result);
     });
+
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
+    return result;
   }
 
   async memberUseTicket(
@@ -187,7 +197,7 @@ export default class TicketUseCase {
       input.communityId,
     );
 
-    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+    const result = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.walletValidator.validateTransfer(
         input.pointsRequired,
         communityWallet,
@@ -205,5 +215,11 @@ export default class TicketUseCase {
       const result = await this.ticketService.refundTicket(ctx, id, transaction.id, tx);
       return TicketPresenter.refund(result);
     });
+
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
+    return result;
   }
 }

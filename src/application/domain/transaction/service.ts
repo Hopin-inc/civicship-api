@@ -42,7 +42,6 @@ export default class TransactionService implements ITransactionService {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.issueCommunityPoint(toWalletId, transferPoints, currentUserId, comment);
     const res = await this.repository.create(ctx, data, tx);
-    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
@@ -57,7 +56,6 @@ export default class TransactionService implements ITransactionService {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.grantCommunityPoint(fromWalletId, transferPoints, memberWalletId, currentUserId, comment);
     const res = await this.repository.create(ctx, data, tx);
-    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
@@ -72,7 +70,6 @@ export default class TransactionService implements ITransactionService {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId, comment);
     const transaction = await this.repository.create(ctx, data, tx);
-    await this.repository.refreshCurrentPoints(ctx, tx);
     return transaction;
   }
 
@@ -88,7 +85,6 @@ export default class TransactionService implements ITransactionService {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.reservationCreated(fromWalletId, toWalletId, transferPoints, currentUserId, reservationId, reason);
     const transaction = await this.repository.create(ctx, data, tx);
-    await this.repository.refreshCurrentPoints(ctx, tx);
     return transaction;
   }
 
@@ -109,7 +105,6 @@ export default class TransactionService implements ITransactionService {
       currentUserId,
     );
     const res = await this.repository.create(ctx, data, tx);
-    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
@@ -123,7 +118,6 @@ export default class TransactionService implements ITransactionService {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.purchaseTicket(fromWalletId, toWalletId, transferPoints, currentUserId);
     const res = await this.repository.create(ctx, data, tx);
-    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
@@ -137,7 +131,6 @@ export default class TransactionService implements ITransactionService {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.refundTicket(fromWalletId, toWalletId, transferPoints, currentUserId);
     const res = await this.repository.create(ctx, data, tx);
-    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 

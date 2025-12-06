@@ -146,4 +146,17 @@ export default class OpportunityService {
       );
     }
   }
+
+  async isOwnedByUser(ctx: IContext, opportunityId: string, userId: string): Promise<boolean> {
+    const count = await ctx.issuer.public(ctx, (tx) => {
+      return tx.opportunity.count({
+        where: {
+          id: opportunityId,
+          createdBy: userId,
+        },
+      });
+    });
+
+    return count > 0;
+  }
 }

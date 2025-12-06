@@ -19,9 +19,9 @@ export interface IParticipationService {
     include?: T,
   ): Promise<PrismaParticipationDetail[]>;
 
-  findParticipation(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
+  findParticipation(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaParticipationDetail | null>;
 
-  findParticipationOrThrow(ctx: IContext, id: string): Promise<PrismaParticipationDetail>;
+  findParticipationOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaParticipationDetail>;
 
   bulkCreateParticipations(
     ctx: IContext,
@@ -85,7 +85,7 @@ export interface IParticipationRepository {
     cursor?: string,
   ): Promise<PrismaParticipationForPortfolioInclude[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
+  find(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaParticipationDetail | null>;
   findWithSlot(ctx: IContext, id: string): Promise<PrismaParticipationIncludeSlot | null>;
 
   create(

@@ -39,6 +39,8 @@ export default class TestDataSourceHelper {
     await this.db.transaction.deleteMany();
 
     await this.db.nftMint.deleteMany();
+    await this.db.nftInstance.deleteMany();
+    await this.db.nftWallet.deleteMany();
 
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
@@ -250,6 +252,13 @@ export default class TestDataSourceHelper {
   // ======== MaterializedView Refresh (ポイント集計など) =========
   static async refreshCurrentPoints() {
     return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
+  }
+
+  static async getCurrentPoints(walletId: string): Promise<number | null> {
+    const result = await this.db.currentPointView.findUnique({
+      where: { walletId },
+    });
+    return result?.currentPoint ? Number(result.currentPoint) : null;
   }
 
   // ========== Participation関連 (不要になれば削除) =========

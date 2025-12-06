@@ -57,7 +57,13 @@ export default class ParticipationRepository implements IParticipationRepository
     });
   }
 
-  async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return tx.participation.findUnique({
+        where: { id },
+        select: participationSelectDetail,
+      });
+    }
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findUnique({
         where: { id },

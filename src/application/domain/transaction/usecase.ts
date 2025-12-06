@@ -81,6 +81,9 @@ export default class TransactionUseCase {
         );
       },
     );
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
     return TransactionPresenter.issueCommunityPoint(res);
   }
 
@@ -130,6 +133,11 @@ export default class TransactionUseCase {
     });
 
     const communityName = community?.name ?? "コミュニティ";
+    
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+    
     this.notificationService
       .pushPointGrantReceivedMessage(
         ctx,
@@ -166,6 +174,7 @@ export default class TransactionUseCase {
         ctx,
         toUserId,
         communityId,
+        tx,
       );
 
       const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
@@ -182,6 +191,10 @@ export default class TransactionUseCase {
         tx,
         comment,
       );
+    });
+
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
     const fromUserName = ctx.currentUser?.name ?? "ユーザー";

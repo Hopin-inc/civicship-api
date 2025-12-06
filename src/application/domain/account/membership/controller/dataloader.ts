@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlMembership } from "@/types/graphql";
 import {
   membershipSelectDetail,
@@ -12,20 +12,18 @@ import MembershipPresenter from "@/application/domain/account/membership/present
 
 type MembershipKey = { userId: string; communityId: string };
 
-export function createMembershipLoader(issuer: PrismaClientIssuer) {
+export function createMembershipLoader(prisma: PrismaClient) {
   return createLoaderByCompositeKey<MembershipKey, PrismaMembershipDetail, GqlMembership>(
     async (keys) => {
-      return issuer.internal((tx) =>
-        tx.membership.findMany({
-          where: {
-            OR: keys.map(({ userId, communityId }) => ({
-              userId,
-              communityId,
-            })),
-          },
-          select: membershipSelectDetail,
-        }),
-      );
+      return prisma.membership.findMany({
+        where: {
+          OR: keys.map(({ userId, communityId }) => ({
+            userId,
+            communityId,
+          })),
+        },
+        select: membershipSelectDetail,
+      });
     },
     (record) => ({
       userId: record.userId,
@@ -35,33 +33,29 @@ export function createMembershipLoader(issuer: PrismaClientIssuer) {
   );
 }
 
-export function createMembershipsByUserLoader(issuer: PrismaClientIssuer) {
+export function createMembershipsByUserLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"userId", PrismaMembershipDetail, GqlMembership>(
     "userId",
     async (userIds) => {
-      return issuer.internal((tx) =>
-        tx.membership.findMany({
-          where: {
-            userId: { in: [...userIds] },
-          },
-          select: membershipSelectDetail,
-        }),
-      );
+      return prisma.membership.findMany({
+        where: {
+          userId: { in: [...userIds] },
+        },
+        select: membershipSelectDetail,
+      });
     },
     MembershipPresenter.get,
   );
 }
 
-export function createMembershipsByCommunityLoader(issuer: PrismaClientIssuer) {
+export function createMembershipsByCommunityLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"communityId", PrismaMembershipDetail, GqlMembership>(
     "communityId",
     async (communityIds) => {
-      return issuer.internal((tx) =>
-        tx.membership.findMany({
-          where: { communityId: { in: [...communityIds] } },
-          select: membershipSelectDetail,
-        }),
-      );
+      return prisma.membership.findMany({
+        where: { communityId: { in: [...communityIds] } },
+        select: membershipSelectDetail,
+      });
     },
     MembershipPresenter.get,
   );

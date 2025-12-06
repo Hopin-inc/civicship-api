@@ -1,5 +1,5 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlParticipationStatusHistory } from "@/types/graphql";
 import {
   participationStatusHistorySelectDetail,
@@ -10,31 +10,29 @@ import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/util
 import { ParticipationStatusHistory } from "@prisma/client";
 
 async function batchParticipationStatusHistoriesById(
-  issuer: PrismaClientIssuer,
+  prisma: PrismaClient,
   ids: readonly string[],
 ): Promise<(GqlParticipationStatusHistory | null)[]> {
-  const records = (await issuer.internal(async (tx) => {
-    return tx.participationStatusHistory.findMany({
-      where: { id: { in: [...ids] } },
-      select: participationStatusHistorySelectDetail,
-    });
+  const records = (await prisma.participationStatusHistory.findMany({
+    where: { id: { in: [...ids] } },
+    select: participationStatusHistorySelectDetail,
   })) as PrismaParticipationStatusHistoryDetail[];
 
   const map = new Map(
-    records.map((record) => [record.id, ParticipationStatusHistoryPresenter.get(record)]),
+    records.map((record) => [record.id, ParticipationStatusHistoryPresenter.get(record)])
   );
 
   return ids.map((id) => map.get(id) ?? null);
 }
 
-export function createParticipationStatusHistoryLoader(issuer: PrismaClientIssuer) {
+export function createParticipationStatusHistoryLoader(prisma: PrismaClient) {
   return new DataLoader<string, GqlParticipationStatusHistory | null>((keys) =>
-    batchParticipationStatusHistoriesById(issuer, keys),
+    batchParticipationStatusHistoriesById(prisma, keys)
   );
 }
 
 export function createParticipationStatusHistoriesByParticipationLoader(
-  issuer: PrismaClientIssuer,
+  prisma: PrismaClient,
 ) {
   return createHasManyLoaderByKey<
     "participationId",
@@ -43,13 +41,11 @@ export function createParticipationStatusHistoriesByParticipationLoader(
   >(
     "participationId",
     async (participationIds) => {
-      return issuer.internal((tx) =>
-        tx.participationStatusHistory.findMany({
-          where: {
-            participationId: { in: [...participationIds] },
-          },
-        }),
-      );
+      return prisma.participationStatusHistory.findMany({
+        where: {
+          participationId: { in: [...participationIds] },
+        },
+      });
     },
     ParticipationStatusHistoryPresenter.get,
   );

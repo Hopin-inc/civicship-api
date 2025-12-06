@@ -6,49 +6,50 @@ import * as ReservationLoaders from "@/application/domain/experience/reservation
 import * as EvaluationLoaders from "@/application/domain/experience/evaluation/controller/dataloader";
 import * as EvaluationHistoryLoaders from "@/application/domain/experience/evaluation/evaluationHistory/controller/dataloader";
 import * as VcIssuanceRequestLoaders from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-export function createExperienceLoaders(issuer: PrismaClientIssuer) {
+export function createExperienceLoaders(prisma: PrismaClient) {
   return {
-    opportunity: OpportunityLoaders.createOpportunityLoader(issuer),
-    opportunitiesByArticle: OpportunityLoaders.createOpportunitiesByArticleLoader(issuer),
-    opportunitiesByUtility: OpportunityLoaders.createOpportunitiesByUtilityLoader(issuer),
-    opportunitiesByUser: OpportunityLoaders.createOpportunitiesCreatedByUserLoader(issuer),
-    opportunitiesByCommunity: OpportunityLoaders.createOpportunitiesByCommunityLoader(issuer),
-    opportunitiesByPlace: OpportunityLoaders.createOpportunitiesByPlaceLoader(issuer),
+    opportunity: OpportunityLoaders.createOpportunityLoader(prisma),
+    opportunitiesByArticle: OpportunityLoaders.createOpportunitiesByArticleLoader(prisma),
+    opportunitiesByUtility: OpportunityLoaders.createOpportunitiesByUtilityLoader(prisma),
+    opportunitiesByUser: OpportunityLoaders.createOpportunitiesCreatedByUserLoader(prisma),
+    opportunitiesByCommunity: OpportunityLoaders.createOpportunitiesByCommunityLoader(prisma),
+    opportunitiesByPlace: OpportunityLoaders.createOpportunitiesByPlaceLoader(prisma),
 
-    isReservableWithTicket: OpportunityLoaders.createIsReservableWithTicketLoader(issuer),
+    isReservableWithTicket: OpportunityLoaders.createIsReservableWithTicketLoader(prisma),
 
-    opportunitySlot: OpportunitySlotLoaders.createOpportunitySlotLoader(issuer),
-    opportunitySlotByOpportunity: OpportunitySlotLoaders.createSlotsByOpportunityLoader(issuer),
+    opportunitySlot: OpportunitySlotLoaders.createOpportunitySlotLoader(prisma),
+    opportunitySlotByOpportunity: OpportunitySlotLoaders.createSlotsByOpportunityLoader(prisma),
 
-    reservation: ReservationLoaders.createReservationLoader(issuer),
+    reservation: ReservationLoaders.createReservationLoader(prisma),
     reservationByOpportunitySlot:
-      ReservationLoaders.createReservationsByOpportunitySlotLoader(issuer),
-    reservationsByUser: ReservationLoaders.createReservationsCreatedByUserLoader(issuer),
+      ReservationLoaders.createReservationsByOpportunitySlotLoader(prisma),
+    reservationsByUser: ReservationLoaders.createReservationsCreatedByUserLoader(prisma),
 
-    participation: ParticipationLoaders.createParticipationLoader(issuer),
+    participation: ParticipationLoaders.createParticipationLoader(prisma),
     participationsByReservation:
-      ParticipationLoaders.createParticipationsByReservationLoader(issuer),
-    participationsByUser: ParticipationLoaders.createParticipationsByUserLoader(issuer),
-    participationsByCommunity: ParticipationLoaders.createParticipationsByCommunityLoader(issuer),
+      ParticipationLoaders.createParticipationsByReservationLoader(prisma),
+    participationsByUser: ParticipationLoaders.createParticipationsByUserLoader(prisma),
+    participationsByCommunity: ParticipationLoaders.createParticipationsByCommunityLoader(prisma),
 
     participationStatusHistory:
-      ParticipationStatusHistoryLoaders.createParticipationStatusHistoryLoader(issuer),
+      ParticipationStatusHistoryLoaders.createParticipationStatusHistoryLoader(prisma),
     participationStatusHistoriesByParticipation:
       ParticipationStatusHistoryLoaders.createParticipationStatusHistoriesByParticipationLoader(
-        issuer,
+        prisma,
       ),
 
-    evaluation: EvaluationLoaders.createEvaluationLoader(issuer),
-    evaluationsByUser: EvaluationLoaders.createEvaluationsByUserLoader(issuer),
+    evaluation: EvaluationLoaders.createEvaluationLoader(prisma),
+    evaluationsByUser: EvaluationLoaders.createEvaluationsByUserLoader(prisma),
 
-    evaluationHistory: EvaluationHistoryLoaders.createEvaluationHistoryLoader(issuer),
+    evaluationHistory: EvaluationHistoryLoaders.createEvaluationHistoryLoader(prisma),
     evaluationHistoriesByEvaluation:
-      EvaluationHistoryLoaders.createEvaluationHistoriesByEvaluationLoader(issuer),
+      EvaluationHistoryLoaders.createEvaluationHistoriesByEvaluationLoader(prisma),
     evaluationHistoriesCreatedByUser:
-      EvaluationHistoryLoaders.createEvaluationHistoriesCreatedByUserLoader(issuer),
+      EvaluationHistoryLoaders.createEvaluationHistoriesCreatedByUserLoader(prisma),
 
-    vcIssuanceRequestByEvaluation: VcIssuanceRequestLoaders.createVcIssuanceRequestByEvaluationLoader(issuer),
+    vcIssuanceRequestByEvaluation:
+      VcIssuanceRequestLoaders.createVcIssuanceRequestByEvaluationLoader(prisma),
   };
 }

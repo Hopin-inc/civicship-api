@@ -27,23 +27,23 @@ export default class WalletService {
     return this.repository.find(ctx, id);
   }
 
-  async findMemberWallet(ctx: IContext, userId: string, communityId: string) {
-    return this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
+  async findMemberWallet(ctx: IContext, userId: string, communityId: string, tx?: Prisma.TransactionClient) {
+    return this.repository.findFirstExistingMemberWallet(ctx, communityId, userId, tx);
   }
 
-  async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string, retried: boolean = false) {
-    const wallet = await this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
+  async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string, tx?: Prisma.TransactionClient, retried: boolean = false) {
+    const wallet = await this.repository.findFirstExistingMemberWallet(ctx, communityId, userId, tx);
     if (!wallet) {
       throw new NotFoundError("Member wallet", { userId, communityId });
     }
     const refreshed = await this.refreshCurrentPointViewIfNotExist(ctx, wallet);
     return refreshed && !retried
-      ? await this.findMemberWalletOrThrow(ctx, userId, communityId, true)
+      ? await this.findMemberWalletOrThrow(ctx, userId, communityId, tx, true)
       : wallet;
   }
 
-  async findCommunityWalletOrThrow(ctx: IContext, communityId: string) {
-    const wallet = await this.repository.findCommunityWallet(ctx, communityId);
+  async findCommunityWalletOrThrow(ctx: IContext, communityId: string, tx?: Prisma.TransactionClient) {
+    const wallet = await this.repository.findCommunityWallet(ctx, communityId, tx);
     if (!wallet?.id) {
       throw new NotFoundError("Community wallet", { communityId });
     }
@@ -75,6 +75,7 @@ export default class WalletService {
       ctx,
       communityId,
       userId,
+      tx,
     );
     if (existingWallet) {
       return existingWallet;
@@ -93,10 +94,35 @@ export default class WalletService {
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId);
+    const memberWallet = await this.findMemberWalletOrThrow(ctx, userId, communityId, tx);
     return this.repository.delete(ctx, memberWallet.id, tx);
   }
 
+  /**
+   * Refreshes the materialized view for current points if it doesn't exist.
+   * 
+   * IMPORTANT: This method intentionally runs in a SEPARATE transaction with RLS bypass,
+   * even when called from within a parent transaction. This is by design because:
+   * 
+   * 1. RLS Bypass Required: The materialized view refresh must run with app.rls_bypass='on'
+   *    to update system-wide derived state. Parent transactions (onlyBelongingCommunity)
+   *    have app.rls_bypass='off', so passing the parent tx would break the refresh.
+   * 
+   * 2. Performance & Lock Isolation: Refreshing a materialized view is expensive and can
+   *    take significant time. Running it inside the parent business transaction would:
+   *    - Extend lock duration and increase deadlock risk
+   *    - Block the critical path of the business transaction
+   *    - Reduce throughput under load
+   * 
+   * 3. Eventual Consistency: The re-fetch pattern (with retried flag) handles the case
+   *    where the refresh hasn't completed yet. We accept eventual consistency here.
+   * 
+   * When switching to set_config(..., TRUE), this pattern remains correct and necessary.
+   * 
+   * @param ctx - The context
+   * @param wallet - The wallet to check
+   * @returns true if refresh was triggered, false if currentPointView already exists
+   */
   private async refreshCurrentPointViewIfNotExist(ctx: IContext, wallet: PrismaWallet) {
     if (wallet.currentPointView === null) {
       await ctx.issuer.public(ctx, tx => {

@@ -37,12 +37,12 @@ export default class MembershipService {
     return this.repository.findDetail(ctx, { userId_communityId: { userId, communityId } });
   }
 
-  async findMembership(ctx: IContext, userId: string, communityId: string) {
-    return this.repository.find(ctx, { userId_communityId: { userId, communityId } });
+  async findMembership(ctx: IContext, userId: string, communityId: string, tx?: Prisma.TransactionClient) {
+    return this.repository.find(ctx, { userId_communityId: { userId, communityId } }, tx);
   }
 
-  async findMembershipOrThrow(ctx: IContext, userId: string, communityId: string) {
-    const membership = await this.findMembership(ctx, userId, communityId);
+  async findMembershipOrThrow(ctx: IContext, userId: string, communityId: string, tx?: Prisma.TransactionClient) {
+    const membership = await this.findMembership(ctx, userId, communityId, tx);
     if (!membership) {
       throw new NotFoundError("Membership", { userId, communityId });
     }
@@ -64,7 +64,7 @@ export default class MembershipService {
   ) {
     let membership = await this.repository.find(ctx, {
       userId_communityId: { userId: joinedUserId ?? currentUserId, communityId },
-    });
+    }, tx);
 
     if (!membership) {
       const data = this.converter.join(currentUserId, communityId, joinedUserId);
@@ -95,7 +95,7 @@ export default class MembershipService {
     tx: Prisma.TransactionClient,
   ) {
     const currentUserId = this.currentUserId(ctx);
-    const membership = await this.findMembershipOrThrow(ctx, userId, communityId);
+    const membership = await this.findMembershipOrThrow(ctx, userId, communityId, tx);
 
     const data = this.converter.update(status, reason, membership.role, currentUserId);
     return this.repository.update(ctx, { userId_communityId: { userId, communityId } }, data, tx);
@@ -108,7 +108,7 @@ export default class MembershipService {
     tx: Prisma.TransactionClient,
   ) {
     const currentUserId = this.currentUserId(ctx);
-    await this.findMembershipOrThrow(ctx, userId, communityId);
+    await this.findMembershipOrThrow(ctx, userId, communityId, tx);
 
     const data = this.converter.update(
       GqlMembershipStatus.Joined,
@@ -127,7 +127,7 @@ export default class MembershipService {
   ) {
     const membership = await this.repository.find(ctx, {
       userId_communityId: { userId, communityId },
-    });
+    }, tx);
     if (!membership) {
       throw new NotFoundError("Membership", { userId, communityId });
     }

@@ -73,6 +73,11 @@ export interface ITransactionService {
     toWalletId: string,
     transferPoints: number,
   ): Promise<PrismaTransactionDetail>;
+
+  refreshCurrentPoint(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+  ): Promise<refreshMaterializedViewCurrentPoints.Result[]>;
 }
 
 export interface ITransactionRepository {

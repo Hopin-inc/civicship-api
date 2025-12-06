@@ -3,7 +3,6 @@ import { Prisma } from "@prisma/client";
 export const userAuthInclude = Prisma.validator<Prisma.UserInclude>()({
   identities: true,
   memberships: true,
-  opportunitiesCreatedByMe: true,
 });
 
 export const userInclude = Prisma.validator<Prisma.UserInclude>()({

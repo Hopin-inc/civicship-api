@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { createAccountLoaders } from "@/presentation/graphql/dataloader/domain/account";
 import { createExperienceLoaders } from "@/presentation/graphql/dataloader/domain/experience";
 import { createRewardLoaders } from "@/presentation/graphql/dataloader/domain/reward";
@@ -6,14 +6,14 @@ import { createContentLoaders } from "@/presentation/graphql/dataloader/domain/c
 import { createTransactionLoaders } from "@/presentation/graphql/dataloader/domain/transaction";
 import { createLocationLoaders } from "@/presentation/graphql/dataloader/domain/location";
 
-export function createLoaders(issuer: PrismaClientIssuer) {
+export function createLoaders(prisma: PrismaClient) {
   return {
-    ...createAccountLoaders(issuer),
-    ...createExperienceLoaders(issuer),
-    ...createRewardLoaders(issuer),
-    ...createContentLoaders(issuer),
-    ...createTransactionLoaders(issuer),
-    ...createLocationLoaders(issuer),
+    ...createAccountLoaders(prisma),
+    ...createExperienceLoaders(prisma),
+    ...createRewardLoaders(prisma),
+    ...createContentLoaders(prisma),
+    ...createTransactionLoaders(prisma),
+    ...createLocationLoaders(prisma),
   };
 }
 

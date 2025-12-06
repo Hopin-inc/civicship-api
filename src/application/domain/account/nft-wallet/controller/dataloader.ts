@@ -1,5 +1,5 @@
 import NftWalletPresenter from "@/application/domain/account/nft-wallet/presenter";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import DataLoader from "dataloader";
 import { nftWalletSelectDetail } from "@/application/domain/account/nft-wallet/data/type";
 
@@ -11,14 +11,12 @@ type NftWalletWithoutUser = {
     updatedAt: Date | null;
 };
 
-export function createNftWalletByUserIdLoader(issuer: PrismaClientIssuer) {
+export function createNftWalletByUserIdLoader(prisma: PrismaClient) {
     return new DataLoader<string, NftWalletWithoutUser | null>(async (userIds) => {
-        const records = await issuer.internal((tx) =>
-            tx.nftWallet.findMany({
-                where: { userId: { in: [...userIds] } },
-                select: nftWalletSelectDetail,
-            }),
-        );
+        const records = await prisma.nftWallet.findMany({
+            where: { userId: { in: [...userIds] } },
+            select: nftWalletSelectDetail,
+        });
 
         const map = new Map<string, NftWalletWithoutUser>();
         for (const record of records) {
