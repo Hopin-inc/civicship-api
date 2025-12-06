@@ -14,7 +14,10 @@ extend type Mutation {
         permission: CheckIsSelfPermissionInput!
     ): LinkPhoneAuthPayload
 
-    storePhoneAuthToken(input: StorePhoneAuthTokenInput!): StorePhoneAuthTokenPayload
+    storePhoneAuthToken(
+        input: StorePhoneAuthTokenInput!
+        permission: CheckIsSelfPermissionInput!
+    ): StorePhoneAuthTokenPayload
     @authz(rules: [IsSelf])
 
     identityCheckPhoneUser(
