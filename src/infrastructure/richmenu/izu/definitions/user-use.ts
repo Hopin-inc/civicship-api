@@ -1,3 +1,4 @@
+import { LineRichMenuType } from "@prisma/client";
 import { RichMenuDefinition } from "../../types";
 
 export const userUseMenu: RichMenuDefinition = {
@@ -103,4 +104,5 @@ export const userUseMenu: RichMenuDefinition = {
   ],
   alias: "user-use",
   imagePath: "images/user_menu_use.png",
+  roleEntryFor: LineRichMenuType.USER,
 };
