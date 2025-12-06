@@ -120,23 +120,14 @@ async function main(): Promise<void> {
   const prisma = new PrismaClient();
 
   try {
-    if (options.all) {
-      const communities = getAllCommunityIds();
-      for (const communityId of communities) {
-        await deployCommunity(
-          prisma,
-          communityId,
-          options.dryRun ?? false,
-          options.verbose ?? false,
-        );
-      }
-    } else if (options.community) {
-      await deployCommunity(
-        prisma,
-        options.community,
-        options.dryRun ?? false,
-        options.verbose ?? false,
-      );
+    const communitiesToDeploy = options.all
+      ? getAllCommunityIds()
+      : options.community
+        ? [options.community]
+        : [];
+
+    for (const communityId of communitiesToDeploy) {
+      await deployCommunity(prisma, communityId, options.dryRun ?? false, options.verbose ?? false);
     }
   } finally {
     await prisma.$disconnect();
