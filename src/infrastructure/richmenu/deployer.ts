@@ -26,7 +26,7 @@ function getMimeType(imagePath: string): string {
 export async function deployRichMenu(
   ctx: DeployRichMenuContext,
   menu: RichMenuDefinition,
-): Promise<DeployMenuResult> {
+): Promise<void> {
   const { lineClient, lineBlobClient, prisma, communityBasePath, liffBaseUrl, configId } = ctx;
 
   const resolvedMenu = resolvePlaceholders(menu, liffBaseUrl);
@@ -73,7 +73,6 @@ export async function deployRichMenu(
   });
   logger.info(`Created alias: ${menu.alias} -> ${richMenuId}`);
 
-  let dbSaved = false;
   if (menu.roleEntryFor) {
     await prisma.communityLineRichMenuConfig.upsert({
       where: {
@@ -91,7 +90,6 @@ export async function deployRichMenu(
         richMenuId,
       },
     });
-    dbSaved = true;
     logger.info(`Saved to DB: ${menu.alias} as ${menu.roleEntryFor}`);
   }
 
@@ -99,13 +97,6 @@ export async function deployRichMenu(
     await lineClient.setDefaultRichMenu(richMenuId);
     logger.info(`Set default rich menu: ${menu.alias}`);
   }
-
-  return {
-    alias: menu.alias,
-    richMenuId,
-    dbSaved,
-    isDefault: menu.isDefault ?? false,
-  };
 }
 
 export async function deployRichMenus(
