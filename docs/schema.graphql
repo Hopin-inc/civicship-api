@@ -691,7 +691,7 @@ type Mutation {
   reservationCreate(input: ReservationCreateInput!): ReservationCreatePayload
   reservationJoin(id: ID!): ReservationSetStatusPayload
   reservationReject(id: ID!, input: ReservationRejectInput!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
-  storePhoneAuthToken(input: StorePhoneAuthTokenInput!): StorePhoneAuthTokenPayload
+  storePhoneAuthToken(input: StorePhoneAuthTokenInput!, permission: CheckIsSelfPermissionInput!): StorePhoneAuthTokenPayload
   ticketClaim(input: TicketClaimInput!): TicketClaimPayload
   ticketIssue(input: TicketIssueInput!, permission: CheckCommunityPermissionInput!): TicketIssuePayload
   ticketPurchase(input: TicketPurchaseInput!, permission: CheckCommunityPermissionInput!): TicketPurchasePayload
