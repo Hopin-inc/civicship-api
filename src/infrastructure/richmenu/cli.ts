@@ -84,10 +84,15 @@ async function deployCommunity(
     channelAccessToken: lineConfig.accessToken,
   });
 
+  const lineBlobClient = new messagingApi.MessagingApiBlobClient({
+    channelAccessToken: lineConfig.accessToken,
+  });
+
   const communityBasePath = path.resolve(process.cwd(), "src/infrastructure/richmenu", communityId);
 
   const ctx: DeployRichMenuContext = {
     lineClient,
+    lineBlobClient,
     prisma,
     communityBasePath,
     liffBaseUrl: lineConfig.liffBaseUrl,
@@ -141,7 +146,17 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
-  logger.error("Deployment failed", { error });
+main().catch((error: unknown) => {
+  if (error instanceof Error) {
+    logger.error("Deployment failed", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
+    console.error(error);
+  } else {
+    logger.error("Deployment failed", { error: String(error) });
+    console.error(error);
+  }
   process.exit(1);
 });
