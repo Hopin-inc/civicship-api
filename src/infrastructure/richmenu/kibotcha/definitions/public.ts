@@ -20,7 +20,7 @@ export const publicMenu: RichMenuDefinition = {
       action: {
         type: "uri",
         label: "マイページ",
-        uri: "https://liff.line.me/2007594504-p9d67D74/users/me",
+        uri: "${LIFF_BASE_URL}/users/me",
       },
     },
     {
