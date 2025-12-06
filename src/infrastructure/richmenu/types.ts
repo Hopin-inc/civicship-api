@@ -58,6 +58,7 @@ export interface CommunityRichMenuConfig {
 
 export interface DeployRichMenuContext {
   lineClient: messagingApi.MessagingApiClient;
+  lineBlobClient: messagingApi.MessagingApiBlobClient;
   prisma: PrismaClient;
   communityBasePath: string;
   liffBaseUrl: string;

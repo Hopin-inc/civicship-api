@@ -32,7 +32,7 @@ export async function deployRichMenu(
   ctx: DeployRichMenuContext,
   menu: RichMenuDefinition,
 ): Promise<DeployMenuResult> {
-  const { lineClient, prisma, communityBasePath, liffBaseUrl, configId } = ctx;
+  const { lineClient, lineBlobClient, prisma, communityBasePath, liffBaseUrl, configId } = ctx;
 
   const resolvedMenu = resolvePlaceholders(menu, liffBaseUrl);
 
@@ -63,10 +63,11 @@ export async function deployRichMenu(
   const imagePath = path.resolve(communityBasePath, menu.imagePath);
   if (fs.existsSync(imagePath)) {
     const imageBuffer = fs.readFileSync(imagePath);
-    const mimeType = getMimeType(imagePath);
+    const imageBlob = new Blob([imageBuffer], { type: getMimeType(imagePath) });
 
-    await lineClient.setRichMenuImage(richMenuId, imageBuffer, mimeType);
-    logger.info(`Uploaded image for ${menu.alias}: ${imagePath}`);
+    logger.info(`Uploading image for ${menu.alias}: ${imagePath}`);
+    await lineBlobClient.setRichMenuImage(richMenuId, imageBlob);
+    logger.info(`Uploaded image for ${menu.alias}`);
   } else {
     logger.warn(`Image not found for ${menu.alias}: ${imagePath}`);
   }
