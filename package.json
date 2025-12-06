@@ -26,7 +26,8 @@
     "db:studio": "prisma studio --schema src/infrastructure/prisma/schema.prisma",
     "gql:generate": "graphql-codegen --config codegen.yaml",
     "container:up": "ls src/infrastructure/prisma/migrations/*/migration.sql | sort | awk -F'/' '{print \"cp \"$0\" ./container/docker/postgresql/init/\"$(NF-2)\"_\"$(NF-1)\"_\"$(NF)}' | bash | docker-compose up -d",
-    "container:down": "docker-compose down --rmi all --volumes --remove-orphans"
+    "container:down": "docker-compose down --rmi all --volumes --remove-orphans",
+    "richmenu:deploy": "dotenvx run -f .env -- tsx src/infrastructure/richmenu/cli.ts"
   },
   "keywords": [],
   "author": "",
