@@ -1,7 +1,7 @@
 import { Language } from "@prisma/client";
 import dayjs from "dayjs";
-import "dayjs/locale/ja";
-import "dayjs/locale/en";
+import "dayjs/locale/ja.js";
+import "dayjs/locale/en.js";
 
 /**
  * Convert Language enum to locale string for Intl APIs
