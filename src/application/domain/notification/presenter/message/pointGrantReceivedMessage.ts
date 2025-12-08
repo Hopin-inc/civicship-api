@@ -52,7 +52,7 @@ function buildBody(params: PointGrantReceivedParams): messagingApi.FlexBox {
 function buildTitle(language: Language): messagingApi.FlexText {
   return {
     type: "text",
-    text: language === Language.JA ? "ポイントの受け取り" : "Points Received",
+    text: language === Language.JA ? "ポイントの付与" : "Points Granted",
     size: "xs",
     color: "#1DB446",
     weight: "bold",
