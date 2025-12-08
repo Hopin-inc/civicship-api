@@ -43,7 +43,7 @@ function buildBody(params: PointDonationReceivedParams): messagingApi.FlexBox {
     contents: [
       buildTitle(params.language),
       buildPointInfo(params),
-      ...(params.comment ? [buildCommentSection(params)] : []),
+      ...(params.comment?.trim() ? [buildCommentSection(params)] : []),
       buildExplainMessage(params.language),
     ],
   };
