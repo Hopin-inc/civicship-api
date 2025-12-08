@@ -149,6 +149,7 @@ Table t_users {
   sysRole SysRole [not null, default: 'USER']
   currentPrefecture CurrentPrefecture [not null]
   phoneNumber String
+  preferredLanguage Language [not null, default: 'JA']
   urlWebsite String
   urlX String
   urlFacebook String
@@ -748,6 +749,11 @@ Enum LineRichMenuType {
   ADMIN
   USER
   PUBLIC
+}
+
+Enum Language {
+  JA
+  EN
 }
 
 Enum SysRole {
