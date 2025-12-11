@@ -35,7 +35,7 @@ export const tracingReady = (async () => {
 
   // ✅ 2. 非ローカルのみ初期化
   if (ENV !== "LOCAL") {
-    diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
+    diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
   }
 
   const resource = resourceFromAttributes({
