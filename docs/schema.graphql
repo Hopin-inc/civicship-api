@@ -511,6 +511,11 @@ input ImageInput {
 
 scalar JSON
 
+enum Language {
+  EN
+  JA
+}
+
 enum LineRichMenuType {
   ADMIN
   PUBLIC
@@ -1854,6 +1859,7 @@ type User {
   participations: [Participation!]
   phoneNumber: String
   portfolios(cursor: String, filter: PortfolioFilterInput, first: Int, sort: PortfolioSortInput): [Portfolio!]
+  preferredLanguage: Language!
   reservationStatusChangedByMe: [ReservationHistory!]
   reservations: [Reservation!]
   slug: String
@@ -1895,6 +1901,7 @@ input UserSignUpInput {
   phoneRefreshToken: String
   phoneTokenExpiresAt: String
   phoneUid: String
+  preferredLanguage: Language
   slug: String
 }
 
@@ -1907,6 +1914,7 @@ input UserUpdateProfileInput {
   currentPrefecture: CurrentPrefecture
   image: ImageInput
   name: String!
+  preferredLanguage: Language
   slug: String!
   urlFacebook: String
   urlInstagram: String
