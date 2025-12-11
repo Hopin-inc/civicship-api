@@ -1,4 +1,3 @@
-import http from "http";
 import { auth } from "@/infrastructure/libs/firebase";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { createLoaders } from "@/presentation/graphql/dataloader";
@@ -7,42 +6,15 @@ import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta, IContext } from "@/types/server";
-import { isBot, getBotName } from "./security/bot-detection";
 import { AuthenticationError } from "@/errors/graphql";
-import { isSuspiciousPath } from "@/presentation/middleware/auth/security/suspicious-paths";
-import { extractRequestInfo } from "@/presentation/middleware/auth/security/extract-request-info";
 
 export async function handleFirebaseAuth(
   headers: AuthHeaders,
   issuer: PrismaClientIssuer,
-  req: http.IncomingMessage,
 ): Promise<AuthResult> {
-  const url = req.url || "";
-  const userAgent = req.headers["user-agent"];
+  const { idToken, authMode } = headers;
+  const communityId = headers.communityId!;
 
-  // ① パス攻撃（最優先でブロック）
-  if (isSuspiciousPath(url)) {
-    logger.warn("🚨 Suspicious path blocked", { url, userAgent });
-    throw new AuthenticationError("Suspicious path blocked");
-  }
-
-  // ② Bot UA ブロック
-  if (isBot(userAgent)) {
-    const botName = getBotName(userAgent);
-    logger.debug("🤖 Bot blocked", { botName, url });
-    throw new AuthenticationError("Bot access blocked");
-  }
-
-  // ③ communityId が無い
-  if (!headers.communityId) {
-    const info = extractRequestInfo(req);
-    logger.error("❌ Missing x-community-id header", info);
-    throw new AuthenticationError("Missing x-community-id header");
-  }
-
-  // ④ ここから先が認証処理（既存コード）
-
-  const { idToken, authMode, communityId } = headers;
   const loaders = createLoaders(prismaClient);
   const authMeta: AuthMeta = {
     authMode: idToken ? authMode : "anonymous",
