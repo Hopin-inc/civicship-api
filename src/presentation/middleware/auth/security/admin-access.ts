@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { createLoaders } from "@/presentation/graphql/dataloader";
 import logger from "@/infrastructure/logging";
-import { AuthHeaders, AuthResult } from "./types";
+import { AuthHeaders, AuthResult } from "../types";
 
 export async function handleAdminAccess(headers: AuthHeaders): Promise<AuthResult | null> {
   const { adminApiKey, communityId } = headers;

@@ -7,81 +7,42 @@ import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta, IContext } from "@/types/server";
-import { isBot, getBotName } from "./bot-detection";
-
-function extractRequestInfo(req: http.IncomingMessage) {
-  const getHeader = (key: string) => req.headers[key.toLowerCase()];
-
-  function normalize(value?: string | string[]) {
-    return Array.isArray(value) ? value[0] : value;
-  }
-
-  const forwardedFor = getHeader("x-forwarded-for");
-  const realIp = getHeader("x-real-ip");
-
-  let clientIp: string | undefined;
-  if (forwardedFor) {
-    const forwarded = normalize(forwardedFor);
-    clientIp = forwarded?.split(",")[0].trim();
-  } else if (realIp) {
-    const real = normalize(realIp);
-    clientIp = real?.split(",")[0].trim();
-  } else {
-    clientIp = req.socket.remoteAddress;
-  }
-
-  const userAgent = normalize(getHeader("user-agent"));
-  const referer = normalize(getHeader("referer")) || normalize(getHeader("referrer")) || "none";
-  const origin = normalize(getHeader("origin")) || "none";
-
-  const excluded = new Set(["authorization", "cookie", "x-civicship-admin-api-key"]);
-  const safeHeaders = Object.fromEntries(
-    Object.entries(req.headers).filter(([key]) => !excluded.has(key.toLowerCase())),
-  );
-
-  return {
-    clientIp: clientIp || "unknown",
-    userAgent: userAgent || "unknown",
-    referer,
-    origin,
-    method: req.method || "unknown",
-    url: req.url || "unknown",
-    headers: safeHeaders,
-  };
-}
+import { isBot, getBotName } from "./security/bot-detection";
+import { AuthenticationError } from "@/errors/graphql";
+import { isSuspiciousPath } from "@/presentation/middleware/auth/security/suspicious-paths";
+import { extractRequestInfo } from "@/presentation/middleware/auth/security/extract-request-info";
 
 export async function handleFirebaseAuth(
   headers: AuthHeaders,
   issuer: PrismaClientIssuer,
   req: http.IncomingMessage,
 ): Promise<AuthResult> {
-  const { idToken, authMode, communityId } = headers;
+  const url = req.url || "";
+  const userAgent = req.headers["user-agent"];
 
-  if (!communityId) {
-    const requestInfo = extractRequestInfo(req);
-    const userAgent = requestInfo.userAgent;
-
-    if (userAgent && isBot(userAgent)) {
-      const botName = getBotName(userAgent);
-      logger.debug("🤖 Bot request without x-community-id header (expected behavior)", {
-        botName,
-        userAgent,
-        clientIp: requestInfo.clientIp,
-        method: requestInfo.method,
-        url: requestInfo.url,
-      });
-    } else {
-      logger.error("❌ Missing x-community-id header", {
-        ...requestInfo,
-        authMode,
-        hasIdToken: !!idToken,
-        hasAdminKey: !!headers.adminApiKey,
-      });
-    }
-
-    throw new Error("Missing x-community-id header");
+  // ① パス攻撃（最優先でブロック）
+  if (isSuspiciousPath(url)) {
+    logger.warn("🚨 Suspicious path blocked", { url, userAgent });
+    throw new AuthenticationError("Suspicious path blocked");
   }
 
+  // ② Bot UA ブロック
+  if (isBot(userAgent)) {
+    const botName = getBotName(userAgent);
+    logger.debug("🤖 Bot blocked", { botName, url });
+    throw new AuthenticationError("Bot access blocked");
+  }
+
+  // ③ communityId が無い
+  if (!headers.communityId) {
+    const info = extractRequestInfo(req);
+    logger.error("❌ Missing x-community-id header", info);
+    throw new AuthenticationError("Missing x-community-id header");
+  }
+
+  // ④ ここから先が認証処理（既存コード）
+
+  const { idToken, authMode, communityId } = headers;
   const loaders = createLoaders(prismaClient);
   const authMeta: AuthMeta = {
     authMode: idToken ? authMode : "anonymous",
@@ -115,10 +76,7 @@ export async function handleFirebaseAuth(
         include: {
           identities: {
             where: {
-              OR: [
-                { platform: "PHONE" },
-                { communityId },
-              ],
+              OR: [{ platform: "PHONE" }, { communityId }],
             },
           },
           memberships: {
@@ -140,7 +98,17 @@ export async function handleFirebaseAuth(
       membershipsCount: currentUser?.memberships?.length || 0,
     });
 
-    return { issuer, loaders, uid, idToken, platform, tenantId, communityId, currentUser, authMeta };
+    return {
+      issuer,
+      loaders,
+      uid,
+      idToken,
+      platform,
+      tenantId,
+      communityId,
+      currentUser,
+      authMeta,
+    };
   } catch (err) {
     const error = err as any;
     logger.error("🔥 Firebase verification failed", {
@@ -151,6 +119,6 @@ export async function handleFirebaseAuth(
       errorMessage: error.message,
       tokenLength: idToken.length,
     });
-    throw err;
+    throw new AuthenticationError("Firebase verification failed");
   }
 }
