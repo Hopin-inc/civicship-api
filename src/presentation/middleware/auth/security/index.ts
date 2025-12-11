@@ -19,7 +19,7 @@ import { AuthHeaders } from "../types";
  */
 export async function runRequestSecurityChecks(req: http.IncomingMessage, headers: AuthHeaders) {
   const url = req.url || "";
-  const userAgent = req.headers["user-agent"];
+  const userAgent = Array.isArray(req.headers["user-agent"]) ? req.headers["user-agent"][0] : req.headers["user-agent"];
 
   // ① suspicious path (最優先)
   if (isSuspiciousPath(url)) {
