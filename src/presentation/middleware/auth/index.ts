@@ -38,7 +38,7 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
   const adminContext = await runRequestSecurityChecks(req, headers);
   if (adminContext) return adminContext;
 
-  return await handleFirebaseAuth(headers, issuer, req);
+  return await handleFirebaseAuth(headers, issuer);
 }
 
 export function authHandler(server: ApolloServer<IContext>) {
