@@ -1859,7 +1859,7 @@ type User {
   participations: [Participation!]
   phoneNumber: String
   portfolios(cursor: String, filter: PortfolioFilterInput, first: Int, sort: PortfolioSortInput): [Portfolio!]
-  preferredLanguage: Language!
+  preferredLanguage: Language
   reservationStatusChangedByMe: [ReservationHistory!]
   reservations: [Reservation!]
   slug: String

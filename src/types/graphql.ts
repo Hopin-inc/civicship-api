@@ -2651,7 +2651,7 @@ export type GqlUser = {
   participations?: Maybe<Array<GqlParticipation>>;
   phoneNumber?: Maybe<Scalars['String']['output']>;
   portfolios?: Maybe<Array<GqlPortfolio>>;
-  preferredLanguage: GqlLanguage;
+  preferredLanguage?: Maybe<GqlLanguage>;
   reservationStatusChangedByMe?: Maybe<Array<GqlReservationHistory>>;
   reservations?: Maybe<Array<GqlReservation>>;
   slug?: Maybe<Scalars['String']['output']>;
@@ -4883,7 +4883,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   phoneNumber?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   portfolios?: Resolver<Maybe<Array<GqlResolversTypes['Portfolio']>>, ParentType, ContextType, Partial<GqlUserPortfoliosArgs>>;
-  preferredLanguage?: Resolver<GqlResolversTypes['Language'], ParentType, ContextType>;
+  preferredLanguage?: Resolver<Maybe<GqlResolversTypes['Language']>, ParentType, ContextType>;
   reservationStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;
   reservations?: Resolver<Maybe<Array<GqlResolversTypes['Reservation']>>, ParentType, ContextType>;
   slug?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;

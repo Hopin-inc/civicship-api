@@ -10,7 +10,7 @@ type User {
     image: String
     bio: String
     phoneNumber: String @authz(rules: [CanReadPhoneNumber])
-    preferredLanguage: Language!
+    preferredLanguage: Language
 
     urlWebsite: String
     urlX: String
