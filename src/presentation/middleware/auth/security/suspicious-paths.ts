@@ -16,6 +16,8 @@ export const SUSPICIOUS_PATH_PATTERNS: RegExp[] = [
   // Path traversal
   /\.\.\//,
   /\.\.%2f/i,
+  /\.\.\\/,
+  /\.\.%5c/i,
 
   // OS-level sensitive files
   /^\/etc\/passwd/i,
