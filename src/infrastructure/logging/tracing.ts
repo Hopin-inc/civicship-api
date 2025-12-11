@@ -13,7 +13,6 @@ import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { ExpressInstrumentation, ExpressLayerType } from "@opentelemetry/instrumentation-express";
 import { GraphQLInstrumentation } from "@opentelemetry/instrumentation-graphql";
 import { UndiciInstrumentation } from "@opentelemetry/instrumentation-undici";
-import { PrismaInstrumentation } from "@prisma/instrumentation";
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from "@opentelemetry/sdk-trace-node";
 import { diag, DiagConsoleLogger, DiagLogLevel } from "@opentelemetry/api";
 import logger from "./index";
@@ -71,7 +70,10 @@ export const tracingReady = (async () => {
       ignoreTrivialResolveSpans: true,
     }),
     new UndiciInstrumentation(),
-    new PrismaInstrumentation(),
+    // PrismaInstrumentation is disabled due to a bug in v6.19.0 that causes
+    // "Cannot execute operation on ended Span" errors in nested transaction scenarios.
+    // See: https://github.com/prisma/prisma/issues (nested transaction span bug)
+    // new PrismaInstrumentation(),
   ];
 
   sdk = new NodeSDK({
