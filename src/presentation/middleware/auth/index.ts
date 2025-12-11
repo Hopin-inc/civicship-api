@@ -4,15 +4,15 @@ import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { extractAuthHeaders } from "@/presentation/middleware/auth/extract-headers";
-import { handleAdminAccess } from "@/presentation/middleware/auth/admin-access";
 import { handleFirebaseAuth } from "@/presentation/middleware/auth/firebase-auth";
 import logger from "@/infrastructure/logging";
 import { trace, context } from "@opentelemetry/api";
+import { runRequestSecurityChecks } from "@/presentation/middleware/auth/security";
 
 async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
   const currentSpan = trace.getSpan(context.active());
   const traceId = currentSpan?.spanContext().traceId;
-  
+
   if (currentSpan) {
     const body = (req as any).body;
     if (body?.operationName) {
@@ -25,20 +25,18 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
       }
     }
   }
-  
-  logger.debug("🔍 [TRACE] GraphQL context creation (Express entry)", { 
+
+  logger.debug("🔍 [TRACE] GraphQL context creation (Express entry)", {
     traceId,
-    path: (req as any).url 
+    path: (req as any).url,
   });
 
   const issuer = new PrismaClientIssuer();
 
   const headers = extractAuthHeaders(req);
-  const adminResult = await handleAdminAccess(headers);
-  if (adminResult) {
-    logger.debug("🎯 Auth context created", { authBranch: "admin" });
-    return adminResult;
-  }
+
+  const adminContext = await runRequestSecurityChecks(req, headers);
+  if (adminContext) return adminContext;
 
   return await handleFirebaseAuth(headers, issuer, req);
 }
