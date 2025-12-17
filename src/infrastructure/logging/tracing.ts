@@ -33,7 +33,7 @@ let sdk: NodeSDK | undefined;
 export const tracingReady = (async () => {
   // ✅ 1. ローカルなら完全スキップ
   if (isLocal || isTest) {
-    logger.info("🟡 OpenTelemetry disabled in local/test environment");
+    logger.debug("🟡 OpenTelemetry disabled in local/test environment");
     return;
   }
 
@@ -97,13 +97,13 @@ export const tracingReady = (async () => {
   });
 
   await sdk.start();
-  logger.info(`✅ OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
+  logger.debug(`✅ OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
 
   const handleShutdown = async () => {
     if (sdk) {
       try {
         await sdk.shutdown();
-        logger.info("🔍 OpenTelemetry tracing shut down successfully");
+        logger.debug("🔍 OpenTelemetry tracing shut down successfully");
       } catch (error) {
         logger.error("Error shutting down OpenTelemetry:", error);
       }
@@ -118,7 +118,7 @@ export const shutdown = async () => {
   if (sdk) {
     try {
       await sdk.shutdown();
-      logger.info("🔍 OpenTelemetry tracing shut down successfully");
+      logger.debug("🔍 OpenTelemetry tracing shut down successfully");
     } catch (error) {
       logger.error("Error shutting down OpenTelemetry:", error);
     }

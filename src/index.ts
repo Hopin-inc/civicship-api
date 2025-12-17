@@ -86,9 +86,9 @@ async function startServer() {
 
 async function main() {
   if (process.env.PROCESS_TYPE === "batch") {
-    logger.info(`Batch process started: ${process.env.BATCH_PROCESS_NAME}`);
+    logger.debug(`Batch process started: ${process.env.BATCH_PROCESS_NAME}`);
     await batchProcess();
-    logger.info(`Batch process completed: ${process.env.BATCH_PROCESS_NAME}`);
+    logger.debug(`Batch process completed: ${process.env.BATCH_PROCESS_NAME}`);
     if (process.env.ENV === "LOCAL") {
       process.exit(0);
     }

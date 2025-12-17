@@ -74,7 +74,7 @@ export async function resizeAllImages(): Promise<{
 
   const total = images.length;
 
-  logger.info(
+  logger.debug(
     `📦 Resize Summary: ${total} total / ✅ ${resizedCount} / 🔁 ${skippedCount} / ❌ ${failureCount}`,
   );
 
@@ -114,7 +114,7 @@ async function resizeAndUploadMobileImage(filePath: string): Promise<string | nu
       },
     });
 
-    logger.info(`✅ Uploaded: ${targetPath}`);
+    logger.debug(`✅ Uploaded: ${targetPath}`);
     return getPublicUrl(path.basename(targetPath), path.dirname(targetPath));
   } catch (err) {
     logger.error(`❌ Resize failed for ${filePath}`, err);

@@ -9,7 +9,7 @@ import { NftWalletType } from "@prisma/client";
 
 export async function syncNftMetadata() {
   const batchStartTime = Date.now();
-  logger.info("🚀 Starting NFT metadata synchronization batch", {
+  logger.debug("🚀 Starting NFT metadata synchronization batch", {
     startTime: new Date().toISOString(),
   });
 
@@ -57,7 +57,7 @@ export async function syncNftMetadata() {
         break;
       }
 
-      logger.info("📦 Processing batch", {
+      logger.debug("📦 Processing batch", {
         batchNumber: Math.floor(skip / BATCH_SIZE) + 1,
         walletCount: nftWallets.length,
         skip,
@@ -84,7 +84,7 @@ export async function syncNftMetadata() {
         await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
       }
 
-      logger.info("✅ Batch iteration completed", {
+      logger.debug("✅ Batch iteration completed", {
         batchNumber: Math.floor(skip / BATCH_SIZE) + 1,
         durationMs: Date.now() - batchIterationStartTime,
       });
@@ -95,7 +95,7 @@ export async function syncNftMetadata() {
       }
     }
 
-    logger.info("🎯 NFT metadata sync completed", {
+    logger.debug("🎯 NFT metadata sync completed", {
       totalWalletsProcessed: totalProcessed,
       totalWalletsSkipped: totalSkipped,
       totalWalletsErrors: totalErrors,

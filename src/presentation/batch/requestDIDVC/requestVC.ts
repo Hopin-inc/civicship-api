@@ -63,7 +63,7 @@ export async function createVCRequests(
     });
   });
 
-  logger.info(`🆕 Found ${evaluations.length} PASSED evaluations without VC request`);
+  logger.debug(`🆕 Found ${evaluations.length} PASSED evaluations without VC request`);
 
   let successCount = 0;
   let failureCount = 0;
@@ -96,7 +96,7 @@ export async function createVCRequests(
       );
 
       if (result.success) {
-        logger.info(`✅ VC requested: evaluation=${evaluation.id}, user=${user.id}`);
+        logger.debug(`✅ VC requested: evaluation=${evaluation.id}, user=${user.id}`);
         successCount++;
       } else {
         logger.warn(`❌ VC request failed: evaluation=${evaluation.id}, user=${user.id}`);

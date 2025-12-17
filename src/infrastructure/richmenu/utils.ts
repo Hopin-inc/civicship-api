@@ -37,10 +37,10 @@ export async function safeDeleteAlias(
 ): Promise<void> {
   try {
     await client.deleteRichMenuAlias(alias);
-    logger.info(`Deleted alias: ${alias}`);
+    logger.debug(`Deleted alias: ${alias}`);
   } catch (e: unknown) {
     if (isNotFoundError(e)) {
-      logger.info(`Alias "${alias}" not found, skipping deletion`);
+      logger.debug(`Alias "${alias}" not found, skipping deletion`);
       return;
     }
     throw e;
@@ -53,10 +53,10 @@ export async function safeDeleteRichMenu(
 ): Promise<void> {
   try {
     await client.deleteRichMenu(richMenuId);
-    logger.info(`Deleted rich menu: ${richMenuId}`);
+    logger.debug(`Deleted rich menu: ${richMenuId}`);
   } catch (e: unknown) {
     if (isNotFoundError(e)) {
-      logger.info(`Rich menu "${richMenuId}" not found, skipping deletion`);
+      logger.debug(`Rich menu "${richMenuId}" not found, skipping deletion`);
       return;
     }
     throw e;
