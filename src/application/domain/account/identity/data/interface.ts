@@ -4,6 +4,6 @@ import { IContext } from "@/types/server";
 
 export interface IIdentityRepository {
   find(uid: string): Promise<PrismaIdentityDetail | null>;
-  create(ctx: IContext, data: Prisma.IdentityCreateInput): Promise<PrismaIdentityDetail | null>;
+  create(ctx: IContext, data: Prisma.IdentityCreateInput, tx?: Prisma.TransactionClient): Promise<PrismaIdentityDetail | null>;
   update(uid: string, data: Prisma.IdentityUpdateInput): Promise<PrismaIdentityDetail>;
 }

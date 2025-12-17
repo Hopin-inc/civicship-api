@@ -10,6 +10,7 @@ type User {
     image: String
     bio: String
     phoneNumber: String @authz(rules: [CanReadPhoneNumber])
+    preferredLanguage: Language
 
     urlWebsite: String
     urlX: String
@@ -34,6 +35,12 @@ type User {
 
     wallets: [Wallet!]
     nftWallet: NftWallet
+    nftInstances(
+        filter: NftInstanceFilterInput
+        sort: NftInstanceSortInput
+        cursor: String
+        first: Int
+    ): NftInstancesConnection
 
     opportunitiesCreatedByMe: [Opportunity!]
     reservations: [Reservation!]
@@ -67,4 +74,9 @@ enum CurrentPrefecture {
     EHIME
     OUTSIDE_SHIKOKU
     UNKNOWN
+}
+
+enum Language {
+    JA
+    EN
 }

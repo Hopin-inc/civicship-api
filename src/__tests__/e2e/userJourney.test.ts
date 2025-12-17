@@ -42,24 +42,21 @@ describe("End-to-End User Journey Integration Tests", () => {
     const signupCtx: IContext = {
       uid: `uid-${uniqueId}`,
       platform: GqlIdentityPlatform.Line,
-      phoneAuthToken: "test-phone-auth-token",
       communityId: community.id,
       issuer,
     } as IContext;
-
+    //
     const signupResult = await identityUseCase.userCreateAccount(signupCtx, {
       input: {
         name: "Test User",
         slug: `test-user-${uniqueId}`,
         currentPrefecture: GqlCurrentPrefecture.Kagawa,
-        communityId: community.id,
         phoneUid: `test-phone-uid-${uniqueId}`,
+        phoneAccessToken: "test-phone-access-token",
       },
     });
-
     expect(signupResult.user).toBeDefined();
     const userId = signupResult.user!.id;
-
     const communityWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.COMMUNITY,
       community: { connect: { id: community.id } },
@@ -108,7 +105,7 @@ describe("End-to-End User Journey Integration Tests", () => {
     expect(secondUserWallet?.currentPointView?.currentPoint).toBe(BigInt(100));
 
     const transactions = await TestDataSourceHelper.findAllTransactions();
-    expect(transactions).toHaveLength(3); // Issue, Grant, Donation
+    expect(transactions).toHaveLength(3);
 
     const donationTx = transactions.find((t) => t.reason === TransactionReason.DONATION);
     expect(donationTx).toBeDefined();
@@ -188,9 +185,9 @@ describe("End-to-End User Journey Integration Tests", () => {
     const user2Wallet = await TestDataSourceHelper.findMemberWallet(users[1].id, communityId);
     const user3Wallet = await TestDataSourceHelper.findMemberWallet(users[2].id, communityId);
 
-    expect(user1Wallet?.currentPointView?.currentPoint).toBe(BigInt(250)); // 300 - 50
-    expect(user2Wallet?.currentPointView?.currentPoint).toBe(BigInt(275)); // 300 + 50 - 75
-    expect(user3Wallet?.currentPointView?.currentPoint).toBe(BigInt(375)); // 300 + 75
+    expect(user1Wallet?.currentPointView?.currentPoint).toBe(BigInt(250));
+    expect(user2Wallet?.currentPointView?.currentPoint).toBe(BigInt(275));
+    expect(user3Wallet?.currentPointView?.currentPoint).toBe(BigInt(375));
 
     const allTransactions = await TestDataSourceHelper.findAllTransactions();
     const totalIssued = allTransactions

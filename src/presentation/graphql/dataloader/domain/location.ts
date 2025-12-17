@@ -1,13 +1,13 @@
 import * as PlaceLoaders from "@/application/domain/location/place/controller/dataloader";
 import * as MasterLocationLoaders from "@/application/domain/location/master/controller/dataloader";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-export function createLocationLoaders(issuer: PrismaClientIssuer) {
+export function createLocationLoaders(prisma: PrismaClient) {
   return {
-    place: PlaceLoaders.createPlaceLoader(issuer),
-    placesByCommunity: PlaceLoaders.createPlacesByCommunityLoader(issuer),
+    place: PlaceLoaders.createPlaceLoader(prisma),
+    placesByCommunity: PlaceLoaders.createPlacesByCommunityLoader(prisma),
 
-    city: MasterLocationLoaders.createCityByCodeLoader(issuer),
-    state: MasterLocationLoaders.createStateByCodeLoader(issuer),
+    city: MasterLocationLoaders.createCityByCodeLoader(prisma),
+    state: MasterLocationLoaders.createStateByCodeLoader(prisma),
   };
 }

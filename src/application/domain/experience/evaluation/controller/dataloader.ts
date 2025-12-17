@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlEvaluation } from "@/types/graphql";
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";
 import {
@@ -10,28 +10,24 @@ import {
   createLoaderById,
 } from "@/presentation/graphql/dataloader/utils";
 
-export function createEvaluationLoader(issuer: PrismaClientIssuer) {
+export function createEvaluationLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaEvaluationDetail, GqlEvaluation>(
     async (ids) =>
-      issuer.internal((tx) =>
-        tx.evaluation.findMany({
-          where: { id: { in: [...ids] } },
-          select: evaluationSelectDetail,
-        }),
-      ),
+      prisma.evaluation.findMany({
+        where: { id: { in: [...ids] } },
+        select: evaluationSelectDetail,
+      }),
     EvaluationPresenter.get,
   );
 }
 
-export function createEvaluationsByUserLoader(issuer: PrismaClientIssuer) {
+export function createEvaluationsByUserLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"evaluatorId", PrismaEvaluationDetail, GqlEvaluation>(
     "evaluatorId",
     async (userIds) => {
-      return issuer.internal((tx) =>
-        tx.evaluation.findMany({
-          where: { evaluatorId: { in: [...userIds] } },
-        }),
-      );
+      return prisma.evaluation.findMany({
+        where: { evaluatorId: { in: [...userIds] } },
+      });
     },
     EvaluationPresenter.get,
   );

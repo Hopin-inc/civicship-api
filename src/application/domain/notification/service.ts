@@ -12,6 +12,7 @@ import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/expe
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
+import UserService from "@/application/domain/account/user/service";
 import { createLineClient } from "@/infrastructure/libs/line";
 import logger from "@/infrastructure/logging";
 import dayjs from "dayjs";
@@ -20,6 +21,10 @@ import timezone from "dayjs/plugin/timezone.js";
 import "dayjs/locale/ja.js";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
+import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
+import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
+import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
+import { Language } from "@prisma/client";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.locale("ja");
@@ -35,7 +40,9 @@ export default class NotificationService {
   constructor(
     @inject("CommunityConfigService")
     private readonly communityConfigService: CommunityConfigService,
-  ) {}
+    @inject("UserService")
+    private readonly userService: UserService,
+  ) { }
 
   async pushCancelOpportunitySlotMessage(
     ctx: IContext,
@@ -48,12 +55,12 @@ export default class NotificationService {
           id: p.id,
           user: p.user
             ? {
-                identities: p.user.identities.map((identity) => ({
-                  platform: identity.platform,
-                  uid: identity.uid,
-                  communityId: identity.communityId ?? undefined,
-                })),
-              }
+              identities: p.user.identities.map((identity) => ({
+                platform: identity.platform,
+                uid: identity.uid,
+                communityId: identity.communityId ?? undefined,
+              })),
+            }
             : null,
         })),
       ),
@@ -99,14 +106,14 @@ export default class NotificationService {
     const lineUid = this.extractLineUidFromCreator(
       reservation.opportunitySlot.opportunity.createdByUser
         ? {
-            identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
-              (identity) => ({
-                platform: identity.platform,
-                uid: identity.uid,
-                communityId: identity.communityId ?? undefined,
-              }),
-            ),
-          }
+          identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
+            (identity) => ({
+              platform: identity.platform,
+              uid: identity.uid,
+              communityId: identity.communityId ?? undefined,
+            }),
+          ),
+        }
         : null,
       ctx.communityId,
     );
@@ -114,7 +121,39 @@ export default class NotificationService {
     if (!lineUid) {
       logger.warn("pushReservationAppliedMessage: lineUid is missing", {
         reservationId: reservation.id,
-        createdByUser: reservation.opportunitySlot.opportunity.createdByUser,
+        communityId: ctx.communityId,
+        createdByUserId: reservation.opportunitySlot.opportunity.createdByUser?.id,
+        createdByUserIdentities: reservation.opportunitySlot.opportunity.createdByUser?.identities?.map(i => ({
+          platform: i.platform,
+          communityId: i.communityId,
+          hasUid: !!i.uid,
+        })),
+      });
+      return;
+    }
+
+    let liffBaseUrl: string;
+    let client: MessagingApiClient;
+
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error("pushReservationAppliedMessage: failed to get LIFF config", {
+        reservationId: reservation.id,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return;
+    }
+
+    try {
+      client = await createLineClient(ctx.communityId);
+    } catch (error) {
+      logger.error("pushReservationAppliedMessage: failed to create LINE client", {
+        reservationId: reservation.id,
+        communityId: ctx.communityId,
+        err: error,
       });
       return;
     }
@@ -124,10 +163,7 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
-    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}?mode=approval`;
-
-    const client = await createLineClient(ctx.communityId);
 
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
@@ -147,20 +183,20 @@ export default class NotificationService {
     const lineUid = this.extractLineUidFromCreator(
       reservation.opportunitySlot.opportunity.createdByUser
         ? {
-            identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
-              (identity) => ({
-                platform: identity.platform,
-                uid: identity.uid,
-                communityId: identity.communityId ?? undefined,
-              }),
-            ),
-          }
+          identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
+            (identity) => ({
+              platform: identity.platform,
+              uid: identity.uid,
+              communityId: identity.communityId ?? undefined,
+            }),
+          ),
+        }
         : null,
       ctx.communityId,
     );
 
     if (!lineUid) {
-      logger.warn("pushReservationAppliedMessage: lineUid is missing", {
+      logger.warn("pushReservationCanceledMessage: lineUid is missing", {
         reservationId: reservation.id,
         createdByUser: reservation.opportunitySlot.opportunity.createdByUser,
       });
@@ -199,12 +235,12 @@ export default class NotificationService {
         id: p.id,
         user: p.user
           ? {
-              identities: p.user.identities.map((i) => ({
-                platform: i.platform,
-                uid: i.uid,
-                communityId: i.communityId ?? undefined,
-              })),
-            }
+            identities: p.user.identities.map((i) => ({
+              platform: i.platform,
+              uid: i.uid,
+              communityId: i.communityId ?? undefined,
+            })),
+          }
           : null,
       })),
       ctx.communityId,
@@ -248,12 +284,12 @@ export default class NotificationService {
         id: p.id,
         user: p.user
           ? {
-              identities: p.user.identities.map((i) => ({
-                platform: i.platform,
-                uid: i.uid,
-                communityId: i.communityId ?? undefined,
-              })),
-            }
+            identities: p.user.identities.map((i) => ({
+              platform: i.platform,
+              uid: i.uid,
+              communityId: i.communityId ?? undefined,
+            })),
+          }
           : null,
       })),
       ctx.communityId,
@@ -331,6 +367,73 @@ export default class NotificationService {
     await safePushMessage(client, { to: uid, messages: [message] });
   }
 
+  async pushPointDonationReceivedMessage(
+    ctx: IContext,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    fromUserName: string,
+    toUserId: string,
+  ) {
+    const preparedData = await this.prepareLinePush(
+      ctx,
+      toUserId,
+      transactionId,
+      "pushPointDonationReceivedMessage",
+      { includeLanguage: true },
+    );
+
+    if (!preparedData) {
+      return;
+    }
+
+    const { uid, liffBaseUrl, client, language } = preparedData;
+    const redirectUrl = `${liffBaseUrl}/wallets`;
+
+    const message = buildPointDonationReceivedMessage({
+      fromUserName,
+      transferPoints: toPointChange,
+      comment: comment ?? undefined,
+      redirectUrl,
+      language,
+    });
+
+    await safePushMessage(client, { to: uid, messages: [message] });
+  }
+
+  async pushPointGrantReceivedMessage(
+    ctx: IContext,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    communityName: string,
+    toUserId: string,
+  ) {
+    const preparedData = await this.prepareLinePush(
+      ctx,
+      toUserId,
+      transactionId,
+      "pushPointGrantReceivedMessage",
+      { includeLanguage: true },
+    );
+
+    if (!preparedData) {
+      return;
+    }
+
+    const { uid, liffBaseUrl, client, language } = preparedData;
+    const redirectUrl = `${liffBaseUrl}/wallets`;
+
+    const message = buildPointGrantReceivedMessage({
+      communityName,
+      transferPoints: toPointChange,
+      comment: comment ?? undefined,
+      redirectUrl,
+      language,
+    });
+
+    await safePushMessage(client, { to: uid, messages: [message] });
+  }
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
       (identity) =>
@@ -338,7 +441,7 @@ export default class NotificationService {
     )?.uid;
 
     if (!lineUid) {
-      logger.warn("pushReservationAppliedMessage: lineUid is missing", {
+      logger.warn("switchRichMenuByRole: lineUid is missing", {
         userId: membership.user.id,
         communityId: ctx.communityId,
       });
@@ -365,7 +468,27 @@ export default class NotificationService {
     }
     const success = await safeLinkRichMenuIdToUser(client, lineUid, richMenuId);
 
-    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+    if (!success) {
+      logger.error("switchRichMenuByRole: failed to link rich menu to user", {
+        communityId: ctx.communityId,
+        userId: membership.user?.id,
+        lineUid,
+        richMenuId,
+        richMenuType,
+      });
+    }
+
+    let liffBaseUrl: string;
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error("switchRichMenuByRole: failed to get LIFF config", {
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return;
+    }
     const redirectUrl = `${liffBaseUrl}/admin`;
 
     //TODO feature flagにしては細かすぎる設定
@@ -378,6 +501,79 @@ export default class NotificationService {
   }
 
   // --- 共通化したプライベートユーティリティ ---
+
+  private async prepareLinePush(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient } | null>;
+  private async prepareLinePush(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+    options: { includeLanguage: true },
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language: Language } | null>;
+  private async prepareLinePush(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+    options?: { includeLanguage?: boolean },
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language?: Language } | null> {
+    let uid: string;
+    let language: Language | undefined;
+
+    if (options?.includeLanguage) {
+      const result = await this.userService.findLineUidAndLanguageForCommunity(
+        ctx,
+        userId,
+        ctx.communityId,
+      );
+      if (!result) {
+        logger.warn(`${logContext}: lineUid is missing`, {
+          transactionId,
+          userId,
+          communityId: ctx.communityId,
+        });
+        return null;
+      }
+      uid = result.uid;
+      language = result.language;
+    } else {
+      const foundUid = await this.userService.findLineUidForCommunity(ctx, userId, ctx.communityId);
+      if (!foundUid) {
+        logger.warn(`${logContext}: lineUid is missing`, {
+          transactionId,
+          userId,
+          communityId: ctx.communityId,
+        });
+        return null;
+      }
+      uid = foundUid;
+    }
+
+    let liffBaseUrl: string;
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error(`${logContext}: failed to get LIFF config`, {
+        transactionId,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return null;
+    }
+
+    const client = await createLineClient(ctx.communityId);
+
+    if (options?.includeLanguage && language) {
+      return { uid, liffBaseUrl, client, language };
+    }
+    return { uid, liffBaseUrl, client };
+  }
 
   private extractLineUidsFromParticipations(
     participations: {
@@ -405,12 +601,12 @@ export default class NotificationService {
   private extractLineUidFromCreator(
     user:
       | {
-          identities?: {
-            platform: IdentityPlatform;
-            uid: string;
-            communityId?: string;
-          }[];
-        }
+        identities?: {
+          platform: IdentityPlatform;
+          uid: string;
+          communityId?: string;
+        }[];
+      }
       | null
       | undefined,
     communityId: string,

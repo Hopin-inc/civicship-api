@@ -1,36 +1,31 @@
-import { GqlImageInput, GqlMutationUserSignUpArgs } from "@/types/graphql";
+import { GqlIdentityPlatform, GqlUserSignUpInput } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
 export default class IdentityConverter {
-  static create({ input }: GqlMutationUserSignUpArgs): {
-    data: Prisma.UserCreateInput;
-    image?: GqlImageInput;
-    phoneUid?: string;
-    lineRefreshToken?: string;
-    phoneRefreshToken?: string;
-  } {
-    const {
-      image,
-      slug,
-      name,
-      currentPrefecture,
-      phoneUid,
-      phoneNumber,
-      lineRefreshToken,
-      phoneRefreshToken
-    } = input;
+  static create(
+    input: GqlUserSignUpInput,
+    uid: string,
+    platform: GqlIdentityPlatform,
+    communityId: string,
+  ): Prisma.UserCreateInput {
+    const { slug, name, currentPrefecture, phoneNumber, phoneUid, preferredLanguage } = input;
+
+    const identities = phoneUid
+      ? {
+          create: [
+            { uid, platform, communityId },
+            { uid: phoneUid, platform: GqlIdentityPlatform.Phone },
+          ],
+        }
+      : { create: { uid, platform, communityId } };
 
     return {
-      data: {
-        name,
-        currentPrefecture,
-        slug: slug || "",
-        phoneNumber,
-      },
-      image,
-      phoneUid,
-      lineRefreshToken,
-      phoneRefreshToken,
+      name,
+      currentPrefecture,
+      slug: slug || "",
+      phoneNumber,
+      preferredLanguage,
+      identities,
     };
   }
 }

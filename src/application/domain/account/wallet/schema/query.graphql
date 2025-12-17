@@ -9,6 +9,7 @@ extend type Query {
         first: Int
     ): WalletsConnection!
     wallet(id: ID!): Wallet
+    myWallet: Wallet
 }
 
 # ------------------------------

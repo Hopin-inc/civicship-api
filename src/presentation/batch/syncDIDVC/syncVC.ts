@@ -2,7 +2,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IdentityPlatform, VcIssuanceStatus } from "@prisma/client";
 import logger from "@/infrastructure/logging";
-import { markFailedRequests } from "@/presentation/batch/syncDIDVC/utils";
+import { markExpiredVCRequests } from "@/presentation/batch/syncDIDVC/utils";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import NotificationService from "@/application/domain/notification/service";
 import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
@@ -21,13 +21,17 @@ export async function processVCRequests(
   vcService: VCIssuanceRequestService,
   notificationService: NotificationService,
 ): Promise<BatchResult> {
+  const cutoffDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7日前
+
   const requests = await issuer.internal(async (tx) => {
     return tx.vcIssuanceRequest.findMany({
       where: {
-        status: { not: VcIssuanceStatus.COMPLETED },
+        status: VcIssuanceStatus.PROCESSING, // PROCESSINGのみ対象
         jobId: { not: null },
         vcRecordId: null,
         retryCount: { lt: 5 },
+        // processedAtが7日以内のもののみ（nullまたは7日以内）
+        OR: [{ processedAt: null }, { processedAt: { gte: cutoffDate } }],
       },
       include: {
         user: {
@@ -47,141 +51,75 @@ export async function processVCRequests(
   let failureCount = 0;
   let skippedCount = 0;
 
+  // 簡潔なループ: Service層に委譲
   for (const request of requests) {
     try {
-      const phoneIdentity = request.user.identities.find(
-        (identity) => identity.platform === IdentityPlatform.PHONE,
-      );
-      if (!phoneIdentity) {
-        logger.warn(`⚠️ No phone identity for user ${request.userId}`);
-        skippedCount++;
-        continue;
-      }
+      const ctx: IContext = { issuer } as IContext;
+      const result = await vcService.syncJobStatus(request, ctx);
 
-      let { token, isValid } = vcService.evaluateTokenValidity(phoneIdentity);
-
-      if (!isValid && phoneIdentity.refreshToken) {
-        const refreshed = await vcService.refreshAuthToken(
-          phoneIdentity.uid,
-          phoneIdentity.refreshToken,
-        );
-
-        if (refreshed) {
-          token = refreshed.authToken;
-          isValid = true;
-        } else {
-          logger.warn(`Token refresh failed for ${phoneIdentity.uid}, skipping request`);
-          // optional: mark error to DB here
-          failureCount++;
-          continue;
-        }
-      }
-
-      if (!token || !isValid) {
-        logger.warn(`❌ No valid token after refresh for user ${request.userId}`);
-        skippedCount++;
-        continue;
-      }
-
-      const jobStatus = await client.call<{
-        status: string;
-        result?: { recordId: string };
-      }>(phoneIdentity.uid, token || "", `/vc/jobs/connectionless/${request.jobId}`, "GET");
-
-      if (jobStatus === null) {
-        logger.warn(`External API call failed for VC job ${request.jobId}, keeping PENDING status`);
-        await issuer.internal(async (tx) => {
-          await tx.vcIssuanceRequest.update({
-            where: { id: request.id },
-            data: {
-              errorMessage: "External API call failed during sync",
-              retryCount: { increment: 1 },
-            },
-          });
-        });
-        skippedCount++;
-        continue;
-      }
-
-      if (jobStatus?.status === "completed" && jobStatus.result?.recordId) {
-        const vc = await issuer.internal(async (tx) => {
-          return tx.vcIssuanceRequest.update({
-            where: { id: request.id },
-            data: {
-              status: VcIssuanceStatus.COMPLETED,
-              vcRecordId: jobStatus.result?.recordId,
-              completedAt: new Date(),
-            },
-          });
-        });
-        logger.info(`✅ VC completed: ${request.id}`);
-
+      // VC完了時は通知を送信
+      if (result.status === "completed") {
         const evaluation = await issuer.internal(async (tx) => {
           return tx.evaluation.findUnique({
-            where: { id: vc.evaluationId },
+            where: { id: request.evaluationId },
             include: evaluationInclude,
           });
         });
 
         if (!evaluation) {
-          logger.warn(`⚠️ Evaluation not found for request: ${request.id}`);
-          continue;
-        }
-
-        if (!evaluation.participation.communityId) {
-          logger.warn(`⚠️ missing communityId for request: ${request.id}`);
-          continue;
-        }
-        const communityId = evaluation?.participation.communityId;
-        const ctx = { communityId, issuer } as IContext;
-
-        try {
-          await notificationService.pushCertificateIssuedMessage(ctx, evaluation);
-        } catch (error) {
-          logger.error(
-            `Failed to send certificate issued notification for request ${request.id}`,
-            error,
+          logger.warn(
+            `⚠️ Evaluation not found for completed VC request: ${request.id}, evaluationId: ${request.evaluationId}`,
           );
-        }
+        } else if (evaluation.participation.communityId) {
+          const notificationCtx = {
+            communityId: evaluation.participation.communityId,
+            issuer,
+          } as IContext;
 
-        successCount++;
-      } else if (jobStatus?.status === "failed") {
-        await issuer.internal(async (tx) => {
-          await tx.vcIssuanceRequest.update({
-            where: { id: request.id },
-            data: {
-              status: VcIssuanceStatus.FAILED,
-              errorMessage: "VC issuance failed on server",
-            },
-          });
-        });
-        logger.error(`❌ VC failed: ${request.id}`);
-        failureCount++;
-      } else {
-        await issuer.internal(async (tx) => {
-          await tx.vcIssuanceRequest.update({
-            where: { id: request.id },
-            data: { retryCount: { increment: 1 } },
-          });
-        });
-        skippedCount++;
+          try {
+            await notificationService.pushCertificateIssuedMessage(notificationCtx, evaluation);
+          } catch (error) {
+            logger.error(
+              `Failed to send certificate issued notification for request ${request.id}`,
+              error,
+            );
+          }
+        }
+      }
+
+      switch (result.status) {
+        case "completed":
+          successCount++;
+          break;
+        case "failed":
+          failureCount++;
+          break;
+        case "retrying":
+        case "skipped":
+          skippedCount++;
+          break;
       }
     } catch (error) {
-      logger.error(`💥 Error in VC request ${request.id}:`, error);
-      await issuer.internal(async (tx) => {
-        await tx.vcIssuanceRequest.update({
-          where: { id: request.id },
-          data: {
-            retryCount: { increment: 1 },
-            errorMessage: error instanceof Error ? error.message : "Unknown error",
-          },
-        });
+      // Service層で処理されなかった予期しないエラー
+      logger.error(`Unexpected error in VC sync for request ${request.id}:`, {
+        requestId: request.id,
+        userId: request.userId,
+        evaluationId: request.evaluationId,
+        jobId: request.jobId,
+        status: request.status,
+        retryCount: request.retryCount,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
       failureCount++;
     }
   }
 
-  await markFailedRequests(issuer, "vcIssuanceRequest", VcIssuanceStatus.FAILED);
+  await markExpiredVCRequests(issuer, {
+    pending: VcIssuanceStatus.PENDING,
+    processing: VcIssuanceStatus.PROCESSING,
+    failed: VcIssuanceStatus.FAILED,
+  });
 
   return {
     total: requests.length,

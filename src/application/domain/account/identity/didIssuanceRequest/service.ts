@@ -5,7 +5,20 @@ import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IDIDIssuanceRequestRepository } from "@/application/domain/account/identity/didIssuanceRequest/data/interface";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
-import { DidIssuanceRequest, DidIssuanceStatus, Identity } from "@prisma/client";
+import { DidIssuanceRequest, DidIssuanceStatus, Identity, User } from "@prisma/client";
+import {
+  classifyError,
+  ClassifiedError,
+  ErrorCategory,
+  PERMANENTLY_FAILED_RETRY_COUNT,
+} from "@/infrastructure/utils/errorClassifier";
+import { maskSensitiveData } from "@/infrastructure/utils/maskSensitiveData";
+
+type DidIssuanceRequestWithUser = DidIssuanceRequest & {
+  user: User & {
+    identities: Identity[];
+  };
+};
 
 @injectable()
 export class DIDIssuanceService {
@@ -46,12 +59,16 @@ export class DIDIssuanceService {
     }
 
     let { token, isValid } = this.evaluateTokenValidity(identity);
+    let refreshAttempted = false;
+    let refreshSucceeded = false;
 
     if (!isValid && identity.refreshToken) {
+      refreshAttempted = true;
       const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
       if (refreshed) {
         token = refreshed.authToken;
         isValid = true;
+        refreshSucceeded = true;
       } else {
         logger.warn("Token refresh failed, proceeding with existing token");
       }
@@ -70,9 +87,8 @@ export class DIDIssuanceService {
       const response = await this.client.call<{ jobId: string }>(
         phoneUid,
         token,
-        "/did/jobs/create-and-publish",
+        "/did/job/create-and-publish",
         "POST",
-        { userId, requestId: didRequest.id },
       );
 
       if (!response?.jobId) {
@@ -87,11 +103,30 @@ export class DIDIssuanceService {
       await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
         status: DidIssuanceStatus.PROCESSING,
         jobId: response.jobId,
+        processedAt: new Date(),
       });
 
       return { success: true, requestId: didRequest.id, jobId: response.jobId };
     } catch (error) {
-      return this.markIssuanceFailed(ctx, didRequest.id, error);
+      const classified = classifyError(error, !!token);
+      const errorContext = this.buildErrorContext(
+        classified,
+        token,
+        isValid,
+        didRequest.id,
+        userId,
+        refreshAttempted,
+        refreshSucceeded,
+      );
+      logger.error(`💥 Error in DID request:`, errorContext);
+
+      await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
+        status: DidIssuanceStatus.FAILED,
+        errorMessage: this.buildDbErrorMessage(classified),
+        retryCount: { increment: 1 },
+      });
+
+      return { success: false, requestId: didRequest.id };
     }
   }
 
@@ -114,20 +149,6 @@ export class DIDIssuanceService {
       token: identity.authToken,
       isValid: !isExpired,
     };
-  }
-
-  private async markIssuanceFailed(
-    ctx: IContext,
-    requestId: string,
-    error: unknown,
-  ): Promise<{ success: false; requestId: string }> {
-    await this.didIssuanceRequestRepository.update(ctx, requestId, {
-      status: DidIssuanceStatus.FAILED,
-      errorMessage: error instanceof Error ? error.message : "Unknown error",
-    });
-
-    logger.error("DIDIssuanceService.requestDIDIssuance: failed", error);
-    return { success: false, requestId };
   }
 
   async refreshAuthToken(
@@ -162,6 +183,235 @@ export class DIDIssuanceService {
         error,
       );
       return null;
+    }
+  }
+
+  private buildErrorContext(
+    classified: ClassifiedError,
+    token: string | null,
+    isValid: boolean,
+    requestId: string,
+    userId: string,
+    refreshAttempted: boolean,
+    refreshSucceeded: boolean,
+  ) {
+    const tokenStatus = !token ? "MISSING" : !isValid ? "EXPIRED" : "VALID";
+    const refreshAttemptedStr = refreshAttempted ? "YES" : "NO";
+    const refreshResult = !refreshAttempted ? "N/A" : refreshSucceeded ? "SUCCESS" : "FAILED";
+
+    return {
+      requestId,
+      userId,
+      category: classified.category,
+      httpStatus: classified.httpStatus,
+      message: classified.message,
+      tokenStatus,
+      refreshAttempted: refreshAttemptedStr,
+      refreshResult,
+      ...(classified.requestDetails && {
+        url: classified.requestDetails.url,
+        method: classified.requestDetails.method,
+        hasToken: classified.requestDetails.hasToken,
+        requestData: maskSensitiveData(classified.requestDetails.requestData),
+        responseData: classified.requestDetails.responseData,
+      }),
+    };
+  }
+
+  private buildDbErrorMessage(classified: ClassifiedError): string {
+    return classified.requestDetails
+      ? `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} | ` +
+          `URL: ${classified.requestDetails.url} | Method: ${classified.requestDetails.method} | Token: ${classified.requestDetails.hasToken ? "yes" : "no"}`
+      : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
+  }
+
+  async resetRequestForRetry(ctx: IContext, requestId: string, reason: string): Promise<void> {
+    await this.didIssuanceRequestRepository.update(ctx, requestId, {
+      status: DidIssuanceStatus.PENDING,
+      jobId: null,
+      retryCount: 0,
+      errorMessage: `Auto-reset: ${reason}`,
+    });
+    logger.info(`🔄 Reset request ${requestId} for retry: ${reason}`);
+  }
+
+  private async attemptDidJob404Recovery(
+    ctx: IContext,
+    request: DidIssuanceRequest,
+    phoneIdentity: Identity,
+    token: string,
+  ): Promise<"completed" | "reset"> {
+    logger.warn(`Job ${request.jobId} not found, attempting recovery for request ${request.id}`);
+
+    try {
+      const existingDid = await this.client.call<{ status: string; did: string }>(
+        phoneIdentity.uid,
+        token,
+        "/did",
+        "GET",
+      );
+
+      if (existingDid?.status === "PUBLISHED" && existingDid.did) {
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.COMPLETED,
+          didValue: existingDid.did,
+          completedAt: new Date(),
+          errorMessage: "Recovered: Job expired but DID was already published",
+        });
+        logger.info(`✅ DID recovered as completed: ${request.id}, didValue: ${existingDid.did}`);
+        return "completed";
+      }
+    } catch (checkError) {
+      logger.warn(`Failed to check existing DID for recovery, re-throwing`, { checkError });
+      throw checkError;
+    }
+
+    logger.info(`Resetting DID request ${request.id} for retry due to job expiration`);
+    await this.resetRequestForRetry(ctx, request.id, "Job expired in Redis");
+    return "reset";
+  }
+
+  async syncJobStatus(
+    request: DidIssuanceRequestWithUser,
+    ctx: IContext,
+  ): Promise<{
+    success: boolean;
+    status: "completed" | "failed" | "retrying" | "skipped";
+  }> {
+    const phoneIdentity = request.user.identities.find(
+      (identity) => identity.platform === "PHONE",
+    );
+
+    if (!phoneIdentity) {
+      logger.warn(`⚠️ No phone identity for user ${request.userId}`);
+      return { success: false, status: "skipped" };
+    }
+
+    // トークン検証と更新
+    let { token, isValid } = this.evaluateTokenValidity(phoneIdentity);
+    let refreshAttempted = false;
+    let refreshSucceeded = false;
+
+    if (!isValid && phoneIdentity.refreshToken) {
+      refreshAttempted = true;
+      const refreshed = await this.refreshAuthToken(
+        phoneIdentity.uid,
+        phoneIdentity.refreshToken,
+      );
+
+      if (refreshed) {
+        token = refreshed.authToken;
+        isValid = true;
+        refreshSucceeded = true;
+      } else {
+        logger.warn(
+          `Token refresh failed for ${phoneIdentity.uid}, marking request ${request.id} for retry`,
+        );
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          retryCount: { increment: 1 },
+          errorMessage: "Token refresh failed",
+        });
+        return { success: false, status: "retrying" };
+      }
+    }
+
+    if (!token || !isValid) {
+      logger.warn(`❌ No valid token for user ${request.userId}`);
+      return { success: false, status: "skipped" };
+    }
+
+    // 外部API呼び出し
+    try {
+      const jobStatus = await this.client.call<{
+        status: string;
+        result?: { did: string };
+      }>(phoneIdentity.uid, token, `/did/job/${request.jobId}`, "GET");
+
+      if (!jobStatus) {
+        logger.warn(`External API returned null for job ${request.jobId}`);
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          errorMessage: "External API call failed during sync",
+          retryCount: { increment: 1 },
+        });
+        return { success: false, status: "retrying" };
+      }
+
+      if (jobStatus.status === "completed" && jobStatus.result?.did) {
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.COMPLETED,
+          didValue: jobStatus.result.did,
+          completedAt: new Date(),
+        });
+        logger.info(`✅ DID completed: ${request.id}`);
+        return { success: true, status: "completed" };
+      }
+
+      if (jobStatus.status === "failed") {
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.FAILED,
+          errorMessage: "DID issuance failed on server",
+          retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
+        });
+        logger.error(`❌ DID failed: ${request.id}`);
+        return { success: false, status: "failed" };
+      }
+
+      // Still processing
+      await this.didIssuanceRequestRepository.update(ctx, request.id, {
+        retryCount: { increment: 1 },
+      });
+      return { success: true, status: "retrying" };
+    } catch (error) {
+      const classified = classifyError(error, !!token);
+
+      if (classified.category === ErrorCategory.NOT_FOUND && classified.httpStatus === 404) {
+        const outcome = await this.attemptDidJob404Recovery(ctx, request, phoneIdentity, token);
+        return {
+          success: outcome === "completed",
+          status: outcome === "completed" ? "completed" : "retrying",
+        };
+      }
+
+      const errorContext = this.buildErrorContext(
+        classified,
+        token,
+        isValid,
+        request.id,
+        request.userId,
+        refreshAttempted,
+        refreshSucceeded,
+      );
+      logger.error(`💥 Error in DID sync:`, errorContext);
+
+      // リトライ不要なエラー → 即座にFAILED
+      if (!classified.shouldRetry) {
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.FAILED,
+          errorMessage: this.buildDbErrorMessage(classified),
+          retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
+        });
+        return { success: false, status: "failed" };
+      }
+
+      // リトライ可能なエラー
+      const newRetryCount = request.retryCount + 1;
+
+      if (newRetryCount >= classified.maxRetries) {
+        // リトライ回数超過 → FAILED
+        await this.didIssuanceRequestRepository.update(ctx, request.id, {
+          status: DidIssuanceStatus.FAILED,
+          errorMessage: `${this.buildDbErrorMessage(classified)} (max retries exceeded)`,
+          retryCount: newRetryCount,
+        });
+        return { success: false, status: "failed" };
+      }
+
+      // まだリトライ可能
+      await this.didIssuanceRequestRepository.update(ctx, request.id, {
+        retryCount: { increment: 1 },
+        errorMessage: this.buildDbErrorMessage(classified),
+      });
+      return { success: false, status: "retrying" };
     }
   }
 }

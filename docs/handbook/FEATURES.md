@@ -1,169 +1,169 @@
 # Milestone
 
-## 📘 はじめに：この資料の目的
+## 📘 Introduction: Purpose of this Document
 
-本資料は、以下の目的で作成されたものです：
+This document was created for the following purposes:
 
-- 既存ステークホルダーに**現状の実装状況と方針**を正確に伝え、導入に向けた協議の土台にすること
-- 私たちがオープンソースで開発中のデジタル基盤を活用したい方向けに説明すること
-
----
-
-## 🌐 Web3設計方針（2025年4月時点）
-
-1. **識別（DID - Decentralized Identifier）**
-- 分散型識別子であり、ユーザー自身が生成・管理可能な自己主権型ID。
-- W3C により標準化されており、DID Document に公開鍵やサービスエンドポイント等を記述。
-- 本システムでは、Firebase Auth によるログイン後、自動的に DID を生成。
-
-2. **証明（VC - Verifiable Credential）**  
-- 発行者が署名した検証可能な資格情報であり、W3C により標準化。
-- ユーザーは自身の DID Wallet 内で VC を保持し、必要に応じて提示可能。
-
-3. **資産（Token / NFT）**  
-- 現在はオフチェーン実装で対応。
-- チケットや会員証としてのNFT発行を検討中。
-- DID Wallet とは異なり、ユーザーが管理する資産の可視化・移転が主な目的。
-
-4. **管理(Custodial Wallet)**
-- ユーザーの秘密鍵やVCをシステム側で管理中。
-- ユーザーはウォレットの操作や秘密鍵の管理を意識することなく、サービスを利用可能。
-- 「地域体験の記録」をVCとして発行するため、“使われること”を優先。
+- To accurately communicate the current implementation status and policy to existing stakeholders and serve as a basis for discussions regarding implementation.
+- To provide an explanation for those who wish to utilize the digital infrastructure we are developing as open source.
 
 ---
 
-## 🧩 実装機能一覧（2025年4月時点）  
-現時点で提供されている主な機能群を、目的・分類ごとに整理しています。
+## 🌐 Web3 Design Policy (as of April 2025)
 
-### 🧑‍🤝‍🧑 Account  
-**本システムの操作主体管理を担う**
+1. **Identification (DID - Decentralized Identifier)**
+- A decentralized identifier, a self-sovereign ID that users can generate and manage themselves.
+- Standardized by the W3C, the DID Document describes public keys, service endpoints, etc.
+- In this system, a DID is automatically generated after logging in via Firebase Auth.
 
-#### 👤 user（利用者）
-- 新規登録する
-- プロフィールを編集する
-- アカウントを削除する
+2. **Verifiable Credential (VC - Verifiable Credential)**
+- A verifiable credential signed by the issuer, standardized by the W3C.
+- Users can hold VC within their own DID Wallet and present it as needed.
 
-#### 🏘️ community（団体）
-- コミュニティを作成する
-- プロフィールを編集する
-- コミュニティを削除する
+3. **Assets (Tokens / NFTs)**
+- Currently supported through off-chain implementation.
+- Issuing NFTs as tickets or membership cards is under consideration.
+- Unlike DID Wallet, the primary purpose is to visualize and transfer assets managed by users.
 
-#### 🪪 membership（会員）
-- コミュニティに参加する
-- コミュニティに招待する
-- コミュニティから退会する
-- メンバーの権限を変更する
-- メンバーを強制退会させる
-
-### 🧪 Experience  
-**関わりしろの募集・応募、活動後の評価までを担う**
-
-#### 📣 opportunity（募集）
-- 募集を登録する
-- 募集を編集する
-- 募集を公開/非公開する
-- 募集を削除する
-
-#### 🗓️ opportunitySlot（開催日時）
-- 募集の開催日時を編集する
-- 開催日時の実施予定を変更する
-
-#### 📩 reservation（応募）
-- 予約を申し込む
-- 予約を承認する
-- 予約を否認する
-- 予約をキャンセルする
-- 同行者の予約に加わる
-
-#### 🧾 participation（活動）
-- 過去の活動を申請する
-- 申請した活動を削除する
-
-#### ✅ evaluation（評価）
-- 活動を評価する
-
-### 📝 Content  
-**Opportunity（募集）へのReservation（応募）促進を担う**
-
-#### 📰 article（記事）
-- 記事を作成する
-- 記事を編集する
-- 記事を公開/非公開する
-- 記事を削除する
-
-### 🎁 Reward  
-**Participation（活動）の感謝を示す対価を担う**
-
-#### 🙋 utility（特典）
-- 特典を登録する
-- 特典を編集する
-- 特典を公開/非公開する
-- 特典を削除する
-
-#### 🎟️ ticket（チケット）
-- チケットを買う
-- チケットをあげる/もらう
-- チケットを払い戻す
-- チケットを使う
-
-### 💰 Point 
-**コミュニティの原資発行、能動的なポイントの流通を担う**
-
-- コミュニティポイントを発行する
-- コミュニティからポイントを助成する
-- （自分の）ポイントをあげる
+4. **Custodial Wallet**
+- Users' private keys and VC are managed by the system.
+- Users can use the service without having to worry about wallet operations or private key management.
+- "Usage" is prioritized, as "records of local experiences" are issued as VC.
 
 ---
 
-## 🚀 ドメイン導入早わかりガイド
+## 🧩 List of Implemented Features (as of April 2025)
+The main features currently provided are organized by purpose and category.
 
-### 1️⃣ 最小機能を決める 3 つの質問
+### 🧑‍🤝‍🧑 Account
+**Responsible for managing the system's operations**
 
-1. **Asset**: 宿泊・食事・物品など、有形資産（顎足枕を含む対価）が揃っているか？
+#### 👤 User (User)
+- Register
+- Edit Profile
+- Delete Account
 
-2. **Community**: 値付けを変更しても受け入れられる関係になっているか？
+#### 🏘️ Community (Organization)
+- Create a Community
+- Edit Profile
+- Delete a Community
 
-3. **Point**: 複数の場をまたぐ“共通残高”が無いと運営が回らない状況か？
-   - 同じ参加者が複数イベントや団体を行き来している  
-   - 余ったポイントを他団体へ寄付・助成したい  
-   - 横断的な累計貢献値で表彰・投票をしたい  
+#### 🪪 Membership (Membership)
+- Join a Community
+- Invite to a Community
+- Leave a Community
+- Change Member Permissions
+- Force Members to Leave
 
-この順に **Yes / No** を答えると、下記シナリオのうち “ひとつ” が当てはまります。  
-そこに書かれた **導入ドメインセット** が、あなたの MVP です。
+### 🧪 Experience (Experience)
+**Responsible for recruiting and applying for opportunities, as well as post-activity evaluations**
 
-### シナリオと導入ドメイン
+#### 📣 Opportunity (Recruitment)
+- Register a recruitment
+- Edit a recruitment
+- Make a recruitment public/private
+- Delete a recruitment
+
+#### 🗓️ OpportunitySlot (Event Date and Time)
+- Edit the recruitment event date and time
+- Change the event schedule
+
+#### 📩 Reservation
+- Request a reservation
+- Approve a reservation
+- Deny a reservation
+- Cancel a reservation
+- Join a companion's reservation
+
+#### 🧾 Participation
+- Request a past activity
+- Delete a requested activity
+
+#### ✅ Evaluation
+- Evaluate an activity
+
+### 📝 Content
+**Promotes reservations to opportunities**
+
+#### 📰 Article
+- Create an article
+- Edit an article
+- Publish/Unpublish an article
+- Delete an article
+
+### 🎁 Reward
+**Reward for participation**
+
+#### 🙋 Utility
+- Register a utility
+- Edit a utility
+- Publish/Unpublish a utility
+- Delete a utility
+
+#### 🎟️ Ticket
+- ​​Buy a ticket
+- Giving/Receiving Tickets
+- Refunding Tickets
+- Using Tickets
+
+### 💰 Points
+**Issuing community funds and actively circulating points**
+
+- Issuing community points
+- Contributing points from the community
+- Giving (your own) points
+
+---
+
+## 🚀 Quick Domain Implementation Guide
+
+### 1️⃣ Three Questions to Determine Minimum Functionality
+
+1. **Asset**: Are tangible assets (including chin and foot pillows) such as accommodation, meals, and goods available?
+
+2. **Community**: Are pricing changes acceptable?
+
+3. **Point**: Is operation impossible without a "common balance" across multiple venues?
+- The same participants move between multiple events or organizations.
+- I want to donate or subsidize my remaining points to other organizations.
+- I want to recognize and vote based on cumulative contributions across multiple events.
+
+Answering **Yes/No** in this order will apply to one of the following scenarios.
+The **Introduction Domain Set** written there is your MVP.
+
+### Scenario and Introduction Domain
 
 ```
-Asset: 宿泊・食事・物品など、有形資産（顎足枕を含む対価）が揃っているか？
+Asset: Are tangible assets (including chin and foot pillows) such as accommodation, meals, and items available?
 ├─ ⭕️
-│   Community: 値付けを変更しても受け入れられる関係になっているか？
-│   ├─ ⭕️
-│   │   Point: 複数の場をまたぐ“共通残高”が無いと運営が回らない状況か？
-│   │   ├─ ⭕️ → ①Account + Point  
-│   │   │       └ トークノミクス直行：資産も信頼も十分、ポイントを即流通（e.g. キボッチャ）
-│   │   └─ ✖️ → ②Account + Experience + Location + Content + Reward  
-│   │           └ 有形資産活用：資産潤沢、チケットと体験で十分回る （e.g. 太子 遊びと冒険の森ASOBO）
-│   └─ ✖️
-│       Point: 複数の場をまたぐ“共通残高”が無いと運営が回らない状況か？
-│       ├─ ⭕️ → ③Account + Experience + Point  
-│       │       └ トークンβ併走：運営はポイント熱高いが信頼は浅い、小規模β運用 （※導入しても恐らく機能不全）
-│       └─ ✖️ → ④Account + Experience + Location + Content + Reward  
-│               └ 体験ドリブン：利害が複雑、まず体験とチケットで信頼づくり（e.g. NEO88）  
+│ Community: Are pricing changes acceptable?
+│ ├─ ⭕️
+│ │ Point: Is operation impossible without a "common balance" across multiple venues?
+│ │ ├─ ⭕️ → ① Account + Points
+│ │ │ └ Straight to Tokenomics: Sufficient assets and trust, points can be circulated immediately (e.g., Kibotcha)
+│ │ └─ ✖️ → ② Account + Experience + Location + Content + Rewards
+│ │ └ Utilizing Tangible Assets: Abundant assets, tickets and experiences are enough to keep things running (e.g., ASOBO, Prince's Forest of Play and Adventure)
+│ └─ ✖️
+│ Point: Is operation impossible without a "common balance" across multiple venues?
+│ ├─ ⭕️ → ③Account + Experience + Points
+│ │ └ Token Beta: Admins are enthusiastic about points but lack trust; small-scale beta operation (even if implemented, it will likely malfunction)
+│ └─ ✖️ → ④Account + Experience + Location + Content + Reward
+│ └ Experience-driven: Complicated interests; first build trust through experiences and tickets (e.g., NEO88)
 └─ ✖️
-    Community: 値付けを変更しても受け入れられる関係になっているか？
-    ├─ ⭕️
-    │   Point: 複数の場をまたぐ“共通残高”が無いと運営が回らない状況か？
-    │   ├─ ⭕️ → ⑤Account + Point 
-    │   │       └ デジタル実験：ほぼ資産なくてもオンラインDAOがポイント/NFT実験（e.g. あるけ）
-    │   └─ ✖️ → ⑥Account + Experience + Content  
-    │           └ デジタル体験重視：記事など軽量コンテンツで維持（※役立つところから導入）
-    └─ ✖️ → ⑦Account + Experience + Content （地域で何かを始めたいあなたです🥰）
-            └ ミニマム起動：Questで仲間と資産を作る  
+Community: Are relationships in place that allow pricing changes to be accepted?
+├─ ⭕️
+│ Point: Is the operation in a state where it would be impossible to function without a "common balance" across multiple venues?
+│ ├─ ⭕️ → ⑤Account + Point
+│ │ └ Digital Experiment: Online DAO is a point even with almost no assets/NFT experiment (e.g., Aruke)
+│ └─ ✖️ → ⑥Account + Experience + Content
+│ └ Emphasis on digital experience: Maintain with lightweight content such as articles (introduce useful content first)
+└─ ✖️ → ⑦Account + Experience + Content (For those who want to start something locally 🥰)
+└ Minimum Startup: Build assets with friends through Quest
 ```
 
-### 3️⃣ 使い方（30 秒）
+### 3️⃣ How to Use (30 seconds)
 
-1. 3 つの質問に **Yes / No** を答える  
-2. 上の表で該当する行を探す  
-3. 書かれているドメインセットを **まず実装**  
-4. 信頼や資産が増えたら、表の“上”や“左”にあるシナリオへステップアップ
+1. Answer **Yes/No** to the three questions
+2. Find the appropriate row in the table above
+3. **First implement** the domain set listed
+4. As trust and assets increase, step up to the scenarios “up” or “to the left” of the table

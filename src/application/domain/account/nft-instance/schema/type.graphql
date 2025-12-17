@@ -1,0 +1,34 @@
+type NftInstance {
+  id: ID!
+  instanceId: String!
+  name: String
+  description: String
+  imageUrl: String
+  json: JSON
+  nftToken: NftToken
+  nftWallet: NftWallet
+  createdAt: Datetime!
+  updatedAt: Datetime
+}
+
+type NftToken {
+  id: ID!
+  address: String!
+  name: String
+  symbol: String
+  type: String!
+  json: JSON
+  createdAt: Datetime!
+  updatedAt: Datetime
+}
+
+type NftInstancesConnection {
+  edges: [NftInstanceEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type NftInstanceEdge implements Edge {
+  cursor: String!
+  node: NftInstance!
+}

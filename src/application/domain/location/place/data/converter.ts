@@ -15,6 +15,7 @@ export default class PlaceConverter {
         filter?.keyword ? { name: { contains: filter.keyword } } : {},
         filter?.keyword ? { address: { contains: filter.keyword } } : {},
         filter?.cityCode ? { cityCode: filter.cityCode } : {},
+        filter?.communityId ? { communityId: filter.communityId } : {},
       ],
     };
   }

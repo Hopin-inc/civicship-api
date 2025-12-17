@@ -44,3 +44,9 @@ generates:
         State: "@prisma/client/index.d#State"
 #        Image: "@prisma/client/index.d#Image"
 #      contextType: "@/prisma/client#Context"
+  ./docs/schema.graphql:
+    schema:
+      - "./src/application/**/*.graphql"
+      - "./src/presentation/**/*.graphql"
+    plugins:
+      - schema-ast

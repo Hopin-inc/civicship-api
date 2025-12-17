@@ -8,7 +8,6 @@ import {
   ReservationCancellationTimeoutError,
   ReservationAdvanceBookingRequiredError,
 } from "@/errors/graphql";
-import { DEFAULT_CANCELLATION_DEADLINE_DAYS } from "@/application/domain/experience/reservation/config";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 import * as config from "@/application/domain/experience/reservation/config";
 
@@ -19,7 +18,7 @@ describe("ReservationValidator", () => {
     it("should pass when slot is valid and no conflicts and enough capacity", () => {
       const slot = {
         hostingStatus: "SCHEDULED" as any,
-        startsAt: futureDate(8), // 8 days in future to avoid advance booking error (default is 7 days)
+        startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as any;
       const participantCount = 2;
@@ -56,7 +55,7 @@ describe("ReservationValidator", () => {
     it("should throw if there are conflicting reservations", () => {
       const slot = {
         hostingStatus: "SCHEDULED" as any,
-        startsAt: futureDate(8), // 8 days in future to avoid advance booking error (default is 7 days)
+        startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as any;
 
@@ -68,7 +67,7 @@ describe("ReservationValidator", () => {
     it("should throw if participant count exceeds capacity", () => {
       const slot = {
         hostingStatus: "SCHEDULED" as any,
-        startsAt: futureDate(8), // 8 days in future to avoid advance booking error (default is 7 days)
+        startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as any;
 
@@ -78,15 +77,27 @@ describe("ReservationValidator", () => {
     });
 
     it("should throw if booking is within the default advance booking period", () => {
+      // Mock current time to be after the deadline (23:59 of 1 day before the event)
+      const eventDate = futureDate(0.5); // Event is 0.5 days in future
+      const mockNow = new Date(eventDate);
+      mockNow.setDate(mockNow.getDate() - 1); // 1 day before event (default advance booking days)
+      mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
+      mockNow.setMilliseconds(mockNow.getMilliseconds() + 1); // Just past the deadline
+      
+      jest.useFakeTimers();
+      jest.setSystemTime(mockNow);
+
       const slot = {
         hostingStatus: "SCHEDULED" as any,
-        startsAt: futureDate(5), // 5 days in future (default is 7 days)
+        startsAt: eventDate,
         opportunityId: "test-opportunity-id"
       } as any;
 
       expect(() => {
         validator.validateReservable(slot, 1, 5);
       }).toThrow(ReservationAdvanceBookingRequiredError);
+      
+      jest.useRealTimers();
     });
 
     describe("with custom advance booking days", () => {
@@ -98,7 +109,7 @@ describe("ReservationValidator", () => {
           if (activityId === 'zero-days-activity-id') {
             return 0;
           }
-          return 7; // Default
+          return 1; // Default
         });
       });
 
@@ -106,28 +117,49 @@ describe("ReservationValidator", () => {
         jest.restoreAllMocks();
       });
 
-      it("should pass if booking is within custom advance booking period for specific activity", () => {
+      it("should pass if booking is before the deadline (23:59 of N days before event)", () => {
+        const eventDate = futureDate(4); // Event is 4 days in future
+        const mockNow = new Date(eventDate);
+        mockNow.setDate(mockNow.getDate() - 3); // 3 days before event (custom advance booking days)
+        mockNow.setHours(23, 59, 59, 998); // Just before 23:59:59.999 deadline
+        
+        jest.useFakeTimers();
+        jest.setSystemTime(mockNow);
+
         const slot = {
           hostingStatus: "SCHEDULED" as any,
-          startsAt: futureDate(4), // 4 days in future (custom is 3 days)
+          startsAt: eventDate,
           opportunityId: "custom-activity-id"
         } as any;
 
         expect(() => {
           validator.validateReservable(slot, 1, 5);
         }).not.toThrow();
+        
+        jest.useRealTimers();
       });
 
-      it("should throw if booking is within custom advance booking period for specific activity", () => {
+      it("should throw if booking is after the deadline (23:59 of N days before event)", () => {
+        const eventDate = futureDate(4); // Event is 4 days in future
+        const mockNow = new Date(eventDate);
+        mockNow.setDate(mockNow.getDate() - 3); // 3 days before event (custom advance booking days)
+        mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
+        mockNow.setMilliseconds(mockNow.getMilliseconds() + 1); // Just past the deadline
+        
+        jest.useFakeTimers();
+        jest.setSystemTime(mockNow);
+
         const slot = {
           hostingStatus: "SCHEDULED" as any,
-          startsAt: futureDate(2), // 2 days in future (custom is 3 days)
+          startsAt: eventDate,
           opportunityId: "custom-activity-id"
         } as any;
 
         expect(() => {
           validator.validateReservable(slot, 1, 5);
         }).toThrow(ReservationAdvanceBookingRequiredError);
+        
+        jest.useRealTimers();
       });
 
       it("should allow booking until start time for activities with 0 advance booking days", () => {
@@ -140,6 +172,87 @@ describe("ReservationValidator", () => {
         expect(() => {
           validator.validateReservable(slot, 1, 5);
         }).not.toThrow();
+      });
+
+      it("should allow same-day booking for activities with 0 advance booking days", () => {
+        // Test case: Event starts at 18:00 today, current time is 14:00 today
+        const today = new Date();
+        const eventTime = new Date(today);
+        eventTime.setHours(18, 0, 0, 0); // Event at 18:00
+        
+        const currentTime = new Date(today);
+        currentTime.setHours(14, 0, 0, 0); // Current time is 14:00
+        
+        jest.useFakeTimers();
+        jest.setSystemTime(currentTime);
+
+        const slot = {
+          hostingStatus: "SCHEDULED" as any,
+          startsAt: eventTime,
+          opportunityId: "zero-days-activity-id" // 0 advance booking days
+        } as any;
+
+        // Should be allowed - same day booking before event start
+        expect(() => {
+          validator.validateReservable(slot, 1, 5);
+        }).not.toThrow();
+        
+        jest.useRealTimers();
+      });
+
+      it("should allow booking until 23:59 of N days before event regardless of event start time", () => {
+        // Test case: Event starts at 10:00 AM, 4 days from now
+        const eventDate = futureDate(4);
+        eventDate.setHours(10, 0, 0, 0); // Set event to 10:00 AM
+        
+        // Current time is exactly 23:59 of 3 days before the event
+        const mockNow = new Date(eventDate);
+        mockNow.setDate(mockNow.getDate() - 3); // 3 days before event
+        mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
+        
+        jest.useFakeTimers();
+        jest.setSystemTime(mockNow);
+
+        const slot = {
+          hostingStatus: "SCHEDULED" as any,
+          startsAt: eventDate,
+          opportunityId: "custom-activity-id" // 3 days advance booking
+        } as any;
+
+        // Should be allowed - exactly at the deadline
+        expect(() => {
+          validator.validateReservable(slot, 1, 5);
+        }).not.toThrow();
+        
+        jest.useRealTimers();
+      });
+
+      it("should reject booking after 23:59 of N days before event regardless of event start time", () => {
+        // Test case: Event starts at 10:00 AM, 4 days from now
+        const eventDate = futureDate(4);
+        eventDate.setHours(10, 0, 0, 0); // Set event to 10:00 AM
+        
+        // Current time is 1 millisecond after 23:59 of 3 days before the event
+        const mockNow = new Date(eventDate);
+        mockNow.setDate(mockNow.getDate() - 3); // 3 days before event
+        mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
+        mockNow.setMilliseconds(mockNow.getMilliseconds() + 1); // Just past deadline
+        
+        jest.useFakeTimers();
+        jest.setSystemTime(mockNow);
+
+        const slot = {
+          hostingStatus: "SCHEDULED" as any,
+          startsAt: eventDate,
+          opportunityId: "custom-activity-id" // 3 days advance booking
+        } as any;
+
+        // Should be rejected - past the deadline
+        expect(() => {
+          validator.validateReservable(slot, 1, 5);
+        }).toThrow(ReservationAdvanceBookingRequiredError);
+        
+        jest.useRealTimers();
       });
     });
   });
@@ -233,40 +346,53 @@ describe("ReservationValidator", () => {
     });
 
     it("should throw if cancellation is within cancellation deadline (1 day before start)", () => {
-      const slotStartAt = futureDate(0.5); // 0.5日後 (キャンセル期限は1日前)
+      const slotStartAt = futureDate(1); // Event is 1 day in future
+      const mockNow = new Date(slotStartAt);
+      mockNow.setDate(mockNow.getDate() - 1); // 1 day before event
+      mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
+      mockNow.setMilliseconds(mockNow.getMilliseconds() + 1); // Just past the deadline
+      
+      jest.useFakeTimers();
+      jest.setSystemTime(mockNow);
+      
       expect(() => {
         validator.validateCancellable(slotStartAt);
       }).toThrow(ReservationCancellationTimeoutError);
+      
+      jest.useRealTimers();
     });
 
     it("should handle exact boundary condition for cancellation deadline (1 day before start)", () => {
-      // このテストは「1日前ちょうど」ではなく「1日前+1ミリ秒」の予約がキャンセル可能であることを期待している
-      jest.spyOn(Date, 'now').mockImplementation(() => {
-        const mockNow = new Date();
-        return mockNow.getTime();
-      });
-
-      const now = new Date(Date.now());
-      const exactLimit = new Date(now);
-      exactLimit.setDate(exactLimit.getDate() + DEFAULT_CANCELLATION_DEADLINE_DAYS); // 1日
-      exactLimit.setMilliseconds(exactLimit.getMilliseconds() + 1); // 境界値+1ミリ秒
+      const slotStartAt = futureDate(2); // Event is 2 days in future
+      const mockNow = new Date(slotStartAt);
+      mockNow.setDate(mockNow.getDate() - 1); // 1 day before event
+      mockNow.setHours(23, 59, 59, 999); // Exactly at 23:59:59.999 deadline
+      
+      jest.useFakeTimers();
+      jest.setSystemTime(mockNow);
 
       expect(() => {
-        validator.validateCancellable(exactLimit);
+        validator.validateCancellable(slotStartAt);
       }).not.toThrow();
 
-      jest.restoreAllMocks();
+      jest.useRealTimers();
     });
 
     it("should throw when exactly at cancellation deadline limit (1 day before start)", () => {
-      const now = new Date();
-      const exactLimit = new Date(now);
-      exactLimit.setDate(exactLimit.getDate() + DEFAULT_CANCELLATION_DEADLINE_DAYS); // 1日
-      exactLimit.setMilliseconds(exactLimit.getMilliseconds() - 1); // Just under the limit
+      const slotStartAt = futureDate(1); // Event is 1 day in future
+      const mockNow = new Date(slotStartAt);
+      mockNow.setDate(mockNow.getDate() - 1); // 1 day before event
+      mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
+      mockNow.setMilliseconds(mockNow.getMilliseconds() + 1); // Just past the deadline
+      
+      jest.useFakeTimers();
+      jest.setSystemTime(mockNow);
 
       expect(() => {
-        validator.validateCancellable(exactLimit);
+        validator.validateCancellable(slotStartAt);
       }).toThrow(ReservationCancellationTimeoutError);
+      
+      jest.useRealTimers();
     });
 
     it("should handle future daylight saving time transitions", () => {
@@ -313,11 +439,21 @@ describe("ReservationValidator", () => {
         validator.validateCancellable(slotStartAt, 'any-activity-id');
       }).not.toThrow();
       
-      const nearSlotStartAt = futureDate(0.5); // 0.5日後 (キャンセル期限は1日前)
+      // Test cancellation after 23:59 deadline
+      const nearSlotStartAt = futureDate(1); // Event is 1 day in future
+      const mockNow = new Date(nearSlotStartAt);
+      mockNow.setDate(mockNow.getDate() - 1); // 1 day before event
+      mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
+      mockNow.setMilliseconds(mockNow.getMilliseconds() + 1); // Just past the deadline
+      
+      jest.useFakeTimers();
+      jest.setSystemTime(mockNow);
       
       expect(() => {
         validator.validateCancellable(nearSlotStartAt, 'any-activity-id');
       }).toThrow(ReservationCancellationTimeoutError);
+      
+      jest.useRealTimers();
     });
   });
 });

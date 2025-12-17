@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { GqlWallet } from "@/types/graphql";
 import {
   walletSelectDetail,
@@ -10,44 +10,38 @@ import {
   createLoaderById,
 } from "@/presentation/graphql/dataloader/utils";
 
-export function createWalletLoader(issuer: PrismaClientIssuer) {
+export function createWalletLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaWalletDetail, GqlWallet>(async (ids) => {
-    return issuer.internal((tx) =>
-      tx.wallet.findMany({
-        where: { id: { in: [...ids] } },
-        select: walletSelectDetail,
-      }),
-    );
+    return prisma.wallet.findMany({
+      where: { id: { in: [...ids] } },
+      select: walletSelectDetail,
+    });
   }, WalletPresenter.get);
 }
 
-export function createWalletsByUserLoader(issuer: PrismaClientIssuer) {
+export function createWalletsByUserLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"userId", PrismaWalletDetail, GqlWallet>(
     "userId",
     async (userIds) => {
-      return issuer.internal((tx) =>
-        tx.wallet.findMany({
-          where: {
-            userId: { in: [...userIds] },
-          },
-          include: { currentPointView: true },
-        }),
-      );
+      return prisma.wallet.findMany({
+        where: {
+          userId: { in: [...userIds] },
+        },
+        include: { currentPointView: true },
+      });
     },
     WalletPresenter.get,
   );
 }
 
-export function createWalletsByCommunityLoader(issuer: PrismaClientIssuer) {
+export function createWalletsByCommunityLoader(prisma: PrismaClient) {
   return createHasManyLoaderByKey<"communityId", PrismaWalletDetail, GqlWallet>(
     "communityId",
     async (communityIds) => {
-      return issuer.internal((tx) =>
-        tx.wallet.findMany({
-          where: { communityId: { in: [...communityIds] } },
-          include: { currentPointView: true },
-        }),
-      );
+      return prisma.wallet.findMany({
+        where: { communityId: { in: [...communityIds] } },
+        include: { currentPointView: true },
+      });
     },
     WalletPresenter.get,
   );

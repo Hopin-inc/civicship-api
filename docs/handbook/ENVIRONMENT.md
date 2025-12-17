@@ -1,26 +1,26 @@
-# 環境変数設定ガイド
+# Environment Variable Configuration Guide
 
-## 必須環境変数
+## Required Environment Variables
 
-このガイドでは、civicship-api を実行するために必要なすべての環境変数について説明します。設定を簡単にするため、変数はカテゴリ別に整理されています。
+This guide describes all the environment variables required to run civicship-api. Variables are organized by category for easier configuration.
 
-### コアデータベース・認証
+### Core Database & Authentication
 
 ```env
-# データベース接続（PostgreSQL 16.4、ポート 15432）
+# Database Connection (PostgreSQL 16.4, Port 15432)
 DATABASE_URL=postgresql://username:password@database_host:15432/civicship_dev
 
-# 環境設定
-ENV=LOCAL                    # 環境識別子（LOCAL/DEV/PRD）
-NODE_ENV=development        # Node.js 環境
-PORT=3000                   # サーバーポート
-NODE_HTTPS=true             # 開発時の HTTPS 有効化
+# Environment Settings
+ENV=LOCAL # Environment Identifier (LOCAL/DEV/PRD)
+NODE_ENV=development # Node.js Environment
+PORT=3000 # Server Port
+NODE_HTTPS=true # Enable HTTPS for Development
 ```
 
-### Firebase 認証
+### Firebase Authentication
 
 ```env
-# Firebase プロジェクト設定
+# Firebase Project Settings
 FIREBASE_PROJECT_ID=your_firebase_project_id
 FIREBASE_CLIENT_EMAIL=your_service_account@your_project.iam.gserviceaccount.com
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Private_Key_Here\n-----END PRIVATE KEY-----"
@@ -32,171 +32,173 @@ FIREBASE_AUDIENCE=your_project_id
 ### Google Cloud Storage
 
 ```env
-# ファイルアップロード用 GCS 設定
+# GCS Settings for File Upload
 GCS_SERVICE_ACCOUNT_BASE64=base64_encoded_service_account_json
 GCS_BUCKET_NAME=your_storage_bucket_name
 GCP_PROJECT_ID=your_gcp_project_id
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 ```
 
-### セキュリティ・CORS
+### Security/CORS
 
 ```env
-# クロスオリジンリソース共有（CORS）
+# Cross-Origin Resource Sharing (CORS)
 ALLOWED_ORIGINS="http://localhost:8000 https://localhost:8000"
 
-# セッション管理
+# Session Management
 EXPRESS_SESSION_SECRET=your_session_secret_key
 ```
 
-### アクティビティ予約設定
+### Activity Booking Settings
 
 ```env
-# アクティビティごとの予約受付日数設定（JSON形式）
-ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG={"activity-id-1":0,"activity-id-2":1,"activity-id-3":7}
+# Setting the number of booking days per activity (JSON format)
+# Currently, all activities are set to accept bookings up to one day in advance, so the environment variable is not required (deleted).
+# If individual settings are required, set the following format:
+# ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG={"activity-id-1":0,"activity-id-2":1,"activity-id-3":7}
 ```
 
-## 環境ファイルのセットアップ
+## Environment File Setup
 
-### 開発環境
+### Development Environment
 
-1. **テンプレートをコピーする：**
-   ```bash
-   cp .env.example .env
-   ```
+1. **Copy the template:**
+```bash
+cp .env.example .env
+```
 
-2. **上記の変数を使ってすべての値を入力する**
+2. **Enter all values ​​using the variables above**
 
-3. **重要な注意点：**
-   - Firebase の秘密鍵には正しい改行（`\n`）を含めること
-   - PostgreSQL のポートは 15432 を使用する（デフォルトの 5432 ではない）
-   - 開発時 HTTPS のために `NODE_HTTPS=true` を設定する
+3. **Important Notes:**
+- Include the correct line breaks (`\n`) in your Firebase secret key
+- Use PostgreSQL port 15432 (not the default 5432)
+- Set `NODE_HTTPS=true` for development HTTPS
 
-### テスト環境
+### Test Environment
 
-1. **テスト用ファイルを作成する：**
-   ```bash
-   cp .env.test .env.test.local
-   ```
+1. **Create a test file:**
+```bash
+cp .env.test .env.test.local
+```
 
-2. **テスト専用の値を設定する：**
-   - テスト用 Firebase プロジェクトを使用
-   - テスト用のデータベース URL を使用
-   - テスト用 API キーを設定
+2. **Set test-only values:**
+- Use a test Firebase project
+- Use a test database URL
+- Set a test API key
 
-### 本番環境
+### Production Environment
 
-1. **環境固有の値を使用する：**
-   - 本番用 Firebase プロジェクト
-   - 本番用のデータベース接続
-   - 本番用の GCS バケット
-   - 本番用の API エンドポイント
+1. **Use environment-specific values:**
+- Production Firebase project
+- Production database connection
+- Production GCS bucket
+- ​​Production API endpoint
 
-2. **セキュリティ上の注意点：**
-   - 各環境で強力かつ一意なシークレットを使用すること
-   - API キーやシークレットは定期的にローテーションすること
-   - サービスアカウントには最小限の権限のみを与えること
+2. **Security Considerations:**
+- Use a strong and unique secret for each environment
+- API Rotate keys and secrets regularly.
+- Grant service accounts only minimal privileges.
 
-## 環境変数カテゴリの説明
+## Environment Variable Category Description
 
-### データベース関連変数
-- `DATABASE_URL`: 資格情報およびデータベース名を含む PostgreSQL 接続文字列
-- Prisma ORM によるすべての DB 操作に使用される
+### Database-related variables
+- `DATABASE_URL`: PostgreSQL connection string including credentials and database name.
+- Used for all database operations via Prisma ORM.
 
-### Firebase 関連変数
-- `FIREBASE_PROJECT_ID`: Firebase プロジェクト ID
-- `FIREBASE_CLIENT_EMAIL`: サーバー認証用のサービスアカウントメール
-- `FIREBASE_PRIVATE_KEY`: サービスアカウント秘密鍵（改行 `\n` 含む必要あり）
-- `FIREBASE_TOKEN_API_KEY`: トークン検証用の Web API キー
-- `FIREBASE_ISSUER` / `FIREBASE_AUDIENCE`: JWT 検証用パラメータ
+### Firebase-related variables
+- `FIREBASE_PROJECT_ID`: Firebase project ID.
+- `FIREBASE_CLIENT_EMAIL`: Service account email for server authentication.
+- `FIREBASE_PRIVATE_KEY`: Service account private key (must include line breaks).
+- `FIREBASE_TOKEN_API_KEY`: Web API key for token validation.
+- `FIREBASE_ISSUER` / `FIREBASE_AUDIENCE`: JWT validation parameters.
 
-### Google Cloud Storage 関連変数
-- `GCS_SERVICE_ACCOUNT_BASE64`: Base64 エンコードされたサービスアカウント JSON
-- `GCS_BUCKET_NAME`: ファイルアップロード先のストレージバケット名
-- `GCP_PROJECT_ID`: Google Cloud プロジェクト ID
-- `GOOGLE_APPLICATION_CREDENTIALS`: サービスアカウント JSON のパス
+### Google Cloud Storage-related variables
+- `GCS_SERVICE_ACCOUNT_BASE64`: Base64-encoded service account JSON.
+- `GCS_BUCKET_NAME`: Name of the storage bucket to upload files to
+- `GCP_PROJECT_ID`: Google Cloud project ID
+- `GOOGLE_APPLICATION_CREDENTIALS`: Path to the service account JSON
 
-### LINE 連携関連変数
-- リッチメニュー ID はデータベースに保存され、管理画面で設定される
-- LINE チャネル認証情報（LIFF、メッセージング）もデータベースで管理
-- 環境変数として必要なのはリッチメニュー ID のみ
+### LINE Integration-Related Variables
+- The rich menu ID is stored in the database and configured in the admin panel.
+- LINE channel credentials (LIFF, Messaging) are also managed in the database.
+- Only the rich menu ID is required as an environment variable.
 
-### セキュリティ関連変数
-- `CIVICSHIP_ADMIN_API_KEY`: 管理者エンドポイント保護用の API キー
-- `ALLOWED_ORIGINS`: Web クライアント向けの CORS 設定
-- `EXPRESS_SESSION_SECRET`: セッション暗号化用の秘密鍵
+### Security-Related Variables
+- `CIVICSHIP_ADMIN_API_KEY`: API key for administrator endpoint protection
+- `ALLOWED_ORIGINS`: CORS settings for the web client
+- `EXPRESS_SESSION_SECRET`: Secret key for session encryption
 
-## セキュリティベストプラクティス
+## Security Best Practices
 
-### シークレット管理
-- `.env` ファイルは **絶対にバージョン管理に含めないこと**
-- 環境ごとに異なる値を使用する（dev / staging / prod）
-- 本番用の秘密情報は安全なシークレット管理システムに保管する
-- API キーや秘密鍵は定期的にローテーションする
+### Secret Management
+- `.env` files should **never be included in version control**
+- Use different values ​​for each environment (dev / staging / prod)
+- Store production secrets in a secure secrets management system
+- Rotate API keys and secret keys regularly
 
-### Firebase セキュリティ
-- サービスアカウントは最小限の権限に制限する
-- Firebase Authentication のセキュリティルールを有効にする
-- Web クライアントの CORS 設定を適切に行う
-- Firebase の利用状況や認証ログを監視する
+### Firebase Security
+- Limit service accounts to least privileged roles
+- Enable Firebase Authentication security rules
+- Properly configure CORS for web clients
+- Monitor Firebase usage and authentication logs
 
-### データベースセキュリティ
-- 強力な DB パスワードを使用する
-- DB アクセスは必要な IP 範囲に制限する
-- DB 接続には SSL/TLS を使用する
-- 定期的なバックアップとセキュリティアップデートを実施する
+### Database Security
+- Use a strong database password
+- Restrict database access to required IP ranges
+- Use SSL/TLS for database connections
+- Implement regular backups and security updates
 
-### API セキュリティ
-- 管理者用 API エンドポイントは強力な API キーで保護する
-- 公開エンドポイントにはレート制限を設ける
-- API の利用状況や認証試行を監視する
-- 外部通信には必ず HTTPS を使用する
+### API Security
+- Protect admin API endpoints with strong API keys
+- Rate limit public endpoints
+- Monitor API usage and authentication attempts
+- Always use HTTPS for external communications
 
-## 環境変数に関するトラブルシューティング
+## Environment Variable Troubleshooting
 
-### よくある問題
+### Common Issues
 
-**データベース接続の問題：**
-- `DATABASE_URL` の形式や資格情報を確認
-- PostgreSQL コンテナがポート 15432 で起動しているか確認
-- 対象のデータベースが存在し、アクセス可能であるか確認
+**Database Connection Issues**
+- Verify the format and credentials of your `DATABASE_URL`
+- Ensure the PostgreSQL container is running on port 15432
+- Verify that the target database exists and is accessible.
 
-**Firebase 認証エラー：**
-- すべての Firebase 環境変数が設定されているか確認
-- `FIREBASE_PRIVATE_KEY` に適切な改行（`\n`）が含まれているか確認
-- Firebase プロジェクトに認証機能が有効か確認
-- サービスアカウントの権限が適切に設定されているか確認
+**Firebase Authentication Error:**
+- Verify that all Firebase environment variables are set.
+- Verify that `FIREBASE_PRIVATE_KEY` contains the appropriate line breaks (`\n`).
+- Verify that authentication is enabled for your Firebase project.
+- Verify that the service account permissions are set correctly.
 
-**GCS アップロード失敗：**
-- `GCS_SERVICE_ACCOUNT_BASE64` が正しくエンコードされているか確認
-- バケットが存在し、アクセス可能か確認
-- サービスアカウントに Storage Object Admin 権限があるか確認
-- `GCP_PROJECT_ID` が正しいか確認
+**GCS Upload Failed:**
+- Verify that `GCS_SERVICE_ACCOUNT_BASE64` is correctly encoded.
+- Verify that the bucket exists and is accessible.
+- Verify that the service account has Storage Object Admin permissions.
+- Verify that `GCP_PROJECT_ID` is correct.
 
-**CORS 問題：**
-- `ALLOWED_ORIGINS` にクライアントのドメインが含まれているか確認
-- プロトコル（http / https）が一致しているか確認
-- URL に末尾スラッシュが含まれていないことを確認
+**CORS Issue:**
+- Verify that the client domain is included in `ALLOWED_ORIGINS`.
+- Verify that the protocol (http/https) matches.
+- Verify that the URL does not contain a trailing slash.
 
-### バリデーション用コマンド
+### Validation Command
 
 ```bash
-# データベース接続確認
+# Verify Database Connection
 pnpm db:studio
 
-# Firebase 設定の確認
-# Firebase 初期化ログをサーバー上で確認
+# Firebase Verifying the configuration
+# Check the Firebase initialization log on the server
 
-# GCS 接続確認
-# GraphQL ミューテーション経由でテストファイルをアップロード
+# Verify GCS connectivity
+# Upload a test file via GraphQL mutation
 
-# 環境変数の確認
+# Verify environment variables
 node -e "console.log(process.env.DATABASE_URL ? 'DB OK' : 'DB Missing')"
 ```
 
-## 関連ドキュメント
+## Related documentation
 
-- [セットアップガイド](../SETUP.md) - インストール手順の全体
-- [トラブルシューティング](../TROUBLESHOOTING.md) - 詳細な問題解決
-- [開発フロー](DEVELOPMENT.md) - 日常的な開発手順
-- [アーキテクチャガイド](ARCHITECTURE.md) - システム設計の概要
+- [Setup Guide](./SETUP.md) - Overall installation instructions
+- [Troubleshooting](./TROUBLESHOOTING.md) - Detailed troubleshooting
+- [Development Flow](DEVELOPMENT.md) - Daily development procedures
+- [Architecture Guide](ARCHITECTURE.md) - System design overview

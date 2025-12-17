@@ -47,10 +47,10 @@ export default class WalletValidator {
     userId: string,
     createIfNeeded: boolean,
   ) {
-    const communityWallet = await this.service.findCommunityWalletOrThrow(ctx, communityId);
+    const communityWallet = await this.service.findCommunityWalletOrThrow(ctx, communityId, tx);
     const memberWallet = createIfNeeded
       ? await this.service.createMemberWalletIfNeeded(ctx, userId, communityId, tx)
-      : await this.service.findMemberWalletOrThrow(ctx, userId, communityId);
+      : await this.service.findMemberWalletOrThrow(ctx, userId, communityId, tx);
 
     switch (direction) {
       case TransferDirection.COMMUNITY_TO_MEMBER:
@@ -80,6 +80,10 @@ export default class WalletValidator {
     fromWallet: Pick<PrismaWallet, "currentPointView"> | null,
     toWallet: Pick<PrismaWallet, "currentPointView"> | null,
   ) {
+    if (transferPoints <= 0) {
+      throw new ValidationError("Transfer points must be a positive value", ["transferPoints"]);
+    }
+
     if (!fromWallet || !toWallet) {
       const invalidArgs = [
         ...(!fromWallet ? ["fromWallet"] : []),

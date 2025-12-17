@@ -1,35 +1,38 @@
 import winston from "winston";
 import { LoggingWinston } from "@google-cloud/logging-winston";
+import { severity, errorReport } from "./formats/severity";
+import { axiosNormalizer } from "./formats/axios";
+import { sizeGuard } from "./formats/sizeGuard";
+import { traceContext } from "./formats/traceContext";
 
 const isLocal = process.env.ENV === "LOCAL";
 
-const severity = winston.format((log) => {
-  log.severity = log.level.toUpperCase();
-  return log;
-});
-
-const errorReport = winston.format((log) => {
-  if (log instanceof Error) {
-    log.err = {
-      name: log.name,
-      message: log.message,
-      stack: log.stack,
-    };
-  }
-  return log;
-});
-
-const format: winston.Logform.Format[] = [
+const baseFormats: winston.Logform.Format[] = [
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
   severity(),
   errorReport(),
+  axiosNormalizer(), // まず Axios を構造化
+  sizeGuard(),       // 次にサイズ制御
+  traceContext(),    // トレース情報を追加
 ];
+
 if (!isLocal) {
-  format.push(winston.format.json());
+  baseFormats.push(winston.format.json());
 } else {
-  format.push(winston.format.simple());
+  baseFormats.push(
+    winston.format.printf((info) => {
+      const { timestamp, level, message, __truncated, ...rest } = info as {
+        timestamp?: string; level?: string; message?: string; __truncated?: boolean;
+        [k: string]: unknown;
+      };
+      const restStr = Object.keys(rest).length ? ` ${JSON.stringify(rest, null, 2)}` : "";
+      return `${timestamp ?? ""} ${level ?? ""}: ${message ?? ""}${
+        __truncated ? " [TRUNCATED]" : ""
+      }${restStr}`;
+    }),
+  );
 }
 
 const transports: winston.transport[] = [];
@@ -40,9 +43,9 @@ if (isLocal) {
 }
 
 const logger = winston.createLogger({
-  // level: isLocal ? "debug" : "info",
-  level: "debug",
-  format: winston.format.combine(...format),
+  level: "debug", // 本番は "info" 推奨
+  format: winston.format.combine(...baseFormats),
   transports,
 });
+
 export default logger;

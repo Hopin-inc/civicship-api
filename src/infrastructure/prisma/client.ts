@@ -4,9 +4,12 @@ import { ITXClientDenyList } from "@prisma/client/runtime/library";
 import { AuthorizationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import { injectable } from "tsyringe";
+import { trace, context } from "@opentelemetry/api";
 
 type Transaction = Omit<PrismaClient, ITXClientDenyList>;
 type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
+
+const isProduction = process.env.NODE_ENV === "production";
 
 export const prismaClient = new PrismaClient({
   log: [
@@ -16,21 +19,33 @@ export const prismaClient = new PrismaClient({
     { level: "warn", emit: "stdout" },
   ],
 });
-prismaClient.$on("query", async ({ query, params, duration }) => {
-  logger.debug("Prisma query executed", {
-    query,
-    params,
-    duration,
-  });
 
-  if (duration > 1000) {
-    logger.warn("Slow query detected", {
-      query,
-      params,
-      duration,
+prismaClient.$on("query", async (e) => {
+  if (!isProduction) {
+    logger.debug("Prisma query executed", {
+      query: e.query,
+      params: e.params,
+      duration: e.duration,
     });
   }
 });
+
+prismaClient.$use(async (params, next) => {
+  const start = Date.now();
+  const result = await next(params);
+  const duration = Date.now() - start;
+
+  if (duration > 300) {
+    logger.warn("Slow Prisma operation", {
+      model: params.model ?? "raw",
+      action: params.action,
+      duration,
+    });
+  }
+
+  return result;
+});
+
 prismaClient.$on("error", async ({ message, target }) => {
   logger.error("Prisma: Error occurred.", { message, target });
 });
@@ -52,7 +67,10 @@ export class PrismaClientIssuer {
   }
 
   public async onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    logger.debug("onlyBelongingCommunity invoked", {
+    const currentSpan = trace.getSpan(context.active());
+    const traceId = currentSpan?.spanContext().traceId;
+    logger.debug("🔍 [TRACE] onlyBelongingCommunity invoked", {
+      traceId,
       isAdmin: ctx.isAdmin,
       hasCurrentUser: !!ctx.currentUser,
     });
@@ -67,6 +85,10 @@ export class PrismaClientIssuer {
       try {
         return await this.client.$transaction(
           async (tx) => {
+            const txSpan = trace.getSpan(context.active());
+            const txTraceId = txSpan?.spanContext().traceId;
+            logger.debug("🔍 [TRACE] Inside $transaction", { traceId: txTraceId });
+            
             await this.setRls(tx);
             await this.setRlsConfigUserId(tx, user.id);
             return await callback(tx);
@@ -97,10 +119,18 @@ export class PrismaClientIssuer {
   }
 
   private async bypassRls<T>(callback: CallbackFn<T>): Promise<T> {
+    const currentSpan = trace.getSpan(context.active());
+    const traceId = currentSpan?.spanContext().traceId;
+    logger.debug("🔍 [TRACE] bypassRls invoked", { traceId });
+
     const startedAt = Date.now();
     try {
       return await this.client.$transaction(
         async (tx) => {
+          const txSpan = trace.getSpan(context.active());
+          const txTraceId = txSpan?.spanContext().traceId;
+          logger.debug("🔍 [TRACE] Inside $transaction (bypassRls)", { traceId: txTraceId });
+          
           await this.setRls(tx, true);
           await this.setRlsConfigUserId(tx, null);
           return await callback(tx);
@@ -121,7 +151,7 @@ export class PrismaClientIssuer {
 
   private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
     const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
-      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', FALSE) as value;`,
+      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', TRUE) as value;`,
     );
     return value;
   }
@@ -129,7 +159,7 @@ export class PrismaClientIssuer {
   private async setRls(tx: Transaction, bypass: boolean = false) {
     const bypassConfig = bypass ? "on" : "off";
     const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
-      `SELECT set_config('app.rls_bypass', '${bypassConfig}', FALSE) as value;`,
+      `SELECT set_config('app.rls_bypass', '${bypassConfig}', TRUE) as value;`,
     );
     return value;
   }

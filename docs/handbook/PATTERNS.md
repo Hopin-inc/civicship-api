@@ -1,448 +1,449 @@
-# 実装パターンとベストプラクティス
+# Implementation Patterns and Best Practices
 
-このドキュメントでは、civicship-apiプロジェクトで使用される重要な実装パターン、アーキテクチャパターン、およびベストプラクティスについて説明します。
+This document describes important implementation patterns, architectural patterns, and best practices used in the civicship-api project.
 
-## アーキテクチャパターン
+## Architectural Pattern
 
-### ドメイン構造パターン
+### Domain Structure Pattern
 
-確立されたドメインパターンに従う:
+Follow an Established Domain Pattern:
 
 ```
 src/application/domain/your-domain/
 ├── controller/
-│   ├── resolver.ts      # GraphQLリゾルバー
-│   └── dataloader.ts    # データローディング最適化
-├── usecase.ts          # ビジネスロジック統制
-├── service.ts          # コアドメイン操作
+│ ├── resolver.ts # GraphQL resolver
+│ └── dataloader.ts # Data Loading Optimization
+├── usecase.ts # Business Logic Control
+├── service.ts # Core Domain Operations
 ├── data/
-│   ├── repository.ts   # データアクセス実装
-│   ├── interface.ts    # リポジトリ契約
-│   ├── converter.ts    # データ変換
-│   └── type.ts         # ドメイン型
-├── schema/             # GraphQLスキーマファイル
-└── presenter.ts        # レスポンス整形
+│ ├── repository.ts # Data Access Implementation
+│ ├── interface.ts # Repository Contract
+│ ├── converter.ts # Data Conversion
+│ └── type.ts # Domain Types
+├── schema/ # GraphQL Schema File
+└── presenter.ts # Response Formatting
 ```
 
-### 依存性注入パターン
+### Dependency Injection Pattern
 
 ```typescript
 // src/application/provider.ts
 import { container } from "tsyringe";
 
-// サービスの登録
+// Registering the service
 container.registerSingleton<IUserRepository>(
-  "UserRepository", 
-  UserRepository
+"UserRepository",
+UserRepository
 );
 
 container.registerSingleton<UserService>(
-  "UserService", 
-  UserService
+"UserService",
+UserService
 );
 
-// 使用例
+// Usage example
 @injectable()
 export class UserService {
-  constructor(
-    @inject("UserRepository") private userRepository: IUserRepository
-  ) {}
+constructor(
+@inject("UserRepository") private userRepository: IUserRepository
+) {}
 }
 ```
 
-## パフォーマンス最適化パターン
+## Performance optimization patterns
 
-### DataLoaderパターン
+### DataLoader pattern
 
-N+1クエリ問題を解決するためのDataLoader実装:
+Implementing DataLoader to solve the N+1 query problem:
 
 ```typescript
 // src/application/domain/your-domain/controller/dataloader.ts
 import DataLoader from 'dataloader';
 
 export const createUserDataLoader = (context: IContext) => {
-  return new DataLoader<string, User>(async (userIds) => {
-    const users = await context.prisma.user.findMany({
-      where: { id: { in: userIds as string[] } }
-    });
-    
-    // IDの順序を保持してマッピング
-    return userIds.map(id => 
-      users.find(user => user.id === id) || null
-    );
-  });
+return new DataLoader<string, User>(async (userIds) => {
+const users = await context.prisma.user.findMany({
+where: { id: { in: userIds as string[] } }
+});
+
+// Map IDs while preserving their order
+return userIds.map(id =>
+users.find(user => user.id === id) || null
+);
+});
 };
 
-// GraphQLリゾルバーでの使用
+// Use with GraphQL resolver
 export const communityResolver = {
-  Community: {
-    members: async (community, args, context) => {
-      const membershipIds = await context.dataloaders.communityMemberships
-        .load(community.id);
-      return context.dataloaders.user.loadMany(membershipIds);
-    }
-  }
+Community: {
+members: async (community, args, context) => {
+const membershipIds = await context.dataloaders.communityMemberships
+.load(community.id);
+return context.dataloaders.user.loadMany(membershipIds);
+}
+}
 };
 ```
 
-### データベース最適化パターン
+### Database Optimization Patterns
 
-1. **関連データの効率的な取得:**
-   ```typescript
-   // 単一クエリで関連データを含める
-   const user = await prisma.user.findUnique({
-     where: { id },
-     include: {
-       memberships: {
-         include: {
-           community: true
-         }
-       }
-     }
-   });
-   ```
+1. **Efficiently Retrieving Related Data**
+```typescript
+// Include Related Data in a Single Query
+const user = await prisma.user.findUnique({
+where: { id },
+include: {
+memberships: {
+include: {
+community: true
+}
+}
+}
+});
+```
 
-2. **インデックスの活用:**
-   ```prisma
-   model User {
-     id    String @id
-     email String @unique
-     
-     @@index([email])
-     @@index([createdAt])
-   }
-   ```
+2. **Leveraging Indexes**
+```prisma
+model User {
+id String @id
+email String @unique
 
-3. **マテリアライズドビューの使用:**
-   ```sql
-   -- パフォーマンス最適化のためのビュー
-   CREATE MATERIALIZED VIEW mv_current_points AS
-   SELECT 
-     wallet_id,
-     SUM(amount) as current_balance
-   FROM transactions
-   GROUP BY wallet_id;
-   ```
+@@index([email])
+@@index([createdAt])
+}
+```
 
-## セキュリティパターン
+3. **Using Materialized Views**
+```sql
+-- Views for Performance Optimization
+CREATE MATERIALIZED VIEW mv_current_points AS
+SELECT
+wallet_id,
+SUM(amount) as current_balance
+FROM transactions
+GROUP BY wallet_id;
+```
 
-### Row-Level Security (RLS) パターン
+## Security Patterns
+
+### Row-Level Security (RLS) Pattern
 
 ```typescript
 // src/infrastructure/prisma/client.ts
 export class PrismaClientIssuer {
-  // コミュニティメンバーのみアクセス可能
-  onlyBelongingCommunity(userId: string, communityId: string) {
-    return this.prisma.$extends({
-      query: {
-        $allModels: {
-          async $allOperations({ args, query }) {
-            // RLSルールを適用
-            return query({
-              ...args,
-              where: {
-                ...args.where,
-                community: { 
-                  memberships: { 
-                    some: { userId, status: 'JOINED' } 
-                  } 
-                }
-              }
-            });
-          }
-        }
-      }
-    });
-  }
+// Accessible only to community members
+   onlyBelongingCommunity(userId: string, communityId: string) {
+      return this.prisma.$extends({
+         query: {
+            $allModels: {
+               async $allOperations({ args, query }) {
+// Apply RLS rules
+                  return query({
+                     ...args,
+                     where: {
+                        ...args.where,
+                        community: {
+                           memberships: {
+                              some: { userId, status: 'JOINED' }
+                           }
+                        }
+                     }
+                  });
+               }
+            }
+         }
+      });
+   }
 }
 ```
 
-### GraphQL認可パターン
+### GraphQL Authorization Pattern
 
 ```typescript
 // src/presentation/graphql/rule.ts
 import { rule, shield, and, or } from 'graphql-shield';
 
-const isAuthenticated = rule({ cache: 'contextual' })(
-  async (parent, args, context) => {
-    return context.currentUser !== null;
-  }
+const isAuthenticated = rule({ cache: 'contextual' })( 
+async (parent, args, context) => { 
+return context.currentUser !== null; 
+}
 );
 
-const isCommunityOwner = rule({ cache: 'strict' })(
-  async (parent, args, context) => {
-    const membership = await context.prisma.membership.findFirst({
-      where: {
-        userId: context.currentUser.id,
-        communityId: args.communityId,
-        role: 'OWNER'
-      }
-    });
-    return !!membership;
-  }
+const isCommunityOwner = rule({ cache: 'strict' })( 
+async (parent, args, context) => { 
+const membership = await context.prisma.membership.findFirst({ 
+where: { 
+userId: context.currentUser.id, 
+communityId: args.communityId, 
+role: 'OWNER' 
+} 
+}); 
+return !!membership; 
+}
 );
 
 export const permissions = shield({
-  Query: {
-    community: isAuthenticated,
-  },
-  Mutation: {
-    updateCommunity: and(isAuthenticated, isCommunityOwner),
-  }
+Query: {
+community: isAuthenticated,
+},
+Mutation: {
+updateCommunity: and(isAuthenticated, isCommunityOwner),
+}
 });
 ```
 
-## エラーハンドリングパターン
+## Error Handling Pattern
 
-### サービス層のエラーハンドリング
+### Service Layer Error Handling
 
 ```typescript
 export class UserService {
-  async createUser(data: CreateUserInput): Promise<User> {
-    try {
-      // 入力を検証
-      await this.validateUserData(data);
-      
-      // ビジネスロジック
-      const user = await this.repository.create(data);
-      
-      return user;
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        throw new UserInputError(error.message);
-      }
-      
-      // 予期しないエラーをログ
-      logger.error('Failed to create user', { error, data });
-      throw new InternalServerError('User creation failed');
-    }
-  }
+async createUser(data: CreateUserInput): Promise<User> {
+try {
+// Validate input
+await this.validateUserData(data);
+
+// Business logic
+const user = await this.repository.create(data);
+
+return user;
+} catch (error) {
+if (error instanceof ValidationError) {
+throw new UserInputError(error.message);
+}
+
+// Log unexpected errors
+logger.error('Failed to create user', { error, data });
+throw new InternalServerError('User creation failed');
+}
+}
 }
 ```
 
-### GraphQLリゾルバーのエラーハンドリング
+### GraphQL Resolver Error Handling
 
 ```typescript
 export const userResolver = {
-  Mutation: {
-    createUser: async (parent, args, context) => {
-      try {
-        return await context.services.user.createUser(args.input);
-      } catch (error) {
-        // GraphQLエラーハンドリングミドルウェアに処理を委ねる
-        throw error;
-      }
-    }
-  }
+Mutation: {
+createUser: async (parent, args, context) => {
+try {
+return await context.services.user.createUser(args.input);
+} catch (error) {
+// Delegate to GraphQL error handling middleware
+throw error;
+}
+}
+}
+}
 };
 ```
 
-## ログ記録パターン
+## Logging Pattern
 
-### 構造化ログ記録
+### Structured Logging
 
 ```typescript
 import { logger } from '../infrastructure/logger';
 
-// 異なるログレベル
+// Different Log Levels
 logger.debug('Debug information', { userId, action });
 logger.info('User created successfully', { userId });
 logger.warn('Deprecated API used', { endpoint });
 logger.error('Database connection failed', { error });
 ```
 
-### 本番環境ログ記録のベストプラクティス
+### Production Logging Best Practices
 
-- **機密データのログ記録を避ける**（パスワード、トークン）
-- **一貫したフィールドで構造化ログを使用**
-- **リクエスト追跡のための相関IDを含める**
-- **監視のためのパフォーマンスメトリクスをログ**
+- **Avoid logging sensitive data** (passwords, tokens)
+- **Use structured logs with consistent fields**
+- **Include a correlation ID for request tracking**
+- **Log performance metrics for monitoring**
 
-### リクエストトレーシングパターン
+### Request Tracing Pattern
 
 ```typescript
-// リクエストタイミングミドルウェア
+// Request Timing Middleware
 app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    logger.info('Request completed', {
-      method: req.method,
-      url: req.url,
-      duration,
-      status: res.statusCode
-    });
-  });
-  next();
+const start = Date.now();
+res.on('finish', () => {
+const duration = Date.now() - start;
+logger.info('Request completed', {
+method: req.method,
+url: req.url,
+duration,
+status: res.statusCode
+});
+});
+next();
 });
 ```
 
-## GraphQL最適化パターン
+## GraphQL Optimization Pattern
 
-### フィールドレベルキャッシング
+### Field-Level Caching
 
 ```typescript
 const resolvers = {
-  User: {
-    communities: async (user, args, context) => {
-      return context.dataloaders.userCommunities.load(user.id);
-    }
-  }
+User: {
+communities: async (user, args, context) => {
+return context.dataloaders.userCommunities.load(user.id);
+}
+}
 };
 ```
 
-### クエリ複雑度分析
+### Query Complexity Analysis
 
 ```typescript
 const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  plugins: [
-    depthLimit(10),
-    costAnalysis({ maximumCost: 1000 })
-  ]
+typeDefs,
+resolvers,
+plugins: [
+depthLimit(10),
+costAnalysis({ maximumCost: 1000 })
+]
 });
 ```
 
-## 命名規則パターン
+## Naming Convention Pattern
 
-### ファイルとディレクトリ
+### Files and Directories
 
-- **ファイル:** kebab-case (`user-service.ts`)
-- **ディレクトリ:** kebab-case (`user-management/`)
-- **テストファイル:** `*.test.ts` または `*.spec.ts`
+- **File:** kebab-case (`user-service.ts`)
+- **Directory:** kebab-case (`user-management/`)
+- **Test Files:** `*.test.ts` or `*.spec.ts`
 
-### コード要素
+### Code Elements
 
-- **変数/関数:** camelCase (`getUserById`)
-- **クラス:** PascalCase (`UserService`)
-- **定数:** UPPER_SNAKE_CASE (`MAX_RETRY_COUNT`)
-- **インターフェース:** 'I'プレフィックス付きPascalCase (`IUserRepository`)
-- **型:** PascalCase (`UserCreateInput`)
+- **Variables/Functions:** camelCase (`getUserById`)
+- **Class:** PascalCase (`UserService`)
+- **Constants:** UPPER_SNAKE_CASE (`MAX_RETRY_COUNT`)
+- **Interface:** 'I'-Prefixed PascalCase (`IUserRepository`)
+- **Type:** PascalCase (`UserCreateInput`)
 
-### GraphQLスキーマ
+### GraphQL Schema
 
-- **型:** PascalCase (`User`, `Community`)
-- **フィールド:** camelCase (`firstName`, `createdAt`)
-- **列挙型:** UPPER_SNAKE_CASE (`USER_ROLE`)
-- **入力型:** サフィックス付きPascalCase (`CreateUserInput`)
+- **Type:** PascalCase (`User`, `Community`)
+- **Fields:** camelCase (`firstName`, `createdAt`)
+- **Enumeration:** UPPER_SNAKE_CASE (`USER_ROLE`)
+- **Input Type:** Suffixed PascalCase (`CreateUserInput`)
 
-## 認証・認可パターン
+## Authentication and Authorization Patterns
 
-### Firebase認証統合
+### Firebase Authentication Integration
 
 ```typescript
-// Firebase認証の検証
+// Verify Firebase Authentication
 const verifyFirebaseToken = async (token: string) => {
-  try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    return decodedToken;
-  } catch (error) {
-    throw new AuthenticationError('Invalid token');
-  }
+try {
+const decodedToken = await admin.auth().verifyIdToken(token);
+return decodedToken;
+} catch (error) {
+throw new AuthenticationError('Invalid token');
+}
 };
 ```
 
-### マルチテナント認証
+### Multi-tenant authentication
 
 ```typescript
-// テナント固有の認証
+// Tenant-specific authentication
 const verifyTenantToken = async (token: string, tenantId: string) => {
-  const auth = admin.auth().tenantManager().authForTenant(tenantId);
-  return await auth.verifyIdToken(token);
+const auth = admin.auth().tenantManager().authForTenant(tenantId);
+return await auth.verifyIdToken(token);
 };
 ```
 
-## データ変換パターン
+## Data conversion pattern
 
-### GraphQL ↔ Prisma変換
+### GraphQL ↔ Prisma conversion
 
 ```typescript
 // src/application/domain/user/data/converter.ts
 export class UserConverter {
-  static toGraphQL(prismaUser: PrismaUser): GraphQLUser {
-    return {
-      id: prismaUser.id,
-      name: prismaUser.name,
-      email: prismaUser.email,
-      createdAt: prismaUser.createdAt.toISOString()
-    };
-  }
-  
-  static toPrisma(graphqlInput: CreateUserInput): PrismaUserCreateInput {
-    return {
-      name: graphqlInput.name,
-      email: graphqlInput.email,
-      // GraphQLからPrismaへの変換ロジック
-    };
-  }
+static toGraphQL(prismaUser: PrismaUser): GraphQLUser {
+return {
+id: prismaUser.id,
+name: prismaUser.name,
+email: prismaUser.email,
+createdAt: prismaUser.createdAt.toISOString()
+};
+}
+
+static toPrisma(graphqlInput: CreateUserInput): PrismaUserCreateInput {
+return {
+name: graphqlInput.name,
+email: graphqlInput.email,
+// GraphQL to Prisma conversion logic
+};
+}
 }
 ```
 
-## 監視とデバッグパターン
+## Monitoring and Debugging Patterns
 
-### パフォーマンス監視
+### Performance Monitoring
 
 ```typescript
-// データベースクエリ監視
+// Database Query Monitoring
 const queryMiddleware = async (params, next) => {
-  const start = Date.now();
-  const result = await next(params);
-  const duration = Date.now() - start;
-  
-  if (duration > 1000) {
-    logger.warn('Slow query detected', {
-      model: params.model,
-      action: params.action,
-      duration
-    });
-  }
-  
-  return result;
+const start = Date.now();
+const result = await next(params);
+const duration = Date.now() - start;
+
+if (duration > 1000) {
+logger.warn('Slow query detected', {
+model: params.model,
+action: params.action,
+duration
+});
+}
+
+return result;
 };
 ```
 
-### メモリ使用量監視
+### Memory Usage Monitoring
 
 ```bash
-# メモリ使用量の監視
+# Monitor Memory Usage
 node --inspect pnpm dev:https
-# chrome://inspectを開く
+# Open chrome://inspect
 ```
 
-## セキュリティベストプラクティス
+## Security Best Practices
 
-### 認証
+### Authentication
 
-- **JWTトークンを常に検証**
-- **トークンの有効期限をチェック**
-- **トークン発行者を検証**
-- **トークンリフレッシュを適切に処理**
+- **Always validate JWT tokens**
+- **Check token expiration**
+- **Validate token issuer**
+- **Gracefully handle token refreshes**
 
-### 認可
+### Authorization
 
-- **ロールベースアクセス制御を実装**
-- **宣言的ルールにGraphQL shieldを使用**
-- **行レベルセキュリティを適用**
-- **複数レイヤーでユーザー権限を検証**
+- **Implement role-based access control**
+- **Use GraphQL shield for declarative rules**
+- **Apply row-level security**
+- **Verify user permissions at multiple layers**
 
-### データ保護
+### Data Protection
 
-- **機密データをログに記録しない**
-- **ユーザー入力をサニタイズ**
-- **パラメータ化クエリを使用**
-- **レート制限を実装**
+- **Do not log sensitive data**
+- **Sanitize user input**
+- **Use parameterized queries**
+- **Implement rate limiting**
 
-### APIセキュリティ
+### API Security
 
-- **全入力を検証**
-- **CORSを適切に実装**
-- **本番環境でHTTPSを使用**
-- **不審な活動を監視**
+- **Validate all input**
+- **Implement CORS properly**
+- **Use HTTPS in production**
+- **Monitor for suspicious activity**
 
-## 関連ドキュメント
+## Related Documentation
 
-- [開発ワークフロー](./DEVELOPMENT.md) - 日常的な開発手順
-- [テストガイド](../TESTING.md) - テスト戦略と実行
-- [コマンドリファレンス](./COMMANDS.md) - 全コマンド一覧
-- [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要
+- [Development Workflow](./DEVELOPMENT.md) - Daily development procedures
+- [Testing Guide](./TESTING.md) - Testing strategy and execution
+- [Command Reference](./COMMANDS.md) - Complete command list
+- [Architecture Guide](./ARCHITECTURE.md) - System design overview

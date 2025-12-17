@@ -1,5 +1,5 @@
 import { injectable, inject } from "tsyringe";
-import { VcIssuanceStatus, Prisma } from "@prisma/client";
+import { VcIssuanceStatus, Prisma, User, Identity, VcIssuanceRequest } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IVCIssuanceRequestRepository } from "./data/interface";
@@ -10,6 +10,13 @@ import IdentityRepository from "@/application/domain/account/identity/data/repos
 import logger from "@/infrastructure/logging";
 import { GqlQueryVcIssuanceRequestsArgs } from "@/types/graphql";
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
+import { classifyError, PERMANENTLY_FAILED_RETRY_COUNT } from "@/infrastructure/utils/errorClassifier";
+
+type VcIssuanceRequestWithUser = VcIssuanceRequest & {
+  user: User & {
+    identities: Identity[];
+  };
+};
 
 @injectable()
 export class VCIssuanceRequestService {
@@ -40,22 +47,6 @@ export class VCIssuanceRequestService {
     id: string,
   ): Promise<PrismaVCIssuanceRequestDetail | null> {
     return await this.vcIssuanceRequestRepository.findById(ctx, id);
-  }
-
-  async preparePendingVCIssuanceRequest(
-    userId: string,
-    evaluationId: string,
-    vcRequest: EvaluationCredentialPayload,
-    ctx: IContext,
-  ): Promise<PrismaVCIssuanceRequestDetail> {
-    return await this.vcIssuanceRequestRepository.create(ctx, {
-      evaluationId,
-      userId,
-      claims: vcRequest.claims,
-      credentialFormat: vcRequest.credentialFormat,
-      schemaId: vcRequest.schemaId,
-      status: VcIssuanceStatus.PENDING,
-    });
   }
 
   async bulkCreateVCIssuanceRequests(
@@ -91,7 +82,7 @@ export class VCIssuanceRequestService {
         evaluationId,
         userId,
         claims: vcRequest.claims,
-        credentialFormat: vcRequest.credentialFormat,
+        credentialFormat: "JWT",
         schemaId: vcRequest.schemaId,
         status: VcIssuanceStatus.PENDING,
       });
@@ -103,22 +94,27 @@ export class VCIssuanceRequestService {
     let { token, isValid } = this.evaluateTokenValidity(identity);
 
     if (!isValid && identity.refreshToken) {
-      try {
-        const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
+      const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
+      if (refreshed) {
         token = refreshed.authToken;
         isValid = true;
-      } catch (error) {
-        logger.error("VCIssuanceService.refreshAuthToken failed", error);
-        return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, error);
+      } else {
+        logger.warn(
+          `Token refresh failed for ${phoneUid}, calling markIssuanceStatus for request ${vcIssuanceRequest.id}`,
+        );
+        return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, "Token refresh failed");
       }
     }
 
     if (!token || !isValid) {
-      logger.warn("No valid authentication token available");
+      const reason = !identity.refreshToken
+        ? "no refresh token available"
+        : "token invalid and refresh failed";
+      logger.warn(`No valid authentication token available: ${reason}`);
       return this.markIssuanceStatus(
         ctx,
         vcIssuanceRequest.id,
-        "No valid authentication token available",
+        `No valid authentication token: ${reason}`,
       );
     }
 
@@ -144,11 +140,10 @@ export class VCIssuanceRequestService {
       const response = await this.client.call<{ jobId: string }>(
         phoneUid,
         token,
-        "/vc/jobs/connectionless/issue-to-holder",
+        "/vc/connectionless/job/issue-to-holder",
         "POST",
         {
           claims: vcRequest.claims,
-          credentialFormat: vcRequest.credentialFormat || "JWT",
           schemaId: vcRequest.schemaId,
         },
       );
@@ -157,6 +152,7 @@ export class VCIssuanceRequestService {
         await this.vcIssuanceRequestRepository.update(ctx, vcIssuanceRequest.id, {
           status: VcIssuanceStatus.PROCESSING,
           jobId: response.jobId,
+          processedAt: new Date(),
         });
 
         return { success: true, requestId: vcIssuanceRequest.id, jobId: response.jobId };
@@ -197,9 +193,14 @@ export class VCIssuanceRequestService {
   async refreshAuthToken(
     uid: string,
     refreshToken: string,
-  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
+  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date } | null> {
     try {
       const response = await this.identityService.fetchNewIdToken(refreshToken);
+
+      if (!response) {
+        logger.warn(`Token refresh failed for uid ${uid}, continuing without refresh`);
+        return null;
+      }
 
       const expiryTime = new Date(Date.now() + response.expiresIn * 1000);
 
@@ -216,8 +217,11 @@ export class VCIssuanceRequestService {
         expiryTime,
       };
     } catch (error) {
-      logger.error(`VCIssuanceService.refreshAuthToken failed for uid ${uid}:`, error);
-      throw error;
+      logger.warn(
+        `VCIssuanceService.refreshAuthToken failed for uid ${uid} (non-blocking):`,
+        error,
+      );
+      return null;
     }
   }
 
@@ -243,5 +247,163 @@ export class VCIssuanceRequestService {
     });
 
     return { success: false, requestId };
+  }
+
+  async syncJobStatus(
+    request: VcIssuanceRequestWithUser,
+    ctx: IContext,
+  ): Promise<{
+    success: boolean;
+    status: "completed" | "failed" | "retrying" | "skipped";
+  }> {
+    const phoneIdentity = request.user.identities.find(
+      (identity) => identity.platform === "PHONE",
+    );
+
+    if (!phoneIdentity) {
+      logger.warn(`⚠️ No phone identity for user ${request.userId}`);
+      return { success: false, status: "skipped" };
+    }
+
+    // トークン検証と更新
+    let { token, isValid } = this.evaluateTokenValidity(phoneIdentity);
+
+    if (!isValid && phoneIdentity.refreshToken) {
+      const refreshed = await this.refreshAuthToken(
+        phoneIdentity.uid,
+        phoneIdentity.refreshToken,
+      );
+      if (refreshed) {
+        token = refreshed.authToken;
+        isValid = true;
+      } else {
+        logger.warn(
+          `Token refresh failed for ${phoneIdentity.uid}, marking request ${request.id} for retry`,
+        );
+        await this.vcIssuanceRequestRepository.update(ctx, request.id, {
+          retryCount: { increment: 1 },
+          errorMessage: "Token refresh failed",
+        });
+        return { success: false, status: "retrying" };
+      }
+    }
+
+    if (!token || !isValid) {
+      const reason = !phoneIdentity.refreshToken
+        ? "no refresh token available"
+        : "token invalid and refresh failed";
+      logger.warn(`❌ No valid token for user ${request.userId}: ${reason}`);
+      return { success: false, status: "skipped" };
+    }
+
+    // 外部API呼び出し
+    try {
+      const jobStatus = await this.client.call<{
+        status: string;
+        result?: { recordId: string };
+      }>(phoneIdentity.uid, token, `/vc/connectionless/job/${request.jobId}`, "GET");
+
+      if (!jobStatus) {
+        logger.warn(`External API returned null for job ${request.jobId}`);
+        await this.vcIssuanceRequestRepository.update(ctx, request.id, {
+          errorMessage: "External API call failed during sync",
+          retryCount: { increment: 1 },
+        });
+        return { success: false, status: "retrying" };
+      }
+
+      if (jobStatus.status === "completed" && jobStatus.result?.recordId) {
+        await this.vcIssuanceRequestRepository.update(ctx, request.id, {
+          status: VcIssuanceStatus.COMPLETED,
+          vcRecordId: jobStatus.result.recordId,
+          completedAt: new Date(),
+        });
+        logger.info(`✅ VC completed: ${request.id}`);
+        return { success: true, status: "completed" };
+      }
+
+      if (jobStatus.status === "failed") {
+        await this.vcIssuanceRequestRepository.update(ctx, request.id, {
+          status: VcIssuanceStatus.FAILED,
+          errorMessage: "VC issuance failed on server",
+          retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
+        });
+        logger.error(`❌ VC failed: ${request.id}`);
+        return { success: false, status: "failed" };
+      }
+
+      // Still processing
+      await this.vcIssuanceRequestRepository.update(ctx, request.id, {
+        retryCount: { increment: 1 },
+      });
+      return { success: true, status: "retrying" };
+    } catch (error) {
+      // エラー分類
+      const classified = classifyError(error, !!token);
+
+      // 詳細ログ（400系エラーの場合はリクエスト詳細も含める）
+      if (classified.requestDetails) {
+        logger.error(`💥 Error in VC request ${request.id} with request details:`, {
+          requestId: request.id,
+          userId: request.userId,
+          jobId: request.jobId,
+          category: classified.category,
+          httpStatus: classified.httpStatus,
+          message: classified.message,
+          url: classified.requestDetails.url,
+          method: classified.requestDetails.method,
+          hasToken: classified.requestDetails.hasToken,
+          requestData: classified.requestDetails.requestData,
+          responseData: classified.requestDetails.responseData,
+        });
+      } else {
+        logger.error(`💥 Error in VC request ${request.id}:`, {
+          requestId: request.id,
+          userId: request.userId,
+          jobId: request.jobId,
+          category: classified.category,
+          httpStatus: classified.httpStatus,
+          message: classified.message,
+        });
+      }
+
+      if (!classified.shouldRetry) {
+        // リトライ不要なエラー → 即座にFAILED
+        // エラーメッセージには必要最小限の情報のみを保存（DBサイズ制限対策）
+        // 詳細なrequestData/responseDataは上記のlogger.errorで出力済み
+        const errorMessage = classified.requestDetails
+          ? `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} | ` +
+            `URL: ${classified.requestDetails.url} | Method: ${classified.requestDetails.method} | ` +
+            `Token: ${classified.requestDetails.hasToken ? "yes" : "no"}`
+          : `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`;
+
+        await this.vcIssuanceRequestRepository.update(ctx, request.id, {
+          status: VcIssuanceStatus.FAILED,
+          errorMessage,
+          retryCount: PERMANENTLY_FAILED_RETRY_COUNT,
+        });
+        return { success: false, status: "failed" };
+      }
+
+      // リトライ可能なエラー
+      const newRetryCount = request.retryCount + 1;
+
+      if (newRetryCount >= classified.maxRetries) {
+        // リトライ回数超過 → FAILED
+        await this.vcIssuanceRequestRepository.update(ctx, request.id, {
+          status: VcIssuanceStatus.FAILED,
+          errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message} (max retries exceeded)`,
+          retryCount: newRetryCount,
+        });
+        return { success: false, status: "failed" };
+      }
+
+      // まだリトライ可能
+      await this.vcIssuanceRequestRepository.update(ctx, request.id, {
+        retryCount: { increment: 1 },
+        errorMessage: `${classified.category} (HTTP ${classified.httpStatus || "unknown"}): ${classified.message}`,
+      });
+      return { success: false, status: "retrying" };
+    }
   }
 }

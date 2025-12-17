@@ -34,12 +34,12 @@ export default class ParticipationService implements IParticipationService {
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  async findParticipation(ctx: IContext, id: string) {
-    return await this.repository.find(ctx, id);
+  async findParticipation(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    return await this.repository.find(ctx, id, tx);
   }
 
-  async findParticipationOrThrow(ctx: IContext, id: string) {
-    const participation = await this.repository.find(ctx, id);
+  async findParticipationOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    const participation = await this.repository.find(ctx, id, tx);
     if (!participation) {
       throw new NotFoundError(`ParticipationNotFound: ID=${id}`);
     }
@@ -74,15 +74,15 @@ export default class ParticipationService implements IParticipationService {
   ) {
     const { data, images } = this.converter.create(input, currentUserId);
 
-    const uploadedImages: Prisma.ImageCreateWithoutParticipationsInput[] = await Promise.all(
-      images.map((img) => this.imageService.uploadPublicImage(img, "participations")),
-    );
+    const uploadedImages: Prisma.ImageCreateWithoutParticipationsInput[] = (await Promise.all(
+      images.map((img) => this.imageService.uploadPublicImage(img, "participations"))
+    )).filter((img): img is Prisma.ImageCreateWithoutParticipationsInput => img !== null);
 
     const createInput: Prisma.ParticipationCreateInput = {
       ...data,
-      images: {
+      images: uploadedImages.length > 0 ? {
         create: uploadedImages,
-      },
+      } : undefined,
     };
 
     return this.repository.create(ctx, createInput, tx);

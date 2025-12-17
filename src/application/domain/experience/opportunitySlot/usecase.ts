@@ -207,11 +207,13 @@ export default class OpportunitySlotUseCase {
       ctx,
       slotCreatedBy,        // 機会作成者（返金支払い側）
       communityId,
+      tx,
     );
     const toWallet = await this.walletService.findMemberWalletOrThrow(
       ctx,
       reservationCreatedBy,  // 予約者（返金受け取り側）
       communityId,
+      tx,
     );
 
     const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(

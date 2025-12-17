@@ -64,15 +64,20 @@ export default class OpportunityService {
 
     const { data, images } = this.converter.create(input, communityId, currentUserId);
 
-    const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = await Promise.all(
-      images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),
-    );
+    const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = (
+      await Promise.all(
+        images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),
+      )
+    ).filter((img): img is Prisma.ImageCreateWithoutOpportunitiesInput => img !== null);
 
     const createInput: Prisma.OpportunityCreateInput = {
       ...data,
-      images: {
-        create: uploadedImages,
-      },
+      images:
+        uploadedImages.length > 0
+          ? {
+              create: uploadedImages,
+            }
+          : undefined,
     };
 
     return await this.repository.create(ctx, createInput, tx);
@@ -92,17 +97,25 @@ export default class OpportunityService {
   ) {
     await this.findOpportunityOrThrow(ctx, id);
 
-    const { data, images } = this.converter.update(input);
+    const currentUserId = getCurrentUserId(ctx, input.createdBy);
 
-    const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = await Promise.all(
-      images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),
-    );
+    const { data, images } = this.converter.update(input, currentUserId);
+
+    const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = (
+      await Promise.all(
+        images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),
+      )
+    ).filter((img): img is Prisma.ImageCreateWithoutOpportunitiesInput => img !== null);
 
     const updateInput: Prisma.OpportunityUpdateInput = {
       ...data,
-      images: {
-        create: uploadedImages,
-      },
+      images:
+        uploadedImages.length > 0
+          ? {
+              deleteMany: {},
+              create: uploadedImages,
+            }
+          : undefined,
     };
 
     return await this.repository.update(ctx, id, updateInput, tx);
@@ -132,5 +145,18 @@ export default class OpportunityService {
         [JSON.stringify(filter?.publishStatus)],
       );
     }
+  }
+
+  async isOwnedByUser(ctx: IContext, opportunityId: string, userId: string): Promise<boolean> {
+    const count = await ctx.issuer.public(ctx, (tx) => {
+      return tx.opportunity.count({
+        where: {
+          id: opportunityId,
+          createdBy: userId,
+        },
+      });
+    });
+
+    return count > 0;
   }
 }

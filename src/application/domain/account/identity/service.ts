@@ -14,25 +14,9 @@ export default class IdentityService {
     @inject("IdentityRepository") private readonly identityRepository: IIdentityRepository,
   ) {}
 
-  async createUserAndIdentity(
-    data: Prisma.UserCreateInput,
-    uid: string,
-    platform: IdentityPlatform,
-    communityId: string,
-    phoneUid?: string,
-  ) {
-    const identityCreate = phoneUid
-      ? {
-          create: [
-            { uid, platform, communityId },
-            { uid: phoneUid, platform: IdentityPlatform.PHONE },
-          ],
-        }
-      : { create: { uid, platform, communityId } };
-
+  async createUserAndIdentity(data: Prisma.UserCreateInput) {
     return this.userRepository.create({
       ...data,
-      identities: identityCreate,
     });
   }
 
@@ -42,23 +26,23 @@ export default class IdentityService {
     uid: string,
     platform: IdentityPlatform,
     communityId: string,
+    tx?: Prisma.TransactionClient,
   ) {
-    const expiryTime = ctx.phoneTokenExpiresAt
-      ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
-      : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
-    await this.identityRepository.create(ctx, {
-      uid,
-      platform,
-      authToken: ctx.idToken,
-      refreshToken: ctx.refreshToken,
-      tokenExpiresAt: expiryTime,
-      user: {
-        connect: { id: userId },
+    // PHONE以外のtokenは不要
+    await this.identityRepository.create(
+      ctx,
+      {
+        uid,
+        platform,
+        user: {
+          connect: { id: userId },
+        },
+        community: {
+          connect: { id: communityId },
+        },
       },
-      community: {
-        connect: { id: communityId },
-      },
-    });
+      tx,
+    );
   }
 
   async linkPhoneIdentity(

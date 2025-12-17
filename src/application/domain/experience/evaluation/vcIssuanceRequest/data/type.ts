@@ -3,6 +3,7 @@ import { EvaluationStatus, Prisma } from "@prisma/client";
 export type EvaluationCredentialClaim = {
   type: "EvaluationCredential";
   score: EvaluationStatus;
+  id: string;
   evaluator: {
     id: string;
     name: string;
@@ -21,7 +22,6 @@ export type EvaluationCredentialClaim = {
 
 export type EvaluationCredentialPayload = {
   claims: EvaluationCredentialClaim;
-  credentialFormat: "JWT";
   schemaId?: string;
 };
 

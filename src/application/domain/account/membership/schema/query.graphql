@@ -33,7 +33,7 @@ input MembershipFilterInput {
     userId: ID
     communityId: ID
     status: MembershipStatus
-    role: Role
+    role: [Role!]
 }
 
 input MembershipSortInput {

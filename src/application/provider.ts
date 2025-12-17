@@ -13,8 +13,16 @@ import CommunityService from "@/application/domain/account/community/service";
 import CommunityUseCase from "@/application/domain/account/community/usecase";
 import UserService from "@/application/domain/account/user/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
+import NFTWalletUsecase from "@/application/domain/account/nft-wallet/usecase";
+import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/repository";
+import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
+import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
+import NftInstanceService from "@/application/domain/account/nft-instance/service";
+import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
+import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
@@ -122,8 +130,17 @@ export function registerProductionDependencies() {
   container.register("UserRepository", { useClass: UserRepository });
   container.register("UserConverter", { useClass: UserConverter });
   container.register("UserService", { useClass: UserService });
+  container.register("NFTWalletRepository", { useClass: NFTWalletRepository });
+  container.register("NftTokenRepository", { useClass: NftTokenRepository });
+  container.register("NftInstanceRepository", { useClass: NftInstanceRepository });
   container.register("NFTWalletService", { useClass: NFTWalletService });
+  container.register("NFTWalletUsecase", { useClass: NFTWalletUsecase });
   container.register("UserUseCase", { useClass: UserUseCase });
+
+  container.register("NftInstanceRepository", { useClass: NftInstanceRepository });
+  container.register("NftInstanceConverter", { useClass: NftInstanceConverter });
+  container.register("NftInstanceService", { useClass: NftInstanceService });
+  container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });
@@ -258,7 +275,6 @@ export function registerProductionDependencies() {
   // ------------------------------
   // 💸 Transaction
   // ------------------------------
-
   container.register("TransactionUseCase", { useClass: TransactionUseCase });
   container.register("TransactionRepository", { useClass: TransactionRepository });
   container.register("TransactionConverter", { useClass: TransactionConverter });
@@ -269,6 +285,11 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("ViewUseCase", { useClass: ViewUseCase });
+
+  // ------------------------------
+  // ------------------------------
+
+  container.register("NmkrClient", { useClass: NmkrClient });
 }
 
 registerProductionDependencies();

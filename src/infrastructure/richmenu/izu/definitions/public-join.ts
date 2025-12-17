@@ -1,0 +1,67 @@
+import { RichMenuDefinition } from "../../types";
+
+export const publicJoinMenu: RichMenuDefinition = {
+  size: {
+    width: 2500,
+    height: 1686,
+  },
+  selected: true,
+  name: "public_menu_join",
+  chatBarText: "メニューを開く",
+  areas: [
+    {
+      bounds: {
+        x: 0,
+        y: 0,
+        width: 810,
+        height: 360,
+      },
+      action: {
+        type: "richmenuswitch",
+        richMenuAliasId: "public-use",
+        data: "switch:public-use",
+      },
+    },
+    {
+      bounds: {
+        x: 810,
+        y: 0,
+        width: 806,
+        height: 360,
+      },
+      action: {
+        type: "richmenuswitch",
+        richMenuAliasId: "public-earn",
+        data: "switch:public-earn",
+      },
+    },
+    {
+      bounds: {
+        x: 1616,
+        y: 0,
+        width: 884,
+        height: 360,
+      },
+      action: {
+        type: "richmenuswitch",
+        richMenuAliasId: "public-join",
+        data: "switch:public-join",
+      },
+    },
+    {
+      bounds: {
+        x: 886,
+        y: 427,
+        width: 1500,
+        height: 576,
+      },
+      action: {
+        type: "uri",
+        label: "IZUとDAO",
+        uri: "https://drive.google.com/file/d/1DAZ2IEdApt-X8SolJ2CKAE6mpw6bHxyk/view?usp=sharing",
+      },
+    },
+  ],
+  alias: "public-join",
+  imagePath: "images/public_menu_join.png",
+};

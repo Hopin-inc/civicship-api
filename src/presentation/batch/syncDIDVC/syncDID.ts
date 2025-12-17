@@ -2,8 +2,9 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DidIssuanceStatus, IdentityPlatform } from "@prisma/client";
 import logger from "@/infrastructure/logging";
-import { markFailedRequests } from "@/presentation/batch/syncDIDVC/utils";
+import { markExpiredDIDRequests } from "@/presentation/batch/syncDIDVC/utils";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
+import { IContext } from "@/types/server";
 
 type BatchResult = {
   total: number;
@@ -17,12 +18,16 @@ export async function processDIDRequests(
   client: DIDVCServerClient,
   didService: DIDIssuanceService,
 ): Promise<BatchResult> {
+  const cutoffDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7日前
+
   const requests = await issuer.internal(async (tx) => {
     return tx.didIssuanceRequest.findMany({
       where: {
-        status: { not: DidIssuanceStatus.COMPLETED },
+        status: DidIssuanceStatus.PROCESSING, // PROCESSINGのみ対象
         jobId: { not: null },
         retryCount: { lt: 5 },
+        // processedAtが7日以内のもののみ（nullまたは7日以内）
+        OR: [{ processedAt: null }, { processedAt: { gte: cutoffDate } }],
       },
       include: {
         user: {
@@ -42,116 +47,44 @@ export async function processDIDRequests(
   let failureCount = 0;
   let skippedCount = 0;
 
+  // 簡潔なループ: Service層に委譲
   for (const request of requests) {
     try {
-      const phoneIdentity = request.user.identities.find(
-        (identity) => identity.platform === IdentityPlatform.PHONE,
-      );
-      if (!phoneIdentity) {
-        logger.warn(`⚠️ No phone identity for user ${request.userId}`);
-        skippedCount++;
-        continue;
-      }
+      const ctx: IContext = { issuer } as IContext;
+      const result = await didService.syncJobStatus(request, ctx);
 
-      let { token, isValid } = didService.evaluateTokenValidity(phoneIdentity);
-
-      if (!isValid && phoneIdentity.refreshToken) {
-        const refreshed = await didService.refreshAuthToken(
-          phoneIdentity.uid,
-          phoneIdentity.refreshToken,
-        );
-
-        if (refreshed) {
-          token = refreshed.authToken;
-          isValid = true;
-        } else {
-          logger.warn(`Token refresh failed for ${phoneIdentity.uid}, skipping request`);
-          // optional: mark error to DB here
+      switch (result.status) {
+        case "completed":
+          successCount++;
+          break;
+        case "failed":
           failureCount++;
-          continue;
-        }
-      }
-
-      if (!token || !isValid) {
-        logger.warn(`❌ No valid token after refresh for user ${request.userId}`);
-        skippedCount++;
-        continue;
-      }
-
-      const jobStatus = await client.call<{
-        status: string;
-        result?: { did: string };
-      }>(phoneIdentity.uid, token || "", `/did/jobs/${request.jobId}`, "GET");
-
-      logger.debug(`jobStatus: ${JSON.stringify(jobStatus, null, 2)}`);
-
-      if (jobStatus === null) {
-        logger.warn(
-          `External API call failed for DID job ${request.jobId}, keeping PENDING status`,
-        );
-        await issuer.internal(async (tx) => {
-          await tx.didIssuanceRequest.update({
-            where: { id: request.id },
-            data: {
-              errorMessage: "External API call failed during sync",
-              retryCount: { increment: 1 },
-            },
-          });
-        });
-        skippedCount++;
-        continue;
-      }
-
-      if (jobStatus?.status === "completed" && jobStatus.result?.did) {
-        await issuer.internal(async (tx) => {
-          await tx.didIssuanceRequest.update({
-            where: { id: request.id },
-            data: {
-              status: DidIssuanceStatus.COMPLETED,
-              didValue: jobStatus.result?.did,
-              completedAt: new Date(),
-            },
-          });
-        });
-        logger.info(`✅ DID completed: ${request.id}`);
-        successCount++;
-      } else if (jobStatus?.status === "failed") {
-        await issuer.internal(async (tx) => {
-          await tx.didIssuanceRequest.update({
-            where: { id: request.id },
-            data: {
-              status: DidIssuanceStatus.FAILED,
-              errorMessage: "DID issuance failed on server",
-            },
-          });
-        });
-        logger.error(`❌ DID failed: ${request.id}`);
-        failureCount++;
-      } else {
-        await issuer.internal(async (tx) => {
-          await tx.didIssuanceRequest.update({
-            where: { id: request.id },
-            data: { retryCount: { increment: 1 } },
-          });
-        });
-        skippedCount++;
+          break;
+        case "retrying":
+        case "skipped":
+          skippedCount++;
+          break;
       }
     } catch (error) {
-      logger.error(`💥 Error in DID request ${request.id}:`, error);
-      await issuer.internal(async (tx) => {
-        await tx.didIssuanceRequest.update({
-          where: { id: request.id },
-          data: {
-            retryCount: { increment: 1 },
-            errorMessage: error instanceof Error ? error.message : "Unknown error",
-          },
-        });
+      // Service層で処理されなかった予期しないエラー
+      logger.error(`Unexpected error in DID sync for request ${request.id}:`, {
+        requestId: request.id,
+        userId: request.userId,
+        jobId: request.jobId,
+        status: request.status,
+        retryCount: request.retryCount,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
       failureCount++;
     }
   }
 
-  await markFailedRequests(issuer, "didIssuanceRequest", DidIssuanceStatus.FAILED);
+  await markExpiredDIDRequests(issuer, {
+    pending: DidIssuanceStatus.PENDING,
+    processing: DidIssuanceStatus.PROCESSING,
+    failed: DidIssuanceStatus.FAILED,
+  });
 
   return {
     total: requests.length,

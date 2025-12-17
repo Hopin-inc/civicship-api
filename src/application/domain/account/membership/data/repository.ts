@@ -3,6 +3,7 @@ import { IContext } from "@/types/server";
 import {
   membershipInclude,
   membershipSelectDetail,
+  PrismaMembershipDetail,
 } from "@/application/domain/account/membership/data/type";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import { injectable } from "tsyringe";
@@ -15,7 +16,7 @@ export default class MembershipRepository implements IMembershipRepository {
     orderBy: Prisma.MembershipOrderByWithRelationInput[],
     take: number,
     cursor?: Prisma.MembershipUserIdCommunityIdCompoundUniqueInput,
-  ) {
+  ): Promise<PrismaMembershipDetail[]> {
     return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
       return tx.membership.findMany({
         where,
@@ -43,7 +44,13 @@ export default class MembershipRepository implements IMembershipRepository {
     });
   }
 
-  async find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
+  async find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return tx.membership.findUnique({
+        where,
+        include: membershipInclude,
+      });
+    }
     return ctx.issuer.public(ctx, (tx) => {
       return tx.membership.findUnique({
         where,

@@ -1,0 +1,2107 @@
+directive @authz(compositeRules: [AuthZDirectiveCompositeRulesInput], deepCompositeRules: [AuthZDirectiveDeepCompositeRulesInput], rules: [AuthZRules]) on FIELD_DEFINITION | INTERFACE | OBJECT
+
+directive @requireRole(role: Role!) on FIELD_DEFINITION
+
+type AccumulatedPointView {
+  accumulatedPoint: BigInt!
+  walletId: String
+}
+
+type Article {
+  authors: [User!]
+  body: String
+  category: ArticleCategory!
+  community: Community
+  createdAt: Datetime
+  id: ID!
+  introduction: String!
+  opportunities: [Opportunity!]
+  publishStatus: PublishStatus!
+  publishedAt: Datetime
+  relatedUsers: [User!]
+  thumbnail: String
+  title: String!
+  updatedAt: Datetime
+}
+
+enum ArticleCategory {
+  ACTIVITY_REPORT
+  INTERVIEW
+}
+
+input ArticleCreateInput {
+  authorIds: [ID!]!
+  body: String
+  category: ArticleCategory!
+  introduction: String!
+  publishStatus: PublishStatus!
+  relatedOpportunityIds: [ID!]
+  relatedUserIds: [ID!]
+  thumbnail: ImageInput
+  title: String!
+}
+
+union ArticleCreatePayload = ArticleCreateSuccess
+
+type ArticleCreateSuccess {
+  article: Article!
+}
+
+union ArticleDeletePayload = ArticleDeleteSuccess
+
+type ArticleDeleteSuccess {
+  articleId: ID!
+}
+
+type ArticleEdge implements Edge {
+  cursor: String!
+  node: Article
+}
+
+input ArticleFilterInput {
+  and: [ArticleFilterInput!]
+  authors: [ID!]
+  categories: [String!]
+  cityCodes: [ID!]
+  communityId: ID
+  dateFrom: Datetime
+  dateTo: Datetime
+  keyword: String
+  not: ArticleFilterInput
+  or: [ArticleFilterInput!]
+  publishStatus: [PublishStatus!]
+  relatedUserIds: [ID!]
+  stateCodes: [ID!]
+}
+
+input ArticleSortInput {
+  createdAt: SortDirection
+  publishedAt: SortDirection
+  startsAt: SortDirection
+}
+
+input ArticleUpdateContentInput {
+  authorIds: [ID!]!
+  body: String
+  category: ArticleCategory!
+  introduction: String!
+  publishStatus: PublishStatus!
+  publishedAt: Datetime
+  relatedOpportunityIds: [ID!]
+  relatedUserIds: [ID!]
+  thumbnail: ImageInput
+  title: String!
+}
+
+union ArticleUpdateContentPayload = ArticleUpdateContentSuccess
+
+type ArticleUpdateContentSuccess {
+  article: Article!
+}
+
+type ArticlesConnection {
+  edges: [ArticleEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input AuthZDirectiveCompositeRulesInput {
+  and: [AuthZRules]
+  not: AuthZRules
+  or: [AuthZRules]
+}
+
+input AuthZDirectiveDeepCompositeRulesInput {
+  and: [AuthZDirectiveDeepCompositeRulesInput]
+  id: AuthZRules
+  not: AuthZDirectiveDeepCompositeRulesInput
+  or: [AuthZDirectiveDeepCompositeRulesInput]
+}
+
+enum AuthZRules {
+  CanReadPhoneNumber
+  IsAdmin
+  IsCommunityManager
+  IsCommunityMember
+  IsCommunityOwner
+  IsOpportunityOwner
+  IsSelf
+  IsUser
+}
+
+scalar BigInt
+
+input CheckCommunityPermissionInput {
+  communityId: ID!
+}
+
+input CheckIsSelfPermissionInput {
+  userId: ID!
+}
+
+input CheckOpportunityPermissionInput {
+  communityId: ID!
+  opportunityId: ID!
+}
+
+type CitiesConnection {
+  edges: [CityEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input CitiesInput {
+  name: String
+}
+
+input CitiesSortInput {
+  code: SortDirection
+}
+
+type City {
+  code: ID!
+  name: String!
+  state: State
+}
+
+type CityEdge implements Edge {
+  cursor: String!
+  node: City
+}
+
+enum ClaimLinkStatus {
+  CLAIMED
+  EXPIRED
+  ISSUED
+}
+
+type CommunitiesConnection {
+  edges: [CommunityEdge!]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Community {
+  articles: [Article!]
+  bio: String
+  config: CommunityConfig
+  createdAt: Datetime
+  establishedAt: Datetime
+  id: ID!
+  image: String
+  memberships: [Membership!]
+  name: String
+  opportunities: [Opportunity!]
+  participations: [Participation!]
+  places: [Place!]
+  pointName: String
+  updatedAt: Datetime
+  utilities: [Utility!]
+  wallets: [Wallet!]
+  website: String
+}
+
+type CommunityConfig {
+  firebaseConfig: CommunityFirebaseConfig
+  lineConfig: CommunityLineConfig
+}
+
+input CommunityConfigInput {
+  firebaseConfig: CommunityFirebaseConfigInput
+  lineConfig: CommunityLineConfigInput
+}
+
+input CommunityCreateInput {
+  bio: String
+  config: CommunityConfigInput
+  createdBy: ID
+  establishedAt: Datetime
+  image: ImageInput
+  name: String!
+  originalId: String
+  pointName: String!
+  website: String
+}
+
+union CommunityCreatePayload = CommunityCreateSuccess
+
+type CommunityCreateSuccess {
+  community: Community!
+}
+
+union CommunityDeletePayload = CommunityDeleteSuccess
+
+type CommunityDeleteSuccess {
+  communityId: String!
+}
+
+type CommunityEdge implements Edge {
+  cursor: String!
+  node: Community
+}
+
+input CommunityFilterInput {
+  cityCodes: [ID!]
+  keyword: String
+  placeIds: [ID!]
+}
+
+type CommunityFirebaseConfig {
+  tenantId: String
+}
+
+input CommunityFirebaseConfigInput {
+  tenantId: String!
+}
+
+type CommunityLineConfig {
+  accessToken: String
+  channelId: String
+  channelSecret: String
+  liffBaseUrl: String
+  liffId: String
+  richMenus: [CommunityLineRichMenuConfig!]
+}
+
+input CommunityLineConfigInput {
+  accessToken: String!
+  channelId: String!
+  channelSecret: String!
+  liffBaseUrl: String!
+  liffId: String!
+  richMenus: [CommunityLineRichMenuConfigInput!]!
+}
+
+type CommunityLineRichMenuConfig {
+  richMenuId: String!
+  type: LineRichMenuType!
+}
+
+input CommunityLineRichMenuConfigInput {
+  richMenuId: String!
+  type: LineRichMenuType!
+}
+
+input CommunitySortInput {
+  createdAt: SortDirection
+}
+
+input CommunityUpdateProfileInput {
+  bio: String
+  establishedAt: Datetime
+  image: ImageInput
+  name: String!
+  pointName: String!
+  website: String
+}
+
+union CommunityUpdateProfilePayload = CommunityUpdateProfileSuccess
+
+type CommunityUpdateProfileSuccess {
+  community: Community!
+}
+
+type CurrentPointView {
+  currentPoint: BigInt!
+  walletId: String
+}
+
+enum CurrentPrefecture {
+  EHIME
+  KAGAWA
+  KOCHI
+  OUTSIDE_SHIKOKU
+  TOKUSHIMA
+  UNKNOWN
+}
+
+type CurrentUserPayload {
+  user: User
+}
+
+input DateTimeRangeFilter {
+  gt: Datetime
+  gte: Datetime
+  lt: Datetime
+  lte: Datetime
+}
+
+scalar Datetime
+
+scalar Decimal
+
+type DidIssuanceRequest {
+  completedAt: Datetime
+  createdAt: Datetime
+  didValue: String
+  id: ID!
+  processedAt: Datetime
+  requestedAt: Datetime
+  status: DidIssuanceStatus!
+  updatedAt: Datetime
+}
+
+enum DidIssuanceStatus {
+  COMPLETED
+  FAILED
+  PENDING
+  PROCESSING
+}
+
+interface Edge {
+  cursor: String!
+}
+
+type Error {
+  code: ErrorCode!
+  message: String!
+}
+
+enum ErrorCode {
+  ALREADY_EVALUATED
+  ALREADY_JOINED
+  ALREADY_STARTED_RESERVATION
+  ALREADY_USED_CLAIM_LINK
+  CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START
+  CLAIM_LINK_EXPIRED
+  FORBIDDEN
+  INSUFFICIENT_BALANCE
+  INTERNAL_SERVER_ERROR
+  INVALID_TRANSFER_METHOD
+  MISSING_WALLET_INFORMATION
+  NOT_FOUND
+  NO_AVAILABLE_PARTICIPATION_SLOTS
+  PERSONAL_RECORD_ONLY_DELETABLE
+  RATE_LIMIT
+  RESERVATION_ADVANCE_BOOKING_REQUIRED
+  RESERVATION_CANCELLATION_TIMEOUT
+  RESERVATION_FULL
+  RESERVATION_NOT_ACCEPTED
+  SLOT_NOT_SCHEDULED
+  TICKET_PARTICIPANT_MISMATCH
+  UNAUTHENTICATED
+  UNKNOWN
+  UNSUPPORTED_TRANSACTION_REASON
+  VALIDATION_ERROR
+}
+
+type Evaluation {
+  comment: String
+  createdAt: Datetime
+  credentialUrl: String
+  evaluator: User
+  histories: [EvaluationHistory!]
+  id: ID!
+  issuedAt: Datetime
+  participation: Participation
+  status: EvaluationStatus!
+  updatedAt: Datetime
+  vcIssuanceRequest: VcIssuanceRequest
+}
+
+input EvaluationBulkCreateInput {
+  evaluations: [EvaluationItem!]!
+}
+
+union EvaluationBulkCreatePayload = EvaluationBulkCreateSuccess
+
+type EvaluationBulkCreateSuccess {
+  evaluations: [Evaluation!]!
+}
+
+input EvaluationCreateInput {
+  comment: String
+  participationId: ID!
+}
+
+type EvaluationEdge implements Edge {
+  cursor: String!
+  node: Evaluation
+}
+
+input EvaluationFilterInput {
+  communityId: ID
+  evaluatorId: ID
+  participationId: ID
+  status: EvaluationStatus
+}
+
+type EvaluationHistoriesConnection {
+  edges: [EvaluationHistoryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type EvaluationHistory {
+  comment: String
+  createdAt: Datetime
+  createdByUser: User
+  evaluation: Evaluation
+  id: ID!
+  status: EvaluationStatus!
+}
+
+type EvaluationHistoryEdge implements Edge {
+  cursor: String!
+  node: EvaluationHistory
+}
+
+input EvaluationHistoryFilterInput {
+  createdByUserId: ID
+  evaluationId: ID
+  status: EvaluationStatus
+}
+
+input EvaluationHistorySortInput {
+  createdAt: SortDirection
+}
+
+input EvaluationItem {
+  comment: String
+  participationId: ID!
+  status: EvaluationStatus!
+}
+
+input EvaluationSortInput {
+  createdAt: SortDirection
+  updatedAt: SortDirection
+}
+
+enum EvaluationStatus {
+  FAILED
+  PASSED
+  PENDING
+}
+
+type EvaluationsConnection {
+  edges: [EvaluationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Identity {
+  createdAt: Datetime
+  platform: IdentityPlatform
+  uid: String!
+  updatedAt: Datetime
+  user: User
+}
+
+input IdentityCheckPhoneUserInput {
+  phoneUid: String!
+}
+
+type IdentityCheckPhoneUserPayload {
+  membership: Membership
+  status: PhoneUserStatus!
+  user: User
+}
+
+enum IdentityPlatform {
+  FACEBOOK
+  LINE
+  PHONE
+}
+
+input ImageInput {
+  alt: String
+  caption: String
+  file: Upload
+}
+
+scalar JSON
+
+enum Language {
+  EN
+  JA
+}
+
+enum LineRichMenuType {
+  ADMIN
+  PUBLIC
+  USER
+}
+
+input LinkPhoneAuthInput {
+  phoneUid: String!
+}
+
+type LinkPhoneAuthPayload {
+  success: Boolean!
+  user: User
+}
+
+type Membership {
+  bio: String
+  community: Community
+  createdAt: Datetime
+  headline: String
+  histories: [MembershipHistory!]
+  reason: MembershipStatusReason!
+  role: Role!
+  status: MembershipStatus!
+  updatedAt: Datetime
+  user: User
+}
+
+input MembershipCursorInput {
+  communityId: ID!
+  userId: ID!
+}
+
+type MembershipEdge implements Edge {
+  cursor: String!
+  node: Membership
+}
+
+input MembershipFilterInput {
+  communityId: ID
+  keyword: String
+  role: [Role!]
+  status: MembershipStatus
+  userId: ID
+}
+
+type MembershipHistory {
+  createdAt: Datetime
+  createdByUser: User
+  id: ID!
+  membership: Membership!
+  reason: MembershipStatusReason!
+  role: Role!
+  status: MembershipStatus!
+  updatedAt: Datetime
+}
+
+input MembershipInviteInput {
+  communityId: ID!
+  role: Role
+  userId: ID!
+}
+
+union MembershipInvitePayload = MembershipInviteSuccess
+
+type MembershipInviteSuccess {
+  membership: Membership!
+}
+
+input MembershipRemoveInput {
+  communityId: ID!
+  userId: ID!
+}
+
+union MembershipRemovePayload = MembershipRemoveSuccess
+
+type MembershipRemoveSuccess {
+  communityId: ID!
+  userId: ID!
+}
+
+input MembershipSetInvitationStatusInput {
+  communityId: ID!
+  userId: ID!
+}
+
+union MembershipSetInvitationStatusPayload = MembershipSetInvitationStatusSuccess
+
+type MembershipSetInvitationStatusSuccess {
+  membership: Membership!
+}
+
+input MembershipSetRoleInput {
+  communityId: ID!
+  userId: ID!
+}
+
+union MembershipSetRolePayload = MembershipSetRoleSuccess
+
+type MembershipSetRoleSuccess {
+  membership: Membership!
+}
+
+input MembershipSortInput {
+  createdAt: SortDirection
+}
+
+enum MembershipStatus {
+  JOINED
+  LEFT
+  PENDING
+}
+
+enum MembershipStatusReason {
+  ACCEPTED_INVITATION
+  ASSIGNED
+  CANCELED_INVITATION
+  CREATED_COMMUNITY
+  DECLINED_INVITATION
+  INVITED
+  REMOVED
+  WITHDRAWN
+}
+
+input MembershipWithdrawInput {
+  communityId: ID!
+  userId: ID!
+}
+
+union MembershipWithdrawPayload = MembershipWithdrawSuccess
+
+type MembershipWithdrawSuccess {
+  communityId: ID!
+  userId: ID!
+}
+
+type MembershipsConnection {
+  edges: [MembershipEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Mutation {
+  articleCreate(input: ArticleCreateInput!, permission: CheckCommunityPermissionInput!): ArticleCreatePayload
+  articleDelete(id: ID!, permission: CheckCommunityPermissionInput!): ArticleDeletePayload
+  articleUpdateContent(id: ID!, input: ArticleUpdateContentInput!, permission: CheckCommunityPermissionInput!): ArticleUpdateContentPayload
+  communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
+  communityDelete(id: ID!, permission: CheckCommunityPermissionInput!): CommunityDeletePayload
+  communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!, permission: CheckCommunityPermissionInput!): CommunityUpdateProfilePayload
+  evaluationBulkCreate(input: EvaluationBulkCreateInput!, permission: CheckCommunityPermissionInput!): EvaluationBulkCreatePayload
+  identityCheckPhoneUser(input: IdentityCheckPhoneUserInput!): IdentityCheckPhoneUserPayload!
+  linkPhoneAuth(input: LinkPhoneAuthInput!, permission: CheckIsSelfPermissionInput!): LinkPhoneAuthPayload
+  membershipAcceptMyInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckIsSelfPermissionInput!): MembershipSetInvitationStatusPayload
+  membershipAssignManager(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput!): MembershipSetRolePayload
+  membershipAssignMember(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput!): MembershipSetRolePayload
+  membershipAssignOwner(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput!): MembershipSetRolePayload
+  membershipCancelInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckCommunityPermissionInput!): MembershipSetInvitationStatusPayload
+  membershipDenyMyInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckIsSelfPermissionInput!): MembershipSetInvitationStatusPayload
+  membershipInvite(input: MembershipInviteInput!, permission: CheckCommunityPermissionInput!): MembershipInvitePayload
+  membershipRemove(input: MembershipRemoveInput!, permission: CheckCommunityPermissionInput!): MembershipRemovePayload
+  membershipWithdraw(input: MembershipWithdrawInput!, permission: CheckIsSelfPermissionInput!): MembershipWithdrawPayload
+  mutationEcho: String!
+  opportunityCreate(input: OpportunityCreateInput!, permission: CheckCommunityPermissionInput!): OpportunityCreatePayload
+  opportunityDelete(id: ID!, permission: CheckCommunityPermissionInput!): OpportunityDeletePayload
+  opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!, permission: CheckCommunityPermissionInput!): OpportunitySetPublishStatusPayload
+  opportunitySlotCreate(input: OpportunitySlotCreateInput!, opportunityId: ID!, permission: CheckOpportunityPermissionInput!): OpportunitySlotCreatePayload
+  opportunitySlotSetHostingStatus(id: ID!, input: OpportunitySlotSetHostingStatusInput!, permission: CheckOpportunityPermissionInput!): OpportunitySlotSetHostingStatusPayload
+  opportunitySlotsBulkUpdate(input: OpportunitySlotsBulkUpdateInput!, permission: CheckOpportunityPermissionInput!): OpportunitySlotsBulkUpdatePayload
+  opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!, permission: CheckCommunityPermissionInput!): OpportunityUpdateContentPayload
+  participationBulkCreate(input: ParticipationBulkCreateInput!, permission: CheckCommunityPermissionInput!): ParticipationBulkCreatePayload
+  participationCreatePersonalRecord(input: ParticipationCreatePersonalRecordInput!): ParticipationCreatePersonalRecordPayload
+  participationDeletePersonalRecord(id: ID!, permission: CheckIsSelfPermissionInput!): ParticipationDeletePayload
+  placeCreate(input: PlaceCreateInput!, permission: CheckCommunityPermissionInput!): PlaceCreatePayload
+  placeDelete(id: ID!, permission: CheckCommunityPermissionInput!): PlaceDeletePayload
+  placeUpdate(id: ID!, input: PlaceUpdateInput!, permission: CheckCommunityPermissionInput!): PlaceUpdatePayload
+  reservationAccept(id: ID!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
+  reservationCancel(id: ID!, input: ReservationCancelInput!, permission: CheckIsSelfPermissionInput!): ReservationSetStatusPayload
+  reservationCreate(input: ReservationCreateInput!): ReservationCreatePayload
+  reservationJoin(id: ID!): ReservationSetStatusPayload
+  reservationReject(id: ID!, input: ReservationRejectInput!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
+  storePhoneAuthToken(input: StorePhoneAuthTokenInput!, permission: CheckIsSelfPermissionInput!): StorePhoneAuthTokenPayload
+  ticketClaim(input: TicketClaimInput!): TicketClaimPayload
+  ticketIssue(input: TicketIssueInput!, permission: CheckCommunityPermissionInput!): TicketIssuePayload
+  ticketPurchase(input: TicketPurchaseInput!, permission: CheckCommunityPermissionInput!): TicketPurchasePayload
+  ticketRefund(id: ID!, input: TicketRefundInput!, permission: CheckIsSelfPermissionInput!): TicketRefundPayload
+  ticketUse(id: ID!, permission: CheckIsSelfPermissionInput!): TicketUsePayload
+  transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
+  transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
+  transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
+  userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
+  userSignUp(input: UserSignUpInput!): CurrentUserPayload
+  userUpdateMyProfile(input: UserUpdateProfileInput!, permission: CheckIsSelfPermissionInput!): UserUpdateProfilePayload
+  utilityCreate(input: UtilityCreateInput!, permission: CheckCommunityPermissionInput!): UtilityCreatePayload
+  utilityDelete(id: ID!, permission: CheckCommunityPermissionInput!): UtilityDeletePayload
+  utilitySetPublishStatus(id: ID!, input: UtilitySetPublishStatusInput!, permission: CheckCommunityPermissionInput!): UtilitySetPublishStatusPayload
+  utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!, permission: CheckCommunityPermissionInput!): UtilityUpdateInfoPayload
+}
+
+input NestedPlaceConnectOrCreateInput {
+  create: NestedPlaceCreateInput
+  where: ID
+}
+
+input NestedPlaceCreateInput {
+  address: String!
+  cityCode: ID!
+  communityId: ID
+  googlePlaceId: String
+  isManual: Boolean!
+  latitude: Decimal!
+  longitude: Decimal!
+  mapLocation: JSON
+  name: String!
+}
+
+input NestedPlacesBulkConnectOrCreateInput {
+  data: [NestedPlaceConnectOrCreateInput!]
+}
+
+input NestedPlacesBulkUpdateInput {
+  connectOrCreate: [NestedPlaceConnectOrCreateInput!]
+  disconnect: [ID!]
+}
+
+type NftInstance {
+  createdAt: Datetime!
+  description: String
+  id: ID!
+  imageUrl: String
+  instanceId: String!
+  json: JSON
+  name: String
+  nftToken: NftToken
+  nftWallet: NftWallet
+  updatedAt: Datetime
+}
+
+type NftInstanceEdge implements Edge {
+  cursor: String!
+  node: NftInstance!
+}
+
+input NftInstanceFilterInput {
+  and: [NftInstanceFilterInput!]
+  hasDescription: Boolean
+  hasImage: Boolean
+  hasName: Boolean
+  nftTokenAddress: [String!]
+  nftTokenType: [String!]
+  nftWalletId: [ID!]
+  not: NftInstanceFilterInput
+  or: [NftInstanceFilterInput!]
+  userId: [ID!]
+}
+
+input NftInstanceSortInput {
+  createdAt: SortDirection
+  instanceId: SortDirection
+  name: SortDirection
+}
+
+type NftInstancesConnection {
+  edges: [NftInstanceEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type NftToken {
+  address: String!
+  createdAt: Datetime!
+  id: ID!
+  json: JSON
+  name: String
+  symbol: String
+  type: String!
+  updatedAt: Datetime
+}
+
+type NftWallet {
+  createdAt: Datetime
+  id: ID!
+  updatedAt: Datetime
+  user: User!
+  walletAddress: String!
+}
+
+type OpportunitiesConnection {
+  edges: [OpportunityEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Opportunity {
+  articles: [Article!]
+  body: String
+  capacity: Int
+  category: OpportunityCategory!
+  community: Community
+  createdAt: Datetime
+  createdByUser: User
+  description: String!
+  earliestReservableAt: Datetime
+  feeRequired: Int
+  id: ID!
+  images: [String!]
+  isReservableWithTicket: Boolean
+  place: Place
+  pointsRequired: Int
+  pointsToEarn: Int
+  publishStatus: PublishStatus!
+  requireApproval: Boolean!
+  requiredUtilities: [Utility!]
+  slots(filter: OpportunitySlotFilterInput, sort: OpportunitySlotSortInput): [OpportunitySlot!]
+  title: String!
+  updatedAt: Datetime
+}
+
+enum OpportunityCategory {
+  ACTIVITY
+  EVENT
+  QUEST
+}
+
+input OpportunityCreateInput {
+  body: String
+  category: OpportunityCategory!
+  createdBy: ID
+  description: String!
+  feeRequired: Int
+  images: [ImageInput!]
+  placeId: ID
+  pointsRequired: Int
+  pointsToEarn: Int
+  publishStatus: PublishStatus!
+  relatedArticleIds: [ID!]
+  requireApproval: Boolean!
+  requiredUtilityIds: [ID!]
+  slots: [OpportunitySlotCreateInput!]
+  title: String!
+}
+
+union OpportunityCreatePayload = OpportunityCreateSuccess
+
+type OpportunityCreateSuccess {
+  opportunity: Opportunity!
+}
+
+union OpportunityDeletePayload = OpportunityDeleteSuccess
+
+type OpportunityDeleteSuccess {
+  opportunityId: ID!
+}
+
+type OpportunityEdge implements Edge {
+  cursor: String!
+  node: Opportunity
+}
+
+input OpportunityFilterInput {
+  and: [OpportunityFilterInput!]
+  articleIds: [ID!]
+  category: OpportunityCategory
+  cityCodes: [ID!]
+  communityIds: [ID!]
+  createdByUserIds: [ID!]
+  isReservableWithPoint: Boolean
+  isReservableWithTicket: Boolean
+  keyword: String
+  not: OpportunityFilterInput
+  or: [OpportunityFilterInput!]
+  placeIds: [ID!]
+  publishStatus: [PublishStatus!]
+  requiredUtilityIds: [ID!]
+  slotDateRange: DateTimeRangeFilter
+  slotHostingStatus: [OpportunitySlotHostingStatus!]
+  slotRemainingCapacity: Int
+  stateCodes: [ID!]
+}
+
+input OpportunitySetPublishStatusInput {
+  publishStatus: PublishStatus!
+}
+
+union OpportunitySetPublishStatusPayload = OpportunitySetPublishStatusSuccess
+
+type OpportunitySetPublishStatusSuccess {
+  opportunity: Opportunity!
+}
+
+type OpportunitySlot {
+  capacity: Int
+  createdAt: Datetime
+  endsAt: Datetime!
+  hostingStatus: OpportunitySlotHostingStatus!
+  id: ID!
+  isFullyEvaluated: Boolean
+  numEvaluated: Int
+  numParticipants: Int
+  opportunity: Opportunity
+  remainingCapacity: Int
+  reservations: [Reservation!]
+  startsAt: Datetime!
+  updatedAt: Datetime
+  vcIssuanceRequests: [VcIssuanceRequest!]
+}
+
+input OpportunitySlotCreateInput {
+  capacity: Int!
+  endsAt: Datetime!
+  startsAt: Datetime!
+}
+
+union OpportunitySlotCreatePayload = OpportunitySlotCreateSuccess
+
+type OpportunitySlotCreateSuccess {
+  slot: OpportunitySlot!
+}
+
+type OpportunitySlotEdge implements Edge {
+  cursor: String!
+  node: OpportunitySlot
+}
+
+input OpportunitySlotFilterInput {
+  dateRange: DateTimeRangeFilter
+  hostingStatus: [OpportunitySlotHostingStatus!]
+  opportunityIds: [ID!]
+  ownerId: ID
+}
+
+enum OpportunitySlotHostingStatus {
+  CANCELLED
+  COMPLETED
+  SCHEDULED
+}
+
+input OpportunitySlotSetHostingStatusInput {
+  capacity: Int
+  comment: String
+  createdBy: ID
+  endsAt: Datetime
+  startsAt: Datetime
+  status: OpportunitySlotHostingStatus!
+}
+
+union OpportunitySlotSetHostingStatusPayload = OpportunitySlotSetHostingStatusSuccess
+
+type OpportunitySlotSetHostingStatusSuccess {
+  slot: OpportunitySlot!
+}
+
+input OpportunitySlotSortInput {
+  createdAt: SortDirection
+  endsAt: SortDirection
+  startsAt: SortDirection
+}
+
+input OpportunitySlotUpdateInput {
+  endsAt: Datetime!
+  id: ID!
+  startsAt: Datetime!
+}
+
+input OpportunitySlotsBulkUpdateInput {
+  create: [OpportunitySlotCreateInput!]
+  delete: [ID!]
+  opportunityId: ID!
+  update: [OpportunitySlotUpdateInput!]
+}
+
+union OpportunitySlotsBulkUpdatePayload = OpportunitySlotsBulkUpdateSuccess
+
+type OpportunitySlotsBulkUpdateSuccess {
+  slots: [OpportunitySlot!]!
+}
+
+type OpportunitySlotsConnection {
+  edges: [OpportunitySlotEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input OpportunitySortInput {
+  createdAt: SortDirection
+  earliestSlotStartsAt: SortDirection
+}
+
+input OpportunityUpdateContentInput {
+  body: String
+  category: OpportunityCategory!
+  createdBy: ID
+  description: String!
+  feeRequired: Int
+  images: [ImageInput!]
+  placeId: ID
+  pointsRequired: Int
+  pointsToEarn: Int
+  publishStatus: PublishStatus!
+  relatedArticleIds: [ID!]
+  requireApproval: Boolean!
+  requiredUtilityIds: [ID!]
+  title: String!
+}
+
+union OpportunityUpdateContentPayload = OpportunityUpdateContentSuccess
+
+type OpportunityUpdateContentSuccess {
+  opportunity: Opportunity!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
+type Paging {
+  skip: Int!
+  take: Int!
+}
+
+type Participation {
+  community: Community
+  createdAt: Datetime
+  description: String
+  evaluation: Evaluation
+  id: ID!
+  images: [String!]
+  opportunitySlot: OpportunitySlot
+  reason: ParticipationStatusReason!
+  reservation: Reservation
+  source: Source
+  status: ParticipationStatus!
+  statusHistories: [ParticipationStatusHistory!]
+  ticketStatusHistories: [TicketStatusHistory!]
+  transactions: [Transaction!]
+  updatedAt: Datetime
+  user: User
+}
+
+input ParticipationBulkCreateInput {
+  description: String
+  slotId: ID!
+  userIds: [ID!]!
+}
+
+union ParticipationBulkCreatePayload = ParticipationBulkCreateSuccess
+
+type ParticipationBulkCreateSuccess {
+  participations: [Participation!]!
+}
+
+input ParticipationCreatePersonalRecordInput {
+  description: String
+  images: [ImageInput!]
+}
+
+union ParticipationCreatePersonalRecordPayload = ParticipationCreatePersonalRecordSuccess
+
+type ParticipationCreatePersonalRecordSuccess {
+  participation: Participation!
+}
+
+union ParticipationDeletePayload = ParticipationDeleteSuccess
+
+type ParticipationDeleteSuccess {
+  participationId: ID!
+}
+
+type ParticipationEdge implements Edge {
+  cursor: String!
+  node: Participation
+}
+
+input ParticipationFilterInput {
+  categories: [String!]
+  cityCodes: [ID!]
+  communityId: ID
+  dateFrom: Datetime
+  dateTo: Datetime
+  opportunityId: ID
+  opportunitySlotId: ID
+  reservationId: ID
+  stateCodes: [ID!]
+  status: ParticipationStatus
+  userIds: [ID!]
+}
+
+input ParticipationSortInput {
+  createdAt: SortDirection
+  startsAt: SortDirection
+  updatedAt: SortDirection
+}
+
+enum ParticipationStatus {
+  NOT_PARTICIPATING
+  PARTICIPATED
+  PARTICIPATING
+  PENDING
+}
+
+type ParticipationStatusHistoriesConnection {
+  edges: [ParticipationStatusHistoryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ParticipationStatusHistory {
+  createdAt: Datetime
+  createdByUser: User
+  id: ID!
+  participation: Participation
+  reason: ParticipationStatusReason!
+  status: ParticipationStatus!
+  updatedAt: Datetime
+}
+
+type ParticipationStatusHistoryEdge implements Edge {
+  cursor: String!
+  node: ParticipationStatusHistory
+}
+
+input ParticipationStatusHistoryFilterInput {
+  createdById: ID
+  participationId: ID
+  status: ParticipationStatus
+}
+
+input ParticipationStatusHistorySortInput {
+  createdAt: SortDirection
+}
+
+enum ParticipationStatusReason {
+  OPPORTUNITY_CANCELED
+  PERSONAL_RECORD
+  RESERVATION_ACCEPTED
+  RESERVATION_APPLIED
+  RESERVATION_CANCELED
+  RESERVATION_JOINED
+  RESERVATION_REJECTED
+}
+
+enum ParticipationType {
+  HOSTED
+  PARTICIPATED
+}
+
+type ParticipationsConnection {
+  edges: [ParticipationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+enum PhoneUserStatus {
+  EXISTING_DIFFERENT_COMMUNITY
+  EXISTING_SAME_COMMUNITY
+  NEW_USER
+}
+
+type Place {
+  accumulatedParticipants: Int
+  address: String!
+  city: City
+  community: Community
+  createdAt: Datetime
+  currentPublicOpportunityCount: Int
+  googlePlaceId: String
+  id: ID!
+  image: String
+  isManual: Boolean
+  latitude: Decimal!
+  longitude: Decimal!
+  mapLocation: JSON
+  name: String!
+  opportunities: [Opportunity!]
+  updatedAt: Datetime
+}
+
+input PlaceCreateInput {
+  address: String!
+  cityCode: ID!
+  communityId: ID!
+  googlePlaceId: String
+  isManual: Boolean!
+  latitude: Decimal!
+  longitude: Decimal!
+  mapLocation: JSON
+  name: String!
+  opportunityIds: [ID!]
+}
+
+union PlaceCreatePayload = PlaceCreateSuccess
+
+type PlaceCreateSuccess {
+  place: Place!
+}
+
+union PlaceDeletePayload = PlaceDeleteSuccess
+
+type PlaceDeleteSuccess {
+  id: ID!
+}
+
+type PlaceEdge implements Edge {
+  cursor: String!
+  node: Place
+}
+
+input PlaceFilterInput {
+  cityCode: ID
+  communityId: ID
+  keyword: String
+}
+
+input PlaceSortInput {
+  createdAt: SortDirection
+}
+
+input PlaceUpdateInput {
+  address: String!
+  cityCode: ID!
+  googlePlaceId: String
+  id: ID!
+  isManual: Boolean!
+  latitude: Decimal!
+  longitude: Decimal!
+  mapLocation: JSON
+  name: String!
+  opportunityIds: [ID!]
+}
+
+union PlaceUpdatePayload = PlaceUpdateSuccess
+
+type PlaceUpdateSuccess {
+  place: Place!
+}
+
+type PlacesConnection {
+  edges: [PlaceEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Portfolio {
+  category: PortfolioCategory!
+  date: Datetime!
+  evaluationStatus: EvaluationStatus
+  id: ID!
+  participants: [User!]
+  place: Place
+  reservationStatus: ReservationStatus
+  source: PortfolioSource!
+  thumbnailUrl: String
+  title: String!
+}
+
+enum PortfolioCategory {
+  ACTIVITY
+  ACTIVITY_REPORT
+  EVENT
+  INTERVIEW
+  QUEST
+}
+
+type PortfolioEdge implements Edge {
+  cursor: String!
+  node: Portfolio
+}
+
+input PortfolioFilterInput {
+  communityIds: [ID!]
+  dateRange: DateTimeRangeFilter
+  keyword: String
+}
+
+input PortfolioSortInput {
+  date: SortDirection
+}
+
+enum PortfolioSource {
+  ARTICLE
+  OPPORTUNITY
+}
+
+type PortfoliosConnection {
+  edges: [PortfolioEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+enum PublishStatus {
+  COMMUNITY_INTERNAL
+  PRIVATE
+  PUBLIC
+}
+
+type Query {
+  article(id: ID!, permission: CheckCommunityPermissionInput!): Article
+  articles(cursor: String, filter: ArticleFilterInput, first: Int, sort: ArticleSortInput): ArticlesConnection!
+  cities(cursor: String, filter: CitiesInput, first: Int, sort: CitiesSortInput): CitiesConnection!
+  communities(cursor: String, filter: CommunityFilterInput, first: Int, sort: CommunitySortInput): CommunitiesConnection!
+  community(id: ID!): Community
+  currentUser: CurrentUserPayload
+  echo: String!
+  evaluation(id: ID!): Evaluation
+  evaluationHistories(cursor: String, filter: EvaluationHistoryFilterInput, first: Int, sort: EvaluationHistorySortInput): EvaluationHistoriesConnection!
+  evaluationHistory(id: ID!): EvaluationHistory
+  evaluations(cursor: String, filter: EvaluationFilterInput, first: Int, sort: EvaluationSortInput): EvaluationsConnection!
+  membership(communityId: ID!, userId: ID!): Membership
+  memberships(cursor: MembershipCursorInput, filter: MembershipFilterInput, first: Int, sort: MembershipSortInput): MembershipsConnection!
+  myWallet: Wallet
+  nftInstance(id: ID!): NftInstance
+  nftInstances(cursor: String, filter: NftInstanceFilterInput, first: Int, sort: NftInstanceSortInput): NftInstancesConnection!
+  opportunities(cursor: String, filter: OpportunityFilterInput, first: Int, sort: OpportunitySortInput): OpportunitiesConnection!
+  opportunity(id: ID!, permission: CheckCommunityPermissionInput!): Opportunity
+  opportunitySlot(id: ID!): OpportunitySlot
+  opportunitySlots(cursor: String, filter: OpportunitySlotFilterInput, first: Int, sort: OpportunitySlotSortInput): OpportunitySlotsConnection!
+  participation(id: ID!): Participation
+  participationStatusHistories(cursor: String, filter: ParticipationStatusHistoryFilterInput, first: Int, sort: ParticipationStatusHistorySortInput): ParticipationStatusHistoriesConnection!
+  participationStatusHistory(id: ID!): ParticipationStatusHistory
+  participations(cursor: String, filter: ParticipationFilterInput, first: Int, sort: ParticipationSortInput): ParticipationsConnection!
+  place(id: ID!): Place
+  places(cursor: String, filter: PlaceFilterInput, first: Int, sort: PlaceSortInput): PlacesConnection!
+  portfolios(filter: PortfolioFilterInput, first: Int, sort: PortfolioSortInput): [Portfolio!]
+  reservation(id: ID!): Reservation
+  reservationHistories(cursor: String, filter: ReservationHistoryFilterInput, first: Int, sort: ReservationHistorySortInput): ReservationHistoriesConnection!
+  reservationHistory(id: ID!): ReservationHistory
+  reservations(cursor: String, filter: ReservationFilterInput, first: Int, sort: ReservationSortInput): ReservationsConnection!
+  states(cursor: String, filter: StatesInput, first: Int): StatesConnection!
+  ticket(id: ID!): Ticket
+  ticketClaimLink(id: ID!): TicketClaimLink
+  ticketClaimLinks(cursor: String, filter: TicketClaimLinkFilterInput, first: Int, sort: TicketClaimLinkSortInput): TicketClaimLinksConnection!
+  ticketIssuer(id: ID!): TicketIssuer
+  ticketIssuers(cursor: String, filter: TicketIssuerFilterInput, first: Int, sort: TicketIssuerSortInput): TicketIssuersConnection!
+  ticketStatusHistories(cursor: String, filter: TicketStatusHistoryFilterInput, first: Int, sort: TicketStatusHistorySortInput): TicketStatusHistoriesConnection!
+  ticketStatusHistory(id: ID!): TicketStatusHistory
+  tickets(cursor: String, filter: TicketFilterInput, first: Int, sort: TicketSortInput): TicketsConnection!
+  transaction(id: ID!): Transaction
+  transactions(cursor: String, filter: TransactionFilterInput, first: Int, sort: TransactionSortInput): TransactionsConnection!
+  user(id: ID!): User
+  users(cursor: String, filter: UserFilterInput, first: Int, sort: UserSortInput): UsersConnection!
+  utilities(cursor: String, filter: UtilityFilterInput, first: Int, sort: UtilitySortInput): UtilitiesConnection!
+  utility(id: ID!, permission: CheckCommunityPermissionInput!): Utility
+  vcIssuanceRequest(id: ID!): VcIssuanceRequest
+  vcIssuanceRequests(cursor: String, filter: VcIssuanceRequestFilterInput, first: Int, sort: VcIssuanceRequestSortInput): VcIssuanceRequestsConnection!
+  wallet(id: ID!): Wallet
+  wallets(cursor: String, filter: WalletFilterInput, first: Int, sort: WalletSortInput): WalletsConnection!
+}
+
+type Reservation {
+  comment: String
+  createdAt: Datetime
+  createdByUser: User
+  histories: [ReservationHistory!]
+  id: ID!
+  opportunitySlot: OpportunitySlot
+  participantCountWithPoint: Int
+  participations: [Participation!]
+  status: ReservationStatus!
+  updatedAt: Datetime
+}
+
+input ReservationCancelInput {
+  paymentMethod: ReservationPaymentMethod!
+  ticketIdsIfExists: [ID!]
+}
+
+input ReservationCreateInput {
+  comment: String
+  opportunitySlotId: ID!
+  otherUserIds: [ID!]
+  participantCountWithPoint: Int
+  paymentMethod: ReservationPaymentMethod!
+  ticketIdsIfNeed: [ID!]
+  totalParticipantCount: Int!
+}
+
+union ReservationCreatePayload = ReservationCreateSuccess
+
+type ReservationCreateSuccess {
+  reservation: Reservation!
+}
+
+type ReservationEdge implements Edge {
+  cursor: String!
+  node: Reservation
+}
+
+input ReservationFilterInput {
+  and: [ReservationFilterInput!]
+  communityId: ID
+  createdByUserId: ID
+  evaluationStatus: EvaluationStatus
+  hostingStatus: [OpportunitySlotHostingStatus!]
+  not: [ReservationFilterInput!]
+  opportunityId: ID
+  opportunityOwnerId: ID
+  opportunitySlotId: ID
+  or: [ReservationFilterInput!]
+  participationStatus: [ParticipationStatus!]
+  reservationStatus: [ReservationStatus!]
+}
+
+type ReservationHistoriesConnection {
+  edges: [ReservationHistoryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ReservationHistory {
+  createdAt: Datetime
+  createdByUser: User
+  id: ID!
+  reservation: Reservation!
+  status: ReservationStatus!
+}
+
+type ReservationHistoryEdge implements Edge {
+  cursor: String!
+  node: ReservationHistory
+}
+
+input ReservationHistoryFilterInput {
+  createdByUserId: ID
+  reservationId: ID
+  status: ReservationStatus
+}
+
+input ReservationHistorySortInput {
+  createdAt: SortDirection
+}
+
+enum ReservationPaymentMethod {
+  FEE
+  TICKET
+}
+
+input ReservationRejectInput {
+  comment: String
+}
+
+union ReservationSetStatusPayload = ReservationSetStatusSuccess
+
+type ReservationSetStatusSuccess {
+  reservation: Reservation!
+}
+
+input ReservationSortInput {
+  createdAt: SortDirection
+  updatedAt: SortDirection
+}
+
+enum ReservationStatus {
+  ACCEPTED
+  APPLIED
+  CANCELED
+  REJECTED
+}
+
+type ReservationsConnection {
+  edges: [ReservationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+enum Role {
+  MANAGER
+  MEMBER
+  OWNER
+}
+
+enum SortDirection {
+  asc
+  desc
+}
+
+enum Source {
+  EXTERNAL
+  INTERNAL
+}
+
+type State {
+  code: ID!
+  countryCode: ID!
+  name: String!
+}
+
+type StateEdge implements Edge {
+  cursor: String!
+  node: State
+}
+
+type StatesConnection {
+  edges: [StateEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input StatesInput {
+  name: String
+}
+
+input StorePhoneAuthTokenInput {
+  authToken: String!
+  expiresIn: Int!
+  phoneUid: String!
+  refreshToken: String!
+}
+
+type StorePhoneAuthTokenPayload {
+  expiresAt: Datetime
+  success: Boolean!
+}
+
+enum SysRole {
+  SYS_ADMIN
+  USER
+}
+
+type Ticket {
+  claimLink: TicketClaimLink
+  createdAt: Datetime
+  id: ID!
+  reason: TicketStatusReason!
+  status: TicketStatus!
+  ticketStatusHistories: [TicketStatusHistory!]
+  updatedAt: Datetime
+  utility: Utility
+  wallet: Wallet
+}
+
+input TicketClaimInput {
+  ticketClaimLinkId: ID!
+}
+
+type TicketClaimLink {
+  claimedAt: Datetime
+  createdAt: Datetime
+  id: ID!
+  issuer: TicketIssuer
+
+  """Max number of tickets a user can claim using this link"""
+  qty: Int!
+  status: ClaimLinkStatus!
+  tickets: [Ticket!]
+}
+
+type TicketClaimLinkEdge implements Edge {
+  cursor: String!
+  node: TicketClaimLink
+}
+
+input TicketClaimLinkFilterInput {
+  hasAvailableTickets: Boolean
+  issuedTo: ID
+  issuerId: ID
+  status: ClaimLinkStatus
+}
+
+input TicketClaimLinkSortInput {
+  createdAt: SortDirection
+  status: SortDirection
+}
+
+type TicketClaimLinksConnection {
+  edges: [TicketClaimLinkEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+union TicketClaimPayload = TicketClaimSuccess
+
+type TicketClaimSuccess {
+  tickets: [Ticket!]!
+}
+
+type TicketEdge implements Edge {
+  cursor: String!
+  node: Ticket
+}
+
+input TicketFilterInput {
+  ownerId: ID
+  status: TicketStatus
+  utilityId: ID
+  walletId: ID
+}
+
+input TicketIssueInput {
+  qtyToBeIssued: Int!
+  utilityId: ID!
+}
+
+union TicketIssuePayload = TicketIssueSuccess
+
+type TicketIssueSuccess {
+  issue: TicketIssuer!
+}
+
+type TicketIssuer {
+  claimLink: TicketClaimLink
+  createdAt: Datetime
+  id: ID!
+  owner: User
+
+  """Maximum number of tickets claimable from this link"""
+  qtyToBeIssued: Int!
+  updatedAt: Datetime
+  utility: Utility
+}
+
+type TicketIssuerEdge implements Edge {
+  cursor: String!
+  node: TicketIssuer
+}
+
+input TicketIssuerFilterInput {
+  ownerId: ID
+}
+
+input TicketIssuerSortInput {
+  createdAt: SortDirection
+}
+
+type TicketIssuersConnection {
+  edges: [TicketIssuerEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input TicketPurchaseInput {
+  communityId: ID!
+  pointsRequired: Int!
+  utilityId: ID!
+  walletId: ID!
+}
+
+union TicketPurchasePayload = TicketPurchaseSuccess
+
+type TicketPurchaseSuccess {
+  ticket: Ticket!
+}
+
+input TicketRefundInput {
+  communityId: ID!
+  pointsRequired: Int!
+  walletId: ID!
+}
+
+union TicketRefundPayload = TicketRefundSuccess
+
+type TicketRefundSuccess {
+  ticket: Ticket!
+}
+
+input TicketSortInput {
+  createdAt: SortDirection
+  status: SortDirection
+}
+
+enum TicketStatus {
+  AVAILABLE
+  DISABLED
+}
+
+type TicketStatusHistoriesConnection {
+  edges: [TicketStatusHistoryEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type TicketStatusHistory {
+  createdAt: Datetime
+  createdByUser: User
+  id: ID!
+  reason: TicketStatusReason!
+  status: TicketStatus!
+  ticket: Ticket
+  transaction: Transaction
+  updatedAt: Datetime
+}
+
+type TicketStatusHistoryEdge implements Edge {
+  cursor: String!
+  node: TicketStatusHistory
+}
+
+input TicketStatusHistoryFilterInput {
+  createdById: ID
+  reason: TicketStatusReason
+  status: TicketStatus
+  ticketId: ID
+}
+
+input TicketStatusHistorySortInput {
+  createdAt: SortDirection
+}
+
+enum TicketStatusReason {
+  CANCELED
+  EXPIRED
+  GIFTED
+  PURCHASED
+  REFUNDED
+  RESERVED
+  USED
+}
+
+union TicketUsePayload = TicketUseSuccess
+
+type TicketUseSuccess {
+  ticket: Ticket!
+}
+
+type TicketsConnection {
+  edges: [TicketEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Transaction {
+  comment: String
+  createdAt: Datetime
+  createdByUser: User
+  fromPointChange: Int
+  fromWallet: Wallet
+  id: ID!
+  participation: Participation
+  reason: TransactionReason!
+  reservation: Reservation
+  ticketStatusHistories: [TicketStatusHistory!]
+  toPointChange: Int
+  toWallet: Wallet
+  updatedAt: Datetime
+}
+
+input TransactionDonateSelfPointInput {
+  comment: String
+  communityId: ID!
+  toUserId: ID!
+  transferPoints: Int!
+}
+
+union TransactionDonateSelfPointPayload = TransactionDonateSelfPointSuccess
+
+type TransactionDonateSelfPointSuccess {
+  transaction: Transaction!
+}
+
+type TransactionEdge implements Edge {
+  cursor: String!
+  node: Transaction
+}
+
+input TransactionFilterInput {
+  and: [TransactionFilterInput!]
+  communityId: ID
+  fromDidValue: String
+  fromUserId: ID
+  fromUserName: String
+  fromWalletId: ID
+  fromWalletType: WalletType
+  not: TransactionFilterInput
+  or: [TransactionFilterInput!]
+  reason: TransactionReason
+  toDidValue: String
+  toUserId: ID
+  toUserName: String
+  toWalletId: ID
+  toWalletType: WalletType
+}
+
+input TransactionGrantCommunityPointInput {
+  comment: String
+  toUserId: ID!
+  transferPoints: Int!
+}
+
+union TransactionGrantCommunityPointPayload = TransactionGrantCommunityPointSuccess
+
+type TransactionGrantCommunityPointSuccess {
+  transaction: Transaction!
+}
+
+input TransactionIssueCommunityPointInput {
+  comment: String
+  transferPoints: Int!
+}
+
+union TransactionIssueCommunityPointPayload = TransactionIssueCommunityPointSuccess
+
+type TransactionIssueCommunityPointSuccess {
+  transaction: Transaction!
+}
+
+enum TransactionReason {
+  DONATION
+  GRANT
+  ONBOARDING
+  OPPORTUNITY_RESERVATION_CANCELED
+  OPPORTUNITY_RESERVATION_CREATED
+  OPPORTUNITY_RESERVATION_REJECTED
+  POINT_ISSUED
+  POINT_REWARD
+  TICKET_PURCHASED
+  TICKET_REFUNDED
+}
+
+input TransactionSortInput {
+  createdAt: SortDirection
+}
+
+type TransactionsConnection {
+  edges: [TransactionEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+scalar Upload
+
+type User {
+  articlesAboutMe: [Article!]
+  articlesWrittenByMe: [Article!]
+  bio: String
+  createdAt: Datetime
+  currentPrefecture: CurrentPrefecture
+  didIssuanceRequests: [DidIssuanceRequest!]
+  evaluationCreatedByMe: [EvaluationHistory!]
+  evaluations: [Evaluation!]
+  id: ID!
+  identities: [Identity!]
+  image: String
+  membershipChangedByMe: [MembershipHistory!]
+  memberships: [Membership!]
+  name: String!
+  nftInstances(cursor: String, filter: NftInstanceFilterInput, first: Int, sort: NftInstanceSortInput): NftInstancesConnection
+  nftWallet: NftWallet
+  opportunitiesCreatedByMe: [Opportunity!]
+  participationStatusChangedByMe: [ParticipationStatusHistory!]
+  participations: [Participation!]
+  phoneNumber: String
+  portfolios(cursor: String, filter: PortfolioFilterInput, first: Int, sort: PortfolioSortInput): [Portfolio!]
+  preferredLanguage: Language
+  reservationStatusChangedByMe: [ReservationHistory!]
+  reservations: [Reservation!]
+  slug: String
+  sysRole: SysRole
+  ticketStatusChangedByMe: [TicketStatusHistory!]
+  updatedAt: Datetime
+  urlFacebook: String
+  urlInstagram: String
+  urlTiktok: String
+  urlWebsite: String
+  urlX: String
+  urlYoutube: String
+  wallets: [Wallet!]
+}
+
+type UserDeletePayload {
+  userId: ID
+}
+
+type UserEdge implements Edge {
+  cursor: String!
+  node: User
+}
+
+input UserFilterInput {
+  ids: [ID!]
+  keywords: [String!]
+  sysRole: SysRole
+}
+
+input UserSignUpInput {
+  currentPrefecture: CurrentPrefecture!
+  image: ImageInput
+  lineRefreshToken: String
+  lineTokenExpiresAt: String
+  name: String!
+  phoneAccessToken: String
+  phoneNumber: String
+  phoneRefreshToken: String
+  phoneTokenExpiresAt: String
+  phoneUid: String
+  preferredLanguage: Language
+  slug: String
+}
+
+input UserSortInput {
+  createdAt: SortDirection
+}
+
+input UserUpdateProfileInput {
+  bio: String
+  currentPrefecture: CurrentPrefecture
+  image: ImageInput
+  name: String!
+  preferredLanguage: Language
+  slug: String!
+  urlFacebook: String
+  urlInstagram: String
+  urlTiktok: String
+  urlWebsite: String
+  urlX: String
+  urlYoutube: String
+}
+
+union UserUpdateProfilePayload = UserUpdateProfileSuccess
+
+type UserUpdateProfileSuccess {
+  user: User
+}
+
+type UsersConnection {
+  edges: [UserEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type UtilitiesConnection {
+  edges: [UtilityEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type Utility {
+  community: Community
+  createdAt: Datetime
+  description: String
+  id: ID!
+  images: [String!]
+  name: String
+  owner: User
+  pointsRequired: Int!
+  publishStatus: PublishStatus!
+  requiredForOpportunities: [Opportunity!]
+  ticketIssuers: [TicketIssuer!]
+  tickets: [Ticket!]
+  updatedAt: Datetime
+}
+
+input UtilityCreateInput {
+  description: String
+  images: [ImageInput!]
+  name: String!
+  pointsRequired: Int!
+  requiredForOpportunityIds: [String!]
+}
+
+union UtilityCreatePayload = UtilityCreateSuccess
+
+type UtilityCreateSuccess {
+  utility: Utility!
+}
+
+union UtilityDeletePayload = UtilityDeleteSuccess
+
+type UtilityDeleteSuccess {
+  utilityId: String!
+}
+
+type UtilityEdge implements Edge {
+  cursor: String!
+  node: Utility
+}
+
+input UtilityFilterInput {
+  and: [UtilityFilterInput!]
+  communityIds: [ID!]
+  not: UtilityFilterInput
+  or: [UtilityFilterInput!]
+  ownerIds: [ID!]
+  publishStatus: [PublishStatus!]
+}
+
+input UtilitySetPublishStatusInput {
+  publishStatus: PublishStatus!
+}
+
+union UtilitySetPublishStatusPayload = UtilitySetPublishStatusSuccess
+
+type UtilitySetPublishStatusSuccess {
+  utility: Utility!
+}
+
+input UtilitySortInput {
+  createdAt: SortDirection
+  pointsRequired: SortDirection
+}
+
+input UtilityUpdateInfoInput {
+  description: String
+  images: [ImageInput!]
+  name: String!
+  pointsRequired: Int!
+}
+
+union UtilityUpdateInfoPayload = UtilityUpdateInfoSuccess
+
+type UtilityUpdateInfoSuccess {
+  utility: Utility!
+}
+
+enum ValueType {
+  FLOAT
+  INT
+}
+
+type VcIssuanceRequest {
+  completedAt: Datetime
+  createdAt: Datetime
+  evaluation: Evaluation
+  id: ID!
+  processedAt: Datetime
+  requestedAt: Datetime
+  status: VcIssuanceStatus!
+  updatedAt: Datetime
+  user: User
+}
+
+type VcIssuanceRequestEdge implements Edge {
+  cursor: String!
+  node: VcIssuanceRequest
+}
+
+input VcIssuanceRequestFilterInput {
+  evaluationId: ID
+  status: VcIssuanceStatus
+  userIds: [ID!]
+}
+
+input VcIssuanceRequestSortInput {
+  createdAt: SortDirection
+  updatedAt: SortDirection
+}
+
+type VcIssuanceRequestsConnection {
+  edges: [VcIssuanceRequestEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+enum VcIssuanceStatus {
+  COMPLETED
+  FAILED
+  PENDING
+  PROCESSING
+}
+
+type Wallet {
+  accumulatedPointView: AccumulatedPointView
+  community: Community
+  createdAt: Datetime
+  currentPointView: CurrentPointView
+  id: ID!
+  tickets: [Ticket!]
+  transactions: [Transaction!] @deprecated(reason: "Use transactionsConnection for pagination support")
+  transactionsConnection(cursor: String, first: Int, sort: TransactionSortInput): TransactionsConnection
+  type: WalletType!
+  updatedAt: Datetime
+  user: User
+}
+
+type WalletEdge implements Edge {
+  cursor: String!
+  node: Wallet
+}
+
+input WalletFilterInput {
+  communityId: ID
+  type: WalletType
+  userId: ID
+}
+
+input WalletSortInput {
+  createdAt: SortDirection
+}
+
+enum WalletType {
+  COMMUNITY
+  MEMBER
+}
+
+type WalletsConnection {
+  edges: [WalletEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}

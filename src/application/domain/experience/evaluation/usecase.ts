@@ -78,6 +78,9 @@ export default class EvaluationUseCase {
     );
 
     await this.processPassedEvaluationEffects(ctx, createdEvaluations, currentUserId, communityId);
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
 
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
@@ -278,7 +281,7 @@ export default class EvaluationUseCase {
 
     if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
       const [fromWallet, toWallet] = await Promise.all([
-        this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
+        this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId, tx),
         this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
       ]);
 

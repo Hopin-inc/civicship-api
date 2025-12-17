@@ -62,6 +62,12 @@ export default class ReservationConverter {
         });
       }
 
+      if (input.communityId) {
+        conditions.push({
+          opportunitySlot: { opportunity: { communityId: input.communityId } },
+        });
+      }
+
       const and = input.and?.map(resolve).filter(Boolean);
       if (and?.length) {
         conditions.push({ AND: and });

@@ -8,7 +8,7 @@ import {
   GqlMutationIdentityCheckPhoneUserArgs,
   GqlIdentityCheckPhoneUserPayload,
   GqlPhoneUserStatus,
-  GqlImageInput,
+  GqlUserSignUpInput,
 } from "@/types/graphql";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -20,8 +20,7 @@ import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
-import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
-import { Prisma, User } from "@prisma/client";
+import { User } from "@prisma/client";
 
 @injectable()
 export default class IdentityUseCase {
@@ -99,61 +98,30 @@ export default class IdentityUseCase {
 
   async userCreateAccount(
     ctx: IContext,
-    args: GqlMutationUserSignUpArgs,
+    { input }: GqlMutationUserSignUpArgs,
   ): Promise<GqlCurrentUserPayload> {
-    this.validateSignupContext(ctx);
-    const { data, image, phoneUid, phoneRefreshToken, lineRefreshToken } =
-      this.extractSignupInput(args);
+    if (!ctx.uid || !ctx.platform) throw new Error("Authentication required");
+    if (!input.phoneAccessToken) throw new Error("Phone authentication required");
 
-    const user = await this.createUserWithImage(data, ctx, image, phoneUid);
-    const res = await this.initializeUserAssets(ctx, user.id, args.input.communityId);
+    const data = IdentityConverter.create(input, ctx.uid, ctx.platform, ctx.communityId);
+    const uploadedImage = input.image
+      ? await this.imageService.uploadPublicImage(input.image, "users")
+      : undefined;
+
+    const user = await this.identityService.createUserAndIdentity({
+      ...data,
+      image: uploadedImage ? { create: uploadedImage } : undefined,
+    });
+
+    const res = await this.initializeUserAssets(ctx, user.id, ctx.communityId);
 
     if (!res) {
       logger.error("[userCreateAccount] User not found after asset initialization");
       throw new Error("User not found after initialization");
     }
 
-    await this.storeUserAuthTokens(ctx, phoneUid, phoneRefreshToken, lineRefreshToken);
+    await this.storeUserAuthTokens(ctx, input);
     return IdentityPresenter.create(res);
-  }
-
-  private validateSignupContext(ctx: IContext): void {
-    if (!ctx.uid || !ctx.platform) {
-      logger.error("Authentication required (uid or platform missing)");
-      throw new Error("Authentication required (uid or platform missing)");
-    }
-    if (!ctx.phoneAuthToken) {
-      logger.error("Phone authentication required for user signup");
-      throw new Error("Phone authentication required for user signup");
-    }
-  }
-
-  private extractSignupInput(args: GqlMutationUserSignUpArgs) {
-    const { data, image, phoneUid, phoneRefreshToken, lineRefreshToken } =
-      IdentityConverter.create(args);
-    return { data, image, phoneUid, phoneRefreshToken, lineRefreshToken };
-  }
-
-  private async createUserWithImage(
-    data: Prisma.UserCreateInput,
-    ctx: IContext,
-    image?: GqlImageInput,
-    phoneUid?: string,
-  ): Promise<PrismaUserDetail> {
-    const uploadedImage = image
-      ? await this.imageService.uploadPublicImage(image, "users")
-      : undefined;
-
-    return this.identityService.createUserAndIdentity(
-      {
-        ...data,
-        image: uploadedImage ? { create: uploadedImage } : undefined,
-      },
-      ctx.uid!,
-      ctx.platform!,
-      ctx.communityId,
-      phoneUid,
-    );
   }
 
   private async initializeUserAssets(
@@ -189,16 +157,21 @@ export default class IdentityUseCase {
 
   private async storeUserAuthTokens(
     ctx: IContext,
-    phoneUid?: string,
-    phoneRefreshToken?: string,
-    lineRefreshToken?: string,
+    {
+      phoneRefreshToken,
+      phoneTokenExpiresAt,
+      phoneUid,
+      lineTokenExpiresAt,
+      lineRefreshToken,
+      phoneAccessToken,
+    }: GqlUserSignUpInput,
   ): Promise<void> {
-    if (phoneUid && ctx.phoneAuthToken) {
-      const expiryTime = this.deriveExpiryTime(ctx.phoneTokenExpiresAt);
-      const refreshToken = phoneRefreshToken || ctx.phoneRefreshToken || "";
+    if (phoneUid && phoneAccessToken) {
+      const expiryTime = this.deriveExpiryTime(phoneTokenExpiresAt);
+      const refreshToken = phoneRefreshToken || "";
       await this.identityService.storeAuthTokens(
         phoneUid,
-        ctx.phoneAuthToken,
+        phoneAccessToken,
         refreshToken,
         expiryTime,
       );
@@ -206,8 +179,8 @@ export default class IdentityUseCase {
     }
 
     if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
-      const expiryTime = this.deriveExpiryTime(ctx.tokenExpiresAt);
-      const refreshToken = lineRefreshToken || ctx.refreshToken || "";
+      const expiryTime = this.deriveExpiryTime(lineTokenExpiresAt);
+      const refreshToken = lineRefreshToken || "";
       await this.identityService.storeAuthTokens(ctx.uid, ctx.idToken, refreshToken, expiryTime);
       logger.debug(`Stored LINE auth tokens for ${ctx.uid}`);
     }
@@ -221,15 +194,29 @@ export default class IdentityUseCase {
     ctx: IContext,
     args: GqlMutationIdentityCheckPhoneUserArgs,
   ): Promise<GqlIdentityCheckPhoneUserPayload> {
-    if (!ctx.phoneUid) {
-      throw new Error("Phone authentication required");
-    }
+    const { phoneUid } = args.input;
 
-    const { communityId } = args.input;
+    logger.info("[checkPhoneUser] Starting phone user check", {
+      phoneUid,
+      communityId: ctx.communityId,
+      uid: ctx.uid,
+      platform: ctx.platform,
+    });
 
-    const existingUser = await this.identityService.findUserByIdentity(ctx, ctx.phoneUid);
+    const existingUser = await this.identityService.findUserByIdentity(ctx, phoneUid);
+
+    logger.info("[checkPhoneUser] User lookup result", {
+      phoneUid,
+      existingUserId: existingUser?.id,
+      existingUserFound: !!existingUser,
+      communityId: ctx.communityId,
+    });
 
     if (!existingUser) {
+      logger.info("[checkPhoneUser] Returning NEW_USER status", {
+        phoneUid,
+        communityId: ctx.communityId,
+      });
       return {
         status: GqlPhoneUserStatus.NewUser,
         user: null,
@@ -240,10 +227,26 @@ export default class IdentityUseCase {
     const existingMembership = await this.membershipService.findMembership(
       ctx,
       existingUser.id,
-      communityId,
+      ctx.communityId,
     );
 
+    logger.info("[checkPhoneUser] Membership lookup result", {
+      phoneUid,
+      userId: existingUser.id,
+      communityId: ctx.communityId,
+      membershipFound: !!existingMembership,
+      membershipUserId: existingMembership?.userId,
+      membershipCommunityId: existingMembership?.communityId,
+    });
+
     if (existingMembership) {
+      logger.info("[checkPhoneUser] Returning EXISTING_SAME_COMMUNITY status", {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+        membershipUserId: existingMembership.userId,
+        membershipCommunityId: existingMembership.communityId,
+      });
       return {
         status: GqlPhoneUserStatus.ExistingSameCommunity,
         user: existingUser,
@@ -251,25 +254,124 @@ export default class IdentityUseCase {
       };
     }
 
+    logger.info(
+      "[checkPhoneUser] User exists but no membership in current community, proceeding with EXISTING_DIFFERENT_COMMUNITY flow",
+      {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+        currentUid: ctx.uid,
+        currentPlatform: ctx.platform,
+      },
+    );
+
     const membership = await ctx.issuer.public(ctx, async (tx) => {
       if (!ctx.uid || !ctx.platform) {
+        logger.error("[checkPhoneUser] Missing uid or platform in context", {
+          phoneUid,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+          hasUid: !!ctx.uid,
+          hasPlatform: !!ctx.platform,
+        });
         throw new AuthenticationError();
       }
-      await this.identityService.addIdentityToUser(
-        ctx,
-        existingUser.id,
-        ctx.uid,
-        ctx.platform,
-        ctx.communityId,
-      );
+
+      const existingIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+
+      logger.info("[checkPhoneUser] Checking if current LINE identity exists", {
+        phoneUid,
+        currentUid: ctx.uid,
+        currentPlatform: ctx.platform,
+        existingIdentityUserId: existingIdentity?.id,
+        targetUserId: existingUser.id,
+        communityId: ctx.communityId,
+      });
+
+      if (existingIdentity) {
+        if (existingIdentity.id !== existingUser.id) {
+          logger.error("Identity already linked to another user", {
+            uid: ctx.uid,
+            platform: ctx.platform,
+            existingUserId: existingIdentity.id,
+            attemptedUserId: existingUser.id,
+            communityId: ctx.communityId,
+          });
+          throw new Error("This LINE account is already linked to another user");
+        }
+        logger.info("Identity already exists for this user, skipping creation", {
+          uid: ctx.uid,
+          platform: ctx.platform,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+        });
+      } else {
+        logger.info("[checkPhoneUser] Creating new LINE identity for existing user", {
+          phoneUid,
+          currentUid: ctx.uid,
+          currentPlatform: ctx.platform,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+        });
+        await this.identityService.addIdentityToUser(
+          ctx,
+          existingUser.id,
+          ctx.uid,
+          ctx.platform,
+          ctx.communityId,
+          tx,
+        );
+        logger.info("[checkPhoneUser] Successfully created new identity for user", {
+          uid: ctx.uid,
+          platform: ctx.platform,
+          userId: existingUser.id,
+          communityId: ctx.communityId,
+        });
+      }
+
+      logger.info("[checkPhoneUser] Creating membership for user in new community", {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+      });
+
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         existingUser.id,
-        communityId,
+        ctx.communityId,
         tx,
       );
-      await this.walletService.createMemberWalletIfNeeded(ctx, existingUser.id, communityId, tx);
+
+      logger.info("[checkPhoneUser] Membership created, creating wallet", {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+        membershipUserId: membership?.userId,
+        membershipCommunityId: membership?.communityId,
+      });
+
+      await this.walletService.createMemberWalletIfNeeded(
+        ctx,
+        existingUser.id,
+        ctx.communityId,
+        tx,
+      );
+
+      logger.info("[checkPhoneUser] Wallet created successfully", {
+        phoneUid,
+        userId: existingUser.id,
+        communityId: ctx.communityId,
+      });
+
       return membership;
+    });
+
+    logger.info("[checkPhoneUser] Returning EXISTING_DIFFERENT_COMMUNITY status", {
+      phoneUid,
+      userId: existingUser.id,
+      communityId: ctx.communityId,
+      membershipUserId: membership?.userId,
+      membershipCommunityId: membership?.communityId,
     });
 
     return {

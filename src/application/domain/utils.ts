@@ -10,7 +10,6 @@ export function getCurrentUserId(ctx: IContext, inputUserId?: string): string {
     throw new AuthorizationError("User must be logged in");
   }
 
-
   return currentUserId;
 }
 
@@ -32,6 +31,11 @@ export function getMembershipRolesByCtx(
     return { isManager: {}, isMember: {} };
   }
 
+  if (ctx.isAdmin) {
+    const allTrue = Object.fromEntries(communityIds.map((id) => [id, true]));
+    return { isManager: { ...allTrue }, isMember: { ...allTrue } };
+  }
+
   const userMemberships = getUserMembershipMap(ctx);
 
   return communityIds.reduce(
@@ -46,7 +50,7 @@ export function getMembershipRolesByCtx(
 }
 
 function getUserMembershipMap(ctx: IContext): Map<string, Role> {
-  return new Map(ctx.hasPermissions?.memberships?.map((m) => [m.communityId, m.role]) || []);
+  return new Map(ctx.currentUser?.memberships?.map((m) => [m.communityId, m.role]) || []);
 }
 
 function determineRoleForCommunity(

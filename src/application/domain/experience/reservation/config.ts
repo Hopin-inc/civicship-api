@@ -8,12 +8,11 @@ export interface ActivityBookingConfig {
     [activityId: string]: number;
 }
 
-// NOTE: 予約受付日数カスタムニーズが今後不明のため、現在は環境変数で管理しているが、多ければデータベースで管理を検討する
 
 /**
  * Default advance booking days for activities without specific configuration
  */
-export const DEFAULT_ADVANCE_BOOKING_DAYS = 7;
+export const DEFAULT_ADVANCE_BOOKING_DAYS = 2;
 
 /**
  * Default cancellation deadline days before activity start
@@ -21,11 +20,9 @@ export const DEFAULT_ADVANCE_BOOKING_DAYS = 7;
 export const DEFAULT_CANCELLATION_DEADLINE_DAYS = 1;
 
 /**
- * Empty default configuration - we'll use only environment variables
- */
-
-/**
- * Get activity booking configuration from environment variable
+ * Activity booking configuration from environment variable
+ * 現在は一律設定のため環境変数は未設定（削除済み）
+ * 必要に応じて個別アクティビティIDと日数を設定可能
  * Environment variable format: {"activity-id-1":0,"activity-id-2":1,"activity-id-3":7}
  */
 let configFromEnv: ActivityBookingConfig = {};

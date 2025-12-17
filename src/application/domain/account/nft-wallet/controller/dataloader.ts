@@ -1,19 +1,24 @@
-import { GqlNftWallet } from "@/types/graphql";
-import NftWalletPresenter from "../presenter";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import NftWalletPresenter from "@/application/domain/account/nft-wallet/presenter";
+import { PrismaClient } from "@prisma/client";
 import DataLoader from "dataloader";
-import { nftWalletSelectDetail } from "../data/type";
+import { nftWalletSelectDetail } from "@/application/domain/account/nft-wallet/data/type";
 
-export function createNftWalletByUserIdLoader(issuer: PrismaClientIssuer) {
-    return new DataLoader<string, GqlNftWallet | null>(async (userIds) => {
-        const records = await issuer.internal((tx) =>
-            tx.nftWallet.findMany({
-                where: { userId: { in: [...userIds] } },
-                select: nftWalletSelectDetail,
-            }),
-        );
+type NftWalletWithoutUser = {
+    __typename: "NftWallet";
+    id: string;
+    walletAddress: string;
+    createdAt: Date;
+    updatedAt: Date | null;
+};
 
-        const map = new Map<string, GqlNftWallet>();
+export function createNftWalletByUserIdLoader(prisma: PrismaClient) {
+    return new DataLoader<string, NftWalletWithoutUser | null>(async (userIds) => {
+        const records = await prisma.nftWallet.findMany({
+            where: { userId: { in: [...userIds] } },
+            select: nftWalletSelectDetail,
+        });
+
+        const map = new Map<string, NftWalletWithoutUser>();
         for (const record of records) {
             map.set(record.userId, NftWalletPresenter.get(record));
         }

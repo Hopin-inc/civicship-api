@@ -38,6 +38,10 @@ export default class TestDataSourceHelper {
     await this.db.ticket.deleteMany();
     await this.db.transaction.deleteMany();
 
+    await this.db.nftMint.deleteMany();
+    await this.db.nftInstance.deleteMany();
+    await this.db.nftWallet.deleteMany();
+
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
     await this.db.membership.deleteMany();
@@ -250,6 +254,13 @@ export default class TestDataSourceHelper {
     return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
+  static async getCurrentPoints(walletId: string): Promise<number | null> {
+    const result = await this.db.currentPointView.findUnique({
+      where: { walletId },
+    });
+    return result?.currentPoint ? Number(result.currentPoint) : null;
+  }
+
   // ========== Participation関連 (不要になれば削除) =========
   static async createParticipation(data: Prisma.ParticipationCreateInput) {
     return this.db.participation.create({
@@ -272,9 +283,9 @@ export default class TestDataSourceHelper {
   // ======== VcIssuanceRequest =========
   static async findAllVCIssuanceRequests() {
     return this.db.vcIssuanceRequest.findMany({
-      include: { 
-        evaluation: true, 
-        user: true 
+      include: {
+        evaluation: true,
+        user: true,
       },
     });
   }
@@ -283,4 +294,25 @@ export default class TestDataSourceHelper {
   static async createIdentity(data: Prisma.IdentityCreateInput) {
     return this.db.identity.create({ data });
   }
+
+  // ======== NftMint =========
+  // static async createNftMint(data: Prisma.NftMintCreateInput) {
+  //   return this.db.nftMint.create({
+  //     data,
+  //     include: {
+  //       nftWallet: true,
+  //       nftInstance: true,
+  //     }
+  //   });
+  // }
+  //
+  // static async findNftMintById(id: string) {
+  //   return this.db.nftMint.findUnique({
+  //     where: { id },
+  //     include: {
+  //       nftWallet: true,
+  //       nftInstance: true,
+  //     }
+  //   });
+  // }
 }

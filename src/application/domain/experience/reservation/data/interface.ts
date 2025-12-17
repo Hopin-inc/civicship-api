@@ -19,9 +19,9 @@ export interface IReservationService {
     slotId: string,
   ): Promise<PrismaReservation[]>;
 
-  findReservation(ctx: IContext, id: string): Promise<PrismaReservationDetail | null>;
+  findReservation(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaReservationDetail | null>;
 
-  findReservationOrThrow(ctx: IContext, id: string): Promise<PrismaReservation>;
+  findReservationOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaReservation>;
 
   createReservation(
     ctx: IContext,
@@ -59,7 +59,7 @@ export interface IReservationRepository {
     tx: Prisma.TransactionClient,
   ): Promise<number>;
 
-  find(ctx: IContext, id: string): Promise<PrismaReservation | null>;
+  find(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaReservation | null>;
 
   checkConflict(ctx: IContext, where: Prisma.ReservationWhereInput): Promise<PrismaReservation[]>;
 

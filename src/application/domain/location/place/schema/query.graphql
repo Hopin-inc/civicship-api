@@ -31,6 +31,7 @@ type PlaceEdge implements Edge {
 input PlaceFilterInput {
     keyword: String
     cityCode: ID
+    communityId: ID
 }
 
 input PlaceSortInput {

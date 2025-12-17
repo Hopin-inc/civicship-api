@@ -14,7 +14,10 @@ extend type Mutation {
         permission: CheckIsSelfPermissionInput!
     ): LinkPhoneAuthPayload
 
-    storePhoneAuthToken(input: StorePhoneAuthTokenInput!): StorePhoneAuthTokenPayload
+    storePhoneAuthToken(
+        input: StorePhoneAuthTokenInput!
+        permission: CheckIsSelfPermissionInput!
+    ): StorePhoneAuthTokenPayload
     @authz(rules: [IsSelf])
 
     identityCheckPhoneUser(
@@ -28,15 +31,18 @@ extend type Mutation {
 input UserSignUpInput {
     name: String!
     slug: String
-    image: ImageInput
-
-    communityId: ID!
-
     currentPrefecture: CurrentPrefecture!
+    image: ImageInput
+    preferredLanguage: Language
+
     phoneUid: String
     phoneNumber: String
-    lineRefreshToken: String
+    phoneAccessToken: String
     phoneRefreshToken: String
+    phoneTokenExpiresAt: String
+
+    lineRefreshToken: String
+    lineTokenExpiresAt: String
 }
 
 input LinkPhoneAuthInput {
@@ -51,7 +57,7 @@ input StorePhoneAuthTokenInput {
 }
 
 input IdentityCheckPhoneUserInput {
-    communityId: ID!
+    phoneUid: String!
 }
 
 # ------------------------------

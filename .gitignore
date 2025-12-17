@@ -146,3 +146,6 @@ credentials/
 
 # sciprt result
 .generated/
+
+# NMKR generated files
+/src/infrastructure/libs/nmkr/types/*.d.ts

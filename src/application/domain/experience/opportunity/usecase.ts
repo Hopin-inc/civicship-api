@@ -33,7 +33,7 @@ export default class OpportunityUseCase {
     const take = clampFirst(first);
 
     const currentUserId = ctx.currentUser?.id;
-    const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
+    const communityIds = ctx.currentUser?.memberships?.map((m) => m.communityId) || [];
 
     const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
     const allowedStatuses = getAllowedPublishStatuses(communityIds, isManager, isMember);
@@ -82,6 +82,8 @@ export default class OpportunityUseCase {
       isMember,
       isManager,
       currentUserId,
+      undefined,
+      ctx.isAdmin,
     );
 
     const record = await this.service.findOpportunityAccessible(ctx, id, validatedFilter);
@@ -211,7 +213,12 @@ function validateByMembershipRoles(
   isMember: Record<string, boolean>,
   currentUserId?: string,
   filter?: GqlOpportunityFilterInput,
+  isAdmin?: boolean,
 ): GqlOpportunityFilterInput {
+  if (isAdmin) {
+    return filter ?? {};
+  }
+
   if (communityIds.length === 0) {
     return {
       and: [{ publishStatus: [PublishStatus.PUBLIC] }, ...(filter ? [filter] : [])],

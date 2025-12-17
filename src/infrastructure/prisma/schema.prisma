@@ -190,6 +190,8 @@ model Community {
   participations Participation[]
   articles       Article[]
 
+  nftInstance NftInstance[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -268,6 +270,11 @@ enum LineRichMenuType {
 
 // ------------------------------ User Domain ------------------------------
 
+enum Language {
+  JA
+  EN
+}
+
 model User {
   id String @id @default(cuid())
 
@@ -277,6 +284,7 @@ model User {
   sysRole           SysRole           @default(USER) @map("sys_role")
   currentPrefecture CurrentPrefecture @map("current_prefecture")
   phoneNumber       String?           @map("phone_number")
+  preferredLanguage Language          @default(JA) @map("preferred_language")
 
   urlWebsite   String? @map("url_website")
   urlX         String? @map("url_x")
@@ -289,7 +297,7 @@ model User {
   image   Image?  @relation(fields: [imageId], references: [id])
 
   identities          Identity[]
-  nftWallet           NftWallet?
+  nftWallets          NftWallet[]
   didIssuanceRequests DidIssuanceRequest[]
   vcIssuanceRequests  VcIssuanceRequest[]
 
@@ -316,6 +324,7 @@ model User {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([name])
   @@map("t_users")
 }
 
@@ -350,6 +359,7 @@ model Identity {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_identities")
 }
 
@@ -387,6 +397,7 @@ model DidIssuanceRequest {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_did_issuance_requests")
 }
 
@@ -424,6 +435,7 @@ model VcIssuanceRequest {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_vc_issuance_requests")
 }
 
@@ -568,6 +580,7 @@ model Wallet {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_wallets")
 }
 
@@ -664,6 +677,8 @@ model Opportunity {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([title])
+  @@index([createdBy])
   @@map("t_opportunities")
 }
 
@@ -711,6 +726,7 @@ model OpportunitySlot {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([opportunityId])
   @@map("t_opportunity_slots")
 }
 
@@ -751,6 +767,7 @@ model Reservation {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([opportunitySlotId])
   @@map("t_reservations")
 }
 
@@ -811,6 +828,7 @@ model Participation {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_participations")
 }
 
@@ -1053,7 +1071,8 @@ enum TicketStatusReason {
 model Transaction {
   id String @id @default(cuid())
 
-  reason TransactionReason
+  reason  TransactionReason
+  comment String?
 
   from            String?
   fromWallet      Wallet? @relation("from_wallet", fields: [from], references: [id], onDelete: SetNull)
@@ -1076,6 +1095,8 @@ model Transaction {
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
+
+  merkleProofs MerkleProof[]
 
   @@map("t_transactions")
 }
@@ -1110,14 +1131,143 @@ model ApiKey {
   @@map("m_api_keys")
 }
 
-model NftWallet {
-  id            String    @id @default(cuid())
-  userId        String    @unique @map("user_id")
-  walletAddress String    @map("wallet_address")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime? @updatedAt @map("updated_at")
+// ------------------------------ NFT Domain ------------------------------
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model NftWallet {
+  id   String        @id @default(cuid())
+  type NftWalletType @default(INTERNAL)
+
+  walletAddress String @unique @map("wallet_address")
+
+  userId       String        @map("user_id")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  nftInstances NftInstance[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_nft_wallets")
+}
+
+enum NftWalletType {
+  INTERNAL // read and write
+  EXTERNAL // only read
+}
+
+model NftToken {
+  id      String @id @default(cuid())
+  address String @unique // コントラクト/PolicyId として運用
+  type    String // "ERC-721" など（命名は standard にしてもOK）
+
+  name   String?
+  symbol String?
+  json   Json?
+
+  nftInstances NftInstance[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_nft_tokens")
+}
+
+model NftInstance {
+  id          String @id @default(cuid())
+  instanceId  String @map("instance_id")
+  sequenceNum Int?   @map("sequence_num")
+
+  status      NftInstanceStatus @default(STOCK)
+  name        String?
+  description String?
+  imageUrl    String?           @map("image_url")
+  json        Json?
+
+  nftTokenId String   @map("nft_token_id")
+  nftToken   NftToken @relation(fields: [nftTokenId], references: [id], onDelete: Restrict)
+
+  nftWalletId String?    @map("nft_wallet_id")
+  nftWallet   NftWallet? @relation(fields: [nftWalletId], references: [id], onDelete: SetNull)
+
+  nftMints NftMint[]
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([nftTokenId, instanceId])
+  @@index([instanceId])
+  @@index([nftWalletId])
+  @@map("t_nft_instances")
+}
+
+enum NftInstanceStatus {
+  STOCK
+  RESERVED
+  MINTING
+  OWNED
+  RETIRED
+}
+
+model NftMint {
+  id     String        @id @default(cuid())
+  status NftMintStatus @default(QUEUED)
+
+  txHash     String? @unique @map("tx_hash")
+  error      String?
+  retryCount Int     @default(0) @map("retry_count")
+
+  externalRequestId String? @unique @map("external_request_id")
+
+  nftInstanceId String      @map("nft_instance_id")
+  nftInstance   NftInstance @relation(fields: [nftInstanceId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@index([status, retryCount, createdAt])
+  @@map("t_nft_mints")
+}
+
+enum NftMintStatus {
+  QUEUED
+  SUBMITTED
+  MINTED
+  FAILED
+}
+
+// ------------------------------ Merkle Extension ------------------------------
+
+enum Position {
+  LEFT
+  RIGHT
+}
+
+model MerkleCommit {
+  id          String        @id
+  rootHash    String        @map("root_hash")
+  label       Int
+  periodStart DateTime      @map("period_start")
+  periodEnd   DateTime      @map("period_end")
+  committedAt DateTime      @default(now()) @map("committed_at")
+  proofs      MerkleProof[]
+
+  @@map("t_merkle_commits")
+}
+
+model MerkleProof {
+  id String @id @default(cuid())
+
+  txId String      @map("tx_id")
+  tx   Transaction @relation(fields: [txId], references: [id], onDelete: Cascade)
+
+  commitId String       @map("commit_id")
+  commit   MerkleCommit @relation(fields: [commitId], references: [id], onDelete: Cascade)
+
+  index    Int
+  sibling  String
+  position Position
+
+  @@map("t_merkle_proofs")
 }

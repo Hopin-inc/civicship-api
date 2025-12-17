@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import {
   GqlOpportunitySlot,
   GqlOpportunitySlotFilterInput,
@@ -14,20 +14,18 @@ import {
   createLoaderById,
 } from "@/presentation/graphql/dataloader/utils";
 
-export function createOpportunitySlotLoader(issuer: PrismaClientIssuer) {
+export function createOpportunitySlotLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaOpportunitySlotDetail, GqlOpportunitySlot>(
     async (ids) =>
-      issuer.internal((tx) =>
-        tx.opportunitySlot.findMany({
-          where: { id: { in: [...ids] } },
-          select: opportunitySlotSelectDetail,
-        }),
-      ),
+      prisma.opportunitySlot.findMany({
+        where: { id: { in: [...ids] } },
+        select: opportunitySlotSelectDetail,
+      }),
     OpportunitySlotPresenter.get,
   );
 }
 
-export function createSlotsByOpportunityLoader(issuer: PrismaClientIssuer) {
+export function createSlotsByOpportunityLoader(prisma: PrismaClient) {
   return createFilterSortAwareHasManyLoaderByKey<
     "opportunityId",
     GqlOpportunitySlotFilterInput,
@@ -37,23 +35,21 @@ export function createSlotsByOpportunityLoader(issuer: PrismaClientIssuer) {
   >(
     "opportunityId",
     async (opportunityId, filter, sort) => {
-      const opportunity = await issuer.internal((tx) =>
-        tx.opportunity.findUnique({
-          where: { id: opportunityId },
-          include: {
-            slots: {
-              where: {
-                ...filter,
-                hostingStatus: filter.hostingStatus ? { in: filter.hostingStatus } : undefined,
-              },
-              orderBy: sort,
-              include: { remainingCapacityView: true },
+      const opportunity = await prisma.opportunity.findUnique({
+        where: { id: opportunityId },
+        include: {
+          slots: {
+            where: {
+              ...filter,
+              hostingStatus: filter.hostingStatus ? { in: filter.hostingStatus } : undefined,
             },
+            orderBy: sort,
+            include: { remainingCapacityView: true },
           },
-        }),
-      );
+        },
+      });
       return opportunity?.slots ?? [];
     },
-    (slot) => OpportunitySlotPresenter.get(slot),
+    (slot) => OpportunitySlotPresenter.get(slot)
   );
 }

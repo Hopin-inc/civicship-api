@@ -11,6 +11,10 @@ jobs:
     environment: co-creation-dao-prod
     timeout-minutes: 30
 
+    permissions:
+      id-token: write
+      contents: write
+
     env:
       # stage
       STAGE: dev
@@ -32,28 +36,34 @@ jobs:
       # Jumpbox settings
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+      # Apollo studio
+      APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Install pnpm
       run: npm install -g pnpm
 
     - name: Set up Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
       with:
         node-version: '20'
         cache: 'pnpm'
 
     - name: Install dependencies
       run: |
-          pnpm install
+          pnpm install --frozen-lockfile
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
+    - name: Authenticate to Google Cloud (Workload Identity Federation)
+      uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
       with:
-        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
+        workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+    - name: Set up gcloud SDK
+      uses: google-github-actions/setup-gcloud@v2
 
     - name: pnpm db:generate
       env:
@@ -80,6 +90,14 @@ jobs:
     - name: pnpm gql:generate
       run: pnpm gql:generate
 
+    - name: Install and Publish via Rover CLI
+      env:
+        APOLLO_KEY: ${{ env.APOLLO_KEY }}
+      run: |
+        curl -sSL https://rover.apollo.dev/nix/latest | sh
+        export PATH="$HOME/.rover/bin:$PATH"
+        rover graph publish civicship-api-jq1988@prod --schema ./docs/schema.graphql
+
     - name: pnpm build
       run: pnpm build
 
@@ -92,18 +110,13 @@ jobs:
       run: |
         pnpm dotenvx run -- docker build --no-cache -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest .
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
-
     - name: Push Docker image to Artifact Registry
       run: |
         docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
 
     - name: Deploy Internal API to Cloud Run
       id: 'deploy'
-      uses: 'google-github-actions/deploy-cloudrun@v2'
+      uses: 'google-github-actions/deploy-cloudrun@v2' # v2.8.1
       with:
         service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest

@@ -6,70 +6,40 @@ import {
   GqlMembershipWithdrawSuccess,
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
-  GqlMembershipParticipationLocation,
 } from "@/types/graphql";
 import {
   PrismaMembership,
   PrismaMembershipDetail,
 } from "@/application/domain/account/membership/data/type";
-import { ParticipationType } from "@prisma/client";
 
 export default class MembershipPresenter {
-  static query(r: GqlMembership[], hasNextPage: boolean, cursor?: string): GqlMembershipsConnection {
+  static query(
+    r: PrismaMembershipDetail[],
+    hasNextPage: boolean,
+    cursor?: string,
+  ): GqlMembershipsConnection {
     return {
       __typename: "MembershipsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
         hasPreviousPage: !!cursor,
-        startCursor: r[0]?.user?.id + "_" + r[0]?.community?.id,
+        startCursor: r.length ? r[0].userId + "_" + r[0].communityId : undefined,
         endCursor: r.length
-          ? r[r.length - 1].user?.id + "_" + r[r.length - 1].community?.id
+          ? r[r.length - 1].userId + "_" + r[r.length - 1].communityId
           : undefined,
       },
       edges: r.map((edge) => ({
-        cursor: edge.user?.id + "_" + edge.community?.id,
-        node: edge,
+        cursor: edge.userId + "_" + edge.communityId,
+        node: this.get(edge),
       })),
     };
   }
 
   static get(r: PrismaMembershipDetail): GqlMembership {
-    const { participationGeoViews, participationCountViews, opportunityHostedCountView, ...prop } =
-      r;
-
-    const hostedGeoMap = new Map<string, GqlMembershipParticipationLocation>();
-
-    participationGeoViews
-      .filter((v) => v.type === ParticipationType.HOSTED)
-      .forEach((v) => {
-        if (!hostedGeoMap.has(v.placeId)) {
-          hostedGeoMap.set(v.placeId, {
-            placeId: v.placeId,
-            placeName: v.placeName ?? undefined,
-            placeImage: v.placeImage ?? undefined,
-            address: v.address,
-            latitude: v.latitude.toString(),
-            longitude: v.longitude.toString(),
-          });
-        }
-      });
-
-    const hostedGeo = Array.from(hostedGeoMap.values());
-
-    const hostedCount =
-      participationCountViews.find((v) => v.type === ParticipationType.HOSTED)?.totalCount ?? 0;
-
     return {
       __typename: "Membership",
-      ...prop,
-      participationView: {
-        hosted: {
-          totalParticipantCount: hostedCount,
-          geo: hostedGeo,
-        },
-      },
-      hostOpportunityCount: opportunityHostedCountView?.totalCount,
+      ...r,
     };
   }
 

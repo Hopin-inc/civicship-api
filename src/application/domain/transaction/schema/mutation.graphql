@@ -25,18 +25,21 @@ extend type Mutation {
 # Transaction Mutation Input Definitions
 # ------------------------------
 input TransactionIssueCommunityPointInput {
-    transferPoints: Int!
+  transferPoints: Int!
+  comment: String
 }
 
 input TransactionGrantCommunityPointInput {
-    toUserId: ID!
-    transferPoints: Int!
+  toUserId: ID!
+  transferPoints: Int!
+  comment: String
 }
 
 input TransactionDonateSelfPointInput {
-    communityId: ID!
-    toUserId: ID!
-    transferPoints: Int!
+  communityId: ID!
+  toUserId: ID!
+  transferPoints: Int!
+  comment: String
 }
 
 # ------------------------------
