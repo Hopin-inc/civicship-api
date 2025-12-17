@@ -30,9 +30,9 @@ try {
     const envConfig = process.env.ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG;
     if (envConfig) {
         configFromEnv = JSON.parse(envConfig);
-        logger.info('Loaded activity advance booking days config from environment variable');
+        logger.debug('Loaded activity advance booking days config from environment variable');
     } else {
-        logger.info('No environment variable for activity advance booking days config found, using defaults');
+        logger.debug('No environment variable for activity advance booking days config found, using defaults');
     }
 } catch (error) {
     logger.error('Error parsing ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG environment variable:', error);

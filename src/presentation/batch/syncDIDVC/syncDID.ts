@@ -41,7 +41,7 @@ export async function processDIDRequests(
     });
   });
 
-  logger.info(`📡 Found ${requests.length} processing DID issuance requests`);
+  logger.debug(`📡 Found ${requests.length} processing DID issuance requests`);
 
   let successCount = 0;
   let failureCount = 0;

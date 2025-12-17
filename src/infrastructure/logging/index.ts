@@ -6,6 +6,7 @@ import { sizeGuard } from "./formats/sizeGuard";
 import { traceContext } from "./formats/traceContext";
 
 const isLocal = process.env.ENV === "LOCAL";
+const isProduction = process.env.NODE_ENV === "production";
 
 const baseFormats: winston.Logform.Format[] = [
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
@@ -14,8 +15,8 @@ const baseFormats: winston.Logform.Format[] = [
   severity(),
   errorReport(),
   axiosNormalizer(), // まず Axios を構造化
-  sizeGuard(),       // 次にサイズ制御
-  traceContext(),    // トレース情報を追加
+  sizeGuard(), // 次にサイズ制御
+  traceContext(), // トレース情報を追加
 ];
 
 if (!isLocal) {
@@ -24,7 +25,10 @@ if (!isLocal) {
   baseFormats.push(
     winston.format.printf((info) => {
       const { timestamp, level, message, __truncated, ...rest } = info as {
-        timestamp?: string; level?: string; message?: string; __truncated?: boolean;
+        timestamp?: string;
+        level?: string;
+        message?: string;
+        __truncated?: boolean;
         [k: string]: unknown;
       };
       const restStr = Object.keys(rest).length ? ` ${JSON.stringify(rest, null, 2)}` : "";
@@ -43,7 +47,7 @@ if (isLocal) {
 }
 
 const logger = winston.createLogger({
-  level: "debug", // 本番は "info" 推奨
+  level: isProduction ? "warn" : "debug",
   format: winston.format.combine(...baseFormats),
   transports,
 });

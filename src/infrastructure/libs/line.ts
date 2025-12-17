@@ -22,7 +22,7 @@ export async function createLineClient(
   const configService = container.resolve(CommunityConfigService);
   const { accessToken } = await configService.getLineMessagingConfig(ctx, communityId);
 
-  logger.info("LINE client created", {
+  logger.debug("LINE client created", {
     communityId,
     tokenPreview: accessToken.slice(0, 10),
   });
@@ -39,7 +39,7 @@ export async function createLineMiddleware(
   const configService = container.resolve(CommunityConfigService);
   const { channelSecret } = await configService.getLineMessagingConfig(ctx, communityId);
 
-  logger.info("LINE middleware created", {
+  logger.debug("LINE middleware created", {
     communityId,
     secretPreview: channelSecret.slice(0, 6),
   });

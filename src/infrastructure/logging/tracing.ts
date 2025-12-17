@@ -19,7 +19,12 @@ import logger from "./index";
 
 const ENV = process.env.ENV || "LOCAL";
 const NODE_ENV = process.env.NODE_ENV;
-const TRACE_SAMPLE_RATE = NODE_ENV === "production" ? 0.01 : 1.0;
+
+const isProduction = NODE_ENV === "production";
+const isTest = NODE_ENV === "test";
+const isLocal = ENV === "LOCAL";
+
+const TRACE_SAMPLE_RATE = isProduction ? 0.01 : 1.0;
 const SERVICE_VERSION = "1.0.0";
 const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID;
 
@@ -27,13 +32,13 @@ let sdk: NodeSDK | undefined;
 
 export const tracingReady = (async () => {
   // ✅ 1. ローカルなら完全スキップ
-  if (ENV === "LOCAL" || NODE_ENV === "test") {
-    logger.info("🟡 OpenTelemetry disabled in local/test environment");
+  if (isLocal || isTest) {
+    logger.debug("🟡 OpenTelemetry disabled in local/test environment");
     return;
   }
 
   // ✅ 2. 非ローカルのみ初期化
-  if (ENV !== "LOCAL") {
+  if (!isProduction) {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
   }
 
@@ -92,13 +97,13 @@ export const tracingReady = (async () => {
   });
 
   await sdk.start();
-  logger.info(`✅ OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
+  logger.debug(`✅ OpenTelemetry tracing initialized (sampling: ${TRACE_SAMPLE_RATE * 100}%)`);
 
   const handleShutdown = async () => {
     if (sdk) {
       try {
         await sdk.shutdown();
-        logger.info("🔍 OpenTelemetry tracing shut down successfully");
+        logger.debug("🔍 OpenTelemetry tracing shut down successfully");
       } catch (error) {
         logger.error("Error shutting down OpenTelemetry:", error);
       }
@@ -113,7 +118,7 @@ export const shutdown = async () => {
   if (sdk) {
     try {
       await sdk.shutdown();
-      logger.info("🔍 OpenTelemetry tracing shut down successfully");
+      logger.debug("🔍 OpenTelemetry tracing shut down successfully");
     } catch (error) {
       logger.error("Error shutting down OpenTelemetry:", error);
     }

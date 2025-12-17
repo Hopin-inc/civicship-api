@@ -10,32 +10,38 @@ type Transaction = Omit<PrismaClient, ITXClientDenyList>;
 type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
 
 const isProduction = process.env.NODE_ENV === "production";
+const SLOW_QUERY_THRESHOLD = isProduction ? 1000 : 300;
 
 export const prismaClient = new PrismaClient({
-  log: [
-    { level: "query", emit: "event" },
-    { level: "error", emit: "event" },
-    { level: "info", emit: "stdout" },
-    { level: "warn", emit: "stdout" },
-  ],
+  log: isProduction
+    ? [
+        { level: "error", emit: "event" },
+        { level: "warn", emit: "stdout" },
+      ]
+    : [
+        { level: "query", emit: "event" },
+        { level: "error", emit: "event" },
+        { level: "info", emit: "stdout" },
+        { level: "warn", emit: "stdout" },
+      ],
 });
 
-prismaClient.$on("query", async (e) => {
-  if (!isProduction) {
+if (!isProduction) {
+  prismaClient.$on("query", async (e) => {
     logger.debug("Prisma query executed", {
       query: e.query,
       params: e.params,
       duration: e.duration,
     });
-  }
-});
+  });
+}
 
 prismaClient.$use(async (params, next) => {
   const start = Date.now();
   const result = await next(params);
   const duration = Date.now() - start;
 
-  if (duration > 300) {
+  if (duration > SLOW_QUERY_THRESHOLD) {
     logger.warn("Slow Prisma operation", {
       model: params.model ?? "raw",
       action: params.action,
@@ -85,10 +91,11 @@ export class PrismaClientIssuer {
       try {
         return await this.client.$transaction(
           async (tx) => {
-            const txSpan = trace.getSpan(context.active());
-            const txTraceId = txSpan?.spanContext().traceId;
-            logger.debug("🔍 [TRACE] Inside $transaction", { traceId: txTraceId });
-            
+            if (!isProduction) {
+              const txSpan = trace.getSpan(context.active());
+              const traceId = txSpan?.spanContext().traceId;
+              logger.debug("🔍 [TRACE] bypassRls invoked", { traceId });
+            }
             await this.setRls(tx);
             await this.setRlsConfigUserId(tx, user.id);
             return await callback(tx);
@@ -127,10 +134,12 @@ export class PrismaClientIssuer {
     try {
       return await this.client.$transaction(
         async (tx) => {
-          const txSpan = trace.getSpan(context.active());
-          const txTraceId = txSpan?.spanContext().traceId;
-          logger.debug("🔍 [TRACE] Inside $transaction (bypassRls)", { traceId: txTraceId });
-          
+          if (!isProduction) {
+            const txSpan = trace.getSpan(context.active());
+            const traceId = txSpan?.spanContext().traceId;
+            logger.debug("🔍 [TRACE] bypassRls invoked", { traceId });
+          }
+
           await this.setRls(tx, true);
           await this.setRlsConfigUserId(tx, null);
           return await callback(tx);

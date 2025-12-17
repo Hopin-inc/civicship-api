@@ -7,7 +7,7 @@ import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { NftMintStatus, NftInstanceStatus } from "@prisma/client";
 
 export async function processQueuedMints() {
-  logger.info("🚀 Starting batch for QUEUED nftMints...");
+  logger.debug("🚀 Starting batch for QUEUED nftMints...");
 
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
@@ -39,7 +39,7 @@ export async function processQueuedMints() {
         break;
       }
 
-      logger.info(`📦 Processing ${mints.length} QUEUED mints`);
+      logger.debug(`📦 Processing ${mints.length} QUEUED mints`);
 
       for (const mint of mints) {
         try {
@@ -79,7 +79,7 @@ export async function processQueuedMints() {
             });
           });
 
-          logger.info(`✅ Submitted mint ${mint.id}`);
+          logger.debug(`✅ Submitted mint ${mint.id}`);
         } catch (err) {
           logger.error(`❌ Mint ${mint.id} submission failed: ${(err as Error).message}`);
           await issuer.internal((tx) =>
@@ -99,7 +99,7 @@ export async function processQueuedMints() {
       if (mints.length < BATCH_SIZE) hasMore = false;
     }
 
-    logger.info("🎯 Batch completed");
+    logger.debug("🎯 Batch completed");
   } catch (error) {
     logger.error("💥 Batch process error:", error);
     throw error;

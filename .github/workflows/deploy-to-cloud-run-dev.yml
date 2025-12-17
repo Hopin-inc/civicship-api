@@ -123,6 +123,9 @@ jobs:
         service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
         region: ${{ env.GCP_REGION }}
+        env_vars: |
+          NODE_ENV=development
+          ENV=dev
 
     - name: Build Docker image for batch job
       run: |

@@ -58,7 +58,7 @@ export async function handleFirebaseAuth(
       }),
     );
 
-    logger.info("✅ Firebase user verified", {
+    logger.debug("✅ Firebase user verified", {
       method: verificationMethod,
       uid: decoded.uid.slice(-6),
       tenantId,

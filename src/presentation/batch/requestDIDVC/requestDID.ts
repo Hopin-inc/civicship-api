@@ -67,7 +67,7 @@ export async function createDIDRequests(
     });
   });
 
-  logger.info(`🆕 Found ${users.length} users for DID issuance processing`);
+  logger.debug(`🆕 Found ${users.length} users for DID issuance processing`);
 
   let successCount = 0;
   let failureCount = 0;
@@ -108,7 +108,7 @@ export async function createDIDRequests(
       );
 
       if (result.success) {
-        logger.info(`✅ DID request created: user=${user.id}, request=${result.requestId}`);
+        logger.debug(`✅ DID request created: user=${user.id}, request=${result.requestId}`);
         successCount++;
       } else {
         logger.warn(`❌ DID request failed for user ${user.id}`);

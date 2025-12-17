@@ -106,14 +106,14 @@ export default class NFTWalletService {
       );
 
       if (!response.items?.length) {
-        logger.info("📭 No NFTs found", { 
+        logger.debug("📭 No NFTs found", { 
           walletAddress, 
           durationMs: Date.now() - startTime 
         });
         return { items: [] };
       }
 
-      logger.info("📥 Fetched NFTs from Blockscout", {
+      logger.debug("📥 Fetched NFTs from Blockscout", {
         walletAddress,
         nftCount: response.items.length,
         durationMs: Date.now() - startTime,
@@ -240,7 +240,7 @@ export default class NFTWalletService {
       }
     }
 
-    logger.info("✅ Token info fetch completed", {
+    logger.debug("✅ Token info fetch completed", {
       totalTokens: uniqueAddresses.length,
       cachedCount,
       fetchedCount,
@@ -320,7 +320,7 @@ export default class NFTWalletService {
       processedCount++;
     }
 
-    logger.info("✅ NFT metadata persisted", {
+    logger.debug("✅ NFT metadata persisted", {
       walletAddress: wallet.walletAddress,
       processedCount,
       skippedCount,
