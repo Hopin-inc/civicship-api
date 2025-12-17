@@ -69,7 +69,7 @@ const handleEvent = async (
   client: messagingApi.MessagingApiClient,
 ): Promise<ReplyMessageResponse | null> => {
   if (event.type !== "message" || event.message.type !== "text" || !event.replyToken) {
-    logger.info("Skipped non-text or invalid event", { type: event.type });
+    logger.debug("Skipped non-text or invalid event", { type: event.type });
     return null;
   }
 
@@ -77,7 +77,7 @@ const handleEvent = async (
     const userId = event.source?.userId ?? "unknown";
     const messageText = event.message.text;
 
-    logger.info("LINE message received", { userId, messageText });
+    logger.debug("LINE message received", { userId, messageText });
 
     const res = await client.replyMessage({
       replyToken: event.replyToken,
@@ -89,7 +89,7 @@ const handleEvent = async (
       ],
     });
 
-    logger.info("LINE replyMessage success", { userId, replyToken: event.replyToken });
+    logger.debug("LINE replyMessage success", { userId, replyToken: event.replyToken });
     return res;
   } catch (err) {
     logger.error("LINE replyMessage failed", {

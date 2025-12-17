@@ -30,13 +30,13 @@ export async function requestDIDVC() {
 
   let limit = process.env.BATCH_LIMIT ? parseInt(process.env.BATCH_LIMIT) : undefined;
   if (limit && limit > 0) {
-    logger.info(`🚀 Starting DID & VC request batch (MODE: ${ requestMode }, LIMIT: ${ limit })`, {
+    logger.debug(`🚀 Starting DID & VC request batch (MODE: ${ requestMode }, LIMIT: ${ limit })`, {
       executeDID,
       executeVC,
     });
   } else {
     limit = undefined;
-    logger.info(`🚀 Starting DID & VC request batch (MODE: ${ requestMode })`, {
+    logger.debug(`🚀 Starting DID & VC request batch (MODE: ${ requestMode })`, {
       executeDID,
       executeVC,
     });
@@ -52,7 +52,7 @@ export async function requestDIDVC() {
     // --- DID ---
     if (executeDID) {
       const didResult = await createDIDRequests(issuer, didService, ctx, limit);
-      logger.info(
+      logger.debug(
         `📦 DID Requests: ${ didResult.total } total, ` +
         `${ didResult.successCount } succeeded, ` +
         `${ didResult.failureCount } failed, ` +
@@ -63,7 +63,7 @@ export async function requestDIDVC() {
     // --- VC ---
     if (executeVC) {
       const vcResult = await createVCRequests(issuer, vcService, vcConverter, ctx, limit);
-      logger.info(
+      logger.debug(
         `📦 VC Requests: ${ vcResult.total } total, ` +
         `${ vcResult.successCount } succeeded, ` +
         `${ vcResult.failureCount } failed, ` +
@@ -71,7 +71,7 @@ export async function requestDIDVC() {
       );
     }
 
-    logger.info("✅ DID & VC request batch completed");
+    logger.debug("✅ DID & VC request batch completed");
   } catch (error) {
     logger.error("💥 Error in DID/VC request batch", error);
   }

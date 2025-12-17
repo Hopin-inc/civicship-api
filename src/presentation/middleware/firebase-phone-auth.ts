@@ -22,11 +22,11 @@ export async function validateFirebasePhoneAuth(req: Request, res: Response, nex
       });
 
       if (existingUser) {
-        logger.info(`👤 Existing user found for uid=${uid}, userId=${existingUser.id}`);
+        logger.debug(`👤 Existing user found for uid=${uid}, userId=${existingUser.id}`);
         return existingUser;
       }
 
-      logger.info(`🆕 Creating new user for uid=${uid}`);
+      logger.debug(`🆕 Creating new user for uid=${uid}`);
       
       const newUser = await tx.user.create({
         data: {
@@ -44,7 +44,7 @@ export async function validateFirebasePhoneAuth(req: Request, res: Response, nex
         },
       });
 
-      logger.info(`✅ New user created: userId=${newUser.id}`);
+      logger.debug(`✅ New user created: userId=${newUser.id}`);
       return newUser;
     });
 

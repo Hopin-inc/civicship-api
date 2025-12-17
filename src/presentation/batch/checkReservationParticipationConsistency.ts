@@ -178,7 +178,7 @@ function validateConsistency(
 export async function checkReservationParticipationConsistency() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
 
-  logger.info("🔍 Checking reservation-participation consistency...");
+  logger.debug("🔍 Checking reservation-participation consistency...");
 
   try {
     await issuer.internal(async (tx) => {
@@ -237,7 +237,7 @@ export async function checkReservationParticipationConsistency() {
 
             if (fixDetails) {
               // Auto-fixable pattern detected
-              logger.info("🔧 Auto-fixing inconsistent participation", {
+              logger.debug("🔧 Auto-fixing inconsistent participation", {
                 reservationId: r.id,
                 reservationStatus: r.status,
                 participationId: p.id,
@@ -260,7 +260,7 @@ export async function checkReservationParticipationConsistency() {
               });
 
               autoFixedCount++;
-              logger.info("✅ Fixed participation", {
+              logger.debug("✅ Fixed participation", {
                 participationId: p.id,
                 newStatus: fixDetails.status,
                 newReason: fixDetails.reason,
@@ -289,7 +289,7 @@ export async function checkReservationParticipationConsistency() {
         }
       }
 
-      logger.info(
+      logger.debug(
         `🔎 Checked ${reservations.length} reservations. Auto-fixed ${autoFixedCount} participations. Found ${totalErrors} unfixable violations in ${reservationsWithErrors} reservations.`,
       );
     });
