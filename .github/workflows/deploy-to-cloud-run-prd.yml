@@ -17,7 +17,7 @@ jobs:
 
     env:
       # stage
-      STAGE: dev
+      STAGE: prd
       # GCP settings
       GCP_REGION: ${{ secrets.GCP_REGION }}
       # GCP service account credentials
@@ -121,6 +121,9 @@ jobs:
         service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
         region: ${{ env.GCP_REGION }}
+        env_vars: |
+          NODE_ENV=production
+          ENV=prd
 
     - name: Build Docker image for batch job
       run: |
