@@ -1,0 +1,10 @@
+extend type Query {
+  """
+  Verify transactions against the Cardano blockchain.
+  - Retrieves Merkle proofs for specified transactions
+  - Recalculates root hash using proofs
+  - Compares with Cardano blockchain metadata
+  - Returns data integrity verification results
+  """
+  verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]! @authz(rules: [IsUser])
+}
