@@ -19,7 +19,12 @@ import logger from "./index";
 
 const ENV = process.env.ENV || "LOCAL";
 const NODE_ENV = process.env.NODE_ENV;
-const TRACE_SAMPLE_RATE = NODE_ENV === "production" ? 0.01 : 1.0;
+
+const isProduction = NODE_ENV === "production";
+const isTest = NODE_ENV === "test";
+const isLocal = ENV === "LOCAL";
+
+const TRACE_SAMPLE_RATE = isProduction ? 0.01 : 1.0;
 const SERVICE_VERSION = "1.0.0";
 const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID;
 
@@ -27,13 +32,13 @@ let sdk: NodeSDK | undefined;
 
 export const tracingReady = (async () => {
   // ✅ 1. ローカルなら完全スキップ
-  if (ENV === "LOCAL" || NODE_ENV === "test") {
+  if (isLocal || isTest) {
     logger.info("🟡 OpenTelemetry disabled in local/test environment");
     return;
   }
 
   // ✅ 2. 非ローカルのみ初期化
-  if (ENV !== "LOCAL") {
+  if (!isProduction) {
     diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
   }
 
