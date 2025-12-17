@@ -16,6 +16,7 @@ import PlaceResolver from "@/application/domain/location/place/controller/resolv
 import TicketResolver from "@/application/domain/reward/ticket/controller/resolver";
 import UtilityResolver from "@/application/domain/reward/utility/controller/resolver";
 import TransactionResolver from "@/application/domain/transaction/controller/resolver";
+import TransactionVerificationResolver from "@/application/domain/transaction/verification/controller/resolver";
 import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
@@ -49,6 +50,7 @@ const ticketClaimLink = container.resolve(TicketClaimLinkResolver);
 const utility = container.resolve(UtilityResolver);
 
 const transaction = container.resolve(TransactionResolver);
+const transactionVerification = container.resolve(TransactionVerificationResolver);
 
 const resolvers = {
   Query: {
@@ -70,9 +72,10 @@ const resolvers = {
     ...utility.Query,
     ...ticket.Query,
     ...ticketIssuer.Query,
-    ...ticketClaimLink.Query,
-    ...transaction.Query,
-  },
+      ...ticketClaimLink.Query,
+      ...transaction.Query,
+      ...transactionVerification.Query,
+    },
   Mutation: {
     ...identity.Mutation,
     ...user.Mutation,
