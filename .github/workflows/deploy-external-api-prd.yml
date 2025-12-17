@@ -101,7 +101,6 @@ jobs:
         flags: '--allow-unauthenticated --port=3000'
         env_vars: |
           NODE_ENV=production
-          ENV=prd
 
     - name: Create Git tag for External API
       run: |
