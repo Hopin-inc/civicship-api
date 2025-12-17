@@ -275,18 +275,18 @@ export function registerProductionDependencies() {
   container.register("MasterRepository", { useClass: MasterRepository });
   container.register("MasterConverter", { useClass: MasterConverter });
 
-    // ------------------------------
-    // 💸 Transaction
-    // ------------------------------
-    container.register("TransactionUseCase", { useClass: TransactionUseCase });
-    container.register("TransactionRepository", { useClass: TransactionRepository });
-    container.register("TransactionConverter", { useClass: TransactionConverter });
-    container.register("TransactionService", { useClass: TransactionService });
+  // ------------------------------
+  // 💸 Transaction
+  // ------------------------------
+  container.register("TransactionUseCase", { useClass: TransactionUseCase });
+  container.register("TransactionRepository", { useClass: TransactionRepository });
+  container.register("TransactionConverter", { useClass: TransactionConverter });
+  container.register("TransactionService", { useClass: TransactionService });
 
-    // 🔐 Transaction Verification
-    container.register("PointVerifyClient", { useClass: PointVerifyClient });
-    container.register("TransactionVerificationService", { useClass: TransactionVerificationService });
-    container.register("TransactionVerificationUseCase", { useClass: TransactionVerificationUseCase });
+  // 🔐 Transaction Verification
+  container.register("PointVerifyClient", { useClass: PointVerifyClient });
+  container.register("TransactionVerificationService", { useClass: TransactionVerificationService });
+  container.register("TransactionVerificationUseCase", { useClass: TransactionVerificationUseCase });
 
   // ------------------------------
   // 👓 View

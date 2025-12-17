@@ -25,18 +25,15 @@ export class PointVerifyClient {
 
   async verifyTransactions(txIds: string[]): Promise<VerifyResponse[]> {
     const url = `${this.baseUrl}/point/verify`;
+    const requestBody: VerifyRequest = { txIds };
 
-    logger.debug("[PointVerifyClient] Request", { url, txIds });
+    logger.debug("[PointVerifyClient] Request", { url, body: requestBody });
 
     try {
-      const response = await axios.post<VerifyResponse[]>(
-        url,
-        { txIds },
-        {
-          headers: { "Content-Type": "application/json" },
-          timeout: 30000,
-        },
-      );
+      const response = await axios.post<VerifyResponse[]>(url, requestBody, {
+        headers: { "Content-Type": "application/json" },
+        timeout: 30000,
+      });
 
       logger.debug("[PointVerifyClient] Response", {
         status: response.status,
@@ -46,12 +43,14 @@ export class PointVerifyClient {
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        logger.error("[PointVerifyClient] Error", {
+        logger.error("[PointVerifyClient] Axios Error", {
           url,
           status: error.response?.status,
           response: error.response?.data,
           message: error.message,
         });
+      } else {
+        logger.error("[PointVerifyClient] Unknown Error", { error });
       }
       throw error;
     }
