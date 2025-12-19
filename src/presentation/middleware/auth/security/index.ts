@@ -6,6 +6,7 @@ import { extractRequestInfo } from "./extract-request-info";
 import { AuthenticationError } from "@/errors/graphql";
 import { handleAdminAccess } from "./admin-access";
 import { AuthHeaders } from "../types";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 /**
  * GraphQL Request Security Layer
@@ -17,7 +18,11 @@ import { AuthHeaders } from "../types";
  *
  * → この関数を通過したら "認証処理に進んでも良い状態"
  */
-export async function runRequestSecurityChecks(req: http.IncomingMessage, headers: AuthHeaders) {
+export async function runRequestSecurityChecks(
+  req: http.IncomingMessage, 
+  headers: AuthHeaders,
+  issuer: PrismaClientIssuer
+) {
   const url = req.url || "";
   const userAgent = Array.isArray(req.headers["user-agent"]) ? req.headers["user-agent"][0] : req.headers["user-agent"];
 
@@ -35,7 +40,7 @@ export async function runRequestSecurityChecks(req: http.IncomingMessage, header
   }
 
   // ③ Admin access check
-  const adminResult = await handleAdminAccess(headers);
+  const adminResult = await handleAdminAccess(headers, issuer);
   if (adminResult) {
     logger.debug("🎯 Admin authenticated");
     return adminResult; // admin だけ即 context を返す
