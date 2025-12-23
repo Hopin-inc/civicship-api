@@ -45,7 +45,7 @@ export async function processVCRequests(
     });
   });
 
-  logger.info(`📡 Found ${requests.length} processing VC issuance requests`);
+  logger.debug(`📡 Found ${requests.length} processing VC issuance requests`);
 
   let successCount = 0;
   let failureCount = 0;

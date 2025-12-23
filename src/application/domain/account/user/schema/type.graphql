@@ -10,6 +10,7 @@ type User {
     image: String
     bio: String
     phoneNumber: String @authz(rules: [CanReadPhoneNumber])
+    preferredLanguage: Language
 
     urlWebsite: String
     urlX: String
@@ -73,4 +74,9 @@ enum CurrentPrefecture {
     EHIME
     OUTSIDE_SHIKOKU
     UNKNOWN
+}
+
+enum Language {
+    JA
+    EN
 }

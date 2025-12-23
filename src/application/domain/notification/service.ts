@@ -24,6 +24,7 @@ import { buildCertificateIssuedMessage } from "@/application/domain/notification
 import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
 import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
 import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
+import { Language } from "@prisma/client";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.locale("ja");
@@ -379,13 +380,14 @@ export default class NotificationService {
       toUserId,
       transactionId,
       "pushPointDonationReceivedMessage",
+      { includeLanguage: true },
     );
 
     if (!preparedData) {
       return;
     }
 
-    const { uid, liffBaseUrl, client } = preparedData;
+    const { uid, liffBaseUrl, client, language } = preparedData;
     const redirectUrl = `${liffBaseUrl}/wallets`;
 
     const message = buildPointDonationReceivedMessage({
@@ -393,6 +395,7 @@ export default class NotificationService {
       transferPoints: toPointChange,
       comment: comment ?? undefined,
       redirectUrl,
+      language,
     });
 
     await safePushMessage(client, { to: uid, messages: [message] });
@@ -411,13 +414,14 @@ export default class NotificationService {
       toUserId,
       transactionId,
       "pushPointGrantReceivedMessage",
+      { includeLanguage: true },
     );
 
     if (!preparedData) {
       return;
     }
 
-    const { uid, liffBaseUrl, client } = preparedData;
+    const { uid, liffBaseUrl, client, language } = preparedData;
     const redirectUrl = `${liffBaseUrl}/wallets`;
 
     const message = buildPointGrantReceivedMessage({
@@ -425,11 +429,11 @@ export default class NotificationService {
       transferPoints: toPointChange,
       comment: comment ?? undefined,
       redirectUrl,
+      language,
     });
 
     await safePushMessage(client, { to: uid, messages: [message] });
   }
-
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
       (identity) =>
@@ -503,16 +507,51 @@ export default class NotificationService {
     userId: string,
     transactionId: string,
     logContext: string,
-  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient } | null> {
-    const uid = await this.userService.findLineUidForCommunity(ctx, userId, ctx.communityId);
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient } | null>;
+  private async prepareLinePush(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+    options: { includeLanguage: true },
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language: Language } | null>;
+  private async prepareLinePush(
+    ctx: IContext,
+    userId: string,
+    transactionId: string,
+    logContext: string,
+    options?: { includeLanguage?: boolean },
+  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language?: Language } | null> {
+    let uid: string;
+    let language: Language | undefined;
 
-    if (!uid) {
-      logger.warn(`${logContext}: lineUid is missing`, {
-        transactionId,
+    if (options?.includeLanguage) {
+      const result = await this.userService.findLineUidAndLanguageForCommunity(
+        ctx,
         userId,
-        communityId: ctx.communityId,
-      });
-      return null;
+        ctx.communityId,
+      );
+      if (!result) {
+        logger.warn(`${logContext}: lineUid is missing`, {
+          transactionId,
+          userId,
+          communityId: ctx.communityId,
+        });
+        return null;
+      }
+      uid = result.uid;
+      language = result.language;
+    } else {
+      const foundUid = await this.userService.findLineUidForCommunity(ctx, userId, ctx.communityId);
+      if (!foundUid) {
+        logger.warn(`${logContext}: lineUid is missing`, {
+          transactionId,
+          userId,
+          communityId: ctx.communityId,
+        });
+        return null;
+      }
+      uid = foundUid;
     }
 
     let liffBaseUrl: string;
@@ -530,6 +569,9 @@ export default class NotificationService {
 
     const client = await createLineClient(ctx.communityId);
 
+    if (options?.includeLanguage && language) {
+      return { uid, liffBaseUrl, client, language };
+    }
     return { uid, liffBaseUrl, client };
   }
 

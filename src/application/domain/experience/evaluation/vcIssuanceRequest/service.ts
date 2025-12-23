@@ -318,7 +318,7 @@ export class VCIssuanceRequestService {
           vcRecordId: jobStatus.result.recordId,
           completedAt: new Date(),
         });
-        logger.info(`✅ VC completed: ${request.id}`);
+        logger.debug(`✅ VC completed: ${request.id}`);
         return { success: true, status: "completed" };
       }
 

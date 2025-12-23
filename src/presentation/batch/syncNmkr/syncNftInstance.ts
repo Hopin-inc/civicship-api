@@ -9,7 +9,7 @@ import { NftInstance, NftInstanceStatus, NftMint, NftMintStatus } from "@prisma/
 const MAX_RETRIES = 3;
 
 export async function syncMintingInstances() {
-  logger.info("🚀 Starting sync for MINTING nftInstances...");
+  logger.debug("🚀 Starting sync for MINTING nftInstances...");
 
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const client = container.resolve(NmkrClient);
@@ -41,7 +41,7 @@ export async function syncMintingInstances() {
         break;
       }
 
-      logger.info(
+      logger.debug(
         `📦 Processing batch ${Math.floor(skip / BATCH_SIZE) + 1}: ${instances.length} instances`,
       );
 
@@ -82,7 +82,7 @@ export async function syncMintingInstances() {
       if (instances.length < BATCH_SIZE) hasMore = false;
     }
 
-    logger.info(`🎯 Sync completed: ${totalProcessed} updated, ${totalErrors} errors`);
+    logger.debug(`🎯 Sync completed: ${totalProcessed} updated, ${totalErrors} errors`);
   } catch (error) {
     logger.error("💥 Batch process error:", error);
     throw error;
@@ -115,7 +115,7 @@ async function handleInstanceState(
         },
       });
     });
-    logger.info(`✅ Updated instance ${instance.id} to OWNED`);
+    logger.debug(`✅ Updated instance ${instance.id} to OWNED`);
     return "processed";
   }
 
@@ -127,7 +127,7 @@ async function handleInstanceState(
           data: { status: NftMintStatus.SUBMITTED, error: null },
         });
       });
-      logger.info(`⏳ Instance ${instance.id} is SOLD, still minting`);
+      logger.debug(`⏳ Instance ${instance.id} is SOLD, still minting`);
       return "skipped";
 
     case "error":
@@ -151,7 +151,7 @@ async function handleInstanceState(
       return "error";
 
     default:
-      logger.info(`⏳ Still minting: ${instance.id} (state=${state})`);
+      logger.debug(`⏳ Still minting: ${instance.id} (state=${state})`);
       return "skipped";
   }
 }

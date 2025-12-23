@@ -8,7 +8,7 @@ export default class IdentityConverter {
     platform: GqlIdentityPlatform,
     communityId: string,
   ): Prisma.UserCreateInput {
-    const { slug, name, currentPrefecture, phoneNumber, phoneUid } = input;
+    const { slug, name, currentPrefecture, phoneNumber, phoneUid, preferredLanguage } = input;
 
     const identities = phoneUid
       ? {
@@ -24,6 +24,7 @@ export default class IdentityConverter {
       currentPrefecture,
       slug: slug || "",
       phoneNumber,
+      preferredLanguage,
       identities,
     };
   }

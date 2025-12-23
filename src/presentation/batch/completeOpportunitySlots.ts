@@ -21,7 +21,7 @@ import { endOfDay } from "date-fns";
 export async function completeOpportunitySlots() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
 
-  logger.info("🕓 Starting opportunity slot auto-completion batch...");
+  logger.debug("🕓 Starting opportunity slot auto-completion batch...");
 
   const todayEnd = endOfDay(new Date()); // Local time (JST) assumed
 
@@ -36,7 +36,7 @@ export async function completeOpportunitySlots() {
         },
       });
 
-      logger.info(
+      logger.debug(
         `🎯 Found ${targets.length} slots to complete (startsAt <= today)`,
       );
 
@@ -57,7 +57,7 @@ export async function completeOpportunitySlots() {
       };
     });
 
-    logger.info(`✅ Completed ${result.updatedCount} out of ${result.total} scheduled slots.`);
+    logger.debug(`✅ Completed ${result.updatedCount} out of ${result.total} scheduled slots.`);
   } catch (error) {
     logger.error("❌ Error in opportunity slot completion batch:", error);
   }
