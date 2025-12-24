@@ -119,12 +119,11 @@ input AuthZDirectiveDeepCompositeRulesInput {
 }
 
 enum AuthZRules {
-  CanReadPhoneNumber
+  CanManageOpportunity
   IsAdmin
   IsCommunityManager
   IsCommunityMember
   IsCommunityOwner
-  IsOpportunityOwner
   IsSelf
   IsUser
 }

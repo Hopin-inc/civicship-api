@@ -148,12 +148,11 @@ export type GqlAuthZDirectiveDeepCompositeRulesInput = {
 };
 
 export const GqlAuthZRules = {
-  CanReadPhoneNumber: 'CanReadPhoneNumber',
+  CanManageOpportunity: 'CanManageOpportunity',
   IsAdmin: 'IsAdmin',
   IsCommunityManager: 'IsCommunityManager',
   IsCommunityMember: 'IsCommunityMember',
   IsCommunityOwner: 'IsCommunityOwner',
-  IsOpportunityOwner: 'IsOpportunityOwner',
   IsSelf: 'IsSelf',
   IsUser: 'IsUser'
 } as const;

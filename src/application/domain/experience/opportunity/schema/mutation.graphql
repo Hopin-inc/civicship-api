@@ -12,33 +12,21 @@ extend type Mutation {
         id: ID!
         permission:CheckCommunityPermissionInput!
     ): OpportunityDeletePayload
-    @authz(
-        compositeRules: [
-            { or: [IsCommunityOwner, IsOpportunityOwner] }
-        ]
-    )
+    @authz(rules: [CanManageOpportunity])
 
     opportunityUpdateContent(
         id: ID!,
         input: OpportunityUpdateContentInput!
         permission:CheckCommunityPermissionInput!
     ): OpportunityUpdateContentPayload
-    @authz(
-        compositeRules: [
-            { or: [IsCommunityOwner, IsOpportunityOwner] }
-        ]
-    )
+    @authz(rules: [CanManageOpportunity])
 
     opportunitySetPublishStatus(
         id: ID!
         input: OpportunitySetPublishStatusInput!
         permission:CheckOpportunityPermissionInput!
     ): OpportunitySetPublishStatusPayload
-    @authz(
-        compositeRules: [
-            { or: [IsCommunityOwner, IsOpportunityOwner] }
-        ]
-    )
+    @authz(rules: [CanManageOpportunity])
 }
 
 # ------------------------------
