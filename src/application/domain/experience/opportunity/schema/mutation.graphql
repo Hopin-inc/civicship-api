@@ -10,14 +10,14 @@ extend type Mutation {
 
     opportunityDelete(
         id: ID!
-        permission:CheckCommunityPermissionInput!
+        permission:CheckOpportunityPermissionInput!
     ): OpportunityDeletePayload
     @authz(rules: [CanManageOpportunity])
 
     opportunityUpdateContent(
         id: ID!,
         input: OpportunityUpdateContentInput!
-        permission:CheckCommunityPermissionInput!
+        permission:CheckOpportunityPermissionInput!
     ): OpportunityUpdateContentPayload
     @authz(rules: [CanManageOpportunity])
 

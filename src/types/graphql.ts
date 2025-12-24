@@ -899,7 +899,7 @@ export type GqlMutationOpportunityCreateArgs = {
 
 export type GqlMutationOpportunityDeleteArgs = {
   id: Scalars['ID']['input'];
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
@@ -933,7 +933,7 @@ export type GqlMutationOpportunitySlotsBulkUpdateArgs = {
 export type GqlMutationOpportunityUpdateContentArgs = {
   id: Scalars['ID']['input'];
   input: GqlOpportunityUpdateContentInput;
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
