@@ -678,12 +678,12 @@ type Mutation {
   membershipWithdraw(input: MembershipWithdrawInput!, permission: CheckIsSelfPermissionInput!): MembershipWithdrawPayload
   mutationEcho: String!
   opportunityCreate(input: OpportunityCreateInput!, permission: CheckCommunityPermissionInput!): OpportunityCreatePayload
-  opportunityDelete(id: ID!, permission: CheckCommunityPermissionInput!): OpportunityDeletePayload
+  opportunityDelete(id: ID!, permission: CheckOpportunityPermissionInput!): OpportunityDeletePayload
   opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!, permission: CheckOpportunityPermissionInput!): OpportunitySetPublishStatusPayload
   opportunitySlotCreate(input: OpportunitySlotCreateInput!, opportunityId: ID!, permission: CheckOpportunityPermissionInput!): OpportunitySlotCreatePayload
   opportunitySlotSetHostingStatus(id: ID!, input: OpportunitySlotSetHostingStatusInput!, permission: CheckOpportunityPermissionInput!): OpportunitySlotSetHostingStatusPayload
   opportunitySlotsBulkUpdate(input: OpportunitySlotsBulkUpdateInput!, permission: CheckOpportunityPermissionInput!): OpportunitySlotsBulkUpdatePayload
-  opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!, permission: CheckCommunityPermissionInput!): OpportunityUpdateContentPayload
+  opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!, permission: CheckOpportunityPermissionInput!): OpportunityUpdateContentPayload
   participationBulkCreate(input: ParticipationBulkCreateInput!, permission: CheckCommunityPermissionInput!): ParticipationBulkCreatePayload
   participationCreatePersonalRecord(input: ParticipationCreatePersonalRecordInput!): ParticipationCreatePersonalRecordPayload
   participationDeletePersonalRecord(id: ID!, permission: CheckIsSelfPermissionInput!): ParticipationDeletePayload
