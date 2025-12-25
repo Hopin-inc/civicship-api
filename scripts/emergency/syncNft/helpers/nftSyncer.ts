@@ -27,6 +27,10 @@ export async function syncNftsForWallet(
   let nfts: NftItemDto[];
   try {
     const response = await cardanoShopifyAppClient.getNftsByAddress(walletAddress);
+    logger.debug(`Raw API response from CardanoShopifyApp`, {
+      walletAddress,
+      response: JSON.stringify(response, null, 2),
+    });
     nfts = response.nfts;
     logger.debug(`Fetched ${nfts.length} NFTs from CardanoShopifyApp`, { walletAddress });
   } catch (err) {
