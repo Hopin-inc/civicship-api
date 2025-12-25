@@ -3,6 +3,7 @@ import logger from "../../../../src/infrastructure/logging";
 import { CardanoShopifyAppClient } from "../../../../src/infrastructure/libs/cardanoShopifyApp/api/client";
 import { NftItemDto } from "../../../../src/infrastructure/libs/cardanoShopifyApp/type";
 import { SyncResult } from "../types";
+import { uploadIpfsImageToGcs } from "./ipfsUploader";
 
 function toStringOrNull(value: string | string[] | undefined | null): string | null {
   if (value === undefined || value === null) return null;
@@ -10,7 +11,7 @@ function toStringOrNull(value: string | string[] | undefined | null): string | n
   return value;
 }
 
-function toImageUrl(value: string | string[] | undefined | null): string | null {
+function toImageUrlString(value: string | string[] | undefined | null): string | null {
   if (value === undefined || value === null) return null;
   if (Array.isArray(value)) return value.join("");
   return value;
@@ -85,6 +86,12 @@ export async function syncNftsForWallet(
           });
         }
 
+        const rawImageUrl = toImageUrlString(nft.metadata?.image);
+        let imageUrl: string | null = null;
+        if (rawImageUrl) {
+          imageUrl = await uploadIpfsImageToGcs(rawImageUrl, nft.policyId, nft.assetNameHex);
+        }
+
         await tx.nftInstance.upsert({
           where: {
             nftTokenId_instanceId: {
@@ -96,7 +103,7 @@ export async function syncNftsForWallet(
             nftWalletId: walletId,
             name: nft.metadata?.name || null,
             description: toStringOrNull(nft.metadata?.description),
-            imageUrl: toImageUrl(nft.metadata?.image),
+            imageUrl,
             json: nft.metadata as object,
           },
           create: {
@@ -105,7 +112,7 @@ export async function syncNftsForWallet(
             nftWalletId: walletId,
             name: nft.metadata?.name || null,
             description: toStringOrNull(nft.metadata?.description),
-            imageUrl: toImageUrl(nft.metadata?.image),
+            imageUrl,
             json: nft.metadata as object,
           },
         });
