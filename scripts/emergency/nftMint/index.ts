@@ -4,7 +4,7 @@ import * as process from "node:process";
 import { container } from "tsyringe";
 import * as path from "path";
 import { PrismaClientIssuer } from "../../../src/infrastructure/prisma/client";
-import { CardanoShopifyAppClient } from "../../../src/infrastructure/libs/cardanoShopifyApp/api/client";
+import { CardanoShopifyAppClient } from "../../../src/infrastructure/libs/cardanoShopifyApp";
 import logger from "../../../src/infrastructure/logging";
 import { WalletResult } from "./types";
 import { loadInputCsv } from "./helpers/csvParser";
