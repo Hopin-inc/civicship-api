@@ -1,9 +1,9 @@
-import { PrismaClientIssuer } from "../../../src/infrastructure/prisma/client";
-import logger from "../../../src/infrastructure/logging";
-import { auth } from "../../../src/infrastructure/libs/firebase";
+import { PrismaClientIssuer } from "../../../../src/infrastructure/prisma/client";
+import logger from "../../../../src/infrastructure/logging";
+import { auth } from "../../../../src/infrastructure/libs/firebase";
 import { InputRecord, WalletResult } from "../types";
 import { getFirebaseIdTokenForUid } from "./firebaseTokenHelper";
-import { CardanoShopifyAppClient } from "../../../src/infrastructure/libs/cardanoShopifyApp/api/client";
+import { CardanoShopifyAppClient } from "../../../../src/infrastructure/libs/cardanoShopifyApp/api/client";
 import { NftWalletType } from "@prisma/client";
 
 async function findExistingUserByFirebaseUid(

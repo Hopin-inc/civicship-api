@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import logger from "../../../src/infrastructure/logging";
+import logger from "../../../../src/infrastructure/logging";
 import { ProcessingResult, WalletResult } from "../types";
 
 export function aggregateResults(results: WalletResult[]): ProcessingResult {
