@@ -4,9 +4,8 @@ import * as process from "node:process";
 import { container } from "tsyringe";
 import * as path from "path";
 import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
-import NFTWalletService from "../../src/application/domain/account/nft-wallet/service";
+import { CardanoShopifyAppClient } from "../../src/infrastructure/libs/cardanoShopifyApp/api/client";
 import logger from "../../src/infrastructure/logging";
-import { IContext } from "../../src/types/server";
 import { WalletResult } from "./types";
 import { loadInputCsv } from "./csvParser";
 import { processRecord } from "./walletCreator";
@@ -14,20 +13,15 @@ import { aggregateResults, writeOutputFiles, printSummary } from "./outputGenera
 
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
-  const nftWalletService = container.resolve(NFTWalletService);
+  const cardanoShopifyAppClient = container.resolve(CardanoShopifyAppClient);
 
   const INPUT_CSV_PATH = path.join(process.cwd(), "scripts/emergencyNftMint/input.csv");
   const OUTPUT_CSV_PATH = path.join(process.cwd(), "scripts/emergencyNftMint/output.csv");
   const ERROR_CSV_PATH = path.join(process.cwd(), "scripts/emergencyNftMint/errors.csv");
-  const COMMUNITY_ID = process.env.EMERGENCY_NFT_COMMUNITY_ID || "default";
-
-  const ctx = {
-    communityId: COMMUNITY_ID,
-    issuer,
-  } as IContext;
 
   logger.info("Starting emergency NFT mint process...");
   logger.info("This script creates wallets for users based on phone numbers.");
+  logger.info("Using CardanoShopifyApp API for wallet creation.");
   logger.info("MintService integration is done manually after this script completes.");
 
   const records = loadInputCsv(INPUT_CSV_PATH);
@@ -35,7 +29,7 @@ async function main() {
   const walletResults: WalletResult[] = [];
   for (const record of records) {
     try {
-      const result = await processRecord(ctx, issuer, nftWalletService, record);
+      const result = await processRecord(issuer, cardanoShopifyAppClient, record);
       walletResults.push(result);
     } catch (err) {
       logger.error(`Unexpected error processing record`, {

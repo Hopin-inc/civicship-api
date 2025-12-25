@@ -8,10 +8,9 @@ export type WalletSuccess = {
   kind: "success";
   phoneNumber: string;
   nftSequence: number;
+  name: string;
   walletAddress: string;
   firebaseUid: string;
-  userId: string;
-  isConfirmed: boolean;
 };
 
 export type WalletFirebaseNotFound = {
@@ -26,14 +25,24 @@ export type WalletCreationFailed = {
   kind: "walletCreationFailed";
   phoneNumber: string;
   nftSequence: number;
+  name: string;
   firebaseUid: string;
   error: string;
 };
 
-export type WalletResult = WalletSuccess | WalletFirebaseNotFound | WalletCreationFailed;
+export type UserNotFound = {
+  kind: "userNotFound";
+  phoneNumber: string;
+  nftSequence: number;
+  name: string;
+  firebaseUid: string;
+};
+
+export type WalletResult = WalletSuccess | WalletFirebaseNotFound | WalletCreationFailed | UserNotFound;
 
 export type ProcessingResult = {
   success: WalletSuccess[];
   firebaseNotFound: WalletFirebaseNotFound[];
+  userNotFound: UserNotFound[];
   walletCreationFailed: WalletCreationFailed[];
 };
