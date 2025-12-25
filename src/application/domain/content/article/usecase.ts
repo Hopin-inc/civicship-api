@@ -43,8 +43,8 @@ export default class ArticleUseCase {
 
     const validatedFilter: GqlArticleFilterInput = validateByMembershipRoles(
       communityIds,
-      isMember,
       isManager,
+      isMember,
       currentUserId,
       filter,
     );
@@ -75,8 +75,8 @@ export default class ArticleUseCase {
 
     const validatedFilter = validateByMembershipRoles(
       communityIds,
-      isMember,
       isManager,
+      isMember,
       currentUserId,
     );
 

@@ -79,8 +79,8 @@ export default class OpportunityUseCase {
 
     const validatedFilter = validateByMembershipRoles(
       communityIds,
-      isMember,
       isManager,
+      isMember,
       currentUserId,
       undefined,
       ctx.isAdmin,
