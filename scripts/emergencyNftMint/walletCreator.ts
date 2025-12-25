@@ -1,14 +1,14 @@
 import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
-import NFTWalletService from "../../src/application/domain/account/nft-wallet/service";
 import logger from "../../src/infrastructure/logging";
 import { auth } from "../../src/infrastructure/libs/firebase";
-import { IContext } from "../../src/types/server";
 import { InputRecord, WalletResult } from "./types";
+import { getFirebaseIdTokenForUid } from "./firebaseTokenHelper";
+import { CardanoShopifyAppClient } from "../../src/infrastructure/libs/cardanoShopifyApp/api/client";
 
-async function findOrCreateUserByFirebaseUid(
+async function findExistingUserByFirebaseUid(
   issuer: PrismaClientIssuer,
   firebaseUid: string,
-): Promise<{ id: string; isConfirmed: boolean }> {
+): Promise<{ id: string } | null> {
   return await issuer.internal(async (tx) => {
     const existingIdentity = await tx.identity.findFirst({
       where: { uid: firebaseUid },
@@ -16,40 +16,20 @@ async function findOrCreateUserByFirebaseUid(
     });
 
     if (existingIdentity?.user) {
-      const isConfirmed = existingIdentity.refreshToken !== null;
       logger.debug(`Found existing user for Firebase UID`, {
         firebaseUid,
         userId: existingIdentity.user.id,
-        isConfirmed,
       });
-      return { id: existingIdentity.user.id, isConfirmed };
+      return { id: existingIdentity.user.id };
     }
 
-    logger.debug(`Creating new user for Firebase UID`, { firebaseUid });
-    const newUser = await tx.user.create({
-      data: {
-        name: "名前未設定",
-        slug: "名前未設定",
-        currentPrefecture: "UNKNOWN",
-        identities: {
-          create: [
-            {
-              uid: firebaseUid,
-              platform: "PHONE",
-            },
-          ],
-        },
-      },
-    });
-
-    return { id: newUser.id, isConfirmed: false };
+    return null;
   });
 }
 
 export async function processRecord(
-  ctx: IContext,
   issuer: PrismaClientIssuer,
-  nftWalletService: NFTWalletService,
+  cardanoShopifyAppClient: CardanoShopifyAppClient,
   record: InputRecord,
 ): Promise<WalletResult> {
   logger.debug(`Processing record`, {
@@ -80,14 +60,29 @@ export async function processRecord(
     };
   }
 
-  const { id: userId, isConfirmed } = await findOrCreateUserByFirebaseUid(issuer, firebaseUid);
+  const existingUser = await findExistingUserByFirebaseUid(issuer, firebaseUid);
+  if (!existingUser) {
+    logger.warn(`Civicship user not found for Firebase UID`, {
+      phoneNumber: record.phoneNumber,
+      firebaseUid,
+    });
+    return {
+      kind: "userNotFound",
+      phoneNumber: record.phoneNumber,
+      nftSequence: record.nftSequence,
+      name: record.name,
+      firebaseUid,
+    };
+  }
 
-  let wallet;
+  let walletAddress: string;
   try {
-    wallet = await nftWalletService.ensureNmkrWallet(ctx, userId);
-    logger.debug(`Wallet ensured`, {
-      userId,
-      walletAddress: wallet.walletAddress,
+    const idToken = await getFirebaseIdTokenForUid(firebaseUid);
+    const response = await cardanoShopifyAppClient.getOrCreateAddress(idToken);
+    walletAddress = response.address;
+    logger.debug(`Wallet address obtained from CardanoShopifyApp`, {
+      firebaseUid,
+      walletAddress,
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
@@ -100,6 +95,7 @@ export async function processRecord(
       kind: "walletCreationFailed",
       phoneNumber: record.phoneNumber,
       nftSequence: record.nftSequence,
+      name: record.name,
       firebaseUid,
       error: errorMessage,
     };
@@ -108,17 +104,15 @@ export async function processRecord(
   logger.info(`Successfully processed`, {
     phoneNumber: record.phoneNumber,
     nftSequence: record.nftSequence,
-    walletAddress: wallet.walletAddress,
-    isConfirmed,
+    walletAddress,
   });
 
   return {
     kind: "success",
     phoneNumber: record.phoneNumber,
     nftSequence: record.nftSequence,
-    walletAddress: wallet.walletAddress,
+    name: record.name,
+    walletAddress,
     firebaseUid,
-    userId,
-    isConfirmed,
   };
 }

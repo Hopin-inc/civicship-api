@@ -6,6 +6,7 @@ export function aggregateResults(results: WalletResult[]): ProcessingResult {
   const processing: ProcessingResult = {
     success: [],
     firebaseNotFound: [],
+    userNotFound: [],
     walletCreationFailed: [],
   };
 
@@ -17,6 +18,9 @@ export function aggregateResults(results: WalletResult[]): ProcessingResult {
       case "firebaseNotFound":
         processing.firebaseNotFound.push(result);
         break;
+      case "userNotFound":
+        processing.userNotFound.push(result);
+        break;
       case "walletCreationFailed":
         processing.walletCreationFailed.push(result);
         break;
@@ -27,8 +31,8 @@ export function aggregateResults(results: WalletResult[]): ProcessingResult {
 }
 
 export function buildOutputCsv(processing: ProcessingResult): string {
-  const lines = processing.success.map((r) => `${r.walletAddress},${r.nftSequence}`);
-  return ["walletAddress,nftSequence", ...lines].join("\n");
+  const lines = processing.success.map((r) => `${r.walletAddress},${r.nftSequence},${r.name}`);
+  return ["walletAddress,nftSequence,name", ...lines].join("\n");
 }
 
 export function buildErrorCsv(processing: ProcessingResult): string | null {
@@ -40,10 +44,17 @@ export function buildErrorCsv(processing: ProcessingResult): string | null {
       errorType: "FIREBASE_NOT_FOUND",
       error: r.error,
     })),
+    ...processing.userNotFound.map((r) => ({
+      phoneNumber: r.phoneNumber,
+      nftSequence: r.nftSequence,
+      name: r.name,
+      errorType: "USER_NOT_FOUND",
+      error: "Civicship user not found",
+    })),
     ...processing.walletCreationFailed.map((r) => ({
       phoneNumber: r.phoneNumber,
       nftSequence: r.nftSequence,
-      name: "",
+      name: r.name,
       errorType: "WALLET_CREATION_FAILED",
       error: r.error,
     })),
@@ -75,7 +86,10 @@ export function writeOutputFiles(
   if (errorCsv) {
     fs.writeFileSync(errorOutputPath, errorCsv, "utf-8");
     logger.info(`Error CSV written to ${errorOutputPath}`, {
-      recordCount: processing.firebaseNotFound.length + processing.walletCreationFailed.length,
+      recordCount:
+        processing.firebaseNotFound.length +
+        processing.userNotFound.length +
+        processing.walletCreationFailed.length,
     });
   }
 }
@@ -85,11 +99,8 @@ export function printSummary(processing: ProcessingResult, totalRecords: number)
   logger.info("Processing Summary:");
   logger.info(`  Total records in CSV: ${totalRecords}`);
   logger.info(`  Successfully processed: ${processing.success.length}`);
-  logger.info(`    - Confirmed users: ${processing.success.filter((r) => r.isConfirmed).length}`);
-  logger.info(
-    `    - Unconfirmed users: ${processing.success.filter((r) => !r.isConfirmed).length}`,
-  );
   logger.info(`  Skipped (Firebase not found): ${processing.firebaseNotFound.length}`);
+  logger.info(`  Skipped (Civicship user not found): ${processing.userNotFound.length}`);
   logger.info(`  Failed (Wallet creation): ${processing.walletCreationFailed.length}`);
   logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 }
