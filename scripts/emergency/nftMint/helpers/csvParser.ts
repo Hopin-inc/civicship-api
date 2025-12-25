@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import logger from "../../../../src/infrastructure/logging";
 import { InputRecord } from "../types";
+import { normalizeAndLogPhoneNumber } from "./phoneNormalizer";
 
 export function parseInputCsv(csvContent: string): InputRecord[] {
   const lines = csvContent.trim().split("\n");
@@ -12,13 +13,20 @@ export function parseInputCsv(csvContent: string): InputRecord[] {
   return lines
     .slice(1)
     .map((line, index) => {
-      const [phoneNumber, nftSequence, name] = line.split(",").map((s) => s.trim());
-      if (!phoneNumber || !nftSequence) {
-        logger.warn(`Invalid CSV line ${index + 2}: ${line}`);
+      const lineNumber = index + 2;
+      const [rawPhoneNumber, nftSequence, name] = line.split(",").map((s) => s.trim());
+      if (!rawPhoneNumber || !nftSequence) {
+        logger.warn(`Invalid CSV line ${lineNumber}: ${line}`);
         return null;
       }
+
+      const normalized = normalizeAndLogPhoneNumber(rawPhoneNumber, lineNumber);
+      if (!normalized.ok) {
+        return null;
+      }
+
       return {
-        phoneNumber,
+        phoneNumber: normalized.e164,
         nftSequence: parseInt(nftSequence, 10),
         name: name || "",
       };
