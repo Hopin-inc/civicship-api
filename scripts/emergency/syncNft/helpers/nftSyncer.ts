@@ -47,7 +47,7 @@ export async function syncNftsForWallet(
         const instanceId = `${nft.policyId}-${nft.assetNameHex}`;
 
         const nftToken = await tx.nftToken.findFirst({
-          where: { policyId: nft.policyId },
+          where: { address: nft.policyId },
         });
 
         if (!nftToken) {
