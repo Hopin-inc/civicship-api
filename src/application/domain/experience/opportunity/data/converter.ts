@@ -54,17 +54,6 @@ export default class OpportunityConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  findAccessible(
-    id: string,
-    filter?: GqlOpportunityFilterInput,
-  ): Prisma.OpportunityWhereUniqueInput & Prisma.OpportunityWhereInput {
-    const validatedFilter = this.filter(filter);
-    return {
-      id,
-      ...(validatedFilter.AND ? { AND: validatedFilter.AND } : {}),
-    };
-  }
-
   create = (
     input: GqlOpportunityCreateInput,
     communityId: string,

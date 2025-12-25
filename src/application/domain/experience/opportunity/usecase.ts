@@ -17,7 +17,7 @@ import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/domain/experience/opportunity/presenter";
 import { PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
-import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { canViewByPublishStatus, clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
@@ -70,24 +70,20 @@ export default class OpportunityUseCase {
   }
 
   async visitorViewOpportunity(
-    { id, permission }: GqlQueryOpportunityArgs,
+    { id }: GqlQueryOpportunityArgs,
     ctx: IContext,
   ): Promise<GqlOpportunity | null> {
-    const currentUserId = ctx.currentUser?.id;
-    const communityIds = [permission.communityId];
-    const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
+    const record = await this.service.findOpportunity(ctx, id);
+    if (!record || !record.communityId) {
+      return null;
+    }
 
-    const validatedFilter = validateByMembershipRoles(
-      communityIds,
-      isManager,
-      isMember,
-      currentUserId,
-      undefined,
-      ctx.isAdmin,
-    );
+    // Check if user can view based on publishStatus and role
+    if (!canViewByPublishStatus(ctx, record.publishStatus, record.communityId, record.createdBy ?? undefined)) {
+      return null;
+    }
 
-    const record = await this.service.findOpportunityAccessible(ctx, id, validatedFilter);
-    return record ? OpportunityPresenter.get(record) : null;
+    return OpportunityPresenter.get(record);
   }
 
   async managerCreateOpportunity(
@@ -205,48 +201,4 @@ function enforceAccessFilter(
       communityIds: [communityId],
     })),
   };
-}
-
-function validateByMembershipRoles(
-  communityIds: string[],
-  isManager: Record<string, boolean>,
-  isMember: Record<string, boolean>,
-  currentUserId?: string,
-  filter?: GqlOpportunityFilterInput,
-  isAdmin?: boolean,
-): GqlOpportunityFilterInput {
-  if (isAdmin) {
-    return filter ?? {};
-  }
-
-  if (communityIds.length === 0) {
-    return {
-      and: [{ publishStatus: [PublishStatus.PUBLIC] }, ...(filter ? [filter] : [])],
-    };
-  }
-
-  const orConditions: GqlOpportunityFilterInput[] = communityIds.map((communityId) => {
-    if (isManager[communityId]) {
-      return {
-        and: [{ communityIds: [communityId] }, ...(filter ? [filter] : [])],
-      };
-    }
-    return {
-      and: [
-        { communityIds: [communityId] },
-        {
-          or: [
-            { publishStatus: [PublishStatus.PUBLIC] },
-            ...(isMember[communityId]
-              ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }]
-              : []),
-            ...(currentUserId ? [{ createdByUserIds: [currentUserId] }] : []),
-          ],
-        },
-        ...(filter ? [filter] : []),
-      ],
-    };
-  });
-
-  return { or: orConditions };
 }

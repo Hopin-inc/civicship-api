@@ -35,16 +35,6 @@ export default class OpportunityService {
     return await this.repository.find(ctx, id);
   }
 
-  async findOpportunityAccessible(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {
-    const where = this.converter.findAccessible(id, filter ?? {});
-
-    const opportunity = await this.repository.findAccessible(ctx, where);
-    if (!opportunity) {
-      return null;
-    }
-
-    return opportunity;
-  }
 
   async findOpportunityOrThrow(ctx: IContext, opportunityId: string) {
     const opportunity = await this.repository.find(ctx, opportunityId);

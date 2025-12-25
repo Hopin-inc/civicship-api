@@ -48,15 +48,15 @@ export default class ArticleRepository {
     );
   }
 
-  async findAccessible(
-    ctx: IContext,
-    where: Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput,
-    isForPortfolio: boolean = false,
-  ) {
+  async find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.article.findUnique({
-        where,
-        select: isForPortfolio ? articleForPortfolioSelectDetail : articleSelectDetail,
+        where: { id },
+        select: {
+          ...articleSelectDetail,
+          authors: { select: { id: true } },
+          relatedUsers: { select: { id: true } },
+        },
       });
     });
   }
