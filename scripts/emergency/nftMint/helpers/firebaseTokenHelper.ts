@@ -1,5 +1,5 @@
-import { auth } from "../../../src/infrastructure/libs/firebase";
-import logger from "../../../src/infrastructure/logging";
+import { auth } from "../../../../src/infrastructure/libs/firebase";
+import logger from "../../../../src/infrastructure/logging";
 
 export type FirebaseIdTokenResponse = {
   idToken: string;

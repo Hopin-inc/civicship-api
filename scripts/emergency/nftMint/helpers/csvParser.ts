@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import logger from "../../../src/infrastructure/logging";
+import logger from "../../../../src/infrastructure/logging";
 import { InputRecord } from "../types";
 
 export function parseInputCsv(csvContent: string): InputRecord[] {

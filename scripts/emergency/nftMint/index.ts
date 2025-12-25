@@ -3,9 +3,9 @@ import "@/application/provider";
 import * as process from "node:process";
 import { container } from "tsyringe";
 import * as path from "path";
-import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
-import { CardanoShopifyAppClient } from "../../src/infrastructure/libs/cardanoShopifyApp/api/client";
-import logger from "../../src/infrastructure/logging";
+import { PrismaClientIssuer } from "../../../src/infrastructure/prisma/client";
+import { CardanoShopifyAppClient } from "../../../src/infrastructure/libs/cardanoShopifyApp/api/client";
+import logger from "../../../src/infrastructure/logging";
 import { WalletResult } from "./types";
 import { loadInputCsv } from "./helpers/csvParser";
 import { processRecord } from "./helpers/walletCreator";
@@ -15,9 +15,9 @@ async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const cardanoShopifyAppClient = container.resolve(CardanoShopifyAppClient);
 
-  const INPUT_CSV_PATH = path.join(process.cwd(), "scripts/emergencyNftMint/input.csv");
-  const OUTPUT_CSV_PATH = path.join(process.cwd(), "scripts/emergencyNftMint/output.csv");
-  const ERROR_CSV_PATH = path.join(process.cwd(), "scripts/emergencyNftMint/errors.csv");
+  const INPUT_CSV_PATH = path.join(process.cwd(), "scripts/emergency/nftMint/input.csv");
+  const OUTPUT_CSV_PATH = path.join(process.cwd(), "scripts/emergency/nftMint/output.csv");
+  const ERROR_CSV_PATH = path.join(process.cwd(), "scripts/emergency/nftMint/errors.csv");
 
   logger.info("Starting emergency NFT mint process...");
   logger.info("This script creates wallets for users based on phone numbers.");
