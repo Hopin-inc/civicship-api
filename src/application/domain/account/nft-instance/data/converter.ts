@@ -37,6 +37,20 @@ export default class NftInstanceConverter {
       });
     }
 
+    if (input.communityId !== undefined) {
+      conditions.push({
+        nftWallet: {
+          user: {
+            memberships: {
+              some: {
+                communityId: input.communityId,
+              },
+            },
+          },
+        },
+      });
+    }
+
     if (input.hasName !== undefined) {
       conditions.push(input.hasName ? { name: { not: null } } : { name: null });
     }
