@@ -1,6 +1,6 @@
 import * as fs from "fs";
-import logger from "../../src/infrastructure/logging";
-import { ProcessingResult, WalletResult } from "./types";
+import logger from "../../../src/infrastructure/logging";
+import { ProcessingResult, WalletResult } from "../types";
 
 export function aggregateResults(results: WalletResult[]): ProcessingResult {
   const processing: ProcessingResult = {
