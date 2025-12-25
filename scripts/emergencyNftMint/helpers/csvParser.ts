@@ -1,6 +1,6 @@
 import * as fs from "fs";
-import logger from "../../src/infrastructure/logging";
-import { InputRecord } from "./types";
+import logger from "../../../src/infrastructure/logging";
+import { InputRecord } from "../types";
 
 export function parseInputCsv(csvContent: string): InputRecord[] {
   const lines = csvContent.trim().split("\n");

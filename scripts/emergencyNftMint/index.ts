@@ -7,9 +7,9 @@ import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
 import { CardanoShopifyAppClient } from "../../src/infrastructure/libs/cardanoShopifyApp/api/client";
 import logger from "../../src/infrastructure/logging";
 import { WalletResult } from "./types";
-import { loadInputCsv } from "./csvParser";
-import { processRecord } from "./walletCreator";
-import { aggregateResults, writeOutputFiles, printSummary } from "./outputGenerator";
+import { loadInputCsv } from "./helpers/csvParser";
+import { processRecord } from "./helpers/walletCreator";
+import { aggregateResults, writeOutputFiles, printSummary } from "./helpers/outputGenerator";
 
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");

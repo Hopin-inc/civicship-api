@@ -1,9 +1,10 @@
-import { PrismaClientIssuer } from "../../src/infrastructure/prisma/client";
-import logger from "../../src/infrastructure/logging";
-import { auth } from "../../src/infrastructure/libs/firebase";
-import { InputRecord, WalletResult } from "./types";
+import { PrismaClientIssuer } from "../../../src/infrastructure/prisma/client";
+import logger from "../../../src/infrastructure/logging";
+import { auth } from "../../../src/infrastructure/libs/firebase";
+import { InputRecord, WalletResult } from "../types";
 import { getFirebaseIdTokenForUid } from "./firebaseTokenHelper";
-import { CardanoShopifyAppClient } from "../../src/infrastructure/libs/cardanoShopifyApp/api/client";
+import { CardanoShopifyAppClient } from "../../../src/infrastructure/libs/cardanoShopifyApp/api/client";
+import { NftWalletType } from "@prisma/client";
 
 async function findExistingUserByFirebaseUid(
   issuer: PrismaClientIssuer,
@@ -98,6 +99,40 @@ export async function processRecord(
       name: record.name,
       firebaseUid,
       error: errorMessage,
+    };
+  }
+
+  try {
+    await issuer.internal(async (tx) => {
+      await tx.nftWallet.upsert({
+        where: { walletAddress },
+        update: {},
+        create: {
+          walletAddress,
+          userId: existingUser.id,
+          type: NftWalletType.INTERNAL,
+        },
+      });
+    });
+    logger.debug(`Wallet address saved to database`, {
+      userId: existingUser.id,
+      walletAddress,
+    });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    logger.error(`Failed to save wallet address to database`, {
+      phoneNumber: record.phoneNumber,
+      firebaseUid,
+      walletAddress,
+      error: errorMessage,
+    });
+    return {
+      kind: "walletCreationFailed",
+      phoneNumber: record.phoneNumber,
+      nftSequence: record.nftSequence,
+      name: record.name,
+      firebaseUid,
+      error: `Wallet obtained but DB save failed: ${errorMessage}`,
     };
   }
 
