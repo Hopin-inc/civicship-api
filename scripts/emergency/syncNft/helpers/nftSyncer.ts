@@ -46,16 +46,27 @@ export async function syncNftsForWallet(
       for (const nft of nfts) {
         const instanceId = `${nft.policyId}-${nft.assetNameHex}`;
 
-        const nftToken = await tx.nftToken.findFirst({
+        let nftToken = await tx.nftToken.findFirst({
           where: { address: nft.policyId },
         });
 
         if (!nftToken) {
-          logger.warn(`NftToken not found for policyId, skipping`, {
+          logger.info(`NftToken not found for policyId, creating new one`, {
             policyId: nft.policyId,
-            assetName: nft.assetName,
           });
-          continue;
+          nftToken = await tx.nftToken.create({
+            data: {
+              address: nft.policyId,
+              type: "Cardano",
+              name: nft.metadata?.name || null,
+              symbol: null,
+              json: null,
+            },
+          });
+          logger.debug(`Created NftToken`, {
+            nftTokenId: nftToken.id,
+            policyId: nft.policyId,
+          });
         }
 
         await tx.nftInstance.upsert({
