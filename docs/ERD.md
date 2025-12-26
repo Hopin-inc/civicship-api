@@ -358,6 +358,30 @@ RIGHT RIGHT
     }
   
 
+  "t_community_portal_configs" {
+    String id "🗝️"
+    String config_id 
+    String token_name 
+    String title 
+    String description 
+    String short_description "❓"
+    String domain 
+    String favicon_prefix 
+    String logo_path 
+    String square_logo_path 
+    String og_image_path 
+    Json enable_features 
+    String root_path 
+    String admin_root_path 
+    Json documents "❓"
+    Json common_document_overrides "❓"
+    String region_name "❓"
+    String region_key "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_users" {
     String id "🗝️"
     String name 
@@ -834,11 +858,13 @@ RIGHT RIGHT
     "t_community_configs" o|--|| "t_communities" : "community"
     "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
     "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
+    "t_community_configs" o{--}o "t_community_portal_configs" : "portalConfig"
     "t_community_firebase_configs" o|--|o "t_community_configs" : "config"
     "t_community_line_configs" o|--|o "t_community_configs" : "config"
     "t_community_line_configs" o{--}o "t_community_line_rich_menus" : "richMenus"
     "t_community_line_rich_menus" o|--|| "t_community_line_configs" : "config"
     "t_community_line_rich_menus" o|--|| "LineRichMenuType" : "enum:type"
+    "t_community_portal_configs" o|--|| "t_community_configs" : "config"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|| "Language" : "enum:preferred_language"
