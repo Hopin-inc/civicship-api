@@ -104,21 +104,35 @@ export async function processRecord(
 
   try {
     await issuer.internal(async (tx) => {
-      await tx.nftWallet.upsert({
+      const existingWallet = await tx.nftWallet.findUnique({
         where: { walletAddress },
-        update: {},
-        create: {
-          walletAddress,
-          userId: existingUser.id,
-          type: NftWalletType.INTERNAL,
-        },
       });
+
+      if (existingWallet) {
+        if (existingWallet.userId !== existingUser.id) {
+          throw new Error(
+            `Wallet address ${walletAddress} is already associated with a different user (existing: ${existingWallet.userId}, current: ${existingUser.id})`,
+          );
+        }
+        logger.debug(`Wallet already exists for this user, skipping creation`, {
+          userId: existingUser.id,
+          walletAddress,
+        });
+      } else {
+        await tx.nftWallet.create({
+          data: {
+            walletAddress,
+            userId: existingUser.id,
+            type: NftWalletType.INTERNAL,
+          },
+        });
+        logger.debug(`Wallet address saved to database`, {
+          userId: existingUser.id,
+          walletAddress,
+        });
+      }
     });
-    logger.debug(`Wallet address saved to database`, {
-      userId: existingUser.id,
-      walletAddress,
-    });
-  } catch (err) {
+  }catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     logger.error(`Failed to save wallet address to database`, {
       phoneNumber: record.phoneNumber,
