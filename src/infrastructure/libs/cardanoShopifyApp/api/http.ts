@@ -74,8 +74,14 @@ export class CardanoShopifyAppHttp {
 }
 
 export const createCardanoShopifyAppHttpClient = (): AxiosInstance => {
-  const baseURL = process.env.CARDANO_SHOPIFY_APP_API_URL!;
-  const apiKey = process.env.CARDANO_SHOPIFY_APP_API_KEY!;
+  const baseURL = process.env.CARDANO_SHOPIFY_APP_API_URL;
+  if (!baseURL) {
+    throw new Error("CARDANO_SHOPIFY_APP_API_URL environment variable is not set");
+  }
+  const apiKey = process.env.CARDANO_SHOPIFY_APP_API_KEY;
+  if (!apiKey) {
+    throw new Error("CARDANO_SHOPIFY_APP_API_KEY environment variable is not set");
+  }
 
   const client = axios.create({
     baseURL,
