@@ -25,9 +25,26 @@ export function parseInputCsv(csvContent: string): InputRecord[] {
         return null;
       }
 
+      if (!/^[0-9]+$/.test(nftSequence)) {
+        logger.warn(`nftSequenceが数字ではありません (CSV行 ${lineNumber})`, {
+          nftSequence,
+          rawLine: line,
+        });
+        return null;
+      }
+
+      const parsedSequence = parseInt(nftSequence, 10);
+      if (Number.isNaN(parsedSequence)) {
+        logger.warn(`nftSequenceの解析に失敗しました (CSV行 ${lineNumber})`, {
+          nftSequence,
+          rawLine: line,
+        });
+        return null;
+      }
+
       return {
         phoneNumber: normalized.e164,
-        nftSequence: parseInt(nftSequence, 10),
+        nftSequence: parsedSequence,
         name: name || "",
       };
     })
