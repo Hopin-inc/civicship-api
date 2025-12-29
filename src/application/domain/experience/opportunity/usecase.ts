@@ -17,7 +17,11 @@ import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/domain/experience/opportunity/presenter";
 import { PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
-import { canViewByPublishStatus, clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import {
+  canViewByPublishStatus,
+  clampFirst,
+  getMembershipRolesByCtx,
+} from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
@@ -78,10 +82,17 @@ export default class OpportunityUseCase {
       return null;
     }
 
-    // Check if user can view based on publishStatus and role
-    if (!canViewByPublishStatus(ctx, record.publishStatus, record.communityId, record.createdBy ?? undefined)) {
-      return null;
-    }
+    // // Check if user can view based on publishStatus and role
+    // if (
+    //   !canViewByPublishStatus(
+    //     ctx,
+    //     record.publishStatus,
+    //     record.communityId,
+    //     record.createdBy ?? undefined,
+    //   )
+    // ) {
+    //   return null;
+    // }
 
     return OpportunityPresenter.get(record);
   }
