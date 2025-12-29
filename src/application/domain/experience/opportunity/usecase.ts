@@ -17,11 +17,7 @@ import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/domain/experience/opportunity/presenter";
 import { PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
-import {
-  canViewByPublishStatus,
-  clampFirst,
-  getMembershipRolesByCtx,
-} from "@/application/domain/utils";
+import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
