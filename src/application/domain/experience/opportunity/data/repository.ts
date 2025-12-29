@@ -34,18 +34,6 @@ export default class OpportunityRepository implements IOpportunityRepository {
     });
   }
 
-  async findAccessible(
-    ctx: IContext,
-    where: Prisma.OpportunityWhereUniqueInput & Prisma.OpportunityWhereInput,
-  ) {
-    return ctx.issuer.public(ctx, (dbTx) => {
-      return dbTx.opportunity.findUnique({
-        where,
-        select: opportunitySelectDetail,
-      });
-    });
-  }
-
   async create(ctx: IContext, data: Prisma.OpportunityCreateInput, tx: Prisma.TransactionClient) {
     return tx.opportunity.create({
       data,

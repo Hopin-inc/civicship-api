@@ -9,7 +9,7 @@ type User {
     slug: String
     image: String
     bio: String
-    phoneNumber: String @authz(rules: [CanReadPhoneNumber])
+    phoneNumber: String
     preferredLanguage: Language
 
     urlWebsite: String
