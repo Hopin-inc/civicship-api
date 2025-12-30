@@ -57,11 +57,36 @@ export async function syncNftsForWallet(
     };
   }
 
+  // Step 1: トランザクション外でIPFS→GCSアップロードを事前処理
+  const imageUrlMap = new Map<string, string | null>();
+  for (const nft of nfts) {
+    const key = `${nft.policyId}-${nft.assetNameHex}`;
+    const rawImageUrl = toImageUrlString(nft.metadata?.image);
+    if (rawImageUrl) {
+      try {
+        const gcsUrl = await uploadIpfsImageToGcs(rawImageUrl, nft.policyId, nft.assetNameHex);
+        imageUrlMap.set(key, gcsUrl);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logger.warn(`Failed to upload IPFS image to GCS`, {
+          key,
+          rawImageUrl,
+          error: errorMessage,
+        });
+        imageUrlMap.set(key, null);
+      }
+    } else {
+      imageUrlMap.set(key, null);
+    }
+  }
+
+  // Step 2: トランザクション内はDB操作のみ
   let syncedCount = 0;
   try {
     await issuer.internal(async (tx) => {
       for (const nft of nfts) {
         const instanceId = `${nft.policyId}-${nft.assetNameHex}`;
+        const imageUrl = imageUrlMap.get(instanceId) ?? null;
 
         let nftToken = await tx.nftToken.findFirst({
           where: { address: nft.policyId },
@@ -84,12 +109,6 @@ export async function syncNftsForWallet(
             nftTokenId: nftToken.id,
             policyId: nft.policyId,
           });
-        }
-
-        const rawImageUrl = toImageUrlString(nft.metadata?.image);
-        let imageUrl: string | null = null;
-        if (rawImageUrl) {
-          imageUrl = await uploadIpfsImageToGcs(rawImageUrl, nft.policyId, nft.assetNameHex);
         }
 
         await tx.nftInstance.upsert({
