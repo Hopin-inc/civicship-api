@@ -35,7 +35,6 @@ export default class OpportunityService {
     return await this.repository.find(ctx, id);
   }
 
-
   async findOpportunityOrThrow(ctx: IContext, opportunityId: string) {
     const opportunity = await this.repository.find(ctx, opportunityId);
     if (!opportunity) {
@@ -86,11 +85,9 @@ export default class OpportunityService {
     tx: Prisma.TransactionClient,
   ) {
     await this.findOpportunityOrThrow(ctx, id);
+    getCurrentUserId(ctx, input.createdBy);
 
-    const currentUserId = getCurrentUserId(ctx, input.createdBy);
-
-    const { data, images } = this.converter.update(input, currentUserId);
-
+    const { data, images } = this.converter.update(input);
     const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = (
       await Promise.all(
         images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),
