@@ -78,6 +78,8 @@ export default class OpportunityUseCase {
       return null;
     }
 
+    logger.debug("[visitorViewOpportunity] record:", record, ctx);
+
     // // Check if user can view based on publishStatus and role
     // if (
     //   !canViewByPublishStatus(
