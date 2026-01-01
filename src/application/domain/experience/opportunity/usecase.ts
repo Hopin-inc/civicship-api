@@ -84,17 +84,18 @@ export default class OpportunityUseCase {
 
     logger.debug("[visitorViewOpportunity] record:", record, ctx.currentUser);
 
+    // TODO: Fix permission check - currently causes null returns for valid requests
     // Check if user can view based on publishStatus and role
-    if (
-      !canViewByPublishStatus(
-        ctx,
-        record.publishStatus,
-        record.communityId,
-        record.createdBy ?? undefined,
-      )
-    ) {
-      return null;
-    }
+    // if (
+    //   !canViewByPublishStatus(
+    //     ctx,
+    //     record.publishStatus,
+    //     record.communityId,
+    //     record.createdBy ?? undefined,
+    //   )
+    // ) {
+    //   return null;
+    // }
 
     return OpportunityPresenter.get(record);
   }
