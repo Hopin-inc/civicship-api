@@ -35,17 +35,6 @@ export default class OpportunityService {
     return await this.repository.find(ctx, id);
   }
 
-  async findOpportunityAccessible(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {
-    const where = this.converter.findAccessible(id, filter ?? {});
-
-    const opportunity = await this.repository.findAccessible(ctx, where);
-    if (!opportunity) {
-      return null;
-    }
-
-    return opportunity;
-  }
-
   async findOpportunityOrThrow(ctx: IContext, opportunityId: string) {
     const opportunity = await this.repository.find(ctx, opportunityId);
     if (!opportunity) {
@@ -96,11 +85,9 @@ export default class OpportunityService {
     tx: Prisma.TransactionClient,
   ) {
     await this.findOpportunityOrThrow(ctx, id);
+    getCurrentUserId(ctx, input.createdBy);
 
-    const currentUserId = getCurrentUserId(ctx, input.createdBy);
-
-    const { data, images } = this.converter.update(input, currentUserId);
-
+    const { data, images } = this.converter.update(input);
     const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = (
       await Promise.all(
         images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),

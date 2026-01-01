@@ -98,17 +98,6 @@ export default class ArticleConverter {
     return orderBy.length ? orderBy : [{ createdAt: Prisma.SortOrder.desc }];
   }
 
-  findAccessible(
-    id: string,
-    filter?: GqlArticleFilterInput,
-  ): Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput {
-    const safeFilter = this.filter(filter);
-    return {
-      id,
-      ...(safeFilter.AND ? { AND: safeFilter.AND } : {}),
-    };
-  }
-
   //TODO 作成されると公開日が必ず入力される/DB変更必要性あり
   create(
     input: GqlArticleCreateInput,

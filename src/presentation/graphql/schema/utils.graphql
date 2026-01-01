@@ -132,8 +132,7 @@ enum AuthZRules {
     IsCommunityOwner,
     IsCommunityManager,
     IsCommunityMember,
-    IsOpportunityOwner,
-    CanReadPhoneNumber
+    CanManageOpportunity
 }
 
 # this is a common boilerplate

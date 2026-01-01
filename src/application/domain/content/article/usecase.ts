@@ -15,7 +15,7 @@ import { IContext } from "@/types/server";
 import ArticleService from "@/application/domain/content/article/service";
 import ArticlePresenter from "@/application/domain/content/article/presenter";
 import { PublishStatus } from "@prisma/client";
-import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { canViewArticleByPublishStatus, clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { articleInclude } from "@/application/domain/content/article/data/type";
 import { injectable, inject } from "tsyringe";
 
@@ -43,8 +43,8 @@ export default class ArticleUseCase {
 
     const validatedFilter: GqlArticleFilterInput = validateByMembershipRoles(
       communityIds,
-      isMember,
       isManager,
+      isMember,
       currentUserId,
       filter,
     );
@@ -67,21 +67,23 @@ export default class ArticleUseCase {
 
   async visitorViewArticle(
     ctx: IContext,
-    { id, permission }: GqlQueryArticleArgs,
+    { id }: GqlQueryArticleArgs,
   ): Promise<GqlArticle | null> {
-    const currentUserId = ctx.currentUser?.id;
-    const communityIds = [permission.communityId];
-    const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
+    const record = await this.service.findArticle(ctx, id);
+    if (!record) {
+      return null;
+    }
 
-    const validatedFilter = validateByMembershipRoles(
-      communityIds,
-      isMember,
-      isManager,
-      currentUserId,
-    );
+    // Check if user can view based on publishStatus and role
+    const authorIds = record.authors.map((a) => a.id);
+    const relatedUserIds = record.relatedUsers.map((u) => u.id);
+    if (!canViewArticleByPublishStatus(ctx, record.publishStatus, record.communityId, authorIds, relatedUserIds)) {
+      return null;
+    }
 
-    const record = await this.service.findArticle(ctx, id, validatedFilter);
-    return record ? ArticlePresenter.get(record) : null;
+    // Extract fields for presenter (excluding authors/relatedUsers which are only for access check)
+    const { authors: _authors, relatedUsers: _relatedUsers, ...articleDetail } = record;
+    return ArticlePresenter.get(articleDetail as Parameters<typeof ArticlePresenter.get>[0]);
   }
 
   async managerCreateArticle(
