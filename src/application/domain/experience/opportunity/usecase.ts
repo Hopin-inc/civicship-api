@@ -18,7 +18,6 @@ import OpportunityPresenter from "@/application/domain/experience/opportunity/pr
 import { PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import {
-  canViewByPublishStatus,
   clampFirst,
   getMembershipRolesByCtx,
 } from "@/application/domain/utils";
