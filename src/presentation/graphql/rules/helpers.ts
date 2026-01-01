@@ -57,22 +57,6 @@ export async function canManageOpportunity(
   }
 
   const opportunityService = container.resolve<OpportunityService>("OpportunityService");
-
-  const isOpportunityOwner = await opportunityService.isOwnedByUser(
-    context,
-    opportunityId,
-    user.id,
-  );
-
-  if (isOpportunityOwner) {
-    return {
-      allowed: true,
-      communityId: null,
-      membershipRole: null,
-      isOpportunityOwner: true,
-    };
-  }
-
   const opportunity = await opportunityService.findOpportunity(context, opportunityId);
 
   if (!opportunity) {
@@ -84,6 +68,18 @@ export async function canManageOpportunity(
     };
   }
 
+  // Check for ownership from the fetched opportunity data
+  const isOpportunityOwner = opportunity.createdBy === user.id;
+  if (isOpportunityOwner) {
+    return {
+      allowed: true,
+      communityId: opportunity.communityId,
+      membershipRole: null,
+      isOpportunityOwner: true,
+    };
+  }
+
+  // Check for community manager role
   const communityId = opportunity.communityId;
   if (!communityId) {
     return {
@@ -94,8 +90,8 @@ export async function canManageOpportunity(
     };
   }
 
-  const membership = getCommunityMembership(context, communityId);
   const isManager = isCommunityManager(context, communityId);
+  const membership = getCommunityMembership(context, communityId);
 
   return {
     allowed: isManager,
