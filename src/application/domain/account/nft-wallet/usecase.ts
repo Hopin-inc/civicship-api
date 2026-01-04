@@ -43,10 +43,10 @@ export default class NFTWalletUsecase {
           where: { id: userId },
           data: { name: userName },
         });
-        logger.info("✅ Updated user name", { userId, userName });
+        logger.debug("✅ Updated user name", { userId, userName });
       }
 
-      logger.info("✅ Wallet registered", { userId, walletAddress });
+      logger.debug("✅ Wallet registered", { userId, walletAddress });
       
       return {
         id: wallet.id,
@@ -63,7 +63,7 @@ export default class NFTWalletUsecase {
     const startTime = Date.now();
     
     try {
-      logger.info("🔄 Starting NFT metadata sync", { walletAddress: wallet.walletAddress });
+      logger.debug("🔄 Starting NFT metadata sync", { walletAddress: wallet.walletAddress });
       
       const metadata = await this.nftWalletService.fetchMetadata(wallet.walletAddress);
 
@@ -75,14 +75,14 @@ export default class NFTWalletUsecase {
           });
         });
 
-        logger.info("📭 No NFTs found for wallet", {
+        logger.debug("📭 No NFTs found for wallet", {
           walletAddress: wallet.walletAddress,
           durationMs: Date.now() - startTime,
         });
         return { success: true, itemsProcessed: 0 };
       }
 
-      logger.debug("📦 Fetching token info", { 
+      logger.debug("📦 Fetching token info", {
         walletAddress: wallet.walletAddress,
         nftCount: metadata.items.length,
       });
@@ -103,7 +103,7 @@ export default class NFTWalletUsecase {
         });
       });
 
-      logger.info("✅ NFT metadata sync completed", {
+      logger.debug("✅ NFT metadata sync completed", {
         walletAddress: wallet.walletAddress,
         itemsProcessed: metadata.items.length,
         durationMs: Date.now() - startTime,

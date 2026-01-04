@@ -6,7 +6,7 @@ import { SESSION_EXPIRATION_MS, SESSION_COOKIE_NAME } from "@/config/constants";
 export async function handleSessionLogin(req: Request, res: Response) {
   const { idToken } = req.body;
 
-  logger.info("📥 [handleSessionLogin] Incoming request", {
+  logger.debug("📥 [handleSessionLogin] Incoming request", {
     hasIdToken: !!idToken,
     origin: req.headers.origin,
     referer: req.headers.referer,
@@ -32,7 +32,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
 
     const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
 
-    logger.info("✅ [handleSessionLogin] Session cookie created", {
+    logger.debug("✅ [handleSessionLogin] Session cookie created", {
       expiresAt: new Date(Date.now() + expiresIn).toISOString(),
     });
 

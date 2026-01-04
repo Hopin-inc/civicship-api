@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { Role } from "@prisma/client";
+import { PublishStatus, Role } from "@prisma/client";
 import { AuthorizationError, RateLimitError } from "@/errors/graphql";
 
 export function getCurrentUserId(ctx: IContext, inputUserId?: string): string {
@@ -62,4 +62,103 @@ function determineRoleForCommunity(
     isManager: role === Role.OWNER || role === Role.MANAGER,
     isMember: role !== undefined, // `Map.get()` は `undefined` を返すので、そのまま `boolean` に変換
   };
+}
+
+/**
+ * Check if a user can view content based on publishStatus and their role.
+ * - Admin: can view all
+ * - Manager/Owner: can view all in their community
+ * - Member: can view PUBLIC and COMMUNITY_INTERNAL
+ * - Creator: can view their own content regardless of status
+ * - Visitor: can view PUBLIC only
+ */
+export function canViewByPublishStatus(
+  ctx: IContext,
+  publishStatus: PublishStatus,
+  communityId: string,
+  createdByUserId?: string,
+): boolean {
+  // Admin can view everything
+  if (ctx.isAdmin) {
+    return true;
+  }
+
+  const currentUserId = ctx.currentUser?.id;
+
+  // Creator can always view their own content
+  if (currentUserId && createdByUserId && currentUserId === createdByUserId) {
+    return true;
+  }
+
+  // Check membership role
+  const { isManager, isMember } = getMembershipRolesByCtx(
+    ctx,
+    [communityId],
+    currentUserId,
+  );
+
+  // Manager/Owner can view all statuses in their community
+  if (isManager[communityId]) {
+    return true;
+  }
+
+  // Member can view PUBLIC and COMMUNITY_INTERNAL
+  if (isMember[communityId]) {
+    return (
+      publishStatus === PublishStatus.PUBLIC ||
+      publishStatus === PublishStatus.COMMUNITY_INTERNAL
+    );
+  }
+
+  // Visitor can only view PUBLIC
+  return publishStatus === PublishStatus.PUBLIC;
+}
+
+/**
+ * Check if a user can view an article based on publishStatus and their role.
+ * Similar to canViewByPublishStatus but handles articles with multiple authors/relatedUsers.
+ */
+export function canViewArticleByPublishStatus(
+  ctx: IContext,
+  publishStatus: PublishStatus,
+  communityId: string,
+  authorIds: string[],
+  relatedUserIds: string[],
+): boolean {
+  // Admin can view everything
+  if (ctx.isAdmin) {
+    return true;
+  }
+
+  const currentUserId = ctx.currentUser?.id;
+
+  // Author or related user can always view their own content
+  if (currentUserId) {
+    if (authorIds.includes(currentUserId) || relatedUserIds.includes(currentUserId)) {
+      return true;
+    }
+  }
+
+  // Check membership role
+  const { isManager, isMember } = getMembershipRolesByCtx(
+    ctx,
+    [communityId],
+    currentUserId,
+  );
+
+  // Manager/Owner can view all statuses in their community
+  if (isManager[communityId]) {
+    return true;
+  }
+
+  // Member can view PUBLIC and COMMUNITY_INTERNAL
+  if (isMember[communityId]) {
+    return (
+      publishStatus === PublishStatus.PUBLIC ||
+      publishStatus === PublishStatus.COMMUNITY_INTERNAL
+    );
+  }
+
+  // Visitor can only view PUBLIC
+  return publishStatus === PublishStatus.PUBLIC;
 }

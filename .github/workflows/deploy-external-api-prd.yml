@@ -99,6 +99,8 @@ jobs:
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
         region: ${{ env.GCP_REGION }}
         flags: '--allow-unauthenticated --port=3000'
+        env_vars: |
+          NODE_ENV=production
 
     - name: Create Git tag for External API
       run: |

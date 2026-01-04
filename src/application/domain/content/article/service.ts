@@ -32,13 +32,8 @@ export default class ArticleService {
     return this.repository.query(ctx, where, orderBy, take, cursor, include);
   }
 
-  async findArticle(ctx: IContext, id: string, filter: GqlArticleFilterInput) {
-    const where = this.converter.findAccessible(id, filter ?? {});
-    const article = await this.repository.findAccessible(ctx, where);
-    if (!article) {
-      return null;
-    }
-    return article;
+  async findArticle(ctx: IContext, id: string) {
+    return await this.repository.find(ctx, id);
   }
 
   async validatePublishStatus(allowedStatuses: PublishStatus[], filter?: GqlArticleFilterInput) {
@@ -117,7 +112,7 @@ export default class ArticleService {
   }
 
   async findArticleOrThrow(ctx: IContext, articleId: string) {
-    const article = await this.repository.findAccessible(ctx, { id: articleId });
+    const article = await this.repository.find(ctx, articleId);
     if (!article) {
       throw new NotFoundError("Article", { articleId });
     }

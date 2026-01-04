@@ -18,7 +18,7 @@ export function logLineApiSuccess(
   retryCount?: number,
   responseBody?: unknown,
 ) {
-  logger.info(`LINE ${operationName} success`, {
+  logger.debug(`LINE ${operationName} success`, {
     ...baseLogFields(endpoint, uid, retryCount),
     requestId: response.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
     statusCode: response.status,

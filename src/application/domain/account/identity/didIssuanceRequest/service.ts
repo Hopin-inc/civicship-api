@@ -232,7 +232,7 @@ export class DIDIssuanceService {
       retryCount: 0,
       errorMessage: `Auto-reset: ${reason}`,
     });
-    logger.info(`🔄 Reset request ${requestId} for retry: ${reason}`);
+    logger.debug(`🔄 Reset request ${requestId} for retry: ${reason}`);
   }
 
   private async attemptDidJob404Recovery(
@@ -258,7 +258,7 @@ export class DIDIssuanceService {
           completedAt: new Date(),
           errorMessage: "Recovered: Job expired but DID was already published",
         });
-        logger.info(`✅ DID recovered as completed: ${request.id}, didValue: ${existingDid.did}`);
+        logger.debug(`✅ DID recovered as completed: ${request.id}, didValue: ${existingDid.did}`);
         return "completed";
       }
     } catch (checkError) {
@@ -266,7 +266,7 @@ export class DIDIssuanceService {
       throw checkError;
     }
 
-    logger.info(`Resetting DID request ${request.id} for retry due to job expiration`);
+    logger.debug(`Resetting DID request ${request.id} for retry due to job expiration`);
     await this.resetRequestForRetry(ctx, request.id, "Job expired in Redis");
     return "reset";
   }
@@ -342,7 +342,7 @@ export class DIDIssuanceService {
           didValue: jobStatus.result.did,
           completedAt: new Date(),
         });
-        logger.info(`✅ DID completed: ${request.id}`);
+        logger.debug(`✅ DID completed: ${request.id}`);
         return { success: true, status: "completed" };
       }
 

@@ -196,7 +196,7 @@ export default class IdentityUseCase {
   ): Promise<GqlIdentityCheckPhoneUserPayload> {
     const { phoneUid } = args.input;
 
-    logger.info("[checkPhoneUser] Starting phone user check", {
+    logger.debug("[checkPhoneUser] Starting phone user check", {
       phoneUid,
       communityId: ctx.communityId,
       uid: ctx.uid,
@@ -205,7 +205,7 @@ export default class IdentityUseCase {
 
     const existingUser = await this.identityService.findUserByIdentity(ctx, phoneUid);
 
-    logger.info("[checkPhoneUser] User lookup result", {
+    logger.debug("[checkPhoneUser] User lookup result", {
       phoneUid,
       existingUserId: existingUser?.id,
       existingUserFound: !!existingUser,
@@ -213,7 +213,7 @@ export default class IdentityUseCase {
     });
 
     if (!existingUser) {
-      logger.info("[checkPhoneUser] Returning NEW_USER status", {
+      logger.debug("[checkPhoneUser] Returning NEW_USER status", {
         phoneUid,
         communityId: ctx.communityId,
       });
@@ -230,7 +230,7 @@ export default class IdentityUseCase {
       ctx.communityId,
     );
 
-    logger.info("[checkPhoneUser] Membership lookup result", {
+    logger.debug("[checkPhoneUser] Membership lookup result", {
       phoneUid,
       userId: existingUser.id,
       communityId: ctx.communityId,
@@ -240,7 +240,7 @@ export default class IdentityUseCase {
     });
 
     if (existingMembership) {
-      logger.info("[checkPhoneUser] Returning EXISTING_SAME_COMMUNITY status", {
+      logger.debug("[checkPhoneUser] Returning EXISTING_SAME_COMMUNITY status", {
         phoneUid,
         userId: existingUser.id,
         communityId: ctx.communityId,
@@ -254,7 +254,7 @@ export default class IdentityUseCase {
       };
     }
 
-    logger.info(
+    logger.debug(
       "[checkPhoneUser] User exists but no membership in current community, proceeding with EXISTING_DIFFERENT_COMMUNITY flow",
       {
         phoneUid,
@@ -279,7 +279,7 @@ export default class IdentityUseCase {
 
       const existingIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
 
-      logger.info("[checkPhoneUser] Checking if current LINE identity exists", {
+      logger.debug("[checkPhoneUser] Checking if current LINE identity exists", {
         phoneUid,
         currentUid: ctx.uid,
         currentPlatform: ctx.platform,
@@ -299,14 +299,14 @@ export default class IdentityUseCase {
           });
           throw new Error("This LINE account is already linked to another user");
         }
-        logger.info("Identity already exists for this user, skipping creation", {
+        logger.debug("Identity already exists for this user, skipping creation", {
           uid: ctx.uid,
           platform: ctx.platform,
           userId: existingUser.id,
           communityId: ctx.communityId,
         });
       } else {
-        logger.info("[checkPhoneUser] Creating new LINE identity for existing user", {
+        logger.debug("[checkPhoneUser] Creating new LINE identity for existing user", {
           phoneUid,
           currentUid: ctx.uid,
           currentPlatform: ctx.platform,
@@ -321,7 +321,7 @@ export default class IdentityUseCase {
           ctx.communityId,
           tx,
         );
-        logger.info("[checkPhoneUser] Successfully created new identity for user", {
+        logger.debug("[checkPhoneUser] Successfully created new identity for user", {
           uid: ctx.uid,
           platform: ctx.platform,
           userId: existingUser.id,
@@ -329,7 +329,7 @@ export default class IdentityUseCase {
         });
       }
 
-      logger.info("[checkPhoneUser] Creating membership for user in new community", {
+      logger.debug("[checkPhoneUser] Creating membership for user in new community", {
         phoneUid,
         userId: existingUser.id,
         communityId: ctx.communityId,
@@ -342,7 +342,7 @@ export default class IdentityUseCase {
         tx,
       );
 
-      logger.info("[checkPhoneUser] Membership created, creating wallet", {
+      logger.debug("[checkPhoneUser] Membership created, creating wallet", {
         phoneUid,
         userId: existingUser.id,
         communityId: ctx.communityId,
@@ -357,7 +357,7 @@ export default class IdentityUseCase {
         tx,
       );
 
-      logger.info("[checkPhoneUser] Wallet created successfully", {
+      logger.debug("[checkPhoneUser] Wallet created successfully", {
         phoneUid,
         userId: existingUser.id,
         communityId: ctx.communityId,
@@ -366,7 +366,7 @@ export default class IdentityUseCase {
       return membership;
     });
 
-    logger.info("[checkPhoneUser] Returning EXISTING_DIFFERENT_COMMUNITY status", {
+    logger.debug("[checkPhoneUser] Returning EXISTING_DIFFERENT_COMMUNITY status", {
       phoneUid,
       userId: existingUser.id,
       communityId: ctx.communityId,

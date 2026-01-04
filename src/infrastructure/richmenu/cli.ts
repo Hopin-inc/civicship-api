@@ -67,14 +67,14 @@ async function deployCommunity(
   const lineConfig = await getLineConfig(prisma, communityId);
 
   if (dryRun) {
-    logger.info(`[DRY RUN] Would deploy ${config.menus.length} menus for ${communityId}`);
+    logger.debug(`[DRY RUN] Would deploy ${config.menus.length} menus for ${communityId}`);
     for (const menu of config.menus) {
-      logger.info(
+      logger.debug(
         `  - ${menu.alias} (roleEntryFor: ${menu.roleEntryFor ?? "none"}, isDefault: ${menu.isDefault ?? false})`,
       );
       if (verbose) {
-        logger.info(`    imagePath: ${menu.imagePath}`);
-        logger.info(`    areas: ${menu.areas.length}`);
+        logger.debug(`    imagePath: ${menu.imagePath}`);
+        logger.debug(`    areas: ${menu.areas.length}`);
       }
     }
     return;
@@ -99,11 +99,11 @@ async function deployCommunity(
     configId: lineConfig.configId,
   };
 
-  logger.info(`Deploying ${config.menus.length} menus for ${communityId}...`);
+  logger.debug(`Deploying ${config.menus.length} menus for ${communityId}...`);
 
   await deployRichMenus(ctx, config.menus);
 
-  logger.info(`Deployment complete for ${communityId}`);
+  logger.debug(`Deployment complete for ${communityId}`);
 }
 
 async function main(): Promise<void> {

@@ -12,10 +12,21 @@ export interface IArticleRepository {
     include?: T,
   ): Promise<Prisma.ArticleGetPayload<{ include: T }>[]>;
 
-  findAccessible(
-    ctx: IContext,
-    where: Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput,
-  ): Promise<PrismaArticle | null>;
+  find(ctx: IContext, id: string): Promise<{
+    id: string;
+    title: string;
+    category: string | null;
+    introduction: string | null;
+    body: string;
+    publishStatus: import("@prisma/client").PublishStatus;
+    thumbnailId: string | null;
+    communityId: string;
+    publishedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    authors: { id: string }[];
+    relatedUsers: { id: string }[];
+  } | null>;
 
   create(
     ctx: IContext,

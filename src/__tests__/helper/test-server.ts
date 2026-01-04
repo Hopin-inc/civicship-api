@@ -1,7 +1,7 @@
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServer } from "@apollo/server";
 import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
-import { rules } from "@/presentation/graphql/rule";
+import { rules } from "@/presentation/graphql/rules";
 import express, { json } from "express";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";

@@ -106,7 +106,7 @@ export const customProcessRequest = async (
 ): Promise<GraphQLOperations | GraphQLOperations[]> => {
   const contentType = request.headers['content-type'] || '';
   
-  logger.info('[CustomProcessRequest] Processing request', {
+  logger.debug('[CustomProcessRequest] Processing request', {
     contentType,
     isMultipart: contentType.includes('multipart/form-data'),
     method: request.method,
@@ -114,7 +114,7 @@ export const customProcessRequest = async (
   });
   
   if (!contentType.includes('multipart/form-data')) {
-    logger.info('[CustomProcessRequest] Non-multipart request, using default processor');
+    logger.debug('[CustomProcessRequest] Non-multipart request, using default processor');
     return defaultProcessRequest(request, response, options);
   }
 
@@ -154,7 +154,7 @@ export const customProcessRequest = async (
       
       const safeFilename = filename ? filename.substring(0, 50) + (filename.length > 50 ? '...' : '') : 'none';
       
-      logger.info('[CustomProcessRequest] File detected', {
+      logger.debug('[CustomProcessRequest] File detected', {
         name,
         filename: safeFilename,
         mimeType,
@@ -198,11 +198,11 @@ export const customProcessRequest = async (
 
         if (removedCount > 0) {
           if (Object.keys(sanitizedMap).length === 0) {
-            logger.info('[CustomProcessRequest] Converting to JSON (no real files detected)');
+            logger.debug('[CustomProcessRequest] Converting to JSON (no real files detected)');
             return resolve(operations);
           }
           
-          logger.info('[CustomProcessRequest] Filtering multipart request', {
+          logger.debug('[CustomProcessRequest] Filtering multipart request', {
             uploadCount: Object.keys(sanitizedMap).length,
             removedNullFiles: removedCount
           });
@@ -262,7 +262,7 @@ export const customProcessRequest = async (
           const filteredRequest = await createReconstructedRequest(updatedBody, request, true);
           return resolve(await defaultProcessRequest(filteredRequest, response, options));
         } else {
-          logger.info('[CustomProcessRequest] Passing through unmodified multipart request', {
+          logger.debug('[CustomProcessRequest] Passing through unmodified multipart request', {
             uploadCount: Object.keys(map).length
           });
           

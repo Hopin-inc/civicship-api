@@ -17,7 +17,7 @@ export default class MasterConverter {
   }
 
   statesSort(): Prisma.StateOrderByWithRelationInput[] {
-    return [{ name: "asc" }];
+    return [{ code: "asc" }];
   }
 
   stateToGraphQL(state: { code: string; name: string; countryCode: string }) {
