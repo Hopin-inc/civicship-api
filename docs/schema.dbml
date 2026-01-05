@@ -122,6 +122,7 @@ Table t_community_line_configs {
   channelSecret String [not null]
   accessToken String [not null]
   liffId String [not null]
+  liffAppId String
   liffBaseUrl String [not null]
   richMenus t_community_line_rich_menus [not null]
   createdAt DateTime [default: `now()`, not null]

@@ -2148,6 +2148,7 @@ type CommunityLineConfigFactoryDefineInput = {
     channelSecret?: string;
     accessToken?: string;
     liffId?: string;
+    liffAppId?: string | null;
     liffBaseUrl?: string;
     createdAt?: Date;
     updatedAt?: Date | null;

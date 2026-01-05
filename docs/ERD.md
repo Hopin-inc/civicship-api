@@ -342,6 +342,7 @@ RIGHT RIGHT
     String channel_secret 
     String access_token 
     String liff_id 
+    String liff_app_id "❓"
     String liff_base_url 
     DateTime created_at 
     DateTime updated_at "❓"
