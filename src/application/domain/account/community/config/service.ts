@@ -45,16 +45,14 @@ export default class CommunityConfigService {
   ): Promise<{
     liffId: string;
     liffBaseUrl: string;
-    channelId: string;
   }> {
     const config = await this.repository.getLineConfig(ctx, communityId);
-    if (!config?.liffId || !config?.liffBaseUrl || !config?.channelId) {
+    if (!config?.liffId || !config?.liffBaseUrl) {
       throw new NotFoundError("LIFF Config is incomplete", { communityId });
     }
     return {
       liffId: config.liffId,
       liffBaseUrl: config.liffBaseUrl,
-      channelId: config.channelId,
     };
   }
 

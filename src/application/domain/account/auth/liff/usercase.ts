@@ -22,9 +22,8 @@ export class LIFFAuthUseCase {
 
     const ctx = { issuer } as IContext;
 
-    const { channelId } = await configService.getLiffConfig(ctx, request.communityId);
-    // Use channelId (not liffId) for verification because LINE's verify API returns client_id which is the channel ID
-    const verifyResult = await LIFFService.verifyAccessToken(request.accessToken, channelId);
+    const { liffId } = await configService.getLiffConfig(ctx, request.communityId);
+    const verifyResult = await LIFFService.verifyAccessToken(request.accessToken, liffId);
 
     const profile = await LIFFService.getProfile(request.accessToken);
 
