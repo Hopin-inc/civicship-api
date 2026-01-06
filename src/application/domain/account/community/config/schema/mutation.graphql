@@ -20,3 +20,16 @@ input CommunityLineRichMenuConfigInput {
     type: LineRichMenuType!
     richMenuId: String!
 }
+
+input UpdateSignupBonusConfigInput {
+    isEnabled: Boolean
+    bonusPoint: Int
+    message: String
+}
+
+extend type Mutation {
+    """
+    Update signup bonus config (OWNER/MANAGER only).
+    """
+    updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!): CommunitySignupBonusConfig!
+}

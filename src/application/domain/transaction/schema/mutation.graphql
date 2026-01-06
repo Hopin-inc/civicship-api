@@ -19,6 +19,13 @@ extend type Mutation {
         permission:CheckIsSelfPermissionInput!
     ): TransactionDonateSelfPointPayload
     @authz(rules: [IsSelf])
+
+    """
+    Retry failed signup bonus grant (admin only).
+    Automatically derives walletId, bonusPoint, message from grant and config.
+    """
+    retrySignupBonusGrant(grantId: ID!): Transaction!
+    @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------
