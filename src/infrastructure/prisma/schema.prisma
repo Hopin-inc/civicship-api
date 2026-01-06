@@ -178,12 +178,14 @@ model Community {
   imageId String? @map("image_id")
   image   Image?  @relation(fields: [imageId], references: [id])
 
-  config CommunityConfig?
-  places Place[]
+  config            CommunityConfig?
+  signupBonusConfig CommunitySignupBonusConfig?
+  places            Place[]
 
-  identities  Identity[]
-  memberships Membership[]
-  wallets     Wallet[]
+  identities      Identity[]
+  memberships     Membership[]
+  wallets         Wallet[]
+  incentiveGrants IncentiveGrant[]
 
   utilities      Utility[]
   opportunities  Opportunity[]
@@ -268,6 +270,19 @@ enum LineRichMenuType {
   PUBLIC
 }
 
+model CommunitySignupBonusConfig {
+  id          String    @id @default(cuid())
+  communityId String    @unique @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  isEnabled   Boolean   @default(true) @map("is_enabled")
+  bonusPoint  Int       @default(100) @map("bonus_point")
+  message     String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("t_community_signup_bonus_configs")
+}
+
 // ------------------------------ User Domain ------------------------------
 
 enum Language {
@@ -304,6 +319,7 @@ model User {
   memberships           Membership[]
   membershipChangedByMe MembershipHistory[]
   wallets               Wallet[]
+  incentiveGrants       IncentiveGrant[]
 
   utiltyOwnedByMe         Utility[]
   ticketIssuedByMe        TicketIssuer[]
@@ -1089,6 +1105,7 @@ model Transaction {
   reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
 
   ticketStatusHistory TicketStatusHistory?
+  incentiveGrant      IncentiveGrant?
 
   createdBy     String? @map("created_by")
   createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
@@ -1099,6 +1116,29 @@ model Transaction {
   merkleProofs MerkleProof[]
 
   @@map("t_transactions")
+}
+
+model IncentiveGrant {
+  id              String                     @id @default(cuid())
+  userId          String                     @map("user_id")
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId     String                     @map("community_id")
+  community       Community                  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  type            IncentiveGrantType
+  sourceId        String                     @map("source_id")
+  status          IncentiveGrantStatus       @default(PENDING)
+  failureCode     IncentiveGrantFailureCode? @map("failure_code")
+  lastError       String?                    @map("last_error") @db.Text
+  attemptCount    Int                        @default(1) @map("attempt_count")
+  lastAttemptedAt DateTime                   @default(now()) @map("last_attempted_at")
+  transactionId   String?                    @unique @map("transaction_id")
+  transaction     Transaction?               @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  updatedAt       DateTime                   @updatedAt @map("updated_at")
+
+  @@unique([userId, communityId, type, sourceId], name: "unique_incentive_grant")
+  @@index([status, lastAttemptedAt])
+  @@map("t_incentive_grants")
 }
 
 enum TransactionReason {
@@ -1116,6 +1156,24 @@ enum TransactionReason {
   OPPORTUNITY_RESERVATION_CREATED
   OPPORTUNITY_RESERVATION_CANCELED
   OPPORTUNITY_RESERVATION_REJECTED
+}
+
+enum IncentiveGrantType {
+  SIGNUP
+}
+
+enum IncentiveGrantStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum IncentiveGrantFailureCode {
+  INSUFFICIENT_FUNDS
+  WALLET_NOT_FOUND
+  DATABASE_ERROR
+  TIMEOUT
+  UNKNOWN
 }
 
 // ------------------------------ API Key Domain ------------------------------
