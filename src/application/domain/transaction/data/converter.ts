@@ -132,6 +132,20 @@ export default class TransactionConverter {
       createdByUser: { connect: { id: createdBy } },
     };
   }
+
+  signupBonus(
+    toWalletId: string,
+    transferPoints: number,
+    comment?: string,
+  ): Prisma.TransactionCreateInput {
+    return {
+      reason: TransactionReason.ONBOARDING,
+      toWallet: { connect: { id: toWalletId } },
+      fromPointChange: 0,
+      toPointChange: transferPoints,
+      comment: comment ?? "新規登録ボーナス",
+    };
+  }
 }
 
 function buildTransactionWhereInput(
