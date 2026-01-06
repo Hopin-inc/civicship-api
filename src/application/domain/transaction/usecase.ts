@@ -9,6 +9,7 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import logger from "@/infrastructure/logging";
 import {
+  GqlMutationRetrySignupBonusGrantArgs,
   GqlMutationTransactionDonateSelfPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
@@ -21,6 +22,8 @@ import {
   GqlTransactionsConnection,
 } from "@/types/graphql";
 import { inject, injectable } from "tsyringe";
+import { NotFoundError } from "@/errors/graphql";
+import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 
 @injectable()
 export default class TransactionUseCase {
@@ -30,7 +33,9 @@ export default class TransactionUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
     @inject("NotificationService") private readonly notificationService: NotificationService,
-  ) { }
+    @inject("SignupBonusConfigService")
+    private readonly signupBonusConfigService: SignupBonusConfigService,
+  ) {}
 
   async visitorBrowseTransactions(
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
@@ -215,5 +220,67 @@ export default class TransactionUseCase {
       });
 
     return TransactionPresenter.giveUserPoint(transaction);
+  }
+
+  async managerRetrySignupBonusGrant(
+    { grantId }: GqlMutationRetrySignupBonusGrantArgs,
+    ctx: IContext,
+  ): Promise<GqlTransaction> {
+    // STEP1: Load grant to get userId and communityId
+    const grant = await ctx.issuer.public(ctx, (tx) =>
+      tx.incentiveGrant.findUnique({
+        where: { id: grantId },
+        select: {
+          id: true,
+          userId: true,
+          communityId: true,
+          status: true,
+        },
+      }),
+    );
+
+    if (!grant) {
+      throw new NotFoundError("IncentiveGrant not found", { grantId });
+    }
+
+    const { userId, communityId } = grant;
+
+    // STEP2: Load config to get bonusPoint and message
+    const config = await this.signupBonusConfigService.get(ctx, communityId);
+    if (!config) {
+      throw new NotFoundError("SignupBonusConfig not found for community", { communityId });
+    }
+
+    const { bonusPoint, message } = config;
+
+    // STEP3: Get user's wallet in that community
+    const wallet = await this.walletService.findMemberWalletOrThrow(ctx, userId, communityId);
+
+    // STEP4: Call service to retry
+    const result = await this.transactionService.retrySignupBonusGrant(ctx, {
+      grantId,
+      toWalletId: wallet.id,
+      bonusPoint,
+      message: message ?? undefined,
+    });
+
+    // STEP5: Handle result
+    if (result.status === "FAILED") {
+      logger.error("Signup bonus grant retry failed", {
+        grantId,
+        failureCode: result.failureCode,
+        lastError: result.lastError,
+      });
+      throw new Error(
+        `Failed to grant signup bonus: ${result.failureCode} - ${result.lastError || "Unknown error"}`,
+      );
+    }
+
+    // Refresh points
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
+    return TransactionPresenter.get(result.transaction);
   }
 }

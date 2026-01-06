@@ -4,6 +4,7 @@ import {
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionDonateSelfPointArgs,
+  GqlMutationRetrySignupBonusGrantArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
@@ -44,6 +45,13 @@ export default class TransactionResolver {
       ctx: IContext,
     ) => {
       return this.useCase.userDonateSelfPointToAnother(ctx, args);
+    },
+    retrySignupBonusGrant: async (
+      _: unknown,
+      args: GqlMutationRetrySignupBonusGrantArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.managerRetrySignupBonusGrant(args, ctx);
     },
   };
 
