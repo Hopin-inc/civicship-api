@@ -3,6 +3,7 @@ import { inject, injectable } from "tsyringe";
 import ISignupBonusConfigRepository from "./data/interface";
 import { CommunitySignupBonusConfig, Prisma } from "@prisma/client";
 import { ValidationError } from "@/errors/graphql";
+import { GqlUpdateSignupBonusConfigInput } from "@/types/graphql";
 
 @injectable()
 export default class SignupBonusConfigService {
@@ -22,32 +23,28 @@ export default class SignupBonusConfigService {
   async update(
     ctx: IContext,
     communityId: string,
-    input: {
-      isEnabled?: boolean;
-      bonusPoint?: number;
-      message?: string | null;
-    },
+    input: GqlUpdateSignupBonusConfigInput,
     tx: Prisma.TransactionClient,
   ): Promise<CommunitySignupBonusConfig> {
     // Validation
     if (input.bonusPoint !== undefined) {
       if (input.bonusPoint < 1 || input.bonusPoint > 1_000_000) {
-        throw new ValidationError("bonusPoint must be between 1 and 1,000,000", {
-          bonusPoint: input.bonusPoint,
-        });
+        throw new ValidationError("bonusPoint must be between 1 and 1,000,000", [
+          input.bonusPoint.toString(),
+        ]);
       }
     }
 
     if (input.message !== undefined && input.message !== null) {
       if (input.message.length > 1000) {
-        throw new ValidationError("message must be 1000 characters or less", {
-          messageLength: input.message.length,
-        });
+        throw new ValidationError("message must be 1000 characters or less", [
+          input.message.length.toString(),
+        ]);
       }
     }
 
     // Build update data
-    const updateData: any = {};
+    const updateData: Prisma.CommunitySignupBonusConfigUpdateInput = {};
     if (input.isEnabled !== undefined) {
       updateData.isEnabled = input.isEnabled;
     }

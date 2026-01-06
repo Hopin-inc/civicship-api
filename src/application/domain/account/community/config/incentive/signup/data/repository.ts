@@ -1,10 +1,15 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { injectable } from "tsyringe";
+import { injectable, inject } from "tsyringe";
 import ISignupBonusConfigRepository from "./interface";
+import SignupBonusConfigConverter from "./converter";
 
 @injectable()
 export default class SignupBonusConfigRepository implements ISignupBonusConfigRepository {
+  constructor(
+    @inject("SignupBonusConfigConverter")
+    private readonly converter: SignupBonusConfigConverter,
+  ) {}
   async get(ctx: IContext, communityId: string, tx?: Prisma.TransactionClient) {
     if (tx) {
       return tx.communitySignupBonusConfig.findUnique({
@@ -24,12 +29,12 @@ export default class SignupBonusConfigRepository implements ISignupBonusConfigRe
     data: Prisma.CommunitySignupBonusConfigUpdateInput,
     tx: Prisma.TransactionClient,
   ) {
+    // Use the converter to transform update input to create input
+    const createData = this.converter.toCreateInput(communityId, data);
+
     return tx.communitySignupBonusConfig.upsert({
       where: { communityId },
-      create: {
-        communityId,
-        ...data,
-      },
+      create: createData,
       update: data,
     });
   }

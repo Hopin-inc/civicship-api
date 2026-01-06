@@ -78,6 +78,16 @@ export interface ITransactionService {
     ctx: IContext,
     tx: Prisma.TransactionClient,
   ): Promise<refreshMaterializedViewCurrentPoints.Result[]>;
+
+  retrySignupBonusGrant(
+    ctx: IContext,
+    args: {
+      grantId: string;
+      toWalletId: string;
+      bonusPoint: number;
+      message?: string;
+    },
+  ): Promise<Extract<import("./type").GrantSignupBonusResult, { status: "COMPLETED" | "FAILED" }>>;
 }
 
 export interface ITransactionRepository {

@@ -102,6 +102,7 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
 import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import SignupBonusConfigRepository from "@/application/domain/account/community/config/incentive/signup/data/repository";
+import SignupBonusConfigConverter from "@/application/domain/account/community/config/incentive/signup/data/converter";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -156,6 +157,7 @@ export function registerProductionDependencies() {
 
   container.register("SignupBonusConfigService", { useClass: SignupBonusConfigService });
   container.register("SignupBonusConfigRepository", { useClass: SignupBonusConfigRepository });
+  container.register("SignupBonusConfigConverter", { useClass: SignupBonusConfigConverter });
 
   // 🆔 Identity
   container.register("IdentityService", { useClass: IdentityService });

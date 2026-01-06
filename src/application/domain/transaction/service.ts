@@ -1,9 +1,9 @@
 import {
+  IncentiveGrantFailureCode,
+  IncentiveGrantStatus,
+  IncentiveGrantType,
   Prisma,
   TransactionReason,
-  IncentiveGrantType,
-  IncentiveGrantStatus,
-  IncentiveGrantFailureCode,
 } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
@@ -12,9 +12,9 @@ import {
 } from "@/application/domain/transaction/data/interface";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import {
+  GrantSignupBonusResult,
   PrismaTransactionDetail,
   transactionSelectDetail,
-  GrantSignupBonusResult,
 } from "@/application/domain/transaction/data/type";
 import { GqlQueryTransactionsArgs } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
@@ -59,9 +59,13 @@ export default class TransactionService implements ITransactionService {
     comment?: string,
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.issueCommunityPoint(toWalletId, transferPoints, currentUserId, comment);
-    const res = await this.repository.create(ctx, data, tx);
-    return res;
+    const data = this.converter.issueCommunityPoint(
+      toWalletId,
+      transferPoints,
+      currentUserId,
+      comment,
+    );
+    return await this.repository.create(ctx, data, tx);
   }
 
   async grantCommunityPoint(
@@ -73,7 +77,13 @@ export default class TransactionService implements ITransactionService {
     comment?: string,
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.grantCommunityPoint(fromWalletId, transferPoints, memberWalletId, currentUserId, comment);
+    const data = this.converter.grantCommunityPoint(
+      fromWalletId,
+      transferPoints,
+      memberWalletId,
+      currentUserId,
+      comment,
+    );
     const res = await this.repository.create(ctx, data, tx);
     return res;
   }
@@ -87,9 +97,14 @@ export default class TransactionService implements ITransactionService {
     comment?: string,
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId, comment);
-    const transaction = await this.repository.create(ctx, data, tx);
-    return transaction;
+    const data = this.converter.donateSelfPoint(
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      currentUserId,
+      comment,
+    );
+    return await this.repository.create(ctx, data, tx);
   }
 
   async reservationCreated(
@@ -99,12 +114,18 @@ export default class TransactionService implements ITransactionService {
     toWalletId: string,
     transferPoints: number,
     reservationId: string,
-    reason: TransactionReason
+    reason: TransactionReason,
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.reservationCreated(fromWalletId, toWalletId, transferPoints, currentUserId, reservationId, reason);
-    const transaction = await this.repository.create(ctx, data, tx);
-    return transaction;
+    const data = this.converter.reservationCreated(
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      currentUserId,
+      reservationId,
+      reason,
+    );
+    return await this.repository.create(ctx, data, tx);
   }
 
   async giveRewardPoint(
@@ -135,9 +156,13 @@ export default class TransactionService implements ITransactionService {
     transferPoints: number,
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.purchaseTicket(fromWalletId, toWalletId, transferPoints, currentUserId);
-    const res = await this.repository.create(ctx, data, tx);
-    return res;
+    const data = this.converter.purchaseTicket(
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      currentUserId,
+    );
+    return await this.repository.create(ctx, data, tx);
   }
 
   async refundTicket(
@@ -148,9 +173,13 @@ export default class TransactionService implements ITransactionService {
     transferPoints: number,
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.refundTicket(fromWalletId, toWalletId, transferPoints, currentUserId);
-    const res = await this.repository.create(ctx, data, tx);
-    return res;
+    const data = this.converter.refundTicket(
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      currentUserId,
+    );
+    return await this.repository.create(ctx, data, tx);
   }
 
   async refreshCurrentPoint(ctx: IContext, tx: Prisma.TransactionClient) {
@@ -436,11 +465,9 @@ export default class TransactionService implements ITransactionService {
    * Retry failed signup bonus grant (public method for UseCase).
    * Resets grant to PENDING and re-executes.
    *
-   * @param grantId - The failed grant ID
-   * @param toWalletId - Wallet ID (from UseCase derivation)
-   * @param bonusPoint - Bonus points (from config)
-   * @param message - Optional message (from config)
    * @returns Result (COMPLETED or FAILED)
+   * @param ctx
+   * @param args
    */
   async retrySignupBonusGrant(
     ctx: IContext,
@@ -519,20 +546,13 @@ export default class TransactionService implements ITransactionService {
         } else {
           throw new ValidationError(
             "PENDING grant is too recent for manual retry (wait for batch cleanup or concurrent execution to finish)",
-            {
-              grantId,
-              lastAttemptedAt: grant.lastAttemptedAt,
-              thresholdMinutes: STALE_PENDING_THRESHOLD_MINUTES,
-            },
+            [grantId],
           );
         }
       }
 
       // COMPLETED → error
-      throw new ValidationError("COMPLETED grants cannot be retried", {
-        grantId,
-        currentStatus: grant.status,
-      });
+      throw new ValidationError("COMPLETED grants cannot be retried", [grantId]);
     });
   }
 
@@ -545,6 +565,7 @@ export default class TransactionService implements ITransactionService {
    * 2. Via an admin mutation to manually check status
    * 3. As input to an automated cleanup process
    *
+   * @param ctx
    * @param thresholdMinutes - How old a PENDING grant must be to be considered stale (default: 30 minutes)
    */
   async findStalePendingGrants(

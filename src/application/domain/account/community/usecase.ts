@@ -93,17 +93,8 @@ export default class CommunityUseCase {
     ctx: IContext,
     communityId: string,
   ) {
-    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      return this.signupBonusConfigService.update(
-        ctx,
-        communityId,
-        {
-          isEnabled: input.isEnabled ?? undefined,
-          bonusPoint: input.bonusPoint ?? undefined,
-          message: input.message ?? undefined,
-        },
-        tx,
-      );
+    return ctx.issuer.public(ctx, async (tx) => {
+      return this.signupBonusConfigService.update(ctx, communityId, input, tx);
     });
   }
 }
