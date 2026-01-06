@@ -9,6 +9,7 @@ import {
   GqlCommunityDeletePayload,
   GqlMutationCommunityUpdateProfileArgs,
   GqlCommunityUpdateProfilePayload,
+  GqlMutationUpdateSignupBonusConfigArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/domain/account/community/service";
@@ -16,6 +17,7 @@ import CommunityPresenter from "@/application/domain/account/community/presenter
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
+import SignupBonusConfigService from "./config/incentive/signup/service";
 
 @injectable()
 export default class CommunityUseCase {
@@ -23,6 +25,8 @@ export default class CommunityUseCase {
     @inject("CommunityService") private readonly communityService: CommunityService,
     @inject("WalletService")
     private readonly walletService: WalletService,
+    @inject("SignupBonusConfigService")
+    private readonly signupBonusConfigService: SignupBonusConfigService,
   ) {}
 
   async userBrowseCommunities(
@@ -82,5 +86,24 @@ export default class CommunityUseCase {
       return await this.communityService.updateCommunityProfile(ctx, id, input, tx);
     });
     return CommunityPresenter.update(res);
+  }
+
+  async managerUpdateSignupBonusConfig(
+    { input }: GqlMutationUpdateSignupBonusConfigArgs,
+    ctx: IContext,
+    communityId: string,
+  ) {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      return this.signupBonusConfigService.update(
+        ctx,
+        communityId,
+        {
+          isEnabled: input.isEnabled ?? undefined,
+          bonusPoint: input.bonusPoint ?? undefined,
+          message: input.message ?? undefined,
+        },
+        tx,
+      );
+    });
   }
 }
