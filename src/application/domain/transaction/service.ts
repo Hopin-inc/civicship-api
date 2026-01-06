@@ -535,4 +535,61 @@ export default class TransactionService implements ITransactionService {
       });
     });
   }
+
+  /**
+   * Find stale PENDING grants for monitoring and cleanup.
+   * Returns grants that have been in PENDING state for longer than the threshold.
+   *
+   * This can be called:
+   * 1. Via a cron job to automatically log/alert on stuck grants
+   * 2. Via an admin mutation to manually check status
+   * 3. As input to an automated cleanup process
+   *
+   * @param thresholdMinutes - How old a PENDING grant must be to be considered stale (default: 30 minutes)
+   */
+  async findStalePendingGrants(
+    ctx: IContext,
+    thresholdMinutes: number = 30,
+  ): Promise<
+    Array<{
+      id: string;
+      userId: string;
+      communityId: string;
+      attemptCount: number;
+      lastAttemptedAt: Date;
+      createdAt: Date;
+    }>
+  > {
+    const threshold = new Date(Date.now() - thresholdMinutes * 60 * 1000);
+
+    const staleGrants = await ctx.issuer.public(ctx, (tx) =>
+      tx.incentiveGrant.findMany({
+        where: {
+          status: IncentiveGrantStatus.PENDING,
+          lastAttemptedAt: { lt: threshold },
+        },
+        select: {
+          id: true,
+          userId: true,
+          communityId: true,
+          attemptCount: true,
+          lastAttemptedAt: true,
+          createdAt: true,
+        },
+        orderBy: {
+          lastAttemptedAt: "asc", // oldest first
+        },
+      }),
+    );
+
+    if (staleGrants.length > 0) {
+      logger.warn("Found stale PENDING signup bonus grants", {
+        count: staleGrants.length,
+        thresholdMinutes,
+        oldestGrant: staleGrants[0],
+      });
+    }
+
+    return staleGrants;
+  }
 }
