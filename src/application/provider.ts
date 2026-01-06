@@ -100,6 +100,8 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
+import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
+import SignupBonusConfigRepository from "@/application/domain/account/community/config/incentive/signup/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -151,6 +153,9 @@ export function registerProductionDependencies() {
 
   container.register("CommunityConfigService", { useClass: CommunityConfigService });
   container.register("CommunityConfigRepository", { useClass: CommunityConfigRepository });
+
+  container.register("SignupBonusConfigService", { useClass: SignupBonusConfigService });
+  container.register("SignupBonusConfigRepository", { useClass: SignupBonusConfigRepository });
 
   // 🆔 Identity
   container.register("IdentityService", { useClass: IdentityService });
