@@ -14,6 +14,23 @@ export const communitySelectDetail = Prisma.validator<Prisma.CommunitySelect>()(
   createdAt: true,
   updatedAt: true,
 
+  config: {
+    select: {
+      communityId: true,
+      firebaseConfig: { select: { tenantId: true } },
+      lineConfig: {
+        select: {
+          channelId: true,
+          channelSecret: true,
+          accessToken: true,
+          liffId: true,
+          liffBaseUrl: true,
+          richMenus: { select: { type: true, richMenuId: true } },
+        },
+      },
+    },
+  },
+
   memberships: { select: { userId: true, communityId: true } },
   wallets: { select: { id: true } },
 

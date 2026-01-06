@@ -20,6 +20,7 @@ export function createAccountLoaders(prisma: PrismaClient) {
     didIssuanceRequestsByUser: createDidIssuanceRequestsByUserIdLoader(prisma),
 
     community: CommunityLoaders.createCommunityLoader(prisma),
+    signupBonusConfigByCommunityId: CommunityLoaders.createSignupBonusConfigByCommunityIdLoader(prisma),
 
     wallet: WalletLoaders.createWalletLoader(prisma),
     walletsByUser: WalletLoaders.createWalletsByUserLoader(prisma),
