@@ -10,14 +10,14 @@ export default class SignupBonusConfigConverter {
   /**
    * Converts update input to create input for upsert operations
    * Handles extraction of values from update operations
-   * 
+   *
    * @param communityId - The community ID for the config
    * @param data - The update input data
    * @returns Unchecked create input for Prisma
    */
-  toCreateInput(
+  create(
     communityId: string,
-    data: Prisma.CommunitySignupBonusConfigUpdateInput
+    data: Prisma.CommunitySignupBonusConfigUpdateInput,
   ): Prisma.CommunitySignupBonusConfigUncheckedCreateInput {
     // For create operation, we need to handle the community relation differently
     // and convert update operations to simple values
@@ -53,7 +53,7 @@ export default class SignupBonusConfigConverter {
    * Extracts a boolean value from a field that could be a boolean or an update operation
    */
   private extractBooleanValue(
-    value: boolean | Prisma.BoolFieldUpdateOperationsInput | undefined
+    value: boolean | Prisma.BoolFieldUpdateOperationsInput | undefined,
   ): boolean | undefined {
     if (typeof value === "boolean") {
       return value;
@@ -65,7 +65,7 @@ export default class SignupBonusConfigConverter {
    * Extracts a number value from a field that could be a number or an update operation
    */
   private extractNumberValue(
-    value: number | Prisma.IntFieldUpdateOperationsInput | undefined
+    value: number | Prisma.IntFieldUpdateOperationsInput | undefined,
   ): number | undefined {
     if (typeof value === "number") {
       return value;
@@ -77,7 +77,7 @@ export default class SignupBonusConfigConverter {
    * Extracts a string value from a field that could be a string or an update operation
    */
   private extractStringValue(
-    value: string | Prisma.StringFieldUpdateOperationsInput | undefined
+    value: string | Prisma.StringFieldUpdateOperationsInput | undefined,
   ): string | undefined {
     if (typeof value === "string") {
       return value;
@@ -89,7 +89,7 @@ export default class SignupBonusConfigConverter {
    * Extracts a string or null value from a field that could be a string, null, or an update operation
    */
   private extractStringOrNullValue(
-    value: string | null | Prisma.NullableStringFieldUpdateOperationsInput | undefined
+    value: string | null | Prisma.NullableStringFieldUpdateOperationsInput | undefined,
   ): string | null | undefined {
     if (typeof value === "string" || value === null) {
       return value;

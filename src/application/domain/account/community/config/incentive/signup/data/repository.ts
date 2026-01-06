@@ -30,7 +30,7 @@ export default class SignupBonusConfigRepository implements ISignupBonusConfigRe
     tx: Prisma.TransactionClient,
   ) {
     // Use the converter to transform update input to create input
-    const createData = this.converter.toCreateInput(communityId, data);
+    const createData = this.converter.create(communityId, data);
 
     return tx.communitySignupBonusConfig.upsert({
       where: { communityId },
