@@ -22,9 +22,9 @@ input CommunityLineRichMenuConfigInput {
 }
 
 input UpdateSignupBonusConfigInput {
-    isEnabled: Boolean
-    bonusPoint: Int
-    message: String
+    isEnabled: Boolean!
+    bonusPoint: Int!
+    message: String!
 }
 
 extend type Mutation {

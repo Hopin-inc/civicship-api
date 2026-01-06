@@ -1870,9 +1870,9 @@ type TransactionsConnection {
 }
 
 input UpdateSignupBonusConfigInput {
-  bonusPoint: Int
-  isEnabled: Boolean
-  message: String
+  bonusPoint: Int!
+  isEnabled: Boolean!
+  message: String!
 }
 
 scalar Upload

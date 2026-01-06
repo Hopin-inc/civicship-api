@@ -2675,9 +2675,9 @@ export type GqlTransactionsConnection = {
 };
 
 export type GqlUpdateSignupBonusConfigInput = {
-  bonusPoint?: InputMaybe<Scalars['Int']['input']>;
-  isEnabled?: InputMaybe<Scalars['Boolean']['input']>;
-  message?: InputMaybe<Scalars['String']['input']>;
+  bonusPoint: Scalars['Int']['input'];
+  isEnabled: Scalars['Boolean']['input'];
+  message: Scalars['String']['input'];
 };
 
 export type GqlUser = {
