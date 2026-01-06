@@ -16,6 +16,8 @@ import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
+import TransactionService from "@/application/domain/transaction/service";
+import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
@@ -29,6 +31,9 @@ export default class IdentityUseCase {
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("ImageService") private readonly imageService: ImageService,
+    @inject("TransactionService") private readonly transactionService: TransactionService,
+    @inject("SignupBonusConfigService")
+    private readonly signupBonusConfigService: SignupBonusConfigService,
   ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -135,6 +140,9 @@ export default class IdentityUseCase {
         await this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
       });
 
+      // Grant signup bonus (best-effort - don't fail signup if bonus grant fails)
+      await this.grantSignupBonusIfEnabledBestEffort(ctx, userId, communityId);
+
       if (!ctx.uid) {
         logger.error("Missing uid in context");
         return null;
@@ -152,6 +160,82 @@ export default class IdentityUseCase {
         error,
       });
       throw error;
+    }
+  }
+
+  /**
+   * Grant signup bonus if enabled (best-effort pattern).
+   * Errors are logged but not propagated - user signup should always succeed.
+   */
+  private async grantSignupBonusIfEnabledBestEffort(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+  ): Promise<void> {
+    try {
+      // Check if signup bonus is enabled for this community
+      const config = await this.signupBonusConfigService.get(ctx, communityId);
+
+      if (!config || !config.isEnabled) {
+        logger.debug("Signup bonus not enabled for community", { communityId });
+        return;
+      }
+
+      // Get user's wallet
+      const wallet = await this.walletService.findMemberWallet(ctx, userId, communityId);
+      if (!wallet) {
+        logger.warn("Wallet not found for signup bonus grant (wallet creation may have failed)", {
+          userId,
+          communityId,
+        });
+        return;
+      }
+
+      // Grant signup bonus
+      const result = await this.transactionService.grantSignupBonus(ctx, {
+        userId,
+        communityId,
+        toWalletId: wallet.id,
+        bonusPoint: config.bonusPoint,
+        message: config.message ?? undefined,
+      });
+
+      if (result.status === "COMPLETED") {
+        logger.info("Signup bonus granted successfully", {
+          userId,
+          communityId,
+          bonusPoint: config.bonusPoint,
+          transactionId: result.transaction.id,
+        });
+      } else if (result.status === "SKIPPED_ALREADY_COMPLETED") {
+        logger.info("Signup bonus already granted (duplicate signup attempt)", {
+          userId,
+          communityId,
+          transactionId: result.transaction.id,
+        });
+      } else if (result.status === "SKIPPED_PENDING") {
+        logger.warn("Signup bonus grant is already pending (concurrent signup)", {
+          userId,
+          communityId,
+          grantId: result.grantId,
+        });
+      } else if (result.status === "FAILED") {
+        logger.error("Signup bonus grant failed (recorded as FAILED grant for manual retry)", {
+          userId,
+          communityId,
+          grantId: result.grantId,
+          failureCode: result.failureCode,
+          lastError: result.lastError,
+        });
+      }
+    } catch (error) {
+      // Best-effort: log error but don't fail user signup
+      logger.error("Unexpected error during signup bonus grant (握りつぶす)", {
+        userId,
+        communityId,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
   }
 
