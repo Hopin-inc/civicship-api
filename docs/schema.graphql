@@ -203,6 +203,7 @@ type Community {
 type CommunityConfig {
   firebaseConfig: CommunityFirebaseConfig
   lineConfig: CommunityLineConfig
+  signupBonusConfig: CommunitySignupBonusConfig
 }
 
 input CommunityConfigInput {
@@ -279,6 +280,12 @@ type CommunityLineRichMenuConfig {
 input CommunityLineRichMenuConfigInput {
   richMenuId: String!
   type: LineRichMenuType!
+}
+
+type CommunitySignupBonusConfig {
+  bonusPoint: Int!
+  isEnabled: Boolean!
+  message: String
 }
 
 input CommunitySortInput {
@@ -508,6 +515,24 @@ input ImageInput {
   file: Upload
 }
 
+enum IncentiveGrantFailureCode {
+  DATABASE_ERROR
+  INSUFFICIENT_FUNDS
+  TIMEOUT
+  UNKNOWN
+  WALLET_NOT_FOUND
+}
+
+enum IncentiveGrantStatus {
+  COMPLETED
+  FAILED
+  PENDING
+}
+
+enum IncentiveGrantType {
+  SIGNUP
+}
+
 scalar JSON
 
 enum Language {
@@ -695,6 +720,12 @@ type Mutation {
   reservationCreate(input: ReservationCreateInput!): ReservationCreatePayload
   reservationJoin(id: ID!): ReservationSetStatusPayload
   reservationReject(id: ID!, input: ReservationRejectInput!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
+
+  """
+  Retry failed signup bonus grant (admin only).
+  Automatically derives walletId, bonusPoint, message from grant and config.
+  """
+  retrySignupBonusGrant(grantId: ID!): Transaction!
   storePhoneAuthToken(input: StorePhoneAuthTokenInput!, permission: CheckIsSelfPermissionInput!): StorePhoneAuthTokenPayload
   ticketClaim(input: TicketClaimInput!): TicketClaimPayload
   ticketIssue(input: TicketIssueInput!, permission: CheckCommunityPermissionInput!): TicketIssuePayload
@@ -704,6 +735,9 @@ type Mutation {
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
+
+  """Update signup bonus config (OWNER/MANAGER only)."""
+  updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
   userSignUp(input: UserSignUpInput!): CurrentUserPayload
   userUpdateMyProfile(input: UserUpdateProfileInput!, permission: CheckIsSelfPermissionInput!): UserUpdateProfilePayload
@@ -1833,6 +1867,12 @@ type TransactionsConnection {
   edges: [TransactionEdge]
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+input UpdateSignupBonusConfigInput {
+  bonusPoint: Int
+  isEnabled: Boolean
+  message: String
 }
 
 scalar Upload
