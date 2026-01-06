@@ -42,7 +42,7 @@ export default class CommunityResolver {
       args: GqlMutationUpdateSignupBonusConfigArgs,
       ctx: IContext,
     ) => {
-      const communityId = ctx.currentCommunity?.id;
+      const communityId = ctx.communityId;
       if (!communityId) {
         throw new Error("currentCommunity not set in context");
       }
