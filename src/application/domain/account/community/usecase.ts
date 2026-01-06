@@ -18,6 +18,7 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
 import SignupBonusConfigService from "./config/incentive/signup/service";
+import { CommunitySignupBonusConfig } from "@prisma/client";
 
 @injectable()
 export default class CommunityUseCase {
@@ -92,7 +93,7 @@ export default class CommunityUseCase {
     { input }: GqlMutationUpdateSignupBonusConfigArgs,
     ctx: IContext,
     communityId: string,
-  ) {
+  ): Promise<CommunitySignupBonusConfig> {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return this.signupBonusConfigService.update(ctx, communityId, input, tx);
     });
