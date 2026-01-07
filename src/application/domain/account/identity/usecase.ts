@@ -191,6 +191,36 @@ export default class IdentityUseCase {
         return;
       }
 
+      // Check if community wallet has enough balance
+      try {
+        const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
+        const { currentPoint } = communityWallet.currentPointView || {};
+
+        if (currentPoint == null) {
+          logger.warn("Current point is not available for community wallet", {
+            communityId,
+            userId,
+          });
+        } else if (currentPoint < BigInt(config.bonusPoint)) {
+          logger.error("Insufficient balance in community wallet for signup bonus (skipping grant)", {
+            userId,
+            communityId,
+            availableBalance: currentPoint.toString(),
+            requiredBalance: config.bonusPoint,
+          });
+
+          // Skip the grant attempt due to insufficient balance
+          return;
+        }
+      } catch (error) {
+        logger.warn("Failed to check community wallet balance", {
+          userId,
+          communityId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        // Continue with the grant attempt even if balance check fails
+      }
+
       // Grant signup bonus
       const result = await this.transactionService.grantSignupBonus(ctx, {
         userId,
