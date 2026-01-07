@@ -174,6 +174,11 @@ enum ClaimLinkStatus {
   ISSUED
 }
 
+type CommonDocumentOverrides {
+  privacy: CommunityDocument
+  terms: CommunityDocument
+}
+
 type CommunitiesConnection {
   edges: [CommunityEdge!]
   pageInfo: PageInfo!
@@ -234,6 +239,14 @@ type CommunityDeleteSuccess {
   communityId: String!
 }
 
+type CommunityDocument {
+  id: String!
+  order: Int
+  path: String!
+  title: String!
+  type: String!
+}
+
 type CommunityEdge implements Edge {
   cursor: String!
   node: Community
@@ -279,6 +292,29 @@ type CommunityLineRichMenuConfig {
 input CommunityLineRichMenuConfigInput {
   richMenuId: String!
   type: LineRichMenuType!
+}
+
+type CommunityPortalConfig {
+  adminRootPath: String!
+  commonDocumentOverrides: CommonDocumentOverrides
+  communityId: String!
+  description: String!
+  documents: [CommunityDocument!]
+  domain: String!
+  enableFeatures: [String!]!
+  faviconPrefix: String!
+  firebaseTenantId: String
+  liffBaseUrl: String
+  liffId: String
+  logoPath: String!
+  ogImagePath: String!
+  regionKey: String
+  regionName: String
+  rootPath: String!
+  shortDescription: String
+  squareLogoPath: String!
+  title: String!
+  tokenName: String!
 }
 
 input CommunitySortInput {
@@ -1319,6 +1355,7 @@ type Query {
   cities(cursor: String, filter: CitiesInput, first: Int, sort: CitiesSortInput): CitiesConnection!
   communities(cursor: String, filter: CommunityFilterInput, first: Int, sort: CommunitySortInput): CommunitiesConnection!
   community(id: ID!): Community
+  communityPortalConfig(communityId: String!): CommunityPortalConfig
   currentUser: CurrentUserPayload
   echo: String!
   evaluation(id: ID!): Evaluation
