@@ -5,7 +5,7 @@ import { ApolloServerPluginUsageReporting } from "@apollo/server/plugin/usageRep
 import http from "http";
 import schema from "@/presentation/graphql/schema";
 import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
-import { rules } from "@/presentation/graphql/rule";
+import { rules } from "@/presentation/graphql/rules";
 import { armorProtection } from "@/presentation/graphql/plugins/armor";
 
 const isProduction = process.env.NODE_ENV === "production";

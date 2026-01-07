@@ -54,17 +54,6 @@ export default class OpportunityConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  findAccessible(
-    id: string,
-    filter?: GqlOpportunityFilterInput,
-  ): Prisma.OpportunityWhereUniqueInput & Prisma.OpportunityWhereInput {
-    const validatedFilter = this.filter(filter);
-    return {
-      id,
-      ...(validatedFilter.AND ? { AND: validatedFilter.AND } : {}),
-    };
-  }
-
   create = (
     input: GqlOpportunityCreateInput,
     communityId: string,
@@ -103,7 +92,7 @@ export default class OpportunityConverter {
     };
   };
 
-  update(input: GqlOpportunityUpdateContentInput, userId: string): {
+  update(input: GqlOpportunityUpdateContentInput): {
     data: Omit<Prisma.OpportunityUpdateInput, "images">;
     images: GqlImageInput[];
   } {
@@ -112,7 +101,9 @@ export default class OpportunityConverter {
     return {
       data: {
         ...prop,
-        createdByUser: { connect: { id: userId } },
+        ...(createdBy && {
+          createdByUser: { connect: { id: createdBy } },
+        }),
         ...(placeId?.trim() && {
           place: { connect: { id: placeId } },
         }),

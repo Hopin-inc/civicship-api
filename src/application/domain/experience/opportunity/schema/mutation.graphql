@@ -10,23 +10,23 @@ extend type Mutation {
 
     opportunityDelete(
         id: ID!
-        permission:CheckCommunityPermissionInput!
+        permission:CheckOpportunityPermissionInput!
     ): OpportunityDeletePayload
-    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
+    @authz(rules: [CanManageOpportunity])
 
     opportunityUpdateContent(
         id: ID!,
         input: OpportunityUpdateContentInput!
-        permission:CheckCommunityPermissionInput!
+        permission:CheckOpportunityPermissionInput!
     ): OpportunityUpdateContentPayload
-    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
+    @authz(rules: [CanManageOpportunity])
 
     opportunitySetPublishStatus(
         id: ID!
         input: OpportunitySetPublishStatusInput!
-        permission:CheckCommunityPermissionInput!
+        permission:CheckOpportunityPermissionInput!
     ): OpportunitySetPublishStatusPayload
-    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
+    @authz(rules: [CanManageOpportunity])
 }
 
 # ------------------------------

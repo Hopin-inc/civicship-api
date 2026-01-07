@@ -23,6 +23,7 @@ import NftTokenRepository from "@/application/domain/account/nft-token/data/repo
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import { CardanoShopifyAppClient } from "@/infrastructure/libs/cardanoShopifyApp/api/client";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
@@ -298,6 +299,7 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("NmkrClient", { useClass: NmkrClient });
+  container.register("CardanoShopifyAppClient", { useClass: CardanoShopifyAppClient });
 }
 
 registerProductionDependencies();

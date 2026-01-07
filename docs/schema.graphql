@@ -119,12 +119,11 @@ input AuthZDirectiveDeepCompositeRulesInput {
 }
 
 enum AuthZRules {
-  CanReadPhoneNumber
+  CanManageOpportunity
   IsAdmin
   IsCommunityManager
   IsCommunityMember
   IsCommunityOwner
-  IsOpportunityOwner
   IsSelf
   IsUser
 }
@@ -679,12 +678,12 @@ type Mutation {
   membershipWithdraw(input: MembershipWithdrawInput!, permission: CheckIsSelfPermissionInput!): MembershipWithdrawPayload
   mutationEcho: String!
   opportunityCreate(input: OpportunityCreateInput!, permission: CheckCommunityPermissionInput!): OpportunityCreatePayload
-  opportunityDelete(id: ID!, permission: CheckCommunityPermissionInput!): OpportunityDeletePayload
-  opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!, permission: CheckCommunityPermissionInput!): OpportunitySetPublishStatusPayload
+  opportunityDelete(id: ID!, permission: CheckOpportunityPermissionInput!): OpportunityDeletePayload
+  opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!, permission: CheckOpportunityPermissionInput!): OpportunitySetPublishStatusPayload
   opportunitySlotCreate(input: OpportunitySlotCreateInput!, opportunityId: ID!, permission: CheckOpportunityPermissionInput!): OpportunitySlotCreatePayload
   opportunitySlotSetHostingStatus(id: ID!, input: OpportunitySlotSetHostingStatusInput!, permission: CheckOpportunityPermissionInput!): OpportunitySlotSetHostingStatusPayload
   opportunitySlotsBulkUpdate(input: OpportunitySlotsBulkUpdateInput!, permission: CheckOpportunityPermissionInput!): OpportunitySlotsBulkUpdatePayload
-  opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!, permission: CheckCommunityPermissionInput!): OpportunityUpdateContentPayload
+  opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!, permission: CheckOpportunityPermissionInput!): OpportunityUpdateContentPayload
   participationBulkCreate(input: ParticipationBulkCreateInput!, permission: CheckCommunityPermissionInput!): ParticipationBulkCreatePayload
   participationCreatePersonalRecord(input: ParticipationCreatePersonalRecordInput!): ParticipationCreatePersonalRecordPayload
   participationDeletePersonalRecord(id: ID!, permission: CheckIsSelfPermissionInput!): ParticipationDeletePayload
@@ -760,6 +759,7 @@ type NftInstanceEdge implements Edge {
 
 input NftInstanceFilterInput {
   and: [NftInstanceFilterInput!]
+  communityId: ID
   hasDescription: Boolean
   hasImage: Boolean
   hasName: Boolean

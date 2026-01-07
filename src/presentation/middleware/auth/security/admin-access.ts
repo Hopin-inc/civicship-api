@@ -4,7 +4,10 @@ import { createLoaders } from "@/presentation/graphql/dataloader";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "../types";
 
-export async function handleAdminAccess(headers: AuthHeaders): Promise<AuthResult | null> {
+export async function handleAdminAccess(
+  headers: AuthHeaders,
+  issuer: PrismaClientIssuer
+): Promise<AuthResult | null> {
   const { adminApiKey, communityId } = headers;
   const expectedAdminKey = process.env.CIVICSHIP_ADMIN_API_KEY;
 
@@ -21,7 +24,7 @@ export async function handleAdminAccess(headers: AuthHeaders): Promise<AuthResul
 
   if (!communityId) throw new Error("Missing x-community-id header");
 
-  const issuer = new PrismaClientIssuer();
+  // Use the provided issuer
   const loaders = createLoaders(prismaClient);
 
   return { issuer, loaders, communityId, isAdmin: true };

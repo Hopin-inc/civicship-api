@@ -148,12 +148,11 @@ export type GqlAuthZDirectiveDeepCompositeRulesInput = {
 };
 
 export const GqlAuthZRules = {
-  CanReadPhoneNumber: 'CanReadPhoneNumber',
+  CanManageOpportunity: 'CanManageOpportunity',
   IsAdmin: 'IsAdmin',
   IsCommunityManager: 'IsCommunityManager',
   IsCommunityMember: 'IsCommunityMember',
   IsCommunityOwner: 'IsCommunityOwner',
-  IsOpportunityOwner: 'IsOpportunityOwner',
   IsSelf: 'IsSelf',
   IsUser: 'IsUser'
 } as const;
@@ -900,14 +899,14 @@ export type GqlMutationOpportunityCreateArgs = {
 
 export type GqlMutationOpportunityDeleteArgs = {
   id: Scalars['ID']['input'];
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
 export type GqlMutationOpportunitySetPublishStatusArgs = {
   id: Scalars['ID']['input'];
   input: GqlOpportunitySetPublishStatusInput;
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
@@ -934,7 +933,7 @@ export type GqlMutationOpportunitySlotsBulkUpdateArgs = {
 export type GqlMutationOpportunityUpdateContentArgs = {
   id: Scalars['ID']['input'];
   input: GqlOpportunityUpdateContentInput;
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
@@ -1147,6 +1146,7 @@ export type GqlNftInstanceEdge = GqlEdge & {
 
 export type GqlNftInstanceFilterInput = {
   and?: InputMaybe<Array<GqlNftInstanceFilterInput>>;
+  communityId?: InputMaybe<Scalars['ID']['input']>;
   hasDescription?: InputMaybe<Scalars['Boolean']['input']>;
   hasImage?: InputMaybe<Scalars['Boolean']['input']>;
   hasName?: InputMaybe<Scalars['Boolean']['input']>;
