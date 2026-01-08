@@ -6,5 +6,5 @@ extend type Query {
   - Compares with Cardano blockchain metadata
   - Returns data integrity verification results
   """
-  verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]! @authz(rules: [IsUser])
+  verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]
 }

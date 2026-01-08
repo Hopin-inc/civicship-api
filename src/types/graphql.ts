@@ -1809,7 +1809,7 @@ export type GqlQuery = {
    * - Compares with Cardano blockchain metadata
    * - Returns data integrity verification results
    */
-  verifyTransactions: Array<GqlTransactionVerificationResult>;
+  verifyTransactions?: Maybe<Array<GqlTransactionVerificationResult>>;
   wallet?: Maybe<GqlWallet>;
   wallets: GqlWalletsConnection;
 };
@@ -4594,7 +4594,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   utility?: Resolver<Maybe<GqlResolversTypes['Utility']>, ParentType, ContextType, RequireFields<GqlQueryUtilityArgs, 'id' | 'permission'>>;
   vcIssuanceRequest?: Resolver<Maybe<GqlResolversTypes['VcIssuanceRequest']>, ParentType, ContextType, RequireFields<GqlQueryVcIssuanceRequestArgs, 'id'>>;
   vcIssuanceRequests?: Resolver<GqlResolversTypes['VcIssuanceRequestsConnection'], ParentType, ContextType, Partial<GqlQueryVcIssuanceRequestsArgs>>;
-  verifyTransactions?: Resolver<Array<GqlResolversTypes['TransactionVerificationResult']>, ParentType, ContextType, RequireFields<GqlQueryVerifyTransactionsArgs, 'txIds'>>;
+  verifyTransactions?: Resolver<Maybe<Array<GqlResolversTypes['TransactionVerificationResult']>>, ParentType, ContextType, RequireFields<GqlQueryVerifyTransactionsArgs, 'txIds'>>;
   wallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType, RequireFields<GqlQueryWalletArgs, 'id'>>;
   wallets?: Resolver<GqlResolversTypes['WalletsConnection'], ParentType, ContextType, Partial<GqlQueryWalletsArgs>>;
 }>;
