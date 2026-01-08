@@ -241,4 +241,22 @@ export default class TransactionService implements ITransactionService {
   > {
     return this.incentiveGrantService.findStalePendingGrants(ctx, thresholdMinutes);
   }
+
+  /**
+   * Get grant information for retry operations.
+   * Delegates to IncentiveGrantService.
+   *
+   * @param grantId - Grant ID to retrieve
+   * @returns Grant info with userId, communityId, status
+   */
+  async getGrantInfoForRetry(
+    ctx: IContext,
+    grantId: string,
+  ): Promise<{
+    userId: string;
+    communityId: string;
+    status: string;
+  }> {
+    return this.incentiveGrantService.getGrantInfoForRetry(ctx, grantId);
+  }
 }

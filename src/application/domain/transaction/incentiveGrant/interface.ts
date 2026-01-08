@@ -58,4 +58,21 @@ export interface IIncentiveGrantService {
     ctx: IContext,
     thresholdMinutes?: number,
   ): Promise<StalePendingGrantResult[]>;
+
+  /**
+   * Get grant information for retry operations.
+   * Returns essential grant data needed for retry (userId, communityId, status).
+   *
+   * @param grantId - Grant ID to retrieve
+   * @returns Grant info with userId, communityId, status
+   * @throws NotFoundError if grant doesn't exist
+   */
+  getGrantInfoForRetry(
+    ctx: IContext,
+    grantId: string,
+  ): Promise<{
+    userId: string;
+    communityId: string;
+    status: string;
+  }>;
 }
