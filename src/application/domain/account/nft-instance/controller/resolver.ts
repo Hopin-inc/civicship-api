@@ -19,7 +19,7 @@ export default class NftInstanceResolver {
 
   NftInstance = {
     community: (parent: PrismaNftInstance, _: unknown, ctx: IContext) => {
-      return parent.communityId ? ctx.loaders.communityByNftInstance.load(parent.communityId) : null;
+      return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
     },
   };
 }
