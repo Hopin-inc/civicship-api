@@ -27,7 +27,8 @@ export default class TransactionVerificationPresenter {
       })(),
       transactionHash: result.transactionHash,
       rootHash: result.rootHash,
-      label: result.label,
+      // 外部APIが文字列で返す場合があるため、数値に変換
+      label: typeof result.label === "string" ? parseInt(result.label, 10) : result.label,
     };
   }
 }
