@@ -12,7 +12,7 @@ export interface VerifyResponse {
   status: "verified" | "not_verified" | "pending" | "error";
   transactionHash: string;
   rootHash: string;
-  label: number;
+  label: string | number; // 外部APIが文字列で返す場合があるため
 }
 
 @injectable()
@@ -47,7 +47,7 @@ export class PointVerifyClient {
       validStatuses.includes(response.status) &&
       typeof response.transactionHash === "string" &&
       typeof response.rootHash === "string" &&
-      typeof response.label === "number"
+      (typeof response.label === "number" || typeof response.label === "string")
     );
   }
 
