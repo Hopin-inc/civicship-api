@@ -7,6 +7,7 @@ type NftInstance {
   json: JSON
   nftToken: NftToken
   nftWallet: NftWallet
+  community: Community
   createdAt: Datetime!
   updatedAt: Datetime
 }

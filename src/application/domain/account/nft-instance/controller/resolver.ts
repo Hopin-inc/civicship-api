@@ -2,6 +2,7 @@ import { GqlQueryNftInstancesArgs, GqlQueryNftInstanceArgs } from "@/types/graph
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
+import { PrismaNftInstance } from "@/application/domain/account/nft-instance/data/type";
 
 @injectable()
 export default class NftInstanceResolver {
@@ -13,6 +14,12 @@ export default class NftInstanceResolver {
     },
     nftInstance: async (_: unknown, args: GqlQueryNftInstanceArgs, ctx: IContext) => {
       return this.useCase.getNftInstance(args.id, ctx);
+    },
+  };
+
+  NftInstance = {
+    community: (parent: PrismaNftInstance, _: unknown, ctx: IContext) => {
+      return parent.communityId ? ctx.loaders.communityByNftInstance.load(parent.communityId) : null;
     },
   };
 }
