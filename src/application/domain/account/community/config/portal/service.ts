@@ -23,6 +23,7 @@ export interface CommunityPortalConfigResult {
   regionName: string | null;
   regionKey: string | null;
   liffId: string | null;
+  liffAppId: string | null;
   liffBaseUrl: string | null;
   firebaseTenantId: string | null;
 }
@@ -77,6 +78,7 @@ export default class CommunityPortalConfigService {
       regionName: portalConfig.regionName,
       regionKey: portalConfig.regionKey,
       liffId: lineConfig?.liffId ?? null,
+      liffAppId: lineConfig?.liffAppId ?? null,
       liffBaseUrl: lineConfig?.liffBaseUrl ?? null,
       firebaseTenantId: firebaseConfig?.tenantId ?? null,
     };

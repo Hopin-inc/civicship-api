@@ -237,8 +237,9 @@ model CommunityLineConfig {
   channelSecret String @map("channel_secret")
   accessToken   String @map("access_token")
 
-  liffId      String @map("liff_id")
-  liffBaseUrl String @map("liff_base_url")
+  liffId      String  @map("liff_id")
+  liffAppId   String? @map("liff_app_id")
+  liffBaseUrl String  @map("liff_base_url")
 
   richMenus CommunityLineRichMenuConfig[]
 

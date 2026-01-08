@@ -20,6 +20,7 @@ type CommunityPortalConfig {
     regionName: String
     regionKey: String
     liffId: String
+    liffAppId: String
     liffBaseUrl: String
     firebaseTenantId: String
 }
