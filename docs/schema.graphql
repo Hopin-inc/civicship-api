@@ -740,6 +740,7 @@ input NestedPlacesBulkUpdateInput {
 }
 
 type NftInstance {
+  community: Community
   createdAt: Datetime!
   description: String
   id: ID!
