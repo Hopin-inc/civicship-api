@@ -1,0 +1,14 @@
+enum VerificationStatus {
+  VERIFIED
+  NOT_VERIFIED
+  PENDING
+  ERROR
+}
+
+type TransactionVerificationResult {
+  txId: ID!
+  status: VerificationStatus!
+  transactionHash: String!
+  rootHash: String!
+  label: Int!
+}
