@@ -30,6 +30,27 @@ export class PointVerifyClient {
     }
   }
 
+  /**
+   * レスポンスアイテムが有効な VerifyResponse 型かどうかを検証するヘルパー関数
+   */
+  private isValidVerifyResponse(item: unknown): item is VerifyResponse {
+    if (!item || typeof item !== "object") {
+      return false;
+    }
+
+    const response = item as Record<string, unknown>;
+    const validStatuses = ["verified", "not_verified", "pending", "error"];
+
+    return (
+      typeof response.txId === "string" &&
+      typeof response.status === "string" &&
+      validStatuses.includes(response.status) &&
+      typeof response.transactionHash === "string" &&
+      typeof response.rootHash === "string" &&
+      typeof response.label === "number"
+    );
+  }
+
   async verifyTransactions(txIds: string[]): Promise<VerifyResponse[]> {
     const url = `${this.baseUrl}/point/verify`;
     const requestBody: VerifyRequest = { txIds };
@@ -56,21 +77,7 @@ export class PointVerifyClient {
 
       // 各要素の必須フィールドを検証
       for (const item of data) {
-        const isValidStatus =
-          item != null &&
-          (item.status === "verified" ||
-            item.status === "not_verified" ||
-            item.status === "pending" ||
-            item.status === "error");
-
-        if (
-          !item ||
-          typeof item.txId !== "string" ||
-          !isValidStatus ||
-          typeof item.transactionHash !== "string" ||
-          typeof item.rootHash !== "string" ||
-          typeof item.label !== "number"
-        ) {
+        if (!this.isValidVerifyResponse(item)) {
           logger.error("[PointVerifyClient] Invalid response item format", {
             url,
             status: response.status,
@@ -103,8 +110,10 @@ export class PointVerifyClient {
         logger.error("[PointVerifyClient] Unknown Error", { error });
       }
 
-      // エラーを抽象化してラップ
-      throw new Error("Failed to communicate with the transaction verification service.");
+      // エラーを抽象化してラップしつつ、元のエラーを cause として保持
+      throw new Error("Failed to communicate with the transaction verification service.", {
+        cause: error,
+      });
     }
   }
 }
