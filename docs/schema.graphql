@@ -1371,7 +1371,7 @@ type Query {
   - Compares with Cardano blockchain metadata
   - Returns data integrity verification results
   """
-  verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]!
+  verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]
   wallet(id: ID!): Wallet
   wallets(cursor: String, filter: WalletFilterInput, first: Int, sort: WalletSortInput): WalletsConnection!
 }
