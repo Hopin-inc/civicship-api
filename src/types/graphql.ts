@@ -1126,6 +1126,7 @@ export type GqlNestedPlacesBulkUpdateInput = {
 
 export type GqlNftInstance = {
   __typename?: 'NftInstance';
+  community?: Maybe<GqlCommunity>;
   createdAt: Scalars['Datetime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -3179,7 +3180,7 @@ export type GqlResolversTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  NftInstance: ResolverTypeWrapper<Omit<GqlNftInstance, 'nftWallet'> & { nftWallet?: Maybe<GqlResolversTypes['NftWallet']> }>;
+  NftInstance: ResolverTypeWrapper<Omit<GqlNftInstance, 'community' | 'nftWallet'> & { community?: Maybe<GqlResolversTypes['Community']>, nftWallet?: Maybe<GqlResolversTypes['NftWallet']> }>;
   NftInstanceEdge: ResolverTypeWrapper<Omit<GqlNftInstanceEdge, 'node'> & { node: GqlResolversTypes['NftInstance'] }>;
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
@@ -3496,7 +3497,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  NftInstance: Omit<GqlNftInstance, 'nftWallet'> & { nftWallet?: Maybe<GqlResolversParentTypes['NftWallet']> };
+  NftInstance: Omit<GqlNftInstance, 'community' | 'nftWallet'> & { community?: Maybe<GqlResolversParentTypes['Community']>, nftWallet?: Maybe<GqlResolversParentTypes['NftWallet']> };
   NftInstanceEdge: Omit<GqlNftInstanceEdge, 'node'> & { node: GqlResolversParentTypes['NftInstance'] };
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
@@ -4145,6 +4146,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
 }>;
 
 export type GqlNftInstanceResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['NftInstance'] = GqlResolversParentTypes['NftInstance']> = ResolversObject<{
+  community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
