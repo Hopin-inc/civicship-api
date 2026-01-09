@@ -13,6 +13,7 @@ describe("CommunityService", () => {
   class MockCommunityRepository implements ICommunityRepository {
     query = jest.fn();
     find = jest.fn();
+    findNameById = jest.fn();
     create = jest.fn();
     update = jest.fn();
     delete = jest.fn();

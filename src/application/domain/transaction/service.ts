@@ -282,7 +282,6 @@ export default class TransactionService implements ITransactionService {
           communityId,
           bonusPoint,
           transactionId: result.transaction.id,
-          grantId: result.grant.id,
         });
         break;
 
@@ -291,8 +290,7 @@ export default class TransactionService implements ITransactionService {
           userId,
           communityId,
           bonusPoint,
-          existingTransactionId: result.existingTransaction.id,
-          grantId: result.grant.id,
+          transactionId: result.transaction.id,
         });
         break;
 
@@ -301,8 +299,7 @@ export default class TransactionService implements ITransactionService {
           userId,
           communityId,
           bonusPoint,
-          grantId: result.grant.id,
-          attemptCount: result.grant.attemptCount,
+          grantId: result.grantId,
         });
         break;
 
@@ -311,9 +308,9 @@ export default class TransactionService implements ITransactionService {
           userId,
           communityId,
           bonusPoint,
-          grantId: result.grant.id,
-          attemptCount: result.grant.attemptCount,
-          errorMessage: result.error.message,
+          grantId: result.grantId,
+          failureCode: result.failureCode,
+          lastError: result.lastError,
         });
         break;
     }

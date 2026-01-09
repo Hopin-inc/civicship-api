@@ -1,6 +1,5 @@
-import { IncentiveGrantFailureCode, IncentiveGrantStatus, IncentiveGrantType, Prisma } from "@prisma/client";
+import { IncentiveGrantFailureCode, IncentiveGrantType, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 import { PrismaIncentiveGrantWithTransaction, StalePendingGrantResult } from "./type";
 
 /**

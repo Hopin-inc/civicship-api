@@ -32,6 +32,8 @@ export type PrismaIncentiveGrantDetail = Prisma.IncentiveGrantGetPayload<{
  */
 export type PrismaIncentiveGrantWithTransaction = {
   id: string;
+  userId: string;
+  communityId: string;
   status: IncentiveGrantStatus;
   transactionId: string | null;
   transaction: PrismaTransactionDetail | null;
