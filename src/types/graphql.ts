@@ -1172,6 +1172,7 @@ export type GqlNestedPlacesBulkUpdateInput = {
 
 export type GqlNftInstance = {
   __typename?: 'NftInstance';
+  community?: Maybe<GqlCommunity>;
   createdAt: Scalars['Datetime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -1847,6 +1848,14 @@ export type GqlQuery = {
   utility?: Maybe<GqlUtility>;
   vcIssuanceRequest?: Maybe<GqlVcIssuanceRequest>;
   vcIssuanceRequests: GqlVcIssuanceRequestsConnection;
+  /**
+   * Verify transactions against the Cardano blockchain.
+   * - Retrieves Merkle proofs for specified transactions
+   * - Recalculates root hash using proofs
+   * - Compares with Cardano blockchain metadata
+   * - Returns data integrity verification results
+   */
+  verifyTransactions?: Maybe<Array<GqlTransactionVerificationResult>>;
   wallet?: Maybe<GqlWallet>;
   wallets: GqlWalletsConnection;
 };
@@ -2148,6 +2157,11 @@ export type GqlQueryVcIssuanceRequestsArgs = {
   filter?: InputMaybe<GqlVcIssuanceRequestFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
   sort?: InputMaybe<GqlVcIssuanceRequestSortInput>;
+};
+
+
+export type GqlQueryVerifyTransactionsArgs = {
+  txIds: Array<Scalars['ID']['input']>;
 };
 
 
@@ -2667,6 +2681,15 @@ export type GqlTransactionSortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
 };
 
+export type GqlTransactionVerificationResult = {
+  __typename?: 'TransactionVerificationResult';
+  label: Scalars['Int']['output'];
+  rootHash: Scalars['String']['output'];
+  status: GqlVerificationStatus;
+  transactionHash: Scalars['String']['output'];
+  txId: Scalars['ID']['output'];
+};
+
 export type GqlTransactionsConnection = {
   __typename?: 'TransactionsConnection';
   edges?: Maybe<Array<Maybe<GqlTransactionEdge>>>;
@@ -2942,6 +2965,14 @@ export const GqlVcIssuanceStatus = {
 } as const;
 
 export type GqlVcIssuanceStatus = typeof GqlVcIssuanceStatus[keyof typeof GqlVcIssuanceStatus];
+export const GqlVerificationStatus = {
+  Error: 'ERROR',
+  NotVerified: 'NOT_VERIFIED',
+  Pending: 'PENDING',
+  Verified: 'VERIFIED'
+} as const;
+
+export type GqlVerificationStatus = typeof GqlVerificationStatus[keyof typeof GqlVerificationStatus];
 export type GqlWallet = {
   __typename?: 'Wallet';
   accumulatedPointView?: Maybe<GqlAccumulatedPointView>;
@@ -3235,7 +3266,7 @@ export type GqlResolversTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  NftInstance: ResolverTypeWrapper<Omit<GqlNftInstance, 'nftWallet'> & { nftWallet?: Maybe<GqlResolversTypes['NftWallet']> }>;
+  NftInstance: ResolverTypeWrapper<Omit<GqlNftInstance, 'community' | 'nftWallet'> & { community?: Maybe<GqlResolversTypes['Community']>, nftWallet?: Maybe<GqlResolversTypes['NftWallet']> }>;
   NftInstanceEdge: ResolverTypeWrapper<Omit<GqlNftInstanceEdge, 'node'> & { node: GqlResolversTypes['NftInstance'] }>;
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
@@ -3401,6 +3432,7 @@ export type GqlResolversTypes = ResolversObject<{
   TransactionIssueCommunityPointSuccess: ResolverTypeWrapper<Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
   TransactionReason: GqlTransactionReason;
   TransactionSortInput: GqlTransactionSortInput;
+  TransactionVerificationResult: ResolverTypeWrapper<GqlTransactionVerificationResult>;
   TransactionsConnection: ResolverTypeWrapper<Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TransactionEdge']>>> }>;
   UpdateSignupBonusConfigInput: GqlUpdateSignupBonusConfigInput;
   Upload: ResolverTypeWrapper<Scalars['Upload']['output']>;
@@ -3437,6 +3469,7 @@ export type GqlResolversTypes = ResolversObject<{
   VcIssuanceRequestSortInput: GqlVcIssuanceRequestSortInput;
   VcIssuanceRequestsConnection: ResolverTypeWrapper<Omit<GqlVcIssuanceRequestsConnection, 'edges'> & { edges: Array<GqlResolversTypes['VcIssuanceRequestEdge']> }>;
   VcIssuanceStatus: GqlVcIssuanceStatus;
+  VerificationStatus: GqlVerificationStatus;
   Wallet: ResolverTypeWrapper<Wallet>;
   WalletEdge: ResolverTypeWrapper<Omit<GqlWalletEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Wallet']> }>;
   WalletFilterInput: GqlWalletFilterInput;
@@ -3554,7 +3587,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  NftInstance: Omit<GqlNftInstance, 'nftWallet'> & { nftWallet?: Maybe<GqlResolversParentTypes['NftWallet']> };
+  NftInstance: Omit<GqlNftInstance, 'community' | 'nftWallet'> & { community?: Maybe<GqlResolversParentTypes['Community']>, nftWallet?: Maybe<GqlResolversParentTypes['NftWallet']> };
   NftInstanceEdge: Omit<GqlNftInstanceEdge, 'node'> & { node: GqlResolversParentTypes['NftInstance'] };
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
@@ -3702,6 +3735,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   TransactionIssueCommunityPointPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionIssueCommunityPointPayload'];
   TransactionIssueCommunityPointSuccess: Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
   TransactionSortInput: GqlTransactionSortInput;
+  TransactionVerificationResult: GqlTransactionVerificationResult;
   TransactionsConnection: Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TransactionEdge']>>> };
   UpdateSignupBonusConfigInput: GqlUpdateSignupBonusConfigInput;
   Upload: Scalars['Upload']['output'];
@@ -4214,6 +4248,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
 }>;
 
 export type GqlNftInstanceResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['NftInstance'] = GqlResolversParentTypes['NftInstance']> = ResolversObject<{
+  community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
@@ -4628,6 +4663,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   utility?: Resolver<Maybe<GqlResolversTypes['Utility']>, ParentType, ContextType, RequireFields<GqlQueryUtilityArgs, 'id' | 'permission'>>;
   vcIssuanceRequest?: Resolver<Maybe<GqlResolversTypes['VcIssuanceRequest']>, ParentType, ContextType, RequireFields<GqlQueryVcIssuanceRequestArgs, 'id'>>;
   vcIssuanceRequests?: Resolver<GqlResolversTypes['VcIssuanceRequestsConnection'], ParentType, ContextType, Partial<GqlQueryVcIssuanceRequestsArgs>>;
+  verifyTransactions?: Resolver<Maybe<Array<GqlResolversTypes['TransactionVerificationResult']>>, ParentType, ContextType, RequireFields<GqlQueryVerifyTransactionsArgs, 'txIds'>>;
   wallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType, RequireFields<GqlQueryWalletArgs, 'id'>>;
   wallets?: Resolver<GqlResolversTypes['WalletsConnection'], ParentType, ContextType, Partial<GqlQueryWalletsArgs>>;
 }>;
@@ -4916,6 +4952,15 @@ export type GqlTransactionIssueCommunityPointPayloadResolvers<ContextType = any,
 
 export type GqlTransactionIssueCommunityPointSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionIssueCommunityPointSuccess'] = GqlResolversParentTypes['TransactionIssueCommunityPointSuccess']> = ResolversObject<{
   transaction?: Resolver<GqlResolversTypes['Transaction'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlTransactionVerificationResultResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionVerificationResult'] = GqlResolversParentTypes['TransactionVerificationResult']> = ResolversObject<{
+  label?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  rootHash?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  status?: Resolver<GqlResolversTypes['VerificationStatus'], ParentType, ContextType>;
+  transactionHash?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  txId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5275,6 +5320,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   TransactionGrantCommunityPointSuccess?: GqlTransactionGrantCommunityPointSuccessResolvers<ContextType>;
   TransactionIssueCommunityPointPayload?: GqlTransactionIssueCommunityPointPayloadResolvers<ContextType>;
   TransactionIssueCommunityPointSuccess?: GqlTransactionIssueCommunityPointSuccessResolvers<ContextType>;
+  TransactionVerificationResult?: GqlTransactionVerificationResultResolvers<ContextType>;
   TransactionsConnection?: GqlTransactionsConnectionResolvers<ContextType>;
   Upload?: GraphQLScalarType;
   User?: GqlUserResolvers<ContextType>;

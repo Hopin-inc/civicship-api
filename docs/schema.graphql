@@ -774,6 +774,7 @@ input NestedPlacesBulkUpdateInput {
 }
 
 type NftInstance {
+  community: Community
   createdAt: Datetime!
   description: String
   id: ID!
@@ -1396,6 +1397,15 @@ type Query {
   utility(id: ID!, permission: CheckCommunityPermissionInput!): Utility
   vcIssuanceRequest(id: ID!): VcIssuanceRequest
   vcIssuanceRequests(cursor: String, filter: VcIssuanceRequestFilterInput, first: Int, sort: VcIssuanceRequestSortInput): VcIssuanceRequestsConnection!
+
+  """
+  Verify transactions against the Cardano blockchain.
+  - Retrieves Merkle proofs for specified transactions
+  - Recalculates root hash using proofs
+  - Compares with Cardano blockchain metadata
+  - Returns data integrity verification results
+  """
+  verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]
   wallet(id: ID!): Wallet
   wallets(cursor: String, filter: WalletFilterInput, first: Int, sort: WalletSortInput): WalletsConnection!
 }
@@ -1863,6 +1873,14 @@ input TransactionSortInput {
   createdAt: SortDirection
 }
 
+type TransactionVerificationResult {
+  label: Int!
+  rootHash: String!
+  status: VerificationStatus!
+  transactionHash: String!
+  txId: ID!
+}
+
 type TransactionsConnection {
   edges: [TransactionEdge]
   pageInfo: PageInfo!
@@ -2104,6 +2122,13 @@ enum VcIssuanceStatus {
   FAILED
   PENDING
   PROCESSING
+}
+
+enum VerificationStatus {
+  ERROR
+  NOT_VERIFIED
+  PENDING
+  VERIFIED
 }
 
 type Wallet {

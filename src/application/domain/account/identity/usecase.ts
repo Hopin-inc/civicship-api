@@ -282,6 +282,93 @@ export default class IdentityUseCase {
     });
 
     if (!existingUser) {
+      // Check if user exists via LINE identity (ctx.uid) even though no phone identity exists
+      // This handles the case where a user has LINE Identity but no Phone Identity and no Membership
+      if (ctx.uid && ctx.platform === IdentityPlatform.Line) {
+        const userByLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+
+        if (userByLineIdentity) {
+          logger.debug("[checkPhoneUser] User found via LINE identity, checking membership", {
+            phoneUid,
+            lineUid: ctx.uid,
+            userId: userByLineIdentity.id,
+            communityId: ctx.communityId,
+          });
+
+          // Check if user has membership in this community
+          const existingMembershipForLineUser = await this.membershipService.findMembership(
+            ctx,
+            userByLineIdentity.id,
+            ctx.communityId,
+          );
+
+          if (existingMembershipForLineUser) {
+            // User has LINE Identity and Membership, just needs Phone Identity linked
+            logger.debug("[checkPhoneUser] User has LINE identity and membership, linking phone identity", {
+              phoneUid,
+              lineUid: ctx.uid,
+              userId: userByLineIdentity.id,
+              communityId: ctx.communityId,
+            });
+
+            await ctx.issuer.public(ctx, async (tx) => {
+              await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
+            });
+
+            return {
+              status: GqlPhoneUserStatus.ExistingSameCommunity,
+              user: userByLineIdentity,
+              membership: existingMembershipForLineUser,
+            };
+          } else {
+            // User has LINE Identity but no Membership - create membership and link phone identity
+            logger.debug("[checkPhoneUser] User has LINE identity but no membership, creating membership and linking phone", {
+              phoneUid,
+              lineUid: ctx.uid,
+              userId: userByLineIdentity.id,
+              communityId: ctx.communityId,
+            });
+
+            const membership = await ctx.issuer.public(ctx, async (tx) => {
+              // Link phone identity to existing user
+              await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
+
+              // Create membership
+              const newMembership = await this.membershipService.joinIfNeeded(
+                ctx,
+                userByLineIdentity.id,
+                ctx.communityId,
+                tx,
+              );
+
+              // Create wallet
+              await this.walletService.createMemberWalletIfNeeded(
+                ctx,
+                userByLineIdentity.id,
+                ctx.communityId,
+                tx,
+              );
+
+              return newMembership;
+            });
+
+            logger.debug("[checkPhoneUser] Created membership for LINE user without membership", {
+              phoneUid,
+              lineUid: ctx.uid,
+              userId: userByLineIdentity.id,
+              communityId: ctx.communityId,
+              membershipUserId: membership?.userId,
+            });
+
+            return {
+              status: GqlPhoneUserStatus.ExistingDifferentCommunity,
+              user: userByLineIdentity,
+              membership: membership,
+            };
+          }
+        }
+      }
+
       logger.debug("[checkPhoneUser] Returning NEW_USER status", {
         phoneUid,
         communityId: ctx.communityId,
@@ -309,6 +396,66 @@ export default class IdentityUseCase {
     });
 
     if (existingMembership) {
+      // Check if LINE identity exists for this user in this community, and create if not
+      // This handles the case where a user has a membership but logged in via a different LINE channel
+      if (ctx.uid && ctx.platform === IdentityPlatform.Line) {
+        // Perform identity check and creation within the same transaction to avoid race conditions
+        // This follows the same pattern as EXISTING_DIFFERENT_COMMUNITY case
+        await ctx.issuer.public(ctx, async (tx) => {
+          const existingLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid!);
+
+          logger.debug("[checkPhoneUser] Checking LINE identity for EXISTING_SAME_COMMUNITY", {
+            phoneUid,
+            currentUid: ctx.uid,
+            currentPlatform: ctx.platform,
+            existingLineIdentityUserId: existingLineIdentity?.id,
+            targetUserId: existingUser.id,
+            communityId: ctx.communityId,
+          });
+
+          if (existingLineIdentity) {
+            if (existingLineIdentity.id !== existingUser.id) {
+              logger.error("[checkPhoneUser] LINE identity already linked to another user", {
+                uid: ctx.uid,
+                platform: ctx.platform,
+                existingUserId: existingLineIdentity.id,
+                attemptedUserId: existingUser.id,
+                communityId: ctx.communityId,
+              });
+              throw new Error("This LINE account is already linked to another user");
+            }
+            logger.debug("[checkPhoneUser] LINE identity already exists for this user, skipping creation", {
+              uid: ctx.uid,
+              platform: ctx.platform,
+              userId: existingUser.id,
+              communityId: ctx.communityId,
+            });
+          } else {
+            logger.debug("[checkPhoneUser] Creating new LINE identity for existing membership user", {
+              phoneUid,
+              currentUid: ctx.uid,
+              currentPlatform: ctx.platform,
+              userId: existingUser.id,
+              communityId: ctx.communityId,
+            });
+            await this.identityService.addIdentityToUser(
+              ctx,
+              existingUser.id,
+              ctx.uid!,
+              ctx.platform!,
+              ctx.communityId,
+              tx,
+            );
+            logger.debug("[checkPhoneUser] Successfully created LINE identity for existing membership user", {
+              uid: ctx.uid,
+              platform: ctx.platform,
+              userId: existingUser.id,
+              communityId: ctx.communityId,
+            });
+          }
+        });
+      }
+
       logger.debug("[checkPhoneUser] Returning EXISTING_SAME_COMMUNITY status", {
         phoneUid,
         userId: existingUser.id,
