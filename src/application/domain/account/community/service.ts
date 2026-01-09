@@ -99,4 +99,9 @@ export default class CommunityService {
 
     return await this.repository.update(ctx, id, updateInput, tx);
   }
+
+  async getCommunityName(ctx: IContext, communityId: string): Promise<string> {
+    const name = await this.repository.findNameById(ctx, communityId);
+    return name ?? "コミュニティ";
+  }
 }

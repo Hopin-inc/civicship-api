@@ -30,4 +30,6 @@ export default interface ICommunityRepository {
   ): Promise<PrismaCommunityDetail>;
 
   delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaCommunityDetail>;
+
+  findNameById(ctx: IContext, id: string): Promise<string | null>;
 }

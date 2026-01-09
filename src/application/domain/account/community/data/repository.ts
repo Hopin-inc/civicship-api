@@ -63,4 +63,14 @@ export default class CommunityRepository implements ICommunityRepository {
       select: communitySelectDetail,
     });
   }
+
+  async findNameById(ctx: IContext, id: string): Promise<string | null> {
+    const community = await ctx.issuer.public(ctx, (tx) =>
+      tx.community.findUnique({
+        where: { id },
+        select: { name: true },
+      }),
+    );
+    return community?.name ?? null;
+  }
 }

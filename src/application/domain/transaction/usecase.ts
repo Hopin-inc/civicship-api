@@ -5,6 +5,7 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
+import CommunityService from "@/application/domain/account/community/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import logger from "@/infrastructure/logging";
@@ -35,6 +36,7 @@ export default class TransactionUseCase {
     @inject("NotificationService") private readonly notificationService: NotificationService,
     @inject("SignupBonusConfigService")
     private readonly signupBonusConfigService: SignupBonusConfigService,
+    @inject("CommunityService") private readonly communityService: CommunityService,
   ) {}
 
   async visitorBrowseTransactions(
@@ -130,15 +132,8 @@ export default class TransactionUseCase {
       );
     });
 
-    const community = await ctx.issuer.internal(async (tx) => {
-      return tx.community.findUnique({
-        where: { id: permission.communityId },
-        select: { name: true },
-      });
-    });
+    const communityName = await this.communityService.getCommunityName(ctx, permission.communityId);
 
-    const communityName = community?.name ?? "コミュニティ";
-    
     await ctx.issuer.internal(async (tx) => {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
@@ -227,21 +222,7 @@ export default class TransactionUseCase {
     ctx: IContext,
   ): Promise<GqlTransaction> {
     // STEP1: Load grant to get userId and communityId
-    const grant = await ctx.issuer.public(ctx, (tx) =>
-      tx.incentiveGrant.findUnique({
-        where: { id: grantId },
-        select: {
-          id: true,
-          userId: true,
-          communityId: true,
-          status: true,
-        },
-      }),
-    );
-
-    if (!grant) {
-      throw new NotFoundError("IncentiveGrant not found", { grantId });
-    }
+    const grant = await this.transactionService.getGrantInfoForRetry(ctx, grantId);
 
     const { userId, communityId } = grant;
 

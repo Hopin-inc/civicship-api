@@ -88,6 +88,15 @@ export interface ITransactionService {
       message?: string;
     },
   ): Promise<Extract<import("./type").GrantSignupBonusResult, { status: "COMPLETED" | "FAILED" }>>;
+
+  getGrantInfoForRetry(
+    ctx: IContext,
+    grantId: string,
+  ): Promise<{
+    userId: string;
+    communityId: string;
+    status: string;
+  }>;
 }
 
 export interface ITransactionRepository {
