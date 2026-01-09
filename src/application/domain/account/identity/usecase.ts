@@ -213,6 +213,93 @@ export default class IdentityUseCase {
     });
 
     if (!existingUser) {
+      // Check if user exists via LINE identity (ctx.uid) even though no phone identity exists
+      // This handles the case where a user has LINE Identity but no Phone Identity and no Membership
+      if (ctx.uid && ctx.platform === IdentityPlatform.Line) {
+        const userByLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+
+        if (userByLineIdentity) {
+          logger.debug("[checkPhoneUser] User found via LINE identity, checking membership", {
+            phoneUid,
+            lineUid: ctx.uid,
+            userId: userByLineIdentity.id,
+            communityId: ctx.communityId,
+          });
+
+          // Check if user has membership in this community
+          const existingMembershipForLineUser = await this.membershipService.findMembership(
+            ctx,
+            userByLineIdentity.id,
+            ctx.communityId,
+          );
+
+          if (existingMembershipForLineUser) {
+            // User has LINE Identity and Membership, just needs Phone Identity linked
+            logger.debug("[checkPhoneUser] User has LINE identity and membership, linking phone identity", {
+              phoneUid,
+              lineUid: ctx.uid,
+              userId: userByLineIdentity.id,
+              communityId: ctx.communityId,
+            });
+
+            await ctx.issuer.public(ctx, async (tx) => {
+              await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
+            });
+
+            return {
+              status: GqlPhoneUserStatus.ExistingSameCommunity,
+              user: userByLineIdentity,
+              membership: existingMembershipForLineUser,
+            };
+          } else {
+            // User has LINE Identity but no Membership - create membership and link phone identity
+            logger.debug("[checkPhoneUser] User has LINE identity but no membership, creating membership and linking phone", {
+              phoneUid,
+              lineUid: ctx.uid,
+              userId: userByLineIdentity.id,
+              communityId: ctx.communityId,
+            });
+
+            const membership = await ctx.issuer.public(ctx, async (tx) => {
+              // Link phone identity to existing user
+              await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
+
+              // Create membership
+              const newMembership = await this.membershipService.joinIfNeeded(
+                ctx,
+                userByLineIdentity.id,
+                ctx.communityId,
+                tx,
+              );
+
+              // Create wallet
+              await this.walletService.createMemberWalletIfNeeded(
+                ctx,
+                userByLineIdentity.id,
+                ctx.communityId,
+                tx,
+              );
+
+              return newMembership;
+            });
+
+            logger.debug("[checkPhoneUser] Created membership for LINE user without membership", {
+              phoneUid,
+              lineUid: ctx.uid,
+              userId: userByLineIdentity.id,
+              communityId: ctx.communityId,
+              membershipUserId: membership?.userId,
+            });
+
+            return {
+              status: GqlPhoneUserStatus.ExistingDifferentCommunity,
+              user: userByLineIdentity,
+              membership: membership,
+            };
+          }
+        }
+      }
+
       logger.debug("[checkPhoneUser] Returning NEW_USER status", {
         phoneUid,
         communityId: ctx.communityId,
