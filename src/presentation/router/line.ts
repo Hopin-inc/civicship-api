@@ -4,8 +4,14 @@ import logger from "@/infrastructure/logging";
 import { createLineClientAndMiddleware } from "@/infrastructure/libs/line";
 import { messagingApi, WebhookEvent } from "@line/bot-sdk";
 import { ReplyMessageResponse } from "@line/bot-sdk/dist/messaging-api/model/replyMessageResponse";
+import rateLimit from "express-rate-limit";
 
 const router = express();
+
+const liffLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
 
 router.post("/callback", async (req, res) => {
   try {
@@ -34,7 +40,7 @@ router.post("/callback", async (req, res) => {
   }
 });
 
-router.post("/liff-login", async (req, res) => {
+router.post("/liff-login", liffLoginLimiter, async (req, res) => {
   try {
     const { accessToken } = req.body;
     const communityId = req.headers["x-community-id"] as string;
