@@ -7,6 +7,7 @@ import { IWalletRepository } from "@/application/domain/account/wallet/data/inte
 import { inject, injectable } from "tsyringe";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 import TransactionService from "@/application/domain/transaction/service";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class WalletService {
@@ -130,5 +131,56 @@ export default class WalletService {
       });
       return true;
     } else return false;
+  }
+
+  /**
+   * サインアップボーナス付与のためのウォレット検証
+   * - メンバーウォレット存在確認
+   * - コミュニティウォレット残高確認
+   */
+  async validateForSignupBonus(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+    requiredAmount: number,
+  ): Promise<{
+    valid: boolean;
+    wallet?: PrismaWallet;
+    reason?: 'wallet_not_found' | 'insufficient_balance';
+    currentBalance?: string;
+  }> {
+    // メンバーウォレット確認
+    const wallet = await this.findMemberWallet(ctx, userId, communityId);
+    if (!wallet) {
+      return { valid: false, reason: 'wallet_not_found' };
+    }
+
+    // コミュニティウォレット残高確認
+    try {
+      const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
+      const { currentPoint } = communityWallet.currentPointView || {};
+
+      if (currentPoint == null) {
+        return { valid: true, wallet }; // 不明時は続行
+      }
+
+      if (currentPoint < BigInt(requiredAmount)) {
+        return {
+          valid: false,
+          wallet,
+          reason: 'insufficient_balance',
+          currentBalance: currentPoint.toString(),
+        };
+      }
+
+      return { valid: true, wallet };
+    } catch (error) {
+      logger.warn("Failed to check community wallet balance", {
+        communityId,
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { valid: true, wallet }; // エラー時は続行
+    }
   }
 }

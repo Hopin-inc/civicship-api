@@ -13,6 +13,7 @@ import { GqlQueryTransactionsArgs } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import { IIncentiveGrantService } from "./incentiveGrant/interface";
+import logger from "@/infrastructure/logging";
 
 /**
  * Source ID for signup bonus grants.
@@ -179,10 +180,9 @@ export default class TransactionService implements ITransactionService {
 
   /**
    * Grant signup bonus with complete transaction separation for safety.
+   * Executes the grant and logs the result.
    *
-   * Delegates to IncentiveGrantService.
-   *
-   * @returns Result object (COMPLETED | SKIPPED_ALREADY_COMPLETED | SKIPPED_PENDING | FAILED)
+   * Delegates to IncentiveGrantService and handles result logging.
    */
   async grantSignupBonus(
     ctx: IContext,
@@ -193,8 +193,14 @@ export default class TransactionService implements ITransactionService {
       bonusPoint: number;
       message?: string;
     },
-  ): Promise<GrantSignupBonusResult> {
-    return this.incentiveGrantService.grantSignupBonus(ctx, args);
+  ): Promise<void> {
+    const { userId, communityId, bonusPoint } = args;
+
+    // ポイント付与実行
+    const result = await this.incentiveGrantService.grantSignupBonus(ctx, args);
+
+    // 結果ログ
+    this.logSignupBonusResult(result, userId, communityId, bonusPoint);
   }
 
   /**
@@ -258,5 +264,58 @@ export default class TransactionService implements ITransactionService {
     status: string;
   }> {
     return this.incentiveGrantService.getGrantInfoForRetry(ctx, grantId);
+  }
+
+  /**
+   * Log signup bonus grant result for monitoring and debugging.
+   */
+  private logSignupBonusResult(
+    result: GrantSignupBonusResult,
+    userId: string,
+    communityId: string,
+    bonusPoint: number,
+  ): void {
+    switch (result.status) {
+      case "COMPLETED":
+        logger.info("Signup bonus granted successfully", {
+          userId,
+          communityId,
+          bonusPoint,
+          transactionId: result.transaction.id,
+          grantId: result.grant.id,
+        });
+        break;
+
+      case "SKIPPED_ALREADY_COMPLETED":
+        logger.info("Signup bonus already granted (skipped)", {
+          userId,
+          communityId,
+          bonusPoint,
+          existingTransactionId: result.existingTransaction.id,
+          grantId: result.grant.id,
+        });
+        break;
+
+      case "SKIPPED_PENDING":
+        logger.warn("Signup bonus grant already in progress (skipped)", {
+          userId,
+          communityId,
+          bonusPoint,
+          grantId: result.grant.id,
+          attemptCount: result.grant.attemptCount,
+        });
+        break;
+
+      case "FAILED":
+        logger.error("Signup bonus grant failed", {
+          userId,
+          communityId,
+          bonusPoint,
+          grantId: result.grant.id,
+          attemptCount: result.grant.attemptCount,
+          errorMessage: result.error.message,
+        });
+        break;
+    }
   }
 }

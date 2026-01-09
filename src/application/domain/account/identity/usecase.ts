@@ -173,94 +173,49 @@ export default class IdentityUseCase {
     communityId: string,
   ): Promise<void> {
     try {
-      // Check if signup bonus is enabled for this community
+      // 1. 設定確認
       const config = await this.signupBonusConfigService.get(ctx, communityId);
-
       if (!config || !config.isEnabled) {
         logger.debug("Signup bonus not enabled for community", { communityId });
         return;
       }
 
-      // Get user's wallet
-      const wallet = await this.walletService.findMemberWallet(ctx, userId, communityId);
-      if (!wallet) {
-        logger.warn("Wallet not found for signup bonus grant (wallet creation may have failed)", {
-          userId,
-          communityId,
-        });
+      // 2. ウォレット検証（WalletServiceに委譲）
+      const validation = await this.walletService.validateForSignupBonus(
+        ctx,
+        userId,
+        communityId,
+        config.bonusPoint,
+      );
+
+      if (!validation.valid) {
+        if (validation.reason === "wallet_not_found") {
+          logger.warn("Wallet not found for signup bonus (wallet creation may have failed)", {
+            userId,
+            communityId,
+          });
+        } else if (validation.reason === "insufficient_balance") {
+          logger.error("Insufficient balance in community wallet (skipping grant)", {
+            userId,
+            communityId,
+            availableBalance: validation.currentBalance,
+            requiredBalance: config.bonusPoint,
+          });
+        }
         return;
       }
 
-      // Check if community wallet has enough balance
-      try {
-        const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
-        const { currentPoint } = communityWallet.currentPointView || {};
-
-        if (currentPoint == null) {
-          logger.warn("Current point is not available for community wallet", {
-            communityId,
-            userId,
-          });
-        } else if (currentPoint < BigInt(config.bonusPoint)) {
-          logger.error("Insufficient balance in community wallet for signup bonus (skipping grant)", {
-            userId,
-            communityId,
-            availableBalance: currentPoint.toString(),
-            requiredBalance: config.bonusPoint,
-          });
-
-          // Skip the grant attempt due to insufficient balance
-          return;
-        }
-      } catch (error) {
-        logger.warn("Failed to check community wallet balance", {
-          userId,
-          communityId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        // Continue with the grant attempt even if balance check fails
-      }
-
-      // Grant signup bonus
-      const result = await this.transactionService.grantSignupBonus(ctx, {
+      // 3. ポイント付与（TransactionServiceに委譲）
+      await this.transactionService.grantSignupBonus(ctx, {
         userId,
         communityId,
-        toWalletId: wallet.id,
+        toWalletId: validation.wallet!.id,
         bonusPoint: config.bonusPoint,
         message: config.message ?? undefined,
       });
-
-      if (result.status === "COMPLETED") {
-        logger.info("Signup bonus granted successfully", {
-          userId,
-          communityId,
-          bonusPoint: config.bonusPoint,
-          transactionId: result.transaction.id,
-        });
-      } else if (result.status === "SKIPPED_ALREADY_COMPLETED") {
-        logger.info("Signup bonus already granted (duplicate signup attempt)", {
-          userId,
-          communityId,
-          transactionId: result.transaction.id,
-        });
-      } else if (result.status === "SKIPPED_PENDING") {
-        logger.warn("Signup bonus grant is already pending (concurrent signup)", {
-          userId,
-          communityId,
-          grantId: result.grantId,
-        });
-      } else if (result.status === "FAILED") {
-        logger.error("Signup bonus grant failed (recorded as FAILED grant for manual retry)", {
-          userId,
-          communityId,
-          grantId: result.grantId,
-          failureCode: result.failureCode,
-          lastError: result.lastError,
-        });
-      }
     } catch (error) {
       // Best-effort: log error but don't fail user signup
-      logger.error("Unexpected error during signup bonus grant (握りつぶす)", {
+      logger.error("Unexpected error during signup bonus grant", {
         userId,
         communityId,
         error: error instanceof Error ? error.message : String(error),
