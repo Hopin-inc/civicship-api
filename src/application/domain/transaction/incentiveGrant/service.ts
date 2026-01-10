@@ -23,8 +23,6 @@ import IncentiveGrantConverter from "./data/converter";
 import { determineFailureCode } from "../util/failureCodeResolver";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
-import WalletService from "@/application/domain/account/wallet/service";
-import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import { GqlSignupBonusFilterInput, GqlSignupBonusSortInput } from "@/types/graphql";
 
 const SIGNUP_SOURCE_ID = "default";
@@ -38,9 +36,6 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     @inject("TransactionConverter") private readonly transactionConverter: TransactionConverter,
     @inject("IncentiveGrantConverter")
     private readonly incentiveGrantConverter: IncentiveGrantConverter,
-    @inject("WalletService") private readonly walletService: WalletService,
-    @inject("SignupBonusConfigService")
-    private readonly signupBonusConfigService: SignupBonusConfigService,
   ) {}
 
   async grantSignupBonus(
@@ -297,58 +292,34 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
 
   /**
    * Retry a failed signup bonus grant
+   * Delegates to retrySignupBonusGrant which already has all the logic
    */
   async retrySignupBonus(
     ctx: IContext,
-    grantId: string,
+    args: {
+      grantId: string;
+      toWalletId: string;
+      bonusPoint: number;
+      message?: string;
+    },
   ): Promise<{
     success: boolean;
     transaction?: PrismaTransactionDetail;
     error?: string;
   }> {
-    const grant = await ctx.issuer.public(ctx, (tx) =>
-      this.incentiveGrantRepository.findById(ctx, tx, grantId),
-    );
-
-    if (!grant) {
-      return { success: false, error: "Grant not found" };
-    }
-
-    if (grant.status !== IncentiveGrantStatus.FAILED) {
-      return {
-        success: false,
-        error: `Grant is not in FAILED status (current: ${grant.status})`,
-      };
-    }
-
-    const wallet = await this.walletService.findMemberWallet(ctx, grant.userId, grant.communityId);
-    if (!wallet) {
-      return { success: false, error: "Wallet not found for user" };
-    }
-
-    const config = await this.signupBonusConfigService.get(ctx, grant.communityId);
-    if (!config || !config.isEnabled) {
-      return { success: false, error: "Signup bonus is not enabled for this community" };
-    }
+    const { grantId } = args;
 
     try {
-      const result = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-        await this.incentiveGrantRepository.resetToPending(ctx, tx, grantId);
-
-        return await this.grantSignupBonus(ctx, {
-          userId: grant.userId,
-          communityId: grant.communityId,
-          toWalletId: wallet.id,
-          bonusPoint: config.bonusPoint,
-          message: config.message ?? undefined,
-        });
-      });
+      const result = await this.retrySignupBonusGrant(ctx, args);
 
       if (result.status === "COMPLETED") {
         return { success: true, transaction: result.transaction };
       }
 
-      return { success: false, error: `Grant ended in ${result.status} status` };
+      return {
+        success: false,
+        error: `Grant ended in ${result.status} status`,
+      };
     } catch (error) {
       logger.error("Failed to retry signup bonus", {
         grantId,
