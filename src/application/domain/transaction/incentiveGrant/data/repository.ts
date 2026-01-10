@@ -159,7 +159,7 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
     where: Prisma.IncentiveGrantWhereInput,
     orderBy: Prisma.IncentiveGrantOrderByWithRelationInput
   ): Promise<PrismaIncentiveGrantDetail[]> {
-    return ctx.issuer.internal(ctx, (tx) =>
+    return ctx.issuer.internal(async (tx) =>
       tx.incentiveGrant.findMany({
         where,
         select: incentiveGrantSelectDetail,

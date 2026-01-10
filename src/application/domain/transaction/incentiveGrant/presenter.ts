@@ -6,6 +6,6 @@ export default class IncentiveGrantPresenter {
     return {
       __typename: "SignupBonus",
       ...r,
-    };
+    } as GqlSignupBonus;
   }
 }

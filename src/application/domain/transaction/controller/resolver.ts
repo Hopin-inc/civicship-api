@@ -7,12 +7,12 @@ import {
   GqlMutationTransactionDonateSelfPointArgs,
   GqlMutationRetrySignupBonusGrantArgs,
   GqlMutationSignupBonusRetryArgs,
-  GqlSignupBonus,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
+import { PrismaIncentiveGrantDetail } from "@/application/domain/transaction/incentiveGrant/data/type";
 
 @injectable()
 export default class TransactionResolver {
@@ -87,11 +87,11 @@ export default class TransactionResolver {
   };
 
   SignupBonus = {
-    user: (parent: GqlSignupBonus, _: unknown, ctx: IContext) =>
+    user: (parent: PrismaIncentiveGrantDetail, _: unknown, ctx: IContext) =>
       ctx.loaders.user.load(parent.userId),
-    community: (parent: GqlSignupBonus, _: unknown, ctx: IContext) =>
+    community: (parent: PrismaIncentiveGrantDetail, _: unknown, ctx: IContext) =>
       ctx.loaders.community.load(parent.communityId),
-    transaction: (parent: GqlSignupBonus, _: unknown, ctx: IContext) =>
+    transaction: (parent: PrismaIncentiveGrantDetail, _: unknown, ctx: IContext) =>
       parent.transactionId ? ctx.loaders.transaction.load(parent.transactionId) : null,
   };
 }
