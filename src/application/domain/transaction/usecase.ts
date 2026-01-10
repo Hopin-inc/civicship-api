@@ -11,11 +11,15 @@ import { ITransactionService } from "@/application/domain/transaction/data/inter
 import logger from "@/infrastructure/logging";
 import {
   GqlMutationRetrySignupBonusGrantArgs,
+  GqlMutationSignupBonusRetryArgs,
   GqlMutationTransactionDonateSelfPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
+  GqlQuerySignupBonusesArgs,
   GqlQueryTransactionArgs,
   GqlQueryTransactionsArgs,
+  GqlSignupBonus,
+  GqlSignupBonusRetryPayload,
   GqlTransaction,
   GqlTransactionDonateSelfPointPayload,
   GqlTransactionGrantCommunityPointPayload,
@@ -25,6 +29,8 @@ import {
 import { inject, injectable } from "tsyringe";
 import { NotFoundError } from "@/errors/graphql";
 import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
+import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import IncentiveGrantPresenter from "@/application/domain/transaction/incentiveGrant/presenter";
 
 @injectable()
 export default class TransactionUseCase {
@@ -37,6 +43,8 @@ export default class TransactionUseCase {
     @inject("SignupBonusConfigService")
     private readonly signupBonusConfigService: SignupBonusConfigService,
     @inject("CommunityService") private readonly communityService: CommunityService,
+    @inject("IncentiveGrantService")
+    private readonly incentiveGrantService: IncentiveGrantService,
   ) {}
 
   async visitorBrowseTransactions(
@@ -263,5 +271,32 @@ export default class TransactionUseCase {
     });
 
     return TransactionPresenter.get(result.transaction);
+  }
+
+  async managerGetSignupBonuses(
+    { communityId, filter, sort }: GqlQuerySignupBonusesArgs,
+    ctx: IContext,
+  ): Promise<GqlSignupBonus[]> {
+    const grants = await this.incentiveGrantService.getSignupBonuses(
+      ctx,
+      communityId,
+      filter,
+      sort,
+    );
+    return grants.map(IncentiveGrantPresenter.toSignupBonus);
+  }
+
+  async managerRetrySignupBonus(
+    { grantId }: GqlMutationSignupBonusRetryArgs,
+    ctx: IContext,
+  ): Promise<GqlSignupBonusRetryPayload> {
+    const result = await this.incentiveGrantService.retrySignupBonus(ctx, grantId);
+
+    return {
+      __typename: "SignupBonusRetryPayload",
+      success: result.success,
+      transaction: result.transaction || null,
+      error: result.error || null,
+    };
   }
 }

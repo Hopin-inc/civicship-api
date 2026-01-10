@@ -6,6 +6,7 @@ import TransactionConverter from "@/application/domain/transaction/data/converte
 import ICommunityRepository from "@/application/domain/account/community/data/repository";
 import TransactionService from "@/application/domain/transaction/service";
 import IncentiveGrantRepository from "@/application/domain/transaction/incentiveGrant/data/repository";
+import IncentiveGrantConverter from "@/application/domain/transaction/incentiveGrant/data/converter";
 import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
 import MembershipService from "@/application/domain/account/membership/service";
 import MembershipUseCase from "@/application/domain/account/membership/usecase";
@@ -295,6 +296,7 @@ export function registerProductionDependencies() {
 
   // IncentiveGrant
   container.register("IncentiveGrantRepository", { useClass: IncentiveGrantRepository });
+  container.register("IncentiveGrantConverter", { useClass: IncentiveGrantConverter });
   container.register("IncentiveGrantService", { useClass: IncentiveGrantService });
 
   // 🔐 Transaction Verification

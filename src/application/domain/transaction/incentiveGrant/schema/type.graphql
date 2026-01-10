@@ -1,0 +1,132 @@
+"""
+Signup bonus grant record
+"""
+type SignupBonus {
+  """Grant ID"""
+  id: ID!
+
+  """User who received/should receive the bonus"""
+  user: User!
+
+  """Community"""
+  community: Community!
+
+  """Grant status"""
+  status: IncentiveGrantStatus!
+
+  """Failure reason code (if failed)"""
+  failureCode: IncentiveGrantFailureCode
+
+  """Last error message (if failed)"""
+  lastError: String
+
+  """Number of retry attempts"""
+  attemptCount: Int!
+
+  """Last attempt timestamp"""
+  lastAttemptedAt: Datetime!
+
+  """Grant creation timestamp"""
+  createdAt: Datetime!
+
+  """Granted transaction (if completed)"""
+  transaction: Transaction
+}
+
+"""
+Grant status
+"""
+enum IncentiveGrantStatus {
+  """Pending execution"""
+  PENDING
+
+  """Successfully completed"""
+  COMPLETED
+
+  """Failed"""
+  FAILED
+}
+
+"""
+Failure code for incentive grants
+"""
+enum IncentiveGrantFailureCode {
+  """Insufficient balance in community wallet"""
+  INSUFFICIENT_BALANCE
+
+  """Wallet not found"""
+  WALLET_NOT_FOUND
+
+  """Transaction execution failed"""
+  TRANSACTION_FAILED
+
+  """Unknown error"""
+  UNKNOWN
+}
+
+"""
+Filter input for signup bonuses
+"""
+input SignupBonusFilterInput {
+  """Filter by grant status"""
+  status: IncentiveGrantStatus
+
+  """Filter by user ID"""
+  userId: ID
+
+  """Filter by date range (from)"""
+  dateFrom: Datetime
+
+  """Filter by date range (to)"""
+  dateTo: Datetime
+}
+
+"""
+Sort input for signup bonuses
+"""
+input SignupBonusSortInput {
+  """Sort field"""
+  field: SignupBonusSortField!
+
+  """Sort order"""
+  order: SortOrder!
+}
+
+"""
+Sort fields for signup bonuses
+"""
+enum SignupBonusSortField {
+  """Sort by creation date"""
+  CREATED_AT
+
+  """Sort by last attempt date"""
+  LAST_ATTEMPTED_AT
+
+  """Sort by attempt count"""
+  ATTEMPT_COUNT
+}
+
+"""
+Sort order
+"""
+enum SortOrder {
+  """Ascending order"""
+  ASC
+
+  """Descending order"""
+  DESC
+}
+
+"""
+Payload for signup bonus retry mutation
+"""
+type SignupBonusRetryPayload {
+  """Whether retry was successful"""
+  success: Boolean!
+
+  """Granted transaction (if successful)"""
+  transaction: Transaction
+
+  """Error message (if failed)"""
+  error: String
+}

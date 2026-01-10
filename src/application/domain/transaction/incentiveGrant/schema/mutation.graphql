@@ -1,0 +1,6 @@
+extend type Mutation {
+  """
+  Retry a failed signup bonus grant (OWNER/MANAGER only).
+  """
+  signupBonusRetry(grantId: ID!): SignupBonusRetryPayload!
+}

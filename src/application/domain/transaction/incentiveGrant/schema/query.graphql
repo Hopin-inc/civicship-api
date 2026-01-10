@@ -1,0 +1,11 @@
+extend type Query {
+  """
+  Get signup bonus grants for a community (OWNER/MANAGER only).
+  Supports filtering and sorting.
+  """
+  signupBonuses(
+    communityId: ID!
+    filter: SignupBonusFilterInput
+    sort: SignupBonusSortInput
+  ): [SignupBonus!]!
+}

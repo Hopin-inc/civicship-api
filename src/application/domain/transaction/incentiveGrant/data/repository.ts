@@ -3,7 +3,12 @@ import { IContext } from "@/types/server";
 import { IIncentiveGrantRepository } from "./interface";
 import { injectable } from "tsyringe";
 import { transactionSelectDetail } from "@/application/domain/transaction/data/type";
-import { PrismaIncentiveGrantWithTransaction, StalePendingGrantResult } from "./type";
+import {
+  incentiveGrantSelectDetail,
+  PrismaIncentiveGrantDetail,
+  PrismaIncentiveGrantWithTransaction,
+  StalePendingGrantResult,
+} from "./type";
 
 @injectable()
 export default class IncentiveGrantRepository implements IIncentiveGrantRepository {
@@ -147,5 +152,19 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
         lastAttemptedAt: "asc", // oldest first
       },
     });
+  }
+
+  async find(
+    ctx: IContext,
+    where: Prisma.IncentiveGrantWhereInput,
+    orderBy: Prisma.IncentiveGrantOrderByWithRelationInput
+  ): Promise<PrismaIncentiveGrantDetail[]> {
+    return ctx.issuer.internal(ctx, (tx) =>
+      tx.incentiveGrant.findMany({
+        where,
+        select: incentiveGrantSelectDetail,
+        orderBy,
+      }),
+    );
   }
 }

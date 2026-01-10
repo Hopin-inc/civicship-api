@@ -1,10 +1,13 @@
 import {
   GqlQueryTransactionsArgs,
   GqlQueryTransactionArgs,
+  GqlQuerySignupBonusesArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionDonateSelfPointArgs,
   GqlMutationRetrySignupBonusGrantArgs,
+  GqlMutationSignupBonusRetryArgs,
+  GqlSignupBonus,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
@@ -21,6 +24,9 @@ export default class TransactionResolver {
     },
     transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) => {
       return this.useCase.visitorViewTransaction(args, ctx);
+    },
+    signupBonuses: async (_: unknown, args: GqlQuerySignupBonusesArgs, ctx: IContext) => {
+      return this.useCase.managerGetSignupBonuses(args, ctx);
     },
   };
 
@@ -53,6 +59,13 @@ export default class TransactionResolver {
     ) => {
       return this.useCase.managerRetrySignupBonusGrant(args, ctx);
     },
+    signupBonusRetry: async (
+      _: unknown,
+      args: GqlMutationSignupBonusRetryArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.managerRetrySignupBonus(args, ctx);
+    },
   };
 
   Transaction = {
@@ -71,5 +84,14 @@ export default class TransactionResolver {
     ticketStatusHistories: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.ticketStatusHistoriesByTransaction.load(parent.id);
     },
+  };
+
+  SignupBonus = {
+    user: (parent: GqlSignupBonus, _: unknown, ctx: IContext) =>
+      ctx.loaders.user.load(parent.userId),
+    community: (parent: GqlSignupBonus, _: unknown, ctx: IContext) =>
+      ctx.loaders.community.load(parent.communityId),
+    transaction: (parent: GqlSignupBonus, _: unknown, ctx: IContext) =>
+      parent.transactionId ? ctx.loaders.transaction.load(parent.transactionId) : null,
   };
 }

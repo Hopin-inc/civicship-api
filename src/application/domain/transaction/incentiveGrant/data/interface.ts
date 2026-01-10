@@ -1,6 +1,10 @@
 import { IncentiveGrantFailureCode, IncentiveGrantType, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaIncentiveGrantWithTransaction, StalePendingGrantResult } from "./type";
+import {
+  PrismaIncentiveGrantDetail,
+  PrismaIncentiveGrantWithTransaction,
+  StalePendingGrantResult,
+} from "./type";
 
 /**
  * Repository interface for IncentiveGrant operations
@@ -81,4 +85,13 @@ export interface IIncentiveGrantRepository {
     tx: Prisma.TransactionClient,
     thresholdDate: Date
   ): Promise<StalePendingGrantResult[]>;
+
+  /**
+   * Find signup bonus grants
+   */
+  find(
+    ctx: IContext,
+    where: Prisma.IncentiveGrantWhereInput,
+    orderBy: Prisma.IncentiveGrantOrderByWithRelationInput
+  ): Promise<PrismaIncentiveGrantDetail[]>;
 }
