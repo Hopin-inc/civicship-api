@@ -3,7 +3,7 @@ import {
   GqlSignupBonusFilterInput,
   GqlSignupBonusSortInput,
   GqlSignupBonusSortField,
-  GqlSortOrder,
+  GqlSortDirection,
 } from "@/types/graphql";
 import { injectable } from "tsyringe";
 
@@ -15,7 +15,7 @@ export default class IncentiveGrantConverter {
   ): Prisma.IncentiveGrantWhereInput {
     const where: Prisma.IncentiveGrantWhereInput = {
       communityId,
-      type: IncentiveGrantType.SIGNUP_BONUS,
+      type: IncentiveGrantType.SIGNUP,
     };
 
     if (!filter) return where;
@@ -46,7 +46,8 @@ export default class IncentiveGrantConverter {
       return { createdAt: Prisma.SortOrder.desc };
     }
 
-    const order = sort.order === GqlSortOrder.Asc ? Prisma.SortOrder.asc : Prisma.SortOrder.desc;
+    const order =
+      sort.order === GqlSortDirection.Asc ? Prisma.SortOrder.asc : Prisma.SortOrder.desc;
 
     switch (sort.field) {
       case GqlSignupBonusSortField.CreatedAt:
