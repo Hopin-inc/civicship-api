@@ -34,34 +34,6 @@ type SignupBonus {
 }
 
 """
-Filter input for signup bonuses
-"""
-input SignupBonusFilterInput {
-  """Filter by grant status"""
-  status: IncentiveGrantStatus
-
-  """Filter by user ID"""
-  userId: ID
-
-  """Filter by date range (from)"""
-  dateFrom: Datetime
-
-  """Filter by date range (to)"""
-  dateTo: Datetime
-}
-
-"""
-Sort input for signup bonuses
-"""
-input SignupBonusSortInput {
-  """Sort field"""
-  field: SignupBonusSortField!
-
-  """Sort order"""
-  order: SortOrder!
-}
-
-"""
 Sort fields for signup bonuses
 """
 enum SignupBonusSortField {
@@ -73,29 +45,4 @@ enum SignupBonusSortField {
 
   """Sort by attempt count"""
   ATTEMPT_COUNT
-}
-
-"""
-Sort order
-"""
-enum SortOrder {
-  """Ascending order"""
-  ASC
-
-  """Descending order"""
-  DESC
-}
-
-"""
-Payload for signup bonus retry mutation
-"""
-type SignupBonusRetryPayload {
-  """Whether retry was successful"""
-  success: Boolean!
-
-  """Granted transaction (if successful)"""
-  transaction: Transaction
-
-  """Error message (if failed)"""
-  error: String
 }

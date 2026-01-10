@@ -7,5 +7,33 @@ extend type Query {
     communityId: ID!
     filter: SignupBonusFilterInput
     sort: SignupBonusSortInput
-  ): [SignupBonus!]!
+  ): [SignupBonus!] @authz(rules: [IsCommunityOwner])
+}
+
+"""
+Filter input for signup bonuses
+"""
+input SignupBonusFilterInput {
+  """Filter by grant status"""
+  status: IncentiveGrantStatus
+
+  """Filter by user ID"""
+  userId: ID
+
+  """Filter by date range (from)"""
+  dateFrom: Datetime
+
+  """Filter by date range (to)"""
+  dateTo: Datetime
+}
+
+"""
+Sort input for signup bonuses
+"""
+input SignupBonusSortInput {
+  """Sort field"""
+  field: SignupBonusSortField!
+
+  """Sort order"""
+  order: SortDirection!
 }

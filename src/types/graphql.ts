@@ -1842,7 +1842,7 @@ export type GqlQuery = {
    * Get signup bonus grants for a community (OWNER/MANAGER only).
    * Supports filtering and sorting.
    */
-  signupBonuses: Array<GqlSignupBonus>;
+  signupBonuses?: Maybe<Array<GqlSignupBonus>>;
   states: GqlStatesConnection;
   ticket?: Maybe<GqlTicket>;
   ticketClaimLink?: Maybe<GqlTicketClaimLink>;
@@ -2393,7 +2393,7 @@ export type GqlSignupBonusSortInput = {
   /** Sort field */
   field: GqlSignupBonusSortField;
   /** Sort order */
-  order: GqlSortOrder;
+  order: GqlSortDirection;
 };
 
 export const GqlSortDirection = {
@@ -2402,15 +2402,6 @@ export const GqlSortDirection = {
 } as const;
 
 export type GqlSortDirection = typeof GqlSortDirection[keyof typeof GqlSortDirection];
-/** Sort order */
-export const GqlSortOrder = {
-  /** Ascending order */
-  Asc: 'ASC',
-  /** Descending order */
-  Desc: 'DESC'
-} as const;
-
-export type GqlSortOrder = typeof GqlSortOrder[keyof typeof GqlSortOrder];
 export const GqlSource = {
   External: 'EXTERNAL',
   Internal: 'INTERNAL'
@@ -3473,7 +3464,6 @@ export type GqlResolversTypes = ResolversObject<{
   SignupBonusSortField: GqlSignupBonusSortField;
   SignupBonusSortInput: GqlSignupBonusSortInput;
   SortDirection: GqlSortDirection;
-  SortOrder: GqlSortOrder;
   Source: GqlSource;
   State: ResolverTypeWrapper<State>;
   StateEdge: ResolverTypeWrapper<Omit<GqlStateEdge, 'node'> & { node?: Maybe<GqlResolversTypes['State']> }>;
@@ -4752,7 +4742,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   reservationHistories?: Resolver<GqlResolversTypes['ReservationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryReservationHistoriesArgs>>;
   reservationHistory?: Resolver<Maybe<GqlResolversTypes['ReservationHistory']>, ParentType, ContextType, RequireFields<GqlQueryReservationHistoryArgs, 'id'>>;
   reservations?: Resolver<GqlResolversTypes['ReservationsConnection'], ParentType, ContextType, Partial<GqlQueryReservationsArgs>>;
-  signupBonuses?: Resolver<Array<GqlResolversTypes['SignupBonus']>, ParentType, ContextType, RequireFields<GqlQuerySignupBonusesArgs, 'communityId'>>;
+  signupBonuses?: Resolver<Maybe<Array<GqlResolversTypes['SignupBonus']>>, ParentType, ContextType, RequireFields<GqlQuerySignupBonusesArgs, 'communityId'>>;
   states?: Resolver<GqlResolversTypes['StatesConnection'], ParentType, ContextType, Partial<GqlQueryStatesArgs>>;
   ticket?: Resolver<Maybe<GqlResolversTypes['Ticket']>, ParentType, ContextType, RequireFields<GqlQueryTicketArgs, 'id'>>;
   ticketClaimLink?: Resolver<Maybe<GqlResolversTypes['TicketClaimLink']>, ParentType, ContextType, RequireFields<GqlQueryTicketClaimLinkArgs, 'id'>>;

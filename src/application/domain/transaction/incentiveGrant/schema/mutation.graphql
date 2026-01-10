@@ -2,5 +2,19 @@ extend type Mutation {
   """
   Retry a failed signup bonus grant (OWNER/MANAGER only).
   """
-  signupBonusRetry(grantId: ID!): SignupBonusRetryPayload!
+  signupBonusRetry(grantId: ID!): SignupBonusRetryPayload!  @authz(rules: [IsCommunityOwner])
+}
+
+"""
+Payload for signup bonus retry mutation
+"""
+type SignupBonusRetryPayload {
+  """Whether retry was successful"""
+  success: Boolean!
+
+  """Granted transaction (if successful)"""
+  transaction: Transaction
+
+  """Error message (if failed)"""
+  error: String
 }

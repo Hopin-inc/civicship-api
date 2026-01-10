@@ -1388,7 +1388,7 @@ type Query {
   Get signup bonus grants for a community (OWNER/MANAGER only).
   Supports filtering and sorting.
   """
-  signupBonuses(communityId: ID!, filter: SignupBonusFilterInput, sort: SignupBonusSortInput): [SignupBonus!]!
+  signupBonuses(communityId: ID!, filter: SignupBonusFilterInput, sort: SignupBonusSortInput): [SignupBonus!]
   states(cursor: String, filter: StatesInput, first: Int): StatesConnection!
   ticket(id: ID!): Ticket
   ticketClaimLink(id: ID!): TicketClaimLink
@@ -1619,21 +1619,12 @@ input SignupBonusSortInput {
   field: SignupBonusSortField!
 
   """Sort order"""
-  order: SortOrder!
+  order: SortDirection!
 }
 
 enum SortDirection {
   asc
   desc
-}
-
-"""Sort order"""
-enum SortOrder {
-  """Ascending order"""
-  ASC
-
-  """Descending order"""
-  DESC
 }
 
 enum Source {
