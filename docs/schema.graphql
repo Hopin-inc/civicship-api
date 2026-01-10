@@ -726,6 +726,9 @@ type Mutation {
   Automatically derives walletId, bonusPoint, message from grant and config.
   """
   retrySignupBonusGrant(grantId: ID!): Transaction!
+
+  """Retry a failed signup bonus grant (OWNER/MANAGER only)."""
+  signupBonusRetry(grantId: ID!): SignupBonusRetryPayload!
   storePhoneAuthToken(input: StorePhoneAuthTokenInput!, permission: CheckIsSelfPermissionInput!): StorePhoneAuthTokenPayload
   ticketClaim(input: TicketClaimInput!): TicketClaimPayload
   ticketIssue(input: TicketIssueInput!, permission: CheckCommunityPermissionInput!): TicketIssuePayload
@@ -1380,6 +1383,12 @@ type Query {
   reservationHistories(cursor: String, filter: ReservationHistoryFilterInput, first: Int, sort: ReservationHistorySortInput): ReservationHistoriesConnection!
   reservationHistory(id: ID!): ReservationHistory
   reservations(cursor: String, filter: ReservationFilterInput, first: Int, sort: ReservationSortInput): ReservationsConnection!
+
+  """
+  Get signup bonus grants for a community (OWNER/MANAGER only).
+  Supports filtering and sorting.
+  """
+  signupBonuses(communityId: ID!, filter: SignupBonusFilterInput, sort: SignupBonusSortInput): [SignupBonus!]!
   states(cursor: String, filter: StatesInput, first: Int): StatesConnection!
   ticket(id: ID!): Ticket
   ticketClaimLink(id: ID!): TicketClaimLink
@@ -1532,9 +1541,99 @@ enum Role {
   OWNER
 }
 
+"""Signup bonus grant record"""
+type SignupBonus {
+  """Number of retry attempts"""
+  attemptCount: Int!
+
+  """Community"""
+  community: Community!
+
+  """Grant creation timestamp"""
+  createdAt: Datetime!
+
+  """Failure reason code (if failed)"""
+  failureCode: IncentiveGrantFailureCode
+
+  """Grant ID"""
+  id: ID!
+
+  """Last attempt timestamp"""
+  lastAttemptedAt: Datetime!
+
+  """Last error message (if failed)"""
+  lastError: String
+
+  """Grant status"""
+  status: IncentiveGrantStatus!
+
+  """Granted transaction (if completed)"""
+  transaction: Transaction
+
+  """User who received/should receive the bonus"""
+  user: User!
+}
+
+"""Filter input for signup bonuses"""
+input SignupBonusFilterInput {
+  """Filter by date range (from)"""
+  dateFrom: Datetime
+
+  """Filter by date range (to)"""
+  dateTo: Datetime
+
+  """Filter by grant status"""
+  status: IncentiveGrantStatus
+
+  """Filter by user ID"""
+  userId: ID
+}
+
+"""Payload for signup bonus retry mutation"""
+type SignupBonusRetryPayload {
+  """Error message (if failed)"""
+  error: String
+
+  """Whether retry was successful"""
+  success: Boolean!
+
+  """Granted transaction (if successful)"""
+  transaction: Transaction
+}
+
+"""Sort fields for signup bonuses"""
+enum SignupBonusSortField {
+  """Sort by attempt count"""
+  ATTEMPT_COUNT
+
+  """Sort by creation date"""
+  CREATED_AT
+
+  """Sort by last attempt date"""
+  LAST_ATTEMPTED_AT
+}
+
+"""Sort input for signup bonuses"""
+input SignupBonusSortInput {
+  """Sort field"""
+  field: SignupBonusSortField!
+
+  """Sort order"""
+  order: SortOrder!
+}
+
 enum SortDirection {
   asc
   desc
+}
+
+"""Sort order"""
+enum SortOrder {
+  """Ascending order"""
+  ASC
+
+  """Descending order"""
+  DESC
 }
 
 enum Source {

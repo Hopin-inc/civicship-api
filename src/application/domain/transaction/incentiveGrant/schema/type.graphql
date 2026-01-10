@@ -34,37 +34,6 @@ type SignupBonus {
 }
 
 """
-Grant status
-"""
-enum IncentiveGrantStatus {
-  """Pending execution"""
-  PENDING
-
-  """Successfully completed"""
-  COMPLETED
-
-  """Failed"""
-  FAILED
-}
-
-"""
-Failure code for incentive grants
-"""
-enum IncentiveGrantFailureCode {
-  """Insufficient balance in community wallet"""
-  INSUFFICIENT_BALANCE
-
-  """Wallet not found"""
-  WALLET_NOT_FOUND
-
-  """Transaction execution failed"""
-  TRANSACTION_FAILED
-
-  """Unknown error"""
-  UNKNOWN
-}
-
-"""
 Filter input for signup bonuses
 """
 input SignupBonusFilterInput {
