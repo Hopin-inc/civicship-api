@@ -18,7 +18,6 @@ import {
   GqlQuerySignupBonusesArgs,
   GqlQueryTransactionArgs,
   GqlQueryTransactionsArgs,
-  GqlSignupBonus,
   GqlSignupBonusRetryPayload,
   GqlTransaction,
   GqlTransactionDonateSelfPointPayload,
@@ -30,7 +29,7 @@ import { inject, injectable } from "tsyringe";
 import { NotFoundError } from "@/errors/graphql";
 import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
-import IncentiveGrantPresenter from "@/application/domain/transaction/incentiveGrant/presenter";
+import { PrismaIncentiveGrantDetail } from "@/application/domain/transaction/incentiveGrant/data/type";
 
 @injectable()
 export default class TransactionUseCase {
@@ -277,14 +276,14 @@ export default class TransactionUseCase {
   async managerGetSignupBonuses(
     { communityId, filter, sort }: GqlQuerySignupBonusesArgs,
     ctx: IContext,
-  ): Promise<GqlSignupBonus[]> {
+  ): Promise<PrismaIncentiveGrantDetail[]> {
     const grants = await this.incentiveGrantService.getSignupBonuses(
       ctx,
       communityId,
       filter,
       sort,
     );
-    return grants.map(IncentiveGrantPresenter.toSignupBonus);
+    return grants;
   }
 
   async managerRetrySignupBonus(

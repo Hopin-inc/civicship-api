@@ -83,6 +83,7 @@ export interface ITransactionService {
     ctx: IContext,
     args: {
       grantId: string;
+      communityId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;
