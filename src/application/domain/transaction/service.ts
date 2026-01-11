@@ -14,7 +14,6 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import { IIncentiveGrantService } from "./incentiveGrant/interface";
 import logger from "@/infrastructure/logging";
-import WalletService from "@/application/domain/account/wallet/service";
 
 /**
  * Source ID for signup bonus grants.
@@ -27,7 +26,6 @@ export default class TransactionService implements ITransactionService {
     @inject("TransactionRepository") private readonly repository: ITransactionRepository,
     @inject("TransactionConverter") private readonly converter: TransactionConverter,
     @inject("IncentiveGrantService") private readonly incentiveGrantService: IIncentiveGrantService,
-    @inject("WalletService") private readonly walletService: WalletService,
   ) {}
 
   async fetchTransactions(
@@ -185,29 +183,24 @@ export default class TransactionService implements ITransactionService {
    * Executes the grant and logs the result.
    *
    * Delegates to IncentiveGrantService and handles result logging.
+   *
+   * @param fromWalletId - Community wallet ID (caller must provide to avoid circular dependency)
    */
   async grantSignupBonus(
     ctx: IContext,
     args: {
       userId: string;
       communityId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;
-      fromWalletId?: string;
     },
   ): Promise<void> {
-    const { userId, communityId, bonusPoint, fromWalletId } = args;
-
-    // Get community wallet if not provided
-    const finalFromWalletId = fromWalletId ??
-      (await this.walletService.findCommunityWalletOrThrow(ctx, communityId)).id;
+    const { userId, communityId, bonusPoint } = args;
 
     // ポイント付与実行
-    const result = await this.incentiveGrantService.grantSignupBonus(ctx, {
-      ...args,
-      fromWalletId: finalFromWalletId,
-    });
+    const result = await this.incentiveGrantService.grantSignupBonus(ctx, args);
 
     // 結果ログ
     this.logSignupBonusResult(result, userId, communityId, bonusPoint);
@@ -219,6 +212,7 @@ export default class TransactionService implements ITransactionService {
    *
    * Delegates to IncentiveGrantService.
    *
+   * @param fromWalletId - Community wallet ID (caller must provide to avoid circular dependency)
    * @returns Result (COMPLETED or FAILED)
    */
   async retrySignupBonusGrant(
@@ -226,20 +220,13 @@ export default class TransactionService implements ITransactionService {
     args: {
       grantId: string;
       communityId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;
     },
   ): Promise<Extract<GrantSignupBonusResult, { status: "COMPLETED" | "FAILED" }>> {
-    const { communityId } = args;
-
-    // Get community wallet
-    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
-
-    return this.incentiveGrantService.retrySignupBonusGrant(ctx, {
-      ...args,
-      fromWalletId: communityWallet.id,
-    });
+    return this.incentiveGrantService.retrySignupBonusGrant(ctx, args);
   }
 
   /**

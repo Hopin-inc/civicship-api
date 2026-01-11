@@ -84,6 +84,7 @@ export interface ITransactionService {
     args: {
       grantId: string;
       communityId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;

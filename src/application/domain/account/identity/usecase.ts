@@ -206,13 +206,21 @@ export default class IdentityUseCase {
       }
 
       // 3. ポイント付与（TransactionServiceに委譲）
+      if (!validation.communityWallet) {
+        logger.error("Community wallet not found in validation result", {
+          userId,
+          communityId,
+        });
+        return;
+      }
+
       await this.transactionService.grantSignupBonus(ctx, {
         userId,
         communityId,
         toWalletId: validation.wallet!.id,
         bonusPoint: config.bonusPoint,
         message: config.message ?? undefined,
-        fromWalletId: validation.communityWallet?.id, // Use wallet from validation to avoid re-fetching
+        fromWalletId: validation.communityWallet.id,
       });
     } catch (error) {
       // Best-effort: log error but don't fail user signup
