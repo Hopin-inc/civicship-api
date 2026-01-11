@@ -212,6 +212,7 @@ export default class IdentityUseCase {
         toWalletId: validation.wallet!.id,
         bonusPoint: config.bonusPoint,
         message: config.message ?? undefined,
+        fromWalletId: validation.communityWallet?.id, // Use wallet from validation to avoid re-fetching
       });
     } catch (error) {
       // Best-effort: log error but don't fail user signup

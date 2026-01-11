@@ -194,17 +194,19 @@ export default class TransactionService implements ITransactionService {
       toWalletId: string;
       bonusPoint: number;
       message?: string;
+      fromWalletId?: string;
     },
   ): Promise<void> {
-    const { userId, communityId, bonusPoint } = args;
+    const { userId, communityId, bonusPoint, fromWalletId } = args;
 
-    // Get community wallet
-    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
+    // Get community wallet if not provided
+    const finalFromWalletId = fromWalletId ??
+      (await this.walletService.findCommunityWalletOrThrow(ctx, communityId)).id;
 
     // ポイント付与実行
     const result = await this.incentiveGrantService.grantSignupBonus(ctx, {
       ...args,
-      fromWalletId: communityWallet.id,
+      fromWalletId: finalFromWalletId,
     });
 
     // 結果ログ

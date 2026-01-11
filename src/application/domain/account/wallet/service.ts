@@ -146,6 +146,7 @@ export default class WalletService {
   ): Promise<{
     valid: boolean;
     wallet?: PrismaWallet;
+    communityWallet?: PrismaWalletDetail;
     reason?: 'wallet_not_found' | 'insufficient_balance';
     currentBalance?: string;
   }> {
@@ -161,26 +162,27 @@ export default class WalletService {
       const { currentPoint } = communityWallet.currentPointView || {};
 
       if (currentPoint == null) {
-        return { valid: true, wallet }; // 不明時は続行
+        return { valid: true, wallet, communityWallet }; // 不明時は続行
       }
 
       if (currentPoint < BigInt(requiredAmount)) {
         return {
           valid: false,
           wallet,
+          communityWallet,
           reason: 'insufficient_balance',
           currentBalance: currentPoint.toString(),
         };
       }
 
-      return { valid: true, wallet };
+      return { valid: true, wallet, communityWallet };
     } catch (error) {
       logger.warn("Failed to check community wallet balance", {
         communityId,
         userId,
         error: error instanceof Error ? error.message : String(error),
       });
-      return { valid: true, wallet }; // エラー時は続行
+      return { valid: true, wallet }; // エラー時は続行（communityWalletなし）
     }
   }
 }
