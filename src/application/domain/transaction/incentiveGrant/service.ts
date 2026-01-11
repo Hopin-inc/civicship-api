@@ -43,12 +43,13 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     args: {
       userId: string;
       communityId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;
     },
   ): Promise<GrantSignupBonusResult> {
-    const { userId, communityId, toWalletId, bonusPoint, message } = args;
+    const { userId, communityId, fromWalletId, toWalletId, bonusPoint, message } = args;
 
     const grantOrResult = await this.acquireIncentiveGrant(
       ctx,
@@ -66,6 +67,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
 
     return this.executeSignupBonusGrant(ctx, {
       grantId,
+      fromWalletId,
       toWalletId,
       bonusPoint,
       message,
@@ -76,17 +78,19 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     ctx: IContext,
     args: {
       grantId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;
     },
   ): Promise<Extract<GrantSignupBonusResult, { status: "COMPLETED" | "FAILED" }>> {
-    const { grantId, toWalletId, bonusPoint, message } = args;
+    const { grantId, fromWalletId, toWalletId, bonusPoint, message } = args;
 
     await this.resetGrantToPending(ctx, grantId);
 
     return this.executeSignupBonusGrant(ctx, {
       grantId,
+      fromWalletId,
       toWalletId,
       bonusPoint,
       message,
@@ -234,12 +238,13 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     ctx: IContext,
     args: {
       grantId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;
     },
   ): Promise<Extract<GrantSignupBonusResult, { status: "COMPLETED" | "FAILED" }>> {
-    const { grantId, toWalletId, bonusPoint, message } = args;
+    const { grantId, fromWalletId, toWalletId, bonusPoint, message } = args;
 
     const grantCheck = await ctx.issuer.public(ctx, (tx) =>
       this.incentiveGrantRepository.findById(ctx, tx, grantId),
@@ -260,7 +265,12 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
 
     try {
       const transaction = await ctx.issuer.public(ctx, async (tx) => {
-        const transactionData = this.transactionConverter.signupBonus(toWalletId, bonusPoint, message);
+        const transactionData = this.transactionConverter.signupBonus(
+          fromWalletId,
+          toWalletId,
+          bonusPoint,
+          message,
+        );
 
         const transaction = await this.transactionRepository.create(ctx, transactionData, tx);
 
@@ -298,6 +308,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     ctx: IContext,
     args: {
       grantId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;

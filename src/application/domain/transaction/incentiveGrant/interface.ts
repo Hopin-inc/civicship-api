@@ -21,6 +21,7 @@ export interface IIncentiveGrantService {
     args: {
       userId: string;
       communityId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;
@@ -37,6 +38,7 @@ export interface IIncentiveGrantService {
     ctx: IContext,
     args: {
       grantId: string;
+      fromWalletId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;

@@ -248,6 +248,7 @@ export default class TransactionUseCase {
     // STEP4: Call service to retry
     const result = await this.transactionService.retrySignupBonusGrant(ctx, {
       grantId,
+      communityId,
       toWalletId: wallet.id,
       bonusPoint,
       message: message ?? undefined,
@@ -316,9 +317,13 @@ export default class TransactionUseCase {
       };
     }
 
+    // Get community wallet
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
+
     // Retry
     const result = await this.incentiveGrantService.retrySignupBonus(ctx, {
       grantId,
+      fromWalletId: communityWallet.id,
       toWalletId: wallet.id,
       bonusPoint: config.bonusPoint,
       message: config.message ?? undefined,

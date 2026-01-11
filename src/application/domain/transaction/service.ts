@@ -14,6 +14,7 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import { IIncentiveGrantService } from "./incentiveGrant/interface";
 import logger from "@/infrastructure/logging";
+import WalletService from "@/application/domain/account/wallet/service";
 
 /**
  * Source ID for signup bonus grants.
@@ -26,6 +27,7 @@ export default class TransactionService implements ITransactionService {
     @inject("TransactionRepository") private readonly repository: ITransactionRepository,
     @inject("TransactionConverter") private readonly converter: TransactionConverter,
     @inject("IncentiveGrantService") private readonly incentiveGrantService: IIncentiveGrantService,
+    @inject("WalletService") private readonly walletService: WalletService,
   ) {}
 
   async fetchTransactions(
@@ -196,8 +198,14 @@ export default class TransactionService implements ITransactionService {
   ): Promise<void> {
     const { userId, communityId, bonusPoint } = args;
 
+    // Get community wallet
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
+
     // ポイント付与実行
-    const result = await this.incentiveGrantService.grantSignupBonus(ctx, args);
+    const result = await this.incentiveGrantService.grantSignupBonus(ctx, {
+      ...args,
+      fromWalletId: communityWallet.id,
+    });
 
     // 結果ログ
     this.logSignupBonusResult(result, userId, communityId, bonusPoint);
@@ -215,12 +223,21 @@ export default class TransactionService implements ITransactionService {
     ctx: IContext,
     args: {
       grantId: string;
+      communityId: string;
       toWalletId: string;
       bonusPoint: number;
       message?: string;
     },
   ): Promise<Extract<GrantSignupBonusResult, { status: "COMPLETED" | "FAILED" }>> {
-    return this.incentiveGrantService.retrySignupBonusGrant(ctx, args);
+    const { communityId } = args;
+
+    // Get community wallet
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
+
+    return this.incentiveGrantService.retrySignupBonusGrant(ctx, {
+      ...args,
+      fromWalletId: communityWallet.id,
+    });
   }
 
   /**
