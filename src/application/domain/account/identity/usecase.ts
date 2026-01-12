@@ -205,7 +205,7 @@ export default class IdentityUseCase {
           await this.transactionService.createFailedSignupBonusGrant(ctx, {
             userId,
             communityId,
-            failureCode: IncentiveGrantFailureCode.INSUFFICIENT_BALANCE,
+            failureCode: IncentiveGrantFailureCode.INSUFFICIENT_FUNDS,
             lastError: `Insufficient balance: ${validation.currentBalance} < ${config.bonusPoint}`,
           });
         }

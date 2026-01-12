@@ -142,7 +142,7 @@ export default class TransactionConverter {
     return {
       reason: TransactionReason.ONBOARDING,
       fromWallet: { connect: { id: fromWalletId } },
-      fromPointChange: transferPoints,
+      fromPointChange: -transferPoints,
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
       comment: comment ?? "新規登録ボーナス",

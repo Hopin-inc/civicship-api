@@ -13,7 +13,7 @@ export function determineFailureCode(error: unknown): IncentiveGrantFailureCode 
   if (error instanceof ValidationError) {
     const message = error.message.toLowerCase();
     if (message.includes("insufficient balance")) {
-      return IncentiveGrantFailureCode.INSUFFICIENT_BALANCE;
+      return IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
     }
   }
 
