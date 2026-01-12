@@ -1,5 +1,5 @@
 import { IncentiveGrantFailureCode, Prisma } from "@prisma/client";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 
 /**
  * Determines the appropriate failure code based on the error type.
@@ -9,6 +9,14 @@ import { NotFoundError } from "@/errors/graphql";
  * @returns Appropriate IncentiveGrantFailureCode
  */
 export function determineFailureCode(error: unknown): IncentiveGrantFailureCode {
+  // ValidationError with "Insufficient balance"
+  if (error instanceof ValidationError) {
+    const message = error.message.toLowerCase();
+    if (message.includes("insufficient balance")) {
+      return IncentiveGrantFailureCode.INSUFFICIENT_BALANCE;
+    }
+  }
+
   // NotFoundError with "Wallet"
   if (error instanceof NotFoundError) {
     const message = error.message.toLowerCase();

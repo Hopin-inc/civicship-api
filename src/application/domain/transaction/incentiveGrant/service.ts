@@ -24,6 +24,7 @@ import { determineFailureCode } from "../util/failureCodeResolver";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import { GqlSignupBonusFilterInput, GqlSignupBonusSortInput } from "@/types/graphql";
+import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 
 const SIGNUP_SOURCE_ID = "default";
 
@@ -36,6 +37,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     @inject("TransactionConverter") private readonly transactionConverter: TransactionConverter,
     @inject("IncentiveGrantConverter")
     private readonly incentiveGrantConverter: IncentiveGrantConverter,
+    @inject("WalletRepository") private readonly walletRepository: IWalletRepository,
   ) {}
 
   async grantSignupBonus(
@@ -265,6 +267,27 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
 
     try {
       const transaction = await ctx.issuer.public(ctx, async (tx) => {
+        // Check community wallet balance before creating transaction
+        const communityWallet = await this.walletRepository.find(ctx, fromWalletId);
+        if (!communityWallet) {
+          throw new ValidationError("Community wallet not found", { fromWalletId });
+        }
+
+        const currentBalance = communityWallet.currentPointView?.currentPoint;
+        if (currentBalance == null) {
+          logger.warn("Community wallet has no balance view, proceeding anyway", {
+            fromWalletId,
+            grantId,
+          });
+        } else if (currentBalance < BigInt(bonusPoint)) {
+          throw new ValidationError("Insufficient balance in community wallet", {
+            fromWalletId,
+            grantId,
+            currentBalance: currentBalance.toString(),
+            requiredAmount: bonusPoint,
+          });
+        }
+
         const transactionData = this.transactionConverter.signupBonus(
           fromWalletId,
           toWalletId,
