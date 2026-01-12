@@ -77,4 +77,20 @@ export interface IIncentiveGrantService {
     communityId: string;
     status: string;
   }>;
+
+  /**
+   * Create a failed signup bonus grant record without attempting transaction.
+   * Used when pre-validation fails (e.g., insufficient balance check in UseCase layer).
+   *
+   * @param args - Contains userId, communityId, failureCode, and lastError
+   */
+  createFailedSignupBonusGrant(
+    ctx: IContext,
+    args: {
+      userId: string;
+      communityId: string;
+      failureCode: import("@prisma/client").IncentiveGrantFailureCode;
+      lastError: string;
+    },
+  ): Promise<void>;
 }

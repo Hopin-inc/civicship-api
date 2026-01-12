@@ -1,4 +1,4 @@
-import { Prisma, TransactionReason } from "@prisma/client";
+import { IncentiveGrantFailureCode, Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
   ITransactionRepository,
@@ -270,6 +270,23 @@ export default class TransactionService implements ITransactionService {
     status: string;
   }> {
     return this.incentiveGrantService.getGrantInfoForRetry(ctx, grantId);
+  }
+
+  /**
+   * Create a failed signup bonus grant record without attempting transaction.
+   * Used when pre-validation fails in UseCase layer (e.g., insufficient balance).
+   * Delegates to IncentiveGrantService.
+   */
+  async createFailedSignupBonusGrant(
+    ctx: IContext,
+    args: {
+      userId: string;
+      communityId: string;
+      failureCode: IncentiveGrantFailureCode;
+      lastError: string;
+    },
+  ): Promise<void> {
+    return this.incentiveGrantService.createFailedSignupBonusGrant(ctx, args);
   }
 
   /**

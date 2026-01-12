@@ -24,7 +24,6 @@ import { determineFailureCode } from "../util/failureCodeResolver";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import { GqlSignupBonusFilterInput, GqlSignupBonusSortInput } from "@/types/graphql";
-import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 
 const SIGNUP_SOURCE_ID = "default";
 
@@ -37,7 +36,6 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     @inject("TransactionConverter") private readonly transactionConverter: TransactionConverter,
     @inject("IncentiveGrantConverter")
     private readonly incentiveGrantConverter: IncentiveGrantConverter,
-    @inject("WalletRepository") private readonly walletRepository: IWalletRepository,
   ) {}
 
   async grantSignupBonus(
@@ -141,6 +139,52 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
       communityId: grant.communityId,
       status: grant.status,
     };
+  }
+
+  /**
+   * Create a failed signup bonus grant record without attempting transaction.
+   * Used when pre-validation fails (e.g., insufficient balance).
+   */
+  async createFailedSignupBonusGrant(
+    ctx: IContext,
+    args: {
+      userId: string;
+      communityId: string;
+      failureCode: IncentiveGrantFailureCode;
+      lastError: string;
+    },
+  ): Promise<void> {
+    const { userId, communityId, failureCode, lastError } = args;
+
+    await ctx.issuer.public(ctx, async (tx) => {
+      try {
+        const grant = await this.incentiveGrantRepository.create(ctx, tx, {
+          userId,
+          communityId,
+          type: IncentiveGrantType.SIGNUP_BONUS,
+          sourceId: SIGNUP_SOURCE_ID,
+        });
+
+        await this.incentiveGrantRepository.markAsFailed(ctx, tx, grant.id, failureCode, lastError);
+
+        logger.info("Created failed signup bonus grant", {
+          grantId: grant.id,
+          userId,
+          communityId,
+          failureCode,
+        });
+      } catch (error) {
+        // P2002 (unique violation) = grant already exists
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          logger.info("Grant already exists when trying to create failed grant (skipping)", {
+            userId,
+            communityId,
+          });
+          return;
+        }
+        throw error;
+      }
+    });
   }
 
   private async acquireIncentiveGrant(
@@ -267,27 +311,6 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
 
     try {
       const transaction = await ctx.issuer.public(ctx, async (tx) => {
-        // Check community wallet balance before creating transaction
-        const communityWallet = await this.walletRepository.find(ctx, fromWalletId);
-        if (!communityWallet) {
-          throw new ValidationError("Community wallet not found", { fromWalletId });
-        }
-
-        const currentBalance = communityWallet.currentPointView?.currentPoint;
-        if (currentBalance == null) {
-          logger.warn("Community wallet has no balance view, proceeding anyway", {
-            fromWalletId,
-            grantId,
-          });
-        } else if (currentBalance < BigInt(bonusPoint)) {
-          throw new ValidationError("Insufficient balance in community wallet", {
-            fromWalletId,
-            grantId,
-            currentBalance: currentBalance.toString(),
-            requiredAmount: bonusPoint,
-          });
-        }
-
         const transactionData = this.transactionConverter.signupBonus(
           fromWalletId,
           toWalletId,

@@ -22,7 +22,7 @@ import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
-import { User } from "@prisma/client";
+import { IncentiveGrantFailureCode, User } from "@prisma/client";
 
 @injectable()
 export default class IdentityUseCase {
@@ -195,11 +195,18 @@ export default class IdentityUseCase {
             communityId,
           });
         } else if (validation.reason === "insufficient_balance") {
-          logger.error("Insufficient balance in community wallet (skipping grant)", {
+          logger.error("Insufficient balance in community wallet, creating failed grant", {
             userId,
             communityId,
             availableBalance: validation.currentBalance,
             requiredBalance: config.bonusPoint,
+          });
+          // Create failed grant record for tracking
+          await this.transactionService.createFailedSignupBonusGrant(ctx, {
+            userId,
+            communityId,
+            failureCode: IncentiveGrantFailureCode.INSUFFICIENT_BALANCE,
+            lastError: `Insufficient balance: ${validation.currentBalance} < ${config.bonusPoint}`,
           });
         }
         return;

@@ -323,6 +323,17 @@ export default class TransactionUseCase {
     // Get community wallet
     const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
 
+    // Check balance before retry
+    const currentBalance = communityWallet.currentPointView?.currentPoint;
+    if (currentBalance != null && currentBalance < BigInt(config.bonusPoint)) {
+      return {
+        __typename: "SignupBonusRetryPayload",
+        success: false,
+        transaction: null,
+        error: `Insufficient balance: ${currentBalance} < ${config.bonusPoint}`,
+      };
+    }
+
     // Retry
     const result = await this.incentiveGrantService.retrySignupBonus(ctx, {
       grantId,
