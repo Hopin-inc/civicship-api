@@ -78,27 +78,6 @@ export interface ITransactionService {
     ctx: IContext,
     tx: Prisma.TransactionClient,
   ): Promise<refreshMaterializedViewCurrentPoints.Result[]>;
-
-  retrySignupBonusGrant(
-    ctx: IContext,
-    args: {
-      grantId: string;
-      communityId: string;
-      fromWalletId: string;
-      toWalletId: string;
-      bonusPoint: number;
-      message?: string;
-    },
-  ): Promise<Extract<import("./type").GrantSignupBonusResult, { status: "COMPLETED" | "FAILED" }>>;
-
-  getGrantInfoForRetry(
-    ctx: IContext,
-    grantId: string,
-  ): Promise<{
-    userId: string;
-    communityId: string;
-    status: string;
-  }>;
 }
 
 export interface ITransactionRepository {
