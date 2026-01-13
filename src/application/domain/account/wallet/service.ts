@@ -213,18 +213,20 @@ export default class WalletService {
 
     const { currentPoint } = communityWallet.currentPointView || {};
 
-    if (currentPoint == null) {
-      // Materialized view not available - allow transaction to proceed
-      logger.warn("Community wallet currentPointView is null, skipping balance check", {
-        communityId,
-        requiredAmount,
-      });
-      return;
-    }
+    // Treat null as 0pt (no transactions yet or materialized view not refreshed)
+    const currentBalance = currentPoint ?? BigInt(0);
 
-    if (currentPoint < BigInt(requiredAmount)) {
+    logger.debug("Checking community wallet balance in transaction", {
+      communityId,
+      walletId: communityWallet.id,
+      currentBalance: currentBalance.toString(),
+      requiredAmount,
+      isFromMaterializedView: currentPoint != null,
+    });
+
+    if (currentBalance < BigInt(requiredAmount)) {
       throw new ValidationError(
-        `Insufficient balance: ${currentPoint} < ${requiredAmount}`,
+        `Insufficient balance: ${currentBalance} < ${requiredAmount}`,
         ["communityWallet", communityId]
       );
     }
