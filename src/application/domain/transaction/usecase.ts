@@ -284,10 +284,15 @@ export default class TransactionUseCase {
   }
 
   async managerGetSignupBonuses(
-    { communityId, filter, sort }: GqlQuerySignupBonusesArgs,
+    { permission, filter, sort }: GqlQuerySignupBonusesArgs,
     ctx: IContext,
   ): Promise<PrismaIncentiveGrantDetail[]> {
-    return await this.incentiveGrantService.getSignupBonuses(ctx, communityId, filter, sort);
+    return await this.incentiveGrantService.getSignupBonuses(
+      ctx,
+      permission?.communityId,
+      filter,
+      sort,
+    );
   }
 
   async managerRetrySignupBonus(

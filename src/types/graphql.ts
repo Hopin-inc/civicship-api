@@ -2062,7 +2062,7 @@ export type GqlQueryReservationsArgs = {
 
 export type GqlQuerySignupBonusesArgs = {
   filter?: InputMaybe<GqlSignupBonusFilterInput>;
-  permission?: InputMaybe<GqlCheckCommunityPermissionInput>;
+  permission: GqlCheckCommunityPermissionInput;
   sort?: InputMaybe<GqlSignupBonusSortInput>;
 };
 
@@ -2351,7 +2351,7 @@ export type GqlSignupBonus = {
   /** Granted transaction (if completed) */
   transaction?: Maybe<GqlTransaction>;
   /** User who received/should receive the bonus */
-  user: GqlUser;
+  user?: Maybe<GqlUser>;
 };
 
 /** Filter input for signup bonuses */
@@ -3458,7 +3458,7 @@ export type GqlResolversTypes = ResolversObject<{
   ReservationStatus: GqlReservationStatus;
   ReservationsConnection: ResolverTypeWrapper<Omit<GqlReservationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ReservationEdge']> }>;
   Role: GqlRole;
-  SignupBonus: ResolverTypeWrapper<Omit<GqlSignupBonus, 'community' | 'transaction' | 'user'> & { community: GqlResolversTypes['Community'], transaction?: Maybe<GqlResolversTypes['Transaction']>, user: GqlResolversTypes['User'] }>;
+  SignupBonus: ResolverTypeWrapper<Omit<GqlSignupBonus, 'community' | 'transaction' | 'user'> & { community: GqlResolversTypes['Community'], transaction?: Maybe<GqlResolversTypes['Transaction']>, user?: Maybe<GqlResolversTypes['User']> }>;
   SignupBonusFilterInput: GqlSignupBonusFilterInput;
   SignupBonusRetryPayload: ResolverTypeWrapper<Omit<GqlSignupBonusRetryPayload, 'transaction'> & { transaction?: Maybe<GqlResolversTypes['Transaction']> }>;
   SignupBonusSortField: GqlSignupBonusSortField;
@@ -3772,7 +3772,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReservationSetStatusSuccess: Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: GqlResolversParentTypes['Reservation'] };
   ReservationSortInput: GqlReservationSortInput;
   ReservationsConnection: Omit<GqlReservationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ReservationEdge']> };
-  SignupBonus: Omit<GqlSignupBonus, 'community' | 'transaction' | 'user'> & { community: GqlResolversParentTypes['Community'], transaction?: Maybe<GqlResolversParentTypes['Transaction']>, user: GqlResolversParentTypes['User'] };
+  SignupBonus: Omit<GqlSignupBonus, 'community' | 'transaction' | 'user'> & { community: GqlResolversParentTypes['Community'], transaction?: Maybe<GqlResolversParentTypes['Transaction']>, user?: Maybe<GqlResolversParentTypes['User']> };
   SignupBonusFilterInput: GqlSignupBonusFilterInput;
   SignupBonusRetryPayload: Omit<GqlSignupBonusRetryPayload, 'transaction'> & { transaction?: Maybe<GqlResolversParentTypes['Transaction']> };
   SignupBonusSortInput: GqlSignupBonusSortInput;
@@ -4742,7 +4742,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   reservationHistories?: Resolver<GqlResolversTypes['ReservationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryReservationHistoriesArgs>>;
   reservationHistory?: Resolver<Maybe<GqlResolversTypes['ReservationHistory']>, ParentType, ContextType, RequireFields<GqlQueryReservationHistoryArgs, 'id'>>;
   reservations?: Resolver<GqlResolversTypes['ReservationsConnection'], ParentType, ContextType, Partial<GqlQueryReservationsArgs>>;
-  signupBonuses?: Resolver<Maybe<Array<GqlResolversTypes['SignupBonus']>>, ParentType, ContextType, Partial<GqlQuerySignupBonusesArgs>>;
+  signupBonuses?: Resolver<Maybe<Array<GqlResolversTypes['SignupBonus']>>, ParentType, ContextType, RequireFields<GqlQuerySignupBonusesArgs, 'permission'>>;
   states?: Resolver<GqlResolversTypes['StatesConnection'], ParentType, ContextType, Partial<GqlQueryStatesArgs>>;
   ticket?: Resolver<Maybe<GqlResolversTypes['Ticket']>, ParentType, ContextType, RequireFields<GqlQueryTicketArgs, 'id'>>;
   ticketClaimLink?: Resolver<Maybe<GqlResolversTypes['TicketClaimLink']>, ParentType, ContextType, RequireFields<GqlQueryTicketClaimLinkArgs, 'id'>>;
@@ -4842,7 +4842,7 @@ export type GqlSignupBonusResolvers<ContextType = any, ParentType extends GqlRes
   lastError?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['IncentiveGrantStatus'], ParentType, ContextType>;
   transaction?: Resolver<Maybe<GqlResolversTypes['Transaction']>, ParentType, ContextType>;
-  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

@@ -6,8 +6,8 @@ extend type Query {
   signupBonuses(
     filter: SignupBonusFilterInput
     sort: SignupBonusSortInput
-    permission: CheckCommunityPermissionInput
-  ): [SignupBonus!] @authz(rules: [IsCommunityOwner])
+    permission: CheckCommunityPermissionInput!
+  ): [SignupBonus!]
 }
 
 """

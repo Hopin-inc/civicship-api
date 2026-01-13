@@ -333,7 +333,9 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
   ): Promise<PrismaIncentiveGrantDetail[]> {
     const where = this.incentiveGrantConverter.filter(communityId, filter);
     const orderBy = this.incentiveGrantConverter.sort(sort);
-    return this.incentiveGrantRepository.find(ctx, where, orderBy);
+    const res = await this.incentiveGrantRepository.find(ctx, where, orderBy);
+    console.log(res);
+    return res;
   }
 
   private async handleTransactionCreationError(

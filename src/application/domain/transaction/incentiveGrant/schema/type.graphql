@@ -6,7 +6,7 @@ type SignupBonus {
   id: ID!
 
   """User who received/should receive the bonus"""
-  user: User!
+  user: User
 
   """Community"""
   community: Community!
