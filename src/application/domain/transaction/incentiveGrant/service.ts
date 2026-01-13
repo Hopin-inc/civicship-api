@@ -25,6 +25,7 @@ import { NotFoundError, ValidationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import { GqlSignupBonusFilterInput, GqlSignupBonusSortInput } from "@/types/graphql";
 import WalletService from "@/application/domain/account/wallet/service";
+import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 
 const SIGNUP_SOURCE_ID = "default";
 
@@ -38,7 +39,103 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     @inject("IncentiveGrantConverter")
     private readonly incentiveGrantConverter: IncentiveGrantConverter,
     @inject("WalletService") private readonly walletService: WalletService,
+    @inject("SignupBonusConfigService")
+    private readonly signupBonusConfigService: SignupBonusConfigService,
   ) {}
+
+  /**
+   * Grant signup bonus if enabled (best-effort pattern).
+   *
+   * This method orchestrates the entire signup bonus flow:
+   * 1. Check if signup bonus is enabled for the community
+   * 2. Validate wallet existence (member + community)
+   * 3. Pre-check community wallet balance (advisory, outside transaction)
+   * 4. Grant signup bonus (with TOCTOU-safe balance check inside transaction)
+   *
+   * Errors are logged but not propagated - user signup should always succeed.
+   *
+   * @param ctx - Context
+   * @param userId - User ID to grant bonus to
+   * @param communityId - Community ID
+   */
+  async grantSignupBonusIfEnabledBestEffort(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+  ): Promise<void> {
+    try {
+      // 1. Check if signup bonus is enabled
+      const config = await this.signupBonusConfigService.get(ctx, communityId);
+      if (!config || !config.isEnabled) {
+        logger.debug("Signup bonus not enabled for community", { communityId });
+        return;
+      }
+
+      // 2. Validate member wallet exists
+      const memberWallet = await this.walletService.findMemberWallet(ctx, userId, communityId);
+      if (!memberWallet) {
+        logger.warn("Member wallet not found for signup bonus (wallet creation may have failed)", {
+          userId,
+          communityId,
+        });
+        return;
+      }
+
+      // 3. Pre-check community wallet balance (advisory check outside transaction)
+      const validation = await this.walletService.validateForSignupBonus(
+        ctx,
+        userId,
+        communityId,
+        config.bonusPoint,
+      );
+
+      if (!validation.valid) {
+        if (validation.reason === "insufficient_balance") {
+          // Create FAILED record for tracking when pre-check detects insufficient balance
+          logger.error("Insufficient balance in community wallet (pre-check), creating failed grant", {
+            userId,
+            communityId,
+            availableBalance: validation.currentBalance,
+            requiredBalance: config.bonusPoint,
+          });
+
+          await this.createFailedSignupBonusGrant(ctx, {
+            userId,
+            communityId,
+            failureCode: IncentiveGrantFailureCode.INSUFFICIENT_FUNDS,
+            lastError: `Insufficient balance: ${validation.currentBalance} < ${config.bonusPoint}`,
+          });
+        }
+        return;
+      }
+
+      // 4. Grant signup bonus (with TOCTOU-safe balance check inside transaction)
+      if (!validation.communityWallet) {
+        logger.error("Community wallet not found in validation result", {
+          userId,
+          communityId,
+        });
+        return;
+      }
+
+      await this.grantSignupBonus(ctx, {
+        userId,
+        communityId,
+        fromWalletId: validation.communityWallet.id,
+        toWalletId: memberWallet.id,
+        bonusPoint: config.bonusPoint,
+        message: config.message ?? undefined,
+      });
+    } catch (error) {
+      // Best-effort: log error but don't fail user signup
+      logger.error("Unexpected error during signup bonus grant", {
+        userId,
+        communityId,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    }
+  }
 
   async grantSignupBonus(
     ctx: IContext,

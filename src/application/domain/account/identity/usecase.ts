@@ -16,13 +16,12 @@ import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
-import TransactionService from "@/application/domain/transaction/service";
-import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
+import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
-import { IncentiveGrantFailureCode, User } from "@prisma/client";
+import { User } from "@prisma/client";
 
 @injectable()
 export default class IdentityUseCase {
@@ -31,9 +30,8 @@ export default class IdentityUseCase {
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("ImageService") private readonly imageService: ImageService,
-    @inject("TransactionService") private readonly transactionService: TransactionService,
-    @inject("SignupBonusConfigService")
-    private readonly signupBonusConfigService: SignupBonusConfigService,
+    @inject("IncentiveGrantService")
+    private readonly incentiveGrantService: IncentiveGrantService,
   ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -141,7 +139,7 @@ export default class IdentityUseCase {
       });
 
       // Grant signup bonus (best-effort - don't fail signup if bonus grant fails)
-      await this.grantSignupBonusIfEnabledBestEffort(ctx, userId, communityId);
+      await this.incentiveGrantService.grantSignupBonusIfEnabledBestEffort(ctx, userId, communityId);
 
       if (!ctx.uid) {
         logger.error("Missing uid in context");
@@ -160,83 +158,6 @@ export default class IdentityUseCase {
         error,
       });
       throw error;
-    }
-  }
-
-  /**
-   * Grant signup bonus if enabled (best-effort pattern).
-   * Errors are logged but not propagated - user signup should always succeed.
-   */
-  private async grantSignupBonusIfEnabledBestEffort(
-    ctx: IContext,
-    userId: string,
-    communityId: string,
-  ): Promise<void> {
-    try {
-      // 1. 設定確認
-      const config = await this.signupBonusConfigService.get(ctx, communityId);
-      if (!config || !config.isEnabled) {
-        logger.debug("Signup bonus not enabled for community", { communityId });
-        return;
-      }
-
-      // 2. ウォレット検証（WalletServiceに委譲）
-      const validation = await this.walletService.validateForSignupBonus(
-        ctx,
-        userId,
-        communityId,
-        config.bonusPoint,
-      );
-
-      if (!validation.valid) {
-        if (validation.reason === "wallet_not_found") {
-          logger.warn("Wallet not found for signup bonus (wallet creation may have failed)", {
-            userId,
-            communityId,
-          });
-        } else if (validation.reason === "insufficient_balance") {
-          logger.error("Insufficient balance in community wallet, creating failed grant", {
-            userId,
-            communityId,
-            availableBalance: validation.currentBalance,
-            requiredBalance: config.bonusPoint,
-          });
-          // Create failed grant record for tracking
-          await this.transactionService.createFailedSignupBonusGrant(ctx, {
-            userId,
-            communityId,
-            failureCode: IncentiveGrantFailureCode.INSUFFICIENT_FUNDS,
-            lastError: `Insufficient balance: ${validation.currentBalance} < ${config.bonusPoint}`,
-          });
-        }
-        return;
-      }
-
-      // 3. ポイント付与（TransactionServiceに委譲）
-      if (!validation.communityWallet) {
-        logger.error("Community wallet not found in validation result", {
-          userId,
-          communityId,
-        });
-        return;
-      }
-
-      await this.transactionService.grantSignupBonus(ctx, {
-        userId,
-        communityId,
-        toWalletId: validation.wallet!.id,
-        bonusPoint: config.bonusPoint,
-        message: config.message ?? undefined,
-        fromWalletId: validation.communityWallet.id,
-      });
-    } catch (error) {
-      // Best-effort: log error but don't fail user signup
-      logger.error("Unexpected error during signup bonus grant", {
-        userId,
-        communityId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
     }
   }
 
