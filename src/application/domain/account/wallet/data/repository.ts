@@ -77,4 +77,39 @@ export default class WalletRepository implements IWalletRepository {
       select: walletSelectDetail,
     });
   }
+
+  /**
+   * Calculate wallet balance in real-time within transaction.
+   *
+   * This method directly aggregates from the Transaction table,
+   * ensuring we get the latest balance even if the materialized view
+   * hasn't been refreshed yet.
+   *
+   * IMPORTANT: This is the ONLY correct way to check balance inside a transaction
+   * to prevent TOCTOU race conditions. Materialized views are NOT updated in real-time.
+   *
+   * @param walletId - Wallet ID to calculate balance for
+   * @param tx - Transaction client (required for transaction-safe read)
+   * @returns Current balance as BigInt
+   */
+  async calculateCurrentBalance(walletId: string, tx: Prisma.TransactionClient): Promise<bigint> {
+    // Aggregate in parallel for better performance
+    const [outgoing, incoming] = await Promise.all([
+      tx.transaction.aggregate({
+        where: { from: walletId },
+        _sum: { fromPointChange: true },
+      }),
+      tx.transaction.aggregate({
+        where: { to: walletId },
+        _sum: { toPointChange: true },
+      }),
+    ]);
+
+    const outgoingSum = BigInt(outgoing._sum.fromPointChange ?? 0);
+    const incomingSum = BigInt(incoming._sum.toPointChange ?? 0);
+
+    // Balance = incoming - outgoing
+    // (fromPointChange is positive value, so we subtract it)
+    return incomingSum - outgoingSum;
+  }
 }

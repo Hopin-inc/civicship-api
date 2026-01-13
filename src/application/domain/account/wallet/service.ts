@@ -134,64 +134,12 @@ export default class WalletService {
   }
 
   /**
-   * サインアップボーナス付与のためのウォレット検証
-   * - メンバーウォレット存在確認
-   * - コミュニティウォレット残高確認
-   *
-   * NOTE: This is a pre-check outside transaction. The actual balance check
-   * must be done inside transaction using checkCommunityWalletBalanceInTransaction.
-   */
-  async validateForSignupBonus(
-    ctx: IContext,
-    userId: string,
-    communityId: string,
-    requiredAmount: number,
-  ): Promise<{
-    valid: boolean;
-    wallet?: PrismaWallet;
-    communityWallet?: PrismaWalletDetail;
-    reason?: 'wallet_not_found' | 'insufficient_balance';
-    currentBalance?: string;
-  }> {
-    // メンバーウォレット確認
-    const wallet = await this.findMemberWallet(ctx, userId, communityId);
-    if (!wallet) {
-      return { valid: false, reason: 'wallet_not_found' };
-    }
-
-    // コミュニティウォレット残高確認
-    try {
-      const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
-      const { currentPoint } = communityWallet.currentPointView || {};
-
-      if (currentPoint == null) {
-        return { valid: true, wallet, communityWallet }; // 不明時は続行
-      }
-
-      if (currentPoint < BigInt(requiredAmount)) {
-        return {
-          valid: false,
-          wallet,
-          communityWallet,
-          reason: 'insufficient_balance',
-          currentBalance: currentPoint.toString(),
-        };
-      }
-
-      return { valid: true, wallet, communityWallet };
-    } catch (error) {
-      logger.warn("Failed to check community wallet balance", {
-        communityId,
-        userId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return { valid: true, wallet }; // エラー時は続行（communityWalletなし）
-    }
-  }
-
-  /**
    * Check community wallet balance inside transaction (TOCTOU-safe).
    * Throws ValidationError if insufficient balance.
+   *
+   * IMPORTANT: This method calculates balance in real-time from the Transaction table,
+   * NOT from the materialized view. This ensures we get the latest balance even if
+   * other transactions have modified it.
    *
    * @param ctx - Context
    * @param communityId - Community ID
@@ -211,17 +159,15 @@ export default class WalletService {
       throw new NotFoundError("Community wallet", { communityId });
     }
 
-    const { currentPoint } = communityWallet.currentPointView || {};
-
-    // Treat null as 0pt (no transactions yet or materialized view not refreshed)
-    const currentBalance = currentPoint ?? BigInt(0);
+    // Calculate real-time balance from Transaction table (NOT materialized view)
+    const currentBalance = await this.repository.calculateCurrentBalance(communityWallet.id, tx);
 
     logger.debug("Checking community wallet balance in transaction", {
       communityId,
       walletId: communityWallet.id,
       currentBalance: currentBalance.toString(),
       requiredAmount,
-      isFromMaterializedView: currentPoint != null,
+      source: "real-time aggregate",
     });
 
     if (currentBalance < BigInt(requiredAmount)) {

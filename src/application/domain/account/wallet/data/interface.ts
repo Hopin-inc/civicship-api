@@ -29,4 +29,10 @@ export interface IWalletRepository {
   ): Promise<PrismaWallet>;
 
   delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaWalletDetail>;
+
+  /**
+   * Calculate wallet balance in real-time within transaction.
+   * Aggregates directly from Transaction table to ensure latest balance.
+   */
+  calculateCurrentBalance(walletId: string, tx: Prisma.TransactionClient): Promise<bigint>;
 }

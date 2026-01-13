@@ -39,51 +39,44 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     private readonly signupBonusConfigService: SignupBonusConfigService,
   ) {}
 
+  /**
+   * Grant signup bonus if enabled (best-effort pattern).
+   *
+   * This method orchestrates the entire signup bonus flow:
+   * 1. Check if signup bonus is enabled for the community
+   * 2. Validate wallet existence (member + community)
+   * 3. Grant signup bonus (with real-time balance check inside transaction)
+   *
+   * Errors are logged but not propagated - user signup should always succeed.
+   */
   async grantSignupBonusIfEnabledBestEffort(
     ctx: IContext,
     userId: string,
     communityId: string,
   ): Promise<void> {
     try {
-      // 1. 設定確認 (ガード節)
+      // 1. Check if signup bonus is enabled
       const config = await this.signupBonusConfigService.get(ctx, communityId);
       if (!config?.isEnabled) {
         logger.debug("Signup bonus not enabled for community", { communityId });
         return;
       }
 
-      // 2. メンバーウォレット確認
-      const memberWallet = await this.walletService.findMemberWallet(ctx, userId, communityId);
-      if (!memberWallet) {
-        logger.warn("Member wallet not found for signup bonus", { userId, communityId });
-        return;
-      }
+      // 2. Get wallets in parallel
+      const [memberWallet, communityWallet] = await Promise.all([
+        this.walletService.findMemberWallet(ctx, userId, communityId),
+        this.walletService.findCommunityWalletOrThrow(ctx, communityId),
+      ]);
 
-      // 3. 事前バリデーション (残高確認など)
-      const { valid, reason, communityWallet, currentBalance } =
-        await this.walletService.validateForSignupBonus(
-          ctx,
+      if (!memberWallet) {
+        logger.warn("Member wallet not found for signup bonus (wallet creation may have failed)", {
           userId,
           communityId,
-          config.bonusPoint,
-        );
-
-      if (!valid) {
-        if (reason === "insufficient_balance") {
-          await this.handlePreCheckInsufficientFunds(
-            ctx,
-            userId,
-            communityId,
-            config.bonusPoint,
-            currentBalance,
-          );
-        }
+        });
         return;
       }
 
-      // 4. ポイント付与実行
-      if (!communityWallet) return;
-
+      // 3. Grant signup bonus (balance check happens inside transaction)
       await this.grantSignupBonus(ctx, {
         userId,
         communityId,
@@ -93,7 +86,13 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
         message: config.message ?? undefined,
       });
     } catch (error) {
-      this.logUnexpectedError(error, userId, communityId);
+      // Best-effort: log error but don't fail user signup
+      logger.error("Unexpected error during signup bonus grant", {
+        userId,
+        communityId,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
   }
 
@@ -256,27 +255,6 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
 
   // --- ヘルパーメソッド ---
 
-  private async handlePreCheckInsufficientFunds(
-    ctx: IContext,
-    userId: string,
-    communityId: string,
-    required: number,
-    current?: string,
-  ) {
-    logger.error("Insufficient balance detected in pre-check", {
-      userId,
-      communityId,
-      current,
-      required,
-    });
-    await this.createFailedSignupBonusGrant(ctx, {
-      userId,
-      communityId,
-      failureCode: IncentiveGrantFailureCode.INSUFFICIENT_FUNDS,
-      lastError: `Insufficient balance (pre-check): ${current} < ${required}`,
-    });
-  }
-
   private handleDataCorruption(grantId: string): GrantSignupBonusResult {
     logger.error("DATA CORRUPTION: Grant is COMPLETED but transaction is null", { grantId });
     return {
@@ -285,14 +263,6 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
       failureCode: IncentiveGrantFailureCode.UNKNOWN,
       lastError: "DATA CORRUPTION: Grant marked COMPLETED but transaction is null",
     };
-  }
-
-  private logUnexpectedError(error: unknown, userId: string, communityId: string) {
-    logger.error("Unexpected error during signup bonus grant", {
-      userId,
-      communityId,
-      error: error instanceof Error ? error.message : String(error),
-    });
   }
 
   // --- その他サポートメソッド (リトライ・取得など) ---
