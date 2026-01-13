@@ -112,39 +112,42 @@ export default class TransactionUseCase {
       permission.communityId,
     );
 
-    const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      await this.membershipService.joinIfNeeded(
-        ctx,
-        currentUserId,
-        permission.communityId,
-        tx,
-        toUserId,
-      );
-      const { toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
-        ctx,
-        tx,
-        permission.communityId,
-        toUserId,
-        transferPoints,
-        TransactionReason.GRANT,
-      );
+    const transaction = await ctx.issuer.onlyBelongingCommunity(
+      ctx,
+      async (tx: Prisma.TransactionClient) => {
+        await this.membershipService.joinIfNeeded(
+          ctx,
+          currentUserId,
+          permission.communityId,
+          tx,
+          toUserId,
+        );
+        const { toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+          ctx,
+          tx,
+          permission.communityId,
+          toUserId,
+          transferPoints,
+          TransactionReason.GRANT,
+        );
 
-      return await this.transactionService.grantCommunityPoint(
-        ctx,
-        transferPoints,
-        communityWallet.id,
-        toWalletId,
-        tx,
-        comment,
-      );
-    });
+        return await this.transactionService.grantCommunityPoint(
+          ctx,
+          transferPoints,
+          communityWallet.id,
+          toWalletId,
+          tx,
+          comment,
+        );
+      },
+    );
 
     const communityName = await this.communityService.getCommunityName(ctx, permission.communityId);
 
     await ctx.issuer.internal(async (tx) => {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
-    
+
     this.notificationService
       .pushPointGrantReceivedMessage(
         ctx,
@@ -176,29 +179,32 @@ export default class TransactionUseCase {
       communityId,
     );
 
-    const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      const toWallet = await this.walletService.findMemberWalletOrThrow(
-        ctx,
-        toUserId,
-        communityId,
-        tx,
-      );
+    const transaction = await ctx.issuer.onlyBelongingCommunity(
+      ctx,
+      async (tx: Prisma.TransactionClient) => {
+        const toWallet = await this.walletService.findMemberWalletOrThrow(
+          ctx,
+          toUserId,
+          communityId,
+          tx,
+        );
 
-      const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
-        fromWallet,
-        toWallet,
-        transferPoints,
-      );
+        const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+          fromWallet,
+          toWallet,
+          transferPoints,
+        );
 
-      return await this.transactionService.donateSelfPoint(
-        ctx,
-        fromWallet.id,
-        toWalletId,
-        transferPoints,
-        tx,
-        comment,
-      );
-    });
+        return await this.transactionService.donateSelfPoint(
+          ctx,
+          fromWallet.id,
+          toWalletId,
+          transferPoints,
+          tx,
+          comment,
+        );
+      },
+    );
 
     await ctx.issuer.internal(async (tx) => {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
@@ -281,13 +287,7 @@ export default class TransactionUseCase {
     { communityId, filter, sort }: GqlQuerySignupBonusesArgs,
     ctx: IContext,
   ): Promise<PrismaIncentiveGrantDetail[]> {
-    const grants = await this.incentiveGrantService.getSignupBonuses(
-      ctx,
-      communityId,
-      filter,
-      sort,
-    );
-    return grants;
+    return await this.incentiveGrantService.getSignupBonuses(ctx, communityId, filter, sort);
   }
 
   async managerRetrySignupBonus(

@@ -139,7 +139,11 @@ export default class IdentityUseCase {
       });
 
       // Grant signup bonus (best-effort - don't fail signup if bonus grant fails)
-      await this.incentiveGrantService.grantSignupBonusIfEnabledBestEffort(ctx, userId, communityId);
+      await this.incentiveGrantService.grantSignupBonusIfEnabledBestEffort(
+        ctx,
+        userId,
+        communityId,
+      );
 
       if (!ctx.uid) {
         logger.error("Missing uid in context");
@@ -241,15 +245,23 @@ export default class IdentityUseCase {
 
           if (existingMembershipForLineUser) {
             // User has LINE Identity and Membership, just needs Phone Identity linked
-            logger.debug("[checkPhoneUser] User has LINE identity and membership, linking phone identity", {
-              phoneUid,
-              lineUid: ctx.uid,
-              userId: userByLineIdentity.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] User has LINE identity and membership, linking phone identity",
+              {
+                phoneUid,
+                lineUid: ctx.uid,
+                userId: userByLineIdentity.id,
+                communityId: ctx.communityId,
+              },
+            );
 
             await ctx.issuer.public(ctx, async (tx) => {
-              await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
+              await this.identityService.linkPhoneIdentity(
+                ctx,
+                userByLineIdentity.id,
+                phoneUid,
+                tx,
+              );
             });
 
             return {
@@ -259,16 +271,24 @@ export default class IdentityUseCase {
             };
           } else {
             // User has LINE Identity but no Membership - create membership and link phone identity
-            logger.debug("[checkPhoneUser] User has LINE identity but no membership, creating membership and linking phone", {
-              phoneUid,
-              lineUid: ctx.uid,
-              userId: userByLineIdentity.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] User has LINE identity but no membership, creating membership and linking phone",
+              {
+                phoneUid,
+                lineUid: ctx.uid,
+                userId: userByLineIdentity.id,
+                communityId: ctx.communityId,
+              },
+            );
 
             const membership = await ctx.issuer.public(ctx, async (tx) => {
               // Link phone identity to existing user
-              await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
+              await this.identityService.linkPhoneIdentity(
+                ctx,
+                userByLineIdentity.id,
+                phoneUid,
+                tx,
+              );
 
               // Create membership
               const newMembership = await this.membershipService.joinIfNeeded(
@@ -361,20 +381,26 @@ export default class IdentityUseCase {
               });
               throw new Error("This LINE account is already linked to another user");
             }
-            logger.debug("[checkPhoneUser] LINE identity already exists for this user, skipping creation", {
-              uid: ctx.uid,
-              platform: ctx.platform,
-              userId: existingUser.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] LINE identity already exists for this user, skipping creation",
+              {
+                uid: ctx.uid,
+                platform: ctx.platform,
+                userId: existingUser.id,
+                communityId: ctx.communityId,
+              },
+            );
           } else {
-            logger.debug("[checkPhoneUser] Creating new LINE identity for existing membership user", {
-              phoneUid,
-              currentUid: ctx.uid,
-              currentPlatform: ctx.platform,
-              userId: existingUser.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] Creating new LINE identity for existing membership user",
+              {
+                phoneUid,
+                currentUid: ctx.uid,
+                currentPlatform: ctx.platform,
+                userId: existingUser.id,
+                communityId: ctx.communityId,
+              },
+            );
             await this.identityService.addIdentityToUser(
               ctx,
               existingUser.id,
@@ -383,12 +409,15 @@ export default class IdentityUseCase {
               ctx.communityId,
               tx,
             );
-            logger.debug("[checkPhoneUser] Successfully created LINE identity for existing membership user", {
-              uid: ctx.uid,
-              platform: ctx.platform,
-              userId: existingUser.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] Successfully created LINE identity for existing membership user",
+              {
+                uid: ctx.uid,
+                platform: ctx.platform,
+                userId: existingUser.id,
+                communityId: ctx.communityId,
+              },
+            );
           }
         });
       }

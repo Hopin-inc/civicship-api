@@ -1,20 +1,30 @@
 import { IContext } from "@/types/server";
-import { GrantSignupBonusResult } from "@/application/domain/transaction/data/type";
-import { StalePendingGrantResult } from "@/application/domain/transaction/incentiveGrant/data/type";
+import {
+  GrantSignupBonusResult,
+  PrismaTransactionDetail,
+} from "@/application/domain/transaction/data/type";
+import { PrismaIncentiveGrantDetail } from "@/application/domain/transaction/incentiveGrant/data/type";
+import { IncentiveGrantFailureCode } from "@prisma/client";
+import { GqlSignupBonusFilterInput, GqlSignupBonusSortInput } from "@/types/graphql";
 
 /**
- * Service interface for IncentiveGrant operations
+ * 特典付与（IncentiveGrant）に関するドメインロジックを定義するインターフェース
  */
 export interface IIncentiveGrantService {
   /**
-   * Grant signup bonus with complete transaction separation for safety.
-   *
-   * CRITICAL DESIGN:
-   * - Uses separate transactions to avoid PostgreSQL abort state issues
-   * - Returns Result type (never throws) to preserve FAILED state
-   * - Grant-first pattern ensures idempotency
-   *
-   * @returns Result object (COMPLETED | SKIPPED_ALREADY_COMPLETED | SKIPPED_PENDING | FAILED)
+   * 【推奨】サインアップボーナス付与の全工程をベストエフォートで実行する。
+   * IdentityUseCase からの唯一のエントリポイント。
+   * 設定確認、ウォレット検証、二重付与防止、残高不足の記録をすべて内包する。
+   */
+  grantSignupBonusIfEnabledBestEffort(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+  ): Promise<void>;
+
+  /**
+   * 特典付与のコアロジック。
+   * 冪等性を担保しながら、トランザクション分離レベルを考慮してポイントを付与する。
    */
   grantSignupBonus(
     ctx: IContext,
@@ -29,12 +39,10 @@ export interface IIncentiveGrantService {
   ): Promise<GrantSignupBonusResult>;
 
   /**
-   * Retry failed signup bonus grant (public method for UseCase).
-   * Resets grant to PENDING and re-executes.
-   *
-   * @returns Result (COMPLETED or FAILED)
+   * 失敗した特典付与を再試行する。
+   * 状態を PENDING に戻してから実行し、UI向けの結果を返す。
    */
-  retrySignupBonusGrant(
+  retrySignupBonus(
     ctx: IContext,
     args: {
       grantId: string;
@@ -43,53 +51,32 @@ export interface IIncentiveGrantService {
       bonusPoint: number;
       message?: string;
     },
-  ): Promise<Extract<GrantSignupBonusResult, { status: "COMPLETED" | "FAILED" }>>;
-
-  /**
-   * Find stale PENDING grants for monitoring and cleanup.
-   * Returns grants that have been in PENDING state for longer than the threshold.
-   *
-   * This can be called:
-   * 1. Via a cron job to automatically log/alert on stuck grants
-   * 2. Via an admin mutation to manually check status
-   * 3. As input to an automated cleanup process
-   *
-   * @param thresholdMinutes - How old a PENDING grant must be to be considered stale (default: 30 minutes)
-   */
-  findStalePendingGrants(
-    ctx: IContext,
-    thresholdMinutes?: number,
-  ): Promise<StalePendingGrantResult[]>;
-
-  /**
-   * Get grant information for retry operations.
-   * Returns essential grant data needed for retry (userId, communityId, status).
-   *
-   * @param grantId - Grant ID to retrieve
-   * @returns Grant info with userId, communityId, status
-   * @throws NotFoundError if grant doesn't exist
-   */
-  getGrantInfoForRetry(
-    ctx: IContext,
-    grantId: string,
   ): Promise<{
-    userId: string;
-    communityId: string;
-    status: string;
+    success: boolean;
+    transaction?: PrismaTransactionDetail;
+    error?: string;
   }>;
 
   /**
-   * Create a failed signup bonus grant record without attempting transaction.
-   * Used when pre-validation fails (e.g., insufficient balance check in UseCase layer).
-   *
-   * @param args - Contains userId, communityId, failureCode, and lastError
+   * 特定のコミュニティの特典付与履歴を取得する（管理画面用）。
+   */
+  getSignupBonuses(
+    ctx: IContext,
+    communityId: string,
+    filter?: GqlSignupBonusFilterInput | null,
+    sort?: GqlSignupBonusSortInput | null,
+  ): Promise<PrismaIncentiveGrantDetail[]>;
+
+  /**
+   * 実行を伴わずに「失敗レコード」のみを作成する。
+   * バリデーション層で事前にエラーを検知した場合に使用。
    */
   createFailedSignupBonusGrant(
     ctx: IContext,
     args: {
       userId: string;
       communityId: string;
-      failureCode: import("@prisma/client").IncentiveGrantFailureCode;
+      failureCode: IncentiveGrantFailureCode;
       lastError: string;
     },
   ): Promise<void>;
