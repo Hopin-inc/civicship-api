@@ -118,6 +118,7 @@ const resolvers = {
   Utility: utility.Utility,
 
   Transaction: transaction.Transaction,
+  SignupBonus: transaction.SignupBonus,
 
   ...scalarResolvers,
 };
