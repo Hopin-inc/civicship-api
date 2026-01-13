@@ -2061,8 +2061,8 @@ export type GqlQueryReservationsArgs = {
 
 
 export type GqlQuerySignupBonusesArgs = {
-  communityId: Scalars['ID']['input'];
   filter?: InputMaybe<GqlSignupBonusFilterInput>;
+  permission?: InputMaybe<GqlCheckCommunityPermissionInput>;
   sort?: InputMaybe<GqlSignupBonusSortInput>;
 };
 
@@ -4742,7 +4742,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   reservationHistories?: Resolver<GqlResolversTypes['ReservationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryReservationHistoriesArgs>>;
   reservationHistory?: Resolver<Maybe<GqlResolversTypes['ReservationHistory']>, ParentType, ContextType, RequireFields<GqlQueryReservationHistoryArgs, 'id'>>;
   reservations?: Resolver<GqlResolversTypes['ReservationsConnection'], ParentType, ContextType, Partial<GqlQueryReservationsArgs>>;
-  signupBonuses?: Resolver<Maybe<Array<GqlResolversTypes['SignupBonus']>>, ParentType, ContextType, RequireFields<GqlQuerySignupBonusesArgs, 'communityId'>>;
+  signupBonuses?: Resolver<Maybe<Array<GqlResolversTypes['SignupBonus']>>, ParentType, ContextType, Partial<GqlQuerySignupBonusesArgs>>;
   states?: Resolver<GqlResolversTypes['StatesConnection'], ParentType, ContextType, Partial<GqlQueryStatesArgs>>;
   ticket?: Resolver<Maybe<GqlResolversTypes['Ticket']>, ParentType, ContextType, RequireFields<GqlQueryTicketArgs, 'id'>>;
   ticketClaimLink?: Resolver<Maybe<GqlResolversTypes['TicketClaimLink']>, ParentType, ContextType, RequireFields<GqlQueryTicketClaimLinkArgs, 'id'>>;

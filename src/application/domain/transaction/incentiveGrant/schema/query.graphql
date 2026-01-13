@@ -4,9 +4,9 @@ extend type Query {
   Supports filtering and sorting.
   """
   signupBonuses(
-    communityId: ID!
     filter: SignupBonusFilterInput
     sort: SignupBonusSortInput
+    permission: CheckCommunityPermissionInput
   ): [SignupBonus!] @authz(rules: [IsCommunityOwner])
 }
 
