@@ -6,7 +6,7 @@ import WalletConverter from "@/application/domain/account/wallet/data/converter"
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
 import { PrismaWallet, PrismaWalletDetail } from "@/application/domain/account/wallet/data/type";
-import TransactionService from "@/application/domain/transaction/service";
+import { ITransactionRepository } from "@/application/domain/transaction/data/interface";
 import logger from "@/infrastructure/logging";
 
 @injectable()
@@ -14,7 +14,7 @@ export default class WalletService {
   constructor(
     @inject("WalletRepository") private readonly repository: IWalletRepository,
     @inject("WalletConverter") private readonly converter: WalletConverter,
-    @inject("TransactionService") private readonly transactionService: TransactionService,
+    @inject("TransactionRepository") private readonly transactionRepository: ITransactionRepository,
   ) { }
 
   async fetchWallets(ctx: IContext, { filter, sort, cursor }: GqlQueryWalletsArgs, take: number) {
@@ -127,7 +127,7 @@ export default class WalletService {
   private async refreshCurrentPointViewIfNotExist(ctx: IContext, wallet: PrismaWallet) {
     if (wallet.currentPointView === null) {
       await ctx.issuer.public(ctx, tx => {
-        return this.transactionService.refreshCurrentPoint(ctx, tx);
+        return this.transactionRepository.refreshCurrentPoints(ctx, tx);
       });
       return true;
     } else return false;
