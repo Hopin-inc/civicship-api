@@ -728,7 +728,7 @@ type Mutation {
   retrySignupBonusGrant(grantId: ID!): Transaction!
 
   """Retry a failed signup bonus grant (OWNER/MANAGER only)."""
-  signupBonusRetry(grantId: ID!): SignupBonusRetryPayload!
+  signupBonusRetry(grantId: ID!, permission: CheckCommunityPermissionInput!): SignupBonusRetryPayload!
   storePhoneAuthToken(input: StorePhoneAuthTokenInput!, permission: CheckIsSelfPermissionInput!): StorePhoneAuthTokenPayload
   ticketClaim(input: TicketClaimInput!): TicketClaimPayload
   ticketIssue(input: TicketIssueInput!, permission: CheckCommunityPermissionInput!): TicketIssuePayload

@@ -2,7 +2,7 @@ extend type Mutation {
   """
   Retry a failed signup bonus grant (OWNER/MANAGER only).
   """
-  signupBonusRetry(grantId: ID!): SignupBonusRetryPayload!  @authz(rules: [IsCommunityOwner])
+  signupBonusRetry(grantId: ID!, permission: CheckCommunityPermissionInput!): SignupBonusRetryPayload!  @authz(rules: [IsCommunityOwner])
 }
 
 """

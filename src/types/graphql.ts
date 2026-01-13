@@ -1048,6 +1048,7 @@ export type GqlMutationRetrySignupBonusGrantArgs = {
 
 export type GqlMutationSignupBonusRetryArgs = {
   grantId: Scalars['ID']['input'];
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
@@ -4323,7 +4324,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   reservationJoin?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationJoinArgs, 'id'>>;
   reservationReject?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationRejectArgs, 'id' | 'input' | 'permission'>>;
   retrySignupBonusGrant?: Resolver<GqlResolversTypes['Transaction'], ParentType, ContextType, RequireFields<GqlMutationRetrySignupBonusGrantArgs, 'grantId'>>;
-  signupBonusRetry?: Resolver<GqlResolversTypes['SignupBonusRetryPayload'], ParentType, ContextType, RequireFields<GqlMutationSignupBonusRetryArgs, 'grantId'>>;
+  signupBonusRetry?: Resolver<GqlResolversTypes['SignupBonusRetryPayload'], ParentType, ContextType, RequireFields<GqlMutationSignupBonusRetryArgs, 'grantId' | 'permission'>>;
   storePhoneAuthToken?: Resolver<Maybe<GqlResolversTypes['StorePhoneAuthTokenPayload']>, ParentType, ContextType, RequireFields<GqlMutationStorePhoneAuthTokenArgs, 'input' | 'permission'>>;
   ticketClaim?: Resolver<Maybe<GqlResolversTypes['TicketClaimPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketClaimArgs, 'input'>>;
   ticketIssue?: Resolver<Maybe<GqlResolversTypes['TicketIssuePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketIssueArgs, 'input' | 'permission'>>;
