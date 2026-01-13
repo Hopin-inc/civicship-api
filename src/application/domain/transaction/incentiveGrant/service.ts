@@ -24,6 +24,7 @@ import { determineFailureCode } from "../util/failureCodeResolver";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import { GqlSignupBonusFilterInput, GqlSignupBonusSortInput } from "@/types/graphql";
+import WalletService from "@/application/domain/account/wallet/service";
 
 const SIGNUP_SOURCE_ID = "default";
 
@@ -36,6 +37,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     @inject("TransactionConverter") private readonly transactionConverter: TransactionConverter,
     @inject("IncentiveGrantConverter")
     private readonly incentiveGrantConverter: IncentiveGrantConverter,
+    @inject("WalletService") private readonly walletService: WalletService,
   ) {}
 
   async grantSignupBonus(
@@ -311,6 +313,14 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
 
     try {
       const transaction = await ctx.issuer.public(ctx, async (tx) => {
+        // TOCTOU-safe balance check inside transaction
+        await this.walletService.checkCommunityWalletBalanceInTransaction(
+          ctx,
+          grantCheck.communityId,
+          bonusPoint,
+          tx,
+        );
+
         const transactionData = this.transactionConverter.signupBonus(
           fromWalletId,
           toWalletId,

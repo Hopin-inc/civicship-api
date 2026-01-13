@@ -1,11 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs } from "@/types/graphql";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
-import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
+import { PrismaWallet, PrismaWalletDetail } from "@/application/domain/account/wallet/data/type";
 import TransactionService from "@/application/domain/transaction/service";
 import logger from "@/infrastructure/logging";
 
@@ -137,6 +137,9 @@ export default class WalletService {
    * サインアップボーナス付与のためのウォレット検証
    * - メンバーウォレット存在確認
    * - コミュニティウォレット残高確認
+   *
+   * NOTE: This is a pre-check outside transaction. The actual balance check
+   * must be done inside transaction using checkCommunityWalletBalanceInTransaction.
    */
   async validateForSignupBonus(
     ctx: IContext,
@@ -183,6 +186,47 @@ export default class WalletService {
         error: error instanceof Error ? error.message : String(error),
       });
       return { valid: true, wallet }; // エラー時は続行（communityWalletなし）
+    }
+  }
+
+  /**
+   * Check community wallet balance inside transaction (TOCTOU-safe).
+   * Throws ValidationError if insufficient balance.
+   *
+   * @param ctx - Context
+   * @param communityId - Community ID
+   * @param requiredAmount - Required amount
+   * @param tx - Transaction client (required)
+   * @throws ValidationError if insufficient balance
+   */
+  async checkCommunityWalletBalanceInTransaction(
+    ctx: IContext,
+    communityId: string,
+    requiredAmount: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    const communityWallet = await this.repository.findCommunityWallet(ctx, communityId, tx);
+
+    if (!communityWallet?.id) {
+      throw new NotFoundError("Community wallet", { communityId });
+    }
+
+    const { currentPoint } = communityWallet.currentPointView || {};
+
+    if (currentPoint == null) {
+      // Materialized view not available - allow transaction to proceed
+      logger.warn("Community wallet currentPointView is null, skipping balance check", {
+        communityId,
+        requiredAmount,
+      });
+      return;
+    }
+
+    if (currentPoint < BigInt(requiredAmount)) {
+      throw new ValidationError(
+        `Insufficient balance: ${currentPoint} < ${requiredAmount}`,
+        ["communityWallet", communityId]
+      );
     }
   }
 }
