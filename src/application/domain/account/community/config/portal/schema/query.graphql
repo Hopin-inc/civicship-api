@@ -1,6 +1,0 @@
-# ------------------------------
-# CommunityPortalConfig Query Definitions
-# ------------------------------
-extend type Query {
-    communityPortalConfig(communityId: String!): CommunityPortalConfig
-}

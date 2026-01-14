@@ -6,7 +6,6 @@ import WalletResolver from "@/application/domain/account/wallet/controller/resol
 import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import MembershipResolver from "@/application/domain/account/membership/controller/resolver";
 import CommunityResolver from "@/application/domain/account/community/controller/resolver";
-import CommunityPortalConfigResolver from "@/application/domain/account/community/config/portal/controller/resolver";
 import ArticleResolver from "@/application/domain/content/article/controller/resolver";
 import OpportunityResolver from "@/application/domain/experience/opportunity/controller/resolver";
 import OpportunitySlotResolver from "@/application/domain/experience/opportunitySlot/controller/resolver";
@@ -31,7 +30,6 @@ const wallet = container.resolve(WalletResolver);
 const nftWallet = container.resolve(NftWalletResolver);
 const membership = container.resolve(MembershipResolver);
 const community = container.resolve(CommunityResolver);
-const communityPortalConfig = container.resolve(CommunityPortalConfigResolver);
 
 const article = container.resolve(ArticleResolver);
 
@@ -59,7 +57,6 @@ const resolvers = {
     ...identity.Query,
     ...user.Query,
     ...community.Query,
-    ...communityPortalConfig.Query,
     ...membership.Query,
     ...wallet.Query,
     ...article.Query,
