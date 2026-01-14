@@ -7,6 +7,7 @@ import type { CommunityConfig } from "@prisma/client";
 import type { CommunityFirebaseConfig } from "@prisma/client";
 import type { CommunityLineConfig } from "@prisma/client";
 import type { CommunityLineRichMenuConfig } from "@prisma/client";
+import type { CommunityPortalConfig } from "@prisma/client";
 import type { User } from "@prisma/client";
 import type { Identity } from "@prisma/client";
 import type { DidIssuanceRequest } from "@prisma/client";
@@ -235,6 +236,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "lineConfig",
                 type: "CommunityLineConfig",
                 relationName: "CommunityConfigToCommunityLineConfig"
+            }, {
+                name: "portalConfig",
+                type: "CommunityPortalConfig",
+                relationName: "CommunityConfigToCommunityPortalConfig"
             }]
     }, {
         name: "CommunityFirebaseConfig",
@@ -260,6 +265,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "config",
                 type: "CommunityLineConfig",
                 relationName: "CommunityLineConfigToCommunityLineRichMenuConfig"
+            }]
+    }, {
+        name: "CommunityPortalConfig",
+        fields: [{
+                name: "config",
+                type: "CommunityConfig",
+                relationName: "CommunityConfigToCommunityPortalConfig"
             }]
     }, {
         name: "User",
@@ -1792,6 +1804,11 @@ type CommunityConfiglineConfigFactory = {
     build: () => PromiseLike<Prisma.CommunityLineConfigCreateNestedOneWithoutConfigInput["create"]>;
 };
 
+type CommunityConfigportalConfigFactory = {
+    _factoryFor: "CommunityPortalConfig";
+    build: () => PromiseLike<Prisma.CommunityPortalConfigCreateNestedOneWithoutConfigInput["create"]>;
+};
+
 type CommunityConfigFactoryDefineInput = {
     id?: string;
     createdAt?: Date;
@@ -1799,6 +1816,7 @@ type CommunityConfigFactoryDefineInput = {
     community: CommunityConfigcommunityFactory | Prisma.CommunityCreateNestedOneWithoutConfigInput;
     firebaseConfig?: CommunityConfigfirebaseConfigFactory | Prisma.CommunityFirebaseConfigCreateNestedOneWithoutConfigInput;
     lineConfig?: CommunityConfiglineConfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutConfigInput;
+    portalConfig?: CommunityConfigportalConfigFactory | Prisma.CommunityPortalConfigCreateNestedOneWithoutConfigInput;
 };
 
 type CommunityConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityConfigFactoryDefineInput, never>>;
@@ -1824,6 +1842,10 @@ function isCommunityConfigfirebaseConfigFactory(x: CommunityConfigfirebaseConfig
 
 function isCommunityConfiglineConfigFactory(x: CommunityConfiglineConfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutConfigInput | undefined): x is CommunityConfiglineConfigFactory {
     return (x as any)?._factoryFor === "CommunityLineConfig";
+}
+
+function isCommunityConfigportalConfigFactory(x: CommunityConfigportalConfigFactory | Prisma.CommunityPortalConfigCreateNestedOneWithoutConfigInput | undefined): x is CommunityConfigportalConfigFactory {
+    return (x as any)?._factoryFor === "CommunityPortalConfig";
 }
 
 type CommunityConfigTraitKeys<TOptions extends CommunityConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -1892,7 +1914,10 @@ function defineCommunityConfigFactoryInternal<TTransients extends Record<string,
                 } : defaultData.firebaseConfig,
                 lineConfig: isCommunityConfiglineConfigFactory(defaultData.lineConfig) ? {
                     create: await defaultData.lineConfig.build()
-                } : defaultData.lineConfig
+                } : defaultData.lineConfig,
+                portalConfig: isCommunityConfigportalConfigFactory(defaultData.portalConfig) ? {
+                    create: await defaultData.portalConfig.build()
+                } : defaultData.portalConfig
             } as Prisma.CommunityConfigCreateInput;
             const data: Prisma.CommunityConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -2123,6 +2148,7 @@ type CommunityLineConfigFactoryDefineInput = {
     channelSecret?: string;
     accessToken?: string;
     liffId?: string;
+    liffAppId?: string | null;
     liffBaseUrl?: string;
     createdAt?: Date;
     updatedAt?: Date | null;
@@ -2427,6 +2453,191 @@ export const defineCommunityLineRichMenuConfigFactory = (<TOptions extends Commu
 }) as CommunityLineRichMenuConfigFactoryBuilder;
 
 defineCommunityLineRichMenuConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityLineRichMenuConfigFactoryInternal(options, defaultTransientFieldValues);
+
+type CommunityPortalConfigScalarOrEnumFields = {
+    tokenName: string;
+    title: string;
+    description: string;
+    domain: string;
+    faviconPrefix: string;
+    logoPath: string;
+    squareLogoPath: string;
+    ogImagePath: string;
+    enableFeatures: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+};
+
+type CommunityPortalConfigconfigFactory = {
+    _factoryFor: "CommunityConfig";
+    build: () => PromiseLike<Prisma.CommunityConfigCreateNestedOneWithoutPortalConfigInput["create"]>;
+};
+
+type CommunityPortalConfigFactoryDefineInput = {
+    id?: string;
+    tokenName?: string;
+    title?: string;
+    description?: string;
+    shortDescription?: string | null;
+    domain?: string;
+    faviconPrefix?: string;
+    logoPath?: string;
+    squareLogoPath?: string;
+    ogImagePath?: string;
+    enableFeatures?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    rootPath?: string;
+    adminRootPath?: string;
+    documents?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
+    commonDocumentOverrides?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
+    regionName?: string | null;
+    regionKey?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    config: CommunityPortalConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutPortalConfigInput;
+};
+
+type CommunityPortalConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityPortalConfigFactoryDefineInput, never>>;
+
+type CommunityPortalConfigFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityPortalConfigFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityPortalConfig, Prisma.CommunityPortalConfigCreateInput, TTransients>;
+
+type CommunityPortalConfigFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<CommunityPortalConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: CommunityPortalConfigFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityPortalConfig, Prisma.CommunityPortalConfigCreateInput, TTransients>;
+
+function isCommunityPortalConfigconfigFactory(x: CommunityPortalConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutPortalConfigInput | undefined): x is CommunityPortalConfigconfigFactory {
+    return (x as any)?._factoryFor === "CommunityConfig";
+}
+
+type CommunityPortalConfigTraitKeys<TOptions extends CommunityPortalConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityPortalConfigFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityPortalConfig";
+    build(inputData?: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityPortalConfigCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityPortalConfigCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityPortalConfigCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityPortalConfigCreateInput[]>;
+    pickForConnect(inputData: CommunityPortalConfig): Pick<CommunityPortalConfig, "id">;
+    create(inputData?: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>): PromiseLike<CommunityPortalConfig>;
+    createList(list: readonly Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>[]): PromiseLike<CommunityPortalConfig[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>): PromiseLike<CommunityPortalConfig[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>): PromiseLike<Pick<CommunityPortalConfig, "id">>;
+}
+
+export interface CommunityPortalConfigFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityPortalConfigFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityPortalConfigFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityPortalConfigScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityPortalConfigScalarOrEnumFields {
+    return {
+        tokenName: getScalarFieldValueGenerator().String({ modelName: "CommunityPortalConfig", fieldName: "tokenName", isId: false, isUnique: false, seq }),
+        title: getScalarFieldValueGenerator().String({ modelName: "CommunityPortalConfig", fieldName: "title", isId: false, isUnique: false, seq }),
+        description: getScalarFieldValueGenerator().String({ modelName: "CommunityPortalConfig", fieldName: "description", isId: false, isUnique: false, seq }),
+        domain: getScalarFieldValueGenerator().String({ modelName: "CommunityPortalConfig", fieldName: "domain", isId: false, isUnique: false, seq }),
+        faviconPrefix: getScalarFieldValueGenerator().String({ modelName: "CommunityPortalConfig", fieldName: "faviconPrefix", isId: false, isUnique: false, seq }),
+        logoPath: getScalarFieldValueGenerator().String({ modelName: "CommunityPortalConfig", fieldName: "logoPath", isId: false, isUnique: false, seq }),
+        squareLogoPath: getScalarFieldValueGenerator().String({ modelName: "CommunityPortalConfig", fieldName: "squareLogoPath", isId: false, isUnique: false, seq }),
+        ogImagePath: getScalarFieldValueGenerator().String({ modelName: "CommunityPortalConfig", fieldName: "ogImagePath", isId: false, isUnique: false, seq }),
+        enableFeatures: getScalarFieldValueGenerator().Json({ modelName: "CommunityPortalConfig", fieldName: "enableFeatures", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityPortalConfigFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityPortalConfigFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityPortalConfigFactoryInterface<TTransients, CommunityPortalConfigTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityPortalConfigTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityPortalConfig", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityPortalConfigScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityPortalConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityPortalConfigFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                config: isCommunityPortalConfigconfigFactory(defaultData.config) ? {
+                    create: await defaultData.config.build()
+                } : defaultData.config
+            } as Prisma.CommunityPortalConfigCreateInput;
+            const data: Prisma.CommunityPortalConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityPortalConfig) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityPortalConfig.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityPortalConfigCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityPortalConfigCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityPortalConfig" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityPortalConfigTraitKeys<TOptions>, ...names: readonly CommunityPortalConfigTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityPortalConfigFactoryBuilder {
+    <TOptions extends CommunityPortalConfigFactoryDefineOptions>(options: TOptions): CommunityPortalConfigFactoryInterface<{}, CommunityPortalConfigTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityPortalConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityPortalConfigFactoryDefineOptions<TTransients>>(options: TOptions) => CommunityPortalConfigFactoryInterface<TTransients, CommunityPortalConfigTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityPortalConfig} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityPortalConfigFactoryInterface}
+ */
+export const defineCommunityPortalConfigFactory = (<TOptions extends CommunityPortalConfigFactoryDefineOptions>(options: TOptions): CommunityPortalConfigFactoryInterface<TOptions> => {
+    return defineCommunityPortalConfigFactoryInternal(options, {});
+}) as CommunityPortalConfigFactoryBuilder;
+
+defineCommunityPortalConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityPortalConfigFactoryInternal(options, defaultTransientFieldValues);
 
 type UserScalarOrEnumFields = {
     name: string;

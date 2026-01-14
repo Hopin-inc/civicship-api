@@ -206,6 +206,12 @@ export const GqlClaimLinkStatus = {
 } as const;
 
 export type GqlClaimLinkStatus = typeof GqlClaimLinkStatus[keyof typeof GqlClaimLinkStatus];
+export type GqlCommonDocumentOverrides = {
+  __typename?: 'CommonDocumentOverrides';
+  privacy?: Maybe<GqlCommunityDocument>;
+  terms?: Maybe<GqlCommunityDocument>;
+};
+
 export type GqlCommunitiesConnection = {
   __typename?: 'CommunitiesConnection';
   edges?: Maybe<Array<GqlCommunityEdge>>;
@@ -271,6 +277,15 @@ export type GqlCommunityDeleteSuccess = {
   communityId: Scalars['String']['output'];
 };
 
+export type GqlCommunityDocument = {
+  __typename?: 'CommunityDocument';
+  id: Scalars['String']['output'];
+  order?: Maybe<Scalars['Int']['output']>;
+  path: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
 export type GqlCommunityEdge = GqlEdge & {
   __typename?: 'CommunityEdge';
   cursor: Scalars['String']['output'];
@@ -297,6 +312,7 @@ export type GqlCommunityLineConfig = {
   accessToken?: Maybe<Scalars['String']['output']>;
   channelId?: Maybe<Scalars['String']['output']>;
   channelSecret?: Maybe<Scalars['String']['output']>;
+  liffAppId?: Maybe<Scalars['String']['output']>;
   liffBaseUrl?: Maybe<Scalars['String']['output']>;
   liffId?: Maybe<Scalars['String']['output']>;
   richMenus?: Maybe<Array<GqlCommunityLineRichMenuConfig>>;
@@ -320,6 +336,31 @@ export type GqlCommunityLineRichMenuConfig = {
 export type GqlCommunityLineRichMenuConfigInput = {
   richMenuId: Scalars['String']['input'];
   type: GqlLineRichMenuType;
+};
+
+export type GqlCommunityPortalConfig = {
+  __typename?: 'CommunityPortalConfig';
+  adminRootPath: Scalars['String']['output'];
+  commonDocumentOverrides?: Maybe<GqlCommonDocumentOverrides>;
+  communityId: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  documents?: Maybe<Array<GqlCommunityDocument>>;
+  domain: Scalars['String']['output'];
+  enableFeatures: Array<Scalars['String']['output']>;
+  faviconPrefix: Scalars['String']['output'];
+  firebaseTenantId?: Maybe<Scalars['String']['output']>;
+  liffAppId?: Maybe<Scalars['String']['output']>;
+  liffBaseUrl?: Maybe<Scalars['String']['output']>;
+  liffId?: Maybe<Scalars['String']['output']>;
+  logoPath: Scalars['String']['output'];
+  ogImagePath: Scalars['String']['output'];
+  regionKey?: Maybe<Scalars['String']['output']>;
+  regionName?: Maybe<Scalars['String']['output']>;
+  rootPath: Scalars['String']['output'];
+  shortDescription?: Maybe<Scalars['String']['output']>;
+  squareLogoPath: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  tokenName: Scalars['String']['output'];
 };
 
 export type GqlCommunitySortInput = {
@@ -1759,6 +1800,7 @@ export type GqlQuery = {
   cities: GqlCitiesConnection;
   communities: GqlCommunitiesConnection;
   community?: Maybe<GqlCommunity>;
+  communityPortalConfig?: Maybe<GqlCommunityPortalConfig>;
   currentUser?: Maybe<GqlCurrentUserPayload>;
   echo: Scalars['String']['output'];
   evaluation?: Maybe<GqlEvaluation>;
@@ -1847,6 +1889,11 @@ export type GqlQueryCommunitiesArgs = {
 
 export type GqlQueryCommunityArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type GqlQueryCommunityPortalConfigArgs = {
+  communityId: Scalars['String']['input'];
 };
 
 
@@ -3121,6 +3168,7 @@ export type GqlResolversTypes = ResolversObject<{
   City: ResolverTypeWrapper<City>;
   CityEdge: ResolverTypeWrapper<Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['City']> }>;
   ClaimLinkStatus: GqlClaimLinkStatus;
+  CommonDocumentOverrides: ResolverTypeWrapper<GqlCommonDocumentOverrides>;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversTypes['CommunityEdge']>> }>;
   Community: ResolverTypeWrapper<Community>;
   CommunityConfig: ResolverTypeWrapper<GqlCommunityConfig>;
@@ -3130,6 +3178,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityCreateSuccess: ResolverTypeWrapper<Omit<GqlCommunityCreateSuccess, 'community'> & { community: GqlResolversTypes['Community'] }>;
   CommunityDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityDeletePayload']>;
   CommunityDeleteSuccess: ResolverTypeWrapper<GqlCommunityDeleteSuccess>;
+  CommunityDocument: ResolverTypeWrapper<GqlCommunityDocument>;
   CommunityEdge: ResolverTypeWrapper<Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Community']> }>;
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityFirebaseConfig: ResolverTypeWrapper<GqlCommunityFirebaseConfig>;
@@ -3138,6 +3187,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityLineConfigInput: GqlCommunityLineConfigInput;
   CommunityLineRichMenuConfig: ResolverTypeWrapper<GqlCommunityLineRichMenuConfig>;
   CommunityLineRichMenuConfigInput: GqlCommunityLineRichMenuConfigInput;
+  CommunityPortalConfig: ResolverTypeWrapper<GqlCommunityPortalConfig>;
   CommunitySortInput: GqlCommunitySortInput;
   CommunityUpdateProfileInput: GqlCommunityUpdateProfileInput;
   CommunityUpdateProfilePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityUpdateProfilePayload']>;
@@ -3449,6 +3499,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CitiesSortInput: GqlCitiesSortInput;
   City: City;
   CityEdge: Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['City']> };
+  CommonDocumentOverrides: GqlCommonDocumentOverrides;
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };
   Community: Community;
   CommunityConfig: GqlCommunityConfig;
@@ -3458,6 +3509,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityCreateSuccess: Omit<GqlCommunityCreateSuccess, 'community'> & { community: GqlResolversParentTypes['Community'] };
   CommunityDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityDeletePayload'];
   CommunityDeleteSuccess: GqlCommunityDeleteSuccess;
+  CommunityDocument: GqlCommunityDocument;
   CommunityEdge: Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Community']> };
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityFirebaseConfig: GqlCommunityFirebaseConfig;
@@ -3466,6 +3518,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityLineConfigInput: GqlCommunityLineConfigInput;
   CommunityLineRichMenuConfig: GqlCommunityLineRichMenuConfig;
   CommunityLineRichMenuConfigInput: GqlCommunityLineRichMenuConfigInput;
+  CommunityPortalConfig: GqlCommunityPortalConfig;
   CommunitySortInput: GqlCommunitySortInput;
   CommunityUpdateProfileInput: GqlCommunityUpdateProfileInput;
   CommunityUpdateProfilePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityUpdateProfilePayload'];
@@ -3820,6 +3873,12 @@ export type GqlCityEdgeResolvers<ContextType = any, ParentType extends GqlResolv
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlCommonDocumentOverridesResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommonDocumentOverrides'] = GqlResolversParentTypes['CommonDocumentOverrides']> = ResolversObject<{
+  privacy?: Resolver<Maybe<GqlResolversTypes['CommunityDocument']>, ParentType, ContextType>;
+  terms?: Resolver<Maybe<GqlResolversTypes['CommunityDocument']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlCommunitiesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunitiesConnection'] = GqlResolversParentTypes['CommunitiesConnection']> = ResolversObject<{
   edges?: Resolver<Maybe<Array<GqlResolversTypes['CommunityEdge']>>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
@@ -3872,6 +3931,15 @@ export type GqlCommunityDeleteSuccessResolvers<ContextType = any, ParentType ext
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlCommunityDocumentResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityDocument'] = GqlResolversParentTypes['CommunityDocument']> = ResolversObject<{
+  id?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  order?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  path?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  type?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlCommunityEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityEdge'] = GqlResolversParentTypes['CommunityEdge']> = ResolversObject<{
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
@@ -3887,6 +3955,7 @@ export type GqlCommunityLineConfigResolvers<ContextType = any, ParentType extend
   accessToken?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   channelId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   channelSecret?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  liffAppId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffBaseUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   richMenus?: Resolver<Maybe<Array<GqlResolversTypes['CommunityLineRichMenuConfig']>>, ParentType, ContextType>;
@@ -3896,6 +3965,31 @@ export type GqlCommunityLineConfigResolvers<ContextType = any, ParentType extend
 export type GqlCommunityLineRichMenuConfigResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityLineRichMenuConfig'] = GqlResolversParentTypes['CommunityLineRichMenuConfig']> = ResolversObject<{
   richMenuId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   type?: Resolver<GqlResolversTypes['LineRichMenuType'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlCommunityPortalConfigResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityPortalConfig'] = GqlResolversParentTypes['CommunityPortalConfig']> = ResolversObject<{
+  adminRootPath?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  commonDocumentOverrides?: Resolver<Maybe<GqlResolversTypes['CommonDocumentOverrides']>, ParentType, ContextType>;
+  communityId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  description?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  documents?: Resolver<Maybe<Array<GqlResolversTypes['CommunityDocument']>>, ParentType, ContextType>;
+  domain?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  enableFeatures?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
+  faviconPrefix?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  firebaseTenantId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  liffAppId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  liffBaseUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  liffId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  logoPath?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  ogImagePath?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  regionKey?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  regionName?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  rootPath?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  shortDescription?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  squareLogoPath?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  tokenName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4551,6 +4645,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   cities?: Resolver<GqlResolversTypes['CitiesConnection'], ParentType, ContextType, Partial<GqlQueryCitiesArgs>>;
   communities?: Resolver<GqlResolversTypes['CommunitiesConnection'], ParentType, ContextType, Partial<GqlQueryCommunitiesArgs>>;
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType, RequireFields<GqlQueryCommunityArgs, 'id'>>;
+  communityPortalConfig?: Resolver<Maybe<GqlResolversTypes['CommunityPortalConfig']>, ParentType, ContextType, RequireFields<GqlQueryCommunityPortalConfigArgs, 'communityId'>>;
   currentUser?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType>;
   echo?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   evaluation?: Resolver<Maybe<GqlResolversTypes['Evaluation']>, ParentType, ContextType, RequireFields<GqlQueryEvaluationArgs, 'id'>>;
@@ -5107,6 +5202,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   CitiesConnection?: GqlCitiesConnectionResolvers<ContextType>;
   City?: GqlCityResolvers<ContextType>;
   CityEdge?: GqlCityEdgeResolvers<ContextType>;
+  CommonDocumentOverrides?: GqlCommonDocumentOverridesResolvers<ContextType>;
   CommunitiesConnection?: GqlCommunitiesConnectionResolvers<ContextType>;
   Community?: GqlCommunityResolvers<ContextType>;
   CommunityConfig?: GqlCommunityConfigResolvers<ContextType>;
@@ -5114,10 +5210,12 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   CommunityCreateSuccess?: GqlCommunityCreateSuccessResolvers<ContextType>;
   CommunityDeletePayload?: GqlCommunityDeletePayloadResolvers<ContextType>;
   CommunityDeleteSuccess?: GqlCommunityDeleteSuccessResolvers<ContextType>;
+  CommunityDocument?: GqlCommunityDocumentResolvers<ContextType>;
   CommunityEdge?: GqlCommunityEdgeResolvers<ContextType>;
   CommunityFirebaseConfig?: GqlCommunityFirebaseConfigResolvers<ContextType>;
   CommunityLineConfig?: GqlCommunityLineConfigResolvers<ContextType>;
   CommunityLineRichMenuConfig?: GqlCommunityLineRichMenuConfigResolvers<ContextType>;
+  CommunityPortalConfig?: GqlCommunityPortalConfigResolvers<ContextType>;
   CommunityUpdateProfilePayload?: GqlCommunityUpdateProfilePayloadResolvers<ContextType>;
   CommunityUpdateProfileSuccess?: GqlCommunityUpdateProfileSuccessResolvers<ContextType>;
   CurrentPointView?: GqlCurrentPointViewResolvers<ContextType>;
