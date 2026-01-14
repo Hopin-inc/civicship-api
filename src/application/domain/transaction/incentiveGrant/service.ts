@@ -348,4 +348,23 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     );
     return { status: "FAILED", grantId, failureCode, lastError };
   }
+
+  async getGrantInfoForRetry(
+    ctx: IContext,
+    grantId: string,
+  ): Promise<{ userId: string; communityId: string; status: IncentiveGrantStatus }> {
+    const grant = await ctx.issuer.public(ctx, (tx) =>
+      this.incentiveGrantRepository.findById(ctx, tx, grantId),
+    );
+
+    if (!grant) {
+      throw new NotFoundError("IncentiveGrant", { grantId });
+    }
+
+    return {
+      userId: grant.userId,
+      communityId: grant.communityId,
+      status: grant.status,
+    };
+  }
 }

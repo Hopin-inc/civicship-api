@@ -235,7 +235,7 @@ export default class TransactionUseCase {
     ctx: IContext,
   ): Promise<GqlTransaction> {
     // STEP1: Load grant to get userId and communityId
-    const grant = await this.transactionService.getGrantInfoForRetry(ctx, grantId);
+    const grant = await this.incentiveGrantService.getGrantInfoForRetry(ctx, grantId);
 
     const { userId, communityId } = grant;
 
@@ -254,9 +254,8 @@ export default class TransactionUseCase {
     const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
 
     // STEP4: Call service to retry
-    const result = await this.transactionService.retrySignupBonusGrant(ctx, {
+    const result = await this.incentiveGrantService.retrySignupBonus(ctx, {
       grantId,
-      communityId,
       fromWalletId: communityWallet.id,
       toWalletId: wallet.id,
       bonusPoint,
@@ -264,14 +263,13 @@ export default class TransactionUseCase {
     });
 
     // STEP5: Handle result
-    if (result.status === "FAILED") {
+    if (!result.success) {
       logger.error("Signup bonus grant retry failed", {
         grantId,
-        failureCode: result.failureCode,
-        lastError: result.lastError,
+        error: result.error,
       });
       throw new Error(
-        `Failed to grant signup bonus: ${result.failureCode} - ${result.lastError || "Unknown error"}`,
+        `Failed to grant signup bonus: ${result.error || "Unknown error"}`,
       );
     }
 
@@ -300,7 +298,7 @@ export default class TransactionUseCase {
     ctx: IContext,
   ): Promise<GqlSignupBonusRetryPayload> {
     // Get grant info
-    const grant = await this.transactionService.getGrantInfoForRetry(ctx, grantId);
+    const grant = await this.incentiveGrantService.getGrantInfoForRetry(ctx, grantId);
     const { userId, communityId } = grant;
 
     // Get config
@@ -328,18 +326,7 @@ export default class TransactionUseCase {
     // Get community wallet
     const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
 
-    // Check balance before retry
-    const currentBalance = communityWallet.currentPointView?.currentPoint;
-    if (currentBalance != null && currentBalance < BigInt(config.bonusPoint)) {
-      return {
-        __typename: "SignupBonusRetryPayload",
-        success: false,
-        transaction: null,
-        error: `Insufficient balance: ${currentBalance} < ${config.bonusPoint}`,
-      };
-    }
-
-    // Retry
+    // Retry (balance check happens inside IncentiveGrantService)
     const result = await this.incentiveGrantService.retrySignupBonus(ctx, {
       grantId,
       fromWalletId: communityWallet.id,

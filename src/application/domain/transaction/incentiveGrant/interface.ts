@@ -4,7 +4,7 @@ import {
   PrismaTransactionDetail,
 } from "@/application/domain/transaction/data/type";
 import { PrismaIncentiveGrantDetail } from "@/application/domain/transaction/incentiveGrant/data/type";
-import { IncentiveGrantFailureCode } from "@prisma/client";
+import { IncentiveGrantFailureCode, IncentiveGrantStatus } from "@prisma/client";
 import { GqlSignupBonusFilterInput, GqlSignupBonusSortInput } from "@/types/graphql";
 
 /**
@@ -80,4 +80,17 @@ export interface IIncentiveGrantService {
       lastError: string;
     },
   ): Promise<void>;
+
+  /**
+   * リトライ用にIncentiveGrantの情報を取得する。
+   * UseCaseでリトライ処理に必要なuserIdとcommunityIdを取得するために使用。
+   */
+  getGrantInfoForRetry(
+    ctx: IContext,
+    grantId: string,
+  ): Promise<{
+    userId: string;
+    communityId: string;
+    status: IncentiveGrantStatus;
+  }>;
 }
