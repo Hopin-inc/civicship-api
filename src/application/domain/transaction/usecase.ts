@@ -278,7 +278,8 @@ export default class TransactionUseCase {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
-    return TransactionPresenter.get(result.transaction);
+    // result.success is true, so result.transaction is guaranteed to exist
+    return TransactionPresenter.get(result.transaction!);
   }
 
   async managerGetSignupBonuses(
@@ -338,7 +339,7 @@ export default class TransactionUseCase {
     return {
       __typename: "SignupBonusRetryPayload",
       success: result.success,
-      transaction: result.transaction || null,
+      transaction: TransactionPresenter.getOrNull(result.transaction),
       error: result.error || null,
     };
   }

@@ -32,6 +32,15 @@ export default class TransactionPresenter {
     };
   }
 
+  /**
+   * PrismaTransactionDetailをGqlTransactionに変換する。
+   * undefinedの場合はnullを返す（GraphQL Maybe<T>型対応）。
+   */
+  static getOrNull(r: PrismaTransactionDetail | undefined): GqlTransaction | null {
+    if (!r) return null;
+    return this.get(r);
+  }
+
   static issueCommunityPoint(r: PrismaTransactionDetail): GqlTransactionIssueCommunityPointSuccess {
     return {
       __typename: "TransactionIssueCommunityPointSuccess",
