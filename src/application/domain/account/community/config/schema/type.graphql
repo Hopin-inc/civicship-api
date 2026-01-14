@@ -12,7 +12,6 @@ type CommunityLineConfig {
     channelSecret: String
     accessToken: String
     liffId: String
-    liffAppId: String
     liffBaseUrl: String
     richMenus: [CommunityLineRichMenuConfig!]
 }
