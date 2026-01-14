@@ -49,7 +49,7 @@ export default class NotificationService {
     slot: PrismaOpportunitySlotSetHostingStatus,
     comment?: string,
   ) {
-    const participantInfos = this.extractLineUidsFromParticipations(
+    const participantInfos = this.extractLineUidsFromParticipationsGlobal(
       slot.reservations.flatMap((r) =>
         r.participations.map((p) => ({
           id: p.id,
@@ -58,17 +58,16 @@ export default class NotificationService {
               identities: p.user.identities.map((identity) => ({
                 platform: identity.platform,
                 uid: identity.uid,
-                communityId: identity.communityId ?? undefined,
+                communityId: identity.communityId ?? null,
               })),
             }
             : null,
         })),
       ),
-      ctx.communityId,
     );
 
     if (participantInfos.length === 0) {
-      logger.warn("No LINE UID found in participations", {
+      logger.warn("No LINE UID found in participations (global identity)", {
         context: ctx,
         slotId: slot?.id,
         participations: slot?.reservations?.flatMap((r) => r.participations),
@@ -80,12 +79,12 @@ export default class NotificationService {
     const { opportunityId } = slot;
     const { communityId, createdByUser, title } = slot.opportunity;
 
-    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
     const redirectUrl = communityId
-      ? `${liffBaseUrl}/reservation/select-date?id=${opportunityId}&community_id=${communityId}`
+      ? `${liffBaseUrl}/${communityId}/reservation/select-date?id=${opportunityId}&community_id=${communityId}`
       : `${liffBaseUrl}/activities`;
 
-    const client = await createLineClient(ctx.communityId);
+    const client = await createLineClient(null);
     const message = buildCancelOpportunitySlotMessage({
       title,
       year,
@@ -103,23 +102,22 @@ export default class NotificationService {
   }
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineUid = this.extractLineUidFromCreator(
+    const lineUid = this.extractLineUidFromCreatorGlobal(
       reservation.opportunitySlot.opportunity.createdByUser
         ? {
           identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
             (identity) => ({
               platform: identity.platform,
               uid: identity.uid,
-              communityId: identity.communityId ?? undefined,
+              communityId: identity.communityId ?? null,
             }),
           ),
         }
         : null,
-      ctx.communityId,
     );
 
     if (!lineUid) {
-      logger.warn("pushReservationAppliedMessage: lineUid is missing", {
+      logger.warn("pushReservationAppliedMessage: lineUid is missing (global identity)", {
         reservationId: reservation.id,
         communityId: ctx.communityId,
         createdByUserId: reservation.opportunitySlot.opportunity.createdByUser?.id,
@@ -136,23 +134,21 @@ export default class NotificationService {
     let client: MessagingApiClient;
 
     try {
-      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, null);
       liffBaseUrl = liffConfig.liffBaseUrl;
     } catch (error) {
-      logger.error("pushReservationAppliedMessage: failed to get LIFF config", {
+      logger.error("pushReservationAppliedMessage: failed to get LIFF config (global)", {
         reservationId: reservation.id,
-        communityId: ctx.communityId,
         err: error,
       });
       return;
     }
 
     try {
-      client = await createLineClient(ctx.communityId);
+      client = await createLineClient(null);
     } catch (error) {
-      logger.error("pushReservationAppliedMessage: failed to create LINE client", {
+      logger.error("pushReservationAppliedMessage: failed to create LINE client (global)", {
         reservationId: reservation.id,
-        communityId: ctx.communityId,
         err: error,
       });
       return;
@@ -163,7 +159,7 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
-    const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}?mode=approval`;
+    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/admin/reservations/${reservation.id}?mode=approval`;
 
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
@@ -180,23 +176,22 @@ export default class NotificationService {
   }
 
   async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineUid = this.extractLineUidFromCreator(
+    const lineUid = this.extractLineUidFromCreatorGlobal(
       reservation.opportunitySlot.opportunity.createdByUser
         ? {
           identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
             (identity) => ({
               platform: identity.platform,
               uid: identity.uid,
-              communityId: identity.communityId ?? undefined,
+              communityId: identity.communityId ?? null,
             }),
           ),
         }
         : null,
-      ctx.communityId,
     );
 
     if (!lineUid) {
-      logger.warn("pushReservationCanceledMessage: lineUid is missing", {
+      logger.warn("pushReservationCanceledMessage: lineUid is missing (global identity)", {
         reservationId: reservation.id,
         createdByUser: reservation.opportunitySlot.opportunity.createdByUser,
       });
@@ -208,10 +203,10 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
-    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
-    const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}`;
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
+    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/admin/reservations/${reservation.id}`;
 
-    const client = await createLineClient(ctx.communityId);
+    const client = await createLineClient(null);
     const message = buildReservationCanceledMessage({
       title: reservation.opportunitySlot.opportunity.title,
       year,
@@ -230,7 +225,7 @@ export default class NotificationService {
     reservation: PrismaReservation,
     comment?: string,
   ) {
-    const participantInfos = this.extractLineUidsFromParticipations(
+    const participantInfos = this.extractLineUidsFromParticipationsGlobal(
       reservation.participations.map((p) => ({
         id: p.id,
         user: p.user
@@ -238,15 +233,14 @@ export default class NotificationService {
             identities: p.user.identities.map((i) => ({
               platform: i.platform,
               uid: i.uid,
-              communityId: i.communityId ?? undefined,
+              communityId: i.communityId ?? null,
             })),
           }
           : null,
       })),
-      ctx.communityId,
     );
     if (participantInfos.length === 0) {
-      logger.warn("No LINE UID found in participations", {
+      logger.warn("No LINE UID found in participations (global identity)", {
         context: ctx,
         reservationId: reservation?.id,
         participations: reservation.participations?.flatMap((r) => r),
@@ -262,7 +256,7 @@ export default class NotificationService {
     const { title, createdByUser } = reservation.opportunitySlot.opportunity;
     const { name: hostName, image: hostImage } = createdByUser ?? {};
 
-    const client = await createLineClient(ctx.communityId);
+    const client = await createLineClient(null);
     for (const { uid } of participantInfos) {
       const message = buildDeclineOpportunitySlotMessage({
         title,
@@ -279,7 +273,7 @@ export default class NotificationService {
   }
 
   async pushReservationAcceptedMessage(ctx: IContext, reservation: PrismaReservation) {
-    const participantInfos = this.extractLineUidsFromParticipations(
+    const participantInfos = this.extractLineUidsFromParticipationsGlobal(
       reservation.participations.map((p) => ({
         id: p.id,
         user: p.user
@@ -287,16 +281,15 @@ export default class NotificationService {
             identities: p.user.identities.map((i) => ({
               platform: i.platform,
               uid: i.uid,
-              communityId: i.communityId ?? undefined,
+              communityId: i.communityId ?? null,
             })),
           }
           : null,
       })),
-      ctx.communityId,
     );
 
     if (participantInfos.length === 0) {
-      logger.warn("No LINE UID found in participations", {
+      logger.warn("No LINE UID found in participations (global identity)", {
         context: ctx,
         reservationId: reservation?.id,
         participations: reservation.participations?.flatMap((r) => r),
@@ -313,9 +306,9 @@ export default class NotificationService {
     const { name: hostName, image: hostImage } = createdByUser ?? {};
     const participantCount = `${reservation.participations.length}人`;
 
-    const client = await createLineClient(ctx.communityId);
+    const client = await createLineClient(null);
 
-    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
     for (const { uid, participationId } of participantInfos) {
       const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
       const message = buildReservationAcceptedMessage({
@@ -337,9 +330,14 @@ export default class NotificationService {
   async pushCertificateIssuedMessage(ctx: IContext, evaluation: PrismaEvaluation) {
     const uid = evaluation.participation.user?.identities.find(
       (identity) =>
-        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
+        identity.platform === IdentityPlatform.LINE && identity.communityId === null,
     )?.uid;
-    if (!uid) return;
+    if (!uid) {
+      logger.warn("pushCertificateIssuedMessage: global LINE identity not found", {
+        userId: evaluation.participation.user?.id,
+      });
+      return;
+    }
 
     const slot = evaluation.participation.opportunitySlot;
     const opportunity = slot?.opportunity;
@@ -352,10 +350,10 @@ export default class NotificationService {
     const issueDate = rawDate ? dayjs(rawDate).format("YYYY年M月D日") : "日付未定";
     const issuerName = evaluation.evaluator?.name ?? "主催者";
 
-    const client = await createLineClient(ctx.communityId);
+    const client = await createLineClient(null);
 
-    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
-    const redirectUrl = `${liffBaseUrl}/credentials/${evaluation.participationId}`;
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
+    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/credentials/${evaluation.participationId}`;
     const message = buildCertificateIssuedMessage({
       title,
       year,
@@ -437,31 +435,29 @@ export default class NotificationService {
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
       (identity) =>
-        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
+        identity.platform === IdentityPlatform.LINE && identity.communityId === null,
     )?.uid;
 
     if (!lineUid) {
-      logger.warn("switchRichMenuByRole: lineUid is missing", {
+      logger.warn("switchRichMenuByRole: global LINE identity not found", {
         userId: membership.user.id,
-        communityId: ctx.communityId,
       });
       return;
     }
 
-    const client = await createLineClient(ctx.communityId);
+    const client = await createLineClient(null);
 
     const isAdmin = membership.role === Role.OWNER || membership.role === Role.MANAGER;
     const richMenuType = isAdmin ? LineRichMenuType.ADMIN : LineRichMenuType.PUBLIC;
 
     const richMenuId = await this.communityConfigService.getLineRichMenuIdByType(
       ctx,
-      ctx.communityId,
+      null,
       richMenuType,
     );
 
     if (!richMenuId) {
-      logger.warn("switchRichMenuByRole: richMenuId is not configured", {
-        communityId: ctx.communityId,
+      logger.warn("switchRichMenuByRole: richMenuId is not configured (global)", {
         type: richMenuType,
       });
       return;
@@ -469,8 +465,7 @@ export default class NotificationService {
     const success = await safeLinkRichMenuIdToUser(client, lineUid, richMenuId);
 
     if (!success) {
-      logger.error("switchRichMenuByRole: failed to link rich menu to user", {
-        communityId: ctx.communityId,
+      logger.error("switchRichMenuByRole: failed to link rich menu to user (global)", {
         userId: membership.user?.id,
         lineUid,
         richMenuId,
@@ -480,19 +475,17 @@ export default class NotificationService {
 
     let liffBaseUrl: string;
     try {
-      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, null);
       liffBaseUrl = liffConfig.liffBaseUrl;
     } catch (error) {
-      logger.error("switchRichMenuByRole: failed to get LIFF config", {
-        communityId: ctx.communityId,
+      logger.error("switchRichMenuByRole: failed to get LIFF config (global)", {
         err: error,
       });
       return;
     }
-    const redirectUrl = `${liffBaseUrl}/admin`;
+    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/admin`;
 
-    //TODO feature flagにしては細かすぎる設定
-    if (isAdmin && success && membership.communityId !== "neo88") {
+    if (isAdmin && success) {
       await safePushMessage(client, {
         to: lineUid,
         messages: [buildAdminGrantedMessage(redirectUrl)],
@@ -526,28 +519,25 @@ export default class NotificationService {
     let language: Language | undefined;
 
     if (options?.includeLanguage) {
-      const result = await this.userService.findLineUidAndLanguageForCommunity(
+      const result = await this.userService.findLineUidAndLanguageForGlobal(
         ctx,
         userId,
-        ctx.communityId,
       );
       if (!result) {
-        logger.warn(`${logContext}: lineUid is missing`, {
+        logger.warn(`${logContext}: global LINE identity not found`, {
           transactionId,
           userId,
-          communityId: ctx.communityId,
         });
         return null;
       }
       uid = result.uid;
       language = result.language;
     } else {
-      const foundUid = await this.userService.findLineUidForCommunity(ctx, userId, ctx.communityId);
+      const foundUid = await this.userService.findLineUidForGlobal(ctx, userId);
       if (!foundUid) {
-        logger.warn(`${logContext}: lineUid is missing`, {
+        logger.warn(`${logContext}: global LINE identity not found`, {
           transactionId,
           userId,
-          communityId: ctx.communityId,
         });
         return null;
       }
@@ -556,18 +546,17 @@ export default class NotificationService {
 
     let liffBaseUrl: string;
     try {
-      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, null);
       liffBaseUrl = liffConfig.liffBaseUrl;
     } catch (error) {
-      logger.error(`${logContext}: failed to get LIFF config`, {
+      logger.error(`${logContext}: failed to get LIFF config (global)`, {
         transactionId,
-        communityId: ctx.communityId,
         err: error,
       });
       return null;
     }
 
-    const client = await createLineClient(ctx.communityId);
+    const client = await createLineClient(null);
 
     if (options?.includeLanguage && language) {
       return { uid, liffBaseUrl, client, language };
@@ -598,6 +587,28 @@ export default class NotificationService {
     });
   }
 
+  private extractLineUidsFromParticipationsGlobal(
+    participations: {
+      id: string;
+      user: {
+        identities: {
+          platform: IdentityPlatform;
+          uid: string;
+          communityId: string | null;
+        }[];
+      } | null;
+    }[],
+  ): { uid: string; participationId: string }[] {
+    return participations.flatMap((p) => {
+      const uid = p.user?.identities.find(
+        (identity) =>
+          identity.platform === IdentityPlatform.LINE && identity.communityId === null,
+      )?.uid;
+
+      return uid ? [{ uid, participationId: p.id }] : [];
+    });
+  }
+
   private extractLineUidFromCreator(
     user:
       | {
@@ -614,6 +625,24 @@ export default class NotificationService {
     return user?.identities?.find(
       (identity) =>
         identity.platform === IdentityPlatform.LINE && identity.communityId === communityId,
+    )?.uid;
+  }
+
+  private extractLineUidFromCreatorGlobal(
+    user:
+      | {
+        identities?: {
+          platform: IdentityPlatform;
+          uid: string;
+          communityId: string | null;
+        }[];
+      }
+      | null
+      | undefined,
+  ): string | undefined {
+    return user?.identities?.find(
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === null,
     )?.uid;
   }
 

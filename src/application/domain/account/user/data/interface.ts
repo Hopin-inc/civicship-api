@@ -13,6 +13,8 @@ export interface IUserRepository {
 
   find(ctx: IContext, id: string): Promise<PrismaUserDetail | null>;
 
+  findByPhoneNumber(phoneNumber: string): Promise<PrismaUserDetail | null>;
+
   create(data: Prisma.UserCreateInput): Promise<PrismaUserDetail>;
 
   update(
