@@ -1813,7 +1813,7 @@ type CommunityConfigFactoryDefineInput = {
     id?: string;
     createdAt?: Date;
     updatedAt?: Date | null;
-    community: CommunityConfigcommunityFactory | Prisma.CommunityCreateNestedOneWithoutConfigInput;
+    community?: CommunityConfigcommunityFactory | Prisma.CommunityCreateNestedOneWithoutConfigInput;
     firebaseConfig?: CommunityConfigfirebaseConfigFactory | Prisma.CommunityFirebaseConfigCreateNestedOneWithoutConfigInput;
     lineConfig?: CommunityConfiglineConfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutConfigInput;
     portalConfig?: CommunityConfigportalConfigFactory | Prisma.CommunityPortalConfigCreateNestedOneWithoutConfigInput;
@@ -1826,9 +1826,9 @@ type CommunityConfigFactoryTrait<TTransients extends Record<string, unknown>> = 
 } & CallbackDefineOptions<CommunityConfig, Prisma.CommunityConfigCreateInput, TTransients>;
 
 type CommunityConfigFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<CommunityConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
+    defaultData?: Resolver<CommunityConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: CommunityConfigFactoryTrait<TTransients>;
+        [traitName: TraitName]: CommunityConfigFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<CommunityConfig, Prisma.CommunityConfigCreateInput, TTransients>;
 
@@ -1893,7 +1893,7 @@ function defineCommunityConfigFactoryInternal<TTransients extends Record<string,
         const build = async (inputData: Partial<Prisma.CommunityConfigCreateInput & TTransients> = {}) => {
             const seq = getSeq();
             const requiredScalarData = autoGenerateCommunityConfigScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<CommunityConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const resolveValue = normalizeResolver<CommunityConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
@@ -1959,8 +1959,8 @@ function defineCommunityConfigFactoryInternal<TTransients extends Record<string,
 }
 
 interface CommunityConfigFactoryBuilder {
-    <TOptions extends CommunityConfigFactoryDefineOptions>(options: TOptions): CommunityConfigFactoryInterface<{}, CommunityConfigTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends CommunityConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityConfigFactoryDefineOptions<TTransients>>(options: TOptions) => CommunityConfigFactoryInterface<TTransients, CommunityConfigTraitKeys<TOptions>>;
+    <TOptions extends CommunityConfigFactoryDefineOptions>(options?: TOptions): CommunityConfigFactoryInterface<{}, CommunityConfigTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityConfigFactoryDefineOptions<TTransients>>(options?: TOptions) => CommunityConfigFactoryInterface<TTransients, CommunityConfigTraitKeys<TOptions>>;
 }
 
 /**
@@ -1969,11 +1969,11 @@ interface CommunityConfigFactoryBuilder {
  * @param options
  * @returns factory {@link CommunityConfigFactoryInterface}
  */
-export const defineCommunityConfigFactory = (<TOptions extends CommunityConfigFactoryDefineOptions>(options: TOptions): CommunityConfigFactoryInterface<TOptions> => {
-    return defineCommunityConfigFactoryInternal(options, {});
+export const defineCommunityConfigFactory = (<TOptions extends CommunityConfigFactoryDefineOptions>(options?: TOptions): CommunityConfigFactoryInterface<TOptions> => {
+    return defineCommunityConfigFactoryInternal(options ?? {}, {});
 }) as CommunityConfigFactoryBuilder;
 
-defineCommunityConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityConfigFactoryInternal(options, defaultTransientFieldValues);
+defineCommunityConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityConfigFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type CommunityFirebaseConfigScalarOrEnumFields = {
     tenantId: string;

@@ -199,9 +199,9 @@ model Community {
 }
 
 model CommunityConfig {
-  id          String    @id @default(cuid())
-  communityId String    @unique @map("community_id")
-  community   Community @relation(fields: [communityId], references: [id])
+  id          String     @id @default(cuid())
+  communityId String?    @unique @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id])
 
   firebaseConfig CommunityFirebaseConfig?
   lineConfig     CommunityLineConfig?

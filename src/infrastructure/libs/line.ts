@@ -5,7 +5,7 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import { messagingApi, middleware, MiddlewareConfig } from "@line/bot-sdk";
 import logger from "@/infrastructure/logging";
 
-export async function createLineClientAndMiddleware(communityId: string) {
+export async function createLineClientAndMiddleware(communityId: string | null) {
   const [client, mw] = await Promise.all([
     createLineClient(communityId),
     createLineMiddleware(communityId),
@@ -14,7 +14,7 @@ export async function createLineClientAndMiddleware(communityId: string) {
 }
 
 export async function createLineClient(
-  communityId: string,
+  communityId: string | null,
 ): Promise<messagingApi.MessagingApiClient> {
   const issuer = new PrismaClientIssuer();
   const ctx = { issuer } as IContext;
@@ -31,7 +31,7 @@ export async function createLineClient(
 }
 
 export async function createLineMiddleware(
-  communityId: string,
+  communityId: string | null,
 ): Promise<ReturnType<typeof middleware>> {
   const issuer = new PrismaClientIssuer();
   const ctx = { issuer } as IContext;

@@ -12,10 +12,10 @@ import { injectable } from "tsyringe";
 export default class CommunityConfigRepository implements ICommunityConfigRepository {
   async getFirebaseConfig(
     ctx: IContext,
-    communityId: string,
+    communityId: string | null,
   ): Promise<CommunityFirebaseConfig | null> {
     return await ctx.issuer.public(ctx, async (tx) => {
-      const result = await tx.communityConfig.findUnique({
+      const result = await tx.communityConfig.findFirst({
         where: { communityId },
         include: { firebaseConfig: true },
       });
@@ -23,9 +23,9 @@ export default class CommunityConfigRepository implements ICommunityConfigReposi
     });
   }
 
-  async getLineConfig(ctx: IContext, communityId: string): Promise<CommunityLineConfig | null> {
+  async getLineConfig(ctx: IContext, communityId: string | null): Promise<CommunityLineConfig | null> {
     return await ctx.issuer.public(ctx, async (tx) => {
-      const result = await tx.communityConfig.findUnique({
+      const result = await tx.communityConfig.findFirst({
         where: { communityId },
         include: { lineConfig: true },
       });
@@ -35,11 +35,11 @@ export default class CommunityConfigRepository implements ICommunityConfigReposi
 
   async getLineRichMenuByType(
     ctx: IContext,
-    communityId: string,
+    communityId: string | null,
     type: LineRichMenuType,
   ): Promise<CommunityLineRichMenuConfig | null> {
     return await ctx.issuer.public(ctx, async (tx) => {
-      const config = await tx.communityConfig.findUnique({
+      const config = await tx.communityConfig.findFirst({
         where: { communityId },
         include: {
           lineConfig: true,

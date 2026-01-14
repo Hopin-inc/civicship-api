@@ -7,11 +7,11 @@ import {
 import { IContext } from "@/types/server";
 
 export default interface ICommunityConfigRepository {
-  getFirebaseConfig(ctx: IContext, communityId: string): Promise<CommunityFirebaseConfig | null>;
-  getLineConfig(ctx: IContext, communityId: string): Promise<CommunityLineConfig | null>;
+  getFirebaseConfig(ctx: IContext, communityId: string | null): Promise<CommunityFirebaseConfig | null>;
+  getLineConfig(ctx: IContext, communityId: string | null): Promise<CommunityLineConfig | null>;
   getLineRichMenuByType(
     ctx: IContext,
-    communityId: string,
+    communityId: string | null,
     type: LineRichMenuType,
   ): Promise<CommunityLineRichMenuConfig | null>;
 }

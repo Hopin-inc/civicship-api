@@ -12,7 +12,7 @@ export default class CommunityConfigService {
     private readonly repository: ICommunityConfigRepository,
   ) { }
 
-  async getFirebaseTenantId(ctx: IContext, communityId: string): Promise<string> {
+  async getFirebaseTenantId(ctx: IContext, communityId: string | null): Promise<string> {
     const config = await this.repository.getFirebaseConfig(ctx, communityId);
     if (!config?.tenantId) {
       throw new NotFoundError("Firebase tenantId not found", { communityId });
@@ -22,7 +22,7 @@ export default class CommunityConfigService {
 
   async getLineMessagingConfig(
     ctx: IContext,
-    communityId: string,
+    communityId: string | null,
   ): Promise<{
     channelId: string;
     channelSecret: string;
@@ -41,7 +41,7 @@ export default class CommunityConfigService {
 
   async getLiffConfig(
     ctx: IContext,
-    communityId: string,
+    communityId: string | null,
   ): Promise<{
     liffId: string;
     liffBaseUrl: string;
@@ -58,7 +58,7 @@ export default class CommunityConfigService {
 
   async getLineRichMenuIdByType(
     ctx: IContext,
-    communityId: string,
+    communityId: string | null,
     type: LineRichMenuType,
   ): Promise<string | null> {
     try {
