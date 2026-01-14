@@ -564,29 +564,6 @@ export default class NotificationService {
     return { uid, liffBaseUrl, client };
   }
 
-  private extractLineUidsFromParticipations(
-    participations: {
-      id: string;
-      user: {
-        identities: {
-          platform: IdentityPlatform;
-          uid: string;
-          communityId?: string;
-        }[];
-      } | null;
-    }[],
-    communityId: string,
-  ): { uid: string; participationId: string }[] {
-    return participations.flatMap((p) => {
-      const uid = p.user?.identities.find(
-        (identity) =>
-          identity.platform === IdentityPlatform.LINE && identity.communityId === communityId,
-      )?.uid;
-
-      return uid ? [{ uid, participationId: p.id }] : [];
-    });
-  }
-
   private extractLineUidsFromParticipationsGlobal(
     participations: {
       id: string;
@@ -607,25 +584,6 @@ export default class NotificationService {
 
       return uid ? [{ uid, participationId: p.id }] : [];
     });
-  }
-
-  private extractLineUidFromCreator(
-    user:
-      | {
-        identities?: {
-          platform: IdentityPlatform;
-          uid: string;
-          communityId?: string;
-        }[];
-      }
-      | null
-      | undefined,
-    communityId: string,
-  ): string | undefined {
-    return user?.identities?.find(
-      (identity) =>
-        identity.platform === IdentityPlatform.LINE && identity.communityId === communityId,
-    )?.uid;
   }
 
   private extractLineUidFromCreatorGlobal(

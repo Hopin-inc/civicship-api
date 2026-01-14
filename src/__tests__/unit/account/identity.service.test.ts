@@ -27,12 +27,14 @@ describe("IdentityService", () => {
     update = jest.fn();
     create = jest.fn();
     delete = jest.fn();
+    findByPhoneNumber = jest.fn();
   }
 
   class MockIdentityRepository {
     find = jest.fn();
     create = jest.fn();
     update = jest.fn();
+    findByUidAndCommunity = jest.fn();
   }
 
   let mockUserRepository: MockUserRepository;
