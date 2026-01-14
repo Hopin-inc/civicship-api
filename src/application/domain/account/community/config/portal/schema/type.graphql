@@ -1,0 +1,39 @@
+# ------------------------------
+# CommunityPortalConfig Object Type Definitions
+# ------------------------------
+type CommunityPortalConfig {
+    communityId: String!
+    tokenName: String!
+    title: String!
+    description: String!
+    shortDescription: String
+    domain: String!
+    faviconPrefix: String!
+    logoPath: String!
+    squareLogoPath: String!
+    ogImagePath: String!
+    enableFeatures: [String!]!
+    rootPath: String!
+    adminRootPath: String!
+    documents: [CommunityDocument!]
+    commonDocumentOverrides: CommonDocumentOverrides
+    regionName: String
+    regionKey: String
+    liffId: String
+    liffAppId: String
+    liffBaseUrl: String
+    firebaseTenantId: String
+}
+
+type CommunityDocument {
+    id: String!
+    title: String!
+    path: String!
+    type: String!
+    order: Int
+}
+
+type CommonDocumentOverrides {
+    terms: CommunityDocument
+    privacy: CommunityDocument
+}
