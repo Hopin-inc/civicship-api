@@ -270,6 +270,7 @@ type CommunityLineConfig {
   accessToken: String
   channelId: String
   channelSecret: String
+  liffAppId: String
   liffBaseUrl: String
   liffId: String
   richMenus: [CommunityLineRichMenuConfig!]
@@ -304,6 +305,7 @@ type CommunityPortalConfig {
   enableFeatures: [String!]!
   faviconPrefix: String!
   firebaseTenantId: String
+  liffAppId: String
   liffBaseUrl: String
   liffId: String
   logoPath: String!

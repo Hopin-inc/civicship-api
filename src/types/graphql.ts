@@ -312,6 +312,7 @@ export type GqlCommunityLineConfig = {
   accessToken?: Maybe<Scalars['String']['output']>;
   channelId?: Maybe<Scalars['String']['output']>;
   channelSecret?: Maybe<Scalars['String']['output']>;
+  liffAppId?: Maybe<Scalars['String']['output']>;
   liffBaseUrl?: Maybe<Scalars['String']['output']>;
   liffId?: Maybe<Scalars['String']['output']>;
   richMenus?: Maybe<Array<GqlCommunityLineRichMenuConfig>>;
@@ -348,6 +349,7 @@ export type GqlCommunityPortalConfig = {
   enableFeatures: Array<Scalars['String']['output']>;
   faviconPrefix: Scalars['String']['output'];
   firebaseTenantId?: Maybe<Scalars['String']['output']>;
+  liffAppId?: Maybe<Scalars['String']['output']>;
   liffBaseUrl?: Maybe<Scalars['String']['output']>;
   liffId?: Maybe<Scalars['String']['output']>;
   logoPath: Scalars['String']['output'];
@@ -3953,6 +3955,7 @@ export type GqlCommunityLineConfigResolvers<ContextType = any, ParentType extend
   accessToken?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   channelId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   channelSecret?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  liffAppId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffBaseUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   richMenus?: Resolver<Maybe<Array<GqlResolversTypes['CommunityLineRichMenuConfig']>>, ParentType, ContextType>;
@@ -3975,6 +3978,7 @@ export type GqlCommunityPortalConfigResolvers<ContextType = any, ParentType exte
   enableFeatures?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
   faviconPrefix?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   firebaseTenantId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  liffAppId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffBaseUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   logoPath?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;

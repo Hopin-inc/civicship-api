@@ -56,8 +56,10 @@ export default class CommunityPortalConfigService {
       throw new NotFoundError("Portal config not found", { communityId });
     }
 
-    const lineConfig = await this.configRepository.getLineConfig(ctx, communityId);
-    const firebaseConfig = await this.configRepository.getFirebaseConfig(ctx, communityId);
+    const [lineConfig, firebaseConfig] = await Promise.all([
+      this.configRepository.getLineConfig(ctx, communityId),
+      this.configRepository.getFirebaseConfig(ctx, communityId),
+    ]);
 
     return {
       communityId,
