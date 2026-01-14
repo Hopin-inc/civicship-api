@@ -1,6 +1,7 @@
 import { Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TransactionPresenter from "@/application/domain/transaction/presenter";
+import IncentiveGrantPresenter from "@/application/domain/transaction/incentiveGrant/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import WalletService from "@/application/domain/account/wallet/service";
@@ -305,23 +306,15 @@ export default class TransactionUseCase {
     // Get config
     const config = await this.signupBonusConfigService.get(ctx, communityId);
     if (!config) {
-      return {
-        __typename: "SignupBonusRetryPayload",
-        success: false,
-        transaction: null,
-        error: "Signup bonus config not found for community",
-      };
+      return IncentiveGrantPresenter.signupBonusRetryError(
+        "Signup bonus config not found for community",
+      );
     }
 
     // Get wallet
     const wallet = await this.walletService.findMemberWallet(ctx, userId, communityId);
     if (!wallet) {
-      return {
-        __typename: "SignupBonusRetryPayload",
-        success: false,
-        transaction: null,
-        error: "Wallet not found for user",
-      };
+      return IncentiveGrantPresenter.signupBonusRetryError("Wallet not found for user");
     }
 
     // Get community wallet
@@ -336,11 +329,8 @@ export default class TransactionUseCase {
       message: config.message ?? undefined,
     });
 
-    return {
-      __typename: "SignupBonusRetryPayload",
-      success: result.success,
-      transaction: TransactionPresenter.getOrNull(result.transaction),
-      error: result.error || null,
-    };
+    return result.success
+      ? IncentiveGrantPresenter.signupBonusRetrySuccess(result.transaction)
+      : IncentiveGrantPresenter.signupBonusRetryError(result.error || "Unknown error");
   }
 }
