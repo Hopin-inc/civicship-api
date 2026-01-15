@@ -47,6 +47,7 @@ import type { AccumulatedPointView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { OpportunityAccumulatedParticipantsView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
+import type { TransactionChainView } from "@prisma/client";
 import type { LineRichMenuType } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { CurrentPrefecture } from "@prisma/client";
@@ -755,6 +756,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Wallet",
                 relationName: "to_wallet"
             }, {
+                name: "chainInfo",
+                type: "TransactionChainView",
+                relationName: "TransactionToTransactionChainView"
+            }, {
                 name: "participation",
                 type: "Participation",
                 relationName: "ParticipationToTransaction"
@@ -909,6 +914,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "slot",
                 type: "OpportunitySlot",
                 relationName: "OpportunitySlotToRemainingCapacityView"
+            }]
+    }, {
+        name: "TransactionChainView",
+        fields: [{
+                name: "transaction",
+                type: "Transaction",
+                relationName: "TransactionToTransactionChainView"
             }]
     }];
 
@@ -6417,6 +6429,11 @@ type TransactiontoWalletFactory = {
     build: () => PromiseLike<Prisma.WalletCreateNestedOneWithoutToTransactionsInput["create"]>;
 };
 
+type TransactionchainInfoFactory = {
+    _factoryFor: "TransactionChainView";
+    build: () => PromiseLike<Prisma.TransactionChainViewCreateNestedOneWithoutTransactionInput["create"]>;
+};
+
 type TransactionparticipationFactory = {
     _factoryFor: "Participation";
     build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutTransactionsInput["create"]>;
@@ -6447,6 +6464,7 @@ type TransactionFactoryDefineInput = {
     updatedAt?: Date | null;
     fromWallet?: TransactionfromWalletFactory | Prisma.WalletCreateNestedOneWithoutFromTransactionsInput;
     toWallet?: TransactiontoWalletFactory | Prisma.WalletCreateNestedOneWithoutToTransactionsInput;
+    chainInfo?: TransactionchainInfoFactory | Prisma.TransactionChainViewCreateNestedOneWithoutTransactionInput;
     participation?: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput;
     reservation?: TransactionreservationFactory | Prisma.ReservationCreateNestedOneWithoutTransactionsInput;
     ticketStatusHistory?: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput;
@@ -6473,6 +6491,10 @@ function isTransactionfromWalletFactory(x: TransactionfromWalletFactory | Prisma
 
 function isTransactiontoWalletFactory(x: TransactiontoWalletFactory | Prisma.WalletCreateNestedOneWithoutToTransactionsInput | undefined): x is TransactiontoWalletFactory {
     return (x as any)?._factoryFor === "Wallet";
+}
+
+function isTransactionchainInfoFactory(x: TransactionchainInfoFactory | Prisma.TransactionChainViewCreateNestedOneWithoutTransactionInput | undefined): x is TransactionchainInfoFactory {
+    return (x as any)?._factoryFor === "TransactionChainView";
 }
 
 function isTransactionparticipationFactory(x: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput | undefined): x is TransactionparticipationFactory {
@@ -6559,6 +6581,9 @@ function defineTransactionFactoryInternal<TTransients extends Record<string, unk
                 toWallet: isTransactiontoWalletFactory(defaultData.toWallet) ? {
                     create: await defaultData.toWallet.build()
                 } : defaultData.toWallet,
+                chainInfo: isTransactionchainInfoFactory(defaultData.chainInfo) ? {
+                    create: await defaultData.chainInfo.build()
+                } : defaultData.chainInfo,
                 participation: isTransactionparticipationFactory(defaultData.participation) ? {
                     create: await defaultData.participation.build()
                 } : defaultData.participation,
@@ -9261,3 +9286,158 @@ export const defineRemainingCapacityViewFactory = (<TOptions extends RemainingCa
 }) as RemainingCapacityViewFactoryBuilder;
 
 defineRemainingCapacityViewFactory.withTransientFields = defaultTransientFieldValues => options => defineRemainingCapacityViewFactoryInternal(options, defaultTransientFieldValues);
+
+type TransactionChainViewScalarOrEnumFields = {
+    depth: number;
+    rootTxId: string;
+};
+
+type TransactionChainViewtransactionFactory = {
+    _factoryFor: "Transaction";
+    build: () => PromiseLike<Prisma.TransactionCreateNestedOneWithoutChainInfoInput["create"]>;
+};
+
+type TransactionChainViewFactoryDefineInput = {
+    depth?: number;
+    rootTxId?: string;
+    chainTxIds?: Prisma.TransactionChainViewCreatechainTxIdsInput | Array<string>;
+    transaction: TransactionChainViewtransactionFactory | Prisma.TransactionCreateNestedOneWithoutChainInfoInput;
+};
+
+type TransactionChainViewTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionChainViewFactoryDefineInput, never>>;
+
+type TransactionChainViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<TransactionChainViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TransactionChainView, Prisma.TransactionChainViewCreateInput, TTransients>;
+
+type TransactionChainViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<TransactionChainViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: TransactionChainViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<TransactionChainView, Prisma.TransactionChainViewCreateInput, TTransients>;
+
+function isTransactionChainViewtransactionFactory(x: TransactionChainViewtransactionFactory | Prisma.TransactionCreateNestedOneWithoutChainInfoInput | undefined): x is TransactionChainViewtransactionFactory {
+    return (x as any)?._factoryFor === "Transaction";
+}
+
+type TransactionChainViewTraitKeys<TOptions extends TransactionChainViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TransactionChainViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "TransactionChainView";
+    build(inputData?: Partial<Prisma.TransactionChainViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionChainViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.TransactionChainViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionChainViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.TransactionChainViewCreateInput & TTransients>[]): PromiseLike<Prisma.TransactionChainViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.TransactionChainViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionChainViewCreateInput[]>;
+    pickForConnect(inputData: TransactionChainView): Pick<TransactionChainView, "transactionId">;
+    create(inputData?: Partial<Prisma.TransactionChainViewCreateInput & TTransients>): PromiseLike<TransactionChainView>;
+    createList(list: readonly Partial<Prisma.TransactionChainViewCreateInput & TTransients>[]): PromiseLike<TransactionChainView[]>;
+    createList(count: number, item?: Partial<Prisma.TransactionChainViewCreateInput & TTransients>): PromiseLike<TransactionChainView[]>;
+    createForConnect(inputData?: Partial<Prisma.TransactionChainViewCreateInput & TTransients>): PromiseLike<Pick<TransactionChainView, "transactionId">>;
+}
+
+export interface TransactionChainViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TransactionChainViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): TransactionChainViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTransactionChainViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): TransactionChainViewScalarOrEnumFields {
+    return {
+        depth: getScalarFieldValueGenerator().Int({ modelName: "TransactionChainView", fieldName: "depth", isId: false, isUnique: false, seq }),
+        rootTxId: getScalarFieldValueGenerator().String({ modelName: "TransactionChainView", fieldName: "rootTxId", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineTransactionChainViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TransactionChainViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): TransactionChainViewFactoryInterface<TTransients, TransactionChainViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly TransactionChainViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("TransactionChainView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.TransactionChainViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateTransactionChainViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<TransactionChainViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<TransactionChainViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                transaction: isTransactionChainViewtransactionFactory(defaultData.transaction) ? {
+                    create: await defaultData.transaction.build()
+                } : defaultData.transaction
+            } as Prisma.TransactionChainViewCreateInput;
+            const data: Prisma.TransactionChainViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionChainViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: TransactionChainView) => ({
+            transactionId: inputData.transactionId
+        });
+        const create = async (inputData: Partial<Prisma.TransactionChainViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().transactionChainView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionChainViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.TransactionChainViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "TransactionChainView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: TransactionChainViewTraitKeys<TOptions>, ...names: readonly TransactionChainViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface TransactionChainViewFactoryBuilder {
+    <TOptions extends TransactionChainViewFactoryDefineOptions>(options: TOptions): TransactionChainViewFactoryInterface<{}, TransactionChainViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends TransactionChainViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TransactionChainViewFactoryDefineOptions<TTransients>>(options: TOptions) => TransactionChainViewFactoryInterface<TTransients, TransactionChainViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TransactionChainView} model.
+ *
+ * @param options
+ * @returns factory {@link TransactionChainViewFactoryInterface}
+ */
+export const defineTransactionChainViewFactory = (<TOptions extends TransactionChainViewFactoryDefineOptions>(options: TOptions): TransactionChainViewFactoryInterface<TOptions> => {
+    return defineTransactionChainViewFactoryInternal(options, {});
+}) as TransactionChainViewFactoryBuilder;
+
+defineTransactionChainViewFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionChainViewFactoryInternal(options, defaultTransientFieldValues);

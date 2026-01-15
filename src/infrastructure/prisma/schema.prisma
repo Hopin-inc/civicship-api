@@ -1126,6 +1126,8 @@ model Transaction {
   toWallet      Wallet? @relation("to_wallet", fields: [to], references: [id], onDelete: SetNull)
   toPointChange Int     @map("to_point_change")
 
+  chainInfo TransactionChainView?
+
   participationId String?        @map("participation_id")
   participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
 
@@ -1160,6 +1162,17 @@ enum TransactionReason {
   OPPORTUNITY_RESERVATION_CREATED
   OPPORTUNITY_RESERVATION_CANCELED
   OPPORTUNITY_RESERVATION_REJECTED
+}
+
+view TransactionChainView {
+  transactionId String      @id @map("transaction_id")
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+
+  depth      Int
+  rootTxId   String   @map("root_tx_id")
+  chainTxIds String[] @map("chain_tx_ids")
+
+  @@map("mv_transaction_chains")
 }
 
 // ------------------------------ API Key Domain ------------------------------
