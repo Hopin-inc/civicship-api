@@ -105,9 +105,8 @@ export default class IdentityService {
     }
   }
 
-  async deleteFirebaseAuthUser(uid: string, tenantId: string): Promise<void> {
-    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
-    return tenantedAuth.deleteUser(uid);
+  async deleteFirebaseAuthUser(uid: string): Promise<void> {
+    return auth.deleteUser(uid);
   }
 
   async fetchNewIdToken(refreshToken: string): Promise<FirebaseTokenRefreshResponse> {

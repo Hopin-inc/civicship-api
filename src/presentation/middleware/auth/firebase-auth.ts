@@ -1,11 +1,9 @@
 import { auth } from "@/infrastructure/libs/firebase";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { createLoaders } from "@/presentation/graphql/dataloader";
-import CommunityConfigService from "@/application/domain/account/community/config/service";
-import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
-import { AuthMeta, IContext } from "@/types/server";
+import { AuthMeta } from "@/types/server";
 import { AuthenticationError } from "@/errors/graphql";
 
 export async function handleFirebaseAuth(
@@ -27,18 +25,15 @@ export async function handleFirebaseAuth(
     return { issuer, loaders, communityId, authMeta };
   }
 
-  const configService = container.resolve(CommunityConfigService);
   // Use null for communityId to get the shared/integrated Firebase tenant
   // This ensures all communities use the same LINE authentication (tenant-less)
   // The communityId header is still used for RLS (Row-Level Security) purposes
-  const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, null);
   const verificationMethod = authMode === "session" ? "verifySessionCookie" : "verifyIdToken";
 
   try {
-    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     const decoded = await (authMode === "session"
-      ? tenantedAuth.verifySessionCookie(idToken, false)
-      : tenantedAuth.verifyIdToken(idToken));
+      ? auth.verifySessionCookie(idToken, false)
+      : auth.verifyIdToken(idToken));
     const uid = decoded.uid;
     const platform = decoded.platform;
 
@@ -64,7 +59,6 @@ export async function handleFirebaseAuth(
     logger.debug("✅ Firebase user verified", {
       method: verificationMethod,
       uid: decoded.uid.slice(-6),
-      tenantId,
       decodedTenant,
       provider,
       communityId,
@@ -79,7 +73,6 @@ export async function handleFirebaseAuth(
       uid,
       idToken,
       platform,
-      tenantId,
       communityId,
       currentUser,
       authMeta,
@@ -88,7 +81,6 @@ export async function handleFirebaseAuth(
     const error = err as any;
     logger.error("🔥 Firebase verification failed", {
       method: verificationMethod,
-      tenantId,
       communityId,
       errorCode: error.code || "unknown",
       errorMessage: error.message,

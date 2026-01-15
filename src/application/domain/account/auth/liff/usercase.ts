@@ -63,8 +63,7 @@ export class LIFFAuthUseCase {
 
     const profile = await LIFFService.getProfile(request.accessToken);
 
-    const tenantId = await configService.getFirebaseTenantId(ctx, request.communityId);
-    const customToken = await LIFFService.createFirebaseCustomToken(profile, tenantId);
+    const customToken = await LIFFService.createFirebaseCustomToken(profile);
 
     const expiryTime = new Date();
     expiryTime.setSeconds(expiryTime.getSeconds() + verifyResult.expires_in);
@@ -101,8 +100,7 @@ export class LIFFAuthUseCase {
       };
     }
 
-    const tenantId = await configService.getFirebaseTenantId(ctx, null);
-    const customToken = await LIFFService.createFirebaseCustomToken(profile, tenantId);
+    const customToken = await LIFFService.createFirebaseCustomToken(profile);
 
     const expiryTime = new Date();
     expiryTime.setSeconds(expiryTime.getSeconds() + verifyResult.expires_in);
@@ -145,8 +143,7 @@ export class LIFFAuthUseCase {
       null,
     );
 
-    const tenantId = await configService.getFirebaseTenantId(ctx, null);
-    const customToken = await LIFFService.createFirebaseCustomToken(profile, tenantId);
+    const customToken = await LIFFService.createFirebaseCustomToken(profile);
 
     const expiryTime = new Date();
     expiryTime.setSeconds(expiryTime.getSeconds() + 3600);
@@ -185,8 +182,7 @@ export class LIFFAuthUseCase {
       },
     });
 
-    const tenantId = await configService.getFirebaseTenantId(ctx, null);
-    const customToken = await LIFFService.createFirebaseCustomToken(profile, tenantId);
+    const customToken = await LIFFService.createFirebaseCustomToken(profile);
 
     const expiryTime = new Date();
     expiryTime.setSeconds(expiryTime.getSeconds() + 3600);

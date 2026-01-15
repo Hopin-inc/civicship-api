@@ -25,7 +25,6 @@ export interface CommunityPortalConfigResult {
   liffId: string | null;
   liffAppId: string | null;
   liffBaseUrl: string | null;
-  firebaseTenantId: string | null;
 }
 
 export interface CommunityDocument {
@@ -59,10 +58,7 @@ export default class CommunityPortalConfigService {
     // Use null for LINE config to get the integrated/global LINE config (communityId = null)
     // This ensures all communities use the shared LINE authentication
     // Firebase config still uses community-specific config for tenant isolation
-    const [lineConfig, firebaseConfig] = await Promise.all([
-      this.configRepository.getLineConfig(ctx, null),
-      this.configRepository.getFirebaseConfig(ctx, null),
-    ]);
+    const lineConfig = await this.configRepository.getLineConfig(ctx, null);
 
     return {
       communityId,
@@ -85,7 +81,6 @@ export default class CommunityPortalConfigService {
       liffId: lineConfig?.liffId ?? null,
       liffAppId: lineConfig?.liffAppId ?? null,
       liffBaseUrl: lineConfig?.liffBaseUrl ?? null,
-      firebaseTenantId: firebaseConfig?.tenantId ?? null,
     };
   }
 }

@@ -57,12 +57,12 @@ export default class IdentityUseCase {
   }
 
   async userDeleteAccount(context: IContext): Promise<GqlUserDeletePayload> {
-    if (!context.uid || !context.platform || !context.tenantId) {
+    if (!context.uid || !context.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
     const uid = context.uid;
     const user = await this.identityService.deleteUserAndIdentity(uid);
-    await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
+    await this.identityService.deleteFirebaseAuthUser(uid);
     return IdentityPresenter.delete(user);
   }
 
