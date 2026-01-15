@@ -56,9 +56,12 @@ export default class CommunityPortalConfigService {
       throw new NotFoundError("Portal config not found", { communityId });
     }
 
+    // Use null for LINE config to get the integrated/global LINE config (communityId = null)
+    // This ensures all communities use the shared LINE authentication
+    // Firebase config still uses community-specific config for tenant isolation
     const [lineConfig, firebaseConfig] = await Promise.all([
-      this.configRepository.getLineConfig(ctx, communityId),
-      this.configRepository.getFirebaseConfig(ctx, communityId),
+      this.configRepository.getLineConfig(ctx, null),
+      this.configRepository.getFirebaseConfig(ctx, null),
     ]);
 
     return {
