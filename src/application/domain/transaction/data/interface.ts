@@ -96,6 +96,8 @@ export interface ITransactionRepository {
     tx: Prisma.TransactionClient,
   ): Promise<refreshMaterializedViewCurrentPoints.Result[]>;
 
+  refreshTransactionChains(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
+
   create(
     ctx: IContext,
     data: Prisma.TransactionCreateInput,
