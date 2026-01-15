@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs } from "@/types/graphql";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { InsufficientBalanceError, NotFoundError, ValidationError } from "@/errors/graphql";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
@@ -171,10 +171,7 @@ export default class WalletService {
     });
 
     if (currentBalance < BigInt(requiredAmount)) {
-      throw new ValidationError(
-        `Insufficient balance: ${currentBalance} < ${requiredAmount}`,
-        ["communityWallet", communityId]
-      );
+      throw new InsufficientBalanceError(currentBalance.toString(), requiredAmount);
     }
   }
 }

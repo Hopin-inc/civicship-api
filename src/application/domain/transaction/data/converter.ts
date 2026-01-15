@@ -137,6 +137,7 @@ export default class TransactionConverter {
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
+    createdBy: string,
     comment?: string,
   ): Prisma.TransactionCreateInput {
     return {
@@ -145,6 +146,7 @@ export default class TransactionConverter {
       fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
+      createdByUser: { connect: { id: createdBy } },
       comment: comment ?? "新規登録ボーナス",
     };
   }

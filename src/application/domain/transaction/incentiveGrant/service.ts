@@ -22,6 +22,8 @@ import logger from "@/infrastructure/logging";
 import { GqlSignupBonusFilterInput, GqlSignupBonusSortInput } from "@/types/graphql";
 import WalletService from "@/application/domain/account/wallet/service";
 import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
+import NotificationService from "@/application/domain/notification/service";
+import CommunityService from "@/application/domain/account/community/service";
 
 const SIGNUP_SOURCE_ID = "default";
 
@@ -37,6 +39,8 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("SignupBonusConfigService")
     private readonly signupBonusConfigService: SignupBonusConfigService,
+    @inject("NotificationService") private readonly notificationService: NotificationService,
+    @inject("CommunityService") private readonly communityService: CommunityService,
   ) {}
 
   /**
@@ -77,7 +81,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
       }
 
       // 3. Grant signup bonus (balance check happens inside transaction)
-      await this.grantSignupBonus(ctx, {
+      const result = await this.grantSignupBonus(ctx, {
         userId,
         communityId,
         fromWalletId: communityWallet.id,
@@ -85,6 +89,27 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
         bonusPoint: config.bonusPoint,
         message: config.message ?? undefined,
       });
+
+      // 4. Send LINE notification if successful
+      if (result.status === "COMPLETED") {
+        const community = await this.communityService.getCommunity(ctx, communityId);
+        this.notificationService
+          .pushSignupBonusGrantedMessage(
+            ctx,
+            userId,
+            community.name,
+            config.bonusPoint,
+            config.message,
+          )
+          .catch((notifError) => {
+            // Best-effort: Don't fail signup if notification fails
+            logger.error("Failed to send signup bonus notification", {
+              userId,
+              communityId,
+              error: notifError instanceof Error ? notifError.message : String(notifError),
+            });
+          });
+      }
     } catch (error) {
       // Best-effort: log error but don't fail user signup
       logger.error("Unexpected error during signup bonus grant", {
@@ -239,6 +264,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
           fromWalletId,
           toWalletId,
           bonusPoint,
+          grantCheck.userId,
           message,
         );
         const newTx = await this.transactionRepository.create(ctx, data, tx);

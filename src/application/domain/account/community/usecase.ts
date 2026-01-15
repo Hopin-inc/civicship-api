@@ -90,12 +90,11 @@ export default class CommunityUseCase {
   }
 
   async managerUpdateSignupBonusConfig(
-    { input }: GqlMutationUpdateSignupBonusConfigArgs,
+    { input, permission }: GqlMutationUpdateSignupBonusConfigArgs,
     ctx: IContext,
-    communityId: string,
   ): Promise<CommunitySignupBonusConfig> {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      return this.signupBonusConfigService.update(ctx, communityId, input, tx);
+      return this.signupBonusConfigService.update(ctx, permission.communityId, input, tx);
     });
   }
 }
