@@ -28,7 +28,10 @@ export async function handleFirebaseAuth(
   }
 
   const configService = container.resolve(CommunityConfigService);
-  const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
+  // Use null for communityId to get the shared/integrated Firebase tenant
+  // This ensures all communities use the same LINE authentication (tenant-less)
+  // The communityId header is still used for RLS (Row-Level Security) purposes
+  const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, null);
   const verificationMethod = authMode === "session" ? "verifySessionCookie" : "verifyIdToken";
 
   try {
