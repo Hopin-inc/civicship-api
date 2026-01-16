@@ -97,7 +97,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
 
       // 4. Send LINE notification if successful
       if (result.status === "COMPLETED") {
-        const community = await this.communityService.getCommunity(ctx, communityId);
+        const community = await this.communityService.findCommunityOrThrow(ctx, communityId);
         this.notificationService
           .pushSignupBonusGrantedMessage(
             ctx,

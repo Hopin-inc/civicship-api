@@ -446,7 +446,7 @@ export default class NotificationService {
     const preparedData = await this.prepareLinePush(
       ctx,
       toUserId,
-      "signup-bonus-grant", // dummy transactionId for logging
+      "logctx:signup-bonus-grant", // log context passed via transactionId parameter
       "pushSignupBonusGrantedMessage",
       { includeLanguage: true },
     );
