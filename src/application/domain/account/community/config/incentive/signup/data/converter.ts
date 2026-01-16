@@ -38,10 +38,6 @@ export default class CommunitySignupBonusConfigConverter {
       createData.message = this.extractStringOrNullValue(updateData.message);
     }
 
-    if ("id" in updateData) {
-      createData.id = this.extractStringValue(updateData.id);
-    }
-
     return createData;
   }
 
