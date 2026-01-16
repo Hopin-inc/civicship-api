@@ -208,6 +208,7 @@ type Community {
 type CommunityConfig {
   firebaseConfig: CommunityFirebaseConfig
   lineConfig: CommunityLineConfig
+  signupBonusConfig: CommunitySignupBonusConfig
 }
 
 input CommunityConfigInput {
@@ -317,6 +318,12 @@ type CommunityPortalConfig {
   squareLogoPath: String!
   title: String!
   tokenName: String!
+}
+
+type CommunitySignupBonusConfig {
+  bonusPoint: Int!
+  isEnabled: Boolean!
+  message: String
 }
 
 input CommunitySortInput {
@@ -544,6 +551,24 @@ input ImageInput {
   alt: String
   caption: String
   file: Upload
+}
+
+enum IncentiveGrantFailureCode {
+  DATABASE_ERROR
+  INSUFFICIENT_FUNDS
+  TIMEOUT
+  UNKNOWN
+  WALLET_NOT_FOUND
+}
+
+enum IncentiveGrantStatus {
+  COMPLETED
+  FAILED
+  PENDING
+}
+
+enum IncentiveGrantType {
+  SIGNUP
 }
 
 scalar JSON
@@ -1535,6 +1560,51 @@ enum Role {
   MANAGER
   MEMBER
   OWNER
+}
+
+"""Signup bonus grant record"""
+type SignupBonus {
+  """Number of retry attempts"""
+  attemptCount: Int!
+
+  """Community"""
+  community: Community!
+
+  """Grant creation timestamp"""
+  createdAt: Datetime!
+
+  """Failure reason code (if failed)"""
+  failureCode: IncentiveGrantFailureCode
+
+  """Grant ID"""
+  id: ID!
+
+  """Last attempt timestamp"""
+  lastAttemptedAt: Datetime!
+
+  """Last error message (if failed)"""
+  lastError: String
+
+  """Grant status"""
+  status: IncentiveGrantStatus!
+
+  """Granted transaction (if completed)"""
+  transaction: Transaction
+
+  """User who received/should receive the bonus"""
+  user: User
+}
+
+"""Sort fields for signup bonuses"""
+enum SignupBonusSortField {
+  """Sort by attempt count"""
+  ATTEMPT_COUNT
+
+  """Sort by creation date"""
+  CREATED_AT
+
+  """Sort by last attempt date"""
+  LAST_ATTEMPTED_AT
 }
 
 enum SortDirection {
