@@ -8,6 +8,7 @@ import type { CommunityFirebaseConfig } from "@prisma/client";
 import type { CommunityLineConfig } from "@prisma/client";
 import type { CommunityLineRichMenuConfig } from "@prisma/client";
 import type { CommunityPortalConfig } from "@prisma/client";
+import type { CommunitySignupBonusConfig } from "@prisma/client";
 import type { User } from "@prisma/client";
 import type { Identity } from "@prisma/client";
 import type { DidIssuanceRequest } from "@prisma/client";
@@ -30,6 +31,7 @@ import type { TicketClaimLink } from "@prisma/client";
 import type { Ticket } from "@prisma/client";
 import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
+import type { IncentiveGrant } from "@prisma/client";
 import type { ApiKey } from "@prisma/client";
 import type { NftWallet } from "@prisma/client";
 import type { NftToken } from "@prisma/client";
@@ -71,6 +73,9 @@ import type { ClaimLinkStatus } from "@prisma/client";
 import type { TicketStatus } from "@prisma/client";
 import type { TicketStatusReason } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
+import type { IncentiveGrantType } from "@prisma/client";
+import type { IncentiveGrantStatus } from "@prisma/client";
+import type { IncentiveGrantFailureCode } from "@prisma/client";
 import type { NftWalletType } from "@prisma/client";
 import type { NftInstanceStatus } from "@prisma/client";
 import type { NftMintStatus } from "@prisma/client";
@@ -186,6 +191,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "CommunityConfig",
                 relationName: "CommunityToCommunityConfig"
             }, {
+                name: "signupBonusConfig",
+                type: "CommunitySignupBonusConfig",
+                relationName: "CommunityToCommunitySignupBonusConfig"
+            }, {
                 name: "places",
                 type: "Place",
                 relationName: "CommunityToPlace"
@@ -201,6 +210,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "wallets",
                 type: "Wallet",
                 relationName: "CommunityToWallet"
+            }, {
+                name: "incentiveGrants",
+                type: "IncentiveGrant",
+                relationName: "CommunityToIncentiveGrant"
             }, {
                 name: "utilities",
                 type: "Utility",
@@ -274,6 +287,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 relationName: "CommunityConfigToCommunityPortalConfig"
             }]
     }, {
+        name: "CommunitySignupBonusConfig",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToCommunitySignupBonusConfig"
+            }]
+    }, {
         name: "User",
         fields: [{
                 name: "image",
@@ -307,6 +327,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "wallets",
                 type: "Wallet",
                 relationName: "UserToWallet"
+            }, {
+                name: "incentiveGrants",
+                type: "IncentiveGrant",
+                relationName: "IncentiveGrantToUser"
             }, {
                 name: "utiltyOwnedByMe",
                 type: "Utility",
@@ -767,6 +791,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "TicketStatusHistory",
                 relationName: "TicketStatusHistoryToTransaction"
             }, {
+                name: "incentiveGrant",
+                type: "IncentiveGrant",
+                relationName: "IncentiveGrantToTransaction"
+            }, {
                 name: "createdByUser",
                 type: "User",
                 relationName: "TransactionToUser"
@@ -774,6 +802,21 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "merkleProofs",
                 type: "MerkleProof",
                 relationName: "MerkleProofToTransaction"
+            }]
+    }, {
+        name: "IncentiveGrant",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "IncentiveGrantToUser"
+            }, {
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToIncentiveGrant"
+            }, {
+                name: "transaction",
+                type: "Transaction",
+                relationName: "IncentiveGrantToTransaction"
             }]
     }, {
         name: "ApiKey",
@@ -1620,6 +1663,11 @@ type CommunityconfigFactory = {
     build: () => PromiseLike<Prisma.CommunityConfigCreateNestedOneWithoutCommunityInput["create"]>;
 };
 
+type CommunitysignupBonusConfigFactory = {
+    _factoryFor: "CommunitySignupBonusConfig";
+    build: () => PromiseLike<Prisma.CommunitySignupBonusConfigCreateNestedOneWithoutCommunityInput["create"]>;
+};
+
 type CommunityFactoryDefineInput = {
     id?: string;
     name?: string;
@@ -1631,10 +1679,12 @@ type CommunityFactoryDefineInput = {
     updatedAt?: Date | null;
     image?: CommunityimageFactory | Prisma.ImageCreateNestedOneWithoutCommunitiesInput;
     config?: CommunityconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutCommunityInput;
+    signupBonusConfig?: CommunitysignupBonusConfigFactory | Prisma.CommunitySignupBonusConfigCreateNestedOneWithoutCommunityInput;
     places?: Prisma.PlaceCreateNestedManyWithoutCommunityInput;
     identities?: Prisma.IdentityCreateNestedManyWithoutCommunityInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
+    incentiveGrants?: Prisma.IncentiveGrantCreateNestedManyWithoutCommunityInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
@@ -1661,6 +1711,10 @@ function isCommunityimageFactory(x: CommunityimageFactory | Prisma.ImageCreateNe
 
 function isCommunityconfigFactory(x: CommunityconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutCommunityInput | undefined): x is CommunityconfigFactory {
     return (x as any)?._factoryFor === "CommunityConfig";
+}
+
+function isCommunitysignupBonusConfigFactory(x: CommunitysignupBonusConfigFactory | Prisma.CommunitySignupBonusConfigCreateNestedOneWithoutCommunityInput | undefined): x is CommunitysignupBonusConfigFactory {
+    return (x as any)?._factoryFor === "CommunitySignupBonusConfig";
 }
 
 type CommunityTraitKeys<TOptions extends CommunityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -1729,7 +1783,10 @@ function defineCommunityFactoryInternal<TTransients extends Record<string, unkno
                 } : defaultData.image,
                 config: isCommunityconfigFactory(defaultData.config) ? {
                     create: await defaultData.config.build()
-                } : defaultData.config
+                } : defaultData.config,
+                signupBonusConfig: isCommunitysignupBonusConfigFactory(defaultData.signupBonusConfig) ? {
+                    create: await defaultData.signupBonusConfig.build()
+                } : defaultData.signupBonusConfig
             } as Prisma.CommunityCreateInput;
             const data: Prisma.CommunityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -2639,6 +2696,158 @@ export const defineCommunityPortalConfigFactory = (<TOptions extends CommunityPo
 
 defineCommunityPortalConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityPortalConfigFactoryInternal(options, defaultTransientFieldValues);
 
+type CommunitySignupBonusConfigScalarOrEnumFields = {};
+
+type CommunitySignupBonusConfigcommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutSignupBonusConfigInput["create"]>;
+};
+
+type CommunitySignupBonusConfigFactoryDefineInput = {
+    id?: string;
+    isEnabled?: boolean;
+    bonusPoint?: number;
+    message?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date;
+    community: CommunitySignupBonusConfigcommunityFactory | Prisma.CommunityCreateNestedOneWithoutSignupBonusConfigInput;
+};
+
+type CommunitySignupBonusConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunitySignupBonusConfigFactoryDefineInput, never>>;
+
+type CommunitySignupBonusConfigFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunitySignupBonusConfigFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunitySignupBonusConfig, Prisma.CommunitySignupBonusConfigCreateInput, TTransients>;
+
+type CommunitySignupBonusConfigFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<CommunitySignupBonusConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: CommunitySignupBonusConfigFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunitySignupBonusConfig, Prisma.CommunitySignupBonusConfigCreateInput, TTransients>;
+
+function isCommunitySignupBonusConfigcommunityFactory(x: CommunitySignupBonusConfigcommunityFactory | Prisma.CommunityCreateNestedOneWithoutSignupBonusConfigInput | undefined): x is CommunitySignupBonusConfigcommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
+
+type CommunitySignupBonusConfigTraitKeys<TOptions extends CommunitySignupBonusConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunitySignupBonusConfigFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunitySignupBonusConfig";
+    build(inputData?: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunitySignupBonusConfigCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunitySignupBonusConfigCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>[]): PromiseLike<Prisma.CommunitySignupBonusConfigCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunitySignupBonusConfigCreateInput[]>;
+    pickForConnect(inputData: CommunitySignupBonusConfig): Pick<CommunitySignupBonusConfig, "id">;
+    create(inputData?: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>): PromiseLike<CommunitySignupBonusConfig>;
+    createList(list: readonly Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>[]): PromiseLike<CommunitySignupBonusConfig[]>;
+    createList(count: number, item?: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>): PromiseLike<CommunitySignupBonusConfig[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>): PromiseLike<Pick<CommunitySignupBonusConfig, "id">>;
+}
+
+export interface CommunitySignupBonusConfigFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunitySignupBonusConfigFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunitySignupBonusConfigFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunitySignupBonusConfigScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunitySignupBonusConfigScalarOrEnumFields {
+    return {};
+}
+
+function defineCommunitySignupBonusConfigFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunitySignupBonusConfigFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunitySignupBonusConfigFactoryInterface<TTransients, CommunitySignupBonusConfigTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunitySignupBonusConfigTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunitySignupBonusConfig", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunitySignupBonusConfigScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunitySignupBonusConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunitySignupBonusConfigFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isCommunitySignupBonusConfigcommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
+            } as Prisma.CommunitySignupBonusConfigCreateInput;
+            const data: Prisma.CommunitySignupBonusConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunitySignupBonusConfig) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communitySignupBonusConfig.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunitySignupBonusConfigCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunitySignupBonusConfig" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunitySignupBonusConfigTraitKeys<TOptions>, ...names: readonly CommunitySignupBonusConfigTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunitySignupBonusConfigFactoryBuilder {
+    <TOptions extends CommunitySignupBonusConfigFactoryDefineOptions>(options: TOptions): CommunitySignupBonusConfigFactoryInterface<{}, CommunitySignupBonusConfigTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunitySignupBonusConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunitySignupBonusConfigFactoryDefineOptions<TTransients>>(options: TOptions) => CommunitySignupBonusConfigFactoryInterface<TTransients, CommunitySignupBonusConfigTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunitySignupBonusConfig} model.
+ *
+ * @param options
+ * @returns factory {@link CommunitySignupBonusConfigFactoryInterface}
+ */
+export const defineCommunitySignupBonusConfigFactory = (<TOptions extends CommunitySignupBonusConfigFactoryDefineOptions>(options: TOptions): CommunitySignupBonusConfigFactoryInterface<TOptions> => {
+    return defineCommunitySignupBonusConfigFactoryInternal(options, {});
+}) as CommunitySignupBonusConfigFactoryBuilder;
+
+defineCommunitySignupBonusConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunitySignupBonusConfigFactoryInternal(options, defaultTransientFieldValues);
+
 type UserScalarOrEnumFields = {
     name: string;
     slug: string;
@@ -2675,6 +2884,7 @@ type UserFactoryDefineInput = {
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
     membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
+    incentiveGrants?: Prisma.IncentiveGrantCreateNestedManyWithoutUserInput;
     utiltyOwnedByMe?: Prisma.UtilityCreateNestedManyWithoutOwnerInput;
     ticketIssuedByMe?: Prisma.TicketIssuerCreateNestedManyWithoutOwnerInput;
     ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
@@ -6432,6 +6642,11 @@ type TransactionticketStatusHistoryFactory = {
     build: () => PromiseLike<Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput["create"]>;
 };
 
+type TransactionincentiveGrantFactory = {
+    _factoryFor: "IncentiveGrant";
+    build: () => PromiseLike<Prisma.IncentiveGrantCreateNestedOneWithoutTransactionInput["create"]>;
+};
+
 type TransactioncreatedByUserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput["create"]>;
@@ -6450,6 +6665,7 @@ type TransactionFactoryDefineInput = {
     participation?: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput;
     reservation?: TransactionreservationFactory | Prisma.ReservationCreateNestedOneWithoutTransactionsInput;
     ticketStatusHistory?: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput;
+    incentiveGrant?: TransactionincentiveGrantFactory | Prisma.IncentiveGrantCreateNestedOneWithoutTransactionInput;
     createdByUser?: TransactioncreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput;
     merkleProofs?: Prisma.MerkleProofCreateNestedManyWithoutTxInput;
 };
@@ -6485,6 +6701,10 @@ function isTransactionreservationFactory(x: TransactionreservationFactory | Pris
 
 function isTransactionticketStatusHistoryFactory(x: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput | undefined): x is TransactionticketStatusHistoryFactory {
     return (x as any)?._factoryFor === "TicketStatusHistory";
+}
+
+function isTransactionincentiveGrantFactory(x: TransactionincentiveGrantFactory | Prisma.IncentiveGrantCreateNestedOneWithoutTransactionInput | undefined): x is TransactionincentiveGrantFactory {
+    return (x as any)?._factoryFor === "IncentiveGrant";
 }
 
 function isTransactioncreatedByUserFactory(x: TransactioncreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput | undefined): x is TransactioncreatedByUserFactory {
@@ -6568,6 +6788,9 @@ function defineTransactionFactoryInternal<TTransients extends Record<string, unk
                 ticketStatusHistory: isTransactionticketStatusHistoryFactory(defaultData.ticketStatusHistory) ? {
                     create: await defaultData.ticketStatusHistory.build()
                 } : defaultData.ticketStatusHistory,
+                incentiveGrant: isTransactionincentiveGrantFactory(defaultData.incentiveGrant) ? {
+                    create: await defaultData.incentiveGrant.build()
+                } : defaultData.incentiveGrant,
                 createdByUser: isTransactioncreatedByUserFactory(defaultData.createdByUser) ? {
                     create: await defaultData.createdByUser.build()
                 } : defaultData.createdByUser
@@ -6627,6 +6850,194 @@ export const defineTransactionFactory = (<TOptions extends TransactionFactoryDef
 }) as TransactionFactoryBuilder;
 
 defineTransactionFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type IncentiveGrantScalarOrEnumFields = {
+    type: IncentiveGrantType;
+    sourceId: string;
+};
+
+type IncentiveGrantuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutIncentiveGrantsInput["create"]>;
+};
+
+type IncentiveGrantcommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutIncentiveGrantsInput["create"]>;
+};
+
+type IncentiveGranttransactionFactory = {
+    _factoryFor: "Transaction";
+    build: () => PromiseLike<Prisma.TransactionCreateNestedOneWithoutIncentiveGrantInput["create"]>;
+};
+
+type IncentiveGrantFactoryDefineInput = {
+    id?: string;
+    type?: IncentiveGrantType;
+    sourceId?: string;
+    status?: IncentiveGrantStatus;
+    failureCode?: IncentiveGrantFailureCode | null;
+    lastError?: string | null;
+    attemptCount?: number;
+    lastAttemptedAt?: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
+    user: IncentiveGrantuserFactory | Prisma.UserCreateNestedOneWithoutIncentiveGrantsInput;
+    community: IncentiveGrantcommunityFactory | Prisma.CommunityCreateNestedOneWithoutIncentiveGrantsInput;
+    transaction?: IncentiveGranttransactionFactory | Prisma.TransactionCreateNestedOneWithoutIncentiveGrantInput;
+};
+
+type IncentiveGrantTransientFields = Record<string, unknown> & Partial<Record<keyof IncentiveGrantFactoryDefineInput, never>>;
+
+type IncentiveGrantFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IncentiveGrantFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<IncentiveGrant, Prisma.IncentiveGrantCreateInput, TTransients>;
+
+type IncentiveGrantFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<IncentiveGrantFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: IncentiveGrantFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<IncentiveGrant, Prisma.IncentiveGrantCreateInput, TTransients>;
+
+function isIncentiveGrantuserFactory(x: IncentiveGrantuserFactory | Prisma.UserCreateNestedOneWithoutIncentiveGrantsInput | undefined): x is IncentiveGrantuserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+function isIncentiveGrantcommunityFactory(x: IncentiveGrantcommunityFactory | Prisma.CommunityCreateNestedOneWithoutIncentiveGrantsInput | undefined): x is IncentiveGrantcommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
+
+function isIncentiveGranttransactionFactory(x: IncentiveGranttransactionFactory | Prisma.TransactionCreateNestedOneWithoutIncentiveGrantInput | undefined): x is IncentiveGranttransactionFactory {
+    return (x as any)?._factoryFor === "Transaction";
+}
+
+type IncentiveGrantTraitKeys<TOptions extends IncentiveGrantFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface IncentiveGrantFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "IncentiveGrant";
+    build(inputData?: Partial<Prisma.IncentiveGrantCreateInput & TTransients>): PromiseLike<Prisma.IncentiveGrantCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IncentiveGrantCreateInput & TTransients>): PromiseLike<Prisma.IncentiveGrantCreateInput>;
+    buildList(list: readonly Partial<Prisma.IncentiveGrantCreateInput & TTransients>[]): PromiseLike<Prisma.IncentiveGrantCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IncentiveGrantCreateInput & TTransients>): PromiseLike<Prisma.IncentiveGrantCreateInput[]>;
+    pickForConnect(inputData: IncentiveGrant): Pick<IncentiveGrant, "id">;
+    create(inputData?: Partial<Prisma.IncentiveGrantCreateInput & TTransients>): PromiseLike<IncentiveGrant>;
+    createList(list: readonly Partial<Prisma.IncentiveGrantCreateInput & TTransients>[]): PromiseLike<IncentiveGrant[]>;
+    createList(count: number, item?: Partial<Prisma.IncentiveGrantCreateInput & TTransients>): PromiseLike<IncentiveGrant[]>;
+    createForConnect(inputData?: Partial<Prisma.IncentiveGrantCreateInput & TTransients>): PromiseLike<Pick<IncentiveGrant, "id">>;
+}
+
+export interface IncentiveGrantFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IncentiveGrantFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IncentiveGrantFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateIncentiveGrantScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): IncentiveGrantScalarOrEnumFields {
+    return {
+        type: "SIGNUP",
+        sourceId: getScalarFieldValueGenerator().String({ modelName: "IncentiveGrant", fieldName: "sourceId", isId: false, isUnique: true, seq })
+    };
+}
+
+function defineIncentiveGrantFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends IncentiveGrantFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): IncentiveGrantFactoryInterface<TTransients, IncentiveGrantTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly IncentiveGrantTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("IncentiveGrant", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.IncentiveGrantCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIncentiveGrantScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<IncentiveGrantFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<IncentiveGrantFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isIncentiveGrantuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user,
+                community: isIncentiveGrantcommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community,
+                transaction: isIncentiveGranttransactionFactory(defaultData.transaction) ? {
+                    create: await defaultData.transaction.build()
+                } : defaultData.transaction
+            } as Prisma.IncentiveGrantCreateInput;
+            const data: Prisma.IncentiveGrantCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IncentiveGrantCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: IncentiveGrant) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.IncentiveGrantCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().incentiveGrant.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IncentiveGrantCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.IncentiveGrantCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "IncentiveGrant" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: IncentiveGrantTraitKeys<TOptions>, ...names: readonly IncentiveGrantTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface IncentiveGrantFactoryBuilder {
+    <TOptions extends IncentiveGrantFactoryDefineOptions>(options: TOptions): IncentiveGrantFactoryInterface<{}, IncentiveGrantTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IncentiveGrantTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IncentiveGrantFactoryDefineOptions<TTransients>>(options: TOptions) => IncentiveGrantFactoryInterface<TTransients, IncentiveGrantTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link IncentiveGrant} model.
+ *
+ * @param options
+ * @returns factory {@link IncentiveGrantFactoryInterface}
+ */
+export const defineIncentiveGrantFactory = (<TOptions extends IncentiveGrantFactoryDefineOptions>(options: TOptions): IncentiveGrantFactoryInterface<TOptions> => {
+    return defineIncentiveGrantFactoryInternal(options, {});
+}) as IncentiveGrantFactoryBuilder;
+
+defineIncentiveGrantFactory.withTransientFields = defaultTransientFieldValues => options => defineIncentiveGrantFactoryInternal(options, defaultTransientFieldValues);
 
 type ApiKeyScalarOrEnumFields = {
     key: string;
