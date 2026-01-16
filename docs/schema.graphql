@@ -740,7 +740,7 @@ type Mutation {
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
 
   """Update signup bonus config (OWNER/MANAGER only)."""
-  updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!): CommunitySignupBonusConfig!
+  updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
   userSignUp(input: UserSignUpInput!): CurrentUserPayload
   userUpdateMyProfile(input: UserUpdateProfileInput!, permission: CheckIsSelfPermissionInput!): UserUpdateProfilePayload
