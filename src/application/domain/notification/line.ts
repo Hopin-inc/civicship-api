@@ -15,13 +15,13 @@ export async function safeLinkRichMenuIdToUser(
 
   try {
     const response = await client.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
-    logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse, userId, undefined, {
+    logLineApiSuccess("linkRichMenuIdToUser", endpoint, "POST", response.httpResponse, userId, undefined, {
       userId,
       richMenuId,
     });
     return true;
   } catch (error) {
-    logLineApiError("linkRichMenuIdToUser", endpoint, error, userId, undefined, {
+    logLineApiError("linkRichMenuIdToUser", endpoint, "POST", error, userId, undefined, {
       userId,
       richMenuId,
     });
@@ -47,10 +47,10 @@ export async function safePushMessage(
   try {
     await client.validatePushWithHttpInfo({ messages });
     const response = await client.pushMessageWithHttpInfo({ to, messages });
-    logLineApiSuccess("pushMessage", endpoint, response.httpResponse, params.to, undefined, params);
+    logLineApiSuccess("pushMessage", endpoint, "POST", response.httpResponse, params.to, undefined, params);
     return true;
   } catch (error) {
-    logLineApiError("pushMessage", endpoint, error, params.to, undefined, params);
+    logLineApiError("pushMessage", endpoint, "POST", error, params.to, undefined, params);
     return false;
   }
 }
@@ -65,6 +65,7 @@ async function safeGetUserProfile(
     logLineApiSuccess(
       "getProfile",
       endpoint,
+      "GET",
       {
         status: 200,
         headers: new Headers({ [LINE_REQUEST_ID_HTTP_HEADER_NAME]: "N/A" }),
@@ -73,7 +74,7 @@ async function safeGetUserProfile(
     );
     return response;
   } catch (error) {
-    logLineApiError("getProfile", endpoint, error, userId);
+    logLineApiError("getProfile", endpoint, "GET", error, userId);
     return null;
   }
 }

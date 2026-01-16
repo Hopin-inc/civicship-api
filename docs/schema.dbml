@@ -81,12 +81,10 @@ Table t_communities {
   imageId String
   image t_images
   config t_community_configs
-  signupBonusConfig t_community_signup_bonus_configs
   places t_places [not null]
   identities t_identities [not null]
   memberships t_memberships [not null]
   wallets t_wallets [not null]
-  incentiveGrants t_incentive_grants [not null]
   utilities t_utilities [not null]
   opportunities t_opportunities [not null]
   participations t_participations [not null]
@@ -102,6 +100,7 @@ Table t_community_configs {
   community t_communities [not null]
   firebaseConfig t_community_firebase_configs
   lineConfig t_community_line_configs
+  portalConfig t_community_portal_configs
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -123,6 +122,7 @@ Table t_community_line_configs {
   channelSecret String [not null]
   accessToken String [not null]
   liffId String [not null]
+  liffAppId String
   liffBaseUrl String [not null]
   richMenus t_community_line_rich_menus [not null]
   createdAt DateTime [default: `now()`, not null]
@@ -143,15 +143,28 @@ Table t_community_line_rich_menus {
   }
 }
 
-Table t_community_signup_bonus_configs {
+Table t_community_portal_configs {
   id String [pk]
-  communityId String [unique, not null]
-  community t_communities [not null]
-  isEnabled Boolean [not null, default: true]
-  bonusPoint Int [not null, default: 100]
-  message String
+  configId String [unique, not null]
+  config t_community_configs [not null]
+  tokenName String [not null]
+  title String [not null]
+  description String [not null]
+  shortDescription String
+  domain String [not null]
+  faviconPrefix String [not null]
+  logoPath String [not null]
+  squareLogoPath String [not null]
+  ogImagePath String [not null]
+  enableFeatures Json [not null, note: '[FeaturesType]']
+  rootPath String [not null, default: '/']
+  adminRootPath String [not null, default: '/admin']
+  documents Json [note: '[CommunityDocument]']
+  commonDocumentOverrides Json [note: '[CommonDocumentOverrides]']
+  regionName String
+  regionKey String
   createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime [not null]
+  updatedAt DateTime
 }
 
 Table t_users {
@@ -178,7 +191,6 @@ Table t_users {
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
-  incentiveGrants t_incentive_grants [not null]
   utiltyOwnedByMe t_utilities [not null]
   ticketIssuedByMe t_ticket_issuers [not null]
   ticketStatusChangedByMe t_ticket_status_histories [not null]
@@ -534,35 +546,11 @@ Table t_transactions {
   reservationId String
   reservation t_reservations
   ticketStatusHistory t_ticket_status_histories
-  incentiveGrant t_incentive_grants
   createdBy String
   createdByUser t_users
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
   merkleProofs t_merkle_proofs [not null]
-}
-
-Table t_incentive_grants {
-  id String [pk]
-  userId String [not null]
-  user t_users [not null]
-  communityId String [not null]
-  community t_communities [not null]
-  type IncentiveGrantType [not null]
-  sourceId String [not null]
-  status IncentiveGrantStatus [not null, default: 'PENDING']
-  failureCode IncentiveGrantFailureCode
-  lastError String
-  attemptCount Int [not null, default: 1]
-  lastAttemptedAt DateTime [default: `now()`, not null]
-  transactionId String [unique]
-  transaction t_transactions
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime [not null]
-
-  indexes {
-    (userId, communityId, type, sourceId) [unique]
-  }
 }
 
 Table m_api_keys {
@@ -942,24 +930,6 @@ Enum TransactionReason {
   OPPORTUNITY_RESERVATION_REJECTED
 }
 
-Enum IncentiveGrantType {
-  SIGNUP
-}
-
-Enum IncentiveGrantStatus {
-  PENDING
-  COMPLETED
-  FAILED
-}
-
-Enum IncentiveGrantFailureCode {
-  INSUFFICIENT_FUNDS
-  WALLET_NOT_FOUND
-  DATABASE_ERROR
-  TIMEOUT
-  UNKNOWN
-}
-
 Enum NftWalletType {
   INTERNAL
   EXTERNAL
@@ -1003,7 +973,7 @@ Ref: t_community_line_configs.configId - t_community_configs.id
 
 Ref: t_community_line_rich_menus.configId > t_community_line_configs.id [delete: Cascade]
 
-Ref: t_community_signup_bonus_configs.communityId - t_communities.id [delete: Cascade]
+Ref: t_community_portal_configs.configId - t_community_configs.id
 
 Ref: t_users.imageId > t_images.id
 
@@ -1102,12 +1072,6 @@ Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
 Ref: t_transactions.reservationId > t_reservations.id [delete: Set Null]
 
 Ref: t_transactions.createdBy > t_users.id [delete: Set Null]
-
-Ref: t_incentive_grants.userId > t_users.id [delete: Cascade]
-
-Ref: t_incentive_grants.communityId > t_communities.id [delete: Cascade]
-
-Ref: t_incentive_grants.transactionId - t_transactions.id [delete: Restrict]
 
 Ref: t_nft_wallets.userId > t_users.id [delete: Restrict]
 

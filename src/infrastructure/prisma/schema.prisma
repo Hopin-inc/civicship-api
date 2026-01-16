@@ -207,6 +207,7 @@ model CommunityConfig {
 
   firebaseConfig CommunityFirebaseConfig?
   lineConfig     CommunityLineConfig?
+  portalConfig   CommunityPortalConfig?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -238,8 +239,9 @@ model CommunityLineConfig {
   channelSecret String @map("channel_secret")
   accessToken   String @map("access_token")
 
-  liffId      String @map("liff_id")
-  liffBaseUrl String @map("liff_base_url")
+  liffId      String  @map("liff_id")
+  liffAppId   String? @map("liff_app_id")
+  liffBaseUrl String  @map("liff_base_url")
 
   richMenus CommunityLineRichMenuConfig[]
 
@@ -268,6 +270,48 @@ enum LineRichMenuType {
   ADMIN
   USER
   PUBLIC
+}
+
+model CommunityPortalConfig {
+  id       String          @id @default(cuid())
+  configId String          @unique @map("config_id")
+  config   CommunityConfig @relation(fields: [configId], references: [id])
+
+  // 基本情報
+  tokenName        String  @map("token_name")
+  title            String
+  description      String  @db.Text
+  shortDescription String? @map("short_description")
+
+  // ドメイン・URL
+  domain String
+
+  // アセットパス
+  faviconPrefix  String @map("favicon_prefix")
+  logoPath       String @map("logo_path")
+  squareLogoPath String @map("square_logo_path")
+  ogImagePath    String @map("og_image_path")
+
+  // 機能設定
+  /// [FeaturesType]
+  enableFeatures Json   @map("enable_features") // ["opportunities", "points", ...]
+  rootPath       String @default("/") @map("root_path")
+  adminRootPath  String @default("/admin") @map("admin_root_path")
+
+  // 文書設定
+  /// [CommunityDocument]
+  documents               Json? // CommunityDocument[]
+  /// [CommonDocumentOverrides]
+  commonDocumentOverrides Json? @map("common_document_overrides")
+
+  // 地域設定
+  regionName String? @map("region_name")
+  regionKey  String? @map("region_key")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_community_portal_configs")
 }
 
 model CommunitySignupBonusConfig {
