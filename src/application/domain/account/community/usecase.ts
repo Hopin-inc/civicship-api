@@ -17,16 +17,16 @@ import CommunityService from "@/application/domain/account/community/service";
 import CommunityPresenter from "@/application/domain/account/community/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
-import SignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import { inject, injectable } from "tsyringe";
+import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 
 @injectable()
 export default class CommunityUseCase {
   constructor(
     @inject("CommunityService") private readonly communityService: CommunityService,
     @inject("WalletService") private readonly walletService: WalletService,
-    @inject("SignupBonusConfigService")
-    private readonly signupBonusConfigService: SignupBonusConfigService,
+    @inject("CommunitySignupBonusConfigService")
+    private readonly signupBonusConfigService: CommunitySignupBonusConfigService,
   ) {}
 
   async userBrowseCommunities(
