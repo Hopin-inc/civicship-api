@@ -27,7 +27,7 @@ export default class CommunitySignupBonusConfigService {
     tx: Prisma.TransactionClient,
   ): Promise<CommunitySignupBonusConfig> {
     // Validation
-    // Range: 1-1,000,000pt (業務要件に基づく。上限は誤設定防止のため)
+    // Range: 1-1,000,000pt (based on business requirements; upper bound prevents misconfiguration)
     if (input.bonusPoint < 1 || input.bonusPoint > 1_000_000) {
       throw new ValidationError("bonusPoint must be between 1 and 1,000,000", [
         String(input.bonusPoint),
