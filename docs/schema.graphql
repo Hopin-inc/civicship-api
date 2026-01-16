@@ -767,6 +767,7 @@ type Mutation {
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
+  updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
   userSignUp(input: UserSignUpInput!): CurrentUserPayload
   userUpdateMyProfile(input: UserUpdateProfileInput!, permission: CheckIsSelfPermissionInput!): UserUpdateProfilePayload
@@ -1562,48 +1563,24 @@ enum Role {
   OWNER
 }
 
-"""Signup bonus grant record"""
 type SignupBonus {
-  """Number of retry attempts"""
   attemptCount: Int!
-
-  """Community"""
   community: Community!
-
-  """Grant creation timestamp"""
   createdAt: Datetime!
-
-  """Failure reason code (if failed)"""
   failureCode: IncentiveGrantFailureCode
 
   """Grant ID"""
   id: ID!
-
-  """Last attempt timestamp"""
   lastAttemptedAt: Datetime!
-
-  """Last error message (if failed)"""
   lastError: String
-
-  """Grant status"""
   status: IncentiveGrantStatus!
-
-  """Granted transaction (if completed)"""
   transaction: Transaction
-
-  """User who received/should receive the bonus"""
   user: User
 }
 
-"""Sort fields for signup bonuses"""
 enum SignupBonusSortField {
-  """Sort by attempt count"""
   ATTEMPT_COUNT
-
-  """Sort by creation date"""
   CREATED_AT
-
-  """Sort by last attempt date"""
   LAST_ATTEMPTED_AT
 }
 
@@ -1960,6 +1937,12 @@ type TransactionsConnection {
   edges: [TransactionEdge]
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+input UpdateSignupBonusConfigInput {
+  bonusPoint: Int!
+  isEnabled: Boolean!
+  message: String
 }
 
 scalar Upload

@@ -9,20 +9,24 @@ import {
   GqlCommunityDeletePayload,
   GqlMutationCommunityUpdateProfileArgs,
   GqlCommunityUpdateProfilePayload,
+  GqlMutationUpdateSignupBonusConfigArgs,
 } from "@/types/graphql";
+import { CommunitySignupBonusConfig } from "@prisma/client";
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/domain/account/community/service";
 import CommunityPresenter from "@/application/domain/account/community/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
+import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 
 @injectable()
 export default class CommunityUseCase {
   constructor(
     @inject("CommunityService") private readonly communityService: CommunityService,
-    @inject("WalletService")
-    private readonly walletService: WalletService,
+    @inject("WalletService") private readonly walletService: WalletService,
+    @inject("CommunitySignupBonusConfigService")
+    private readonly signupBonusConfigService: CommunitySignupBonusConfigService,
   ) {}
 
   async userBrowseCommunities(
@@ -82,5 +86,14 @@ export default class CommunityUseCase {
       return await this.communityService.updateCommunityProfile(ctx, id, input, tx);
     });
     return CommunityPresenter.update(res);
+  }
+
+  async managerUpdateSignupBonusConfig(
+    { input, permission }: GqlMutationUpdateSignupBonusConfigArgs,
+    ctx: IContext,
+  ): Promise<CommunitySignupBonusConfig> {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      return this.signupBonusConfigService.update(ctx, permission.communityId, input, tx);
+    });
   }
 }

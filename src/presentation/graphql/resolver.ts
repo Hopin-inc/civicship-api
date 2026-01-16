@@ -102,6 +102,7 @@ const resolvers = {
   NftInstance: nftInstance.NftInstance,
   Membership: membership.Membership,
   Community: community.Community,
+  CommunityConfig: community.CommunityConfig,
 
   Article: article.Article,
 

@@ -105,6 +105,9 @@ import CommunityPortalConfigRepository from "@/application/domain/account/commun
 import { PointVerifyClient } from "@/infrastructure/libs/point-verify/client";
 import TransactionVerificationService from "@/application/domain/transaction/verification/service";
 import TransactionVerificationUseCase from "@/application/domain/transaction/verification/usecase";
+import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
+import CommunitySignupBonusConfigRepository from "@/application/domain/account/community/config/incentive/signup/data/repository";
+import CommunitySignupBonusConfigConverter from "@/application/domain/account/community/config/incentive/signup/data/converter";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -158,7 +161,19 @@ export function registerProductionDependencies() {
   container.register("CommunityConfigRepository", { useClass: CommunityConfigRepository });
 
   container.register("CommunityPortalConfigService", { useClass: CommunityPortalConfigService });
-  container.register("CommunityPortalConfigRepository", { useClass: CommunityPortalConfigRepository });
+  container.register("CommunityPortalConfigRepository", {
+    useClass: CommunityPortalConfigRepository,
+  });
+
+  container.register("CommunitySignupBonusConfigService", {
+    useClass: CommunitySignupBonusConfigService,
+  });
+  container.register("CommunitySignupBonusConfigRepository", {
+    useClass: CommunitySignupBonusConfigRepository,
+  });
+  container.register("CommunitySignupBonusConfigConverter", {
+    useClass: CommunitySignupBonusConfigConverter,
+  });
 
   // 🆔 Identity
   container.register("IdentityService", { useClass: IdentityService });
@@ -291,8 +306,12 @@ export function registerProductionDependencies() {
 
   // 🔐 Transaction Verification
   container.register("PointVerifyClient", { useClass: PointVerifyClient });
-  container.register("TransactionVerificationService", { useClass: TransactionVerificationService });
-  container.register("TransactionVerificationUseCase", { useClass: TransactionVerificationUseCase });
+  container.register("TransactionVerificationService", {
+    useClass: TransactionVerificationService,
+  });
+  container.register("TransactionVerificationUseCase", {
+    useClass: TransactionVerificationUseCase,
+  });
 
   // ------------------------------
   // 👓 View

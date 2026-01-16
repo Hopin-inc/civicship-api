@@ -4,6 +4,7 @@ import {
   GqlMutationCommunityCreateArgs,
   GqlMutationCommunityDeleteArgs,
   GqlMutationCommunityUpdateProfileArgs,
+  GqlMutationUpdateSignupBonusConfigArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
@@ -36,6 +37,13 @@ export default class CommunityResolver {
     ) => {
       return this.communityUseCase.managerUpdateCommunityProfile(args, ctx);
     },
+    updateSignupBonusConfig: async (
+      _: unknown,
+      args: GqlMutationUpdateSignupBonusConfigArgs,
+      ctx: IContext,
+    ) => {
+      return this.communityUseCase.managerUpdateSignupBonusConfig(args, ctx);
+    },
   };
 
   Community = {
@@ -43,9 +51,15 @@ export default class CommunityResolver {
       const config = parent.config;
       if (!config) return null;
 
+      // Add communityId for child resolvers (e.g., CommunityConfig.signupBonusConfig)
+      const configWithCommunityId = {
+        ...config,
+        communityId: parent.id,
+      };
+
       if (!ctx.isAdmin) {
         return {
-          ...config,
+          ...configWithCommunityId,
           lineConfig: config.lineConfig
             ? {
                 ...config.lineConfig,
@@ -57,7 +71,7 @@ export default class CommunityResolver {
         };
       }
 
-      return config;
+      return configWithCommunityId;
     },
 
     image: (parent, _: unknown, ctx: IContext) => {
@@ -90,6 +104,12 @@ export default class CommunityResolver {
 
     articles: (parent, _: unknown, ctx: IContext) => {
       return ctx.loaders.articlesByCommunity.load(parent.id);
+    },
+  };
+
+  CommunityConfig = {
+    signupBonusConfig: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.signupBonusConfigByCommunityId.load(parent.communityId);
     },
   };
 }
