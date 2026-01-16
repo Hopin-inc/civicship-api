@@ -1180,22 +1180,27 @@ enum TransactionReason {
 }
 
 model IncentiveGrant {
-  id              String                     @id @default(cuid())
-  userId          String                     @map("user_id")
-  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  communityId     String                     @map("community_id")
-  community       Community                  @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  type            IncentiveGrantType
-  sourceId        String                     @map("source_id")
-  status          IncentiveGrantStatus       @default(PENDING)
+  id       String               @id @default(cuid())
+  type     IncentiveGrantType
+  sourceId String               @map("source_id")
+  status   IncentiveGrantStatus @default(PENDING)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
   failureCode     IncentiveGrantFailureCode? @map("failure_code")
   lastError       String?                    @map("last_error") @db.Text
   attemptCount    Int                        @default(1) @map("attempt_count")
   lastAttemptedAt DateTime                   @default(now()) @map("last_attempted_at")
-  transactionId   String?                    @unique @map("transaction_id")
-  transaction     Transaction?               @relation(fields: [transactionId], references: [id], onDelete: Restrict)
-  createdAt       DateTime                   @default(now()) @map("created_at")
-  updatedAt       DateTime                   @updatedAt @map("updated_at")
+
+  transactionId String?      @unique @map("transaction_id")
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([userId, communityId, type, sourceId], name: "unique_incentive_grant")
   @@index([status, lastAttemptedAt])

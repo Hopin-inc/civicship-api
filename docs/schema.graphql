@@ -208,6 +208,7 @@ type Community {
 type CommunityConfig {
   firebaseConfig: CommunityFirebaseConfig
   lineConfig: CommunityLineConfig
+  signupBonusConfig: CommunitySignupBonusConfig
 }
 
 input CommunityConfigInput {
@@ -317,6 +318,12 @@ type CommunityPortalConfig {
   squareLogoPath: String!
   title: String!
   tokenName: String!
+}
+
+type CommunitySignupBonusConfig {
+  bonusPoint: Int!
+  isEnabled: Boolean!
+  message: String
 }
 
 input CommunitySortInput {
@@ -546,6 +553,24 @@ input ImageInput {
   file: Upload
 }
 
+enum IncentiveGrantFailureCode {
+  DATABASE_ERROR
+  INSUFFICIENT_FUNDS
+  TIMEOUT
+  UNKNOWN
+  WALLET_NOT_FOUND
+}
+
+enum IncentiveGrantStatus {
+  COMPLETED
+  FAILED
+  PENDING
+}
+
+enum IncentiveGrantType {
+  SIGNUP
+}
+
 scalar JSON
 
 enum Language {
@@ -742,6 +767,7 @@ type Mutation {
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
+  updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
   userSignUp(input: UserSignUpInput!): CurrentUserPayload
   userUpdateMyProfile(input: UserUpdateProfileInput!, permission: CheckIsSelfPermissionInput!): UserUpdateProfilePayload
@@ -1537,6 +1563,27 @@ enum Role {
   OWNER
 }
 
+type SignupBonus {
+  attemptCount: Int!
+  community: Community!
+  createdAt: Datetime!
+  failureCode: IncentiveGrantFailureCode
+
+  """Grant ID"""
+  id: ID!
+  lastAttemptedAt: Datetime!
+  lastError: String
+  status: IncentiveGrantStatus!
+  transaction: Transaction
+  user: User
+}
+
+enum SignupBonusSortField {
+  ATTEMPT_COUNT
+  CREATED_AT
+  LAST_ATTEMPTED_AT
+}
+
 enum SortDirection {
   asc
   desc
@@ -1890,6 +1937,12 @@ type TransactionsConnection {
   edges: [TransactionEdge]
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+input UpdateSignupBonusConfigInput {
+  bonusPoint: Int!
+  isEnabled: Boolean!
+  message: String
 }
 
 scalar Upload

@@ -51,9 +51,15 @@ export default class CommunityResolver {
       const config = parent.config;
       if (!config) return null;
 
+      // Add communityId for child resolvers (e.g., CommunityConfig.signupBonusConfig)
+      const configWithCommunityId = {
+        ...config,
+        communityId: parent.id,
+      };
+
       if (!ctx.isAdmin) {
         return {
-          ...config,
+          ...configWithCommunityId,
           lineConfig: config.lineConfig
             ? {
                 ...config.lineConfig,
@@ -65,7 +71,7 @@ export default class CommunityResolver {
         };
       }
 
-      return config;
+      return configWithCommunityId;
     },
 
     image: (parent, _: unknown, ctx: IContext) => {

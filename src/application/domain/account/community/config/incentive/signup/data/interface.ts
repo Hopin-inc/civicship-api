@@ -1,7 +1,7 @@
 import { IContext } from "@/types/server";
 import { Prisma, CommunitySignupBonusConfig } from "@prisma/client";
 
-export default interface ISignupBonusConfigRepository {
+export default interface ICommunitySignupBonusConfigRepository {
   get(
     ctx: IContext,
     communityId: string,
