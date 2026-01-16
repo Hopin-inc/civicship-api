@@ -28,9 +28,6 @@ input UpdateSignupBonusConfigInput {
 }
 
 extend type Mutation {
-    """
-    Update signup bonus config (OWNER/MANAGER only).
-    """
     updateSignupBonusConfig(
         input: UpdateSignupBonusConfigInput!,
         permission: CheckCommunityPermissionInput!

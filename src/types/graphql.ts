@@ -843,6 +843,7 @@ export type GqlMutation = {
   transactionDonateSelfPoint?: Maybe<GqlTransactionDonateSelfPointPayload>;
   transactionGrantCommunityPoint?: Maybe<GqlTransactionGrantCommunityPointPayload>;
   transactionIssueCommunityPoint?: Maybe<GqlTransactionIssueCommunityPointPayload>;
+  updateSignupBonusConfig: GqlCommunitySignupBonusConfig;
   userDeleteMe?: Maybe<GqlUserDeletePayload>;
   userSignUp?: Maybe<GqlCurrentUserPayload>;
   userUpdateMyProfile?: Maybe<GqlUserUpdateProfilePayload>;
@@ -1123,6 +1124,12 @@ export type GqlMutationTransactionGrantCommunityPointArgs = {
 
 export type GqlMutationTransactionIssueCommunityPointArgs = {
   input: GqlTransactionIssueCommunityPointInput;
+  permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationUpdateSignupBonusConfigArgs = {
+  input: GqlUpdateSignupBonusConfigInput;
   permission: GqlCheckCommunityPermissionInput;
 };
 
@@ -2340,38 +2347,24 @@ export const GqlRole = {
 } as const;
 
 export type GqlRole = typeof GqlRole[keyof typeof GqlRole];
-/** Signup bonus grant record */
 export type GqlSignupBonus = {
   __typename?: 'SignupBonus';
-  /** Number of retry attempts */
   attemptCount: Scalars['Int']['output'];
-  /** Community */
   community: GqlCommunity;
-  /** Grant creation timestamp */
   createdAt: Scalars['Datetime']['output'];
-  /** Failure reason code (if failed) */
   failureCode?: Maybe<GqlIncentiveGrantFailureCode>;
   /** Grant ID */
   id: Scalars['ID']['output'];
-  /** Last attempt timestamp */
   lastAttemptedAt: Scalars['Datetime']['output'];
-  /** Last error message (if failed) */
   lastError?: Maybe<Scalars['String']['output']>;
-  /** Grant status */
   status: GqlIncentiveGrantStatus;
-  /** Granted transaction (if completed) */
   transaction?: Maybe<GqlTransaction>;
-  /** User who received/should receive the bonus */
   user?: Maybe<GqlUser>;
 };
 
-/** Sort fields for signup bonuses */
 export const GqlSignupBonusSortField = {
-  /** Sort by attempt count */
   AttemptCount: 'ATTEMPT_COUNT',
-  /** Sort by creation date */
   CreatedAt: 'CREATED_AT',
-  /** Sort by last attempt date */
   LastAttemptedAt: 'LAST_ATTEMPTED_AT'
 } as const;
 
@@ -2761,6 +2754,12 @@ export type GqlTransactionsConnection = {
   edges?: Maybe<Array<Maybe<GqlTransactionEdge>>>;
   pageInfo: GqlPageInfo;
   totalCount: Scalars['Int']['output'];
+};
+
+export type GqlUpdateSignupBonusConfigInput = {
+  bonusPoint: Scalars['Int']['input'];
+  isEnabled: Scalars['Boolean']['input'];
+  message?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlUser = {
@@ -3499,6 +3498,7 @@ export type GqlResolversTypes = ResolversObject<{
   TransactionSortInput: GqlTransactionSortInput;
   TransactionVerificationResult: ResolverTypeWrapper<GqlTransactionVerificationResult>;
   TransactionsConnection: ResolverTypeWrapper<Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TransactionEdge']>>> }>;
+  UpdateSignupBonusConfigInput: GqlUpdateSignupBonusConfigInput;
   Upload: ResolverTypeWrapper<Scalars['Upload']['output']>;
   User: ResolverTypeWrapper<User>;
   UserDeletePayload: ResolverTypeWrapper<GqlUserDeletePayload>;
@@ -3805,6 +3805,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   TransactionSortInput: GqlTransactionSortInput;
   TransactionVerificationResult: GqlTransactionVerificationResult;
   TransactionsConnection: Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TransactionEdge']>>> };
+  UpdateSignupBonusConfigInput: GqlUpdateSignupBonusConfigInput;
   Upload: Scalars['Upload']['output'];
   User: User;
   UserDeletePayload: GqlUserDeletePayload;
@@ -4344,6 +4345,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input' | 'permission'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input' | 'permission'>>;
   transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input' | 'permission'>>;
+  updateSignupBonusConfig?: Resolver<GqlResolversTypes['CommunitySignupBonusConfig'], ParentType, ContextType, RequireFields<GqlMutationUpdateSignupBonusConfigArgs, 'input' | 'permission'>>;
   userDeleteMe?: Resolver<Maybe<GqlResolversTypes['UserDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserDeleteMeArgs, 'permission'>>;
   userSignUp?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserSignUpArgs, 'input'>>;
   userUpdateMyProfile?: Resolver<Maybe<GqlResolversTypes['UserUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUpdateMyProfileArgs, 'input' | 'permission'>>;
