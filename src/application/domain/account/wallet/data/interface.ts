@@ -29,4 +29,6 @@ export interface IWalletRepository {
   ): Promise<PrismaWallet>;
 
   delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaWalletDetail>;
+
+  calculateCurrentBalance(walletId: string, tx: Prisma.TransactionClient): Promise<bigint>;
 }
