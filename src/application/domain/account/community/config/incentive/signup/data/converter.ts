@@ -1,12 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 
-/**
- * Converter for CommunitySignupBonusConfig operations
- * Handles conversion between different input types for Prisma operations
- */
 @injectable()
-export default class SignupBonusConfigConverter {
+export default class CommunitySignupBonusConfigConverter {
   /**
    * Converts update input to create input for upsert operations
    * Handles extraction of values from update operations

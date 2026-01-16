@@ -1,15 +1,15 @@
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
-import ISignupBonusConfigRepository from "./data/interface";
 import { CommunitySignupBonusConfig, Prisma } from "@prisma/client";
 import { ValidationError } from "@/errors/graphql";
 import { GqlUpdateSignupBonusConfigInput } from "@/types/graphql";
+import ICommunitySignupBonusConfigRepository from "./data/interface";
 
 @injectable()
-export default class SignupBonusConfigService {
+export default class CommunitySignupBonusConfigService {
   constructor(
-    @inject("SignupBonusConfigRepository")
-    private readonly repository: ISignupBonusConfigRepository,
+    @inject("CommunitySignupBonusConfigRepository")
+    private readonly repository: ICommunitySignupBonusConfigRepository,
   ) {}
 
   async get(

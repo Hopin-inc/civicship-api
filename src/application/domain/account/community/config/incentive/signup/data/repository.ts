@@ -2,13 +2,13 @@ import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import { injectable, inject } from "tsyringe";
 import ISignupBonusConfigRepository from "./interface";
-import SignupBonusConfigConverter from "./converter";
+import CommunitySignupBonusConfigConverter from "./converter";
 
 @injectable()
-export default class SignupBonusConfigRepository implements ISignupBonusConfigRepository {
+export default class CommunitySignupBonusConfigRepository implements ISignupBonusConfigRepository {
   constructor(
-    @inject("SignupBonusConfigConverter")
-    private readonly converter: SignupBonusConfigConverter,
+    @inject("CommunitySignupBonusConfigConverter")
+    private readonly converter: CommunitySignupBonusConfigConverter,
   ) {}
   async get(ctx: IContext, communityId: string, tx?: Prisma.TransactionClient) {
     if (tx) {
