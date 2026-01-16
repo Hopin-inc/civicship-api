@@ -77,4 +77,25 @@ export default class WalletRepository implements IWalletRepository {
       select: walletSelectDetail,
     });
   }
+
+  async calculateCurrentBalance(walletId: string, tx: Prisma.TransactionClient): Promise<bigint> {
+    // Aggregate in parallel for better performance
+    const [outgoing, incoming] = await Promise.all([
+      tx.transaction.aggregate({
+        where: { from: walletId },
+        _sum: { fromPointChange: true },
+      }),
+      tx.transaction.aggregate({
+        where: { to: walletId },
+        _sum: { toPointChange: true },
+      }),
+    ]);
+
+    const outgoingSum = BigInt(outgoing._sum.fromPointChange ?? 0);
+    const incomingSum = BigInt(incoming._sum.toPointChange ?? 0);
+
+    // Balance = incoming - outgoing
+    // (fromPointChange is positive value, so we subtract it)
+    return incomingSum - outgoingSum;
+  }
 }
