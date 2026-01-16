@@ -1,0 +1,48 @@
+"""
+Signup bonus grant record
+"""
+type SignupBonus {
+  """Grant ID"""
+  id: ID!
+
+  """User who received/should receive the bonus"""
+  user: User
+
+  """Community"""
+  community: Community!
+
+  """Grant status"""
+  status: IncentiveGrantStatus!
+
+  """Failure reason code (if failed)"""
+  failureCode: IncentiveGrantFailureCode
+
+  """Last error message (if failed)"""
+  lastError: String
+
+  """Number of retry attempts"""
+  attemptCount: Int!
+
+  """Last attempt timestamp"""
+  lastAttemptedAt: Datetime!
+
+  """Grant creation timestamp"""
+  createdAt: Datetime!
+
+  """Granted transaction (if completed)"""
+  transaction: Transaction
+}
+
+"""
+Sort fields for signup bonuses
+"""
+enum SignupBonusSortField {
+  """Sort by creation date"""
+  CREATED_AT
+
+  """Sort by last attempt date"""
+  LAST_ATTEMPTED_AT
+
+  """Sort by attempt count"""
+  ATTEMPT_COUNT
+}
