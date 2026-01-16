@@ -66,18 +66,6 @@ export default class CommunitySignupBonusConfigConverter {
   }
 
   /**
-   * Extracts a string value from a field that could be a string or an update operation
-   */
-  private extractStringValue(
-    value: string | Prisma.StringFieldUpdateOperationsInput | undefined,
-  ): string | undefined {
-    if (typeof value === "string") {
-      return value;
-    }
-    return value?.set;
-  }
-
-  /**
    * Extracts a string or null value from a field that could be a string, null, or an update operation
    */
   private extractStringOrNullValue(
