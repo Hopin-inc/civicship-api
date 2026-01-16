@@ -28,19 +28,18 @@ export default class SignupBonusConfigService {
   ): Promise<CommunitySignupBonusConfig> {
     // Validation
     if (input.bonusPoint !== undefined) {
+      // Range: 1-1,000,000pt (業務要件に基づく。上限は誤設定防止のため)
       if (input.bonusPoint < 1 || input.bonusPoint > 1_000_000) {
         throw new ValidationError("bonusPoint must be between 1 and 1,000,000", [
-          input.bonusPoint.toString(),
+          String(input.bonusPoint),
         ]);
       }
     }
 
-    if (input.message !== undefined && input.message !== null) {
-      if (input.message.length > 1000) {
-        throw new ValidationError("message must be 1000 characters or less", [
-          input.message.length.toString(),
-        ]);
-      }
+    if (input.message?.length && input.message.length > 1000) {
+      throw new ValidationError("message must be 1000 characters or less", [
+        String(input.message.length),
+      ]);
     }
 
     // Build update data

@@ -32,11 +32,13 @@ export function determineFailureCode(error: unknown): IncentiveGrantFailureCode 
     return IncentiveGrantFailureCode.DATABASE_ERROR;
   }
 
-  // Timeout errors (if you have custom TimeoutError class)
+  // TIMEOUT: Occurs when external service calls (e.g., notification service, payment gateway)
+  // exceed the configured timeout threshold. Requires custom TimeoutError class implementation.
   // if (error instanceof TimeoutError) {
   //   return IncentiveGrantFailureCode.TIMEOUT;
   // }
 
-  // Default: unknown error
+  // UNKNOWN: Fallback for unexpected errors that don't match any specific category.
+  // This includes network errors, unexpected exceptions, or any error type not explicitly handled above.
   return IncentiveGrantFailureCode.UNKNOWN;
 }

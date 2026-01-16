@@ -25,7 +25,12 @@ import SignupBonusConfigService from "@/application/domain/account/community/con
 import NotificationService from "@/application/domain/notification/service";
 import CommunityService from "@/application/domain/account/community/service";
 
-const SIGNUP_SOURCE_ID = "default";
+/**
+ * Default source ID for signup bonus grants.
+ * This distinguishes standard signup bonuses from potential future variations
+ * (e.g., referral bonuses, campaign-specific bonuses).
+ */
+const SIGNUP_BONUS_DEFAULT_SOURCE_ID = "default";
 
 @injectable()
 export default class IncentiveGrantService implements IIncentiveGrantService {
@@ -143,7 +148,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
       userId,
       communityId,
       IncentiveGrantType.SIGNUP,
-      SIGNUP_SOURCE_ID,
+      SIGNUP_BONUS_DEFAULT_SOURCE_ID,
     );
 
     if (typeof grantOrResult !== "string") {
@@ -202,6 +207,13 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
     });
 
     if (!existing) {
+      logger.error("DATA INTEGRITY VIOLATION: Grant not found after P2002", {
+        userId,
+        communityId,
+        type,
+        sourceId,
+        errorCode: "P2002_GRANT_NOT_FOUND",
+      });
       throw new Error("Grant not found after P2002 (integrity violation)");
     }
 
@@ -309,7 +321,7 @@ export default class IncentiveGrantService implements IIncentiveGrantService {
           userId,
           communityId,
           type: IncentiveGrantType.SIGNUP,
-          sourceId: SIGNUP_SOURCE_ID,
+          sourceId: SIGNUP_BONUS_DEFAULT_SOURCE_ID,
         });
         await this.incentiveGrantRepository.markAsFailed(ctx, tx, grant.id, failureCode, lastError);
       } catch (error) {
