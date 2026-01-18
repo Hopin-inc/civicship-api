@@ -14,6 +14,7 @@ export class MockWalletRepository implements IWalletRepository {
   findFirstExistingMemberWallet = jest.fn();
   create = jest.fn();
   delete = jest.fn();
+  calculateCurrentBalance = jest.fn();
 }
 
 export class MockWalletConverter extends WalletConverter {
