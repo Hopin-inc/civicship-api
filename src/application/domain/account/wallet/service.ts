@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs } from "@/types/graphql";
-import { InsufficientBalanceError, NotFoundError } from "@/errors/graphql";
+import { InsufficientBalanceError, NotFoundError, ValidationError } from "@/errors/graphql";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
@@ -135,7 +135,8 @@ export default class WalletService {
 
   /**
    * Check community wallet balance inside transaction (TOCTOU-safe).
-   * Throws ValidationError if insufficient balance.
+   * Throws InsufficientBalanceError if insufficient balance.
+   * Throws NotFoundError if community wallet doesn't exist.
    *
    * IMPORTANT: This method calculates balance in real-time from the Transaction table,
    * NOT from the materialized view. This ensures we get the latest balance even if
@@ -143,9 +144,10 @@ export default class WalletService {
    *
    * @param ctx - Context
    * @param communityId - Community ID
-   * @param requiredAmount - Required amount
+   * @param requiredAmount - Required amount (must be a safe integer)
    * @param tx - Transaction client (required)
-   * @throws ValidationError if insufficient balance
+   * @throws InsufficientBalanceError if insufficient balance
+   * @throws NotFoundError if community wallet not found
    */
   async checkCommunityWalletBalanceInTransaction(
     ctx: IContext,
@@ -153,6 +155,18 @@ export default class WalletService {
     requiredAmount: number,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
+    // Validate requiredAmount is a safe integer for BigInt conversion
+    if (!Number.isSafeInteger(requiredAmount)) {
+      throw new ValidationError(
+        "requiredAmount must be a safe integer for BigInt conversion",
+        [String(requiredAmount)],
+      );
+    }
+
+    if (requiredAmount < 0) {
+      throw new ValidationError("requiredAmount must be non-negative", [String(requiredAmount)]);
+    }
+
     const communityWallet = await this.repository.findCommunityWallet(ctx, communityId, tx);
 
     if (!communityWallet?.id) {
@@ -170,7 +184,8 @@ export default class WalletService {
       source: "real-time aggregate",
     });
 
-    if (currentBalance < BigInt(requiredAmount)) {
+    const requiredAmountBigInt = BigInt(requiredAmount);
+    if (currentBalance < requiredAmountBigInt) {
       throw new InsufficientBalanceError(currentBalance.toString(), requiredAmount);
     }
   }
