@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { Prisma, WalletType } from "@prisma/client";
 import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
-import { NotFoundError } from "@/errors/graphql";
+import { InsufficientBalanceError, NotFoundError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
@@ -331,6 +331,129 @@ describe("WalletService", () => {
       await expect(
         walletService.findMemberWalletOrThrow(mockCtx, "user-1", "community-1")
       ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe("checkCommunityWalletBalanceInTransaction", () => {
+    it("should pass when balance is sufficient", async () => {
+      const requiredAmount = 1000;
+      const currentBalance = BigInt(5000);
+
+      mockRepository.findCommunityWallet.mockResolvedValue(communityWallet);
+      mockRepository.calculateCurrentBalance.mockResolvedValue(currentBalance);
+
+      await expect(
+        walletService.checkCommunityWalletBalanceInTransaction(
+          mockCtx,
+          communityId,
+          requiredAmount,
+          mockTx,
+        ),
+      ).resolves.not.toThrow();
+
+      expect(mockRepository.findCommunityWallet).toHaveBeenCalledWith(mockCtx, communityId, mockTx);
+      expect(mockRepository.calculateCurrentBalance).toHaveBeenCalledWith(communityWallet.id, mockTx);
+    });
+
+    it("should throw InsufficientBalanceError when balance is insufficient", async () => {
+      const requiredAmount = 5000;
+      const currentBalance = BigInt(1000);
+
+      mockRepository.findCommunityWallet.mockResolvedValue(communityWallet);
+      mockRepository.calculateCurrentBalance.mockResolvedValue(currentBalance);
+
+      await expect(
+        walletService.checkCommunityWalletBalanceInTransaction(
+          mockCtx,
+          communityId,
+          requiredAmount,
+          mockTx,
+        ),
+      ).rejects.toThrow(InsufficientBalanceError);
+    });
+
+    it("should throw NotFoundError when community wallet does not exist", async () => {
+      mockRepository.findCommunityWallet.mockResolvedValue(null);
+
+      await expect(
+        walletService.checkCommunityWalletBalanceInTransaction(mockCtx, communityId, 1000, mockTx),
+      ).rejects.toThrow(NotFoundError);
+
+      expect(mockRepository.calculateCurrentBalance).not.toHaveBeenCalled();
+    });
+
+    it("should throw ValidationError when requiredAmount is not a safe integer", async () => {
+      const unsafeInteger = Number.MAX_SAFE_INTEGER + 1;
+
+      await expect(
+        walletService.checkCommunityWalletBalanceInTransaction(
+          mockCtx,
+          communityId,
+          unsafeInteger,
+          mockTx,
+        ),
+      ).rejects.toThrow(ValidationError);
+
+      expect(mockRepository.findCommunityWallet).not.toHaveBeenCalled();
+    });
+
+    it("should throw ValidationError when requiredAmount is negative", async () => {
+      await expect(
+        walletService.checkCommunityWalletBalanceInTransaction(mockCtx, communityId, -100, mockTx),
+      ).rejects.toThrow(ValidationError);
+
+      expect(mockRepository.findCommunityWallet).not.toHaveBeenCalled();
+    });
+
+    it("should handle exact balance match (boundary case)", async () => {
+      const requiredAmount = 1000;
+      const currentBalance = BigInt(1000);
+
+      mockRepository.findCommunityWallet.mockResolvedValue(communityWallet);
+      mockRepository.calculateCurrentBalance.mockResolvedValue(currentBalance);
+
+      await expect(
+        walletService.checkCommunityWalletBalanceInTransaction(
+          mockCtx,
+          communityId,
+          requiredAmount,
+          mockTx,
+        ),
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle zero balance case", async () => {
+      const requiredAmount = 100;
+      const currentBalance = BigInt(0);
+
+      mockRepository.findCommunityWallet.mockResolvedValue(communityWallet);
+      mockRepository.calculateCurrentBalance.mockResolvedValue(currentBalance);
+
+      await expect(
+        walletService.checkCommunityWalletBalanceInTransaction(
+          mockCtx,
+          communityId,
+          requiredAmount,
+          mockTx,
+        ),
+      ).rejects.toThrow(InsufficientBalanceError);
+    });
+
+    it("should handle large BigInt values", async () => {
+      const requiredAmount = Number.MAX_SAFE_INTEGER - 1; // Safe integer
+      const currentBalance = BigInt(Number.MAX_SAFE_INTEGER);
+
+      mockRepository.findCommunityWallet.mockResolvedValue(communityWallet);
+      mockRepository.calculateCurrentBalance.mockResolvedValue(currentBalance);
+
+      await expect(
+        walletService.checkCommunityWalletBalanceInTransaction(
+          mockCtx,
+          communityId,
+          requiredAmount,
+          mockTx,
+        ),
+      ).resolves.not.toThrow();
     });
   });
 
