@@ -114,6 +114,7 @@ describe("WalletService", () => {
         mockCtx,
         communityId,
         userId,
+        undefined,
       );
       expect(result).toEqual(memberWallet);
     });
@@ -133,7 +134,7 @@ describe("WalletService", () => {
 
       const result = await walletService.findCommunityWalletOrThrow(mockCtx, communityId);
 
-      expect(mockRepository.findCommunityWallet).toHaveBeenCalledWith(mockCtx, communityId);
+      expect(mockRepository.findCommunityWallet).toHaveBeenCalledWith(mockCtx, communityId, undefined);
       expect(result).toEqual(communityWallet);
     });
 
@@ -197,6 +198,7 @@ describe("WalletService", () => {
         mockCtx,
         communityId,
         userId,
+        mockTx,
       );
       expect(result).toEqual(memberWallet);
     });

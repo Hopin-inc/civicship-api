@@ -99,19 +99,20 @@ describe("WalletRepository.calculateCurrentBalance", () => {
   it("should handle large BigInt values correctly", async () => {
     const walletId = "wallet-large";
 
-    // Large outgoing: 9007199254740991 (Number.MAX_SAFE_INTEGER)
+    // Large outgoing: 9007199254740990
     (mockTx.transaction.aggregate as jest.Mock).mockResolvedValueOnce({
-      _sum: { fromPointChange: Number.MAX_SAFE_INTEGER },
+      _sum: { fromPointChange: 9007199254740990 },
     });
 
-    // Large incoming: Number.MAX_SAFE_INTEGER + 1000
+    // Large incoming: 9007199254740991 (Number.MAX_SAFE_INTEGER)
     (mockTx.transaction.aggregate as jest.Mock).mockResolvedValueOnce({
-      _sum: { toPointChange: Number.MAX_SAFE_INTEGER + 1000 },
+      _sum: { toPointChange: Number.MAX_SAFE_INTEGER },
     });
 
     const balance = await repository.calculateCurrentBalance(walletId, mockTx);
 
-    expect(balance).toBe(BigInt(1000));
+    // 9007199254740991 - 9007199254740990 = 1
+    expect(balance).toBe(BigInt(1));
   });
 
   it("should handle exact balance (incoming equals outgoing)", async () => {
