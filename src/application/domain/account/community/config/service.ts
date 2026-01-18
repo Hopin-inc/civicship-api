@@ -14,15 +14,15 @@ export default class CommunityConfigService {
 
   async getLineMessagingConfig(
     ctx: IContext,
-    communityId: string | null,
+    _communityId: string | null,
   ): Promise<{
     channelId: string;
     channelSecret: string;
     accessToken: string;
   }> {
-    const config = await this.repository.getLineConfig(ctx, communityId);
+    const config = await this.repository.getLineConfig(ctx, "integrated");
     if (!config?.channelId || !config?.channelSecret || !config?.accessToken) {
-      throw new NotFoundError("LINE Messaging Config is incomplete", { communityId });
+      throw new NotFoundError("LINE Messaging Config is incomplete", { communityId: "integrated" });
     }
     return {
       channelId: config.channelId,
@@ -33,14 +33,14 @@ export default class CommunityConfigService {
 
   async getLiffConfig(
     ctx: IContext,
-    communityId: string | null,
+    _communityId: string | null,
   ): Promise<{
     liffId: string;
     liffBaseUrl: string;
   }> {
-    const config = await this.repository.getLineConfig(ctx, communityId);
+    const config = await this.repository.getLineConfig(ctx, "integrated");
     if (!config?.liffId || !config?.liffBaseUrl) {
-      throw new NotFoundError("LIFF Config is incomplete", { communityId });
+      throw new NotFoundError("LIFF Config is incomplete", { communityId: "integrated" });
     }
     return {
       liffId: config.liffId,

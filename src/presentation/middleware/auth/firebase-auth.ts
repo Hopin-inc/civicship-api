@@ -25,9 +25,9 @@ export async function handleFirebaseAuth(
     return { issuer, loaders, communityId, authMeta };
   }
 
-  // Use null for communityId to get the shared/integrated Firebase tenant
-  // This ensures all communities use the same LINE authentication (tenant-less)
-  // The communityId header is still used for RLS (Row-Level Security) purposes
+  // Use the shared/integrated LINE authentication
+  // All communities use the same LINE login channel (configId = 'integrated')
+  // The communityId header is used for membership lookup and RLS (Row-Level Security)
   const verificationMethod = authMode === "session" ? "verifySessionCookie" : "verifyIdToken";
 
   try {
