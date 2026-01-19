@@ -20,6 +20,10 @@ import MembershipPresenter from "@/application/domain/account/membership/present
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
+import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import CommunityService from "@/application/domain/account/community/service";
+import logger from "@/infrastructure/logging";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
@@ -29,6 +33,12 @@ export default class MembershipUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("NotificationService")
     private readonly notificationService: NotificationService,
+    @inject("IncentiveGrantService")
+    private readonly incentiveGrantService: IncentiveGrantService,
+    @inject("TransactionService")
+    private readonly transactionService: ITransactionService,
+    @inject("CommunityService")
+    private readonly communityService: CommunityService,
   ) {}
 
   async visitorBrowseMemberships(
@@ -78,7 +88,7 @@ export default class MembershipUseCase {
   async userAcceptMyInvitation(args: GqlMutationMembershipAcceptMyInvitationArgs, ctx: IContext) {
     const currentUserId = getCurrentUserId(ctx);
 
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const { membership, signupBonusTransaction } = await ctx.issuer.public(ctx, async (tx) => {
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         currentUserId,
@@ -91,10 +101,77 @@ export default class MembershipUseCase {
         args.input.communityId,
         tx,
       );
-      return membership;
+
+      // Grant signup bonus if enabled (best-effort within transaction)
+      await this.incentiveGrantService.grantSignupBonusIfEnabled(
+        ctx,
+        currentUserId,
+        args.input.communityId,
+        membership.id,
+        tx,
+      );
+
+      // Fetch transaction for notification (if grant succeeded)
+      const signupBonusGrant = await tx.incentiveGrant.findUnique({
+        where: {
+          unique_incentive_grant: {
+            userId: currentUserId,
+            communityId: args.input.communityId,
+            type: "SIGNUP",
+            sourceId: membership.id,
+          },
+        },
+        select: {
+          status: true,
+          transactionId: true,
+        },
+      });
+
+      let signupBonusTransaction = null;
+      if (signupBonusGrant?.status === "COMPLETED" && signupBonusGrant.transactionId) {
+        signupBonusTransaction = await tx.transaction.findUnique({
+          where: { id: signupBonusGrant.transactionId },
+          select: {
+            id: true,
+            toPointChange: true,
+            comment: true,
+          },
+        });
+      }
+
+      return { membership, signupBonusTransaction };
     });
 
+    // Refresh materialized view
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
+    // Switch rich menu
     await this.notificationService.switchRichMenuByRole(ctx, membership);
+
+    // Send signup bonus notification (best-effort, after transaction commits)
+    if (signupBonusTransaction) {
+      const community = await this.communityService.findCommunityOrThrow(ctx, args.input.communityId);
+      this.notificationService
+        .pushSignupBonusGrantedMessage(
+          ctx,
+          signupBonusTransaction.id,
+          signupBonusTransaction.toPointChange,
+          signupBonusTransaction.comment,
+          community.name,
+          currentUserId,
+        )
+        .catch((error) => {
+          logger.error("Failed to send signup bonus notification", {
+            transactionId: signupBonusTransaction.id,
+            userId: currentUserId,
+            communityId: args.input.communityId,
+            error,
+          });
+        });
+    }
+
     return MembershipPresenter.setInvitationStatus(membership);
   }
 

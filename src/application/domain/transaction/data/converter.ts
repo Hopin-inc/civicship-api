@@ -46,6 +46,24 @@ export default class TransactionConverter {
     };
   }
 
+  grantSignupBonus(
+    fromWalletId: string,
+    transferPoints: number,
+    toWalletId: string,
+    createdBy: string,
+    comment?: string | null,
+  ): Prisma.TransactionCreateInput {
+    return {
+      reason: TransactionReason.GRANT,
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
+      createdByUser: { connect: { id: createdBy } },
+      comment: comment ?? undefined,
+    };
+  }
+
   donateSelfPoint(
     fromWalletId: string,
     toWalletId: string,
