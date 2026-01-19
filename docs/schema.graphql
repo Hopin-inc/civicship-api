@@ -1563,27 +1563,6 @@ enum Role {
   OWNER
 }
 
-type SignupBonus {
-  attemptCount: Int!
-  community: Community!
-  createdAt: Datetime!
-  failureCode: IncentiveGrantFailureCode
-
-  """Grant ID"""
-  id: ID!
-  lastAttemptedAt: Datetime!
-  lastError: String
-  status: IncentiveGrantStatus!
-  transaction: Transaction
-  user: User
-}
-
-enum SignupBonusSortField {
-  ATTEMPT_COUNT
-  CREATED_AT
-  LAST_ATTEMPTED_AT
-}
-
 enum SortDirection {
   asc
   desc
