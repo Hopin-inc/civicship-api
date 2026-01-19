@@ -58,13 +58,11 @@ export default class IncentiveGrantService {
     membershipId: string,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-    const currentUserId = getCurrentUserId(ctx);
     const logContext = {
       logctx: "IncentiveGrantService.grantSignupBonusIfEnabled",
       userId,
       communityId,
       membershipId,
-      currentUserId,
     };
 
     try {
@@ -117,6 +115,7 @@ export default class IncentiveGrantService {
         config.bonusPoint,
         communityWallet.id,
         memberWallet.id,
+        userId,
         tx,
         config.message,
       );

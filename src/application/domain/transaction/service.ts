@@ -64,11 +64,11 @@ export default class TransactionService implements ITransactionService {
     transferPoints: number,
     fromWalletId: string,
     memberWalletId: string,
+    createdBy: string,
     tx: Prisma.TransactionClient,
     comment?: string | null,
   ): Promise<PrismaTransactionDetail> {
-    const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.grantSignupBonus(fromWalletId, transferPoints, memberWalletId, currentUserId, comment);
+    const data = this.converter.grantSignupBonus(fromWalletId, transferPoints, memberWalletId, createdBy, comment);
     const res = await this.repository.create(ctx, data, tx);
     return res;
   }

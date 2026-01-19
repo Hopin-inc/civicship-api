@@ -35,6 +35,7 @@ export interface ITransactionService {
     transferPoints: number,
     fromWalletId: string,
     memberWalletId: string,
+    createdBy: string,
     tx: Prisma.TransactionClient,
     comment?: string | null,
   ): Promise<PrismaTransactionDetail>;
