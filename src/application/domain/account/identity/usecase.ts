@@ -362,26 +362,28 @@ export default class IdentityUseCase {
               communityId: ctx.communityId,
             });
           } else {
-            logger.debug("[checkPhoneUser] Creating new LINE identity for existing membership user", {
+            logger.debug("[checkPhoneUser] Creating new global LINE identity (communityId=null) for existing membership user", {
               phoneUid,
               currentUid: ctx.uid,
               currentPlatform: ctx.platform,
               userId: existingUser.id,
               communityId: ctx.communityId,
             });
+            // Create a global identity (communityId=null) so the user can be found
+            // regardless of which community they're accessing via the integrated LINE channel
             await this.identityService.addIdentityToUser(
               ctx,
               existingUser.id,
               ctx.uid!,
               ctx.platform!,
-              ctx.communityId,
+              null, // Global identity for integrated LINE channel
               tx,
             );
-            logger.debug("[checkPhoneUser] Successfully created LINE identity for existing membership user", {
+            logger.debug("[checkPhoneUser] Successfully created global LINE identity for existing membership user", {
               uid: ctx.uid,
               platform: ctx.platform,
               userId: existingUser.id,
-              communityId: ctx.communityId,
+              communityId: null,
             });
           }
         });
@@ -453,26 +455,28 @@ export default class IdentityUseCase {
           communityId: ctx.communityId,
         });
       } else {
-        logger.debug("[checkPhoneUser] Creating new LINE identity for existing user", {
+        logger.debug("[checkPhoneUser] Creating new global LINE identity (communityId=null) for existing user", {
           phoneUid,
           currentUid: ctx.uid,
           currentPlatform: ctx.platform,
           userId: existingUser.id,
           communityId: ctx.communityId,
         });
+        // Create a global identity (communityId=null) so the user can be found
+        // regardless of which community they're accessing via the integrated LINE channel
         await this.identityService.addIdentityToUser(
           ctx,
           existingUser.id,
           ctx.uid,
           ctx.platform,
-          ctx.communityId,
+          null, // Global identity for integrated LINE channel
           tx,
         );
-        logger.debug("[checkPhoneUser] Successfully created new identity for user", {
+        logger.debug("[checkPhoneUser] Successfully created global LINE identity for user", {
           uid: ctx.uid,
           platform: ctx.platform,
           userId: existingUser.id,
-          communityId: ctx.communityId,
+          communityId: null,
         });
       }
 
