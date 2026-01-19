@@ -102,12 +102,15 @@ export default class MembershipUseCase {
         tx,
       );
 
+      // Use composite key as sourceId for idempotency
+      const membershipSourceId = `${currentUserId}_${args.input.communityId}`;
+
       // Grant signup bonus if enabled (best-effort within transaction)
       await this.incentiveGrantService.grantSignupBonusIfEnabled(
         ctx,
         currentUserId,
         args.input.communityId,
-        membership.id,
+        membershipSourceId,
         tx,
       );
 
@@ -118,7 +121,7 @@ export default class MembershipUseCase {
             userId: currentUserId,
             communityId: args.input.communityId,
             type: "SIGNUP",
-            sourceId: membership.id,
+            sourceId: membershipSourceId,
           },
         },
         select: {
@@ -127,7 +130,7 @@ export default class MembershipUseCase {
         },
       });
 
-      let signupBonusTransaction = null;
+      let signupBonusTransaction: { id: string; toPointChange: number; comment: string | null } | null = null;
       if (signupBonusGrant?.status === "COMPLETED" && signupBonusGrant.transactionId) {
         signupBonusTransaction = await tx.transaction.findUnique({
           where: { id: signupBonusGrant.transactionId },
@@ -153,18 +156,19 @@ export default class MembershipUseCase {
     // Send signup bonus notification (best-effort, after transaction commits)
     if (signupBonusTransaction) {
       const community = await this.communityService.findCommunityOrThrow(ctx, args.input.communityId);
+      const transactionForNotification = signupBonusTransaction; // Capture for closure
       this.notificationService
         .pushSignupBonusGrantedMessage(
           ctx,
-          signupBonusTransaction.id,
-          signupBonusTransaction.toPointChange,
-          signupBonusTransaction.comment,
+          transactionForNotification.id,
+          transactionForNotification.toPointChange,
+          transactionForNotification.comment,
           community.name,
           currentUserId,
         )
         .catch((error) => {
           logger.error("Failed to send signup bonus notification", {
-            transactionId: signupBonusTransaction.id,
+            transactionId: transactionForNotification.id,
             userId: currentUserId,
             communityId: args.input.communityId,
             error,
