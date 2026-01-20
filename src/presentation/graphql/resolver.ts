@@ -18,6 +18,7 @@ import TicketResolver from "@/application/domain/reward/ticket/controller/resolv
 import UtilityResolver from "@/application/domain/reward/utility/controller/resolver";
 import TransactionResolver from "@/application/domain/transaction/controller/resolver";
 import TransactionVerificationResolver from "@/application/domain/transaction/verification/controller/resolver";
+import IncentiveGrantResolver from "@/application/domain/transaction/incentiveGrant/controller/resolver";
 import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
@@ -53,6 +54,7 @@ const utility = container.resolve(UtilityResolver);
 
 const transaction = container.resolve(TransactionResolver);
 const transactionVerification = container.resolve(TransactionVerificationResolver);
+const incentiveGrant = container.resolve(IncentiveGrantResolver);
 
 const resolvers = {
   Query: {
@@ -78,6 +80,7 @@ const resolvers = {
     ...ticketClaimLink.Query,
     ...transaction.Query,
     ...transactionVerification.Query,
+    ...incentiveGrant.Query,
   },
   Mutation: {
     ...identity.Mutation,
@@ -121,6 +124,7 @@ const resolvers = {
   Utility: utility.Utility,
 
   Transaction: transaction.Transaction,
+  IncentiveGrant: incentiveGrant.IncentiveGrant,
 
   ...scalarResolvers,
 };
