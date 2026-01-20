@@ -31,7 +31,6 @@ export default class CommunityPresenter {
   static get(r: PrismaCommunityDetail) {
     return {
       ...r,
-      config: null, // Resolved by field resolver
       memberships: [],
       wallets: [],
 
