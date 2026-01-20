@@ -76,7 +76,9 @@ export default class IncentiveGrantUseCase {
     return IncentiveGrantPresenter.get(record);
   }
 
-  private buildWhereClause(filter: GqlIncentiveGrantFilterInput | null | undefined): Prisma.IncentiveGrantWhereInput {
+  private buildWhereClause(
+    filter: GqlIncentiveGrantFilterInput | null | undefined,
+  ): Prisma.IncentiveGrantWhereInput {
     if (!filter) {
       return {};
     }
@@ -114,7 +116,7 @@ export default class IncentiveGrantUseCase {
     args: GqlMutationIncentiveGrantRetryArgs,
     ctx: IContext,
   ): Promise<GqlIncentiveGrantRetryPayload> {
-    const { input, permission } = args;
+    const { input } = args;
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       // Retry the failed grant
@@ -129,7 +131,10 @@ export default class IncentiveGrantUseCase {
       // Send notification if retry was successful (best-effort)
       if (result.success && result.transaction) {
         const transaction = result.transaction;
-        const community = await this.communityService.findCommunityOrThrow(ctx, updatedGrant.communityId);
+        const community = await this.communityService.findCommunityOrThrow(
+          ctx,
+          updatedGrant.communityId,
+        );
 
         this.notificationService
           .pushSignupBonusGrantedMessage(

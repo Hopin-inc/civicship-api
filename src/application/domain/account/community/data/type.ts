@@ -14,6 +14,8 @@ export const communitySelectDetail = Prisma.validator<Prisma.CommunitySelect>()(
   createdAt: true,
   updatedAt: true,
 
+  config: true,
+
   memberships: { select: { userId: true, communityId: true } },
   wallets: { select: { id: true } },
 
