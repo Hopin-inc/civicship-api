@@ -19,6 +19,7 @@ import ImageService from "@/application/domain/content/image/service";
 import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
 import TransactionService from "@/application/domain/transaction/service";
 import NotificationService from "@/application/domain/notification/service";
+import CommunityService from "@/application/domain/account/community/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
@@ -35,6 +36,7 @@ export default class IdentityUseCase {
     @inject("IncentiveGrantService") private readonly incentiveGrantService: IncentiveGrantService,
     @inject("TransactionService") private readonly transactionService: TransactionService,
     @inject("NotificationService") private readonly notificationService: NotificationService,
+    @inject("CommunityService") private readonly communityService: CommunityService,
   ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -139,48 +141,19 @@ export default class IdentityUseCase {
       // Use composite key as sourceId for idempotency
       const initializationSourceId = `${userId}_${communityId}`;
 
-      const signupBonusTransaction = await ctx.issuer.public(ctx, async (tx) => {
+      // Execute membership initialization and signup bonus grant in transaction
+      const signupBonusResult = await ctx.issuer.public(ctx, async (tx) => {
         await this.membershipService.joinIfNeeded(ctx, userId, communityId, tx);
         await this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
 
-        // Grant signup bonus if enabled (best-effort within transaction)
-        await this.incentiveGrantService.grantSignupBonusIfEnabled(
+        // Grant signup bonus if enabled (returns transaction details)
+        return await this.incentiveGrantService.grantSignupBonusIfEnabled(
           ctx,
           userId,
           communityId,
           initializationSourceId,
           tx,
         );
-
-        // Fetch transaction for notification (if grant succeeded)
-        const signupBonusGrant = await tx.incentiveGrant.findUnique({
-          where: {
-            unique_incentive_grant: {
-              userId: userId,
-              communityId: communityId,
-              type: "SIGNUP",
-              sourceId: initializationSourceId,
-            },
-          },
-          select: {
-            status: true,
-            transactionId: true,
-          },
-        });
-
-        let signupBonusTransaction: { id: string; toPointChange: number; comment: string | null } | null = null;
-        if (signupBonusGrant?.status === "COMPLETED" && signupBonusGrant.transactionId) {
-          signupBonusTransaction = await tx.transaction.findUnique({
-            where: { id: signupBonusGrant.transactionId },
-            select: {
-              id: true,
-              toPointChange: true,
-              comment: true,
-            },
-          });
-        }
-
-        return signupBonusTransaction;
       });
 
       // Refresh current points after transaction
@@ -199,29 +172,22 @@ export default class IdentityUseCase {
       }
 
       // Send signup bonus notification (best-effort)
-      if (signupBonusTransaction) {
-        const community = await ctx.issuer.internal(async (tx) => {
-          return tx.community.findUnique({
-            where: { id: communityId },
-            select: { name: true },
-          });
-        });
-
+      if (signupBonusResult.granted && signupBonusResult.transaction) {
+        const community = await this.communityService.findCommunity(ctx, communityId);
         const communityName = community?.name ?? "コミュニティ";
-        const transactionForNotification = signupBonusTransaction;
 
         this.notificationService
           .pushSignupBonusGrantedMessage(
             ctx,
-            transactionForNotification.id,
-            transactionForNotification.toPointChange,
-            transactionForNotification.comment,
+            signupBonusResult.transaction.id,
+            signupBonusResult.transaction.toPointChange,
+            signupBonusResult.transaction.comment,
             communityName,
             userId,
           )
           .catch((error) => {
             logger.error("Failed to send signup bonus notification", {
-              transactionId: transactionForNotification.id,
+              transactionId: signupBonusResult.transaction!.id,
               userId,
               communityId,
               error,

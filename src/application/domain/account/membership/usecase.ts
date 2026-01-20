@@ -88,7 +88,11 @@ export default class MembershipUseCase {
   async userAcceptMyInvitation(args: GqlMutationMembershipAcceptMyInvitationArgs, ctx: IContext) {
     const currentUserId = getCurrentUserId(ctx);
 
-    const { membership, signupBonusTransaction } = await ctx.issuer.public(ctx, async (tx) => {
+    // Use composite key as sourceId for idempotency
+    const membershipSourceId = `${currentUserId}_${args.input.communityId}`;
+
+    // Execute membership initialization and signup bonus grant in transaction
+    const { membership, signupBonusResult } = await ctx.issuer.public(ctx, async (tx) => {
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         currentUserId,
@@ -102,11 +106,8 @@ export default class MembershipUseCase {
         tx,
       );
 
-      // Use composite key as sourceId for idempotency
-      const membershipSourceId = `${currentUserId}_${args.input.communityId}`;
-
-      // Grant signup bonus if enabled (best-effort within transaction)
-      await this.incentiveGrantService.grantSignupBonusIfEnabled(
+      // Grant signup bonus if enabled (returns transaction details)
+      const signupBonusResult = await this.incentiveGrantService.grantSignupBonusIfEnabled(
         ctx,
         currentUserId,
         args.input.communityId,
@@ -114,35 +115,7 @@ export default class MembershipUseCase {
         tx,
       );
 
-      // Fetch transaction for notification (if grant succeeded)
-      const signupBonusGrant = await tx.incentiveGrant.findUnique({
-        where: {
-          unique_incentive_grant: {
-            userId: currentUserId,
-            communityId: args.input.communityId,
-            type: "SIGNUP",
-            sourceId: membershipSourceId,
-          },
-        },
-        select: {
-          status: true,
-          transactionId: true,
-        },
-      });
-
-      let signupBonusTransaction: { id: string; toPointChange: number; comment: string | null } | null = null;
-      if (signupBonusGrant?.status === "COMPLETED" && signupBonusGrant.transactionId) {
-        signupBonusTransaction = await tx.transaction.findUnique({
-          where: { id: signupBonusGrant.transactionId },
-          select: {
-            id: true,
-            toPointChange: true,
-            comment: true,
-          },
-        });
-      }
-
-      return { membership, signupBonusTransaction };
+      return { membership, signupBonusResult };
     });
 
     // Refresh materialized view
@@ -154,21 +127,20 @@ export default class MembershipUseCase {
     await this.notificationService.switchRichMenuByRole(ctx, membership);
 
     // Send signup bonus notification (best-effort, after transaction commits)
-    if (signupBonusTransaction) {
+    if (signupBonusResult.granted && signupBonusResult.transaction) {
       const community = await this.communityService.findCommunityOrThrow(ctx, args.input.communityId);
-      const transactionForNotification = signupBonusTransaction; // Capture for closure
       this.notificationService
         .pushSignupBonusGrantedMessage(
           ctx,
-          transactionForNotification.id,
-          transactionForNotification.toPointChange,
-          transactionForNotification.comment,
+          signupBonusResult.transaction.id,
+          signupBonusResult.transaction.toPointChange,
+          signupBonusResult.transaction.comment,
           community.name,
           currentUserId,
         )
         .catch((error) => {
           logger.error("Failed to send signup bonus notification", {
-            transactionId: transactionForNotification.id,
+            transactionId: signupBonusResult.transaction!.id,
             userId: currentUserId,
             communityId: args.input.communityId,
             error,

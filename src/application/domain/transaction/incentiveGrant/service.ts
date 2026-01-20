@@ -10,6 +10,15 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import logger from "@/infrastructure/logging";
 import { InsufficientBalanceError, NotFoundError } from "@/errors/graphql";
 
+export type SignupBonusGrantResult = {
+  granted: boolean;
+  transaction: {
+    id: string;
+    toPointChange: number;
+    comment: string | null;
+  } | null;
+};
+
 @injectable()
 export default class IncentiveGrantService {
   constructor(
@@ -35,6 +44,7 @@ export default class IncentiveGrantService {
    * 3. Check community wallet balance (TOCTOU-safe)
    * 4. Create transaction to transfer points
    * 5. Mark grant as COMPLETED
+   * 6. Return transaction details for notification
    *
    * Error handling:
    * - P2002 (unique constraint): Already granted, skip silently
@@ -50,6 +60,7 @@ export default class IncentiveGrantService {
    * @param communityId - Community ID granting the bonus
    * @param membershipId - Membership ID (used as sourceId for idempotency)
    * @param tx - Transaction client (required)
+   * @returns SignupBonusGrantResult with transaction details if granted
    */
   async grantSignupBonusIfEnabled(
     ctx: IContext,
@@ -57,7 +68,7 @@ export default class IncentiveGrantService {
     communityId: string,
     membershipId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  ): Promise<SignupBonusGrantResult> {
     const logContext = {
       logctx: "IncentiveGrantService.grantSignupBonusIfEnabled",
       userId,
@@ -70,7 +81,7 @@ export default class IncentiveGrantService {
       const config = await this.signupBonusConfigService.get(ctx, communityId, tx);
       if (!config?.isEnabled) {
         logger.debug("Signup bonus not enabled, skipping", logContext);
-        return;
+        return { granted: false, transaction: null };
       }
 
       logger.info("Attempting to grant signup bonus", {
@@ -92,7 +103,7 @@ export default class IncentiveGrantService {
         // P2002 = unique constraint violation = already granted
         if (error?.code === "P2002") {
           logger.info("Signup bonus already granted (idempotent)", logContext);
-          return;
+          return { granted: false, transaction: null };
         }
         throw error; // Re-throw other errors
       }
@@ -136,6 +147,16 @@ export default class IncentiveGrantService {
         transactionId: transaction.id,
         bonusPoint: config.bonusPoint,
       });
+
+      // 7. Return transaction details for notification
+      return {
+        granted: true,
+        transaction: {
+          id: transaction.id,
+          toPointChange: transaction.toPointChange,
+          comment: transaction.comment,
+        },
+      };
     } catch (error: any) {
       // Best-effort: Log error and mark as failed, but don't throw
       logger.warn("Signup bonus grant failed (best-effort)", {
@@ -175,6 +196,9 @@ export default class IncentiveGrantService {
           error: markFailedError.message,
         });
       }
+
+      // Return failure result
+      return { granted: false, transaction: null };
     }
   }
 }
