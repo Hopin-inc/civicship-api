@@ -27,6 +27,7 @@ class MockIncentiveGrantRepository implements IIncentiveGrantRepository {
   create = jest.fn();
   markAsCompleted = jest.fn();
   markAsFailed = jest.fn();
+  markAsRetrying = jest.fn();
 }
 
 // Mock Services

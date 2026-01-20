@@ -675,7 +675,8 @@ export type GqlIncentiveGrantSortInput = {
 export const GqlIncentiveGrantStatus = {
   Completed: 'COMPLETED',
   Failed: 'FAILED',
-  Pending: 'PENDING'
+  Pending: 'PENDING',
+  Retrying: 'RETRYING'
 } as const;
 
 export type GqlIncentiveGrantStatus = typeof GqlIncentiveGrantStatus[keyof typeof GqlIncentiveGrantStatus];
