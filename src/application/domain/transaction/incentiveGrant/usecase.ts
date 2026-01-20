@@ -116,7 +116,7 @@ export default class IncentiveGrantUseCase {
     args: GqlMutationIncentiveGrantRetryArgs,
     ctx: IContext,
   ): Promise<GqlIncentiveGrantRetryPayload> {
-    const { input } = args;
+    const { input, permission } = args;
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       // Retry the failed grant
