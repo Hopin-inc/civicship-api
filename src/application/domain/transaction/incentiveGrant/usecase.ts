@@ -1,21 +1,31 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import IncentiveGrantPresenter from "./presenter";
+import IncentiveGrantService from "./service";
 import { IIncentiveGrantRepository } from "./data/interface";
+import CommunityService from "@/application/domain/account/community/service";
+import NotificationService from "@/application/domain/notification/service";
+import TransactionPresenter from "@/application/domain/transaction/presenter";
 import { clampFirst } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
+import logger from "@/infrastructure/logging";
 import {
   GqlQueryIncentiveGrantsArgs,
   GqlQueryIncentiveGrantArgs,
+  GqlMutationIncentiveGrantRetryArgs,
   GqlIncentiveGrant,
   GqlIncentiveGrantsConnection,
   GqlIncentiveGrantFilterInput,
+  GqlIncentiveGrantRetryPayload,
 } from "@/types/graphql";
 
 @injectable()
 export default class IncentiveGrantUseCase {
   constructor(
     @inject("IncentiveGrantRepository") private readonly repository: IIncentiveGrantRepository,
+    @inject("IncentiveGrantService") private readonly service: IncentiveGrantService,
+    @inject("CommunityService") private readonly communityService: CommunityService,
+    @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
 
   async visitorBrowseIncentiveGrants(
@@ -97,5 +107,60 @@ export default class IncentiveGrantUseCase {
     }
 
     return where;
+  }
+
+  async ownerRetryIncentiveGrant(
+    args: GqlMutationIncentiveGrantRetryArgs,
+    ctx: IContext,
+  ): Promise<GqlIncentiveGrantRetryPayload> {
+    const { input, permission } = args;
+
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+      // Retry the failed grant
+      const result = await this.service.retryFailedGrant(ctx, input.incentiveGrantId, tx);
+
+      // Get the updated grant record
+      const updatedGrant = await this.repository.find(ctx, input.incentiveGrantId);
+      if (!updatedGrant) {
+        throw new Error(`IncentiveGrant not found after retry: ${input.incentiveGrantId}`);
+      }
+
+      // Send notification if retry was successful (best-effort)
+      if (result.success && result.transaction) {
+        const transaction = result.transaction;
+        const community = await this.communityService.findCommunityOrThrow(ctx, updatedGrant.communityId);
+
+        this.notificationService
+          .pushSignupBonusGrantedMessage(
+            ctx,
+            transaction.id,
+            transaction.toPointChange,
+            transaction.comment,
+            community.name,
+            updatedGrant.userId,
+          )
+          .catch((error) => {
+            logger.error("Failed to send signup bonus notification after retry", {
+              transactionId: transaction.id,
+              userId: updatedGrant.userId,
+              communityId: updatedGrant.communityId,
+              incentiveGrantId: input.incentiveGrantId,
+              error,
+            });
+          });
+      }
+
+      return {
+        __typename: "IncentiveGrantRetrySuccess",
+        incentiveGrant: IncentiveGrantPresenter.get(updatedGrant),
+        transaction: result.transaction
+          ? TransactionPresenter.get({
+              id: result.transaction.id,
+              toPointChange: result.transaction.toPointChange,
+              comment: result.transaction.comment,
+            } as any)
+          : null,
+      };
+    });
   }
 }

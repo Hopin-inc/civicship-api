@@ -97,6 +97,7 @@ const resolvers = {
     ...utility.Mutation,
     ...ticket.Mutation,
     ...transaction.Mutation,
+    ...incentiveGrant.Mutation,
   },
   Identity: identity.Identity,
   User: user.User,

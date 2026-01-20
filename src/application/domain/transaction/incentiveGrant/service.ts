@@ -18,6 +18,15 @@ export type SignupBonusGrantResult = {
   } | null;
 };
 
+export type RetryGrantResult = {
+  success: boolean;
+  transaction: {
+    id: string;
+    toPointChange: number;
+    comment: string | null;
+  } | null;
+};
+
 @injectable()
 export default class IncentiveGrantService {
   constructor(
@@ -205,6 +214,176 @@ export default class IncentiveGrantService {
 
       // Return failure result
       return { granted: false, transaction: null };
+    }
+  }
+
+  /**
+   * Retry a failed incentive grant.
+   * This method re-attempts to grant the incentive for a FAILED grant record.
+   *
+   * Flow:
+   * 1. Find the grant record by ID
+   * 2. Verify it's in FAILED status
+   * 3. Get the signup bonus configuration
+   * 4. Check community wallet balance (TOCTOU-safe)
+   * 5. Create transaction to transfer points
+   * 6. Mark grant as COMPLETED
+   * 7. Return transaction details for notification
+   *
+   * Error handling:
+   * - NotFoundError: Grant record not found
+   * - Error: Grant is not in FAILED status
+   * - InsufficientBalanceError: Mark as FAILED with INSUFFICIENT_FUNDS
+   * - NotFoundError: Mark as FAILED with WALLET_NOT_FOUND
+   * - Other errors: Mark as FAILED with UNKNOWN
+   *
+   * Note: This method DOES throw errors for validation failures (not found, wrong status).
+   * Business logic errors (insufficient balance, etc.) mark the grant as FAILED and throw.
+   *
+   * @param ctx - Context
+   * @param incentiveGrantId - IncentiveGrant ID to retry
+   * @param tx - Transaction client (required)
+   * @returns RetryGrantResult with transaction details if successful
+   */
+  async retryFailedGrant(
+    ctx: IContext,
+    incentiveGrantId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<RetryGrantResult> {
+    const logContext = {
+      logctx: "IncentiveGrantService.retryFailedGrant",
+      incentiveGrantId,
+    };
+
+    try {
+      // 1. Find the grant record
+      const grant = await this.repository.find(ctx, incentiveGrantId);
+      if (!grant) {
+        throw new NotFoundError(`IncentiveGrant not found: ${incentiveGrantId}`);
+      }
+
+      logger.info("Retrying failed incentive grant", {
+        ...logContext,
+        userId: grant.userId,
+        communityId: grant.communityId,
+        type: grant.type,
+        status: grant.status,
+        attemptCount: grant.attemptCount,
+      });
+
+      // 2. Verify FAILED status
+      if (grant.status !== "FAILED") {
+        throw new Error(
+          `IncentiveGrant is not in FAILED status: ${grant.status}`,
+        );
+      }
+
+      // 3. Get configuration (only SIGNUP type is supported for now)
+      if (grant.type !== IncentiveGrantType.SIGNUP) {
+        throw new Error(`Unsupported grant type for retry: ${grant.type}`);
+      }
+
+      const config = await this.signupBonusConfigService.get(ctx, grant.communityId, tx);
+      if (!config?.isEnabled) {
+        throw new Error(
+          `Signup bonus is no longer enabled for community: ${grant.communityId}`,
+        );
+      }
+
+      // 4. TOCTOU-safe balance check
+      await this.walletService.checkCommunityWalletBalanceInTransaction(
+        ctx,
+        grant.communityId,
+        config.bonusPoint,
+        tx,
+      );
+
+      // 5. Get wallets
+      const [communityWallet, memberWallet] = await Promise.all([
+        this.walletService.findCommunityWalletOrThrow(ctx, grant.communityId, tx),
+        this.walletService.findMemberWalletOrThrow(ctx, grant.userId, grant.communityId, tx),
+      ]);
+
+      // 6. Create transaction
+      const transaction = await this.transactionService.grantSignupBonus(
+        ctx,
+        config.bonusPoint,
+        communityWallet.id,
+        memberWallet.id,
+        grant.userId,
+        tx,
+        config.message,
+      );
+
+      // 7. Mark as COMPLETED
+      await this.repository.markAsCompleted(
+        ctx,
+        grant.userId,
+        grant.communityId,
+        grant.type,
+        grant.sourceId,
+        transaction.id,
+        tx,
+      );
+
+      logger.info("Incentive grant retry succeeded", {
+        ...logContext,
+        transactionId: transaction.id,
+        bonusPoint: config.bonusPoint,
+      });
+
+      return {
+        success: true,
+        transaction: {
+          id: transaction.id,
+          toPointChange: transaction.toPointChange,
+          comment: transaction.comment,
+        },
+      };
+    } catch (error: any) {
+      logger.error("Incentive grant retry failed", {
+        ...logContext,
+        error: error.message,
+        stack: error.stack,
+      });
+
+      // Try to mark as failed (if it's a business logic error, not validation error)
+      if (!(error instanceof NotFoundError) && !error.message.includes("not in FAILED status")) {
+        try {
+          const grant = await this.repository.find(ctx, incentiveGrantId);
+          if (grant) {
+            let failureCode: IncentiveGrantFailureCode;
+            if (error instanceof InsufficientBalanceError) {
+              failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
+            } else if (error instanceof NotFoundError) {
+              failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
+            } else if (error?.code?.startsWith("P")) {
+              failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
+            } else {
+              failureCode = IncentiveGrantFailureCode.UNKNOWN;
+            }
+
+            await this.repository.markAsFailed(
+              ctx,
+              grant.userId,
+              grant.communityId,
+              grant.type,
+              grant.sourceId,
+              failureCode,
+              error.message,
+              tx,
+            );
+          }
+        } catch (markFailedError: any) {
+          logger.error("Failed to mark incentive grant as failed during retry", {
+            ...logContext,
+            error: markFailedError.message,
+          });
+        }
+      }
+
+      // Re-throw the error
+      throw error;
     }
   }
 }
