@@ -6,7 +6,6 @@ export interface SignupBonusGrantedParams {
   communityName: string;
   transferPoints: number;
   comment?: string | null;
-  redirectUrl: string;
   language: Language;
 }
 

@@ -128,19 +128,20 @@ export default class MembershipUseCase {
 
     // Send signup bonus notification (best-effort, after transaction commits)
     if (signupBonusResult.granted && signupBonusResult.transaction) {
+      const transaction = signupBonusResult.transaction;
       const community = await this.communityService.findCommunityOrThrow(ctx, args.input.communityId);
       this.notificationService
         .pushSignupBonusGrantedMessage(
           ctx,
-          signupBonusResult.transaction.id,
-          signupBonusResult.transaction.toPointChange,
-          signupBonusResult.transaction.comment,
+          transaction.id,
+          transaction.toPointChange,
+          transaction.comment,
           community.name,
           currentUserId,
         )
         .catch((error) => {
           logger.error("Failed to send signup bonus notification", {
-            transactionId: signupBonusResult.transaction!.id,
+            transactionId: transaction.id,
             userId: currentUserId,
             communityId: args.input.communityId,
             error,

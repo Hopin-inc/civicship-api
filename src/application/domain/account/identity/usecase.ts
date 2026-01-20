@@ -173,21 +173,22 @@ export default class IdentityUseCase {
 
       // Send signup bonus notification (best-effort)
       if (signupBonusResult.granted && signupBonusResult.transaction) {
+        const transaction = signupBonusResult.transaction;
         const community = await this.communityService.findCommunity(ctx, communityId);
         const communityName = community?.name ?? "コミュニティ";
 
         this.notificationService
           .pushSignupBonusGrantedMessage(
             ctx,
-            signupBonusResult.transaction.id,
-            signupBonusResult.transaction.toPointChange,
-            signupBonusResult.transaction.comment,
+            transaction.id,
+            transaction.toPointChange,
+            transaction.comment,
             communityName,
             userId,
           )
           .catch((error) => {
             logger.error("Failed to send signup bonus notification", {
-              transactionId: signupBonusResult.transaction!.id,
+              transactionId: transaction.id,
               userId,
               communityId,
               error,

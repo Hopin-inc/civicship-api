@@ -57,7 +57,7 @@ export default class IncentiveGrantService {
    * @param ctx - Context
    * @param userId - User ID receiving the bonus
    * @param communityId - Community ID granting the bonus
-   * @param membershipId - Membership ID (used as sourceId for idempotency)
+   * @param sourceId - Composite key (${userId}_${communityId}) used as sourceId for idempotency
    * @param tx - Transaction client (required)
    * @returns SignupBonusGrantResult with transaction details if granted
    */
@@ -65,16 +65,17 @@ export default class IncentiveGrantService {
     ctx: IContext,
     userId: string,
     communityId: string,
-    membershipId: string,
+    sourceId: string,
     tx: Prisma.TransactionClient,
   ): Promise<SignupBonusGrantResult> {
     const logContext = {
       logctx: "IncentiveGrantService.grantSignupBonusIfEnabled",
       userId,
       communityId,
-      membershipId,
+      sourceId,
     };
 
+    let grantRecordCreated = false;
     try {
       // 1. Check if signup bonus is enabled
       const config = await this.signupBonusConfigService.get(ctx, communityId, tx);
@@ -93,11 +94,12 @@ export default class IncentiveGrantService {
         userId,
         communityId,
         type: IncentiveGrantType.SIGNUP,
-        sourceId: membershipId,
+        sourceId: sourceId,
       });
 
       try {
         await this.repository.create(ctx, createData, tx);
+        grantRecordCreated = true;
       } catch (error: any) {
         // P2002 = unique constraint violation = already granted
         if (error?.code === "P2002") {
@@ -145,7 +147,7 @@ export default class IncentiveGrantService {
         userId,
         communityId,
         IncentiveGrantType.SIGNUP,
-        membershipId,
+        sourceId,
         transaction.id,
         tx,
       );
@@ -173,36 +175,39 @@ export default class IncentiveGrantService {
         stack: error.stack,
       });
 
-      try {
-        // Determine failure code
-        let failureCode: IncentiveGrantFailureCode;
-        if (error instanceof InsufficientBalanceError) {
-          failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
-        } else if (error instanceof NotFoundError) {
-          failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
-        } else if (error?.code?.startsWith("P")) {
-          failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
-        } else {
-          failureCode = IncentiveGrantFailureCode.UNKNOWN;
-        }
+      // Only mark as failed if the PENDING record was created
+      if (grantRecordCreated) {
+        try {
+          // Determine failure code
+          let failureCode: IncentiveGrantFailureCode;
+          if (error instanceof InsufficientBalanceError) {
+            failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
+          } else if (error instanceof NotFoundError) {
+            failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
+          } else if (error?.code?.startsWith("P")) {
+            failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
+          } else {
+            failureCode = IncentiveGrantFailureCode.UNKNOWN;
+          }
 
-        // Mark as failed (only if PENDING record was created)
-        await this.repository.markAsFailed(
-          ctx,
-          userId,
-          communityId,
-          IncentiveGrantType.SIGNUP,
-          membershipId,
-          failureCode,
-          error.message,
-          tx,
-        );
-      } catch (markFailedError: any) {
-        // If marking as failed also fails, just log it
-        logger.error("Failed to mark incentive grant as failed", {
-          ...logContext,
-          error: markFailedError.message,
-        });
+          // Mark as failed (only if PENDING record was created)
+          await this.repository.markAsFailed(
+            ctx,
+            userId,
+            communityId,
+            IncentiveGrantType.SIGNUP,
+            sourceId,
+            failureCode,
+            error.message,
+            tx,
+          );
+        } catch (markFailedError: any) {
+          // If marking as failed also fails, just log it
+          logger.error("Failed to mark incentive grant as failed", {
+            ...logContext,
+            error: markFailedError.message,
+          });
+        }
       }
 
       // Return failure result

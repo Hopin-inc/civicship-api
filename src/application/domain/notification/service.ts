@@ -456,14 +456,12 @@ export default class NotificationService {
       return;
     }
 
-    const { uid, liffBaseUrl, client, language } = preparedData;
-    const redirectUrl = `${liffBaseUrl}/wallets`;
+    const { uid, client, language } = preparedData;
 
     const message = buildSignupBonusGrantedMessage({
       communityName,
       transferPoints: toPointChange,
       comment,
-      redirectUrl,
       language,
     });
 
