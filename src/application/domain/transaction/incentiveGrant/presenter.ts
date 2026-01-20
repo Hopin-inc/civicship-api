@@ -23,6 +23,6 @@ export default class IncentiveGrantPresenter {
     return {
       __typename: "IncentiveGrant",
       ...r,
-    };
+    } as GqlIncentiveGrant;
   }
 }
