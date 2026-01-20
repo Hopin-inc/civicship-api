@@ -118,17 +118,10 @@ export default class IncentiveGrantService {
       );
 
       // 4. Get wallets
-      const communityWallet = await this.walletService.findCommunityWalletOrThrow(
-        ctx,
-        communityId,
-        tx,
-      );
-      const memberWallet = await this.walletService.findMemberWalletOrThrow(
-        ctx,
-        userId,
-        communityId,
-        tx,
-      );
+      const [communityWallet, memberWallet] = await Promise.all([
+        this.walletService.findCommunityWalletOrThrow(ctx, communityId, tx),
+        this.walletService.findMemberWalletOrThrow(ctx, userId, communityId, tx),
+      ]);
 
       // 5. Create transaction
       const transaction = await this.transactionService.grantSignupBonus(
