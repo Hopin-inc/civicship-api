@@ -313,3 +313,14 @@ export class IncentiveDisabledError extends ApolloError {
   }
 }
 
+export class ConcurrentRetryError extends ApolloError {
+  public grantId: string;
+
+  constructor(grantId: string) {
+    const message = `IncentiveGrant ${grantId} is already being retried by another request`;
+    super(message, "CONCURRENT_RETRY_DETECTED");
+    this.grantId = grantId;
+    Object.defineProperty(this, "name", { value: "ConcurrentRetryError" });
+  }
+}
+

@@ -95,6 +95,7 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
         attemptCount: 0, // Reset attempt count on success
         failureCode: null, // Clear failure information
         lastError: null,
+        lastAttemptedAt: null, // Clear last attempt timestamp
         updatedAt: new Date(),
       },
       select: incentiveGrantSelect,

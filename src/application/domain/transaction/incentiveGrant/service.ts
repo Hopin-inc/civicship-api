@@ -2,7 +2,6 @@ import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import { IncentiveGrantFailureCode, IncentiveGrantType, Prisma } from "@prisma/client";
 import { IIncentiveGrantRepository } from "./data/interface";
-import { PrismaIncentiveGrant } from "./data/type";
 import IncentiveGrantConverter from "./data/converter";
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import WalletService from "@/application/domain/account/wallet/service";
@@ -14,6 +13,7 @@ import {
   InvalidGrantStatusError,
   UnsupportedGrantTypeError,
   IncentiveDisabledError,
+  ConcurrentRetryError,
 } from "@/errors/graphql";
 
 export type SignupBonusGrantResult = {
@@ -294,7 +294,7 @@ export default class IncentiveGrantService {
 
     if (!marked) {
       // Another concurrent request already marked this grant as RETRYING
-      throw new Error("Grant is already being retried by another request");
+      throw new ConcurrentRetryError(incentiveGrantId);
     }
 
     // 3. Get configuration (only SIGNUP type is supported for now)

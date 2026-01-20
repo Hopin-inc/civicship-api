@@ -15,6 +15,7 @@ import {
   UnsupportedGrantTypeError,
   IncentiveDisabledError,
   InsufficientBalanceError,
+  ConcurrentRetryError,
 } from "@/errors/graphql";
 import {
   GqlQueryIncentiveGrantsArgs,
@@ -138,7 +139,9 @@ export default class IncentiveGrantUseCase {
 
           // 2. Security check: Ensure the grant belongs to the community (before retry)
           if (grant.community.id !== permission.communityId) {
-            throw new AuthorizationError("Grant does not belong to the specified community");
+            throw new AuthorizationError(
+              `Grant ${input.incentiveGrantId} does not belong to community ${permission.communityId}`,
+            );
           }
 
           // 3. Retry the failed grant
@@ -201,7 +204,8 @@ export default class IncentiveGrantUseCase {
         error instanceof InvalidGrantStatusError ||
         error instanceof UnsupportedGrantTypeError ||
         error instanceof IncentiveDisabledError ||
-        error instanceof AuthorizationError;
+        error instanceof AuthorizationError ||
+        error instanceof ConcurrentRetryError;
 
       if (!isValidationError) {
         // Attempt to mark as failed in a separate transaction
@@ -209,6 +213,7 @@ export default class IncentiveGrantUseCase {
           (updateError) => {
             logger.error("Failed to update grant failure status", {
               incentiveGrantId: input.incentiveGrantId,
+              originalError: error.message || String(error),
               error: updateError,
             });
           },
