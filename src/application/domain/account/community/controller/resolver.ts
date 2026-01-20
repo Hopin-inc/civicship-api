@@ -68,7 +68,6 @@ export default class CommunityResolver {
               }
             : null,
           firebaseConfig: null,
-          signupBonusConfig: config.signupBonusConfig,
         };
       }
 
