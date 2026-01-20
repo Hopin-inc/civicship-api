@@ -30,7 +30,6 @@ export default class CommunityPresenter {
 
   static get(r: PrismaCommunityDetail) {
     return {
-      __typename: "Community" as const,
       ...r,
       config: null, // Resolved by field resolver
       memberships: [],
