@@ -19,10 +19,10 @@ export default class IncentiveGrantPresenter {
     };
   }
 
-  static get(r: PrismaIncentiveGrant): GqlIncentiveGrant {
+  static get(r: PrismaIncentiveGrant) {
     return {
-      __typename: "IncentiveGrant",
+      __typename: "IncentiveGrant" as const,
       ...r,
-    } as GqlIncentiveGrant;
+    };
   }
 }
