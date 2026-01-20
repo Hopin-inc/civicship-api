@@ -5,10 +5,10 @@ import IncentiveGrantService from "./service";
 import { IIncentiveGrantRepository } from "./data/interface";
 import CommunityService from "@/application/domain/account/community/service";
 import NotificationService from "@/application/domain/notification/service";
-import TransactionPresenter from "@/application/domain/transaction/presenter";
 import { clampFirst } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import logger from "@/infrastructure/logging";
+import { NotFoundError, AuthorizationError } from "@/errors/graphql";
 import {
   GqlQueryIncentiveGrantsArgs,
   GqlQueryIncentiveGrantArgs,
@@ -122,10 +122,15 @@ export default class IncentiveGrantUseCase {
       // Retry the failed grant
       const result = await this.service.retryFailedGrant(ctx, input.incentiveGrantId, tx);
 
-      // Get the updated grant record
-      const updatedGrant = await this.repository.find(ctx, input.incentiveGrantId);
+      // Get the updated grant record within the same transaction
+      const updatedGrant = await this.repository.findInTransaction(ctx, input.incentiveGrantId, tx);
       if (!updatedGrant) {
-        throw new Error(`IncentiveGrant not found after retry: ${input.incentiveGrantId}`);
+        throw new NotFoundError("IncentiveGrant", { id: input.incentiveGrantId });
+      }
+
+      // Security check: Ensure the grant belongs to the community specified in the permission
+      if (updatedGrant.communityId !== permission.communityId) {
+        throw new AuthorizationError("Grant does not belong to the specified community");
       }
 
       // Send notification if retry was successful (best-effort)
@@ -159,13 +164,8 @@ export default class IncentiveGrantUseCase {
       return {
         __typename: "IncentiveGrantRetrySuccess",
         incentiveGrant: IncentiveGrantPresenter.get(updatedGrant),
-        transaction: result.transaction
-          ? TransactionPresenter.get({
-              id: result.transaction.id,
-              toPointChange: result.transaction.toPointChange,
-              comment: result.transaction.comment,
-            } as any)
-          : null,
+        // Transaction will be resolved by the field resolver using DataLoader
+        transaction: null,
       };
     });
   }

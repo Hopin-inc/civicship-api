@@ -2,12 +2,19 @@ import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import { IncentiveGrantFailureCode, IncentiveGrantType, Prisma } from "@prisma/client";
 import { IIncentiveGrantRepository } from "./data/interface";
+import { PrismaIncentiveGrant } from "./data/type";
 import IncentiveGrantConverter from "./data/converter";
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import logger from "@/infrastructure/logging";
-import { InsufficientBalanceError, NotFoundError } from "@/errors/graphql";
+import {
+  InsufficientBalanceError,
+  NotFoundError,
+  InvalidGrantStatusError,
+  UnsupportedGrantTypeError,
+  IncentiveDisabledError,
+} from "@/errors/graphql";
 
 export type SignupBonusGrantResult = {
   granted: boolean;
@@ -255,11 +262,13 @@ export default class IncentiveGrantService {
       incentiveGrantId,
     };
 
+    let grant: PrismaIncentiveGrant | null = null;
+
     try {
-      // 1. Find the grant record
-      const grant = await this.repository.find(ctx, incentiveGrantId);
+      // 1. Find the grant record within the transaction
+      grant = await this.repository.findInTransaction(ctx, incentiveGrantId, tx);
       if (!grant) {
-        throw new NotFoundError(`IncentiveGrant not found: ${incentiveGrantId}`);
+        throw new NotFoundError("IncentiveGrant", { id: incentiveGrantId });
       }
 
       logger.info("Retrying failed incentive grant", {
@@ -273,21 +282,17 @@ export default class IncentiveGrantService {
 
       // 2. Verify FAILED status
       if (grant.status !== "FAILED") {
-        throw new Error(
-          `IncentiveGrant is not in FAILED status: ${grant.status}`,
-        );
+        throw new InvalidGrantStatusError(grant.status, "FAILED");
       }
 
       // 3. Get configuration (only SIGNUP type is supported for now)
       if (grant.type !== IncentiveGrantType.SIGNUP) {
-        throw new Error(`Unsupported grant type for retry: ${grant.type}`);
+        throw new UnsupportedGrantTypeError(grant.type);
       }
 
       const config = await this.signupBonusConfigService.get(ctx, grant.communityId, tx);
       if (!config?.isEnabled) {
-        throw new Error(
-          `Signup bonus is no longer enabled for community: ${grant.communityId}`,
-        );
+        throw new IncentiveDisabledError(grant.communityId, "Signup bonus");
       }
 
       // 4. TOCTOU-safe balance check
@@ -348,32 +353,34 @@ export default class IncentiveGrantService {
       });
 
       // Try to mark as failed (if it's a business logic error, not validation error)
-      if (!(error instanceof NotFoundError) && !error.message.includes("not in FAILED status")) {
-        try {
-          const grant = await this.repository.find(ctx, incentiveGrantId);
-          if (grant) {
-            let failureCode: IncentiveGrantFailureCode;
-            if (error instanceof InsufficientBalanceError) {
-              failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
-            } else if (error instanceof NotFoundError) {
-              failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
-            } else if (error?.code?.startsWith("P")) {
-              failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
-            } else {
-              failureCode = IncentiveGrantFailureCode.UNKNOWN;
-            }
+      // Skip marking as failed for validation errors (NotFoundError, InvalidGrantStatusError, etc.)
+      const isValidationError =
+        error instanceof NotFoundError ||
+        error instanceof InvalidGrantStatusError ||
+        error instanceof UnsupportedGrantTypeError ||
+        error instanceof IncentiveDisabledError;
 
-            await this.repository.markAsFailed(
-              ctx,
-              grant.userId,
-              grant.communityId,
-              grant.type,
-              grant.sourceId,
-              failureCode,
-              error.message,
-              tx,
-            );
+      if (!isValidationError && grant) {
+        try {
+          let failureCode: IncentiveGrantFailureCode;
+          if (error instanceof InsufficientBalanceError) {
+            failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
+          } else if (error?.code?.startsWith("P")) {
+            failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
+          } else {
+            failureCode = IncentiveGrantFailureCode.UNKNOWN;
           }
+
+          await this.repository.markAsFailed(
+            ctx,
+            grant.userId,
+            grant.communityId,
+            grant.type,
+            grant.sourceId,
+            failureCode,
+            error.message,
+            tx,
+          );
         } catch (markFailedError: any) {
           logger.error("Failed to mark incentive grant as failed during retry", {
             ...logContext,
