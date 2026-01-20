@@ -592,6 +592,17 @@ input IncentiveGrantFilterInput {
   userId: ID
 }
 
+input IncentiveGrantRetryInput {
+  incentiveGrantId: ID!
+}
+
+union IncentiveGrantRetryPayload = IncentiveGrantRetrySuccess
+
+type IncentiveGrantRetrySuccess {
+  incentiveGrant: IncentiveGrant!
+  transaction: Transaction
+}
+
 input IncentiveGrantSortInput {
   createdAt: SortDirection
   updatedAt: SortDirection
@@ -771,6 +782,7 @@ type Mutation {
   communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!, permission: CheckCommunityPermissionInput!): CommunityUpdateProfilePayload
   evaluationBulkCreate(input: EvaluationBulkCreateInput!, permission: CheckCommunityPermissionInput!): EvaluationBulkCreatePayload
   identityCheckPhoneUser(input: IdentityCheckPhoneUserInput!): IdentityCheckPhoneUserPayload!
+  incentiveGrantRetry(input: IncentiveGrantRetryInput!, permission: CheckCommunityPermissionInput!): IncentiveGrantRetryPayload
   linkPhoneAuth(input: LinkPhoneAuthInput!, permission: CheckIsSelfPermissionInput!): LinkPhoneAuthPayload
   membershipAcceptMyInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckIsSelfPermissionInput!): MembershipSetInvitationStatusPayload
   membershipAssignManager(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput!): MembershipSetRolePayload

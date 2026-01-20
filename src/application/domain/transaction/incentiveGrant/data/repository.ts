@@ -34,6 +34,17 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
     });
   }
 
+  async findInTransaction(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaIncentiveGrant | null> {
+    return tx.incentiveGrant.findUnique({
+      where: { id },
+      select: incentiveGrantSelect,
+    });
+  }
+
   async findManyByIds(ctx: IContext, ids: string[]): Promise<PrismaIncentiveGrant[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.incentiveGrant.findMany({
