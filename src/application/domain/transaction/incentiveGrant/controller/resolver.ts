@@ -2,11 +2,7 @@ import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import IncentiveGrantUseCase from "../usecase";
 import { PrismaIncentiveGrant } from "../data/type";
-
-// Note: GraphQL types will be generated after running `pnpm gql:generate`
-// Using 'any' temporarily until types are available
-type GqlQueryIncentiveGrantsArgs = any;
-type GqlQueryIncentiveGrantArgs = any;
+import { GqlQueryIncentiveGrantsArgs, GqlQueryIncentiveGrantArgs } from "@/types/graphql";
 
 @injectable()
 export default class IncentiveGrantResolver {

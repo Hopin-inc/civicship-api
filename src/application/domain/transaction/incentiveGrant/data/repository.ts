@@ -43,6 +43,12 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
     });
   }
 
+  async count(ctx: IContext, where: Prisma.IncentiveGrantWhereInput): Promise<number> {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.incentiveGrant.count({ where });
+    });
+  }
+
   async create(
     ctx: IContext,
     data: Prisma.IncentiveGrantUncheckedCreateInput,

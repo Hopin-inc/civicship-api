@@ -25,6 +25,11 @@ export interface IIncentiveGrantRepository {
   findManyByIds(ctx: IContext, ids: string[]): Promise<PrismaIncentiveGrant[]>;
 
   /**
+   * Count incentive grants matching the given where clause.
+   */
+  count(ctx: IContext, where: Prisma.IncentiveGrantWhereInput): Promise<number>;
+
+  /**
    * Create a new incentive grant record in PENDING status.
    * Idempotency: P2002 error will be thrown if duplicate unique constraint is violated.
    */

@@ -1,15 +1,11 @@
 import { PrismaIncentiveGrant } from "./data/type";
-
-// Note: GraphQL types will be generated after running `pnpm gql:generate`
-// Using 'any' temporarily until types are available
-type GqlIncentiveGrant = any;
-type GqlIncentiveGrantsConnection = any;
+import { GqlIncentiveGrant, GqlIncentiveGrantsConnection } from "@/types/graphql";
 
 export default class IncentiveGrantPresenter {
-  static query(r: GqlIncentiveGrant[], hasNextPage: boolean, cursor?: string): GqlIncentiveGrantsConnection {
+  static query(r: GqlIncentiveGrant[], totalCount: number, hasNextPage: boolean, cursor?: string): GqlIncentiveGrantsConnection {
     return {
       __typename: "IncentiveGrantsConnection",
-      totalCount: r.length,
+      totalCount,
       pageInfo: {
         hasNextPage,
         hasPreviousPage: !!cursor,
