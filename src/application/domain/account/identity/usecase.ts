@@ -16,6 +16,10 @@ import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
+import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import TransactionService from "@/application/domain/transaction/service";
+import NotificationService from "@/application/domain/notification/service";
+import CommunityService from "@/application/domain/account/community/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
@@ -29,6 +33,10 @@ export default class IdentityUseCase {
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("ImageService") private readonly imageService: ImageService,
+    @inject("IncentiveGrantService") private readonly incentiveGrantService: IncentiveGrantService,
+    @inject("TransactionService") private readonly transactionService: TransactionService,
+    @inject("NotificationService") private readonly notificationService: NotificationService,
+    @inject("CommunityService") private readonly communityService: CommunityService,
   ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -130,9 +138,27 @@ export default class IdentityUseCase {
     communityId: string,
   ): Promise<User | null> {
     try {
-      await ctx.issuer.public(ctx, async (tx) => {
+      // Use composite key as sourceId for idempotency
+      const initializationSourceId = `${userId}_${communityId}`;
+
+      // Execute membership initialization and signup bonus grant in transaction
+      const signupBonusResult = await ctx.issuer.public(ctx, async (tx) => {
         await this.membershipService.joinIfNeeded(ctx, userId, communityId, tx);
         await this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
+
+        // Grant signup bonus if enabled (returns transaction details)
+        return await this.incentiveGrantService.grantSignupBonusIfEnabled(
+          ctx,
+          userId,
+          communityId,
+          initializationSourceId,
+          tx,
+        );
+      });
+
+      // Refresh current points after transaction
+      await ctx.issuer.internal(async (tx) => {
+        await this.transactionService.refreshCurrentPoint(ctx, tx);
       });
 
       if (!ctx.uid) {
@@ -142,6 +168,31 @@ export default class IdentityUseCase {
       const user = await this.identityService.findUserByIdentity(ctx, ctx.uid);
       if (!user) {
         logger.error(`User not found after initialization: userId=${userId}`);
+        return null;
+      }
+
+      // Send signup bonus notification (best-effort)
+      if (signupBonusResult.granted && signupBonusResult.transaction) {
+        const transaction = signupBonusResult.transaction;
+        const community = await this.communityService.findCommunityOrThrow(ctx, communityId);
+
+        this.notificationService
+          .pushSignupBonusGrantedMessage(
+            ctx,
+            transaction.id,
+            transaction.toPointChange,
+            transaction.comment,
+            community.name,
+            userId,
+          )
+          .catch((error) => {
+            logger.error("Failed to send signup bonus notification", {
+              transactionId: transaction.id,
+              userId,
+              communityId,
+              error,
+            });
+          });
       }
 
       return user;

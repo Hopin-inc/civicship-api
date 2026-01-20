@@ -108,6 +108,9 @@ import TransactionVerificationUseCase from "@/application/domain/transaction/ver
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import CommunitySignupBonusConfigRepository from "@/application/domain/account/community/config/incentive/signup/data/repository";
 import CommunitySignupBonusConfigConverter from "@/application/domain/account/community/config/incentive/signup/data/converter";
+import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import IncentiveGrantRepository from "@/application/domain/transaction/incentiveGrant/data/repository";
+import IncentiveGrantConverter from "@/application/domain/transaction/incentiveGrant/data/converter";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -173,6 +176,16 @@ export function registerProductionDependencies() {
   });
   container.register("CommunitySignupBonusConfigConverter", {
     useClass: CommunitySignupBonusConfigConverter,
+  });
+
+  container.register("IncentiveGrantService", {
+    useClass: IncentiveGrantService,
+  });
+  container.register("IncentiveGrantRepository", {
+    useClass: IncentiveGrantRepository,
+  });
+  container.register("IncentiveGrantConverter", {
+    useClass: IncentiveGrantConverter,
   });
 
   // 🆔 Identity

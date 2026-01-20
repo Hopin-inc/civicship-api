@@ -20,6 +20,10 @@ import MembershipPresenter from "@/application/domain/account/membership/present
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
+import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import CommunityService from "@/application/domain/account/community/service";
+import logger from "@/infrastructure/logging";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
@@ -29,6 +33,12 @@ export default class MembershipUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("NotificationService")
     private readonly notificationService: NotificationService,
+    @inject("IncentiveGrantService")
+    private readonly incentiveGrantService: IncentiveGrantService,
+    @inject("TransactionService")
+    private readonly transactionService: ITransactionService,
+    @inject("CommunityService")
+    private readonly communityService: CommunityService,
   ) {}
 
   async visitorBrowseMemberships(
@@ -78,7 +88,11 @@ export default class MembershipUseCase {
   async userAcceptMyInvitation(args: GqlMutationMembershipAcceptMyInvitationArgs, ctx: IContext) {
     const currentUserId = getCurrentUserId(ctx);
 
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    // Use composite key as sourceId for idempotency
+    const membershipSourceId = `${currentUserId}_${args.input.communityId}`;
+
+    // Execute membership initialization and signup bonus grant in transaction
+    const { membership, signupBonusResult } = await ctx.issuer.public(ctx, async (tx) => {
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         currentUserId,
@@ -91,10 +105,50 @@ export default class MembershipUseCase {
         args.input.communityId,
         tx,
       );
-      return membership;
+
+      // Grant signup bonus if enabled (returns transaction details)
+      const signupBonusResult = await this.incentiveGrantService.grantSignupBonusIfEnabled(
+        ctx,
+        currentUserId,
+        args.input.communityId,
+        membershipSourceId,
+        tx,
+      );
+
+      return { membership, signupBonusResult };
     });
 
+    // Refresh materialized view
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
+    // Switch rich menu
     await this.notificationService.switchRichMenuByRole(ctx, membership);
+
+    // Send signup bonus notification (best-effort, after transaction commits)
+    if (signupBonusResult.granted && signupBonusResult.transaction) {
+      const transaction = signupBonusResult.transaction;
+      const community = await this.communityService.findCommunityOrThrow(ctx, args.input.communityId);
+      this.notificationService
+        .pushSignupBonusGrantedMessage(
+          ctx,
+          transaction.id,
+          transaction.toPointChange,
+          transaction.comment,
+          community.name,
+          currentUserId,
+        )
+        .catch((error) => {
+          logger.error("Failed to send signup bonus notification", {
+            transactionId: transaction.id,
+            userId: currentUserId,
+            communityId: args.input.communityId,
+            error,
+          });
+        });
+    }
+
     return MembershipPresenter.setInvitationStatus(membership);
   }
 

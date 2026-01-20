@@ -1,12 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs } from "@/types/graphql";
-import { NotFoundError } from "@/errors/graphql";
+import { InsufficientBalanceError, NotFoundError, ValidationError } from "@/errors/graphql";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 import TransactionService from "@/application/domain/transaction/service";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class WalletService {
@@ -130,5 +131,62 @@ export default class WalletService {
       });
       return true;
     } else return false;
+  }
+
+  /**
+   * Check community wallet balance inside transaction (TOCTOU-safe).
+   * Throws InsufficientBalanceError if insufficient balance.
+   * Throws NotFoundError if community wallet doesn't exist.
+   *
+   * IMPORTANT: This method calculates balance in real-time from the Transaction table,
+   * NOT from the materialized view. This ensures we get the latest balance even if
+   * other transactions have modified it.
+   *
+   * @param ctx - Context
+   * @param communityId - Community ID
+   * @param requiredAmount - Required amount (must be a safe integer)
+   * @param tx - Transaction client (required)
+   * @throws InsufficientBalanceError if insufficient balance
+   * @throws NotFoundError if community wallet not found
+   */
+  async checkCommunityWalletBalanceInTransaction(
+    ctx: IContext,
+    communityId: string,
+    requiredAmount: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    // Validate requiredAmount is a safe integer for BigInt conversion
+    if (!Number.isSafeInteger(requiredAmount)) {
+      throw new ValidationError(
+        "requiredAmount must be a safe integer for BigInt conversion",
+        [String(requiredAmount)],
+      );
+    }
+
+    if (requiredAmount < 0) {
+      throw new ValidationError("requiredAmount must be non-negative", [String(requiredAmount)]);
+    }
+
+    const communityWallet = await this.repository.findCommunityWallet(ctx, communityId, tx);
+
+    if (!communityWallet?.id) {
+      throw new NotFoundError("Community wallet", { communityId });
+    }
+
+    // Calculate real-time balance from Transaction table (NOT materialized view)
+    const currentBalance = await this.repository.calculateCurrentBalance(communityWallet.id, tx);
+
+    logger.debug("Checking community wallet balance in transaction", {
+      communityId,
+      walletId: communityWallet.id,
+      currentBalance: currentBalance.toString(),
+      requiredAmount,
+      source: "real-time aggregate",
+    });
+
+    const requiredAmountBigInt = BigInt(requiredAmount);
+    if (currentBalance < requiredAmountBigInt) {
+      throw new InsufficientBalanceError(currentBalance.toString(), requiredAmount);
+    }
   }
 }

@@ -30,6 +30,16 @@ export interface ITransactionService {
     comment?: string,
   ): Promise<PrismaTransactionDetail>;
 
+  grantSignupBonus(
+    ctx: IContext,
+    transferPoints: number,
+    fromWalletId: string,
+    memberWalletId: string,
+    createdBy: string,
+    tx: Prisma.TransactionClient,
+    comment?: string | null,
+  ): Promise<PrismaTransactionDetail>;
+
   donateSelfPoint(
     ctx: IContext,
     fromWalletId: string,
