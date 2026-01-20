@@ -54,7 +54,7 @@ export default class TransactionConverter {
     comment?: string | null,
   ): Prisma.TransactionCreateInput {
     return {
-      reason: TransactionReason.GRANT,
+      reason: TransactionReason.ONBOARDING,
       fromWallet: { connect: { id: fromWalletId } },
       fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },
