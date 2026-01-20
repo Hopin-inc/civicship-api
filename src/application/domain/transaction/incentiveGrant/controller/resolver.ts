@@ -22,20 +22,16 @@ export default class IncentiveGrantResolver {
   };
 
   Mutation = {
-    incentiveGrantRetry: async (_: unknown, args: GqlMutationIncentiveGrantRetryArgs, ctx: IContext) => {
+    incentiveGrantRetry: async (
+      _: unknown,
+      args: GqlMutationIncentiveGrantRetryArgs,
+      ctx: IContext,
+    ) => {
       return this.useCase.ownerRetryIncentiveGrant(args, ctx);
     },
   };
 
   IncentiveGrant = {
-    user: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
-      return ctx.loaders.user.load(parent.userId);
-    },
-
-    community: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
-      return ctx.loaders.community.load(parent.communityId);
-    },
-
     transaction: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
       return parent.transactionId ? ctx.loaders.transaction.load(parent.transactionId) : null;
     },

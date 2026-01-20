@@ -129,7 +129,7 @@ export default class IncentiveGrantUseCase {
       }
 
       // Security check: Ensure the grant belongs to the community specified in the permission
-      if (updatedGrant.communityId !== permission.communityId) {
+      if (updatedGrant.community.id !== permission.communityId) {
         throw new AuthorizationError("Grant does not belong to the specified community");
       }
 
@@ -138,7 +138,7 @@ export default class IncentiveGrantUseCase {
         const transaction = result.transaction;
         const community = await this.communityService.findCommunityOrThrow(
           ctx,
-          updatedGrant.communityId,
+          updatedGrant.community.id,
         );
 
         this.notificationService
@@ -148,13 +148,13 @@ export default class IncentiveGrantUseCase {
             transaction.toPointChange,
             transaction.comment,
             community.name,
-            updatedGrant.userId,
+            updatedGrant.user.id,
           )
           .catch((error) => {
             logger.error("Failed to send signup bonus notification after retry", {
               transactionId: transaction.id,
-              userId: updatedGrant.userId,
-              communityId: updatedGrant.communityId,
+              userId: updatedGrant.user.id,
+              communityId: updatedGrant.community.id,
               incentiveGrantId: input.incentiveGrantId,
               error,
             });
