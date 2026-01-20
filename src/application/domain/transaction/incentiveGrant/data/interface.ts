@@ -74,4 +74,18 @@ export interface IIncentiveGrantRepository {
     lastError: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaIncentiveGrant>;
+
+  /**
+   * Atomically mark an incentive grant as RETRYING.
+   * Only updates grants with FAILED status to prevent concurrent retry attempts.
+   * Returns true if the grant was successfully marked as RETRYING, false otherwise.
+   */
+  markAsRetrying(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+    type: IncentiveGrantType,
+    sourceId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<boolean>;
 }

@@ -1213,6 +1213,7 @@ enum IncentiveGrantType {
 
 enum IncentiveGrantStatus {
   PENDING
+  RETRYING
   COMPLETED
   FAILED
 }

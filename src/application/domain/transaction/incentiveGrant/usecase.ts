@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { IncentiveGrantFailureCode, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import IncentiveGrantPresenter from "./presenter";
 import IncentiveGrantService from "./service";
@@ -8,7 +8,14 @@ import NotificationService from "@/application/domain/notification/service";
 import { clampFirst } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import logger from "@/infrastructure/logging";
-import { NotFoundError, AuthorizationError } from "@/errors/graphql";
+import {
+  NotFoundError,
+  AuthorizationError,
+  InvalidGrantStatusError,
+  UnsupportedGrantTypeError,
+  IncentiveDisabledError,
+  InsufficientBalanceError,
+} from "@/errors/graphql";
 import {
   GqlQueryIncentiveGrantsArgs,
   GqlQueryIncentiveGrantArgs,
@@ -118,43 +125,63 @@ export default class IncentiveGrantUseCase {
   ): Promise<GqlIncentiveGrantRetryPayload> {
     const { input, permission } = args;
 
-    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      // Retry the failed grant
-      const result = await this.service.retryFailedGrant(ctx, input.incentiveGrantId, tx);
+    try {
+      // Execute retry in transaction
+      const txResult = await ctx.issuer.onlyBelongingCommunity(
+        ctx,
+        async (tx: Prisma.TransactionClient) => {
+          // 1. Get the grant record and verify authorization BEFORE retry
+          const grant = await this.repository.findInTransaction(ctx, input.incentiveGrantId, tx);
+          if (!grant) {
+            throw new NotFoundError("IncentiveGrant", { id: input.incentiveGrantId });
+          }
 
-      // Get the updated grant record within the same transaction
-      const updatedGrant = await this.repository.findInTransaction(ctx, input.incentiveGrantId, tx);
-      if (!updatedGrant) {
-        throw new NotFoundError("IncentiveGrant", { id: input.incentiveGrantId });
-      }
+          // 2. Security check: Ensure the grant belongs to the community (before retry)
+          if (grant.community.id !== permission.communityId) {
+            throw new AuthorizationError("Grant does not belong to the specified community");
+          }
 
-      // Security check: Ensure the grant belongs to the community specified in the permission
-      if (updatedGrant.community.id !== permission.communityId) {
-        throw new AuthorizationError("Grant does not belong to the specified community");
-      }
+          // 3. Retry the failed grant
+          const result = await this.service.retryFailedGrant(ctx, input.incentiveGrantId, tx);
 
-      // Send notification if retry was successful (best-effort)
-      if (result.success && result.transaction) {
-        const transaction = result.transaction;
+          // 4. Get the updated grant record within the same transaction
+          const updatedGrant = await this.repository.findInTransaction(
+            ctx,
+            input.incentiveGrantId,
+            tx,
+          );
+          if (!updatedGrant) {
+            throw new NotFoundError("IncentiveGrant", { id: input.incentiveGrantId });
+          }
+
+          return {
+            grant: updatedGrant,
+            transaction: result.transaction,
+          };
+        },
+      );
+
+      // 5. Send notification outside of transaction (best-effort)
+      if (txResult.transaction) {
         const community = await this.communityService.findCommunityOrThrow(
           ctx,
-          updatedGrant.community.id,
+          txResult.grant.community.id,
         );
 
         this.notificationService
           .pushSignupBonusGrantedMessage(
             ctx,
-            transaction.id,
-            transaction.toPointChange,
-            transaction.comment,
+            txResult.transaction.id,
+            txResult.transaction.toPointChange,
+            txResult.transaction.comment,
             community.name,
-            updatedGrant.user.id,
+            txResult.grant.user.id,
           )
           .catch((error) => {
             logger.error("Failed to send signup bonus notification after retry", {
-              transactionId: transaction.id,
-              userId: updatedGrant.user.id,
-              communityId: updatedGrant.community.id,
+              transactionId: txResult.transaction!.id,
+              userId: txResult.grant.user.id,
+              communityId: txResult.grant.community.id,
               incentiveGrantId: input.incentiveGrantId,
               error,
             });
@@ -163,10 +190,73 @@ export default class IncentiveGrantUseCase {
 
       return {
         __typename: "IncentiveGrantRetrySuccess",
-        incentiveGrant: IncentiveGrantPresenter.get(updatedGrant),
+        incentiveGrant: IncentiveGrantPresenter.get(txResult.grant),
         // Transaction will be resolved by the field resolver using DataLoader
         transaction: null,
       };
+    } catch (error: any) {
+      // Handle business logic errors: persist failure info in a separate transaction
+      const isValidationError =
+        error instanceof NotFoundError ||
+        error instanceof InvalidGrantStatusError ||
+        error instanceof UnsupportedGrantTypeError ||
+        error instanceof IncentiveDisabledError ||
+        error instanceof AuthorizationError;
+
+      if (!isValidationError) {
+        // Attempt to mark as failed in a separate transaction
+        await this.updateFailedGrantStatus(ctx, input.incentiveGrantId, error).catch(
+          (updateError) => {
+            logger.error("Failed to update grant failure status", {
+              incentiveGrantId: input.incentiveGrantId,
+              error: updateError,
+            });
+          },
+        );
+      }
+
+      // Re-throw the error
+      throw error;
+    }
+  }
+
+  /**
+   * Update failed grant status in a separate transaction.
+   * This ensures failure information persists even when the main transaction is rolled back.
+   */
+  private async updateFailedGrantStatus(
+    ctx: IContext,
+    incentiveGrantId: string,
+    error: any,
+  ): Promise<void> {
+    await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+      const grant = await this.repository.findInTransaction(ctx, incentiveGrantId, tx);
+      if (!grant || grant.status === "COMPLETED") {
+        // Don't update if grant not found or already completed
+        return;
+      }
+
+      // Determine failure code
+      let failureCode: IncentiveGrantFailureCode;
+      if (error instanceof InsufficientBalanceError) {
+        failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
+      } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
+      } else {
+        failureCode = IncentiveGrantFailureCode.UNKNOWN;
+      }
+
+      // Mark as failed
+      await this.repository.markAsFailed(
+        ctx,
+        grant.user.id,
+        grant.community.id,
+        grant.type,
+        grant.sourceId,
+        failureCode,
+        error.message || "Unknown error",
+        tx,
+      );
     });
   }
 }
