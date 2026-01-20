@@ -2,7 +2,11 @@ import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import IncentiveGrantUseCase from "../usecase";
 import { PrismaIncentiveGrant } from "../data/type";
-import { GqlQueryIncentiveGrantsArgs, GqlQueryIncentiveGrantArgs } from "@/types/graphql";
+import {
+  GqlQueryIncentiveGrantsArgs,
+  GqlQueryIncentiveGrantArgs,
+  GqlMutationIncentiveGrantRetryArgs,
+} from "@/types/graphql";
 
 @injectable()
 export default class IncentiveGrantResolver {
@@ -17,15 +21,17 @@ export default class IncentiveGrantResolver {
     },
   };
 
+  Mutation = {
+    incentiveGrantRetry: async (
+      _: unknown,
+      args: GqlMutationIncentiveGrantRetryArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.ownerRetryIncentiveGrant(args, ctx);
+    },
+  };
+
   IncentiveGrant = {
-    user: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
-      return ctx.loaders.user.load(parent.userId);
-    },
-
-    community: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
-      return ctx.loaders.community.load(parent.communityId);
-    },
-
     transaction: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
       return parent.transactionId ? ctx.loaders.transaction.load(parent.transactionId) : null;
     },

@@ -28,10 +28,10 @@ export default class CommunityPresenter {
     };
   }
 
-  static get(r: PrismaCommunityDetail): GqlCommunity {
+  static get(r: PrismaCommunityDetail) {
     return {
-      __typename: "Community",
       ...r,
+      config: null, // Resolved by field resolver
       memberships: [],
       wallets: [],
 

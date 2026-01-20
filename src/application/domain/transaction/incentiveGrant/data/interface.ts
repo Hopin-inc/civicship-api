@@ -20,6 +20,15 @@ export interface IIncentiveGrantRepository {
   find(ctx: IContext, id: string): Promise<PrismaIncentiveGrant | null>;
 
   /**
+   * Find a single incentive grant by ID within a transaction.
+   */
+  findInTransaction(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaIncentiveGrant | null>;
+
+  /**
    * Find multiple incentive grants by IDs (for DataLoader batch loading).
    */
   findManyByIds(ctx: IContext, ids: string[]): Promise<PrismaIncentiveGrant[]>;

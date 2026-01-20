@@ -1,22 +1,32 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import IncentiveGrantPresenter from "./presenter";
+import IncentiveGrantService from "./service";
 import { IIncentiveGrantRepository } from "./data/interface";
+import CommunityService from "@/application/domain/account/community/service";
+import NotificationService from "@/application/domain/notification/service";
 import { clampFirst } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
+import logger from "@/infrastructure/logging";
+import { NotFoundError, AuthorizationError } from "@/errors/graphql";
 import {
   GqlQueryIncentiveGrantsArgs,
   GqlQueryIncentiveGrantArgs,
+  GqlMutationIncentiveGrantRetryArgs,
   GqlIncentiveGrant,
   GqlIncentiveGrantsConnection,
   GqlIncentiveGrantFilterInput,
   GqlSortDirection,
+  GqlIncentiveGrantRetryPayload,
 } from "@/types/graphql";
 
 @injectable()
 export default class IncentiveGrantUseCase {
   constructor(
     @inject("IncentiveGrantRepository") private readonly repository: IIncentiveGrantRepository,
+    @inject("IncentiveGrantService") private readonly service: IncentiveGrantService,
+    @inject("CommunityService") private readonly communityService: CommunityService,
+    @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
 
   async visitorBrowseIncentiveGrants(
@@ -66,7 +76,9 @@ export default class IncentiveGrantUseCase {
     return IncentiveGrantPresenter.get(record);
   }
 
-  private buildWhereClause(filter: GqlIncentiveGrantFilterInput | null | undefined): Prisma.IncentiveGrantWhereInput {
+  private buildWhereClause(
+    filter: GqlIncentiveGrantFilterInput | null | undefined,
+  ): Prisma.IncentiveGrantWhereInput {
     if (!filter) {
       return {};
     }
@@ -98,5 +110,63 @@ export default class IncentiveGrantUseCase {
     }
 
     return where;
+  }
+
+  async ownerRetryIncentiveGrant(
+    args: GqlMutationIncentiveGrantRetryArgs,
+    ctx: IContext,
+  ): Promise<GqlIncentiveGrantRetryPayload> {
+    const { input, permission } = args;
+
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+      // Retry the failed grant
+      const result = await this.service.retryFailedGrant(ctx, input.incentiveGrantId, tx);
+
+      // Get the updated grant record within the same transaction
+      const updatedGrant = await this.repository.findInTransaction(ctx, input.incentiveGrantId, tx);
+      if (!updatedGrant) {
+        throw new NotFoundError("IncentiveGrant", { id: input.incentiveGrantId });
+      }
+
+      // Security check: Ensure the grant belongs to the community specified in the permission
+      if (updatedGrant.community.id !== permission.communityId) {
+        throw new AuthorizationError("Grant does not belong to the specified community");
+      }
+
+      // Send notification if retry was successful (best-effort)
+      if (result.success && result.transaction) {
+        const transaction = result.transaction;
+        const community = await this.communityService.findCommunityOrThrow(
+          ctx,
+          updatedGrant.community.id,
+        );
+
+        this.notificationService
+          .pushSignupBonusGrantedMessage(
+            ctx,
+            transaction.id,
+            transaction.toPointChange,
+            transaction.comment,
+            community.name,
+            updatedGrant.user.id,
+          )
+          .catch((error) => {
+            logger.error("Failed to send signup bonus notification after retry", {
+              transactionId: transaction.id,
+              userId: updatedGrant.user.id,
+              communityId: updatedGrant.community.id,
+              incentiveGrantId: input.incentiveGrantId,
+              error,
+            });
+          });
+      }
+
+      return {
+        __typename: "IncentiveGrantRetrySuccess",
+        incentiveGrant: IncentiveGrantPresenter.get(updatedGrant),
+        // Transaction will be resolved by the field resolver using DataLoader
+        transaction: null,
+      };
+    });
   }
 }
