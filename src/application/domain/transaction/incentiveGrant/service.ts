@@ -6,7 +6,6 @@ import IncentiveGrantConverter from "./data/converter";
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
-import { getCurrentUserId } from "@/application/domain/utils";
 import logger from "@/infrastructure/logging";
 import { InsufficientBalanceError, NotFoundError } from "@/errors/graphql";
 
@@ -117,8 +116,17 @@ export default class IncentiveGrantService {
       );
 
       // 4. Get wallets
-      const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId, tx);
-      const memberWallet = await this.walletService.findMemberWalletOrThrow(ctx, userId, communityId, tx);
+      const communityWallet = await this.walletService.findCommunityWalletOrThrow(
+        ctx,
+        communityId,
+        tx,
+      );
+      const memberWallet = await this.walletService.findMemberWalletOrThrow(
+        ctx,
+        userId,
+        communityId,
+        tx,
+      );
 
       // 5. Create transaction
       const transaction = await this.transactionService.grantSignupBonus(
