@@ -974,6 +974,7 @@ Enum IncentiveGrantType {
 
 Enum IncentiveGrantStatus {
   PENDING
+  RETRYING
   COMPLETED
   FAILED
 }
