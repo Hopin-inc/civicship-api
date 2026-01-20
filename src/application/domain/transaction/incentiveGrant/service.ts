@@ -273,8 +273,8 @@ export default class IncentiveGrantService {
 
       logger.info("Retrying failed incentive grant", {
         ...logContext,
-        userId: grant.userId,
-        communityId: grant.communityId,
+        userId: grant.user.id,
+        communityId: grant.community.id,
         type: grant.type,
         status: grant.status,
         attemptCount: grant.attemptCount,
@@ -290,23 +290,23 @@ export default class IncentiveGrantService {
         throw new UnsupportedGrantTypeError(grant.type);
       }
 
-      const config = await this.signupBonusConfigService.get(ctx, grant.communityId, tx);
+      const config = await this.signupBonusConfigService.get(ctx, grant.community.id, tx);
       if (!config?.isEnabled) {
-        throw new IncentiveDisabledError(grant.communityId, "Signup bonus");
+        throw new IncentiveDisabledError(grant.community.id, "Signup bonus");
       }
 
       // 4. TOCTOU-safe balance check
       await this.walletService.checkCommunityWalletBalanceInTransaction(
         ctx,
-        grant.communityId,
+        grant.community.id,
         config.bonusPoint,
         tx,
       );
 
       // 5. Get wallets
       const [communityWallet, memberWallet] = await Promise.all([
-        this.walletService.findCommunityWalletOrThrow(ctx, grant.communityId, tx),
-        this.walletService.findMemberWalletOrThrow(ctx, grant.userId, grant.communityId, tx),
+        this.walletService.findCommunityWalletOrThrow(ctx, grant.community.id, tx),
+        this.walletService.findMemberWalletOrThrow(ctx, grant.user.id, grant.community.id, tx),
       ]);
 
       // 6. Create transaction
@@ -315,7 +315,7 @@ export default class IncentiveGrantService {
         config.bonusPoint,
         communityWallet.id,
         memberWallet.id,
-        grant.userId,
+        grant.user.id,
         tx,
         config.message,
       );
@@ -323,8 +323,8 @@ export default class IncentiveGrantService {
       // 7. Mark as COMPLETED
       await this.repository.markAsCompleted(
         ctx,
-        grant.userId,
-        grant.communityId,
+        grant.user.id,
+        grant.community.id,
         grant.type,
         grant.sourceId,
         transaction.id,
@@ -373,8 +373,8 @@ export default class IncentiveGrantService {
 
           await this.repository.markAsFailed(
             ctx,
-            grant.userId,
-            grant.communityId,
+            grant.user.id,
+            grant.community.id,
             grant.type,
             grant.sourceId,
             failureCode,
