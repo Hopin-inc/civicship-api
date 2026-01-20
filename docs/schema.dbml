@@ -570,13 +570,13 @@ Table t_transactions {
 
 Table t_incentive_grants {
   id String [pk]
+  type IncentiveGrantType [not null]
+  sourceId String [not null]
+  status IncentiveGrantStatus [not null, default: 'PENDING']
   userId String [not null]
   user t_users [not null]
   communityId String [not null]
   community t_communities [not null]
-  type IncentiveGrantType [not null]
-  sourceId String [not null]
-  status IncentiveGrantStatus [not null, default: 'PENDING']
   failureCode IncentiveGrantFailureCode
   lastError String
   attemptCount Int [not null, default: 1]

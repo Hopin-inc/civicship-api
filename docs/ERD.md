@@ -715,11 +715,11 @@ RIGHT RIGHT
 
   "t_incentive_grants" {
     String id "🗝️"
-    String user_id 
-    String community_id 
     IncentiveGrantType type 
     String source_id 
     IncentiveGrantStatus status 
+    String user_id 
+    String community_id 
     IncentiveGrantFailureCode failure_code "❓"
     String last_error "❓"
     Int attempt_count 
@@ -1066,10 +1066,10 @@ RIGHT RIGHT
     "t_transactions" o{--}o "t_incentive_grants" : "incentiveGrant"
     "t_transactions" o|--|o "t_users" : "createdByUser"
     "t_transactions" o{--}o "t_merkle_proofs" : "merkleProofs"
-    "t_incentive_grants" o|--|| "t_users" : "user"
-    "t_incentive_grants" o|--|| "t_communities" : "community"
     "t_incentive_grants" o|--|| "IncentiveGrantType" : "enum:type"
     "t_incentive_grants" o|--|| "IncentiveGrantStatus" : "enum:status"
+    "t_incentive_grants" o|--|| "t_users" : "user"
+    "t_incentive_grants" o|--|| "t_communities" : "community"
     "t_incentive_grants" o|--|o "IncentiveGrantFailureCode" : "enum:failure_code"
     "t_incentive_grants" o|--|o "t_transactions" : "transaction"
     "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
