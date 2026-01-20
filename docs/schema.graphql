@@ -553,12 +553,48 @@ input ImageInput {
   file: Upload
 }
 
+type IncentiveGrant {
+  attemptCount: Int!
+  community: Community!
+  createdAt: Datetime!
+  failureCode: IncentiveGrantFailureCode
+  id: ID!
+  lastAttemptedAt: Datetime
+  lastError: String
+  sourceId: String!
+  status: IncentiveGrantStatus!
+  transaction: Transaction
+  type: IncentiveGrantType!
+  updatedAt: Datetime!
+  user: User!
+}
+
+type IncentiveGrantEdge implements Edge {
+  cursor: String!
+  node: IncentiveGrant
+}
+
 enum IncentiveGrantFailureCode {
   DATABASE_ERROR
   INSUFFICIENT_FUNDS
   TIMEOUT
   UNKNOWN
   WALLET_NOT_FOUND
+}
+
+input IncentiveGrantFilterInput {
+  and: [IncentiveGrantFilterInput!]
+  communityId: ID
+  not: IncentiveGrantFilterInput
+  or: [IncentiveGrantFilterInput!]
+  status: IncentiveGrantStatus
+  type: IncentiveGrantType
+  userId: ID
+}
+
+input IncentiveGrantSortInput {
+  createdAt: SortDirection
+  updatedAt: SortDirection
 }
 
 enum IncentiveGrantStatus {
@@ -569,6 +605,12 @@ enum IncentiveGrantStatus {
 
 enum IncentiveGrantType {
   SIGNUP
+}
+
+type IncentiveGrantsConnection {
+  edges: [IncentiveGrantEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 scalar JSON
@@ -1391,6 +1433,8 @@ type Query {
   evaluationHistories(cursor: String, filter: EvaluationHistoryFilterInput, first: Int, sort: EvaluationHistorySortInput): EvaluationHistoriesConnection!
   evaluationHistory(id: ID!): EvaluationHistory
   evaluations(cursor: String, filter: EvaluationFilterInput, first: Int, sort: EvaluationSortInput): EvaluationsConnection!
+  incentiveGrant(id: ID!): IncentiveGrant
+  incentiveGrants(cursor: String, filter: IncentiveGrantFilterInput, first: Int, sort: IncentiveGrantSortInput): IncentiveGrantsConnection!
   membership(communityId: ID!, userId: ID!): Membership
   memberships(cursor: MembershipCursorInput, filter: MembershipFilterInput, first: Int, sort: MembershipSortInput): MembershipsConnection!
   myWallet: Wallet

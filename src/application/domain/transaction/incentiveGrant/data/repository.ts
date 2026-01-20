@@ -6,6 +6,49 @@ import { incentiveGrantSelect, PrismaIncentiveGrant } from "./type";
 
 @injectable()
 export default class IncentiveGrantRepository implements IIncentiveGrantRepository {
+  async query(
+    ctx: IContext,
+    where: Prisma.IncentiveGrantWhereInput,
+    orderBy: Prisma.IncentiveGrantOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaIncentiveGrant[]> {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.incentiveGrant.findMany({
+        where,
+        orderBy,
+        select: incentiveGrantSelect,
+        take: take + 1,
+        skip: cursor ? 1 : 0,
+        cursor: cursor ? { id: cursor } : undefined,
+      });
+    });
+  }
+
+  async find(ctx: IContext, id: string): Promise<PrismaIncentiveGrant | null> {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.incentiveGrant.findUnique({
+        where: { id },
+        select: incentiveGrantSelect,
+      });
+    });
+  }
+
+  async findManyByIds(ctx: IContext, ids: string[]): Promise<PrismaIncentiveGrant[]> {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.incentiveGrant.findMany({
+        where: { id: { in: ids } },
+        select: incentiveGrantSelect,
+      });
+    });
+  }
+
+  async count(ctx: IContext, where: Prisma.IncentiveGrantWhereInput): Promise<number> {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.incentiveGrant.count({ where });
+    });
+  }
+
   async create(
     ctx: IContext,
     data: Prisma.IncentiveGrantUncheckedCreateInput,

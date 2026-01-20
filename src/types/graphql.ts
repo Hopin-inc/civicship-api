@@ -613,6 +613,29 @@ export type GqlImageInput = {
   file?: InputMaybe<Scalars['Upload']['input']>;
 };
 
+export type GqlIncentiveGrant = {
+  __typename?: 'IncentiveGrant';
+  attemptCount: Scalars['Int']['output'];
+  community: GqlCommunity;
+  createdAt: Scalars['Datetime']['output'];
+  failureCode?: Maybe<GqlIncentiveGrantFailureCode>;
+  id: Scalars['ID']['output'];
+  lastAttemptedAt?: Maybe<Scalars['Datetime']['output']>;
+  lastError?: Maybe<Scalars['String']['output']>;
+  sourceId: Scalars['String']['output'];
+  status: GqlIncentiveGrantStatus;
+  transaction?: Maybe<GqlTransaction>;
+  type: GqlIncentiveGrantType;
+  updatedAt: Scalars['Datetime']['output'];
+  user: GqlUser;
+};
+
+export type GqlIncentiveGrantEdge = GqlEdge & {
+  __typename?: 'IncentiveGrantEdge';
+  cursor: Scalars['String']['output'];
+  node?: Maybe<GqlIncentiveGrant>;
+};
+
 export const GqlIncentiveGrantFailureCode = {
   DatabaseError: 'DATABASE_ERROR',
   InsufficientFunds: 'INSUFFICIENT_FUNDS',
@@ -622,6 +645,21 @@ export const GqlIncentiveGrantFailureCode = {
 } as const;
 
 export type GqlIncentiveGrantFailureCode = typeof GqlIncentiveGrantFailureCode[keyof typeof GqlIncentiveGrantFailureCode];
+export type GqlIncentiveGrantFilterInput = {
+  and?: InputMaybe<Array<GqlIncentiveGrantFilterInput>>;
+  communityId?: InputMaybe<Scalars['ID']['input']>;
+  not?: InputMaybe<GqlIncentiveGrantFilterInput>;
+  or?: InputMaybe<Array<GqlIncentiveGrantFilterInput>>;
+  status?: InputMaybe<GqlIncentiveGrantStatus>;
+  type?: InputMaybe<GqlIncentiveGrantType>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlIncentiveGrantSortInput = {
+  createdAt?: InputMaybe<GqlSortDirection>;
+  updatedAt?: InputMaybe<GqlSortDirection>;
+};
+
 export const GqlIncentiveGrantStatus = {
   Completed: 'COMPLETED',
   Failed: 'FAILED',
@@ -634,6 +672,13 @@ export const GqlIncentiveGrantType = {
 } as const;
 
 export type GqlIncentiveGrantType = typeof GqlIncentiveGrantType[keyof typeof GqlIncentiveGrantType];
+export type GqlIncentiveGrantsConnection = {
+  __typename?: 'IncentiveGrantsConnection';
+  edges?: Maybe<Array<Maybe<GqlIncentiveGrantEdge>>>;
+  pageInfo: GqlPageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
 export const GqlLanguage = {
   En: 'EN',
   Ja: 'JA'
@@ -1843,6 +1888,8 @@ export type GqlQuery = {
   evaluationHistories: GqlEvaluationHistoriesConnection;
   evaluationHistory?: Maybe<GqlEvaluationHistory>;
   evaluations: GqlEvaluationsConnection;
+  incentiveGrant?: Maybe<GqlIncentiveGrant>;
+  incentiveGrants: GqlIncentiveGrantsConnection;
   membership?: Maybe<GqlMembership>;
   memberships: GqlMembershipsConnection;
   myWallet?: Maybe<GqlWallet>;
@@ -1956,6 +2003,19 @@ export type GqlQueryEvaluationsArgs = {
   filter?: InputMaybe<GqlEvaluationFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
   sort?: InputMaybe<GqlEvaluationSortInput>;
+};
+
+
+export type GqlQueryIncentiveGrantArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlQueryIncentiveGrantsArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlIncentiveGrantFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlIncentiveGrantSortInput>;
 };
 
 
@@ -3176,7 +3236,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCityEdge, 'node'> & { node?: Maybe<_RefType['City']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlNftInstanceEdge, 'node'> & { node: _RefType['NftInstance'] } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlPortfolioEdge, 'node'> & { node?: Maybe<_RefType['Portfolio']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlStateEdge, 'node'> & { node?: Maybe<_RefType['State']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<_RefType['VcIssuanceRequest']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
+  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCityEdge, 'node'> & { node?: Maybe<_RefType['City']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<_RefType['IncentiveGrant']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlNftInstanceEdge, 'node'> & { node: _RefType['NftInstance'] } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlPortfolioEdge, 'node'> & { node?: Maybe<_RefType['Portfolio']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlStateEdge, 'node'> & { node?: Maybe<_RefType['State']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<_RefType['VcIssuanceRequest']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -3268,9 +3328,14 @@ export type GqlResolversTypes = ResolversObject<{
   IdentityCheckPhoneUserPayload: ResolverTypeWrapper<Omit<GqlIdentityCheckPhoneUserPayload, 'membership' | 'user'> & { membership?: Maybe<GqlResolversTypes['Membership']>, user?: Maybe<GqlResolversTypes['User']> }>;
   IdentityPlatform: GqlIdentityPlatform;
   ImageInput: GqlImageInput;
+  IncentiveGrant: ResolverTypeWrapper<Omit<GqlIncentiveGrant, 'community' | 'transaction' | 'user'> & { community: GqlResolversTypes['Community'], transaction?: Maybe<GqlResolversTypes['Transaction']>, user: GqlResolversTypes['User'] }>;
+  IncentiveGrantEdge: ResolverTypeWrapper<Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<GqlResolversTypes['IncentiveGrant']> }>;
   IncentiveGrantFailureCode: GqlIncentiveGrantFailureCode;
+  IncentiveGrantFilterInput: GqlIncentiveGrantFilterInput;
+  IncentiveGrantSortInput: GqlIncentiveGrantSortInput;
   IncentiveGrantStatus: GqlIncentiveGrantStatus;
   IncentiveGrantType: GqlIncentiveGrantType;
+  IncentiveGrantsConnection: ResolverTypeWrapper<Omit<GqlIncentiveGrantsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['IncentiveGrantEdge']>>> }>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   Language: GqlLanguage;
@@ -3599,6 +3664,11 @@ export type GqlResolversParentTypes = ResolversObject<{
   IdentityCheckPhoneUserInput: GqlIdentityCheckPhoneUserInput;
   IdentityCheckPhoneUserPayload: Omit<GqlIdentityCheckPhoneUserPayload, 'membership' | 'user'> & { membership?: Maybe<GqlResolversParentTypes['Membership']>, user?: Maybe<GqlResolversParentTypes['User']> };
   ImageInput: GqlImageInput;
+  IncentiveGrant: Omit<GqlIncentiveGrant, 'community' | 'transaction' | 'user'> & { community: GqlResolversParentTypes['Community'], transaction?: Maybe<GqlResolversParentTypes['Transaction']>, user: GqlResolversParentTypes['User'] };
+  IncentiveGrantEdge: Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['IncentiveGrant']> };
+  IncentiveGrantFilterInput: GqlIncentiveGrantFilterInput;
+  IncentiveGrantSortInput: GqlIncentiveGrantSortInput;
+  IncentiveGrantsConnection: Omit<GqlIncentiveGrantsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['IncentiveGrantEdge']>>> };
   Int: Scalars['Int']['output'];
   JSON: Scalars['JSON']['output'];
   LinkPhoneAuthInput: GqlLinkPhoneAuthInput;
@@ -4091,7 +4161,7 @@ export type GqlDidIssuanceRequestResolvers<ContextType = any, ParentType extends
 }>;
 
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'ArticleEdge' | 'CityEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'NftInstanceEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'PortfolioEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'StateEdge' | 'TicketClaimLinkEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'VcIssuanceRequestEdge' | 'WalletEdge', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ArticleEdge' | 'CityEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'IncentiveGrantEdge' | 'MembershipEdge' | 'NftInstanceEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'PortfolioEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'StateEdge' | 'TicketClaimLinkEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'VcIssuanceRequestEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -4174,6 +4244,36 @@ export type GqlIdentityCheckPhoneUserPayloadResolvers<ContextType = any, ParentT
   membership?: Resolver<Maybe<GqlResolversTypes['Membership']>, ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['PhoneUserStatus'], ParentType, ContextType>;
   user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlIncentiveGrantResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['IncentiveGrant'] = GqlResolversParentTypes['IncentiveGrant']> = ResolversObject<{
+  attemptCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  community?: Resolver<GqlResolversTypes['Community'], ParentType, ContextType>;
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  failureCode?: Resolver<Maybe<GqlResolversTypes['IncentiveGrantFailureCode']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  lastAttemptedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  lastError?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  sourceId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  status?: Resolver<GqlResolversTypes['IncentiveGrantStatus'], ParentType, ContextType>;
+  transaction?: Resolver<Maybe<GqlResolversTypes['Transaction']>, ParentType, ContextType>;
+  type?: Resolver<GqlResolversTypes['IncentiveGrantType'], ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlIncentiveGrantEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['IncentiveGrantEdge'] = GqlResolversParentTypes['IncentiveGrantEdge']> = ResolversObject<{
+  cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<Maybe<GqlResolversTypes['IncentiveGrant']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlIncentiveGrantsConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['IncentiveGrantsConnection'] = GqlResolversParentTypes['IncentiveGrantsConnection']> = ResolversObject<{
+  edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['IncentiveGrantEdge']>>>, ParentType, ContextType>;
+  pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4710,6 +4810,8 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   evaluationHistories?: Resolver<GqlResolversTypes['EvaluationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryEvaluationHistoriesArgs>>;
   evaluationHistory?: Resolver<Maybe<GqlResolversTypes['EvaluationHistory']>, ParentType, ContextType, RequireFields<GqlQueryEvaluationHistoryArgs, 'id'>>;
   evaluations?: Resolver<GqlResolversTypes['EvaluationsConnection'], ParentType, ContextType, Partial<GqlQueryEvaluationsArgs>>;
+  incentiveGrant?: Resolver<Maybe<GqlResolversTypes['IncentiveGrant']>, ParentType, ContextType, RequireFields<GqlQueryIncentiveGrantArgs, 'id'>>;
+  incentiveGrants?: Resolver<GqlResolversTypes['IncentiveGrantsConnection'], ParentType, ContextType, Partial<GqlQueryIncentiveGrantsArgs>>;
   membership?: Resolver<Maybe<GqlResolversTypes['Membership']>, ParentType, ContextType, RequireFields<GqlQueryMembershipArgs, 'communityId' | 'userId'>>;
   memberships?: Resolver<GqlResolversTypes['MembershipsConnection'], ParentType, ContextType, Partial<GqlQueryMembershipsArgs>>;
   myWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
@@ -5294,6 +5396,9 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   EvaluationsConnection?: GqlEvaluationsConnectionResolvers<ContextType>;
   Identity?: GqlIdentityResolvers<ContextType>;
   IdentityCheckPhoneUserPayload?: GqlIdentityCheckPhoneUserPayloadResolvers<ContextType>;
+  IncentiveGrant?: GqlIncentiveGrantResolvers<ContextType>;
+  IncentiveGrantEdge?: GqlIncentiveGrantEdgeResolvers<ContextType>;
+  IncentiveGrantsConnection?: GqlIncentiveGrantsConnectionResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   LinkPhoneAuthPayload?: GqlLinkPhoneAuthPayloadResolvers<ContextType>;
   Membership?: GqlMembershipResolvers<ContextType>;

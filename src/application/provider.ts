@@ -109,6 +109,7 @@ import CommunitySignupBonusConfigService from "@/application/domain/account/comm
 import CommunitySignupBonusConfigRepository from "@/application/domain/account/community/config/incentive/signup/data/repository";
 import CommunitySignupBonusConfigConverter from "@/application/domain/account/community/config/incentive/signup/data/converter";
 import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import IncentiveGrantUseCase from "@/application/domain/transaction/incentiveGrant/usecase";
 import IncentiveGrantRepository from "@/application/domain/transaction/incentiveGrant/data/repository";
 import IncentiveGrantConverter from "@/application/domain/transaction/incentiveGrant/data/converter";
 
@@ -180,6 +181,9 @@ export function registerProductionDependencies() {
 
   container.register("IncentiveGrantService", {
     useClass: IncentiveGrantService,
+  });
+  container.register("IncentiveGrantUseCase", {
+    useClass: IncentiveGrantUseCase,
   });
   container.register("IncentiveGrantRepository", {
     useClass: IncentiveGrantRepository,
