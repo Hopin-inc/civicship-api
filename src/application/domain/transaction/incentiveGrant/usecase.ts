@@ -245,8 +245,29 @@ export default class IncentiveGrantUseCase {
       let failureCode: IncentiveGrantFailureCode;
       if (error instanceof InsufficientBalanceError) {
         failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
+      } else if (error instanceof NotFoundError) {
+        failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
       } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
+        // More specific Prisma error classification
+        switch (error.code) {
+          // Timeout and connection errors
+          case "P1001": // Can't reach database server
+          case "P1002": // Database server timeout
+          case "P1008": // Operations timed out
+          case "P1017": // Server has closed the connection
+          case "P2024": // Timed out fetching a new connection
+            failureCode = IncentiveGrantFailureCode.TIMEOUT;
+            break;
+          // Record not found errors
+          case "P2001": // Record searched for does not exist
+          case "P2018": // Required connected records not found
+          case "P2025": // Record to update/delete does not exist
+            failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
+            break;
+          // All other database errors
+          default:
+            failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
+        }
       } else {
         failureCode = IncentiveGrantFailureCode.UNKNOWN;
       }
