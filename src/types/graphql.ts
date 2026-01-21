@@ -456,9 +456,12 @@ export const GqlErrorCode = {
   AlreadyUsedClaimLink: 'ALREADY_USED_CLAIM_LINK',
   CannotEvaluateBeforeOpportunityStart: 'CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START',
   ClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
+  ConcurrentRetryDetected: 'CONCURRENT_RETRY_DETECTED',
   Forbidden: 'FORBIDDEN',
+  IncentiveDisabled: 'INCENTIVE_DISABLED',
   InsufficientBalance: 'INSUFFICIENT_BALANCE',
   InternalServerError: 'INTERNAL_SERVER_ERROR',
+  InvalidGrantStatus: 'INVALID_GRANT_STATUS',
   InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
   MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
   NotFound: 'NOT_FOUND',
@@ -473,6 +476,7 @@ export const GqlErrorCode = {
   TicketParticipantMismatch: 'TICKET_PARTICIPANT_MISMATCH',
   Unauthenticated: 'UNAUTHENTICATED',
   Unknown: 'UNKNOWN',
+  UnsupportedGrantType: 'UNSUPPORTED_GRANT_TYPE',
   UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
   ValidationError: 'VALIDATION_ERROR'
 } as const;
