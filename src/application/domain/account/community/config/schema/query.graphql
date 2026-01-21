@@ -1,0 +1,6 @@
+# ------------------------------
+# CommunityConfig Query Definitions
+# ------------------------------
+extend type Query {
+  signupBonusConfig(communityId: ID!): CommunitySignupBonusConfig
+}
