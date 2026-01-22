@@ -91,7 +91,9 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
       },
       data: {
         status: "COMPLETED",
-        transactionId,
+        transaction: {
+          connect: { id: transactionId },
+        },
         attemptCount: 0, // Reset attempt count on success
         failureCode: null, // Clear failure information
         lastError: null,
