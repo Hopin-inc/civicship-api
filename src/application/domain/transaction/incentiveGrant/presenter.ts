@@ -2,7 +2,12 @@ import { PrismaIncentiveGrant } from "./data/type";
 import { GqlIncentiveGrant, GqlIncentiveGrantsConnection } from "@/types/graphql";
 
 export default class IncentiveGrantPresenter {
-  static query(r: GqlIncentiveGrant[], totalCount: number, hasNextPage: boolean, cursor?: string): GqlIncentiveGrantsConnection {
+  static query(
+    r: GqlIncentiveGrant[],
+    totalCount: number,
+    hasNextPage: boolean,
+    cursor?: string,
+  ): GqlIncentiveGrantsConnection {
     return {
       __typename: "IncentiveGrantsConnection",
       totalCount,
@@ -23,6 +28,6 @@ export default class IncentiveGrantPresenter {
     return {
       __typename: "IncentiveGrant",
       ...r,
-    } as GqlIncentiveGrant;
+    };
   }
 }
