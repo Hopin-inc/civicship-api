@@ -403,7 +403,8 @@ enum CurrentPrefecture {
 }
 
 model Identity {
-  uid      String           @id
+  id       String           @id @default(cuid())
+  uid      String
   platform IdentityPlatform
 
   userId String @map("user_id")
@@ -419,7 +420,9 @@ model Identity {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@unique([uid, communityId])
   @@index([userId])
+  @@index([uid])
   @@map("t_identities")
 }
 
