@@ -555,7 +555,7 @@ input ImageInput {
 
 type IncentiveGrant {
   attemptCount: Int!
-  community: Community!
+  community: Community
   createdAt: Datetime!
   failureCode: IncentiveGrantFailureCode
   id: ID!
@@ -566,7 +566,7 @@ type IncentiveGrant {
   transaction: Transaction
   type: IncentiveGrantType!
   updatedAt: Datetime!
-  user: User!
+  user: User
 }
 
 type IncentiveGrantEdge implements Edge {
