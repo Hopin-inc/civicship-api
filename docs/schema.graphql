@@ -1455,6 +1455,7 @@ type Query {
   reservationHistories(cursor: String, filter: ReservationHistoryFilterInput, first: Int, sort: ReservationHistorySortInput): ReservationHistoriesConnection!
   reservationHistory(id: ID!): ReservationHistory
   reservations(cursor: String, filter: ReservationFilterInput, first: Int, sort: ReservationSortInput): ReservationsConnection!
+  signupBonusConfig(communityId: ID!): CommunitySignupBonusConfig
   states(cursor: String, filter: StatesInput, first: Int): StatesConnection!
   ticket(id: ID!): Ticket
   ticketClaimLink(id: ID!): TicketClaimLink
