@@ -580,7 +580,7 @@ Table t_incentive_grants {
   failureCode IncentiveGrantFailureCode
   lastError String
   attemptCount Int [not null, default: 1]
-  lastAttemptedAt DateTime [default: `now()`, not null]
+  lastAttemptedAt DateTime [default: `now()`]
   transactionId String [unique]
   transaction t_transactions
   createdAt DateTime [default: `now()`, not null]
@@ -974,6 +974,7 @@ Enum IncentiveGrantType {
 
 Enum IncentiveGrantStatus {
   PENDING
+  RETRYING
   COMPLETED
   FAILED
 }

@@ -6879,7 +6879,7 @@ type IncentiveGrantFactoryDefineInput = {
     failureCode?: IncentiveGrantFailureCode | null;
     lastError?: string | null;
     attemptCount?: number;
-    lastAttemptedAt?: Date;
+    lastAttemptedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
     user: IncentiveGrantuserFactory | Prisma.UserCreateNestedOneWithoutIncentiveGrantsInput;
