@@ -3,7 +3,7 @@ import { GqlIncentiveGrant, GqlIncentiveGrantsConnection } from "@/types/graphql
 
 export default class IncentiveGrantPresenter {
   static query(
-    r: ReturnType<typeof IncentiveGrantPresenter.get>[],
+    r: GqlIncentiveGrant[],
     totalCount: number,
     hasNextPage: boolean,
     cursor?: string,

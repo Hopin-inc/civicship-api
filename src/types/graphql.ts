@@ -620,7 +620,7 @@ export type GqlImageInput = {
 export type GqlIncentiveGrant = {
   __typename?: 'IncentiveGrant';
   attemptCount: Scalars['Int']['output'];
-  community: GqlCommunity;
+  community?: Maybe<GqlCommunity>;
   createdAt: Scalars['Datetime']['output'];
   failureCode?: Maybe<GqlIncentiveGrantFailureCode>;
   id: Scalars['ID']['output'];
@@ -631,7 +631,7 @@ export type GqlIncentiveGrant = {
   transaction?: Maybe<GqlTransaction>;
   type: GqlIncentiveGrantType;
   updatedAt: Scalars['Datetime']['output'];
-  user: GqlUser;
+  user?: Maybe<GqlUser>;
 };
 
 export type GqlIncentiveGrantEdge = GqlEdge & {
@@ -3359,7 +3359,7 @@ export type GqlResolversTypes = ResolversObject<{
   IdentityCheckPhoneUserPayload: ResolverTypeWrapper<Omit<GqlIdentityCheckPhoneUserPayload, 'membership' | 'user'> & { membership?: Maybe<GqlResolversTypes['Membership']>, user?: Maybe<GqlResolversTypes['User']> }>;
   IdentityPlatform: GqlIdentityPlatform;
   ImageInput: GqlImageInput;
-  IncentiveGrant: ResolverTypeWrapper<Omit<GqlIncentiveGrant, 'community' | 'transaction' | 'user'> & { community: GqlResolversTypes['Community'], transaction?: Maybe<GqlResolversTypes['Transaction']>, user: GqlResolversTypes['User'] }>;
+  IncentiveGrant: ResolverTypeWrapper<Omit<GqlIncentiveGrant, 'community' | 'transaction' | 'user'> & { community?: Maybe<GqlResolversTypes['Community']>, transaction?: Maybe<GqlResolversTypes['Transaction']>, user?: Maybe<GqlResolversTypes['User']> }>;
   IncentiveGrantEdge: ResolverTypeWrapper<Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<GqlResolversTypes['IncentiveGrant']> }>;
   IncentiveGrantFailureCode: GqlIncentiveGrantFailureCode;
   IncentiveGrantFilterInput: GqlIncentiveGrantFilterInput;
@@ -3698,7 +3698,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   IdentityCheckPhoneUserInput: GqlIdentityCheckPhoneUserInput;
   IdentityCheckPhoneUserPayload: Omit<GqlIdentityCheckPhoneUserPayload, 'membership' | 'user'> & { membership?: Maybe<GqlResolversParentTypes['Membership']>, user?: Maybe<GqlResolversParentTypes['User']> };
   ImageInput: GqlImageInput;
-  IncentiveGrant: Omit<GqlIncentiveGrant, 'community' | 'transaction' | 'user'> & { community: GqlResolversParentTypes['Community'], transaction?: Maybe<GqlResolversParentTypes['Transaction']>, user: GqlResolversParentTypes['User'] };
+  IncentiveGrant: Omit<GqlIncentiveGrant, 'community' | 'transaction' | 'user'> & { community?: Maybe<GqlResolversParentTypes['Community']>, transaction?: Maybe<GqlResolversParentTypes['Transaction']>, user?: Maybe<GqlResolversParentTypes['User']> };
   IncentiveGrantEdge: Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['IncentiveGrant']> };
   IncentiveGrantFilterInput: GqlIncentiveGrantFilterInput;
   IncentiveGrantRetryInput: GqlIncentiveGrantRetryInput;
@@ -4286,7 +4286,7 @@ export type GqlIdentityCheckPhoneUserPayloadResolvers<ContextType = any, ParentT
 
 export type GqlIncentiveGrantResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['IncentiveGrant'] = GqlResolversParentTypes['IncentiveGrant']> = ResolversObject<{
   attemptCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  community?: Resolver<GqlResolversTypes['Community'], ParentType, ContextType>;
+  community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   failureCode?: Resolver<Maybe<GqlResolversTypes['IncentiveGrantFailureCode']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
@@ -4297,7 +4297,7 @@ export type GqlIncentiveGrantResolvers<ContextType = any, ParentType extends Gql
   transaction?: Resolver<Maybe<GqlResolversTypes['Transaction']>, ParentType, ContextType>;
   type?: Resolver<GqlResolversTypes['IncentiveGrantType'], ParentType, ContextType>;
   updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

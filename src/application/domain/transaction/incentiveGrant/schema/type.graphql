@@ -7,8 +7,8 @@ type IncentiveGrant {
   sourceId: String!
   status: IncentiveGrantStatus!
 
-  user: User!
-  community: Community!
+  user: User
+  community: Community
 
   failureCode: IncentiveGrantFailureCode
   lastError: String

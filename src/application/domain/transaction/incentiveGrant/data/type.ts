@@ -6,8 +6,8 @@ export const incentiveGrantSelect = Prisma.validator<Prisma.IncentiveGrantSelect
   sourceId: true,
   status: true,
 
-  user: true,
-  community: true,
+  userId: true,
+  communityId: true,
 
   failureCode: true,
   lastError: true,
