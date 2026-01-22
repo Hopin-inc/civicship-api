@@ -1194,7 +1194,7 @@ model IncentiveGrant {
   failureCode     IncentiveGrantFailureCode? @map("failure_code")
   lastError       String?                    @map("last_error") @db.Text
   attemptCount    Int                        @default(1) @map("attempt_count")
-  lastAttemptedAt DateTime                   @default(now()) @map("last_attempted_at")
+  lastAttemptedAt DateTime?                  @default(now()) @map("last_attempted_at")
 
   transactionId String?      @unique @map("transaction_id")
   transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Restrict)
@@ -1213,6 +1213,7 @@ enum IncentiveGrantType {
 
 enum IncentiveGrantStatus {
   PENDING
+  RETRYING
   COMPLETED
   FAILED
 }

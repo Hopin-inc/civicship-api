@@ -21,11 +21,13 @@ const IncentiveGrantFailureCode = {
 class MockIncentiveGrantRepository implements IIncentiveGrantRepository {
   query = jest.fn();
   find = jest.fn();
+  findInTransaction = jest.fn();
   findManyByIds = jest.fn();
   count = jest.fn();
   create = jest.fn();
   markAsCompleted = jest.fn();
   markAsFailed = jest.fn();
+  markAsRetrying = jest.fn();
 }
 
 // Mock Services
