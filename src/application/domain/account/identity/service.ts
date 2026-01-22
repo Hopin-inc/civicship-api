@@ -20,10 +20,17 @@ export default class IdentityService {
       const identityArray = Array.isArray(identities) ? identities : [identities];
 
       for (const identity of identityArray) {
-        if (identity.platform === IdentityPlatform.PHONE && !identity.communityId) {
-          const existingPhoneIdentity = await this.identityRepository.findByUid(identity.uid);
+        if (!identity) continue;
+
+        const identityData = identity as { platform?: IdentityPlatform; uid?: string; communityId?: string | null };
+        if (
+          identityData.platform === IdentityPlatform.PHONE &&
+          !identityData.communityId &&
+          identityData.uid
+        ) {
+          const existingPhoneIdentity = await this.identityRepository.findByUid(identityData.uid);
           if (existingPhoneIdentity && existingPhoneIdentity.platform === IdentityPlatform.PHONE) {
-            throw new Error(`Phone identity with UID ${identity.uid} already exists`);
+            throw new Error(`Phone identity with UID ${identityData.uid} already exists`);
           }
         }
       }

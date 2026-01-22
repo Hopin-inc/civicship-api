@@ -3055,6 +3055,7 @@ type IdentitycommunityFactory = {
 };
 
 type IdentityFactoryDefineInput = {
+    id?: string;
     uid?: string;
     platform?: IdentityPlatform;
     authToken?: string | null;
@@ -3095,11 +3096,11 @@ export interface IdentityFactoryInterfaceWithoutTraits<TTransients extends Recor
     buildCreateInput(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Prisma.IdentityCreateInput>;
     buildList(list: readonly Partial<Prisma.IdentityCreateInput & TTransients>[]): PromiseLike<Prisma.IdentityCreateInput[]>;
     buildList(count: number, item?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Prisma.IdentityCreateInput[]>;
-    pickForConnect(inputData: Identity): Pick<Identity, "uid">;
+    pickForConnect(inputData: Identity): Pick<Identity, "id">;
     create(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Identity>;
     createList(list: readonly Partial<Prisma.IdentityCreateInput & TTransients>[]): PromiseLike<Identity[]>;
     createList(count: number, item?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Identity[]>;
-    createForConnect(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Pick<Identity, "uid">>;
+    createForConnect(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Pick<Identity, "id">>;
 }
 
 export interface IdentityFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IdentityFactoryInterfaceWithoutTraits<TTransients> {
@@ -3110,7 +3111,7 @@ function autoGenerateIdentityScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): IdentityScalarOrEnumFields {
     return {
-        uid: getScalarFieldValueGenerator().String({ modelName: "Identity", fieldName: "uid", isId: true, isUnique: false, seq }),
+        uid: getScalarFieldValueGenerator().String({ modelName: "Identity", fieldName: "uid", isId: false, isUnique: true, seq }),
         platform: "LINE"
     };
 }
@@ -3161,7 +3162,7 @@ function defineIdentityFactoryInternal<TTransients extends Record<string, unknow
         };
         const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IdentityCreateInput & TTransients>>(...args).map(data => build(data)));
         const pickForConnect = (inputData: Identity) => ({
-            uid: inputData.uid
+            id: inputData.id
         });
         const create = async (inputData: Partial<Prisma.IdentityCreateInput & TTransients> = {}) => {
             const data = await build({ ...inputData }).then(screen);
