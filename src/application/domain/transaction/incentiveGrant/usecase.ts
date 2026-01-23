@@ -138,7 +138,7 @@ export default class IncentiveGrantUseCase {
           }
 
           // 2. Security check: Ensure the grant belongs to the community (before retry)
-          if (grant.community.id !== permission.communityId) {
+          if (grant.communityId !== permission.communityId) {
             throw new AuthorizationError(
               `Grant ${input.incentiveGrantId} does not belong to community ${permission.communityId}`,
             );
@@ -168,7 +168,7 @@ export default class IncentiveGrantUseCase {
       if (txResult.transaction) {
         const community = await this.communityService.findCommunityOrThrow(
           ctx,
-          txResult.grant.community.id,
+          txResult.grant.communityId,
         );
 
         this.notificationService
@@ -178,13 +178,13 @@ export default class IncentiveGrantUseCase {
             txResult.transaction.toPointChange,
             txResult.transaction.comment,
             community.name,
-            txResult.grant.user.id,
+            txResult.grant.userId,
           )
           .catch((error) => {
             logger.error("Failed to send signup bonus notification after retry", {
               transactionId: txResult.transaction?.id,
-              userId: txResult.grant.user.id,
-              communityId: txResult.grant.community.id,
+              userId: txResult.grant.userId,
+              communityId: txResult.grant.communityId,
               incentiveGrantId: input.incentiveGrantId,
               error,
             });
@@ -275,8 +275,8 @@ export default class IncentiveGrantUseCase {
       // Mark as failed
       await this.repository.markAsFailed(
         ctx,
-        grant.user.id,
-        grant.community.id,
+        grant.userId,
+        grant.communityId,
         grant.type,
         grant.sourceId,
         failureCode,
