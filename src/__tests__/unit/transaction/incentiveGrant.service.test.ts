@@ -2,11 +2,19 @@ import "reflect-metadata";
 import { Prisma } from "@prisma/client";
 import { container } from "tsyringe";
 import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
-import { InsufficientBalanceError, NotFoundError } from "@/errors/graphql";
+import {
+  InsufficientBalanceError,
+  NotFoundError,
+  InvalidGrantStatusError,
+  UnsupportedGrantTypeError,
+  IncentiveDisabledError,
+  ConcurrentRetryError,
+} from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import { IIncentiveGrantRepository } from "@/application/domain/transaction/incentiveGrant/data/interface";
 import IncentiveGrantConverter from "@/application/domain/transaction/incentiveGrant/data/converter";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import { PrismaIncentiveGrant } from "@/application/domain/transaction/incentiveGrant/data/type";
 
 // Enum values (since Prisma types may not be available)
 const IncentiveGrantType = { SIGNUP: "SIGNUP" } as const;
@@ -358,6 +366,210 @@ describe("IncentiveGrantService", () => {
 
       expect(result).toEqual({ granted: false, transaction: null });
       // Should not throw, just log and return failure
+    });
+  });
+
+  describe("retryFailedGrant", () => {
+    const grantId = "grant-123";
+    const bonusPoint = 100;
+    const config = { isEnabled: true, bonusPoint, message: "Welcome back!" };
+    const communityWallet = { id: "community-wallet-1" };
+    const memberWallet = { id: "member-wallet-1" };
+    const transaction = {
+      id: "transaction-1",
+      toPointChange: bonusPoint,
+      comment: "Welcome back!",
+    };
+
+    const createMockGrant = (overrides?: Partial<PrismaIncentiveGrant>): PrismaIncentiveGrant => ({
+      id: grantId,
+      type: IncentiveGrantType.SIGNUP,
+      sourceId,
+      status: "FAILED",
+      user: { id: userId } as any,
+      community: { id: communityId } as any,
+      failureCode: IncentiveGrantFailureCode.INSUFFICIENT_FUNDS,
+      lastError: "Previous error",
+      attemptCount: 1,
+      lastAttemptedAt: new Date(),
+      transactionId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    });
+
+    it("should successfully retry a FAILED grant", async () => {
+      const grant = createMockGrant();
+
+      mockRepository.markAsRetrying.mockResolvedValue(true);
+      mockConfigService.get.mockResolvedValue(config);
+      mockWalletService.checkCommunityWalletBalanceInTransaction.mockResolvedValue(undefined);
+      mockWalletService.findCommunityWalletOrThrow.mockResolvedValue(communityWallet);
+      mockWalletService.findMemberWalletOrThrow.mockResolvedValue(memberWallet);
+      mockTransactionService.grantSignupBonus.mockResolvedValue(transaction);
+      mockRepository.markAsCompleted.mockResolvedValue(undefined);
+
+      const result = await service.retryFailedGrant(mockCtx, grant, mockTx);
+
+      expect(result).toEqual({
+        success: true,
+        transaction: {
+          id: transaction.id,
+          toPointChange: transaction.toPointChange,
+          comment: transaction.comment,
+        },
+      });
+
+      expect(mockRepository.markAsRetrying).toHaveBeenCalledWith(
+        mockCtx,
+        userId,
+        communityId,
+        IncentiveGrantType.SIGNUP,
+        sourceId,
+        mockTx,
+      );
+      expect(mockConfigService.get).toHaveBeenCalledWith(mockCtx, communityId, mockTx);
+      expect(mockWalletService.checkCommunityWalletBalanceInTransaction).toHaveBeenCalledWith(
+        mockCtx,
+        communityId,
+        bonusPoint,
+        mockTx,
+      );
+      expect(mockTransactionService.grantSignupBonus).toHaveBeenCalledWith(
+        mockCtx,
+        bonusPoint,
+        communityWallet.id,
+        memberWallet.id,
+        userId,
+        mockTx,
+        config.message,
+      );
+      expect(mockRepository.markAsCompleted).toHaveBeenCalledWith(
+        mockCtx,
+        userId,
+        communityId,
+        IncentiveGrantType.SIGNUP,
+        sourceId,
+        transaction.id,
+        mockTx,
+      );
+    });
+
+    it("should throw InvalidGrantStatusError for PENDING status", async () => {
+      const grant = createMockGrant({ status: "PENDING" });
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        InvalidGrantStatusError,
+      );
+
+      expect(mockRepository.markAsRetrying).not.toHaveBeenCalled();
+    });
+
+    it("should throw InvalidGrantStatusError for COMPLETED status", async () => {
+      const grant = createMockGrant({ status: "COMPLETED" });
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        InvalidGrantStatusError,
+      );
+
+      expect(mockRepository.markAsRetrying).not.toHaveBeenCalled();
+    });
+
+    it("should throw InvalidGrantStatusError for RETRYING status", async () => {
+      const grant = createMockGrant({ status: "RETRYING" });
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        InvalidGrantStatusError,
+      );
+
+      expect(mockRepository.markAsRetrying).not.toHaveBeenCalled();
+    });
+
+    it("should throw ConcurrentRetryError when markAsRetrying returns false", async () => {
+      const grant = createMockGrant();
+      mockRepository.markAsRetrying.mockResolvedValue(false);
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        ConcurrentRetryError,
+      );
+
+      expect(mockRepository.markAsRetrying).toHaveBeenCalled();
+      expect(mockConfigService.get).not.toHaveBeenCalled();
+    });
+
+    it("should throw UnsupportedGrantTypeError for non-SIGNUP type", async () => {
+      const grant = createMockGrant({ type: "REFERRAL" as any });
+      mockRepository.markAsRetrying.mockResolvedValue(true);
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        UnsupportedGrantTypeError,
+      );
+
+      expect(mockRepository.markAsRetrying).toHaveBeenCalled();
+      expect(mockConfigService.get).not.toHaveBeenCalled();
+    });
+
+    it("should throw IncentiveDisabledError when config is not enabled", async () => {
+      const grant = createMockGrant();
+      mockRepository.markAsRetrying.mockResolvedValue(true);
+      mockConfigService.get.mockResolvedValue({ isEnabled: false, bonusPoint: 100 });
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        IncentiveDisabledError,
+      );
+
+      expect(mockRepository.markAsRetrying).toHaveBeenCalled();
+      expect(mockConfigService.get).toHaveBeenCalled();
+      expect(mockWalletService.checkCommunityWalletBalanceInTransaction).not.toHaveBeenCalled();
+    });
+
+    it("should throw IncentiveDisabledError when config is null", async () => {
+      const grant = createMockGrant();
+      mockRepository.markAsRetrying.mockResolvedValue(true);
+      mockConfigService.get.mockResolvedValue(null);
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        IncentiveDisabledError,
+      );
+
+      expect(mockRepository.markAsRetrying).toHaveBeenCalled();
+      expect(mockConfigService.get).toHaveBeenCalled();
+    });
+
+    it("should throw InsufficientBalanceError when balance is insufficient", async () => {
+      const grant = createMockGrant();
+      const error = new InsufficientBalanceError("50", 100);
+
+      mockRepository.markAsRetrying.mockResolvedValue(true);
+      mockConfigService.get.mockResolvedValue(config);
+      mockWalletService.checkCommunityWalletBalanceInTransaction.mockRejectedValue(error);
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        InsufficientBalanceError,
+      );
+
+      expect(mockRepository.markAsRetrying).toHaveBeenCalled();
+      expect(mockConfigService.get).toHaveBeenCalled();
+      expect(mockWalletService.checkCommunityWalletBalanceInTransaction).toHaveBeenCalled();
+      expect(mockTransactionService.grantSignupBonus).not.toHaveBeenCalled();
+    });
+
+    it("should throw NotFoundError when wallet is not found", async () => {
+      const grant = createMockGrant();
+      const error = new NotFoundError("Wallet", { id: "wallet-1" });
+
+      mockRepository.markAsRetrying.mockResolvedValue(true);
+      mockConfigService.get.mockResolvedValue(config);
+      mockWalletService.checkCommunityWalletBalanceInTransaction.mockResolvedValue(undefined);
+      mockWalletService.findCommunityWalletOrThrow.mockRejectedValue(error);
+
+      await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(
+        NotFoundError,
+      );
+
+      expect(mockRepository.markAsRetrying).toHaveBeenCalled();
+      expect(mockWalletService.findCommunityWalletOrThrow).toHaveBeenCalled();
+      expect(mockTransactionService.grantSignupBonus).not.toHaveBeenCalled();
     });
   });
 });

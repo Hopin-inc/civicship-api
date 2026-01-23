@@ -2,6 +2,7 @@ import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import { IncentiveGrantFailureCode, IncentiveGrantType, Prisma } from "@prisma/client";
 import { IIncentiveGrantRepository } from "./data/interface";
+import { PrismaIncentiveGrant } from "./data/type";
 import IncentiveGrantConverter from "./data/converter";
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
 import WalletService from "@/application/domain/account/wallet/service";
@@ -255,19 +256,13 @@ export default class IncentiveGrantService {
    */
   async retryFailedGrant(
     ctx: IContext,
-    incentiveGrantId: string,
+    grant: PrismaIncentiveGrant,
     tx: Prisma.TransactionClient,
   ): Promise<RetryGrantResult> {
     const logContext = {
       logctx: "IncentiveGrantService.retryFailedGrant",
-      incentiveGrantId,
+      incentiveGrantId: grant.id,
     };
-
-    // 1. Find the grant record within the transaction
-    const grant = await this.repository.findInTransaction(ctx, incentiveGrantId, tx);
-    if (!grant) {
-      throw new NotFoundError("IncentiveGrant", { id: incentiveGrantId });
-    }
 
     logger.info("Retrying failed incentive grant", {
       ...logContext,
@@ -278,7 +273,7 @@ export default class IncentiveGrantService {
       attemptCount: grant.attemptCount,
     });
 
-    // 2. Verify FAILED status and atomically mark as RETRYING
+    // 1. Verify FAILED status and atomically mark as RETRYING
     if (grant.status !== "FAILED") {
       throw new InvalidGrantStatusError(grant.status, "FAILED");
     }
@@ -294,10 +289,10 @@ export default class IncentiveGrantService {
 
     if (!marked) {
       // Another concurrent request already marked this grant as RETRYING
-      throw new ConcurrentRetryError(incentiveGrantId);
+      throw new ConcurrentRetryError(grant.id);
     }
 
-    // 3. Get configuration (only SIGNUP type is supported for now)
+    // 2. Get configuration (only SIGNUP type is supported for now)
     if (grant.type !== IncentiveGrantType.SIGNUP) {
       throw new UnsupportedGrantTypeError(grant.type);
     }
@@ -307,7 +302,7 @@ export default class IncentiveGrantService {
       throw new IncentiveDisabledError(grant.community.id, "Signup bonus");
     }
 
-    // 4. TOCTOU-safe balance check
+    // 3. TOCTOU-safe balance check
     await this.walletService.checkCommunityWalletBalanceInTransaction(
       ctx,
       grant.community.id,
@@ -315,13 +310,13 @@ export default class IncentiveGrantService {
       tx,
     );
 
-    // 5. Get wallets
+    // 4. Get wallets
     const [communityWallet, memberWallet] = await Promise.all([
       this.walletService.findCommunityWalletOrThrow(ctx, grant.community.id, tx),
       this.walletService.findMemberWalletOrThrow(ctx, grant.user.id, grant.community.id, tx),
     ]);
 
-    // 6. Create transaction
+    // 5. Create transaction
     const transaction = await this.transactionService.grantSignupBonus(
       ctx,
       config.bonusPoint,
@@ -332,7 +327,7 @@ export default class IncentiveGrantService {
       config.message,
     );
 
-    // 7. Mark as COMPLETED
+    // 6. Mark as COMPLETED
     await this.repository.markAsCompleted(
       ctx,
       grant.user.id,

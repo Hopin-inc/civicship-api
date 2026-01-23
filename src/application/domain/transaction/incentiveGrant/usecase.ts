@@ -145,7 +145,7 @@ export default class IncentiveGrantUseCase {
           }
 
           // 3. Retry the failed grant
-          const result = await this.service.retryFailedGrant(ctx, input.incentiveGrantId, tx);
+          const result = await this.service.retryFailedGrant(ctx, grant, tx);
 
           // 4. Get the updated grant record within the same transaction
           const updatedGrant = await this.repository.findInTransaction(
@@ -182,7 +182,7 @@ export default class IncentiveGrantUseCase {
           )
           .catch((error) => {
             logger.error("Failed to send signup bonus notification after retry", {
-              transactionId: txResult.transaction!.id,
+              transactionId: txResult.transaction?.id,
               userId: txResult.grant.user.id,
               communityId: txResult.grant.community.id,
               incentiveGrantId: input.incentiveGrantId,
