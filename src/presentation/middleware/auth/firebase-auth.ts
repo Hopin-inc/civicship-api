@@ -44,7 +44,14 @@ export async function handleFirebaseAuth(
 
     const currentUser = await issuer.internal((tx) =>
       tx.user.findFirst({
-        where: { identities: { some: { uid: decoded.uid } } },
+        where: {
+          identities: {
+            some: {
+              uid: decoded.uid,
+              communityId,
+            },
+          },
+        },
         include: {
           identities: {
             where: {

@@ -7,6 +7,7 @@ export interface FirebaseTokenRefreshResponse {
 }
 
 export const identitySelectDetail = Prisma.validator<Prisma.IdentitySelect>()({
+  id: true,
   uid: true,
   platform: true,
 

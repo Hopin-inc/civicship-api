@@ -9,8 +9,15 @@ import { IContext } from "@/types/server";
 export default class IdentityRepository implements IIdentityRepository {
   constructor(@inject("prismaClient") private readonly db: typeof prismaClient) {}
 
-  async find(uid: string) {
-    return this.db.identity.findUnique({
+  async find(uid: string, communityId?: string | null) {
+    return this.db.identity.findFirst({
+      where: { uid, communityId: communityId ?? null },
+      select: identitySelectDetail,
+    });
+  }
+
+  async findByUid(uid: string) {
+    return this.db.identity.findFirst({
       where: { uid },
       select: identitySelectDetail,
     });
@@ -32,9 +39,18 @@ export default class IdentityRepository implements IIdentityRepository {
     }
   }
 
-  async update(uid: string, data: Prisma.IdentityUpdateInput) {
+  async update(uid: string, communityId: string | null, data: Prisma.IdentityUpdateInput) {
+    const identity = await this.db.identity.findFirst({
+      where: { uid, communityId },
+      select: { id: true },
+    });
+
+    if (!identity) {
+      throw new Error(`Identity not found for uid: ${uid}, communityId: ${communityId}`);
+    }
+
     return this.db.identity.update({
-      where: { uid },
+      where: { id: identity.id },
       data,
       select: identitySelectDetail,
     });

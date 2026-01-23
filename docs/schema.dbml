@@ -223,7 +223,8 @@ Table t_users {
 }
 
 Table t_identities {
-  uid String [pk]
+  id String [pk]
+  uid String [not null]
   platform IdentityPlatform [not null]
   userId String [not null]
   user t_users [not null]
@@ -234,6 +235,10 @@ Table t_identities {
   tokenExpiresAt DateTime
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+
+  indexes {
+    (uid, communityId) [unique]
+  }
 }
 
 Table t_did_issuance_requests {

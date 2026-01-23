@@ -3,7 +3,8 @@ import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
 export interface IIdentityRepository {
-  find(uid: string): Promise<PrismaIdentityDetail | null>;
+  find(uid: string, communityId?: string | null): Promise<PrismaIdentityDetail | null>;
+  findByUid(uid: string): Promise<PrismaIdentityDetail | null>;
   create(ctx: IContext, data: Prisma.IdentityCreateInput, tx?: Prisma.TransactionClient): Promise<PrismaIdentityDetail | null>;
-  update(uid: string, data: Prisma.IdentityUpdateInput): Promise<PrismaIdentityDetail>;
+  update(uid: string, communityId: string | null, data: Prisma.IdentityUpdateInput): Promise<PrismaIdentityDetail>;
 }

@@ -440,7 +440,8 @@ RIGHT RIGHT
   
 
   "t_identities" {
-    String uid "🗝️"
+    String id "🗝️"
+    String uid 
     IdentityPlatform platform 
     String user_id 
     String community_id "❓"
