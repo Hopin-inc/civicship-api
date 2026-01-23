@@ -1,0 +1,36 @@
+# ------------------------------
+# IncentiveGrant Object Type Definitions
+# ------------------------------
+type IncentiveGrant {
+  id: ID!
+  type: IncentiveGrantType!
+  sourceId: String!
+  status: IncentiveGrantStatus!
+
+  user: User
+  community: Community
+
+  failureCode: IncentiveGrantFailureCode
+  lastError: String
+  attemptCount: Int!
+  lastAttemptedAt: Datetime
+
+  transaction: Transaction
+
+  createdAt: Datetime!
+  updatedAt: Datetime!
+}
+
+# ------------------------------
+# IncentiveGrant Connection Type Definitions
+# ------------------------------
+type IncentiveGrantsConnection {
+  edges: [IncentiveGrantEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type IncentiveGrantEdge implements Edge {
+  cursor: String!
+  node: IncentiveGrant
+}

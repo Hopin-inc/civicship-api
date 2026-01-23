@@ -208,6 +208,7 @@ type Community {
 type CommunityConfig {
   firebaseConfig: CommunityFirebaseConfig
   lineConfig: CommunityLineConfig
+  signupBonusConfig: CommunitySignupBonusConfig
 }
 
 input CommunityConfigInput {
@@ -317,6 +318,12 @@ type CommunityPortalConfig {
   squareLogoPath: String!
   title: String!
   tokenName: String!
+}
+
+type CommunitySignupBonusConfig {
+  bonusPoint: Int!
+  isEnabled: Boolean!
+  message: String
 }
 
 input CommunitySortInput {
@@ -546,6 +553,66 @@ input ImageInput {
   file: Upload
 }
 
+type IncentiveGrant {
+  attemptCount: Int!
+  community: Community
+  createdAt: Datetime!
+  failureCode: IncentiveGrantFailureCode
+  id: ID!
+  lastAttemptedAt: Datetime
+  lastError: String
+  sourceId: String!
+  status: IncentiveGrantStatus!
+  transaction: Transaction
+  type: IncentiveGrantType!
+  updatedAt: Datetime!
+  user: User
+}
+
+type IncentiveGrantEdge implements Edge {
+  cursor: String!
+  node: IncentiveGrant
+}
+
+enum IncentiveGrantFailureCode {
+  DATABASE_ERROR
+  INSUFFICIENT_FUNDS
+  TIMEOUT
+  UNKNOWN
+  WALLET_NOT_FOUND
+}
+
+input IncentiveGrantFilterInput {
+  and: [IncentiveGrantFilterInput!]
+  communityId: ID
+  not: IncentiveGrantFilterInput
+  or: [IncentiveGrantFilterInput!]
+  status: IncentiveGrantStatus
+  type: IncentiveGrantType
+  userId: ID
+}
+
+input IncentiveGrantSortInput {
+  createdAt: SortDirection
+  updatedAt: SortDirection
+}
+
+enum IncentiveGrantStatus {
+  COMPLETED
+  FAILED
+  PENDING
+}
+
+enum IncentiveGrantType {
+  SIGNUP
+}
+
+type IncentiveGrantsConnection {
+  edges: [IncentiveGrantEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
 scalar JSON
 
 enum Language {
@@ -742,6 +809,7 @@ type Mutation {
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
+  updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
   userSignUp(input: UserSignUpInput!): CurrentUserPayload
   userUpdateMyProfile(input: UserUpdateProfileInput!, permission: CheckIsSelfPermissionInput!): UserUpdateProfilePayload
@@ -1365,6 +1433,8 @@ type Query {
   evaluationHistories(cursor: String, filter: EvaluationHistoryFilterInput, first: Int, sort: EvaluationHistorySortInput): EvaluationHistoriesConnection!
   evaluationHistory(id: ID!): EvaluationHistory
   evaluations(cursor: String, filter: EvaluationFilterInput, first: Int, sort: EvaluationSortInput): EvaluationsConnection!
+  incentiveGrant(id: ID!): IncentiveGrant
+  incentiveGrants(cursor: String, filter: IncentiveGrantFilterInput, first: Int, sort: IncentiveGrantSortInput): IncentiveGrantsConnection!
   membership(communityId: ID!, userId: ID!): Membership
   memberships(cursor: MembershipCursorInput, filter: MembershipFilterInput, first: Int, sort: MembershipSortInput): MembershipsConnection!
   myWallet: Wallet
@@ -1385,6 +1455,7 @@ type Query {
   reservationHistories(cursor: String, filter: ReservationHistoryFilterInput, first: Int, sort: ReservationHistorySortInput): ReservationHistoriesConnection!
   reservationHistory(id: ID!): ReservationHistory
   reservations(cursor: String, filter: ReservationFilterInput, first: Int, sort: ReservationSortInput): ReservationsConnection!
+  signupBonusConfig(communityId: ID!): CommunitySignupBonusConfig
   states(cursor: String, filter: StatesInput, first: Int): StatesConnection!
   ticket(id: ID!): Ticket
   ticketClaimLink(id: ID!): TicketClaimLink
@@ -1890,6 +1961,12 @@ type TransactionsConnection {
   edges: [TransactionEdge]
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+input UpdateSignupBonusConfigInput {
+  bonusPoint: Int!
+  isEnabled: Boolean!
+  message: String
 }
 
 scalar Upload

@@ -15,6 +15,27 @@ export default class IdentityService {
   ) {}
 
   async createUserAndIdentity(data: Prisma.UserCreateInput) {
+    if (data.identities && typeof data.identities === "object" && "create" in data.identities) {
+      const identities = data.identities.create;
+      const identityArray = Array.isArray(identities) ? identities : [identities];
+
+      for (const identity of identityArray) {
+        if (!identity) continue;
+
+        const identityData = identity as { platform?: IdentityPlatform; uid?: string; communityId?: string | null };
+        if (
+          identityData.platform === IdentityPlatform.PHONE &&
+          !identityData.communityId &&
+          identityData.uid
+        ) {
+          const existingPhoneIdentity = await this.identityRepository.findByUid(identityData.uid);
+          if (existingPhoneIdentity && existingPhoneIdentity.platform === IdentityPlatform.PHONE) {
+            throw new Error(`Phone identity with UID ${identityData.uid} already exists`);
+          }
+        }
+      }
+    }
+
     return this.userRepository.create({
       ...data,
     });
@@ -62,6 +83,9 @@ export default class IdentityService {
         }) => Promise<{ id: string } | null>;
       };
       identity: {
+        findFirst: (args: {
+          where: { uid: string; platform: IdentityPlatform; communityId: null };
+        }) => Promise<{ uid: string } | null>;
         create: (args: {
           data: { uid: string; platform: IdentityPlatform; userId: string };
         }) => Promise<unknown>;
@@ -77,6 +101,18 @@ export default class IdentityService {
       throw new Error(`User with ID ${userId} not found`);
     }
 
+    const existingPhoneIdentity = await tx.identity.findFirst({
+      where: {
+        uid: phoneUid,
+        platform: IdentityPlatform.PHONE,
+        communityId: null,
+      },
+    });
+
+    if (existingPhoneIdentity) {
+      throw new Error(`Phone identity with UID ${phoneUid} already exists`);
+    }
+
     await tx.identity.create({
       data: {
         uid: phoneUid,
@@ -88,16 +124,24 @@ export default class IdentityService {
     return this.userRepository.find(ctx, userId);
   }
 
-  async findUserByIdentity(ctx: IContext, uid: string): Promise<User | null> {
-    const identity = await this.identityRepository.find(uid);
+  async findUserByIdentity(ctx: IContext, uid: string, communityId?: string | null): Promise<User | null> {
+    const identity = await this.identityRepository.find(uid, communityId);
     if (identity) {
       return await this.userRepository.find(ctx, identity.userId);
     }
     return null;
   }
 
-  async deleteUserAndIdentity(uid: string): Promise<User | null> {
-    const identity = await this.identityRepository.find(uid);
+  async findUserByUid(ctx: IContext, uid: string): Promise<User | null> {
+    const identity = await this.identityRepository.findByUid(uid);
+    if (identity) {
+      return await this.userRepository.find(ctx, identity.userId);
+    }
+    return null;
+  }
+
+  async deleteUserAndIdentity(uid: string, communityId?: string | null): Promise<User | null> {
+    const identity = await this.identityRepository.find(uid, communityId);
     if (identity) {
       return this.userRepository.delete(identity.userId);
     } else {
@@ -140,11 +184,12 @@ export default class IdentityService {
 
   async storeAuthTokens(
     uid: string,
+    communityId: string | null,
     authToken: string,
     refreshToken: string,
     expiryTime: Date,
   ): Promise<void> {
-    await this.identityRepository.update(uid, {
+    await this.identityRepository.update(uid, communityId, {
       authToken,
       refreshToken,
       tokenExpiresAt: expiryTime,

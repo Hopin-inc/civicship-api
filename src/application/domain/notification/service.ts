@@ -23,6 +23,7 @@ import { PrismaEvaluation } from "@/application/domain/experience/evaluation/dat
 import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
 import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
 import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
+import { buildSignupBonusGrantedMessage } from "@/application/domain/notification/presenter/message/signupBonusGrantedMessage";
 import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
 import { Language } from "@prisma/client";
 dayjs.extend(utc);
@@ -432,6 +433,39 @@ export default class NotificationService {
 
     await safePushMessage(client, { to: uid, messages: [message] });
   }
+
+  async pushSignupBonusGrantedMessage(
+    ctx: IContext,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    communityName: string,
+    toUserId: string,
+  ) {
+    const preparedData = await this.prepareLinePush(
+      ctx,
+      toUserId,
+      transactionId,
+      "pushSignupBonusGrantedMessage",
+      { includeLanguage: true },
+    );
+
+    if (!preparedData) {
+      return;
+    }
+
+    const { uid, client, language } = preparedData;
+
+    const message = buildSignupBonusGrantedMessage({
+      communityName,
+      transferPoints: toPointChange,
+      comment,
+      language,
+    });
+
+    await safePushMessage(client, { to: uid, messages: [message] });
+  }
+
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
       (identity) =>

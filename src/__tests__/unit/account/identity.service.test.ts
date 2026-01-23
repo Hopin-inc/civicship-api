@@ -32,6 +32,7 @@ describe("IdentityService", () => {
 
   class MockIdentityRepository {
     find = jest.fn();
+    findByUid = jest.fn();
     create = jest.fn();
     update = jest.fn();
     findByUidAndCommunity = jest.fn();

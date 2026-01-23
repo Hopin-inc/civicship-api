@@ -167,6 +167,7 @@ export class DIDIssuanceService {
 
       await this.identityService.storeAuthTokens(
         uid,
+        null,
         response.idToken,
         response.refreshToken,
         expiryTime,

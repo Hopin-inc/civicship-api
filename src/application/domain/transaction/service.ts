@@ -59,6 +59,20 @@ export default class TransactionService implements ITransactionService {
     return res;
   }
 
+  async grantSignupBonus(
+    ctx: IContext,
+    transferPoints: number,
+    fromWalletId: string,
+    memberWalletId: string,
+    createdBy: string,
+    tx: Prisma.TransactionClient,
+    comment?: string | null,
+  ): Promise<PrismaTransactionDetail> {
+    const data = this.converter.grantSignupBonus(fromWalletId, transferPoints, memberWalletId, createdBy, comment);
+    const res = await this.repository.create(ctx, data, tx);
+    return res;
+  }
+
   async donateSelfPoint(
     ctx: IContext,
     fromWalletId: string,

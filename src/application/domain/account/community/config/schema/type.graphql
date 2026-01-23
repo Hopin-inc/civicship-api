@@ -1,6 +1,7 @@
 type CommunityConfig {
     firebaseConfig: CommunityFirebaseConfig
     lineConfig: CommunityLineConfig
+    signupBonusConfig: CommunitySignupBonusConfig
 }
 
 type CommunityFirebaseConfig {
@@ -26,4 +27,10 @@ enum LineRichMenuType {
     ADMIN
     USER
     PUBLIC
+}
+
+type CommunitySignupBonusConfig {
+    isEnabled: Boolean!
+    bonusPoint: Int!
+    message: String
 }

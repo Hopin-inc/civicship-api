@@ -16,6 +16,10 @@ import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
+import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import TransactionService from "@/application/domain/transaction/service";
+import NotificationService from "@/application/domain/notification/service";
+import CommunityService from "@/application/domain/account/community/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
@@ -29,6 +33,10 @@ export default class IdentityUseCase {
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("ImageService") private readonly imageService: ImageService,
+    @inject("IncentiveGrantService") private readonly incentiveGrantService: IncentiveGrantService,
+    @inject("TransactionService") private readonly transactionService: TransactionService,
+    @inject("NotificationService") private readonly notificationService: NotificationService,
+    @inject("CommunityService") private readonly communityService: CommunityService,
   ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -61,7 +69,8 @@ export default class IdentityUseCase {
       throw new Error("Authentication required (uid or platform missing)");
     }
     const uid = context.uid;
-    const user = await this.identityService.deleteUserAndIdentity(uid);
+    const communityId = context.platform === IdentityPlatform.Line ? context.communityId : null;
+    const user = await this.identityService.deleteUserAndIdentity(uid, communityId);
     await this.identityService.deleteFirebaseAuthUser(uid);
     return IdentityPresenter.delete(user);
   }
@@ -81,7 +90,7 @@ export default class IdentityUseCase {
     expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
 
     try {
-      await this.identityService.storeAuthTokens(phoneUid, authToken, refreshToken, expiryTime);
+      await this.identityService.storeAuthTokens(phoneUid, null, authToken, refreshToken, expiryTime);
 
       return {
         success: true,
@@ -130,18 +139,61 @@ export default class IdentityUseCase {
     communityId: string,
   ): Promise<User | null> {
     try {
-      await ctx.issuer.public(ctx, async (tx) => {
+      // Use composite key as sourceId for idempotency
+      const initializationSourceId = `${userId}_${communityId}`;
+
+      // Execute membership initialization and signup bonus grant in transaction
+      const signupBonusResult = await ctx.issuer.public(ctx, async (tx) => {
         await this.membershipService.joinIfNeeded(ctx, userId, communityId, tx);
         await this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
+
+        // Grant signup bonus if enabled (returns transaction details)
+        return await this.incentiveGrantService.grantSignupBonusIfEnabled(
+          ctx,
+          userId,
+          communityId,
+          initializationSourceId,
+          tx,
+        );
+      });
+
+      // Refresh current points after transaction
+      await ctx.issuer.internal(async (tx) => {
+        await this.transactionService.refreshCurrentPoint(ctx, tx);
       });
 
       if (!ctx.uid) {
         logger.error("Missing uid in context");
         return null;
       }
-      const user = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+      const user = await this.identityService.findUserByIdentity(ctx, ctx.uid, ctx.communityId);
       if (!user) {
         logger.error(`User not found after initialization: userId=${userId}`);
+        return null;
+      }
+
+      // Send signup bonus notification (best-effort)
+      if (signupBonusResult.granted && signupBonusResult.transaction) {
+        const transaction = signupBonusResult.transaction;
+        const community = await this.communityService.findCommunityOrThrow(ctx, communityId);
+
+        this.notificationService
+          .pushSignupBonusGrantedMessage(
+            ctx,
+            transaction.id,
+            transaction.toPointChange,
+            transaction.comment,
+            community.name,
+            userId,
+          )
+          .catch((error) => {
+            logger.error("Failed to send signup bonus notification", {
+              transactionId: transaction.id,
+              userId,
+              communityId,
+              error,
+            });
+          });
       }
 
       return user;
@@ -171,6 +223,7 @@ export default class IdentityUseCase {
       const refreshToken = phoneRefreshToken || "";
       await this.identityService.storeAuthTokens(
         phoneUid,
+        null,
         phoneAccessToken,
         refreshToken,
         expiryTime,
@@ -181,7 +234,7 @@ export default class IdentityUseCase {
     if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
       const expiryTime = this.deriveExpiryTime(lineTokenExpiresAt);
       const refreshToken = lineRefreshToken || "";
-      await this.identityService.storeAuthTokens(ctx.uid, ctx.idToken, refreshToken, expiryTime);
+      await this.identityService.storeAuthTokens(ctx.uid, ctx.communityId, ctx.idToken, refreshToken, expiryTime);
       logger.debug(`Stored LINE auth tokens for ${ctx.uid}`);
     }
   }
@@ -203,7 +256,7 @@ export default class IdentityUseCase {
       platform: ctx.platform,
     });
 
-    const existingUser = await this.identityService.findUserByIdentity(ctx, phoneUid);
+    const existingUser = await this.identityService.findUserByIdentity(ctx, phoneUid, null);
 
     logger.debug("[checkPhoneUser] User lookup result", {
       phoneUid,
@@ -216,7 +269,7 @@ export default class IdentityUseCase {
       // Check if user exists via LINE identity (ctx.uid) even though no phone identity exists
       // This handles the case where a user has LINE Identity but no Phone Identity and no Membership
       if (ctx.uid && ctx.platform === IdentityPlatform.Line) {
-        const userByLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+        const userByLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid, ctx.communityId);
 
         if (userByLineIdentity) {
           logger.debug("[checkPhoneUser] User found via LINE identity, checking membership", {
@@ -333,7 +386,7 @@ export default class IdentityUseCase {
         // Perform identity check and creation within the same transaction to avoid race conditions
         // This follows the same pattern as EXISTING_DIFFERENT_COMMUNITY case
         await ctx.issuer.public(ctx, async (tx) => {
-          const existingLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid!);
+          const existingLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid!, ctx.communityId);
 
           logger.debug("[checkPhoneUser] Checking LINE identity for EXISTING_SAME_COMMUNITY", {
             phoneUid,
@@ -426,7 +479,7 @@ export default class IdentityUseCase {
         throw new AuthenticationError();
       }
 
-      const existingIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+      const existingIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid, ctx.communityId);
 
       logger.debug("[checkPhoneUser] Checking if current LINE identity exists", {
         phoneUid,

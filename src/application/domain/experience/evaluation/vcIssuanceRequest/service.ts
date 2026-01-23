@@ -206,6 +206,7 @@ export class VCIssuanceRequestService {
 
       await this.identityService.storeAuthTokens(
         uid,
+        null,
         response.idToken,
         response.refreshToken,
         expiryTime,

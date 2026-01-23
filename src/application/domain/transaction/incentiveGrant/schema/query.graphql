@@ -1,0 +1,31 @@
+# ------------------------------
+# IncentiveGrant Query Definitions
+# ------------------------------
+extend type Query {
+  incentiveGrants(
+    filter: IncentiveGrantFilterInput
+    sort: IncentiveGrantSortInput
+    cursor: String
+    first: Int
+  ): IncentiveGrantsConnection!
+  incentiveGrant(id: ID!): IncentiveGrant
+}
+
+# ------------------------------
+# IncentiveGrant Query Input Definitions
+# ------------------------------
+input IncentiveGrantFilterInput {
+  communityId: ID
+  userId: ID
+  type: IncentiveGrantType
+  status: IncentiveGrantStatus
+
+  and: [IncentiveGrantFilterInput!]
+  or: [IncentiveGrantFilterInput!]
+  not: IncentiveGrantFilterInput
+}
+
+input IncentiveGrantSortInput {
+  createdAt: SortDirection
+  updatedAt: SortDirection
+}

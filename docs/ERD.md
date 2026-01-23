@@ -221,6 +221,30 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
     
 
 
+        IncentiveGrantType {
+            SIGNUP SIGNUP
+        }
+    
+
+
+        IncentiveGrantStatus {
+            PENDING PENDING
+COMPLETED COMPLETED
+FAILED FAILED
+        }
+    
+
+
+        IncentiveGrantFailureCode {
+            INSUFFICIENT_FUNDS INSUFFICIENT_FUNDS
+WALLET_NOT_FOUND WALLET_NOT_FOUND
+DATABASE_ERROR DATABASE_ERROR
+TIMEOUT TIMEOUT
+UNKNOWN UNKNOWN
+        }
+    
+
+
         NftWalletType {
             INTERNAL INTERNAL
 EXTERNAL EXTERNAL
@@ -383,6 +407,17 @@ RIGHT RIGHT
     }
   
 
+  "t_community_signup_bonus_configs" {
+    String id "🗝️"
+    String community_id 
+    Boolean is_enabled 
+    Int bonus_point 
+    String message "❓"
+    DateTime created_at 
+    DateTime updated_at 
+    }
+  
+
   "t_users" {
     String id "🗝️"
     String name 
@@ -405,7 +440,8 @@ RIGHT RIGHT
   
 
   "t_identities" {
-    String uid "🗝️"
+    String id "🗝️"
+    String uid 
     IdentityPlatform platform 
     String user_id 
     String community_id "❓"
@@ -678,6 +714,23 @@ RIGHT RIGHT
     }
   
 
+  "t_incentive_grants" {
+    String id "🗝️"
+    IncentiveGrantType type 
+    String source_id 
+    IncentiveGrantStatus status 
+    String user_id 
+    String community_id 
+    IncentiveGrantFailureCode failure_code "❓"
+    String last_error "❓"
+    Int attempt_count 
+    DateTime last_attempted_at 
+    String transaction_id "❓"
+    DateTime created_at 
+    DateTime updated_at 
+    }
+  
+
   "m_api_keys" {
     String id "🗝️"
     String key 
@@ -847,10 +900,12 @@ RIGHT RIGHT
     "t_places" o{--}o "v_place_accumulated_participants" : "accumulated_participants"
     "t_communities" o|--|o "t_images" : "image"
     "t_communities" o{--}o "t_community_configs" : "config"
+    "t_communities" o{--}o "t_community_signup_bonus_configs" : "signupBonusConfig"
     "t_communities" o{--}o "t_places" : "places"
     "t_communities" o{--}o "t_identities" : "identities"
     "t_communities" o{--}o "t_memberships" : "memberships"
     "t_communities" o{--}o "t_wallets" : "wallets"
+    "t_communities" o{--}o "t_incentive_grants" : "incentiveGrants"
     "t_communities" o{--}o "t_utilities" : "utilities"
     "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
@@ -866,6 +921,7 @@ RIGHT RIGHT
     "t_community_line_rich_menus" o|--|| "t_community_line_configs" : "config"
     "t_community_line_rich_menus" o|--|| "LineRichMenuType" : "enum:type"
     "t_community_portal_configs" o|--|| "t_community_configs" : "config"
+    "t_community_signup_bonus_configs" o|--|| "t_communities" : "community"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|| "Language" : "enum:preferred_language"
@@ -877,6 +933,7 @@ RIGHT RIGHT
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
+    "t_users" o{--}o "t_incentive_grants" : "incentiveGrants"
     "t_users" o{--}o "t_utilities" : "utiltyOwnedByMe"
     "t_users" o{--}o "t_ticket_issuers" : "ticketIssuedByMe"
     "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"
@@ -1007,8 +1064,15 @@ RIGHT RIGHT
     "t_transactions" o|--|o "t_participations" : "participation"
     "t_transactions" o|--|o "t_reservations" : "reservation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
+    "t_transactions" o{--}o "t_incentive_grants" : "incentiveGrant"
     "t_transactions" o|--|o "t_users" : "createdByUser"
     "t_transactions" o{--}o "t_merkle_proofs" : "merkleProofs"
+    "t_incentive_grants" o|--|| "IncentiveGrantType" : "enum:type"
+    "t_incentive_grants" o|--|| "IncentiveGrantStatus" : "enum:status"
+    "t_incentive_grants" o|--|| "t_users" : "user"
+    "t_incentive_grants" o|--|| "t_communities" : "community"
+    "t_incentive_grants" o|--|o "IncentiveGrantFailureCode" : "enum:failure_code"
+    "t_incentive_grants" o|--|o "t_transactions" : "transaction"
     "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"

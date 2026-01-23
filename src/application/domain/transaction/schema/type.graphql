@@ -41,3 +41,24 @@ enum TransactionReason {
   OPPORTUNITY_RESERVATION_CANCELED
   OPPORTUNITY_RESERVATION_REJECTED
 }
+
+# ------------------------------
+# IncentiveGrant Enum Definitions
+# ------------------------------
+enum IncentiveGrantType {
+  SIGNUP
+}
+
+enum IncentiveGrantStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum IncentiveGrantFailureCode {
+  INSUFFICIENT_FUNDS
+  WALLET_NOT_FOUND
+  DATABASE_ERROR
+  TIMEOUT
+  UNKNOWN
+}
