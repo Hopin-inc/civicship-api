@@ -21,7 +21,8 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 export async function runRequestSecurityChecks(
   req: http.IncomingMessage, 
   headers: AuthHeaders,
-  issuer: PrismaClientIssuer
+  issuer: PrismaClientIssuer,
+  operationInfo?: { operationName: string; operationType: string }
 ) {
   const url = req.url || "";
   const userAgent = Array.isArray(req.headers["user-agent"]) ? req.headers["user-agent"][0] : req.headers["user-agent"];
@@ -49,7 +50,11 @@ export async function runRequestSecurityChecks(
   // ④ communityId が必要
   if (!headers.communityId) {
     const info = extractRequestInfo(req);
-    logger.error("❌ Missing x-community-id header", info);
+    logger.error("❌ Missing x-community-id header", {
+      ...info,
+      operationName: operationInfo?.operationName,
+      operationType: operationInfo?.operationType,
+    });
     throw new AuthenticationError("Missing x-community-id header");
   }
 
