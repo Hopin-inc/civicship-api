@@ -32,6 +32,12 @@ export default class IncentiveGrantResolver {
   };
 
   IncentiveGrant = {
+    user: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
+      return ctx.loaders.user.load(parent.userId);
+    },
+    community: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
+      return ctx.loaders.community.load(parent.communityId);
+    },
     transaction: (parent: PrismaIncentiveGrant, _: unknown, ctx: IContext) => {
       return parent.transactionId ? ctx.loaders.transaction.load(parent.transactionId) : null;
     },
