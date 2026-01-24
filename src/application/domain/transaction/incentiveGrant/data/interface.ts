@@ -20,6 +20,15 @@ export interface IIncentiveGrantRepository {
   find(ctx: IContext, id: string): Promise<PrismaIncentiveGrant | null>;
 
   /**
+   * Find a single incentive grant by ID within a transaction.
+   */
+  findInTransaction(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaIncentiveGrant | null>;
+
+  /**
    * Find multiple incentive grants by IDs (for DataLoader batch loading).
    */
   findManyByIds(ctx: IContext, ids: string[]): Promise<PrismaIncentiveGrant[]>;
@@ -65,4 +74,18 @@ export interface IIncentiveGrantRepository {
     lastError: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaIncentiveGrant>;
+
+  /**
+   * Atomically mark an incentive grant as RETRYING.
+   * Only updates grants with FAILED status to prevent concurrent retry attempts.
+   * Returns true if the grant was successfully marked as RETRYING, false otherwise.
+   */
+  markAsRetrying(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+    type: IncentiveGrantType,
+    sourceId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<boolean>;
 }

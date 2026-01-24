@@ -1,0 +1,31 @@
+# ------------------------------
+# IncentiveGrant Mutation Definitions
+# ------------------------------
+extend type Mutation {
+  incentiveGrantRetry(
+    input: IncentiveGrantRetryInput!
+    permission: CheckCommunityPermissionInput!
+  ): IncentiveGrantRetryPayload
+  @authz(rules: [IsCommunityOwner])
+}
+
+# ------------------------------
+# IncentiveGrant Mutation Input Definitions
+# ------------------------------
+input IncentiveGrantRetryInput {
+  incentiveGrantId: ID!
+}
+
+# ------------------------------
+# IncentiveGrant Mutation Success Type Definitions
+# ------------------------------
+type IncentiveGrantRetrySuccess {
+  incentiveGrant: IncentiveGrant!
+  transaction: Transaction
+}
+
+# ------------------------------
+# IncentiveGrant Mutation Union (Payload) Definitions
+# ------------------------------
+union IncentiveGrantRetryPayload =
+  IncentiveGrantRetrySuccess

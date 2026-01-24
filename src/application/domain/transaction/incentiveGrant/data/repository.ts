@@ -34,6 +34,17 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
     });
   }
 
+  async findInTransaction(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaIncentiveGrant | null> {
+    return tx.incentiveGrant.findUnique({
+      where: { id },
+      select: incentiveGrantSelect,
+    });
+  }
+
   async findManyByIds(ctx: IContext, ids: string[]): Promise<PrismaIncentiveGrant[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.incentiveGrant.findMany({
@@ -80,7 +91,13 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
       },
       data: {
         status: "COMPLETED",
-        transactionId,
+        transaction: {
+          connect: { id: transactionId },
+        },
+        attemptCount: 0, // Reset attempt count on success
+        failureCode: null, // Clear failure information
+        lastError: null,
+        lastAttemptedAt: null, // Clear last attempt timestamp
         updatedAt: new Date(),
       },
       select: incentiveGrantSelect,
@@ -116,5 +133,31 @@ export default class IncentiveGrantRepository implements IIncentiveGrantReposito
       },
       select: incentiveGrantSelect,
     });
+  }
+
+  async markAsRetrying(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+    type: IncentiveGrantType,
+    sourceId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<boolean> {
+    const result = await tx.incentiveGrant.updateMany({
+      where: {
+        userId,
+        communityId,
+        type,
+        sourceId,
+        status: "FAILED", // Only update if status is FAILED
+      },
+      data: {
+        status: "RETRYING",
+        attemptCount: { increment: 1 },
+        lastAttemptedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+    return result.count > 0;
   }
 }

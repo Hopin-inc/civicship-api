@@ -408,9 +408,12 @@ enum ErrorCode {
   ALREADY_USED_CLAIM_LINK
   CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START
   CLAIM_LINK_EXPIRED
+  CONCURRENT_RETRY_DETECTED
   FORBIDDEN
+  INCENTIVE_DISABLED
   INSUFFICIENT_BALANCE
   INTERNAL_SERVER_ERROR
+  INVALID_GRANT_STATUS
   INVALID_TRANSFER_METHOD
   MISSING_WALLET_INFORMATION
   NOT_FOUND
@@ -425,6 +428,7 @@ enum ErrorCode {
   TICKET_PARTICIPANT_MISMATCH
   UNAUTHENTICATED
   UNKNOWN
+  UNSUPPORTED_GRANT_TYPE
   UNSUPPORTED_TRANSACTION_REASON
   VALIDATION_ERROR
 }
@@ -592,6 +596,17 @@ input IncentiveGrantFilterInput {
   userId: ID
 }
 
+input IncentiveGrantRetryInput {
+  incentiveGrantId: ID!
+}
+
+union IncentiveGrantRetryPayload = IncentiveGrantRetrySuccess
+
+type IncentiveGrantRetrySuccess {
+  incentiveGrant: IncentiveGrant!
+  transaction: Transaction
+}
+
 input IncentiveGrantSortInput {
   createdAt: SortDirection
   updatedAt: SortDirection
@@ -601,6 +616,7 @@ enum IncentiveGrantStatus {
   COMPLETED
   FAILED
   PENDING
+  RETRYING
 }
 
 enum IncentiveGrantType {
@@ -771,6 +787,7 @@ type Mutation {
   communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!, permission: CheckCommunityPermissionInput!): CommunityUpdateProfilePayload
   evaluationBulkCreate(input: EvaluationBulkCreateInput!, permission: CheckCommunityPermissionInput!): EvaluationBulkCreatePayload
   identityCheckPhoneUser(input: IdentityCheckPhoneUserInput!): IdentityCheckPhoneUserPayload!
+  incentiveGrantRetry(input: IncentiveGrantRetryInput!, permission: CheckCommunityPermissionInput!): IncentiveGrantRetryPayload
   linkPhoneAuth(input: LinkPhoneAuthInput!, permission: CheckIsSelfPermissionInput!): LinkPhoneAuthPayload
   membershipAcceptMyInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckIsSelfPermissionInput!): MembershipSetInvitationStatusPayload
   membershipAssignManager(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput!): MembershipSetRolePayload

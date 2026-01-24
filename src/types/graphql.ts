@@ -456,9 +456,12 @@ export const GqlErrorCode = {
   AlreadyUsedClaimLink: 'ALREADY_USED_CLAIM_LINK',
   CannotEvaluateBeforeOpportunityStart: 'CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START',
   ClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
+  ConcurrentRetryDetected: 'CONCURRENT_RETRY_DETECTED',
   Forbidden: 'FORBIDDEN',
+  IncentiveDisabled: 'INCENTIVE_DISABLED',
   InsufficientBalance: 'INSUFFICIENT_BALANCE',
   InternalServerError: 'INTERNAL_SERVER_ERROR',
+  InvalidGrantStatus: 'INVALID_GRANT_STATUS',
   InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
   MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
   NotFound: 'NOT_FOUND',
@@ -473,6 +476,7 @@ export const GqlErrorCode = {
   TicketParticipantMismatch: 'TICKET_PARTICIPANT_MISMATCH',
   Unauthenticated: 'UNAUTHENTICATED',
   Unknown: 'UNKNOWN',
+  UnsupportedGrantType: 'UNSUPPORTED_GRANT_TYPE',
   UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
   ValidationError: 'VALIDATION_ERROR'
 } as const;
@@ -655,6 +659,18 @@ export type GqlIncentiveGrantFilterInput = {
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
+export type GqlIncentiveGrantRetryInput = {
+  incentiveGrantId: Scalars['ID']['input'];
+};
+
+export type GqlIncentiveGrantRetryPayload = GqlIncentiveGrantRetrySuccess;
+
+export type GqlIncentiveGrantRetrySuccess = {
+  __typename?: 'IncentiveGrantRetrySuccess';
+  incentiveGrant: GqlIncentiveGrant;
+  transaction?: Maybe<GqlTransaction>;
+};
+
 export type GqlIncentiveGrantSortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
   updatedAt?: InputMaybe<GqlSortDirection>;
@@ -663,7 +679,8 @@ export type GqlIncentiveGrantSortInput = {
 export const GqlIncentiveGrantStatus = {
   Completed: 'COMPLETED',
   Failed: 'FAILED',
-  Pending: 'PENDING'
+  Pending: 'PENDING',
+  Retrying: 'RETRYING'
 } as const;
 
 export type GqlIncentiveGrantStatus = typeof GqlIncentiveGrantStatus[keyof typeof GqlIncentiveGrantStatus];
@@ -850,6 +867,7 @@ export type GqlMutation = {
   communityUpdateProfile?: Maybe<GqlCommunityUpdateProfilePayload>;
   evaluationBulkCreate?: Maybe<GqlEvaluationBulkCreatePayload>;
   identityCheckPhoneUser: GqlIdentityCheckPhoneUserPayload;
+  incentiveGrantRetry?: Maybe<GqlIncentiveGrantRetryPayload>;
   linkPhoneAuth?: Maybe<GqlLinkPhoneAuthPayload>;
   membershipAcceptMyInvitation?: Maybe<GqlMembershipSetInvitationStatusPayload>;
   membershipAssignManager?: Maybe<GqlMembershipSetRolePayload>;
@@ -944,6 +962,12 @@ export type GqlMutationEvaluationBulkCreateArgs = {
 
 export type GqlMutationIdentityCheckPhoneUserArgs = {
   input: GqlIdentityCheckPhoneUserInput;
+};
+
+
+export type GqlMutationIncentiveGrantRetryArgs = {
+  input: GqlIncentiveGrantRetryInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
@@ -3205,6 +3229,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   CommunityDeletePayload: ( GqlCommunityDeleteSuccess );
   CommunityUpdateProfilePayload: ( Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: _RefType['Community'] } );
   EvaluationBulkCreatePayload: ( Omit<GqlEvaluationBulkCreateSuccess, 'evaluations'> & { evaluations: Array<_RefType['Evaluation']> } );
+  IncentiveGrantRetryPayload: ( Omit<GqlIncentiveGrantRetrySuccess, 'incentiveGrant' | 'transaction'> & { incentiveGrant: _RefType['IncentiveGrant'], transaction?: Maybe<_RefType['Transaction']> } );
   MembershipInvitePayload: ( Omit<GqlMembershipInviteSuccess, 'membership'> & { membership: _RefType['Membership'] } );
   MembershipRemovePayload: ( GqlMembershipRemoveSuccess );
   MembershipSetInvitationStatusPayload: ( Omit<GqlMembershipSetInvitationStatusSuccess, 'membership'> & { membership: _RefType['Membership'] } );
@@ -3338,6 +3363,9 @@ export type GqlResolversTypes = ResolversObject<{
   IncentiveGrantEdge: ResolverTypeWrapper<Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<GqlResolversTypes['IncentiveGrant']> }>;
   IncentiveGrantFailureCode: GqlIncentiveGrantFailureCode;
   IncentiveGrantFilterInput: GqlIncentiveGrantFilterInput;
+  IncentiveGrantRetryInput: GqlIncentiveGrantRetryInput;
+  IncentiveGrantRetryPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IncentiveGrantRetryPayload']>;
+  IncentiveGrantRetrySuccess: ResolverTypeWrapper<Omit<GqlIncentiveGrantRetrySuccess, 'incentiveGrant' | 'transaction'> & { incentiveGrant: GqlResolversTypes['IncentiveGrant'], transaction?: Maybe<GqlResolversTypes['Transaction']> }>;
   IncentiveGrantSortInput: GqlIncentiveGrantSortInput;
   IncentiveGrantStatus: GqlIncentiveGrantStatus;
   IncentiveGrantType: GqlIncentiveGrantType;
@@ -3673,6 +3701,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   IncentiveGrant: Omit<GqlIncentiveGrant, 'community' | 'transaction' | 'user'> & { community?: Maybe<GqlResolversParentTypes['Community']>, transaction?: Maybe<GqlResolversParentTypes['Transaction']>, user?: Maybe<GqlResolversParentTypes['User']> };
   IncentiveGrantEdge: Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['IncentiveGrant']> };
   IncentiveGrantFilterInput: GqlIncentiveGrantFilterInput;
+  IncentiveGrantRetryInput: GqlIncentiveGrantRetryInput;
+  IncentiveGrantRetryPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IncentiveGrantRetryPayload'];
+  IncentiveGrantRetrySuccess: Omit<GqlIncentiveGrantRetrySuccess, 'incentiveGrant' | 'transaction'> & { incentiveGrant: GqlResolversParentTypes['IncentiveGrant'], transaction?: Maybe<GqlResolversParentTypes['Transaction']> };
   IncentiveGrantSortInput: GqlIncentiveGrantSortInput;
   IncentiveGrantsConnection: Omit<GqlIncentiveGrantsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['IncentiveGrantEdge']>>> };
   Int: Scalars['Int']['output'];
@@ -4276,6 +4307,16 @@ export type GqlIncentiveGrantEdgeResolvers<ContextType = any, ParentType extends
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlIncentiveGrantRetryPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['IncentiveGrantRetryPayload'] = GqlResolversParentTypes['IncentiveGrantRetryPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'IncentiveGrantRetrySuccess', ParentType, ContextType>;
+}>;
+
+export type GqlIncentiveGrantRetrySuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['IncentiveGrantRetrySuccess'] = GqlResolversParentTypes['IncentiveGrantRetrySuccess']> = ResolversObject<{
+  incentiveGrant?: Resolver<GqlResolversTypes['IncentiveGrant'], ParentType, ContextType>;
+  transaction?: Resolver<Maybe<GqlResolversTypes['Transaction']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlIncentiveGrantsConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['IncentiveGrantsConnection'] = GqlResolversParentTypes['IncentiveGrantsConnection']> = ResolversObject<{
   edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['IncentiveGrantEdge']>>>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
@@ -4388,6 +4429,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input' | 'permission'>>;
   evaluationBulkCreate?: Resolver<Maybe<GqlResolversTypes['EvaluationBulkCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationEvaluationBulkCreateArgs, 'input' | 'permission'>>;
   identityCheckPhoneUser?: Resolver<GqlResolversTypes['IdentityCheckPhoneUserPayload'], ParentType, ContextType, RequireFields<GqlMutationIdentityCheckPhoneUserArgs, 'input'>>;
+  incentiveGrantRetry?: Resolver<Maybe<GqlResolversTypes['IncentiveGrantRetryPayload']>, ParentType, ContextType, RequireFields<GqlMutationIncentiveGrantRetryArgs, 'input' | 'permission'>>;
   linkPhoneAuth?: Resolver<Maybe<GqlResolversTypes['LinkPhoneAuthPayload']>, ParentType, ContextType, RequireFields<GqlMutationLinkPhoneAuthArgs, 'input' | 'permission'>>;
   membershipAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAcceptMyInvitationArgs, 'input' | 'permission'>>;
   membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'input' | 'permission'>>;
@@ -5405,6 +5447,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   IdentityCheckPhoneUserPayload?: GqlIdentityCheckPhoneUserPayloadResolvers<ContextType>;
   IncentiveGrant?: GqlIncentiveGrantResolvers<ContextType>;
   IncentiveGrantEdge?: GqlIncentiveGrantEdgeResolvers<ContextType>;
+  IncentiveGrantRetryPayload?: GqlIncentiveGrantRetryPayloadResolvers<ContextType>;
+  IncentiveGrantRetrySuccess?: GqlIncentiveGrantRetrySuccessResolvers<ContextType>;
   IncentiveGrantsConnection?: GqlIncentiveGrantsConnectionResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   LinkPhoneAuthPayload?: GqlLinkPhoneAuthPayloadResolvers<ContextType>;

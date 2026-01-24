@@ -274,3 +274,53 @@ export class PaymentStateTransitionError extends OrderProcessingError {
     Object.defineProperty(this, "name", { value: "PaymentStateTransitionError" });
   }
 }
+
+// IncentiveGrant
+export class InvalidGrantStatusError extends ApolloError {
+  public currentStatus: string;
+  public expectedStatus: string;
+
+  constructor(currentStatus: string, expectedStatus: string) {
+    const message = `IncentiveGrant is not in ${expectedStatus} status: current status is ${currentStatus}`;
+    super(message, "INVALID_GRANT_STATUS");
+    this.currentStatus = currentStatus;
+    this.expectedStatus = expectedStatus;
+    Object.defineProperty(this, "name", { value: "InvalidGrantStatusError" });
+  }
+}
+
+export class UnsupportedGrantTypeError extends ApolloError {
+  public grantType: string;
+
+  constructor(grantType: string) {
+    const message = `Unsupported grant type for retry: ${grantType}`;
+    super(message, "UNSUPPORTED_GRANT_TYPE");
+    this.grantType = grantType;
+    Object.defineProperty(this, "name", { value: "UnsupportedGrantTypeError" });
+  }
+}
+
+export class IncentiveDisabledError extends ApolloError {
+  public communityId: string;
+  public incentiveType: string;
+
+  constructor(communityId: string, incentiveType: string) {
+    const message = `${incentiveType} is no longer enabled for community: ${communityId}`;
+    super(message, "INCENTIVE_DISABLED");
+    this.communityId = communityId;
+    this.incentiveType = incentiveType;
+    Object.defineProperty(this, "name", { value: "IncentiveDisabledError" });
+  }
+}
+
+export class ConcurrentRetryError extends ApolloError {
+  public grantId: string;
+
+  constructor(grantId: string) {
+    const message = `IncentiveGrant ${grantId} is already being retried by another request`;
+    super(message, "CONCURRENT_RETRY_DETECTED");
+    this.grantId = grantId;
+    Object.defineProperty(this, "name", { value: "ConcurrentRetryError" });
+  }
+}
+

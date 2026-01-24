@@ -229,6 +229,7 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
 
         IncentiveGrantStatus {
             PENDING PENDING
+RETRYING RETRYING
 COMPLETED COMPLETED
 FAILED FAILED
         }
@@ -724,7 +725,7 @@ RIGHT RIGHT
     IncentiveGrantFailureCode failure_code "❓"
     String last_error "❓"
     Int attempt_count 
-    DateTime last_attempted_at 
+    DateTime last_attempted_at "❓"
     String transaction_id "❓"
     DateTime created_at 
     DateTime updated_at 
