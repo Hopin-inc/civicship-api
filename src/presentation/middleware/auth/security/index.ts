@@ -54,6 +54,7 @@ export async function runRequestSecurityChecks(
       ...info,
       operationName: operationInfo?.operationName,
       operationType: operationInfo?.operationType,
+      authMode: headers.authMode,
     });
     throw new AuthenticationError("Missing x-community-id header");
   }
