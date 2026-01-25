@@ -125,7 +125,15 @@ export default class IdentityService {
   }
 
   async findUserByIdentity(ctx: IContext, uid: string, communityId?: string | null): Promise<User | null> {
-    const identity = await this.identityRepository.find(uid, communityId);
+    // First, try to find identity with the specified communityId
+    let identity = await this.identityRepository.find(uid, communityId);
+    
+    // If not found and communityId was specified, also try to find global identity (communityId = null)
+    // This handles the case where LINE identities are created as global identities
+    if (!identity && communityId) {
+      identity = await this.identityRepository.find(uid, null);
+    }
+    
     if (identity) {
       return await this.userRepository.find(ctx, identity.userId);
     }
