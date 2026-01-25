@@ -135,13 +135,20 @@ export class LIFFAuthUseCase {
       };
     }
 
-    await identityService.addIdentityToUser(
-      ctx,
-      existingUser.id,
+    const existingGlobalIdentity = await identityService.findGlobalIdentity(
       profile.userId,
       IdentityPlatform.LINE,
-      null,
     );
+
+    if (!existingGlobalIdentity) {
+      await identityService.addIdentityToUser(
+        ctx,
+        existingUser.id,
+        profile.userId,
+        IdentityPlatform.LINE,
+        null,
+      );
+    }
 
     const customToken = await LIFFService.createFirebaseCustomToken(profile);
 
@@ -168,6 +175,14 @@ export class LIFFAuthUseCase {
     await LIFFService.verifyAccessToken(request.accessToken, liffId);
 
     const profile = await LIFFService.getProfile(request.accessToken);
+
+    const existingIdentity = await identityService.findGlobalIdentity(
+      profile.userId,
+      IdentityPlatform.LINE,
+    );
+    if (existingIdentity) {
+      throw new Error("This LINE account is already registered.");
+    }
 
     const newUser = await identityService.createUserAndIdentity({
       name: request.name,

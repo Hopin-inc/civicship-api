@@ -160,7 +160,12 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
-    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/admin/reservations/${reservation.id}?mode=approval`;
+    const communityId = reservation.opportunitySlot.opportunity.communityId;
+    if (!communityId) {
+      logger.error("pushReservationAppliedMessage: communityId is missing for admin notification", { reservationId: reservation.id });
+      return;
+    }
+    const redirectUrl = `${liffBaseUrl}/${communityId}/admin/reservations/${reservation.id}?mode=approval`;
 
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
@@ -204,8 +209,14 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
+    const communityId = reservation.opportunitySlot.opportunity.communityId;
+    if (!communityId) {
+      logger.error("pushReservationCanceledMessage: communityId is missing for admin notification", { reservationId: reservation.id });
+      return;
+    }
+
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
-    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/admin/reservations/${reservation.id}`;
+    const redirectUrl = `${liffBaseUrl}/${communityId}/admin/reservations/${reservation.id}`;
 
     const client = await createLineClient(null);
     const message = buildReservationCanceledMessage({
@@ -307,11 +318,17 @@ export default class NotificationService {
     const { name: hostName, image: hostImage } = createdByUser ?? {};
     const participantCount = `${reservation.participations.length}人`;
 
+    const communityId = reservation.opportunitySlot.opportunity.communityId;
+    if (!communityId) {
+      logger.error("pushReservationAcceptedMessage: communityId is missing", { reservationId: reservation.id });
+      return;
+    }
+
     const client = await createLineClient(null);
 
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
     for (const { uid, participationId } of participantInfos) {
-      const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/participations/${participationId}`;
+      const redirectUrl = `${liffBaseUrl}/${communityId}/participations/${participationId}`;
       const message = buildReservationAcceptedMessage({
         title,
         thumbnail: this.safeImageUrl(images[0]?.url, DEFAULT_THUMBNAIL),
@@ -353,8 +370,14 @@ export default class NotificationService {
 
     const client = await createLineClient(null);
 
+    const communityId = opportunity.communityId;
+    if (!communityId) {
+      logger.warn("pushCertificateIssuedMessage: communityId is missing", { evaluationId: evaluation.id });
+      return;
+    }
+
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
-    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/credentials/${evaluation.participationId}`;
+    const redirectUrl = `${liffBaseUrl}/${communityId}/credentials/${evaluation.participationId}`;
     const message = buildCertificateIssuedMessage({
       title,
       year,
@@ -517,7 +540,7 @@ export default class NotificationService {
       });
       return;
     }
-    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/admin`;
+    const redirectUrl = `${liffBaseUrl}/${membership.communityId}/admin`;
 
     if (isAdmin && success) {
       await safePushMessage(client, {
