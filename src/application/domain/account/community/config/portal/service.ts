@@ -57,7 +57,7 @@ export default class CommunityPortalConfigService {
 
     // Use the integrated LINE config
     // This ensures all communities use the same LINE authentication
-    // Firebase config still uses community-specific config for tenant isolation
+
     const lineConfig = await this.configRepository.getLineConfig(ctx, "integrated");
 
     return {
