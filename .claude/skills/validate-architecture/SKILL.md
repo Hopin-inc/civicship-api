@@ -37,13 +37,15 @@ If `$ARGUMENTS` is provided, validate that specific path or domain. Otherwise, v
 - ✅ MUST implement business logic and validation
 - ✅ MUST call repositories
 - ✅ CAN call other domain services (read operations only)
-- ✅ MUST handle `tx` parameter with `if (tx)` branching
+- ✅ MUST accept `tx` parameter and pass it to repository methods (no `if (tx)` branching in Service)
 - ❌ NEVER return GraphQL types (`GqlXxx`) - return Prisma types only
 
 **Repository Layer** (`data/repository.ts`)
 - ✅ MUST execute Prisma queries only
 - ✅ MUST use `ctx.issuer` for Row-Level Security (RLS)
-- ✅ MUST handle `tx` parameter with `if (tx)` branching
+- ✅ MUST handle `tx` parameter according to method type:
+  - **Mutation methods** (create/update/delete): Accept required `tx: Prisma.TransactionClient` and use it directly (no `if (tx)` branching)
+  - **Query methods** callable both inside and outside a transaction: Accept optional `tx?: Prisma.TransactionClient` and handle with `if (tx)` branching
 - ❌ NEVER contain business logic
 
 **Converter** (`data/converter.ts`)
@@ -60,34 +62,57 @@ If `$ARGUMENTS` is provided, validate that specific path or domain. Otherwise, v
 
 ### 2. Transaction Pattern Validation
 
-**CORRECT Pattern:**
+**Pattern A: Mutation Methods (create/update/delete) - Required Transaction**
+
 ```typescript
 // UseCase manages transactions
-async managerCreateOpportunity({ input }, ctx) {
+async managerCreateOpportunity({ input, permission }, ctx) {
   return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-    const record = await this.service.createOpportunity(ctx, input, tx);
+    const record = await this.service.createOpportunity(ctx, input, permission.communityId, tx);
     return OpportunityPresenter.create(record);
   });
 }
 
-// Service receives tx
-async createOpportunity(ctx, input, tx) {
+// Service receives tx and passes it to repository
+async createOpportunity(ctx, input, communityId, tx) {
+  const data = this.converter.create(input, communityId);
   return await this.repository.create(ctx, data, tx);
 }
 
-// Repository handles tx with branching
-async create(ctx, data, tx?) {
+// Repository accepts required tx parameter (no branching)
+async create(ctx, data, tx: Prisma.TransactionClient) {
+  return tx.opportunity.create({
+    data,
+    select: opportunitySelectDetail,
+  });
+}
+```
+
+**Pattern B: Query Methods - Optional Transaction (for flexible usage)**
+
+```typescript
+// Repository accepts optional tx parameter with branching
+async findCommunityWallet(ctx, communityId, tx?: Prisma.TransactionClient) {
   if (tx) {
-    return tx.opportunity.create({ data });
+    return tx.wallet.findFirst({
+      where: { communityId, type: WalletType.COMMUNITY },
+      select: walletSelectDetail,
+    });
   }
-  return ctx.issuer.public(ctx, (tx) => tx.opportunity.create({ data }));
+  return ctx.issuer.public(ctx, (tx) => {
+    return tx.wallet.findFirst({
+      where: { communityId, type: WalletType.COMMUNITY },
+      select: walletSelectDetail,
+    });
+  });
 }
 ```
 
 **VIOLATIONS to Flag:**
-- ❌ Transactions started in Service or Repository layer
-- ❌ Missing `tx` parameter propagation
-- ❌ Missing `if (tx)` branching in Repository
+- ❌ Transactions started in Service layer (use UseCase only)
+- ❌ Missing `tx` parameter propagation from Service to Repository
+- ❌ Mutation methods using optional `tx?` instead of required `tx`
+- ❌ Query methods without `if (tx)` branching when using optional `tx?`
 
 ---
 
@@ -143,13 +168,13 @@ Opportunity: {
 If `$ARGUMENTS` provided:
 ```bash
 # Validate specific domain
-find src/application/domain/$ARGUMENTS -type f \( -name "*.ts" -o -name "*.graphql" \)
+find src/application/domain/"$ARGUMENTS" -type f '(' -name "*.ts" -o -name "*.graphql" ')'
 ```
 
 Otherwise:
 ```bash
 # Validate uncommitted changes
-git status --porcelain | grep -E '^\s*M|^\s*A' | awk '{print $2}'
+git status --porcelain | grep -E '^\s*[MA]' | cut -c 4-
 ```
 
 ### Step 2: Read and Analyze Files
@@ -172,7 +197,8 @@ For each file, perform layer-specific checks:
 
 **For `data/repository.ts`:**
 - Verify all queries use `ctx.issuer.public/internal/onlyBelongingCommunity`
-- Check `if (tx)` branching exists
+- Check mutation methods (create/update/delete) use required `tx: Prisma.TransactionClient`
+- Check query methods with optional `tx?` implement `if (tx)` branching
 - Search for business logic (complex conditionals, validation)
 
 **For `data/converter.ts`:**
