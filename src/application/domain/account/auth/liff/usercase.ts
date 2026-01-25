@@ -182,12 +182,6 @@ export class LIFFAuthUseCase {
     );
     if (existingIdentity) {
       throw new Error("This LINE account is already registered.");
-    const profile = await LIFFService.getProfile(request.accessToken);
-
-    const existingIdentity = await identityService.findGlobalIdentity(profile.userId, IdentityPlatform.LINE);
-    if (existingIdentity) {
-      // 例: このLINEアカウントは既に登録済みです
-      throw new Error("This LINE account is already registered.");
     }
 
     const newUser = await identityService.createUserAndIdentity({
