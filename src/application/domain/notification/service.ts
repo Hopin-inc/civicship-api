@@ -83,7 +83,7 @@ export default class NotificationService {
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
     const redirectUrl = communityId
       ? `${liffBaseUrl}/${communityId}/reservation/select-date?id=${opportunityId}&community_id=${communityId}`
-      : `${liffBaseUrl}/activities`;
+      : `${liffBaseUrl}/${communityId}/activities`;
 
     const client = await createLineClient(null);
     const message = buildCancelOpportunitySlotMessage({
@@ -311,7 +311,7 @@ export default class NotificationService {
 
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, null);
     for (const { uid, participationId } of participantInfos) {
-      const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
+      const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/participations/${participationId}`;
       const message = buildReservationAcceptedMessage({
         title,
         thumbnail: this.safeImageUrl(images[0]?.url, DEFAULT_THUMBNAIL),
@@ -387,7 +387,7 @@ export default class NotificationService {
     }
 
     const { uid, liffBaseUrl, client, language } = preparedData;
-    const redirectUrl = `${liffBaseUrl}/wallets`;
+    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/wallets`;
 
     const message = buildPointDonationReceivedMessage({
       fromUserName,
@@ -421,7 +421,7 @@ export default class NotificationService {
     }
 
     const { uid, liffBaseUrl, client, language } = preparedData;
-    const redirectUrl = `${liffBaseUrl}/wallets`;
+    const redirectUrl = `${liffBaseUrl}/${ctx.communityId}/wallets`;
 
     const message = buildPointGrantReceivedMessage({
       communityName,
