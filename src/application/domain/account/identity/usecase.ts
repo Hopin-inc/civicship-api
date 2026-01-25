@@ -234,7 +234,8 @@ export default class IdentityUseCase {
     if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
       const expiryTime = this.deriveExpiryTime(lineTokenExpiresAt);
       const refreshToken = lineRefreshToken || "";
-      await this.identityService.storeAuthTokens(ctx.uid, ctx.communityId, ctx.idToken, refreshToken, expiryTime);
+      // LINE identities are now global (communityId = null) for the integrated LINE channel
+      await this.identityService.storeAuthTokens(ctx.uid, null, ctx.idToken, refreshToken, expiryTime);
       logger.debug(`Stored LINE auth tokens for ${ctx.uid}`);
     }
   }
