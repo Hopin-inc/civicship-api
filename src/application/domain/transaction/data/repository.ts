@@ -5,7 +5,10 @@ import {
   transactionSelectDetail,
   PrismaTransactionDetail,
 } from "@/application/domain/transaction/data/type";
-import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
+import {
+  refreshMaterializedViewCurrentPoints,
+  refreshMaterializedViewTransactionChains,
+} from "@prisma/client/sql";
 import { injectable } from "tsyringe";
 
 @injectable()
@@ -45,8 +48,11 @@ export default class TransactionRepository implements ITransactionRepository {
     return tx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
   }
 
-  async refreshTransactionChains(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
-    await tx.$executeRawUnsafe(`REFRESH MATERIALIZED VIEW CONCURRENTLY mv_transaction_chains;`);
+  async refreshTransactionChains(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+  ): Promise<refreshMaterializedViewTransactionChains.Result[]> {
+    return tx.$queryRawTyped(refreshMaterializedViewTransactionChains());
   }
 
   async create(
