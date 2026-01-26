@@ -1,5 +1,5 @@
--- 1. 検索インデックス
-CREATE INDEX IF NOT EXISTS idx_t_transactions_chain_lookup ON t_transactions("from", "to", "created_at");
+-- 1. 検索インデックス（再帰CTEで使用する列のみ）
+CREATE INDEX IF NOT EXISTS idx_t_transactions_chain_lookup ON t_transactions("from", "created_at");
 
 -- 2. Materialized View の作成
 -- 再帰の内部ではフィルタリングせず、最後に全経路の中から最適なものを選び出します

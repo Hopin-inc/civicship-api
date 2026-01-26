@@ -1164,6 +1164,7 @@ model Transaction {
 
   merkleProofs MerkleProof[]
 
+  @@index([from, createdAt])
   @@map("t_transactions")
 }
 
