@@ -700,7 +700,7 @@ RIGHT RIGHT
   
 
   "t_transactions" {
-    String transaction_id "🗝️"
+    String id "🗝️"
     TransactionReason reason 
     String comment "❓"
     String from "❓"
@@ -716,7 +716,7 @@ RIGHT RIGHT
   
 
   "t_incentive_grants" {
-    String id "🗝️"
+    String transaction_id "🗝️"
     IncentiveGrantType type 
     String source_id 
     IncentiveGrantStatus status 
