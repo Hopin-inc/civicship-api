@@ -5,346 +5,346 @@ user-invocable: true
 allowed-tools: Read, Grep, Bash
 ---
 
-# Database Migration Guide for civicship-api
+# civicship-api データベースマイグレーションガイド
 
-Safely guide through Prisma schema changes, migration creation, and type generation following project best practices.
+Prismaスキーマ変更、マイグレーション作成、型生成をプロジェクトのベストプラクティスに従って安全にガイドします。
 
-## Usage
+## 使用方法
 
 ```bash
-# Run migration workflow
+# マイグレーションワークフローを実行
 /db-migration
 
-# Check migration status only
+# マイグレーションステータスのみをチェック
 /db-migration status
 ```
 
 ---
 
-## Migration Workflow
+## マイグレーションワークフロー
 
-### Step 1: Detect Schema Changes
+### ステップ1: スキーマ変更の検出
 
-Check if `prisma/schema.prisma` has uncommitted changes:
+`prisma/schema.prisma` に未コミット変更があるかチェック:
 
 ```bash
 git status --porcelain prisma/schema.prisma
 ```
 
-**If no changes:**
-- Display message: "No schema changes detected"
-- Check pending migrations
+**変更なしの場合:**
+- メッセージ表示: "スキーマ変更は検出されませんでした"
+- 保留中のマイグレーションをチェック
 
-**If changes detected:**
-- Show diff: `git diff prisma/schema.prisma`
-- Proceed to validation
+**変更が検出された場合:**
+- diffを表示: `git diff prisma/schema.prisma`
+- 検証へ進む
 
 ---
 
-### Step 2: Validate Schema Changes
+### ステップ2: スキーマ変更の検証
 
-Read and analyze schema changes for common issues:
+スキーマ変更を読み取り、一般的な問題を分析:
 
-**Check for:**
+**チェック項目:**
 
-1. **Breaking Changes**
-   - Dropping columns without data migration
-   - Changing column types (potential data loss)
-   - Removing tables with foreign key dependencies
-   - Changing primary keys
+1. **破壊的変更**
+   - データマイグレーションなしでのカラム削除
+   - カラム型の変更（データ損失の可能性）
+   - 外部キー依存関係のあるテーブルの削除
+   - プライマリキーの変更
 
-2. **Missing Constraints**
-   - Foreign keys without indexes
-   - Unique constraints on nullable fields
-   - Missing @default for non-nullable fields
+2. **制約の欠落**
+   - インデックスのない外部キー
+   - nullable フィールドに対するユニーク制約
+   - non-nullable フィールドへの @default の欠落
 
-3. **Naming Conventions**
-   - Table names: snake_case (e.g., `t_users`, `t_opportunities`)
-   - Column names: camelCase (e.g., `createdAt`, `updatedAt`)
-   - Enum names: PascalCase (e.g., `UserStatus`, `PublishStatus`)
+3. **命名規則**
+   - テーブル名: snake_case（例: `t_users`, `t_opportunities`）
+   - カラム名: camelCase（例: `createdAt`, `updatedAt`）
+   - Enum名: PascalCase（例: `UserStatus`, `PublishStatus`）
 
 4. **Row-Level Security (RLS)**
-   - Tables should be prefixed with `t_` (e.g., `t_users`)
-   - Check if RLS policies need updating
+   - テーブルは `t_` プレフィックスを持つべき（例: `t_users`）
+   - RLSポリシーの更新が必要かチェック
 
-5. **Indexes**
-   - Foreign keys should have indexes
-   - Frequently queried columns should be indexed
-   - Consider compound indexes for multi-column queries
+5. **インデックス**
+   - 外部キーにはインデックスがあるべき
+   - 頻繁にクエリされるカラムにインデックスを追加
+   - 複数カラムクエリには複合インデックスを検討
 
-**Display validation results:**
+**検証結果を表示:**
 
 ```markdown
-## Schema Validation
+## スキーマ検証
 
-✅ No breaking changes detected
-✅ Naming conventions followed
-⚠️  Missing index on foreign key: `opportunityId` in `t_reservations`
-⚠️  Consider adding @default for `status` field in `t_participations`
+✅ 破壊的変更は検出されませんでした
+✅ 命名規則に従っています
+⚠️  外部キーにインデックスがありません: `t_reservations` の `opportunityId`
+⚠️  `t_participations` の `status` フィールドに @default の追加を検討してください
 ```
 
 ---
 
-### Step 3: Generate Migration Name
+### ステップ3: マイグレーション名の生成
 
-Suggest a descriptive migration name following conventions:
+規約に従った説明的なマイグレーション名を提案:
 
-**Format:** `{action}_{subject}_{detail}`
+**フォーマット:** `{action}_{subject}_{detail}`
 
-**Actions:**
-- `add` - New table or column
-- `update` - Modify existing structure
-- `remove` - Delete table or column
-- `fix` - Bug fix or correction
-- `refactor` - Structure improvement
+**アクション:**
+- `add` - 新しいテーブルまたはカラム
+- `update` - 既存構造の変更
+- `remove` - テーブルまたはカラムの削除
+- `fix` - バグ修正または訂正
+- `refactor` - 構造の改善
 
-**Examples:**
+**例:**
 - `add_user_phone_field`
 - `update_opportunity_status_enum`
 - `remove_deprecated_wallet_type`
 - `fix_reservation_foreign_key`
 - `refactor_identity_primary_key`
 
-**Analyze schema diff and suggest name:**
+**スキーマdiffを分析して名前を提案:**
 
 ```bash
-# If adding a new table
+# 新しいテーブルを追加する場合
 add_products_table
 
-# If adding a field
+# フィールドを追加する場合
 add_user_email_verified_field
 
-# If modifying enum
+# enumを変更する場合
 update_publish_status_enum
 ```
 
 ---
 
-### Step 4: Create Migration
+### ステップ4: マイグレーションの作成
 
-**IMPORTANT: Do NOT run migration automatically. Ask user for confirmation first.**
+**重要: マイグレーションを自動実行しないでください。最初にユーザーの確認を求めてください。**
 
-Display the migration command and wait for approval:
+マイグレーションコマンドを表示し、承認を待機:
 
 ```markdown
-## Migration Command
+## マイグレーションコマンド
 
-Ready to create migration with name: `add_user_phone_field`
+マイグレーション名 `add_user_phone_field` で作成準備完了
 
-Command to run:
+実行コマンド:
 \`\`\`bash
 pnpm db:migrate add_user_phone_field
 \`\`\`
 
-⚠️  **Before proceeding:**
-1. Review schema changes one more time
-2. Ensure no active development on affected tables
-3. Backup production database if applying to production
+⚠️  **実行前に:**
+1. スキーマ変更をもう一度確認
+2. 影響を受けるテーブルで開発が行われていないことを確認
+3. 本番環境に適用する場合はデータベースをバックアップ
 
-Do you want to proceed? (yes/no)
+続行しますか？ (yes/no)
 ```
 
-**If user confirms:**
+**ユーザーが確認した場合:**
 
 ```bash
 pnpm db:migrate add_user_phone_field
 ```
 
-**Expected output:**
-- Migration file created in `prisma/migrations/`
-- SQL file generated
+**期待される出力:**
+- `prisma/migrations/` にマイグレーションファイルが作成される
+- SQLファイルが生成される
 
 ---
 
-### Step 5: Review Generated SQL
+### ステップ5: 生成されたSQLのレビュー
 
-Read and display the generated migration SQL:
+生成されたマイグレーションSQLを読み取り、表示:
 
 ```bash
-# Find the latest migration
+# 最新のマイグレーションを見つける
 LATEST_MIGRATION=$(ls -t prisma/migrations/ | head -1)
 
-# Display SQL
+# SQLを表示
 cat "prisma/migrations/${LATEST_MIGRATION}/migration.sql"
 ```
 
-**Review checklist:**
+**レビューチェックリスト:**
 
-- ✅ SQL syntax is correct
-- ✅ No DROP TABLE without data migration
-- ✅ ALTER TABLE changes are safe
-- ✅ Indexes are created for foreign keys
-- ✅ Default values are appropriate
+- ✅ SQL構文が正しい
+- ✅ データマイグレーションなしの DROP TABLE がない
+- ✅ ALTER TABLE 変更が安全
+- ✅ 外部キーに対してインデックスが作成されている
+- ✅ デフォルト値が適切
 
-**Ask user to review:**
+**ユーザーにレビューを依頼:**
 
 ```markdown
-## Generated Migration SQL
+## 生成されたマイグレーションSQL
 
 \`\`\`sql
-[Display SQL content here]
+[ここにSQLの内容を表示]
 \`\`\`
 
-Does this SQL look correct? (yes/no)
+このSQLは正しく見えますか？ (yes/no)
 ```
 
 ---
 
-### Step 6: Generate Prisma Client
+### ステップ6: Prismaクライアントの生成
 
-After migration creation, generate TypeScript types:
+マイグレーション作成後、TypeScript型を生成:
 
 ```bash
 pnpm db:generate
 ```
 
-**This will:**
-- Update `@prisma/client` types
-- Generate TypeScript definitions
-- Update `node_modules/.prisma/client/`
+**これにより:**
+- `@prisma/client` 型が更新される
+- TypeScript定義が生成される
+- `node_modules/.prisma/client/` が更新される
 
-**Verify generation:**
+**生成を確認:**
 
 ```bash
-# Check if Prisma client was updated
+# Prismaクライアントが更新されたかチェック
 ls -la node_modules/.prisma/client/index.d.ts
 ```
 
 ---
 
-### Step 7: Update Application Code
+### ステップ7: アプリケーションコードの更新
 
-**Check if any application code needs updates:**
+**更新が必要なアプリケーションコードをチェック:**
 
-1. **Find files importing Prisma types:**
+1. **Prisma型をインポートしているファイルを検索:**
    ```bash
    grep -r "from '@prisma/client'" src/ --files-with-matches
    ```
 
-2. **Find files with Prisma select shapes:**
+2. **Prisma select shapesを持つファイルを検索:**
    ```bash
    grep -r "select.*{" src/application/domain/**/data/type.ts --files-with-matches
    ```
 
-3. **Display files that may need updates:**
+3. **更新が必要な可能性のあるファイルを表示:**
 
 ```markdown
-## Files That May Need Updates
+## 更新が必要な可能性のあるファイル
 
-The following files import Prisma types and may need updates:
+以下のファイルはPrisma型をインポートしており、更新が必要な可能性があります:
 
 - src/application/domain/account/user/data/type.ts
 - src/application/domain/account/membership/service.ts
 - src/application/domain/experience/opportunity/data/repository.ts
 
-Please review these files for:
-- New fields in select shapes
-- Updated enum values
-- Changed type definitions
+これらのファイルで以下を確認してください:
+- select shapesの新しいフィールド
+- 更新されたenum値
+- 変更された型定義
 ```
 
 ---
 
-### Step 8: Verify TypeScript Compilation
+### ステップ8: TypeScriptコンパイルの確認
 
-Compile TypeScript to check for type errors:
+型エラーをチェックするためにTypeScriptをコンパイル:
 
 ```bash
 pnpm build
 ```
 
-**If errors:**
-- Display compilation errors
-- Suggest fixes based on error messages
-- Common issues:
-  - Missing properties in types
-  - Enum value changes
-  - Type mismatches
+**エラーがある場合:**
+- コンパイルエラーを表示
+- エラーメッセージに基づいて修正を提案
+- 一般的な問題:
+  - 型のプロパティの欠落
+  - enum値の変更
+  - 型の不一致
 
-**If successful:**
+**成功した場合:**
 
 ```markdown
-✅ TypeScript compilation successful
-✅ No type errors detected
+✅ TypeScriptコンパイル成功
+✅ 型エラーは検出されませんでした
 ```
 
 ---
 
-### Step 9: Run Tests
+### ステップ9: テストの実行
 
-**IMPORTANT: Always run tests after schema changes.**
+**重要: スキーマ変更後は常にテストを実行してください。**
 
 ```bash
 pnpm test --runInBand
 ```
 
-**If tests fail:**
-- Display failed tests
-- Suggest checking:
-  - Test fixtures (may need updated data)
-  - Factory definitions (Prisma Fabbrica)
-  - Seed data scripts
+**テストが失敗した場合:**
+- 失敗したテストを表示
+- 以下をチェックすることを提案:
+  - テストフィクスチャ（データの更新が必要な可能性）
+  - ファクトリ定義（Prisma Fabbrica）
+  - シードデータスクリプト
 
-**If tests pass:**
+**テストが成功した場合:**
 
 ```markdown
-✅ All tests passed
-✅ Database schema changes are compatible with existing code
+✅ 全てのテストが成功しました
+✅ データベーススキーマ変更は既存コードと互換性があります
 ```
 
 ---
 
-### Step 10: Update Documentation
+### ステップ10: ドキュメントの更新
 
-Remind user to update related documentation:
+関連ドキュメントの更新をリマインド:
 
 ```markdown
-## Documentation Updates
+## ドキュメントの更新
 
-Consider updating:
+以下の更新を検討してください:
 
-- [ ] `docs/database/schema.md` - Document new tables/fields
-- [ ] `docs/handbook/FEATURES.md` - Update feature documentation
-- [ ] GraphQL schema comments - Add descriptions for new fields
-- [ ] `CHANGELOG.md` - Add migration to changelog
+- [ ] `docs/database/schema.md` - 新しいテーブル/フィールドをドキュメント化
+- [ ] `docs/handbook/FEATURES.md` - 機能ドキュメントを更新
+- [ ] GraphQLスキーマコメント - 新しいフィールドの説明を追加
+- [ ] `CHANGELOG.md` - マイグレーションをchangelogに追加
 
-Prisma schema comments are automatically included in generated types.
+Prismaスキーマのコメントは生成された型に自動的に含まれます。
 ```
 
 ---
 
-## Migration Best Practices
+## マイグレーションのベストプラクティス
 
-### Before Creating Migration
+### マイグレーション作成前
 
-- ✅ Review schema changes carefully
-- ✅ Check for breaking changes
-- ✅ Ensure naming conventions are followed
-- ✅ Add appropriate indexes
-- ✅ Consider data migration needs
+- ✅ スキーマ変更を慎重にレビュー
+- ✅ 破壊的変更をチェック
+- ✅ 命名規則に従っていることを確認
+- ✅ 適切なインデックスを追加
+- ✅ データマイグレーションの必要性を検討
 
-### After Creating Migration
+### マイグレーション作成後
 
-- ✅ Review generated SQL
-- ✅ Run `pnpm db:generate`
-- ✅ Fix TypeScript compilation errors
-- ✅ Run tests with `pnpm test --runInBand`
-- ✅ Update application code if needed
-- ✅ Update documentation
+- ✅ 生成されたSQLをレビュー
+- ✅ `pnpm db:generate` を実行
+- ✅ TypeScriptコンパイルエラーを修正
+- ✅ `pnpm test --runInBand` でテストを実行
+- ✅ 必要に応じてアプリケーションコードを更新
+- ✅ ドキュメントを更新
 
-### For Production Migrations
+### 本番環境マイグレーション
 
-- ✅ Test migration on staging environment first
-- ✅ Backup production database
-- ✅ Plan for downtime if needed
-- ✅ Have rollback plan ready
-- ✅ Monitor application after deployment
+- ✅ ステージング環境で最初にマイグレーションをテスト
+- ✅ 本番データベースをバックアップ
+- ✅ 必要に応じてダウンタイムを計画
+- ✅ ロールバック計画を用意
+- ✅ デプロイ後アプリケーションを監視
 
 ---
 
-## Common Migration Patterns
+## 一般的なマイグレーションパターン
 
-### Adding a New Table
+### 新しいテーブルの追加
 
 ```prisma
 model t_products {
@@ -361,84 +361,84 @@ model t_products {
 }
 ```
 
-**Migration name:** `add_products_table`
+**マイグレーション名:** `add_products_table`
 
-### Adding a Column
+### カラムの追加
 
 ```prisma
 model t_users {
-  // ... existing fields
-  phoneNumber String? // New field
+  // ... 既存のフィールド
+  phoneNumber String? // 新しいフィールド
 }
 ```
 
-**Migration name:** `add_user_phone_number_field`
+**マイグレーション名:** `add_user_phone_number_field`
 
-### Updating an Enum
+### Enumの更新
 
 ```prisma
 enum PublishStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
-  SCHEDULED  // New value
+  SCHEDULED  // 新しい値
 }
 ```
 
-**Migration name:** `update_publish_status_enum_add_scheduled`
+**マイグレーション名:** `update_publish_status_enum_add_scheduled`
 
-### Adding an Index
+### インデックスの追加
 
 ```prisma
 model t_opportunities {
-  // ... existing fields
+  // ... 既存のフィールド
 
-  @@index([communityId, publishStatus]) // New compound index
+  @@index([communityId, publishStatus]) // 新しい複合インデックス
 }
 ```
 
-**Migration name:** `add_opportunity_community_status_index`
+**マイグレーション名:** `add_opportunity_community_status_index`
 
 ---
 
-## Troubleshooting
+## トラブルシューティング
 
-### Migration Fails
+### マイグレーションが失敗
 
-**Error:** "Migration failed to apply"
+**エラー:** "Migration failed to apply"
 
-**Solutions:**
-1. Check PostgreSQL connection: `pnpm container:up`
-2. Verify database credentials in `.env`
-3. Check if tables/columns already exist
-4. Review migration SQL for syntax errors
+**解決策:**
+1. PostgreSQL接続をチェック: `pnpm container:up`
+2. `.env` のデータベース認証情報を確認
+3. テーブル/カラムが既に存在していないかチェック
+4. マイグレーションSQLの構文エラーをレビュー
 
-### Type Generation Fails
+### 型生成が失敗
 
-**Error:** "Prisma client generation failed"
+**エラー:** "Prisma client generation failed"
 
-**Solutions:**
-1. Check Prisma schema syntax: `pnpm prisma format`
-2. Verify all relations are valid
-3. Check for circular dependencies
-4. Ensure all referenced models exist
+**解決策:**
+1. Prismaスキーマの構文をチェック: `pnpm prisma format`
+2. 全てのリレーションが有効であることを確認
+3. 循環依存をチェック
+4. 参照される全てのモデルが存在することを確認
 
-### Tests Fail After Migration
+### マイグレーション後にテストが失敗
 
-**Error:** Tests fail with database errors
+**エラー:** データベースエラーでテストが失敗
 
-**Solutions:**
-1. Update test fixtures with new fields
-2. Re-seed test database: `pnpm db:seed-domain`
-3. Update Prisma Fabbrica factories
-4. Check for missing required fields
+**解決策:**
+1. 新しいフィールドでテストフィクスチャを更新
+2. テストデータベースを再シード: `pnpm db:seed-domain`
+3. Prisma Fabブリカファクトリを更新
+4. 必須フィールドの欠落をチェック
 
 ---
 
-## Reference
+## 参考資料
 
-See `@CLAUDE.md` for:
-- Database commands (`pnpm db:*`)
-- Migration workflow
-- Prisma schema conventions
-- Testing after migrations
+以下については `@CLAUDE.md` を参照してください:
+- データベースコマンド（`pnpm db:*`）
+- マイグレーションワークフロー
+- Prismaスキーマ規約
+- マイグレーション後のテスト

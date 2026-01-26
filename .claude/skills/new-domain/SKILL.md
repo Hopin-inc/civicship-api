@@ -2,72 +2,72 @@
 name: new-domain
 description: Create a new domain following DDD/Clean Architecture pattern with complete file structure
 user-invocable: true
-argument-hint: [domain-name] [parent-category]
+argument-hint: [ドメイン名] [親カテゴリ]
 allowed-tools: Read, Write, Edit, Bash
 ---
 
-# New Domain Creation for civicship-api
+# civicship-api 新規ドメイン作成
 
-Create a new domain following **DDD (Domain-Driven Design)** and **Clean Architecture** principles with complete directory structure, template files, and dependency injection setup.
+**DDD（ドメイン駆動設計）** と **Clean Architecture** の原則に従い、完全なディレクトリ構造、テンプレートファイル、依存性注入の設定を含む新しいドメインを作成します。
 
-## Usage
+## 使用方法
 
 ```bash
-# Create a new domain in existing category
+# 既存のカテゴリに新しいドメインを作成
 /new-domain article content
 
-# Create a new domain in a new category
+# 新しいカテゴリに新しいドメインを作成
 /new-domain product marketplace
 ```
 
-**Arguments:**
-- `$ARGUMENTS[0]`: Domain name (e.g., `article`, `product`, `review`)
-- `$ARGUMENTS[1]`: Parent category (e.g., `content`, `experience`, `account`, `reward`)
+**引数:**
+- `$ARGUMENTS[0]`: ドメイン名（例: `article`, `product`, `review`）
+- `$ARGUMENTS[1]`: 親カテゴリ（例: `content`, `experience`, `account`, `reward`）
 
 ---
 
-## Domain Structure Template
+## ドメイン構造テンプレート
 
-The skill will create the following complete structure:
+このスキルは以下の完全な構造を作成します:
 
 ```
 src/application/domain/{category}/{domain-name}/
 ├── controller/
-│   ├── resolver.ts          # GraphQL Query/Mutation/field resolvers
-│   └── dataloader.ts        # N+1 prevention (batch loading)
-├── usecase.ts               # Business flow orchestration
-├── service.ts               # Business logic & validation
+│   ├── resolver.ts          # GraphQL Query/Mutation/フィールドリゾルバ
+│   └── dataloader.ts        # N+1問題防止（バッチローディング）
+├── usecase.ts               # ビジネスフローのオーケストレーション
+├── service.ts               # ビジネスロジック & バリデーション
 ├── data/
-│   ├── repository.ts        # Prisma database queries
-│   ├── interface.ts         # Repository interface contract
-│   ├── converter.ts         # GraphQL input → Prisma format
-│   └── type.ts              # TypeScript types (Prisma select shapes)
-├── presenter.ts             # Prisma → GraphQL response formatting
+│   ├── repository.ts        # Prismaデータベースクエリ
+│   ├── interface.ts         # Repository インターフェース契約
+│   ├── converter.ts         # GraphQL input → Prisma形式
+│   └── type.ts              # TypeScript型（Prisma select shapes）
+├── presenter.ts             # Prisma → GraphQLレスポンスのフォーマッティング
 └── schema/
-    ├── query.graphql        # Query definitions
-    ├── mutation.graphql     # Mutation definitions
-    └── type.graphql         # Type definitions
+    ├── query.graphql        # クエリ定義
+    ├── mutation.graphql     # ミューテーション定義
+    └── type.graphql         # 型定義
 ```
 
 ---
 
-## Step-by-Step Process
+## ステップバイステップのプロセス
 
-### Step 1: Validate Arguments
+### ステップ1: 引数の検証
 
-Extract domain name and category from `$ARGUMENTS`:
+`$ARGUMENTS` からドメイン名とカテゴリを抽出:
 
 ```bash
-DOMAIN_NAME="${$ARGUMENTS[0]}"    # e.g., "article"
-CATEGORY="${$ARGUMENTS[1]}"       # e.g., "content"
+DOMAIN_NAME="${$ARGUMENTS[0]}"    # 例: "article"
+CATEGORY="${$ARGUMENTS[1]}"       # 例: "content"
 ```
 
-**Validation:**
-- Domain name must be lowercase, alphanumeric with hyphens
-- Category must be one of: `account`, `content`, `experience`, `reward`, `location`, `transaction`, `notification`
-- Check if domain already exists
+**検証:**
+- ドメイン名は小文字、英数字、ハイフンのみ
+- カテゴリは以下のいずれか: `account`, `content`, `experience`, `reward`, `location`, `transaction`, `notification`
+- ドメインが既に存在しないことを確認
 
-### Step 2: Create Directory Structure
+### ステップ2: ディレクトリ構造の作成
 
 ```bash
 BASE_PATH="src/application/domain/${CATEGORY}/${DOMAIN_NAME}"
@@ -77,65 +77,65 @@ mkdir -p "${BASE_PATH}/data"
 mkdir -p "${BASE_PATH}/schema"
 ```
 
-### Step 3: Generate Template Files
+### ステップ3: テンプレートファイルの生成
 
-Create each file based on templates in `.claude/skills/new-domain/templates/`:
+`.claude/skills/new-domain/templates/` のテンプレートに基づいて各ファイルを作成:
 
-1. **controller/resolver.ts** - GraphQL resolvers
-   - Import UseCase via DI
-   - Define Query, Mutation, and field resolvers
-   - Use DataLoaders for relationships
+1. **controller/resolver.ts** - GraphQLリゾルバ
+   - DIを介してUseCaseをインポート
+   - Query、Mutation、フィールドリゾルバを定義
+   - リレーションシップにDataLoaderを使用
 
-2. **controller/dataloader.ts** - DataLoader setup
-   - Batch loading for N+1 prevention
-   - Load related entities
+2. **controller/dataloader.ts** - DataLoaderのセットアップ
+   - N+1問題防止のバッチローディング
+   - 関連エンティティの読み込み
 
-3. **usecase.ts** - Business flow orchestration
-   - Manage transactions with `ctx.issuer.onlyBelongingCommunity()`
-   - Call services and presenters
-   - No direct repository access
+3. **usecase.ts** - ビジネスフローのオーケストレーション
+   - `ctx.issuer.onlyBelongingCommunity()` でトランザクションを管理
+   - Serviceとpresenterを呼び出す
+   - Repositoryへの直接アクセスなし
 
-4. **service.ts** - Business logic
-   - Validation and business rules
-   - Call repositories
-   - Accept and propagate `tx` parameter
+4. **service.ts** - ビジネスロジック
+   - バリデーションとビジネスルール
+   - Repositoryを呼び出す
+   - `tx` パラメータを受け取り、伝播する
 
-5. **data/repository.ts** - Database access
-   - Prisma queries with RLS (`ctx.issuer`)
-   - Two transaction patterns:
-     - Mutation methods: required `tx: Prisma.TransactionClient`
-     - Query methods: optional `tx?: Prisma.TransactionClient` with `if (tx)` branching
+5. **data/repository.ts** - データベースアクセス
+   - RLS（`ctx.issuer`）を使用したPrismaクエリ
+   - 2つのトランザクションパターン:
+     - Mutationメソッド: 必須の `tx: Prisma.TransactionClient`
+     - Queryメソッド: オプショナルの `tx?: Prisma.TransactionClient` と `if (tx)` 分岐
 
-6. **data/interface.ts** - Repository contract
-   - Interface definition for repository
+6. **data/interface.ts** - Repository契約
+   - Repositoryのインターフェース定義
 
-7. **data/converter.ts** - Input transformation
-   - GraphQL input → Prisma format
-   - Pure functions (no side effects)
+7. **data/converter.ts** - 入力変換
+   - GraphQL input → Prisma形式
+   - 純粋関数（副作用なし）
 
-8. **data/type.ts** - TypeScript types
+8. **data/type.ts** - TypeScript型
    - Prisma select shapes
-   - Type definitions
+   - 型定義
 
-9. **presenter.ts** - Response formatting
-   - Prisma → GraphQL types
-   - Pure functions (no business logic)
+9. **presenter.ts** - レスポンスのフォーマッティング
+   - Prisma → GraphQL型
+   - 純粋関数（ビジネスロジックなし）
 
-10. **schema/query.graphql** - GraphQL queries
-    - Query definitions
+10. **schema/query.graphql** - GraphQLクエリ
+    - クエリ定義
 
-11. **schema/mutation.graphql** - GraphQL mutations
-    - Mutation definitions
+11. **schema/mutation.graphql** - GraphQLミューテーション
+    - ミューテーション定義
 
-12. **schema/type.graphql** - GraphQL types
-    - Type, Input, Payload definitions
-    - Follow `Gql*` naming convention
+12. **schema/type.graphql** - GraphQL型
+    - 型、入力、ペイロード定義
+    - `Gql*` 命名規則に従う
 
-### Step 4: Register Dependencies
+### ステップ4: 依存性の登録
 
-**File: `src/application/provider.ts`**
+**ファイル: `src/application/provider.ts`**
 
-Add imports (alphabetically within category section):
+インポートを追加（カテゴリセクション内でアルファベット順）:
 
 ```typescript
 import ${DomainName}UseCase from "@/application/domain/${category}/${domain-name}/usecase";
@@ -144,7 +144,7 @@ import ${DomainName}Repository from "@/application/domain/${category}/${domain-n
 import ${DomainName}Converter from "@/application/domain/${category}/${domain-name}/data/converter";
 ```
 
-Add registrations in appropriate section:
+適切なセクションに登録を追加:
 
 ```typescript
 // 📦 ${Category}
@@ -155,23 +155,23 @@ container.register("${DomainName}Repository", { useClass: ${DomainName}Repositor
 container.register("${DomainName}Converter", { useClass: ${DomainName}Converter });
 ```
 
-### Step 5: Register GraphQL Resolvers
+### ステップ5: GraphQLリゾルバの登録
 
-**File: `src/presentation/graphql/resolver.ts`**
+**ファイル: `src/presentation/graphql/resolver.ts`**
 
-Add import:
+インポートを追加:
 
 ```typescript
 import ${DomainName}Resolver from "@/application/domain/${category}/${domain-name}/controller/resolver";
 ```
 
-Add resolver instantiation:
+リゾルバのインスタンス化を追加:
 
 ```typescript
 const ${domainName} = container.resolve(${DomainName}Resolver);
 ```
 
-Add to resolvers object:
+resolversオブジェクトに追加:
 
 ```typescript
 const resolvers = {
@@ -188,72 +188,72 @@ const resolvers = {
 };
 ```
 
-### Step 6: Run Code Generation
+### ステップ6: コード生成の実行
 
-After creating GraphQL schema files:
+GraphQLスキーマファイル作成後:
 
 ```bash
 pnpm gql:generate
 ```
 
-This generates TypeScript types in `src/types/graphql.ts`.
+これにより `src/types/graphql.ts` にTypeScript型が生成されます。
 
-### Step 7: Verify Setup
+### ステップ7: セットアップの確認
 
-1. Check TypeScript compilation:
+1. TypeScriptコンパイルのチェック:
    ```bash
    pnpm build
    ```
 
-2. Verify DI registration:
-   - All services should resolve without errors
+2. DI登録の確認:
+   - 全てのServiceがエラーなく解決されること
 
-3. Review generated files:
-   - Each file should follow architecture patterns
-   - No TODOs or placeholder logic left
+3. 生成されたファイルのレビュー:
+   - 各ファイルがアーキテクチャパターンに従っていること
+   - TODOやプレースホルダーロジックが残っていないこと
 
 ---
 
-## Template Placeholders
+## テンプレートプレースホルダー
 
-Templates use the following placeholders:
+テンプレートは以下のプレースホルダーを使用します:
 
-| Placeholder | Example | Description |
+| プレースホルダー | 例 | 説明 |
 |-------------|---------|-------------|
-| `{{DOMAIN_NAME}}` | `article` | Domain name (lowercase-kebab-case) |
-| `{{DomainName}}` | `Article` | Domain name (PascalCase) |
-| `{{domainName}}` | `article` | Domain name (camelCase) |
-| `{{CATEGORY}}` | `content` | Category name (lowercase) |
-| `{{Category}}` | `Content` | Category name (PascalCase) |
+| `{{DOMAIN_NAME}}` | `article` | ドメイン名（lowercase-kebab-case） |
+| `{{DomainName}}` | `Article` | ドメイン名（PascalCase） |
+| `{{domainName}}` | `article` | ドメイン名（camelCase） |
+| `{{CATEGORY}}` | `content` | カテゴリ名（lowercase） |
+| `{{Category}}` | `Content` | カテゴリ名（PascalCase） |
 
 ---
 
-## Architecture Compliance Checklist
+## アーキテクチャ準拠チェックリスト
 
-After domain creation, verify:
+ドメイン作成後、以下を確認:
 
-- ✅ **Resolver** calls UseCase methods only
-- ✅ **UseCase** manages transactions with `ctx.issuer.onlyBelongingCommunity()`
-- ✅ **Service** implements business logic and passes `tx` to Repository
-- ✅ **Repository** uses RLS (`ctx.issuer`) for all queries
-- ✅ **Repository** handles `tx` parameter correctly (required for mutations, optional for queries)
-- ✅ **Converter** is pure functions (no side effects)
-- ✅ **Presenter** transforms Prisma → GraphQL types
-- ✅ **GraphQL types** follow `Gql*` naming convention
-- ✅ **DataLoader** used for field resolvers (N+1 prevention)
-- ✅ **DI registration** in `provider.ts`
-- ✅ **Resolver registration** in `resolver.ts`
-- ✅ **GraphQL codegen** executed successfully
+- ✅ **Resolver** がUseCaseメソッドのみを呼び出している
+- ✅ **UseCase** が `ctx.issuer.onlyBelongingCommunity()` でトランザクションを管理
+- ✅ **Service** がビジネスロジックを実装し、`tx` をRepositoryに渡している
+- ✅ **Repository** が全てのクエリでRLS（`ctx.issuer`）を使用
+- ✅ **Repository** が `tx` パラメータを正しく処理（mutationは必須、queryはオプショナル）
+- ✅ **Converter** が純粋関数（副作用なし）
+- ✅ **Presenter** がPrisma → GraphQL型に変換
+- ✅ **GraphQL型** が `Gql*` 命名規則に従っている
+- ✅ **DataLoader** がフィールドリゾルバで使用されている（N+1問題防止）
+- ✅ **DI登録** が `provider.ts` にある
+- ✅ **リゾルバ登録** が `resolver.ts` にある
+- ✅ **GraphQL codegen** が正常に実行された
 
 ---
 
-## Example Output
+## 出力例
 
-After running `/new-domain product marketplace`:
+`/new-domain product marketplace` 実行後:
 
 ```
-✅ Created domain structure: src/application/domain/marketplace/product/
-✅ Generated 12 files:
+✅ ドメイン構造を作成しました: src/application/domain/marketplace/product/
+✅ 12ファイルを生成しました:
    - controller/resolver.ts
    - controller/dataloader.ts
    - usecase.ts
@@ -267,19 +267,19 @@ After running `/new-domain product marketplace`:
    - schema/mutation.graphql
    - schema/type.graphql
 
-✅ Updated src/application/provider.ts (4 registrations)
-✅ Updated src/presentation/graphql/resolver.ts
+✅ src/application/provider.ts を更新しました（4件の登録）
+✅ src/presentation/graphql/resolver.ts を更新しました
 
-⚠️  Next steps:
-1. Run: pnpm gql:generate
-2. Implement business logic in service.ts
-3. Define GraphQL schema in schema/ directory
-4. Add tests in __tests__/unit/marketplace/product/
-5. Run: /validate-architecture marketplace/product
+⚠️  次のステップ:
+1. 実行: pnpm gql:generate
+2. service.ts にビジネスロジックを実装
+3. schema/ ディレクトリにGraphQLスキーマを定義
+4. __tests__/unit/marketplace/product/ にテストを追加
+5. 実行: /validate-architecture marketplace/product
 ```
 
 ---
 
-## Reference
+## 参考資料
 
-See `@CLAUDE.md` for complete architecture documentation and implementation patterns.
+完全なアーキテクチャドキュメントと実装パターンについては `@CLAUDE.md` を参照してください。
