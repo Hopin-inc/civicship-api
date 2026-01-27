@@ -58,8 +58,8 @@ src/application/domain/{category}/{domain-name}/
 `$ARGUMENTS` からドメイン名とカテゴリを抽出:
 
 ```bash
-DOMAIN_NAME="${$ARGUMENTS[0]}"    # 例: "article"
-CATEGORY="${$ARGUMENTS[1]}"       # 例: "content"
+DOMAIN_NAME="${ARGUMENTS[0]}"    # e.g., "article"
+CATEGORY="${ARGUMENTS[1]}"       # e.g., "content"
 ```
 
 **検証:**
