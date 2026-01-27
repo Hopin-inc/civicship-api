@@ -293,9 +293,10 @@ export type GqlCommunityDocument = {
 };
 
 export type GqlCommunityDocumentInput = {
+  file?: InputMaybe<Scalars['Upload']['input']>;
   id: Scalars['String']['input'];
   order?: InputMaybe<Scalars['Int']['input']>;
-  path: Scalars['String']['input'];
+  path?: InputMaybe<Scalars['String']['input']>;
   title: Scalars['String']['input'];
   type: Scalars['String']['input'];
 };
@@ -385,15 +386,15 @@ export type GqlCommunityPortalConfigUpsertInput = {
   description: Scalars['String']['input'];
   documents?: InputMaybe<Array<GqlCommunityDocumentInput>>;
   domain: Scalars['String']['input'];
-  faviconPrefix: Scalars['String']['input'];
+  favicon?: InputMaybe<GqlImageInput>;
   features: Array<GqlEnableFeature>;
-  logoPath: Scalars['String']['input'];
-  ogImagePath: Scalars['String']['input'];
+  logo?: InputMaybe<GqlImageInput>;
+  ogImage?: InputMaybe<GqlImageInput>;
   regionKey?: InputMaybe<Scalars['String']['input']>;
   regionName?: InputMaybe<Scalars['String']['input']>;
   rootPath?: InputMaybe<Scalars['String']['input']>;
   shortDescription?: InputMaybe<Scalars['String']['input']>;
-  squareLogoPath: Scalars['String']['input'];
+  squareLogo?: InputMaybe<GqlImageInput>;
   title: Scalars['String']['input'];
   tokenName: Scalars['String']['input'];
 };

@@ -254,9 +254,10 @@ type CommunityDocument {
 }
 
 input CommunityDocumentInput {
+  file: Upload
   id: String!
   order: Int
-  path: String!
+  path: String
   title: String!
   type: String!
 }
@@ -340,15 +341,15 @@ input CommunityPortalConfigUpsertInput {
   description: String!
   documents: [CommunityDocumentInput!]
   domain: String!
-  faviconPrefix: String!
+  favicon: ImageInput
   features: [EnableFeature!]!
-  logoPath: String!
-  ogImagePath: String!
+  logo: ImageInput
+  ogImage: ImageInput
   regionKey: String
   regionName: String
   rootPath: String
   shortDescription: String
-  squareLogoPath: String!
+  squareLogo: ImageInput
   title: String!
   tokenName: String!
 }
