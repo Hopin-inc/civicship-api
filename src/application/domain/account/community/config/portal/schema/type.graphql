@@ -3,22 +3,30 @@
 # ------------------------------
 type CommunityPortalConfig {
     communityId: String!
+
     tokenName: String!
     title: String!
     description: String!
     shortDescription: String
+
     domain: String!
     faviconPrefix: String!
     logoPath: String!
     squareLogoPath: String!
     ogImagePath: String!
-    enableFeatures: [String!]!
+
+    enableFeatures: [String!]! @deprecated
+    features: [EnableFeature!]
+
     rootPath: String!
     adminRootPath: String!
+
     documents: [CommunityDocument!]
     commonDocumentOverrides: CommonDocumentOverrides
+
     regionName: String
     regionKey: String
+
     liffId: String
     liffAppId: String
     liffBaseUrl: String
@@ -36,4 +44,21 @@ type CommunityDocument {
 type CommonDocumentOverrides {
     terms: CommunityDocument
     privacy: CommunityDocument
+}
+
+enum EnableFeature {
+    POINT
+    TICKET
+
+    OPPORTUNITY
+    QUEST
+
+    CREDENTIAL
+
+    PLACE
+    ARTICLE
+
+    LANGUAGE_SWITCHER
+    JUST_DAO_IT @deprecated
+    PREFECTURE @deprecated
 }

@@ -179,6 +179,11 @@ type CommonDocumentOverrides {
   terms: CommunityDocument
 }
 
+input CommonDocumentOverridesInput {
+  privacy: CommunityDocumentInput
+  terms: CommunityDocumentInput
+}
+
 type CommunitiesConnection {
   edges: [CommunityEdge!]
   pageInfo: PageInfo!
@@ -248,6 +253,14 @@ type CommunityDocument {
   type: String!
 }
 
+input CommunityDocumentInput {
+  id: String!
+  order: Int
+  path: String!
+  title: String!
+  type: String!
+}
+
 type CommunityEdge implements Edge {
   cursor: String!
   node: Community
@@ -303,8 +316,9 @@ type CommunityPortalConfig {
   description: String!
   documents: [CommunityDocument!]
   domain: String!
-  enableFeatures: [String!]!
+  enableFeatures: [String!]! @deprecated
   faviconPrefix: String!
+  features: [EnableFeature!]
   firebaseTenantId: String
   liffAppId: String
   liffBaseUrl: String
@@ -318,6 +332,31 @@ type CommunityPortalConfig {
   squareLogoPath: String!
   title: String!
   tokenName: String!
+}
+
+input CommunityPortalConfigUpsertInput {
+  adminRootPath: String
+  commonDocumentOverrides: CommonDocumentOverridesInput
+  description: String!
+  documents: [CommunityDocumentInput!]
+  domain: String!
+  faviconPrefix: String!
+  features: [EnableFeature!]!
+  logoPath: String!
+  ogImagePath: String!
+  regionKey: String
+  regionName: String
+  rootPath: String
+  shortDescription: String
+  squareLogoPath: String!
+  title: String!
+  tokenName: String!
+}
+
+union CommunityPortalConfigUpsertPayload = CommunityPortalConfigUpsertSuccess
+
+type CommunityPortalConfigUpsertSuccess {
+  portalConfig: CommunityPortalConfig!
 }
 
 type CommunitySignupBonusConfig {
@@ -394,6 +433,19 @@ enum DidIssuanceStatus {
 
 interface Edge {
   cursor: String!
+}
+
+enum EnableFeature {
+  ARTICLE
+  CREDENTIAL
+  JUST_DAO_IT @deprecated
+  LANGUAGE_SWITCHER
+  OPPORTUNITY
+  PLACE
+  POINT
+  PREFECTURE @deprecated
+  QUEST
+  TICKET
 }
 
 type Error {
@@ -784,6 +836,7 @@ type Mutation {
   articleUpdateContent(id: ID!, input: ArticleUpdateContentInput!, permission: CheckCommunityPermissionInput!): ArticleUpdateContentPayload
   communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
   communityDelete(id: ID!, permission: CheckCommunityPermissionInput!): CommunityDeletePayload
+  communityPortalConfigUpsert(input: CommunityPortalConfigUpsertInput!, permission: CheckCommunityPermissionInput!): CommunityPortalConfigUpsertPayload!
   communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!, permission: CheckCommunityPermissionInput!): CommunityUpdateProfilePayload
   evaluationBulkCreate(input: EvaluationBulkCreateInput!, permission: CheckCommunityPermissionInput!): EvaluationBulkCreatePayload
   identityCheckPhoneUser(input: IdentityCheckPhoneUserInput!): IdentityCheckPhoneUserPayload!

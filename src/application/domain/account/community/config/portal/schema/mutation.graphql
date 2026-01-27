@@ -14,19 +14,25 @@ extend type Mutation {
 # ------------------------------
 input CommunityPortalConfigUpsertInput {
     tokenName: String!
+
     title: String!
     description: String!
     shortDescription: String
+
     domain: String!
     faviconPrefix: String!
     logoPath: String!
     squareLogoPath: String!
     ogImagePath: String!
-    enableFeatures: [String!]!
+
+    features: [EnableFeature!]!
+
     rootPath: String
     adminRootPath: String
+
     documents: [CommunityDocumentInput!]
     commonDocumentOverrides: CommonDocumentOverridesInput
+
     regionName: String
     regionKey: String
 }
