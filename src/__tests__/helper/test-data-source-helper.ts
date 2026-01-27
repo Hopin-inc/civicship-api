@@ -36,6 +36,7 @@ export default class TestDataSourceHelper {
     await this.db.ticketIssuer.deleteMany();
 
     await this.db.ticket.deleteMany();
+    await this.db.incentiveGrant.deleteMany();
     await this.db.transaction.deleteMany();
 
     await this.db.nftMint.deleteMany();
