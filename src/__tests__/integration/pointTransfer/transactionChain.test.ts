@@ -202,5 +202,112 @@ describe("Transaction Chain Tests", () => {
       // Each chain is independent
       expect(chain1?.rootTxId).not.toBe(chain2?.rootTxId);
     });
+
+    it("should select deeper chain when multiple paths exist to same transaction", async () => {
+      // Setup: Community and three Users
+      const userA = await TestDataSourceHelper.createUser({
+        name: "User A",
+        slug: "user-a",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+
+      const userB = await TestDataSourceHelper.createUser({
+        name: "User B",
+        slug: "user-b",
+        currentPrefecture: CurrentPrefecture.TOKUSHIMA,
+      });
+
+      const userC = await TestDataSourceHelper.createUser({
+        name: "User C",
+        slug: "user-c",
+        currentPrefecture: CurrentPrefecture.KOCHI,
+      });
+
+      const community = await TestDataSourceHelper.createCommunity({
+        name: "Test Community",
+        pointName: "point",
+      });
+
+      const communityWallet = await TestDataSourceHelper.createWallet({
+        type: WalletType.COMMUNITY,
+        community: { connect: { id: community.id } },
+      });
+
+      const userAWallet = await TestDataSourceHelper.createWallet({
+        type: WalletType.MEMBER,
+        community: { connect: { id: community.id } },
+        user: { connect: { id: userA.id } },
+      });
+
+      const userBWallet = await TestDataSourceHelper.createWallet({
+        type: WalletType.MEMBER,
+        community: { connect: { id: community.id } },
+        user: { connect: { id: userB.id } },
+      });
+
+      const userCWallet = await TestDataSourceHelper.createWallet({
+        type: WalletType.MEMBER,
+        community: { connect: { id: community.id } },
+        user: { connect: { id: userC.id } },
+      });
+
+      // Create chain: Community → UserA (GRANT, tx1)
+      const grant1 = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: communityWallet.id } },
+        toWallet: { connect: { id: userAWallet.id } },
+        fromPointChange: -100,
+        toPointChange: 100,
+        reason: TransactionReason.GRANT,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Create chain: UserA → UserB (DONATION, tx2)
+      const donation1 = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: userAWallet.id } },
+        toWallet: { connect: { id: userBWallet.id } },
+        fromPointChange: -50,
+        toPointChange: 50,
+        reason: TransactionReason.DONATION,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Create direct GRANT to UserB: Community → UserB (GRANT, tx3)
+      // This creates a shorter path (depth=1) to UserB
+      const grant2 = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: communityWallet.id } },
+        toWallet: { connect: { id: userBWallet.id } },
+        fromPointChange: -100,
+        toPointChange: 100,
+        reason: TransactionReason.GRANT,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Create chain: UserB → UserC (DONATION, tx4)
+      // tx4 can be reached via:
+      //   - tx1 → tx2 → tx4 (depth=3, root=tx1)
+      //   - tx3 → tx4 (depth=2, root=tx3)
+      // Should select deeper chain (depth=3)
+      const donation2 = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: userBWallet.id } },
+        toWallet: { connect: { id: userCWallet.id } },
+        fromPointChange: -25,
+        toPointChange: 25,
+        reason: TransactionReason.DONATION,
+      });
+
+      // Refresh materialized view
+      await TestDataSourceHelper.refreshTransactionChains();
+
+      // Verify tx4 selected the deeper chain (depth=3, root=tx1)
+      const donation2Chain = await TestDataSourceHelper.getTransactionChain(donation2.id);
+
+      expect(donation2Chain).not.toBeNull();
+      expect(donation2Chain?.depth).toBe(3);
+      expect(donation2Chain?.rootTxId).toBe(grant1.id);
+      expect(donation2Chain?.chainTxIds).toEqual([grant1.id, donation1.id, donation2.id]);
+    });
   });
 });
