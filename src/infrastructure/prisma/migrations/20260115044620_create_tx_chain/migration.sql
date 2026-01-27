@@ -30,14 +30,14 @@ WITH RECURSIVE chain_evolution AS (
     JOIN chain_evolution ce ON t."from" = ce.holder_wallet_id
     WHERE t.created_at > ce.created_at
 )
--- 3. 最後に外側で「最も長い連鎖（depth DESC）」かつ「最新（created_at DESC）」を抽出
+-- 3. 最後に外側で「最も長い連鎖（depth DESC）」かつ「より新しいGRANT（root_tx_id DESC）」を優先
 SELECT DISTINCT ON (transaction_id)
     transaction_id,
     depth,
     root_tx_id,
     chain_tx_ids
 FROM chain_evolution
-ORDER BY transaction_id, depth DESC, created_at DESC;
+ORDER BY transaction_id, depth DESC, root_tx_id DESC;
 
 -- 4. ユニークインデックス（リフレッシュに必須）
 CREATE UNIQUE INDEX idx_mv_transaction_chains_id ON mv_transaction_chains(transaction_id);
