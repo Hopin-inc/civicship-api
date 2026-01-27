@@ -20,34 +20,37 @@ input CommunityPortalConfigUpsertInput {
     shortDescription: String
 
     domain: String!
-    faviconPrefix: String!
-    logoPath: String!
-    squareLogoPath: String!
-    ogImagePath: String!
+
+    # 画像 (nullの場合は既存を維持)
+    favicon: ImageInput
+    logo: ImageInput
+    squareLogo: ImageInput
+    ogImage: ImageInput
 
     features: [EnableFeature!]!
 
     rootPath: String
     adminRootPath: String
 
-    documents: [CommunityDocumentInput!]
+    documents: [DocumentInput!]
     commonDocumentOverrides: CommonDocumentOverridesInput
 
     regionName: String
     regionKey: String
 }
 
-input CommunityDocumentInput {
+input DocumentInput {
     id: String!
     title: String!
-    path: String!
+    file: Upload        # 新規/更新時のファイル
+    path: String        # 既存パスを維持する場合
     type: String!
     order: Int
 }
 
 input CommonDocumentOverridesInput {
-    terms: CommunityDocumentInput
-    privacy: CommunityDocumentInput
+    terms: DocumentInput
+    privacy: DocumentInput
 }
 
 # ------------------------------
