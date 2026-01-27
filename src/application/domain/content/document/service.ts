@@ -21,14 +21,15 @@ export interface DocumentUploadResult {
 @injectable()
 export default class DocumentService {
   async uploadDocument(
-    file: Promise<unknown>,
+    file: unknown,
     folderPath: string,
   ): Promise<DocumentUploadResult | null> {
     if (!file) {
       return null;
     }
 
-    const uploadFile = (await file) as unknown as FileUpload;
+    // GraphQL Upload scalar is Promise-like at runtime
+    const uploadFile = (await (file as Promise<unknown>)) as FileUpload;
     const { createReadStream, filename: rawFilename, mimetype: mime } = uploadFile;
 
     const ext = path.extname(rawFilename);
