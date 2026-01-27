@@ -32,14 +32,14 @@ input CommunityPortalConfigUpsertInput {
     rootPath: String
     adminRootPath: String
 
-    documents: [DocumentInput!]
+    documents: [CommunityDocumentInput!]
     commonDocumentOverrides: CommonDocumentOverridesInput
 
     regionName: String
     regionKey: String
 }
 
-input DocumentInput {
+input CommunityDocumentInput {
     id: String!
     title: String!
     file: Upload        # 新規/更新時のファイル
@@ -49,8 +49,8 @@ input DocumentInput {
 }
 
 input CommonDocumentOverridesInput {
-    terms: DocumentInput
-    privacy: DocumentInput
+    terms: CommunityDocumentInput
+    privacy: CommunityDocumentInput
 }
 
 # ------------------------------
