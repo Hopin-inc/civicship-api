@@ -1,9 +1,10 @@
 ---
 name: dependency-upgrade-path
-description: 依存パッケージのアップグレード計画を策定し、安全なアップデート経路を提示
+description: 依存更新計画を策定
 user-invocable: true
 argument-hint: [パッケージ名または--all]
 allowed-tools: Read, Bash, Grep
+context: fork
 ---
 
 # civicship-api 依存関係アップグレード計画

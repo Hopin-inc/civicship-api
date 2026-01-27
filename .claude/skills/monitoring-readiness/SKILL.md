@@ -3,7 +3,7 @@ name: monitoring-readiness
 description: 監視要件を定義し、アラート・メトリクス設定を提案
 user-invocable: true
 argument-hint: [機能名または要件定義書]
-allowed-tools: Read, Grep
+allowed-tools: Read, Grep, Bash
 context: fork
 ---
 

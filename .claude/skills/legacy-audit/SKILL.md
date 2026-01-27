@@ -1,9 +1,10 @@
 ---
 name: legacy-audit
-description: レガシーコードの品質評価、技術的負債の特定、リファクタリング優先度の判定
+description: 技術的負債を評価
 user-invocable: true
 argument-hint: [ドメイン名またはファイルパス]
 allowed-tools: Read, Grep, Glob, Bash
+context: fork
 ---
 
 # civicship-api レガシーコード監査
@@ -36,16 +37,16 @@ allowed-tools: Read, Grep, Glob, Bash
 
 ```bash
 # 対象ドメインのファイル数
-find src/application/domain/${DOMAIN} -name "*.ts" | wc -l
+find src/application/domain/"${DOMAIN}" -name "*.ts" | wc -l
 
 # 総行数
-find src/application/domain/${DOMAIN} -name "*.ts" | xargs wc -l | tail -1
+find src/application/domain/"${DOMAIN}" -name "*.ts" | xargs wc -l | tail -1
 
 # 最終更新日
-find src/application/domain/${DOMAIN} -name "*.ts" -exec stat -c "%y %n" {} \; | sort
+find src/application/domain/"${DOMAIN}" -name "*.ts" -exec stat -c "%y %n" {} \; | sort
 
 # Gitコミット履歴
-git log --oneline --since="1 year ago" -- src/application/domain/${DOMAIN} | wc -l
+git log --oneline --since="1 year ago" -- src/application/domain/"${DOMAIN}" | wc -l
 ```
 
 **基本情報レポート:**
@@ -101,11 +102,11 @@ DDD/Clean Architectureの原則への準拠:
 
 ```bash
 # レイヤー違反の検出
-grep -r "import.*repository" src/application/domain/${DOMAIN}/usecase.ts
-grep -r "import.*GqlWallet" src/application/domain/${DOMAIN}/service.ts
+grep -r "import.*repository" src/application/domain/"${DOMAIN}"/usecase.ts
+grep -r "import.*GqlWallet" src/application/domain/"${DOMAIN}"/service.ts
 
 # 循環依存の検出
-npx madge --circular src/application/domain/${DOMAIN}
+npx madge --circular src/application/domain/"${DOMAIN}"
 ```
 
 **アーキテクチャ評価:**
@@ -230,13 +231,13 @@ Resolver → UseCase → Service → Repository
 
 ```bash
 # 循環的複雑度（Cyclomatic Complexity）
-npx ts-complexity src/application/domain/${DOMAIN}/**/*.ts
+npx ts-complexity src/application/domain/"${DOMAIN}"/**/*.ts
 
 # コード重複の検出
-npx jscpd src/application/domain/${DOMAIN}
+npx jscpd src/application/domain/"${DOMAIN}"
 
 # テストカバレッジ
-pnpm test:coverage src/application/domain/${DOMAIN}
+pnpm test:coverage src/application/domain/"${DOMAIN}"
 ```
 
 **コード品質レポート:**
@@ -448,10 +449,10 @@ throw new Error(ErrorCodes.WALLET_NOT_FOUND);
 
 ```bash
 # N+1問題の検出
-grep -A 10 "for.*of\|for.*in\|forEach" src/application/domain/${DOMAIN}/**/*.ts | grep -B 5 "await.*find\|await.*query"
+grep -A 10 "for.*of\|for.*in\|forEach" src/application/domain/"${DOMAIN}"/**/*.ts | grep -B 5 "await.*find\|await.*query"
 
 # 不要なクエリの検出
-grep -A 5 "findMany" src/application/domain/${DOMAIN}/data/repository.ts
+grep -A 5 "findMany" src/application/domain/"${DOMAIN}"/data/repository.ts
 ```
 
 **パフォーマンス評価:**
@@ -541,10 +542,10 @@ async findAll(ctx, cursor?: string, limit = 20) {
 
 ```bash
 # センシティブデータのログ出力
-grep -r "console.log\|logger.info" src/application/domain/${DOMAIN} | grep -i "password\|token\|secret\|key"
+grep -r "console.log\|logger.info" src/application/domain/"${DOMAIN}" | grep -i "password\|token\|secret\|key"
 
 # RLSの実装確認
-grep -r "prisma\.t_wallets" src/application/domain/${DOMAIN} | grep -v "ctx.issuer"
+grep -r "prisma\.t_wallets" src/application/domain/"${DOMAIN}" | grep -v "ctx.issuer"
 ```
 
 **セキュリティ評価:**
@@ -678,7 +679,7 @@ const isActive = true;
 #### `any` 型の使用
 
 \`\`\`bash
-grep -r ": any" src/application/domain/${DOMAIN}
+grep -r ": any" src/application/domain/"${DOMAIN}"
 \`\`\`
 
 **検出:** 2箇所で `any` 型を使用

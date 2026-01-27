@@ -1,9 +1,10 @@
 ---
 name: phased-delivery-plan
-description: 要件を段階的にリリース可能な単位に分割し、安全なデリバリー計画を策定
+description: 段階的リリース計画
 user-invocable: true
 argument-hint: [要件定義書または機能名]
 allowed-tools: Read, Grep, Bash
+context: fork
 ---
 
 # civicship-api 段階的デリバリー計画

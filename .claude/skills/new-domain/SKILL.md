@@ -138,21 +138,21 @@ mkdir -p "${BASE_PATH}/schema"
 インポートを追加（カテゴリセクション内でアルファベット順）:
 
 ```typescript
-import ${DomainName}UseCase from "@/application/domain/${category}/${domain-name}/usecase";
-import ${DomainName}Service from "@/application/domain/${category}/${domain-name}/service";
-import ${DomainName}Repository from "@/application/domain/${category}/${domain-name}/data/repository";
-import ${DomainName}Converter from "@/application/domain/${category}/${domain-name}/data/converter";
+import {{DomainName}}UseCase from "@/application/domain/{{category}}/{{domain-name}}/usecase";
+import {{DomainName}}Service from "@/application/domain/{{category}}/{{domain-name}}/service";
+import {{DomainName}}Repository from "@/application/domain/{{category}}/{{domain-name}}/data/repository";
+import {{DomainName}}Converter from "@/application/domain/{{category}}/{{domain-name}}/data/converter";
 ```
 
 適切なセクションに登録を追加:
 
 ```typescript
-// 📦 ${Category}
+// 📦 {{Category}}
 
-container.register("${DomainName}UseCase", { useClass: ${DomainName}UseCase });
-container.register("${DomainName}Service", { useClass: ${DomainName}Service });
-container.register("${DomainName}Repository", { useClass: ${DomainName}Repository });
-container.register("${DomainName}Converter", { useClass: ${DomainName}Converter });
+container.register("{{DomainName}}UseCase", { useClass: {{DomainName}}UseCase });
+container.register("{{DomainName}}Service", { useClass: {{DomainName}}Service });
+container.register("{{DomainName}}Repository", { useClass: {{DomainName}}Repository });
+container.register("{{DomainName}}Converter", { useClass: {{DomainName}}Converter });
 ```
 
 ### ステップ5: GraphQLリゾルバの登録
@@ -162,13 +162,13 @@ container.register("${DomainName}Converter", { useClass: ${DomainName}Converter 
 インポートを追加:
 
 ```typescript
-import ${DomainName}Resolver from "@/application/domain/${category}/${domain-name}/controller/resolver";
+import {{DomainName}}Resolver from "@/application/domain/{{category}}/{{domain-name}}/controller/resolver";
 ```
 
 リゾルバのインスタンス化を追加:
 
 ```typescript
-const ${domainName} = container.resolve(${DomainName}Resolver);
+const {{domainName}} = container.resolve({{DomainName}}Resolver);
 ```
 
 resolversオブジェクトに追加:
@@ -176,14 +176,14 @@ resolversオブジェクトに追加:
 ```typescript
 const resolvers = {
   Query: {
-    ...${domainName}.Query,
+    ...{{domainName}}.Query,
     // ...
   },
   Mutation: {
-    ...${domainName}.Mutation,
+    ...{{domainName}}.Mutation,
     // ...
   },
-  ${DomainName}: ${domainName}.${DomainName},
+  {{DomainName}}: {{domainName}}.{{DomainName}},
   // ...
 };
 ```

@@ -1,9 +1,10 @@
 ---
 name: map-impact-analysis
-description: コード変更の影響範囲を可視化し、影響を受けるファイル・機能をリスト化
+description: 影響範囲を分析
 user-invocable: true
 argument-hint: [変更対象ファイルまたはドメイン名]
 allowed-tools: Read, Grep, Glob, Bash
+context: fork
 ---
 
 # civicship-api 影響範囲分析

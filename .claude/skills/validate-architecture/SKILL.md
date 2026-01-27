@@ -168,7 +168,7 @@ Opportunity: {
 `$ARGUMENTS` が指定された場合:
 ```bash
 # 特定のドメインを検証
-find src/application/domain/"$ARGUMENTS" -type f '(' -name "*.ts" -o -name "*.graphql" ')'
+find src/application/domain/"$ARGUMENTS" -type f \( -name "*.ts" -o -name "*.graphql" \)
 ```
 
 指定がない場合:

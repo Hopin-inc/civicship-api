@@ -1,9 +1,10 @@
 ---
 name: elicit-requirements
-description: 新機能の要件を段階的に引き出し、仕様書形式でまとめる
+description: 要件定義を支援
 user-invocable: true
 argument-hint: [機能名または概要]
 allowed-tools: Read, Grep, Bash
+context: fork
 ---
 
 # civicship-api 要件定義支援

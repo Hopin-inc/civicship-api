@@ -1,9 +1,10 @@
 ---
 name: check-requirement-delta
-description: 新要件と既存仕様の衝突を検出し、リスク評価と対策を提示
+description: 要件の衝突を検出
 user-invocable: true
 argument-hint: [要件定義書パスまたは機能概要]
 allowed-tools: Read, Grep, Glob, Bash
+context: fork
 ---
 
 # civicship-api 要件衝突検出
