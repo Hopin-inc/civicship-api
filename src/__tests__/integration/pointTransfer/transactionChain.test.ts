@@ -275,7 +275,7 @@ describe("Transaction Chain Tests", () => {
 
       // Create direct GRANT to UserB: Community → UserB (GRANT, tx3)
       // This creates a shorter path (depth=1) to UserB
-      const grant2 = await TestDataSourceHelper.createTransaction({
+      await TestDataSourceHelper.createTransaction({
         fromWallet: { connect: { id: communityWallet.id } },
         toWallet: { connect: { id: userBWallet.id } },
         fromPointChange: -100,
