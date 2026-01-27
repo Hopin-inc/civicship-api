@@ -32,6 +32,7 @@ import ArticleService from "@/application/domain/content/article/service";
 import ArticleRepository from "@/application/domain/content/article/data/repository";
 import ArticleConverter from "@/application/domain/content/article/data/converter";
 import ImageService from "@/application/domain/content/image/service";
+import DocumentService from "@/application/domain/content/document/service";
 import NotificationService from "@/application/domain/notification/service";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
@@ -224,6 +225,7 @@ export function registerProductionDependencies() {
   container.register("ArticleConverter", { useClass: ArticleConverter });
 
   container.register("ImageService", { useClass: ImageService });
+  container.register("DocumentService", { useClass: DocumentService });
 
   // ------------------------------
   // ✉️ Notification

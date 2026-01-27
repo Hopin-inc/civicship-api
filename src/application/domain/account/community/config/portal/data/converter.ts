@@ -2,12 +2,26 @@ import { GqlCommunityPortalConfigUpsertInput } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { featureEnumsToStrings } from "@/application/domain/account/community/config/portal/data/util";
+import {
+  CommunityDocument,
+  CommonDocumentOverrides,
+} from "@/application/domain/account/community/config/portal/service";
+
+export interface PortalConfigUploadedPaths {
+  faviconPath?: string | null;
+  logoPath?: string | null;
+  squareLogoPath?: string | null;
+  ogImagePath?: string | null;
+  documents?: CommunityDocument[] | null;
+  commonDocumentOverrides?: CommonDocumentOverrides | null;
+}
 
 @injectable()
 export default class CommunityPortalConfigConverter {
   upsert(
     input: GqlCommunityPortalConfigUpsertInput,
     configId: string,
+    uploadedPaths: PortalConfigUploadedPaths,
   ): Prisma.CommunityPortalConfigUpsertArgs {
     const data = {
       tokenName: input.tokenName,
@@ -15,15 +29,15 @@ export default class CommunityPortalConfigConverter {
       description: input.description,
       shortDescription: input.shortDescription ?? null,
       domain: input.domain,
-      faviconPrefix: input.faviconPrefix,
-      logoPath: input.logoPath,
-      squareLogoPath: input.squareLogoPath,
-      ogImagePath: input.ogImagePath,
+      faviconPrefix: uploadedPaths.faviconPath ?? "",
+      logoPath: uploadedPaths.logoPath ?? "",
+      squareLogoPath: uploadedPaths.squareLogoPath ?? "",
+      ogImagePath: uploadedPaths.ogImagePath ?? "",
       enableFeatures: featureEnumsToStrings(input.features),
       rootPath: input.rootPath ?? "/",
       adminRootPath: input.adminRootPath ?? "/admin",
-      documents: input.documents ?? Prisma.JsonNull,
-      commonDocumentOverrides: input.commonDocumentOverrides ?? Prisma.JsonNull,
+      documents: uploadedPaths.documents ?? Prisma.JsonNull,
+      commonDocumentOverrides: uploadedPaths.commonDocumentOverrides ?? Prisma.JsonNull,
       regionName: input.regionName ?? null,
       regionKey: input.regionKey ?? null,
     };

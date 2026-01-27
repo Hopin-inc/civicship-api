@@ -11,10 +11,6 @@ import {
 
 interface ExtraFields {
   communityId: string;
-  liffId?: string | null;
-  liffAppId?: string | null;
-  liffBaseUrl?: string | null;
-  firebaseTenantId?: string | null;
 }
 
 export default class CommunityPortalConfigPresenter {
@@ -39,10 +35,10 @@ export default class CommunityPortalConfigPresenter {
       commonDocumentOverrides: r.commonDocumentOverrides as CommonDocumentOverrides | null,
       regionName: r.regionName,
       regionKey: r.regionKey,
-      liffId: extra.liffId ?? null,
-      liffAppId: extra.liffAppId ?? null,
-      liffBaseUrl: extra.liffBaseUrl ?? null,
-      firebaseTenantId: extra.firebaseTenantId ?? null,
+      liffId: null,
+      liffAppId: null,
+      liffBaseUrl: null,
+      firebaseTenantId: null,
     };
   }
 
