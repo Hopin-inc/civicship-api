@@ -358,8 +358,8 @@ describe("Transaction Chain Tests", () => {
         user: { connect: { id: userC.id } },
       });
 
-      // Create older GRANT to UserA (tx1)
-      const olderGrant = await TestDataSourceHelper.createTransaction({
+      // Create older GRANT to UserA (tx1) - not used in assertion, just for setup
+      await TestDataSourceHelper.createTransaction({
         fromWallet: { connect: { id: communityWallet.id } },
         toWallet: { connect: { id: userAWallet.id } },
         fromPointChange: -100,
