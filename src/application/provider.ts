@@ -102,6 +102,8 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
 import CommunityPortalConfigService from "@/application/domain/account/community/config/portal/service";
 import CommunityPortalConfigRepository from "@/application/domain/account/community/config/portal/data/repository";
+import CommunityPortalConfigConverter from "@/application/domain/account/community/config/portal/data/converter";
+import CommunityPortalConfigUseCase from "@/application/domain/account/community/config/portal/usecase";
 import { PointVerifyClient } from "@/infrastructure/libs/point-verify/client";
 import TransactionVerificationService from "@/application/domain/transaction/verification/service";
 import TransactionVerificationUseCase from "@/application/domain/transaction/verification/usecase";
@@ -168,6 +170,10 @@ export function registerProductionDependencies() {
   container.register("CommunityPortalConfigRepository", {
     useClass: CommunityPortalConfigRepository,
   });
+  container.register("CommunityPortalConfigConverter", {
+    useClass: CommunityPortalConfigConverter,
+  });
+  container.register("CommunityPortalConfigUseCase", { useClass: CommunityPortalConfigUseCase });
 
   container.register("CommunitySignupBonusConfigService", {
     useClass: CommunitySignupBonusConfigService,

@@ -1,13 +1,19 @@
-import { GqlQueryCommunityPortalConfigArgs } from "@/types/graphql";
+import {
+  GqlQueryCommunityPortalConfigArgs,
+  GqlMutationCommunityPortalConfigUpsertArgs,
+} from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import CommunityPortalConfigService from "@/application/domain/account/community/config/portal/service";
+import CommunityPortalConfigUseCase from "@/application/domain/account/community/config/portal/usecase";
 
 @injectable()
 export default class CommunityPortalConfigResolver {
   constructor(
     @inject("CommunityPortalConfigService")
     private readonly portalConfigService: CommunityPortalConfigService,
+    @inject("CommunityPortalConfigUseCase")
+    private readonly useCase: CommunityPortalConfigUseCase,
   ) {}
 
   Query = {
@@ -17,6 +23,16 @@ export default class CommunityPortalConfigResolver {
       ctx: IContext,
     ) => {
       return this.portalConfigService.getPortalConfig(ctx, args.communityId);
+    },
+  };
+
+  Mutation = {
+    communityPortalConfigUpsert: async (
+      _: unknown,
+      args: GqlMutationCommunityPortalConfigUpsertArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.ownerUpsertPortalConfig(args, ctx);
     },
   };
 }

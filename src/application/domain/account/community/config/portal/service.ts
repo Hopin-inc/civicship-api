@@ -1,8 +1,12 @@
 import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
 import { inject, injectable } from "tsyringe";
+import { Prisma } from "@prisma/client";
 import ICommunityPortalConfigRepository from "@/application/domain/account/community/config/portal/data/interface";
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
+import CommunityPortalConfigConverter from "@/application/domain/account/community/config/portal/data/converter";
+import { GqlCommunityPortalConfigUpsertInput } from "@/types/graphql";
+import { PrismaCommunityPortalConfigDetail } from "@/application/domain/account/community/config/portal/data/type";
 
 export interface CommunityPortalConfigResult {
   communityId: string;
@@ -48,6 +52,8 @@ export default class CommunityPortalConfigService {
     private readonly portalRepository: ICommunityPortalConfigRepository,
     @inject("CommunityConfigRepository")
     private readonly configRepository: ICommunityConfigRepository,
+    @inject("CommunityPortalConfigConverter")
+    private readonly converter: CommunityPortalConfigConverter,
   ) {}
 
   async getPortalConfig(ctx: IContext, communityId: string): Promise<CommunityPortalConfigResult> {
@@ -84,5 +90,22 @@ export default class CommunityPortalConfigService {
       liffBaseUrl: lineConfig?.liffBaseUrl ?? null,
       firebaseTenantId: firebaseConfig?.tenantId ?? null,
     };
+  }
+
+  async upsertPortalConfig(
+    ctx: IContext,
+    input: GqlCommunityPortalConfigUpsertInput,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaCommunityPortalConfigDetail> {
+    const config = await tx.communityConfig.findUnique({
+      where: { communityId },
+    });
+    if (!config) {
+      throw new NotFoundError("CommunityConfig not found", { communityId });
+    }
+
+    const args = this.converter.upsert(input, config.id);
+    return this.portalRepository.upsert(ctx, args, tx);
   }
 }
