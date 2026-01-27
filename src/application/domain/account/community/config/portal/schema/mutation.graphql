@@ -1,0 +1,58 @@
+# ------------------------------
+# CommunityPortalConfig Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    communityPortalConfigUpsert(
+        input: CommunityPortalConfigUpsertInput!
+        permission: CheckCommunityPermissionInput!
+    ): CommunityPortalConfigUpsertPayload!
+    @authz(rules: [IsCommunityOwner])
+}
+
+# ------------------------------
+# CommunityPortalConfig Mutation Input Definitions
+# ------------------------------
+input CommunityPortalConfigUpsertInput {
+    tokenName: String!
+    title: String!
+    description: String!
+    shortDescription: String
+    domain: String!
+    faviconPrefix: String!
+    logoPath: String!
+    squareLogoPath: String!
+    ogImagePath: String!
+    enableFeatures: [String!]!
+    rootPath: String
+    adminRootPath: String
+    documents: [CommunityDocumentInput!]
+    commonDocumentOverrides: CommonDocumentOverridesInput
+    regionName: String
+    regionKey: String
+}
+
+input CommunityDocumentInput {
+    id: String!
+    title: String!
+    path: String!
+    type: String!
+    order: Int
+}
+
+input CommonDocumentOverridesInput {
+    terms: CommunityDocumentInput
+    privacy: CommunityDocumentInput
+}
+
+# ------------------------------
+# CommunityPortalConfig Mutation Success Type Definitions
+# ------------------------------
+type CommunityPortalConfigUpsertSuccess {
+    portalConfig: CommunityPortalConfig!
+}
+
+# ------------------------------
+# CommunityPortalConfig Mutation Union (Payload) Definitions
+# ------------------------------
+union CommunityPortalConfigUpsertPayload =
+    CommunityPortalConfigUpsertSuccess
