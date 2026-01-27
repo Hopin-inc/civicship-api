@@ -52,6 +52,8 @@ export default class TestDataSourceHelper {
 
     await this.db.communityFirebaseConfig.deleteMany();
     await this.db.communityLineConfig.deleteMany();
+    await this.db.communityPortalConfig.deleteMany();
+    await this.db.communitySignupBonusConfig.deleteMany();
     await this.db.communityConfig.deleteMany();
 
     await this.db.community.deleteMany();
