@@ -285,12 +285,15 @@ security: Add RLS to all wallet queries
 コード変更の傾向から設計思想を推論:
 
 ```bash
-# 追加された行数と削除された行数
-git log --stat --oneline -- src/application/domain/account/wallet/service.ts | \
-  grep "service.ts" | awk '{sum+=$4} END {print sum}'
+# ファイルパスを引数から取得
+FILE_PATH="${ARGUMENTS}"
 
-# 特定関数の変更履歴
-git log -L :createWallet:src/application/domain/account/wallet/service.ts
+# 追加された行数と削除された行数
+git log --stat --oneline -- "${FILE_PATH}" | \
+  grep "$(basename "${FILE_PATH}")" | awk '{sum+=$4} END {print sum}'
+
+# 特定関数の変更履歴（例: createWallet関数）
+git log -L :createWallet:"${FILE_PATH}"
 ```
 
 **変更パターンレポート:**

@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Comprehensive pull request review including architecture, security, quality, and test coverage
+description: PRレビュー支援
 context: fork
 agent: Explore
 user-invocable: true

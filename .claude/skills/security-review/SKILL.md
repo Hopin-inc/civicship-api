@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: Security review focusing on authentication, authorization, Row-Level Security, and sensitive data handling
+description: セキュリティレビュー
 context: fork
 agent: Explore
 user-invocable: true

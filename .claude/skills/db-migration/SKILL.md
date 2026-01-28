@@ -1,6 +1,6 @@
 ---
 name: db-migration
-description: Guide through Prisma schema changes and migration process safely with validation and type generation
+description: DBマイグレーション支援
 user-invocable: true
 allowed-tools: Read, Grep, Bash
 ---

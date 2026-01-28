@@ -36,8 +36,9 @@ GraphQL APIの**後方互換性**を自動検証し、既存クライアント�
 変更されたGraphQLスキーマファイルを特定:
 
 ```bash
-# PR番号が指定された場合
-gh pr diff 123 --name-only | grep "\.graphql$"
+# PR番号が指定された場合（引数から取得）
+PR_NUMBER="${ARGUMENTS}"
+gh pr diff "$PR_NUMBER" --name-only | grep "\.graphql$"
 
 # ファイルパスが指定された場合
 FILE_PATH="src/application/domain/account/wallet/schema/type.graphql"

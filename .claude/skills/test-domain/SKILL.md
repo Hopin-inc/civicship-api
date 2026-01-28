@@ -1,6 +1,6 @@
 ---
 name: test-domain
-description: Run tests for a specific domain and generate detailed report with coverage
+description: ドメイン単位テスト実行
 user-invocable: true
 argument-hint: [ドメイン名]
 allowed-tools: Read, Bash

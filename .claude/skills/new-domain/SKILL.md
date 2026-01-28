@@ -1,6 +1,6 @@
 ---
 name: new-domain
-description: Create a new domain following DDD/Clean Architecture pattern with complete file structure
+description: 新規ドメイン作成
 user-invocable: true
 argument-hint: [ドメイン名] [親カテゴリ]
 allowed-tools: Read, Write, Edit, Bash

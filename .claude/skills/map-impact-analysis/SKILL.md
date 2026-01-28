@@ -43,8 +43,9 @@ FILE_PATH="src/application/domain/account/wallet/service.ts"
 DOMAIN="wallet"
 find src/application/domain -path "*/${DOMAIN}/*" -name "*.ts"
 
-# PR番号が指定された場合
-gh pr diff 123 --name-only
+# PR番号が指定された場合（引数から取得）
+PR_NUMBER="${ARGUMENTS}"
+gh pr diff "$PR_NUMBER" --name-only
 ```
 
 **ファイル種類の分類:**
