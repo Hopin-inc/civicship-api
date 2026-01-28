@@ -18,7 +18,7 @@ GraphQL APIの**後方互換性**を自動検証し、既存クライアント�
 /api-compatibility-check src/application/domain/account/wallet/schema/type.graphql
 
 # PR全体のAPIチェック
-/api-compatibility-check --pr 123
+/api-compatibility-check --pr <PR番号>
 
 # ドメイン全体のスキーマチェック
 /api-compatibility-check wallet
@@ -1136,7 +1136,7 @@ GqlWallet: {
 ### 例1: PRのAPI互換性チェック
 
 ```bash
-/api-compatibility-check --pr 123
+/api-compatibility-check --pr <PR番号>
 ```
 
 **出力:**

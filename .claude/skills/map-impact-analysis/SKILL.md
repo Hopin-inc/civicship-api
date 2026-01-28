@@ -21,7 +21,7 @@ context: fork
 /map-impact-analysis wallet
 
 # 複数ファイルの影響を分析（PRのdiffから）
-/map-impact-analysis --pr 123
+/map-impact-analysis --pr <PR番号>
 ```
 
 **引数:**
@@ -886,7 +886,7 @@ npx madge --image wallet-impact.svg src/application/domain/account/wallet
 ### 例3: PR全体の影響分析
 
 ```bash
-/map-impact-analysis --pr 123
+/map-impact-analysis --pr <PR番号>
 ```
 
 **生成されるレポート:**
