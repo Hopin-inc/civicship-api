@@ -396,11 +396,12 @@ GitHubのIssue/PRから背景を調査:
 # 関連PRを検索
 gh pr list --search "wallet" --state all --limit 20
 
-# 特定PRの詳細
-gh pr view 123
+# 特定PRの詳細（PR番号を引数から取得）
+PR_NUMBER="${ARGUMENTS}"
+gh pr view "$PR_NUMBER"
 
 # PRのコメントを確認
-gh api repos/Hopin-inc/civicship-api/pulls/123/comments
+gh api repos/Hopin-inc/civicship-api/pulls/"$PR_NUMBER"/comments
 ```
 
 **Issue/PR分析:**
