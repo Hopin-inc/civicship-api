@@ -65,13 +65,13 @@ export default class IdentityUseCase {
   }
 
   async userDeleteAccount(context: IContext): Promise<GqlUserDeletePayload> {
-    if (!context.uid || !context.platform || !context.tenantId) {
+    if (!context.uid || !context.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
     const uid = context.uid;
     const communityId = context.platform === IdentityPlatform.Line ? context.communityId : null;
     const user = await this.identityService.deleteUserAndIdentity(uid, communityId);
-    await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
+    await this.identityService.deleteFirebaseAuthUser(uid);
     return IdentityPresenter.delete(user);
   }
 
@@ -234,7 +234,8 @@ export default class IdentityUseCase {
     if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
       const expiryTime = this.deriveExpiryTime(lineTokenExpiresAt);
       const refreshToken = lineRefreshToken || "";
-      await this.identityService.storeAuthTokens(ctx.uid, ctx.communityId, ctx.idToken, refreshToken, expiryTime);
+      // LINE identities are now global (communityId = null) for the integrated LINE channel
+      await this.identityService.storeAuthTokens(ctx.uid, null, ctx.idToken, refreshToken, expiryTime);
       logger.debug(`Stored LINE auth tokens for ${ctx.uid}`);
     }
   }
@@ -415,26 +416,28 @@ export default class IdentityUseCase {
               communityId: ctx.communityId,
             });
           } else {
-            logger.debug("[checkPhoneUser] Creating new LINE identity for existing membership user", {
+            logger.debug("[checkPhoneUser] Creating new global LINE identity (communityId=null) for existing membership user", {
               phoneUid,
               currentUid: ctx.uid,
               currentPlatform: ctx.platform,
               userId: existingUser.id,
               communityId: ctx.communityId,
             });
+            // Create a global identity (communityId=null) so the user can be found
+            // regardless of which community they're accessing via the integrated LINE channel
             await this.identityService.addIdentityToUser(
               ctx,
               existingUser.id,
               ctx.uid!,
               ctx.platform!,
-              ctx.communityId,
+              null, // Global identity for integrated LINE channel
               tx,
             );
-            logger.debug("[checkPhoneUser] Successfully created LINE identity for existing membership user", {
+            logger.debug("[checkPhoneUser] Successfully created global LINE identity for existing membership user", {
               uid: ctx.uid,
               platform: ctx.platform,
               userId: existingUser.id,
-              communityId: ctx.communityId,
+              communityId: null,
             });
           }
         });
@@ -506,26 +509,28 @@ export default class IdentityUseCase {
           communityId: ctx.communityId,
         });
       } else {
-        logger.debug("[checkPhoneUser] Creating new LINE identity for existing user", {
+        logger.debug("[checkPhoneUser] Creating new global LINE identity (communityId=null) for existing user", {
           phoneUid,
           currentUid: ctx.uid,
           currentPlatform: ctx.platform,
           userId: existingUser.id,
           communityId: ctx.communityId,
         });
+        // Create a global identity (communityId=null) so the user can be found
+        // regardless of which community they're accessing via the integrated LINE channel
         await this.identityService.addIdentityToUser(
           ctx,
           existingUser.id,
           ctx.uid,
           ctx.platform,
-          ctx.communityId,
+          null, // Global identity for integrated LINE channel
           tx,
         );
-        logger.debug("[checkPhoneUser] Successfully created new identity for user", {
+        logger.debug("[checkPhoneUser] Successfully created global LINE identity for user", {
           uid: ctx.uid,
           platform: ctx.platform,
           userId: existingUser.id,
-          communityId: ctx.communityId,
+          communityId: null,
         });
       }
 

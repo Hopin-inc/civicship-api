@@ -12,10 +12,10 @@ import { injectable } from "tsyringe";
 export default class CommunityConfigRepository implements ICommunityConfigRepository {
   async getFirebaseConfig(
     ctx: IContext,
-    communityId: string,
+    communityId: string | null,
   ): Promise<CommunityFirebaseConfig | null> {
     return await ctx.issuer.public(ctx, async (tx) => {
-      const result = await tx.communityConfig.findUnique({
+      const result = await tx.communityConfig.findFirst({
         where: { communityId },
         include: { firebaseConfig: true },
       });
@@ -23,10 +23,14 @@ export default class CommunityConfigRepository implements ICommunityConfigReposi
     });
   }
 
-  async getLineConfig(ctx: IContext, communityId: string): Promise<CommunityLineConfig | null> {
+  async getLineConfig(ctx: IContext, communityId: string | null): Promise<CommunityLineConfig | null> {
     return await ctx.issuer.public(ctx, async (tx) => {
-      const result = await tx.communityConfig.findUnique({
-        where: { communityId },
+      // If communityId is null or 'integrated', use the 'integrated' LINE config.
+      // Otherwise, use the community-specific LINE config.
+      const targetCommunityId = (communityId === "integrated" || communityId === null) ? null : communityId;
+
+      const result = await tx.communityConfig.findFirst({
+        where: { communityId: targetCommunityId },
         include: { lineConfig: true },
       });
       return result?.lineConfig ?? null;
@@ -35,15 +39,16 @@ export default class CommunityConfigRepository implements ICommunityConfigReposi
 
   async getLineRichMenuByType(
     ctx: IContext,
-    communityId: string,
+    communityId: string | null,
     type: LineRichMenuType,
   ): Promise<CommunityLineRichMenuConfig | null> {
     return await ctx.issuer.public(ctx, async (tx) => {
-      const config = await tx.communityConfig.findUnique({
-        where: { communityId },
-        include: {
-          lineConfig: true,
-        },
+      // Rich menus should be retrieved based on community-specific config.
+      const targetCommunityId = (communityId === "integrated" || communityId === null) ? null : communityId;
+
+      const config = await tx.communityConfig.findFirst({
+        where: { communityId: targetCommunityId },
+        include: { lineConfig: true },
       });
       if (!config?.lineConfig) return null;
 

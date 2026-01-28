@@ -37,6 +37,13 @@ export default class UserRepository implements IUserRepository {
     });
   }
 
+  async findByPhoneNumber(phoneNumber: string) {
+    return this.db.user.findFirst({
+      where: { phoneNumber },
+      select: userSelectDetail,
+    });
+  }
+
   async create(data: Prisma.UserCreateInput) {
     return this.db.user.create({
       data,

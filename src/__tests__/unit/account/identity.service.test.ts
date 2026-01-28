@@ -27,6 +27,7 @@ describe("IdentityService", () => {
     update = jest.fn();
     create = jest.fn();
     delete = jest.fn();
+    findByPhoneNumber = jest.fn();
   }
 
   class MockIdentityRepository {
@@ -34,6 +35,7 @@ describe("IdentityService", () => {
     findByUid = jest.fn();
     create = jest.fn();
     update = jest.fn();
+    findByUidAndCommunity = jest.fn();
   }
 
   let mockUserRepository: MockUserRepository;
@@ -154,7 +156,7 @@ describe("IdentityService", () => {
     it("should delete the Firebase auth user successfully", async () => {
       mockTenantedAuth.deleteUser.mockResolvedValue(undefined);
 
-      await service.deleteFirebaseAuthUser(TEST_IDENTITY.uid, TEST_IDENTITY.tenantId);
+      await service.deleteFirebaseAuthUser(TEST_IDENTITY.uid);
 
       expect(auth.tenantManager().authForTenant).toHaveBeenCalledWith(TEST_IDENTITY.tenantId);
       expect(mockTenantedAuth.deleteUser).toHaveBeenCalledWith(TEST_IDENTITY.uid);
@@ -165,7 +167,7 @@ describe("IdentityService", () => {
       mockTenantedAuth.deleteUser.mockRejectedValue(error);
 
       await expect(
-        service.deleteFirebaseAuthUser(TEST_IDENTITY.uid, TEST_IDENTITY.tenantId),
+        service.deleteFirebaseAuthUser(TEST_IDENTITY.uid),
       ).rejects.toThrow("Firebase user deletion failed");
     });
   });

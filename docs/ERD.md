@@ -345,7 +345,7 @@ RIGHT RIGHT
 
   "t_community_configs" {
     String id "🗝️"
-    String community_id 
+    String community_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -912,7 +912,7 @@ RIGHT RIGHT
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
     "t_communities" o{--}o "t_nft_instances" : "nftInstance"
-    "t_community_configs" o|--|| "t_communities" : "community"
+    "t_community_configs" o|--|o "t_communities" : "community"
     "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
     "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
     "t_community_configs" o{--}o "t_community_portal_configs" : "portalConfig"

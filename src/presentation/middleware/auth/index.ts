@@ -33,11 +33,16 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
 
   const headers = extractAuthHeaders(req);
 
+  // Extract operation info for logging
+  const body = (req as any).body;
+  const operationName = body?.operationName || "unknown";
+  const operationType = body?.query?.trim().split(/\s+/)[0].toLowerCase() || "unknown";
+
   // Create a single PrismaClientIssuer instance to be used in both auth flows
   const issuer = new PrismaClientIssuer();
 
   // Pass the issuer to runRequestSecurityChecks for potential admin auth
-  const adminContext = await runRequestSecurityChecks(req, headers, issuer);
+  const adminContext = await runRequestSecurityChecks(req, headers, issuer, { operationName, operationType });
   if (adminContext) return adminContext;
 
   // Use the same issuer for Firebase auth if admin auth didn't handle the request
