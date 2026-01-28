@@ -148,12 +148,30 @@ grep -r "@inject.*${FILE_NAME}" src/ --include="*.ts"
 
 **間接的に影響を受けるファイル**を特定（依存の連鎖）:
 
+`madge` を使用して、完全な依存関係グラフを生成し、再帰的な依存を正確に追跡:
+
 ```bash
-# ステップ2で見つかったファイルに依存しているファイルを再帰的に検索
-for file in "${DIRECT_DEPENDENCIES[@]}"; do
-  grep -r "import.*$(basename ${file} .ts)" src/ --include="*.ts"
-done
+# madge で依存関係グラフを生成（JSON形式）
+npx madge --json src/application/domain/"${DOMAIN}" > dependencies.json
+
+# 循環依存の検出（あれば警告）
+npx madge --circular src/application/domain/"${DOMAIN}"
+
+# 依存関係を可視化（SVG画像）
+npx madge --image impact-graph.svg src/application/domain/"${DOMAIN}"
+
+# 特定ファイルに依存しているファイルを抽出
+npx madge --depends "${CHANGED_FILE}" src/
+
+# 特定ファイルが依存しているファイルを抽出
+npx madge --orphans src/application/domain/"${DOMAIN}"
 ```
+
+**madgeの利点:**
+- ✅ 再帰的な依存関係を完全に追跡（N階層の依存連鎖）
+- ✅ 循環依存の自動検出
+- ✅ 依存関係の可視化（SVG/画像生成）
+- ✅ JSON出力でプログラマティックな解析が可能
 
 **依存関係グラフ:**
 
@@ -830,11 +848,24 @@ graph TD
 /map-impact-analysis src/application/domain/account/wallet/service.ts
 ```
 
+**実行されるコマンド例:**
+```bash
+# 依存関係グラフを生成
+npx madge --json src/application/domain/account/wallet > wallet-deps.json
+
+# 循環依存をチェック
+npx madge --circular src/application/domain/account/wallet
+
+# 依存関係を可視化
+npx madge --image wallet-impact.svg src/application/domain/account/wallet
+```
+
 **生成されるレポート:**
-- 直接依存: 6ファイル
-- 間接依存: 20ファイル
+- 直接依存: 6ファイル（madgeで正確に特定）
+- 間接依存: 20ファイル（再帰的に追跡）
 - 影響ドメイン: 5つ
 - テスト影響: 18ファイル
+- 依存関係グラフ画像: `wallet-impact.svg`
 
 ---
 
@@ -873,6 +904,12 @@ graph TD
 - ❌ 外部サービスへの影響（LINE API、Firebase など）
 - ❌ クライアント側の実装詳細（iOS/Android/Webの具体的な影響）
 - ❌ ビジネス要件上の暗黙的な依存
+
+### madge使用時の注意
+
+- **初回実行**: `npx madge` が初回はパッケージをダウンロードするため、時間がかかる場合があります
+- **パフォーマンス**: 大規模なディレクトリ（`src/` 全体など）では処理に時間がかかるため、ドメイン単位での実行を推奨
+- **循環依存**: 検出された循環依存は必ず修正が必要（アーキテクチャ違反）
 
 ### 推奨される併用スキル
 

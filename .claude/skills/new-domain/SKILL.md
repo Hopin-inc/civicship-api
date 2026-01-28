@@ -198,7 +198,109 @@ pnpm gql:generate
 
 これにより `src/types/graphql.ts` にTypeScript型が生成されます。
 
-### ステップ7: セットアップの確認
+### ステップ7: テストスケルトンの生成
+
+テスト駆動開発を促進するため、テストファイルのスケルトンを生成:
+
+```bash
+TEST_BASE="__tests__"
+
+# ユニットテスト（Service層）
+mkdir -p "${TEST_BASE}/unit/${CATEGORY}/${DOMAIN_NAME}"
+cat > "${TEST_BASE}/unit/${CATEGORY}/${DOMAIN_NAME}/service.test.ts" <<EOF
+import { container } from "tsyringe";
+import { describe, it, expect, beforeEach } from "@jest/globals";
+import ${DomainName}Service from "@/application/domain/${CATEGORY}/${DOMAIN_NAME}/service";
+
+describe("${DomainName}Service", () => {
+  let service: ${DomainName}Service;
+
+  beforeEach(() => {
+    container.reset();
+    // TODO: Mock dependencies
+    service = container.resolve(${DomainName}Service);
+  });
+
+  describe("TODO: メソッド名", () => {
+    it("TODO: テストケース", async () => {
+      // TODO: Implement test
+      expect(true).toBe(true);
+    });
+  });
+});
+EOF
+
+# 統合テスト（UseCase層）
+mkdir -p "${TEST_BASE}/integration/${CATEGORY}/${DOMAIN_NAME}"
+cat > "${TEST_BASE}/integration/${CATEGORY}/${DOMAIN_NAME}/usecase.test.ts" <<EOF
+import { container } from "tsyringe";
+import { describe, it, expect, beforeEach } from "@jest/globals";
+import ${DomainName}UseCase from "@/application/domain/${CATEGORY}/${DOMAIN_NAME}/usecase";
+
+describe("${DomainName}UseCase", () => {
+  let usecase: ${DomainName}UseCase;
+
+  beforeEach(() => {
+    container.reset();
+    // TODO: Setup database and dependencies
+    usecase = container.resolve(${DomainName}UseCase);
+  });
+
+  describe("TODO: メソッド名", () => {
+    it("TODO: テストケース", async () => {
+      // TODO: Implement integration test
+      expect(true).toBe(true);
+    });
+  });
+});
+EOF
+
+# E2Eテスト（GraphQL API層）
+mkdir -p "${TEST_BASE}/e2e/${CATEGORY}/${DOMAIN_NAME}"
+cat > "${TEST_BASE}/e2e/${CATEGORY}/${DOMAIN_NAME}/graphql.test.ts" <<EOF
+import { describe, it, expect } from "@jest/globals";
+import { createTestServer } from "@/test/helper/server";
+
+describe("${DomainName} GraphQL API", () => {
+  const server = createTestServer();
+
+  describe("Query", () => {
+    it("TODO: クエリテストケース", async () => {
+      const query = \`
+        query {
+          # TODO: Add query
+        }
+      \`;
+
+      const response = await server.executeOperation({ query });
+      expect(response.errors).toBeUndefined();
+      // TODO: Add assertions
+    });
+  });
+
+  describe("Mutation", () => {
+    it("TODO: ミューテーションテストケース", async () => {
+      const mutation = \`
+        mutation {
+          # TODO: Add mutation
+        }
+      \`;
+
+      const response = await server.executeOperation({ query: mutation });
+      expect(response.errors).toBeUndefined();
+      // TODO: Add assertions
+    });
+  });
+});
+EOF
+```
+
+**生成されるテストファイル:**
+- `__tests__/unit/{{category}}/{{domain-name}}/service.test.ts` - Service層のユニットテスト
+- `__tests__/integration/{{category}}/{{domain-name}}/usecase.test.ts` - UseCase層の統合テスト
+- `__tests__/e2e/{{category}}/{{domain-name}}/graphql.test.ts` - GraphQL APIのE2Eテスト
+
+### ステップ8: セットアップの確認
 
 1. TypeScriptコンパイルのチェック:
    ```bash
@@ -244,6 +346,7 @@ pnpm gql:generate
 - ✅ **DI登録** が `provider.ts` にある
 - ✅ **リゾルバ登録** が `resolver.ts` にある
 - ✅ **GraphQL codegen** が正常に実行された
+- ✅ **テストファイル** が unit/integration/e2e の3層に存在する
 
 ---
 
@@ -253,7 +356,7 @@ pnpm gql:generate
 
 ```
 ✅ ドメイン構造を作成しました: src/application/domain/marketplace/product/
-✅ 12ファイルを生成しました:
+✅ 15ファイルを生成しました:
    - controller/resolver.ts
    - controller/dataloader.ts
    - usecase.ts
@@ -267,6 +370,11 @@ pnpm gql:generate
    - schema/mutation.graphql
    - schema/type.graphql
 
+✅ テストスケルトンを作成しました:
+   - __tests__/unit/marketplace/product/service.test.ts
+   - __tests__/integration/marketplace/product/usecase.test.ts
+   - __tests__/e2e/marketplace/product/graphql.test.ts
+
 ✅ src/application/provider.ts を更新しました（4件の登録）
 ✅ src/presentation/graphql/resolver.ts を更新しました
 
@@ -274,7 +382,7 @@ pnpm gql:generate
 1. 実行: pnpm gql:generate
 2. service.ts にビジネスロジックを実装
 3. schema/ ディレクトリにGraphQLスキーマを定義
-4. __tests__/unit/marketplace/product/ にテストを追加
+4. テストファイルのTODOを実装
 5. 実行: /validate-architecture marketplace/product
 ```
 
