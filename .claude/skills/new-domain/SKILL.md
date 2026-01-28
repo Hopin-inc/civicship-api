@@ -60,6 +60,12 @@ src/application/domain/{category}/{domain-name}/
 ```bash
 DOMAIN_NAME="${ARGUMENTS[0]}"    # e.g., "article"
 CATEGORY="${ARGUMENTS[1]}"       # e.g., "content"
+
+# PascalCase/camelCaseへの変換
+# 例: "point-expiration" → "PointExpiration" / "pointExpiration"
+DomainName=$(echo "${DOMAIN_NAME}" | sed -r 's/(^|-)([a-z])/\U\2/g')  # PascalCase
+domainName=$(echo "${DOMAIN_NAME}" | sed -r 's/-([a-z])/\U\1/g')      # camelCase
+Category=$(echo "${CATEGORY}" | sed 's/\b\(.\)/\u\1/')                # PascalCase
 ```
 
 **検証:**
