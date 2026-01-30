@@ -67,7 +67,6 @@ export default class CommunityResolver {
                 channelSecret: null,
               }
             : null,
-          firebaseConfig: null,
         };
       }
 
