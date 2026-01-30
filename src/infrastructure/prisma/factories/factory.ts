@@ -144,7 +144,7 @@ export const CommunityConfigFactory = defineCommunityConfigFactory.withTransient
           squareLogoPath:
             "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/communities/himeji-ymca/logo-square.jpg",
           ogImagePath:
-            "https://storage.googleapis.com/prod-civicship-storage-public/asset/himeji-ymca/ogp.jpg",
+            "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/communities/himeji-ymca/ogp.jpg",
           enableFeatures: ["points", "opportunities", "quests"],
           rootPath: "/users/me",
           adminRootPath: "/admin/wallet",
