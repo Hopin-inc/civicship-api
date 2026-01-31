@@ -36,6 +36,7 @@ export default class TestDataSourceHelper {
     await this.db.ticketIssuer.deleteMany();
 
     await this.db.ticket.deleteMany();
+    await this.db.incentiveGrant.deleteMany();
     await this.db.transaction.deleteMany();
 
     await this.db.nftMint.deleteMany();
@@ -51,6 +52,8 @@ export default class TestDataSourceHelper {
 
     await this.db.communityFirebaseConfig.deleteMany();
     await this.db.communityLineConfig.deleteMany();
+    await this.db.communityPortalConfig.deleteMany();
+    await this.db.communitySignupBonusConfig.deleteMany();
     await this.db.communityConfig.deleteMany();
 
     await this.db.community.deleteMany();
@@ -254,11 +257,21 @@ export default class TestDataSourceHelper {
     return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
+  static async refreshTransactionChains() {
+    return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_transaction_chains"`;
+  }
+
   static async getCurrentPoints(walletId: string): Promise<number | null> {
     const result = await this.db.currentPointView.findUnique({
       where: { walletId },
     });
     return result?.currentPoint ? Number(result.currentPoint) : null;
+  }
+
+  static async getTransactionChain(transactionId: string) {
+    return this.db.transactionChainView.findUnique({
+      where: { transactionId },
+    });
   }
 
   // ========== Participation関連 (不要になれば削除) =========

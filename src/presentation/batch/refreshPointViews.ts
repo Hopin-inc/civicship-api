@@ -18,8 +18,13 @@ export async function refreshPointViews() {
     await issuer.internal(async (tx) => {
       logger.debug("📊 Refreshing materialized view for current points...");
       const result = await transactionRepository.refreshCurrentPoints(ctx, tx);
-      logger.debug(`✅ Successfully refreshed current points view. Processed ${result.length} records.`);
-      return result;
+      logger.debug(
+        `✅ Successfully refreshed current points view. Processed ${result.length} records.`,
+      );
+
+      logger.debug("📜 Refreshing materialized view for transaction chains...");
+      await transactionRepository.refreshTransactionChains(ctx, tx);
+      logger.debug("✅ Successfully refreshed transaction chains view.");
     });
 
     logger.debug("✅ Point views refresh batch completed successfully");
