@@ -37,7 +37,7 @@ export default class IdentityUseCase {
     @inject("TransactionService") private readonly transactionService: TransactionService,
     @inject("NotificationService") private readonly notificationService: NotificationService,
     @inject("CommunityService") private readonly communityService: CommunityService,
-  ) {}
+  ) { }
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
     return {
@@ -318,7 +318,7 @@ export default class IdentityUseCase {
               await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
 
               // Create membership
-              const newMembership = await this.membershipService.joinIfNeeded(
+              const membership = await this.membershipService.joinIfNeeded(
                 ctx,
                 userByLineIdentity.id,
                 ctx.communityId,
@@ -333,7 +333,19 @@ export default class IdentityUseCase {
                 tx,
               );
 
-              return newMembership;
+              // Use composite key as sourceId for idempotency
+              const initializationSourceId = `${userByLineIdentity.id}_${ctx.communityId}`;
+
+              // Grant signup bonus if enabled (returns transaction details)
+              const signupBonusResult = await this.incentiveGrantService.grantSignupBonusIfEnabled(
+                ctx,
+                userByLineIdentity.id,
+                ctx.communityId,
+                initializationSourceId,
+                tx,
+              );
+
+              return { membership, signupBonusResult };
             });
 
             logger.debug("[checkPhoneUser] Created membership for LINE user without membership", {
@@ -341,13 +353,36 @@ export default class IdentityUseCase {
               lineUid: ctx.uid,
               userId: userByLineIdentity.id,
               communityId: ctx.communityId,
-              membershipUserId: membership?.userId,
+              membershipUserId: membership?.membership?.userId,
             });
+
+            // Send signup bonus notification (best-effort, after transaction commits)
+            if (membership.signupBonusResult.granted && membership.signupBonusResult.transaction) {
+              const transaction = membership.signupBonusResult.transaction;
+              const community = await this.communityService.findCommunityOrThrow(ctx, ctx.communityId);
+              this.notificationService
+                .pushSignupBonusGrantedMessage(
+                  ctx,
+                  transaction.id,
+                  transaction.toPointChange,
+                  transaction.comment,
+                  community.name,
+                  userByLineIdentity.id,
+                )
+                .catch((error) => {
+                  logger.error("Failed to send signup bonus notification", {
+                    transactionId: transaction.id,
+                    userId: userByLineIdentity.id,
+                    communityId: ctx.communityId,
+                    error,
+                  });
+                });
+            }
 
             return {
               status: GqlPhoneUserStatus.ExistingDifferentCommunity,
               user: userByLineIdentity,
-              membership: membership,
+              membership: membership.membership,
             };
           }
         }
@@ -465,7 +500,7 @@ export default class IdentityUseCase {
       },
     );
 
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const membershipResult = await ctx.issuer.public(ctx, async (tx) => {
       if (!ctx.uid || !ctx.platform) {
         logger.error("[checkPhoneUser] Missing uid or platform in context", {
           phoneUid,
@@ -563,21 +598,56 @@ export default class IdentityUseCase {
         communityId: ctx.communityId,
       });
 
-      return membership;
+      // Use composite key as sourceId for idempotency
+      const initializationSourceId = `${existingUser.id}_${ctx.communityId}`;
+
+      // Grant signup bonus if enabled (returns transaction details)
+      const signupBonusResult = await this.incentiveGrantService.grantSignupBonusIfEnabled(
+        ctx,
+        existingUser.id,
+        ctx.communityId,
+        initializationSourceId,
+        tx,
+      );
+
+      return { membership, signupBonusResult };
     });
 
     logger.debug("[checkPhoneUser] Returning EXISTING_DIFFERENT_COMMUNITY status", {
       phoneUid,
       userId: existingUser.id,
       communityId: ctx.communityId,
-      membershipUserId: membership?.userId,
-      membershipCommunityId: membership?.communityId,
+      membershipUserId: membershipResult.membership?.userId,
+      membershipCommunityId: membershipResult.membership?.communityId,
     });
+
+    // Send signup bonus notification (best-effort, after transaction commits)
+    if (membershipResult.signupBonusResult.granted && membershipResult.signupBonusResult.transaction) {
+      const transaction = membershipResult.signupBonusResult.transaction;
+      const community = await this.communityService.findCommunityOrThrow(ctx, ctx.communityId);
+      this.notificationService
+        .pushSignupBonusGrantedMessage(
+          ctx,
+          transaction.id,
+          transaction.toPointChange,
+          transaction.comment,
+          community.name,
+          existingUser.id,
+        )
+        .catch((error) => {
+          logger.error("Failed to send signup bonus notification", {
+            transactionId: transaction.id,
+            userId: existingUser.id,
+            communityId: ctx.communityId,
+            error,
+          });
+        });
+    }
 
     return {
       status: GqlPhoneUserStatus.ExistingDifferentCommunity,
       user: existingUser,
-      membership: membership,
+      membership: membershipResult.membership,
     };
   }
 }
