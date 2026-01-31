@@ -46,24 +46,29 @@ export default class IdentityService {
     userId: string,
     uid: string,
     platform: IdentityPlatform,
-    communityId: string,
+    communityId: string | null,
     tx?: Prisma.TransactionClient,
   ) {
     // PHONE以外のtokenは不要
-    await this.identityRepository.create(
-      ctx,
-      {
-        uid,
-        platform,
-        user: {
-          connect: { id: userId },
-        },
-        community: {
-          connect: { id: communityId },
-        },
+    const data: Prisma.IdentityCreateInput = {
+      uid,
+      platform,
+      user: {
+        connect: { id: userId },
       },
-      tx,
-    );
+    };
+
+    if (communityId) {
+      data.community = {
+        connect: { id: communityId },
+      };
+    }
+
+    await this.identityRepository.create(ctx, data, tx);
+  }
+
+  async findGlobalIdentity(uid: string, platform: IdentityPlatform) {
+    return this.identityRepository.findByUidAndCommunity(uid, platform, null);
   }
 
   async linkPhoneIdentity(
@@ -120,7 +125,15 @@ export default class IdentityService {
   }
 
   async findUserByIdentity(ctx: IContext, uid: string, communityId?: string | null): Promise<User | null> {
-    const identity = await this.identityRepository.find(uid, communityId);
+    // First, try to find identity with the specified communityId
+    let identity = await this.identityRepository.find(uid, communityId);
+    
+    // If not found and communityId was specified, also try to find global identity (communityId = null)
+    // This handles the case where LINE identities are created as global identities
+    if (!identity && communityId) {
+      identity = await this.identityRepository.find(uid, null);
+    }
+    
     if (identity) {
       return await this.userRepository.find(ctx, identity.userId);
     }
@@ -144,9 +157,8 @@ export default class IdentityService {
     }
   }
 
-  async deleteFirebaseAuthUser(uid: string, tenantId: string): Promise<void> {
-    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
-    return tenantedAuth.deleteUser(uid);
+  async deleteFirebaseAuthUser(uid: string): Promise<void> {
+    return auth.deleteUser(uid);
   }
 
   async fetchNewIdToken(refreshToken: string): Promise<FirebaseTokenRefreshResponse> {

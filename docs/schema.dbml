@@ -98,8 +98,8 @@ Table t_communities {
 
 Table t_community_configs {
   id String [pk]
-  communityId String [unique, not null]
-  community t_communities [not null]
+  communityId String [unique]
+  community t_communities
   firebaseConfig t_community_firebase_configs
   lineConfig t_community_line_configs
   portalConfig t_community_portal_configs

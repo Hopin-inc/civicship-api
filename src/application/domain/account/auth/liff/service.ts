@@ -68,7 +68,7 @@ export class LIFFService {
     }
   }
 
-  static async createFirebaseCustomToken(profile: LINEProfile, tenantId?: string): Promise<string> {
+  static async createFirebaseCustomToken(profile: LINEProfile): Promise<string> {
     try {
       const customClaims = {
         line: {
@@ -82,10 +82,7 @@ export class LIFFService {
         platform: "LINE",
       };
 
-      const tenantedAuth = tenantId ? auth.tenantManager().authForTenant(tenantId) : auth;
-      const customToken = await tenantedAuth.createCustomToken(profile.userId, customClaims);
-
-      return customToken;
+      return await auth.createCustomToken(profile.userId, customClaims);
     } catch (error) {
       logger.error("Error creating Firebase custom token:", error);
       throw new Error("Failed to create authentication token");

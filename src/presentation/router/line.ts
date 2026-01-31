@@ -37,13 +37,14 @@ router.post("/callback", async (req, res) => {
 router.post("/liff-login", async (req, res) => {
   try {
     const { accessToken } = req.body;
-    const communityId = req.headers["x-community-id"] as string;
 
-    if (!accessToken || !communityId) {
-      return res.status(400).json({ error: "accessToken and communityId are required" });
+    if (!accessToken) {
+      return res.status(400).json({ error: "accessToken is required" });
     }
 
-    const result = await LIFFAuthUseCase.login({ accessToken, communityId });
+    // Use null for communityId to use the shared/integrated LINE config
+    // This ensures all communities use the same LINE authentication
+    const result = await LIFFAuthUseCase.login({ accessToken, communityId: null });
 
     res.setHeader("X-Token-Expires-At", result.expiryTimestamp.toString());
 

@@ -18,6 +18,7 @@ describe("UserService", () => {
     create = jest.fn();
     update = jest.fn();
     delete = jest.fn();
+    findByPhoneNumber = jest.fn();
   }
 
   class MockUserConverter extends UserConverter {
