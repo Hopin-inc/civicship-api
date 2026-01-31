@@ -173,7 +173,7 @@ export default class IdentityUseCase {
       }
 
       // Send signup bonus notification (best-effort)
-      this.sendSignupBonusNotification(ctx, signupBonusResult, userId, communityId);
+      this.sendSignupBonusNotification(ctx, signupBonusResult, userId);
 
       return user;
     } catch (error) {
