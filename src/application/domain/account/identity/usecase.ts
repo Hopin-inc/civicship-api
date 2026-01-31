@@ -16,7 +16,7 @@ import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
-import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import IncentiveGrantService, { SignupBonusGrantResult } from "@/application/domain/transaction/incentiveGrant/service";
 import TransactionService from "@/application/domain/transaction/service";
 import NotificationService from "@/application/domain/notification/service";
 import CommunityService from "@/application/domain/account/community/service";
@@ -292,7 +292,7 @@ export default class IdentityUseCase {
               communityId: ctx.communityId,
             });
 
-            const membership = await ctx.issuer.public(ctx, async (tx) => {
+            const joinResult = await ctx.issuer.public(ctx, async (tx) => {
               // Link phone identity to existing user
               await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
 
@@ -332,16 +332,16 @@ export default class IdentityUseCase {
               lineUid: ctx.uid,
               userId: userByLineIdentity.id,
               communityId: ctx.communityId,
-              membershipUserId: membership?.membership?.userId,
+              membershipUserId: joinResult.membership?.userId,
             });
 
             // Send signup bonus notification (best-effort, after transaction commits)
-            this.sendSignupBonusNotification(ctx, membership.signupBonusResult, userByLineIdentity.id);
+            this.sendSignupBonusNotification(ctx, joinResult.signupBonusResult, userByLineIdentity.id);
 
             return {
               status: GqlPhoneUserStatus.ExistingDifferentCommunity,
               user: userByLineIdentity,
-              membership: membership.membership,
+              membership: joinResult.membership,
             };
           }
         }
@@ -459,7 +459,7 @@ export default class IdentityUseCase {
       },
     );
 
-    const membershipResult = await ctx.issuer.public(ctx, async (tx) => {
+    const joinResult = await ctx.issuer.public(ctx, async (tx) => {
       if (!ctx.uid || !ctx.platform) {
         logger.error("[checkPhoneUser] Missing uid or platform in context", {
           phoneUid,
@@ -576,26 +576,23 @@ export default class IdentityUseCase {
       phoneUid,
       userId: existingUser.id,
       communityId: ctx.communityId,
-      membershipUserId: membershipResult.membership?.userId,
-      membershipCommunityId: membershipResult.membership?.communityId,
+      membershipUserId: joinResult.membership?.userId,
+      membershipCommunityId: joinResult.membership?.communityId,
     });
 
     // Send signup bonus notification (best-effort, after transaction commits)
-    this.sendSignupBonusNotification(ctx, membershipResult.signupBonusResult, existingUser.id);
+    this.sendSignupBonusNotification(ctx, joinResult.signupBonusResult, existingUser.id);
 
     return {
       status: GqlPhoneUserStatus.ExistingDifferentCommunity,
       user: existingUser,
-      membership: membershipResult.membership,
+      membership: joinResult.membership,
     };
   }
 
   private sendSignupBonusNotification(
     ctx: IContext,
-    signupBonusResult: {
-      granted: boolean;
-      transaction: { id: string; toPointChange: number; comment: string | null } | null;
-    },
+    signupBonusResult: SignupBonusGrantResult,
     userId: string,
   ): void {
     if (!signupBonusResult.granted || !signupBonusResult.transaction) {
