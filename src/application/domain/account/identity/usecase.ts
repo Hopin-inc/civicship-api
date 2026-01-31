@@ -173,28 +173,7 @@ export default class IdentityUseCase {
       }
 
       // Send signup bonus notification (best-effort)
-      if (signupBonusResult.granted && signupBonusResult.transaction) {
-        const transaction = signupBonusResult.transaction;
-        const community = await this.communityService.findCommunityOrThrow(ctx, communityId);
-
-        this.notificationService
-          .pushSignupBonusGrantedMessage(
-            ctx,
-            transaction.id,
-            transaction.toPointChange,
-            transaction.comment,
-            community.name,
-            userId,
-          )
-          .catch((error) => {
-            logger.error("Failed to send signup bonus notification", {
-              transactionId: transaction.id,
-              userId,
-              communityId,
-              error,
-            });
-          });
-      }
+      this.sendSignupBonusNotification(ctx, signupBonusResult, userId, communityId);
 
       return user;
     } catch (error) {
@@ -357,27 +336,7 @@ export default class IdentityUseCase {
             });
 
             // Send signup bonus notification (best-effort, after transaction commits)
-            if (membership.signupBonusResult.granted && membership.signupBonusResult.transaction) {
-              const transaction = membership.signupBonusResult.transaction;
-              const community = await this.communityService.findCommunityOrThrow(ctx, ctx.communityId);
-              this.notificationService
-                .pushSignupBonusGrantedMessage(
-                  ctx,
-                  transaction.id,
-                  transaction.toPointChange,
-                  transaction.comment,
-                  community.name,
-                  userByLineIdentity.id,
-                )
-                .catch((error) => {
-                  logger.error("Failed to send signup bonus notification", {
-                    transactionId: transaction.id,
-                    userId: userByLineIdentity.id,
-                    communityId: ctx.communityId,
-                    error,
-                  });
-                });
-            }
+            this.sendSignupBonusNotification(ctx, membership.signupBonusResult, userByLineIdentity.id);
 
             return {
               status: GqlPhoneUserStatus.ExistingDifferentCommunity,
@@ -622,32 +581,50 @@ export default class IdentityUseCase {
     });
 
     // Send signup bonus notification (best-effort, after transaction commits)
-    if (membershipResult.signupBonusResult.granted && membershipResult.signupBonusResult.transaction) {
-      const transaction = membershipResult.signupBonusResult.transaction;
-      const community = await this.communityService.findCommunityOrThrow(ctx, ctx.communityId);
-      this.notificationService
-        .pushSignupBonusGrantedMessage(
-          ctx,
-          transaction.id,
-          transaction.toPointChange,
-          transaction.comment,
-          community.name,
-          existingUser.id,
-        )
-        .catch((error) => {
-          logger.error("Failed to send signup bonus notification", {
-            transactionId: transaction.id,
-            userId: existingUser.id,
-            communityId: ctx.communityId,
-            error,
-          });
-        });
-    }
+    this.sendSignupBonusNotification(ctx, membershipResult.signupBonusResult, existingUser.id);
 
     return {
       status: GqlPhoneUserStatus.ExistingDifferentCommunity,
       user: existingUser,
       membership: membershipResult.membership,
     };
+  }
+
+  private sendSignupBonusNotification(
+    ctx: IContext,
+    signupBonusResult: {
+      granted: boolean;
+      transaction: { id: string; toPointChange: number; comment: string | null } | null;
+    },
+    userId: string,
+  ): void {
+    if (!signupBonusResult.granted || !signupBonusResult.transaction) {
+      return;
+    }
+
+    const { transaction } = signupBonusResult;
+
+    // 通知処理は fire-and-forget で実行し、メインフローをブロックしない
+    (async () => {
+      try {
+        const communityId = ctx.communityId;
+        const community = await this.communityService.findCommunityOrThrow(ctx, communityId);
+        await this.notificationService.pushSignupBonusGrantedMessage(
+          ctx,
+          transaction.id,
+          transaction.toPointChange,
+          transaction.comment,
+          community.name,
+          userId,
+        );
+      } catch (error) {
+        logger.error("Failed to send signup bonus notification", {
+          transactionId: transaction.id,
+          userId,
+          communityId: ctx.communityId,
+          error,
+        });
+      }
+    })();
   }
 }
