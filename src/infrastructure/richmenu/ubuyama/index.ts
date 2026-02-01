@@ -1,11 +1,11 @@
 import { CommunityRichMenuConfig } from "../types";
-import { publicUseMenu } from "./definitions/public-use";
-import { publicEarnMenu } from "./definitions/public-earn";
-import { publicMainMenu } from "./definitions/public-main";
+import { ubuyamaUseMenu } from "./definitions/use";
+import { ubuyamaEarnMenu } from "./definitions/earn";
+import { ubuyamaMainMenu } from "./definitions/main";
 
 export const ubuyamaConfig: CommunityRichMenuConfig = {
   communityId: "ubuyama",
-  menus: [publicUseMenu, publicEarnMenu, publicMainMenu],
+  menus: [ubuyamaUseMenu, ubuyamaEarnMenu, ubuyamaMainMenu],
 };
 
-export { publicUseMenu, publicEarnMenu, publicMainMenu };
+export { ubuyamaUseMenu, ubuyamaEarnMenu, ubuyamaMainMenu };

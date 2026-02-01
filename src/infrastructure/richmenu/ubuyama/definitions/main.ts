@@ -1,27 +1,15 @@
 import { RichMenuDefinition } from "../../types";
+import { LineRichMenuType } from "@prisma/client";
 
-export const publicMainMenu: RichMenuDefinition = {
+export const ubuyamaMainMenu: RichMenuDefinition = {
   size: {
     width: 2500,
     height: 1686,
   },
   selected: true,
-  name: "public_menu_main",
+  name: "main",
   chatBarText: "メニューを開く",
   areas: [
-    {
-      bounds: {
-        x: 0,
-        y: 0,
-        width: 810,
-        height: 360,
-      },
-      action: {
-        type: "richmenuswitch",
-        richMenuAliasId: "public-main",
-        data: "switch:public-main",
-      },
-    },
     {
       bounds: {
         x: 810,
@@ -31,8 +19,8 @@ export const publicMainMenu: RichMenuDefinition = {
       },
       action: {
         type: "richmenuswitch",
-        richMenuAliasId: "public-use",
-        data: "switch:public-use",
+        richMenuAliasId: "earn",
+        data: "switch:earn",
       },
     },
     {
@@ -44,8 +32,8 @@ export const publicMainMenu: RichMenuDefinition = {
       },
       action: {
         type: "richmenuswitch",
-        richMenuAliasId: "public-earn",
-        data: "switch:public-earn",
+        richMenuAliasId: "use",
+        data: "switch:use",
       },
     },
     {
@@ -75,7 +63,8 @@ export const publicMainMenu: RichMenuDefinition = {
       },
     },
   ],
-  alias: "public-main",
-  imagePath: "images/public_menu_main.png",
+  alias: "main",
+  imagePath: "images/main.png",
+  roleEntryFor: LineRichMenuType.PUBLIC,
   isDefault: true,
 };
