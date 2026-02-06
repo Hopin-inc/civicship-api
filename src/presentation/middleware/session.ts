@@ -4,7 +4,7 @@ import logger from "@/infrastructure/logging";
 import { SESSION_EXPIRATION_MS, SESSION_COOKIE_NAME } from "@/config/constants";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { IContext } from "@/types/server";
+
 import { container } from "tsyringe";
 
 export async function handleSessionLogin(req: Request, res: Response) {
@@ -39,10 +39,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
   try {
     const issuer = new PrismaClientIssuer();
     const configService = container.resolve(CommunityConfigService);
-    const tenantId = await configService.getFirebaseTenantId(
-      { issuer } as IContext,
-      communityId,
-    );
+    const tenantId = await configService.getFirebaseTenantId(issuer, communityId);
 
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
 

@@ -58,7 +58,7 @@ export default class CommunityPortalConfigService {
 
     const [lineConfig, firebaseConfig] = await Promise.all([
       this.configRepository.getLineConfig(ctx, communityId),
-      this.configRepository.getFirebaseConfig(ctx, communityId),
+      this.configRepository.getFirebaseConfig(ctx.issuer, communityId),
     ]);
 
     return {

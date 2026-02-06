@@ -6,15 +6,16 @@ import {
   LineRichMenuType,
 } from "@prisma/client";
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { injectable } from "tsyringe";
 
 @injectable()
 export default class CommunityConfigRepository implements ICommunityConfigRepository {
   async getFirebaseConfig(
-    ctx: IContext,
+    issuer: PrismaClientIssuer,
     communityId: string,
   ): Promise<CommunityFirebaseConfig | null> {
-    return await ctx.issuer.public(ctx, async (tx) => {
+    return await issuer.internal(async (tx) => {
       const result = await tx.communityConfig.findUnique({
         where: { communityId },
         include: { firebaseConfig: true },

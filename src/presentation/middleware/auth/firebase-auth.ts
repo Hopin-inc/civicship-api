@@ -5,7 +5,7 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
-import { AuthMeta, IContext } from "@/types/server";
+import { AuthMeta } from "@/types/server";
 import { AuthenticationError } from "@/errors/graphql";
 
 export async function handleFirebaseAuth(
@@ -28,7 +28,7 @@ export async function handleFirebaseAuth(
   }
 
   const configService = container.resolve(CommunityConfigService);
-  const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
+  const tenantId = await configService.getFirebaseTenantId(issuer, communityId);
   const verificationMethod = authMode === "session" ? "verifySessionCookie" : "verifyIdToken";
 
   try {
