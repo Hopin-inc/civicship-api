@@ -42,6 +42,17 @@ export async function handleFirebaseAuth(
     const provider = (decoded as any).firebase?.sign_in_provider;
     const decodedTenant = (decoded as any).firebase?.tenant;
 
+    if (decodedTenant !== tenantId) {
+      logger.warn("🚨 Tenant mismatch detected", {
+        expectedTenant: tenantId,
+        actualTenant: decodedTenant,
+        communityId,
+        uid: decoded.uid,
+        authMode,
+      });
+      throw new AuthenticationError("Tenant mismatch");
+    }
+
     const currentUser = await issuer.internal((tx) =>
       tx.user.findFirst({
         where: {
@@ -89,6 +100,9 @@ export async function handleFirebaseAuth(
       authMeta,
     };
   } catch (err) {
+    if (err instanceof AuthenticationError) {
+      throw err;
+    }
     const error = err as any;
     logger.error("🔥 Firebase verification failed", {
       method: verificationMethod,
