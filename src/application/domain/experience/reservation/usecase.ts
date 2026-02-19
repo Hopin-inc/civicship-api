@@ -28,7 +28,7 @@ import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
 import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError, ValidationError } from "@/errors/graphql";
 import { inject, injectable } from "tsyringe";
 import ReservationPresenter from "@/application/domain/experience/reservation/presenter";
 import { IReservationService } from "@/application/domain/experience/reservation/data/interface";
@@ -157,6 +157,9 @@ export default class ReservationUseCase {
     const currentUserId = getCurrentUserId(ctx);
 
     const reservation = await this.reservationService.findReservationOrThrow(ctx, id);
+    if (reservation.createdBy !== currentUserId) {
+      throw new AuthorizationError("Cannot cancel a reservation that does not belong to you");
+    }
     this.reservationValidator.validateCancellable(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.opportunityId
@@ -186,7 +189,7 @@ export default class ReservationUseCase {
           await this.processReservationRefund(
             ctx,
             tx,
-            currentUserId,
+            res.createdBy!,
             res.opportunitySlot.opportunity.createdBy!,
             res.opportunitySlot.opportunity.communityId,
             transferPoints,
