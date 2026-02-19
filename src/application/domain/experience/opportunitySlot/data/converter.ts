@@ -91,7 +91,7 @@ export default class OpportunitySlotConverter {
     return {
       startsAt: startsAt,
       endsAt: endsAt,
-      ...(capacity !== undefined ? { capacity } : {}),
+      ...(capacity != null ? { capacity } : {}),
     };
   }
 }
