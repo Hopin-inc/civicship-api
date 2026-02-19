@@ -1098,6 +1098,7 @@ input OpportunitySlotSortInput {
 }
 
 input OpportunitySlotUpdateInput {
+  capacity: Int
   endsAt: Datetime!
   id: ID!
   startsAt: Datetime!
