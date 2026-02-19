@@ -189,7 +189,7 @@ export default class ReservationUseCase {
           await this.processReservationRefund(
             ctx,
             tx,
-            res.createdBy!,
+            currentUserId,
             res.opportunitySlot.opportunity.createdBy!,
             res.opportunitySlot.opportunity.communityId,
             transferPoints,
