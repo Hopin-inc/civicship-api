@@ -87,10 +87,11 @@ export default class OpportunitySlotConverter {
   }
 
   update(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
-    const { startsAt, endsAt } = input;
+    const { startsAt, endsAt, capacity } = input;
     return {
       startsAt: startsAt,
       endsAt: endsAt,
+      ...(capacity !== undefined ? { capacity } : {}),
     };
   }
 }
