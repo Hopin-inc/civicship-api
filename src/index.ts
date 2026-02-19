@@ -15,6 +15,7 @@ import { customProcessRequest } from "@/presentation/middleware/custom-process-r
 import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import cookieParser from "cookie-parser";
 import { handleSessionLogin } from "@/presentation/middleware/session";
+import { sessionLoginRateLimit } from "@/presentation/middleware/rate-limit";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -66,7 +67,7 @@ async function startServer() {
   });
 
   app.use(cookieParser());
-  app.post("/sessionLogin", handleSessionLogin);
+  app.post("/sessionLogin", sessionLoginRateLimit, handleSessionLogin);
 
   app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);

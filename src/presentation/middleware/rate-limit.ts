@@ -11,6 +11,10 @@ const RATE_LIMIT_CONFIG = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // 100 requests per 15 minutes for general API operations
   },
+  SESSION_LOGIN: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // 10 login attempts per 15 minutes per IP
+  },
 } as const;
 
 export const skipRateLimitForAdminApiKey = (req: Request): boolean => {
@@ -41,6 +45,16 @@ export const walletRateLimit = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skipSuccessfulRequests: false,
   skip: skipRateLimitForAdminApiKey,
+});
+
+export const sessionLoginRateLimit = rateLimit({
+  windowMs: RATE_LIMIT_CONFIG.SESSION_LOGIN.windowMs,
+  max: RATE_LIMIT_CONFIG.SESSION_LOGIN.max,
+  message: {
+    error: 'Too many login attempts from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 export const apiRateLimit = rateLimit({

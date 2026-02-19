@@ -2,12 +2,18 @@ import { Request, Response } from "express";
 import { auth } from "@/infrastructure/libs/firebase";
 import logger from "@/infrastructure/logging";
 import { SESSION_EXPIRATION_MS, SESSION_COOKIE_NAME } from "@/config/constants";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+
+import { container } from "tsyringe";
 
 export async function handleSessionLogin(req: Request, res: Response) {
   const { idToken } = req.body;
+  const communityId = req.headers["x-community-id"] as string | undefined;
 
   logger.debug("📥 [handleSessionLogin] Incoming request", {
     hasIdToken: !!idToken,
+    communityId,
     origin: req.headers.origin,
     referer: req.headers.referer,
     userAgent: req.headers["user-agent"],
@@ -23,23 +29,37 @@ export async function handleSessionLogin(req: Request, res: Response) {
     return res.status(400).json({ error: "Missing idToken" });
   }
 
+  if (!communityId) {
+    logger.warn("⚠️ [handleSessionLogin] Missing x-community-id header");
+    return res.status(400).json({ error: "Missing x-community-id header" });
+  }
+
   const expiresIn = SESSION_EXPIRATION_MS;
 
   try {
-    logger.debug("🧩 [handleSessionLogin] Creating session cookie from Firebase idToken", {
+    const issuer = new PrismaClientIssuer();
+    const configService = container.resolve(CommunityConfigService);
+    const tenantId = await configService.getFirebaseTenantId(issuer, communityId);
+
+    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
+
+    logger.debug("🧩 [handleSessionLogin] Creating tenanted session cookie", {
       expiresInMs: expiresIn,
+      tenantId,
+      communityId,
     });
 
-    const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
+    const sessionCookie = await tenantedAuth.createSessionCookie(idToken, { expiresIn });
 
     logger.debug("✅ [handleSessionLogin] Session cookie created", {
       expiresAt: new Date(Date.now() + expiresIn).toISOString(),
+      tenantId,
     });
 
     // Clear legacy "session" cookie to migrate clients to "__session"
     res.clearCookie("session", { path: "/" });
 
-    // Set canonical "__session" cookie for Firebase Hosting compliance
+    // Set canonical "__session" cookie (path: "/" maintained for GraphQL endpoint compatibility)
     res.cookie(SESSION_COOKIE_NAME, sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
@@ -62,6 +82,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
       message: err.message,
       code: err.code,
       stack: err.stack,
+      communityId,
       idTokenLength: idToken?.length,
       timestamp: new Date().toISOString(),
     });

@@ -5,7 +5,7 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
-import { AuthMeta, IContext } from "@/types/server";
+import { AuthMeta } from "@/types/server";
 import { AuthenticationError } from "@/errors/graphql";
 
 export async function handleFirebaseAuth(
@@ -28,7 +28,7 @@ export async function handleFirebaseAuth(
   }
 
   const configService = container.resolve(CommunityConfigService);
-  const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
+  const tenantId = await configService.getFirebaseTenantId(issuer, communityId);
   const verificationMethod = authMode === "session" ? "verifySessionCookie" : "verifyIdToken";
 
   try {
@@ -41,6 +41,17 @@ export async function handleFirebaseAuth(
 
     const provider = (decoded as any).firebase?.sign_in_provider;
     const decodedTenant = (decoded as any).firebase?.tenant;
+
+    if (decodedTenant !== tenantId) {
+      logger.warn("🚨 Tenant mismatch detected", {
+        expectedTenant: tenantId,
+        actualTenant: decodedTenant,
+        communityId,
+        uid: decoded.uid,
+        authMode,
+      });
+      throw new AuthenticationError("Tenant mismatch");
+    }
 
     const currentUser = await issuer.internal((tx) =>
       tx.user.findFirst({
@@ -89,6 +100,9 @@ export async function handleFirebaseAuth(
       authMeta,
     };
   } catch (err) {
+    if (err instanceof AuthenticationError) {
+      throw err;
+    }
     const error = err as any;
     logger.error("🔥 Firebase verification failed", {
       method: verificationMethod,
