@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { auth } from "@/infrastructure/libs/firebase";
 import logger from "@/infrastructure/logging";
-import { SESSION_EXPIRATION_MS, SESSION_COOKIE_NAME } from "@/config/constants";
+import { SESSION_EXPIRATION_MS, getSessionCookieName } from "@/config/constants";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
@@ -56,11 +56,12 @@ export async function handleSessionLogin(req: Request, res: Response) {
       tenantId,
     });
 
-    // Clear legacy "session" cookie to migrate clients to "__session"
+    // Clear legacy cookies to migrate clients to community-scoped cookie names
     res.clearCookie("session", { path: "/" });
+    res.clearCookie("__session", { path: "/" });
 
-    // Set canonical "__session" cookie (path: "/" maintained for GraphQL endpoint compatibility)
-    res.cookie(SESSION_COOKIE_NAME, sessionCookie, {
+    // Set community-scoped session cookie to prevent cross-community session collisions
+    res.cookie(getSessionCookieName(communityId), sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: true,
@@ -69,7 +70,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
     });
 
     logger.debug("🍪 [handleSessionLogin] Cookie set on response", {
-      cookieName: SESSION_COOKIE_NAME,
+      cookieName: getSessionCookieName(communityId),
       secure: true,
       sameSite: "none",
       path: "/",
