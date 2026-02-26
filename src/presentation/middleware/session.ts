@@ -7,6 +7,16 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 import { container } from "tsyringe";
 
+/** JWTのpayloadをデコードしてfirebase.tenantを取り出す（検証なし・デバッグ用） */
+function extractTenantFromIdToken(idToken: string): string | null {
+  try {
+    const payload = JSON.parse(Buffer.from(idToken.split(".")[1], "base64url").toString());
+    return (payload?.firebase?.tenant as string) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function handleSessionLogin(req: Request, res: Response) {
   const { idToken } = req.body;
   const communityId = req.headers["x-community-id"] as string | undefined;
@@ -36,10 +46,12 @@ export async function handleSessionLogin(req: Request, res: Response) {
 
   const expiresIn = SESSION_EXPIRATION_MS;
 
+  let tenantId: string | undefined;
+
   try {
     const issuer = new PrismaClientIssuer();
     const configService = container.resolve(CommunityConfigService);
-    const tenantId = await configService.getFirebaseTenantId(issuer, communityId);
+    tenantId = await configService.getFirebaseTenantId(issuer, communityId);
 
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
 
@@ -79,12 +91,16 @@ export async function handleSessionLogin(req: Request, res: Response) {
 
     return res.json({ status: "success" });
   } catch (err: any) {
+    const tokenTenantId = extractTenantFromIdToken(idToken);
     logger.error("🔥 [handleSessionLogin] Session login failed", {
       message: err.message,
       code: err.code,
       stack: err.stack,
       communityId,
       idTokenLength: idToken?.length,
+      tenantIdFromDb: tenantId,
+      tenantIdFromToken: tokenTenantId,
+      tenantMismatch: tenantId !== undefined && tokenTenantId !== tenantId,
       timestamp: new Date().toISOString(),
     });
     return res.status(401).json({ error: err.message || "Unauthorized" });
