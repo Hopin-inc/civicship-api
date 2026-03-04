@@ -1,11 +1,21 @@
 import { Request, Response } from "express";
 import { auth } from "@/infrastructure/libs/firebase";
 import logger from "@/infrastructure/logging";
-import { SESSION_EXPIRATION_MS, SESSION_COOKIE_NAME } from "@/config/constants";
+import { SESSION_EXPIRATION_MS, getSessionCookieName } from "@/config/constants";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 import { container } from "tsyringe";
+
+/** JWTのpayloadをデコードしてfirebase.tenantを取り出す（検証なし・デバッグ用） */
+function extractTenantFromIdToken(idToken: string): string | null {
+  try {
+    const payload = JSON.parse(Buffer.from(idToken.split(".")[1], "base64url").toString());
+    return (payload?.firebase?.tenant as string) ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function handleSessionLogin(req: Request, res: Response) {
   const { idToken } = req.body;
@@ -36,10 +46,12 @@ export async function handleSessionLogin(req: Request, res: Response) {
 
   const expiresIn = SESSION_EXPIRATION_MS;
 
+  let tenantId: string | undefined;
+
   try {
     const issuer = new PrismaClientIssuer();
     const configService = container.resolve(CommunityConfigService);
-    const tenantId = await configService.getFirebaseTenantId(issuer, communityId);
+    tenantId = await configService.getFirebaseTenantId(issuer, communityId);
 
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
 
@@ -56,11 +68,12 @@ export async function handleSessionLogin(req: Request, res: Response) {
       tenantId,
     });
 
-    // Clear legacy "session" cookie to migrate clients to "__session"
+    // Clear legacy cookies to migrate clients to community-scoped cookie names
     res.clearCookie("session", { path: "/" });
+    res.clearCookie("__session", { path: "/" });
 
-    // Set canonical "__session" cookie (path: "/" maintained for GraphQL endpoint compatibility)
-    res.cookie(SESSION_COOKIE_NAME, sessionCookie, {
+    // Set community-scoped session cookie to prevent cross-community session collisions
+    res.cookie(getSessionCookieName(communityId), sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: true,
@@ -69,7 +82,7 @@ export async function handleSessionLogin(req: Request, res: Response) {
     });
 
     logger.debug("🍪 [handleSessionLogin] Cookie set on response", {
-      cookieName: SESSION_COOKIE_NAME,
+      cookieName: getSessionCookieName(communityId),
       secure: true,
       sameSite: "none",
       path: "/",
@@ -78,12 +91,16 @@ export async function handleSessionLogin(req: Request, res: Response) {
 
     return res.json({ status: "success" });
   } catch (err: any) {
+    const tokenTenantId = extractTenantFromIdToken(idToken);
     logger.error("🔥 [handleSessionLogin] Session login failed", {
       message: err.message,
       code: err.code,
       stack: err.stack,
       communityId,
       idTokenLength: idToken?.length,
+      tenantIdFromDb: tenantId,
+      tenantIdFromToken: tokenTenantId,
+      tenantMismatch: tenantId !== undefined && tokenTenantId !== tenantId,
       timestamp: new Date().toISOString(),
     });
     return res.status(401).json({ error: err.message || "Unauthorized" });
