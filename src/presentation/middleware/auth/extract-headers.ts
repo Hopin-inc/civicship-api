@@ -6,7 +6,11 @@ import { SESSION_COOKIE_NAME, getSessionCookieName } from "@/config/constants";
 function safeDecodeURIComponent(v: string): string {
   try {
     return decodeURIComponent(v);
-  } catch {
+  } catch (e) {
+    logger.debug("Failed to decode cookie value, returning raw value", {
+      value: v,
+      error: (e as Error).message,
+    });
     return v;
   }
 }
