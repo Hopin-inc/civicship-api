@@ -4,8 +4,8 @@
 export const SESSION_EXPIRATION_MS = 14 * 24 * 60 * 60 * 1000;
 
 /**
- * Session cookie name for Firebase compliance
- * Firebase Hosting expects "__session" as the cookie name
+ * Legacy session cookie name. Kept for backward-compatible fallback reads.
+ * New logins use community-scoped names (see getSessionCookieName).
  */
 export const SESSION_COOKIE_NAME = "__session";
 

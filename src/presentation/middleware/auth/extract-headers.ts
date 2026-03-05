@@ -3,6 +3,14 @@ import logger from "@/infrastructure/logging";
 import { AuthHeaders } from "./types";
 import { SESSION_COOKIE_NAME, getSessionCookieName } from "@/config/constants";
 
+function safeDecodeURIComponent(v: string): string {
+  try {
+    return decodeURIComponent(v);
+  } catch {
+    return v;
+  }
+}
+
 export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
   const getHeader = (key: string) => (req.headers[key.toLowerCase()] as string) || "";
 
@@ -16,7 +24,7 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
         const parts = v.trim().split("=");
         return [(parts.shift() || "").trim(), parts.join("=")];
       })
-      .map(([k, v]) => [k, decodeURIComponent(v || "")]),
+      .map(([k, v]) => [k, safeDecodeURIComponent(v || "")]),
   );
 
   // Prefer community-scoped cookie, fall back to legacy "__session" / "session" for backward compatibility
