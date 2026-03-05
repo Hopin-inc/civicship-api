@@ -150,11 +150,6 @@ export const CommunityConfigFactory = defineCommunityConfigFactory.withTransient
           adminRootPath: "/admin/wallet",
         },
       },
-      firebaseConfig: {
-        create: {
-          tenantId: process.env.FIREBASE_AUTH_TENANT_ID ?? "",
-        },
-      },
       lineConfig: {
         create: {
           channelId: process.env.LINE_LIFF_CHANNEL_ID ?? "",
