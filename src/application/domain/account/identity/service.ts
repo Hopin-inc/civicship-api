@@ -149,7 +149,7 @@ export default class IdentityService {
       await auth.deleteUser(uid);
     } catch (err: any) {
       if (err.code === "auth/user-not-found") {
-        logger.warn("Firebase user not found in global project (pre-migration user)", { uid });
+        logger.warn("Firebase user not found in global project (pre-migration user)", { uid: uid.slice(-6) });
         return;
       }
       throw err;

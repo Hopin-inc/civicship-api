@@ -14,7 +14,6 @@ export async function handleSessionLogin(req: Request, res: Response) {
     referer: req.headers.referer,
     userAgent: req.headers["user-agent"],
     cookiesPresent: Object.keys(req.cookies || {}).length,
-    timestamp: new Date().toISOString(),
   });
 
   if (!idToken) {
@@ -73,7 +72,6 @@ export async function handleSessionLogin(req: Request, res: Response) {
       stack: err.stack,
       communityId,
       idTokenLength: idToken?.length,
-      timestamp: new Date().toISOString(),
     });
     return res.status(401).json({ error: err.message || "Unauthorized" });
   }
