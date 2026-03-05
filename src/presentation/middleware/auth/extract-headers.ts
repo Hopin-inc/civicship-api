@@ -8,7 +8,6 @@ function safeDecodeURIComponent(v: string): string {
     return decodeURIComponent(v);
   } catch (e) {
     logger.warn("Failed to decode cookie value, returning raw value", {
-      value: v,
       error: (e as Error).message,
     });
     return v;
