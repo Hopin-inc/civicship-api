@@ -6,6 +6,13 @@ import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta } from "@/types/server";
 import { AuthenticationError } from "@/errors/graphql";
 
+const STALE_SESSION_ERRORS = [
+  "auth/user-not-found", // テナント移行後の残存cookie
+  "auth/session-cookie-revoked", // 明示的にrevokeされたcookie
+  "auth/session-cookie-expired", // 期限切れcookie
+  "auth/invalid-session-cookie", // 不正なcookie
+];
+
 export async function handleFirebaseAuth(
   headers: AuthHeaders,
   issuer: PrismaClientIssuer,
@@ -87,13 +94,6 @@ export async function handleFirebaseAuth(
 
     // session cookie 固有のステールエラーは throw してフロントエンドに通知
     // フロントエンドの useStaleSessionRecovery が HTTP 500 を検知して cookie をクリアする
-    const STALE_SESSION_ERRORS = [
-      "auth/user-not-found", // テナント移行後の残存cookie
-      "auth/session-cookie-revoked", // 明示的にrevokeされたcookie
-      "auth/session-cookie-expired", // 期限切れcookie
-      "auth/invalid-session-cookie", // 不正なcookie
-    ];
-
     if (authMode === "session" && STALE_SESSION_ERRORS.includes(error.code)) {
       logger.warn("🍪 Stale session cookie detected - signaling to client", {
         method: verificationMethod,
