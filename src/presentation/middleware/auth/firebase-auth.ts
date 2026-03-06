@@ -6,6 +6,13 @@ import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta } from "@/types/server";
 import { AuthenticationError } from "@/errors/graphql";
 
+const STALE_SESSION_ERRORS = [
+  "auth/user-not-found", // テナント移行後の残存cookie
+  "auth/session-cookie-revoked", // 明示的にrevokeされたcookie
+  "auth/session-cookie-expired", // 期限切れcookie
+  "auth/invalid-session-cookie", // 不正なcookie
+];
+
 export async function handleFirebaseAuth(
   headers: AuthHeaders,
   issuer: PrismaClientIssuer,
@@ -84,6 +91,19 @@ export async function handleFirebaseAuth(
       throw err;
     }
     const error = err as any;
+
+    // session cookie 固有のステールエラーは throw してフロントエンドに通知
+    // フロントエンドの useStaleSessionRecovery が HTTP 500 を検知して cookie をクリアする
+    if (authMode === "session" && STALE_SESSION_ERRORS.includes(error.code)) {
+      logger.warn("🍪 Stale session cookie detected - signaling to client", {
+        method: verificationMethod,
+        communityId,
+        errorCode: error.code,
+      });
+      throw new AuthenticationError("Stale session cookie");
+    }
+
+    // その他のエラー（idTokenモード、ネットワーク障害等）は anonymous fallback を維持
     logger.warn("🔥 Firebase verification failed - falling back to anonymous", {
       method: verificationMethod,
       communityId,
@@ -91,7 +111,6 @@ export async function handleFirebaseAuth(
       errorMessage: error.message,
       tokenLength: idToken.length,
     });
-    // 検証失敗時は anonymous として扱う（public クエリは引き続き動作する）
     return { issuer, loaders, communityId, authMeta };
   }
 }
