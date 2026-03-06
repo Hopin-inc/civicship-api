@@ -68,7 +68,7 @@ export class LIFFService {
     }
   }
 
-  static async createFirebaseCustomToken(profile: LINEProfile, tenantId?: string): Promise<string> {
+  static async createFirebaseCustomToken(profile: LINEProfile): Promise<string> {
     try {
       const customClaims = {
         line: {
@@ -82,8 +82,7 @@ export class LIFFService {
         platform: "LINE",
       };
 
-      const tenantedAuth = tenantId ? auth.tenantManager().authForTenant(tenantId) : auth;
-      const customToken = await tenantedAuth.createCustomToken(profile.userId, customClaims);
+      const customToken = await auth.createCustomToken(profile.userId, customClaims);
 
       return customToken;
     } catch (error) {

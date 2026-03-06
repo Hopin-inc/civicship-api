@@ -1,7 +1,18 @@
 import http from "http";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders } from "./types";
-import { SESSION_COOKIE_NAME } from "@/config/constants";
+import { SESSION_COOKIE_NAME, getSessionCookieName } from "@/config/constants";
+
+function safeDecodeURIComponent(v: string): string {
+  try {
+    return decodeURIComponent(v);
+  } catch (e) {
+    logger.warn("Failed to decode cookie value, returning raw value", {
+      error: (e as Error).message,
+    });
+    return v;
+  }
+}
 
 export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
   const getHeader = (key: string) => (req.headers[key.toLowerCase()] as string) || "";
@@ -16,11 +27,16 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
         const parts = v.trim().split("=");
         return [(parts.shift() || "").trim(), parts.join("=")];
       })
-      .map(([k, v]) => [k, decodeURIComponent(v || "")]),
+      .map(([k, v]) => [k, safeDecodeURIComponent(v || "")]),
   );
 
-  // Prefer canonical "__session" cookie, fall back to legacy "session" for backward compatibility
-  const sessionCookie = cookies[SESSION_COOKIE_NAME] || cookies["session"];
+  // Prefer community-scoped cookie, fall back to legacy "__session" / "session" for backward compatibility
+  const communityIdForCookie = getHeader("x-community-id");
+  const sessionCookie = communityIdForCookie
+    ? cookies[getSessionCookieName(communityIdForCookie)] ||
+      cookies[SESSION_COOKIE_NAME] ||
+      cookies["session"]
+    : cookies[SESSION_COOKIE_NAME] || cookies["session"];
 
   const bearer = getHeader("authorization")?.replace(/^Bearer\s+/, "");
 

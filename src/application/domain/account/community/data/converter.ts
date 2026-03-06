@@ -71,13 +71,6 @@ export default class CommunityConverter {
         ...(config && {
           config: {
             create: {
-              ...(config.firebaseConfig && {
-                firebaseConfig: {
-                  create: {
-                    tenantId: config.firebaseConfig.tenantId,
-                  },
-                },
-              }),
               ...(config.lineConfig && {
                 lineConfig: {
                   create: {

@@ -351,15 +351,6 @@ RIGHT RIGHT
     }
   
 
-  "t_community_firebase_configs" {
-    String id "🗝️"
-    String config_id 
-    String tenant_id 
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
   "t_community_line_configs" {
     String id "🗝️"
     String config_id 
@@ -913,10 +904,8 @@ RIGHT RIGHT
     "t_communities" o{--}o "t_articles" : "articles"
     "t_communities" o{--}o "t_nft_instances" : "nftInstance"
     "t_community_configs" o|--|| "t_communities" : "community"
-    "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
     "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
     "t_community_configs" o{--}o "t_community_portal_configs" : "portalConfig"
-    "t_community_firebase_configs" o|--|o "t_community_configs" : "config"
     "t_community_line_configs" o|--|o "t_community_configs" : "config"
     "t_community_line_configs" o{--}o "t_community_line_rich_menus" : "richMenus"
     "t_community_line_rich_menus" o|--|| "t_community_line_configs" : "config"
