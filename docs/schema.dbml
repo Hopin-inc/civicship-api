@@ -100,18 +100,8 @@ Table t_community_configs {
   id String [pk]
   communityId String [unique, not null]
   community t_communities [not null]
-  firebaseConfig t_community_firebase_configs
   lineConfig t_community_line_configs
   portalConfig t_community_portal_configs
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
-}
-
-Table t_community_firebase_configs {
-  id String [pk]
-  configId String [unique, not null]
-  config t_community_configs
-  tenantId String [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -1028,8 +1018,6 @@ Ref: t_places.communityId > t_communities.id [delete: Set Null]
 Ref: t_communities.imageId > t_images.id
 
 Ref: t_community_configs.communityId - t_communities.id
-
-Ref: t_community_firebase_configs.configId - t_community_configs.id
 
 Ref: t_community_line_configs.configId - t_community_configs.id
 

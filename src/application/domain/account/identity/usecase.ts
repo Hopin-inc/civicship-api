@@ -65,13 +65,17 @@ export default class IdentityUseCase {
   }
 
   async userDeleteAccount(context: IContext): Promise<GqlUserDeletePayload> {
-    if (!context.uid || !context.platform || !context.tenantId) {
-      throw new Error("Authentication required (uid or platform missing)");
+    if (!context.uid || !context.platform) {
+      throw new AuthenticationError("Authentication required (uid or platform missing)");
     }
     const uid = context.uid;
     const communityId = context.platform === IdentityPlatform.Line ? context.communityId : null;
     const user = await this.identityService.deleteUserAndIdentity(uid, communityId);
-    await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
+    try {
+      await this.identityService.deleteFirebaseAuthUser(uid);
+    } catch (error) {
+      logger.error("Failed to delete Firebase Auth user during account deletion", { uid: uid.slice(-6), error });
+    }
     return IdentityPresenter.delete(user);
   }
 

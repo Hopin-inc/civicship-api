@@ -13,7 +13,6 @@ export type LoggedInUserInfo = {
   issuer: PrismaClientIssuer;
   loaders: Loaders;
 
-  tenantId?: string;
   communityId: string;
   platform?: IdentityPlatform;
   uid?: string;
