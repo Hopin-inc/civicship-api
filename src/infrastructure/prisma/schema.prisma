@@ -205,6 +205,7 @@ model CommunityConfig {
   communityId String    @unique @map("community_id")
   community   Community @relation(fields: [communityId], references: [id])
 
+  firebaseConfig CommunityFirebaseConfig?
   lineConfig     CommunityLineConfig?
   portalConfig   CommunityPortalConfig?
 
@@ -212,6 +213,20 @@ model CommunityConfig {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_community_configs")
+}
+
+model CommunityFirebaseConfig {
+  id String @id @default(cuid())
+
+  configId String           @unique @map("config_id")
+  config   CommunityConfig? @relation(fields: [configId], references: [id])
+
+  tenantId String @map("tenant_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_community_firebase_configs")
 }
 
 model CommunityLineConfig {

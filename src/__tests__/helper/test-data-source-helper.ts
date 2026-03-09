@@ -49,6 +49,7 @@ export default class TestDataSourceHelper {
     await this.db.opportunity.deleteMany();
     await this.db.article.deleteMany();
 
+    await this.db.communityFirebaseConfig.deleteMany();
     await this.db.communityLineConfig.deleteMany();
     await this.db.communityConfig.deleteMany();
 

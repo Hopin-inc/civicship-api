@@ -144,16 +144,9 @@ export default class IdentityService {
     }
   }
 
-  async deleteFirebaseAuthUser(uid: string): Promise<void> {
-    try {
-      await auth.deleteUser(uid);
-    } catch (err: any) {
-      if (err.code === "auth/user-not-found") {
-        logger.warn("Firebase user not found in global project (pre-migration user)", { uid: uid.slice(-6) });
-        return;
-      }
-      throw err;
-    }
+  async deleteFirebaseAuthUser(uid: string, tenantId: string): Promise<void> {
+    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
+    return tenantedAuth.deleteUser(uid);
   }
 
   async fetchNewIdToken(refreshToken: string): Promise<FirebaseTokenRefreshResponse> {

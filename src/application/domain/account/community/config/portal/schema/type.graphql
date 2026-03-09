@@ -22,6 +22,7 @@ type CommunityPortalConfig {
     liffId: String
     liffAppId: String
     liffBaseUrl: String
+    firebaseTenantId: String
 }
 
 type CommunityDocument {

@@ -1,6 +1,6 @@
 import http from "http";
 import { ApolloServer } from "@apollo/server";
-import { expressMiddleware } from "@as-integrations/express4";
+import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { extractAuthHeaders } from "@/presentation/middleware/auth/extract-headers";

@@ -1,5 +1,10 @@
 input CommunityConfigInput {
+    firebaseConfig: CommunityFirebaseConfigInput
     lineConfig: CommunityLineConfigInput
+}
+
+input CommunityFirebaseConfigInput {
+    tenantId: String!
 }
 
 input CommunityLineConfigInput {

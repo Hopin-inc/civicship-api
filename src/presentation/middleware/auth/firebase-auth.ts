@@ -1,6 +1,8 @@
 import { auth } from "@/infrastructure/libs/firebase";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { createLoaders } from "@/presentation/graphql/dataloader";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta } from "@/types/server";
@@ -25,16 +27,31 @@ export async function handleFirebaseAuth(
     return { issuer, loaders, communityId, authMeta };
   }
 
+  const configService = container.resolve(CommunityConfigService);
+  const tenantId = await configService.getFirebaseTenantId(issuer, communityId);
   const verificationMethod = authMode === "session" ? "verifySessionCookie" : "verifyIdToken";
 
   try {
+    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     const decoded = await (authMode === "session"
-      ? auth.verifySessionCookie(idToken, true)
-      : auth.verifyIdToken(idToken));
+      ? tenantedAuth.verifySessionCookie(idToken, true)
+      : tenantedAuth.verifyIdToken(idToken));
     const uid = decoded.uid;
     const platform = decoded.platform;
 
     const provider = (decoded as any).firebase?.sign_in_provider;
+    const decodedTenant = (decoded as any).firebase?.tenant;
+
+    if (decodedTenant !== tenantId) {
+      logger.warn("🚨 Tenant mismatch detected", {
+        expectedTenant: tenantId,
+        actualTenant: decodedTenant,
+        communityId,
+        uid: decoded.uid,
+        authMode,
+      });
+      throw new AuthenticationError("Tenant mismatch");
+    }
 
     const currentUser = await issuer.internal((tx) =>
       tx.user.findFirst({
@@ -62,6 +79,8 @@ export async function handleFirebaseAuth(
     logger.debug("✅ Firebase user verified", {
       method: verificationMethod,
       uid: decoded.uid.slice(-6),
+      tenantId,
+      decodedTenant,
       provider,
       communityId,
       hasCurrentUser: !!currentUser,
@@ -75,6 +94,7 @@ export async function handleFirebaseAuth(
       uid,
       idToken,
       platform,
+      tenantId,
       communityId,
       currentUser,
       authMeta,
@@ -84,14 +104,14 @@ export async function handleFirebaseAuth(
       throw err;
     }
     const error = err as any;
-    logger.warn("🔥 Firebase verification failed - falling back to anonymous", {
+    logger.error("🔥 Firebase verification failed", {
       method: verificationMethod,
+      tenantId,
       communityId,
       errorCode: error.code || "unknown",
       errorMessage: error.message,
       tokenLength: idToken.length,
     });
-    // 検証失敗時は anonymous として扱う（public クエリは引き続き動作する）
-    return { issuer, loaders, communityId, authMeta };
+    throw new AuthenticationError("Firebase verification failed");
   }
 }

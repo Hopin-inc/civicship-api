@@ -206,11 +206,13 @@ type Community {
 }
 
 type CommunityConfig {
+  firebaseConfig: CommunityFirebaseConfig
   lineConfig: CommunityLineConfig
   signupBonusConfig: CommunitySignupBonusConfig
 }
 
 input CommunityConfigInput {
+  firebaseConfig: CommunityFirebaseConfigInput
   lineConfig: CommunityLineConfigInput
 }
 
@@ -257,6 +259,14 @@ input CommunityFilterInput {
   placeIds: [ID!]
 }
 
+type CommunityFirebaseConfig {
+  tenantId: String
+}
+
+input CommunityFirebaseConfigInput {
+  tenantId: String!
+}
+
 type CommunityLineConfig {
   accessToken: String
   channelId: String
@@ -295,6 +305,7 @@ type CommunityPortalConfig {
   domain: String!
   enableFeatures: [String!]!
   faviconPrefix: String!
+  firebaseTenantId: String
   liffAppId: String
   liffBaseUrl: String
   liffId: String
