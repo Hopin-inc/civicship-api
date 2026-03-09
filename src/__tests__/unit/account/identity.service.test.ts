@@ -4,9 +4,17 @@ import { auth } from "@/infrastructure/libs/firebase";
 import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
 
 jest.mock("@/infrastructure/libs/firebase", () => {
+  const mockDeleteUser = jest.fn();
+  const mockAuthForTenant = jest.fn(() => ({
+    deleteUser: mockDeleteUser,
+  }));
+  const mockTenantManager = jest.fn(() => ({
+    authForTenant: mockAuthForTenant,
+  }));
+
   return {
     auth: {
-      deleteUser: jest.fn(),
+      tenantManager: mockTenantManager,
     },
     __esModule: true,
   };
@@ -48,8 +56,13 @@ describe("IdentityService", () => {
   const TEST_IDENTITY = {
     userId: TEST_USER_ID,
     uid: "test-uid",
+    tenantId: "test-tenant-id",
     communityId: TEST_COMMUNITY_ID,
     platform: IdentityPlatform.LINE,
+  };
+
+  const mockTenantedAuth = {
+    deleteUser: jest.fn(),
   };
 
   beforeEach(() => {
@@ -57,6 +70,9 @@ describe("IdentityService", () => {
     mockUserRepository = new MockUserRepository();
     mockIdentityRepository = new MockIdentityRepository();
     service = new IdentityService(mockUserRepository, mockIdentityRepository);
+    (auth.tenantManager as jest.Mock).mockReturnValue({
+      authForTenant: jest.fn().mockReturnValue(mockTenantedAuth),
+    });
   });
 
   afterEach(() => {
@@ -109,7 +125,7 @@ describe("IdentityService", () => {
 
       const result = await service.deleteUserAndIdentity(TEST_IDENTITY.uid);
 
-      expect(mockIdentityRepository.find).toHaveBeenCalledWith(TEST_IDENTITY.uid, undefined);
+      expect(mockIdentityRepository.find).toHaveBeenCalledWith(TEST_IDENTITY.uid);
       expect(mockUserRepository.delete).toHaveBeenCalledWith(TEST_IDENTITY.userId);
       expect(result).toEqual(TEST_USER);
     });
@@ -119,7 +135,7 @@ describe("IdentityService", () => {
 
       const result = await service.deleteUserAndIdentity("nonexistent-uid");
 
-      expect(mockIdentityRepository.find).toHaveBeenCalledWith("nonexistent-uid", undefined);
+      expect(mockIdentityRepository.find).toHaveBeenCalledWith("nonexistent-uid");
       expect(result).toBeNull();
     });
 
@@ -136,26 +152,20 @@ describe("IdentityService", () => {
 
   describe("deleteFirebaseAuthUser", () => {
     it("should delete the Firebase auth user successfully", async () => {
-      (auth.deleteUser as jest.Mock).mockResolvedValue(undefined);
+      mockTenantedAuth.deleteUser.mockResolvedValue(undefined);
 
-      await service.deleteFirebaseAuthUser(TEST_IDENTITY.uid);
+      await service.deleteFirebaseAuthUser(TEST_IDENTITY.uid, TEST_IDENTITY.tenantId);
 
-      expect(auth.deleteUser).toHaveBeenCalledWith(TEST_IDENTITY.uid);
+      expect(auth.tenantManager().authForTenant).toHaveBeenCalledWith(TEST_IDENTITY.tenantId);
+      expect(mockTenantedAuth.deleteUser).toHaveBeenCalledWith(TEST_IDENTITY.uid);
     });
 
-    it("should silently succeed when user is not found in global project (pre-migration user)", async () => {
-      const error = Object.assign(new Error("User not found"), { code: "auth/user-not-found" });
-      (auth.deleteUser as jest.Mock).mockRejectedValue(error);
-
-      await expect(service.deleteFirebaseAuthUser(TEST_IDENTITY.uid)).resolves.toBeUndefined();
-    });
-
-    it("should throw an error when Firebase user deletion fails for other reasons", async () => {
+    it("should throw an error when Firebase user deletion fails", async () => {
       const error = new Error("Firebase user deletion failed");
-      (auth.deleteUser as jest.Mock).mockRejectedValue(error);
+      mockTenantedAuth.deleteUser.mockRejectedValue(error);
 
       await expect(
-        service.deleteFirebaseAuthUser(TEST_IDENTITY.uid),
+        service.deleteFirebaseAuthUser(TEST_IDENTITY.uid, TEST_IDENTITY.tenantId),
       ).rejects.toThrow("Firebase user deletion failed");
     });
   });

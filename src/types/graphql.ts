@@ -242,11 +242,13 @@ export type GqlCommunity = {
 
 export type GqlCommunityConfig = {
   __typename?: 'CommunityConfig';
+  firebaseConfig?: Maybe<GqlCommunityFirebaseConfig>;
   lineConfig?: Maybe<GqlCommunityLineConfig>;
   signupBonusConfig?: Maybe<GqlCommunitySignupBonusConfig>;
 };
 
 export type GqlCommunityConfigInput = {
+  firebaseConfig?: InputMaybe<GqlCommunityFirebaseConfigInput>;
   lineConfig?: InputMaybe<GqlCommunityLineConfigInput>;
 };
 
@@ -297,6 +299,15 @@ export type GqlCommunityFilterInput = {
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export type GqlCommunityFirebaseConfig = {
+  __typename?: 'CommunityFirebaseConfig';
+  tenantId?: Maybe<Scalars['String']['output']>;
+};
+
+export type GqlCommunityFirebaseConfigInput = {
+  tenantId: Scalars['String']['input'];
+};
+
 export type GqlCommunityLineConfig = {
   __typename?: 'CommunityLineConfig';
   accessToken?: Maybe<Scalars['String']['output']>;
@@ -338,6 +349,7 @@ export type GqlCommunityPortalConfig = {
   domain: Scalars['String']['output'];
   enableFeatures: Array<Scalars['String']['output']>;
   faviconPrefix: Scalars['String']['output'];
+  firebaseTenantId?: Maybe<Scalars['String']['output']>;
   liffAppId?: Maybe<Scalars['String']['output']>;
   liffBaseUrl?: Maybe<Scalars['String']['output']>;
   liffId?: Maybe<Scalars['String']['output']>;
@@ -3303,6 +3315,8 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityDocument: ResolverTypeWrapper<GqlCommunityDocument>;
   CommunityEdge: ResolverTypeWrapper<Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Community']> }>;
   CommunityFilterInput: GqlCommunityFilterInput;
+  CommunityFirebaseConfig: ResolverTypeWrapper<GqlCommunityFirebaseConfig>;
+  CommunityFirebaseConfigInput: GqlCommunityFirebaseConfigInput;
   CommunityLineConfig: ResolverTypeWrapper<GqlCommunityLineConfig>;
   CommunityLineConfigInput: GqlCommunityLineConfigInput;
   CommunityLineRichMenuConfig: ResolverTypeWrapper<GqlCommunityLineRichMenuConfig>;
@@ -3645,6 +3659,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityDocument: GqlCommunityDocument;
   CommunityEdge: Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Community']> };
   CommunityFilterInput: GqlCommunityFilterInput;
+  CommunityFirebaseConfig: GqlCommunityFirebaseConfig;
+  CommunityFirebaseConfigInput: GqlCommunityFirebaseConfigInput;
   CommunityLineConfig: GqlCommunityLineConfig;
   CommunityLineConfigInput: GqlCommunityLineConfigInput;
   CommunityLineRichMenuConfig: GqlCommunityLineRichMenuConfig;
@@ -4049,6 +4065,7 @@ export type GqlCommunityResolvers<ContextType = any, ParentType extends GqlResol
 }>;
 
 export type GqlCommunityConfigResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityConfig'] = GqlResolversParentTypes['CommunityConfig']> = ResolversObject<{
+  firebaseConfig?: Resolver<Maybe<GqlResolversTypes['CommunityFirebaseConfig']>, ParentType, ContextType>;
   lineConfig?: Resolver<Maybe<GqlResolversTypes['CommunityLineConfig']>, ParentType, ContextType>;
   signupBonusConfig?: Resolver<Maybe<GqlResolversTypes['CommunitySignupBonusConfig']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4087,6 +4104,11 @@ export type GqlCommunityEdgeResolvers<ContextType = any, ParentType extends GqlR
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlCommunityFirebaseConfigResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityFirebaseConfig'] = GqlResolversParentTypes['CommunityFirebaseConfig']> = ResolversObject<{
+  tenantId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlCommunityLineConfigResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityLineConfig'] = GqlResolversParentTypes['CommunityLineConfig']> = ResolversObject<{
   accessToken?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   channelId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -4113,6 +4135,7 @@ export type GqlCommunityPortalConfigResolvers<ContextType = any, ParentType exte
   domain?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   enableFeatures?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
   faviconPrefix?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  firebaseTenantId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffAppId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffBaseUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   liffId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -5399,6 +5422,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   CommunityDeleteSuccess?: GqlCommunityDeleteSuccessResolvers<ContextType>;
   CommunityDocument?: GqlCommunityDocumentResolvers<ContextType>;
   CommunityEdge?: GqlCommunityEdgeResolvers<ContextType>;
+  CommunityFirebaseConfig?: GqlCommunityFirebaseConfigResolvers<ContextType>;
   CommunityLineConfig?: GqlCommunityLineConfigResolvers<ContextType>;
   CommunityLineRichMenuConfig?: GqlCommunityLineRichMenuConfigResolvers<ContextType>;
   CommunityPortalConfig?: GqlCommunityPortalConfigResolvers<ContextType>;

@@ -72,6 +72,9 @@ describe("CommunityService", () => {
       const mockCommunity = {
         id: "community-1",
         config: {
+          firebaseConfig: {
+            tenantId: "civicship-dev",
+          },
           lineConfig: {
             accessToken: "should-be-masked",
             channelId: "1234567890",

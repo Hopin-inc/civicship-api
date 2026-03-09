@@ -1,6 +1,11 @@
 type CommunityConfig {
+    firebaseConfig: CommunityFirebaseConfig
     lineConfig: CommunityLineConfig
     signupBonusConfig: CommunitySignupBonusConfig
+}
+
+type CommunityFirebaseConfig {
+    tenantId: String
 }
 
 type CommunityLineConfig {

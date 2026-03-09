@@ -25,6 +25,7 @@ export interface CommunityPortalConfigResult {
   liffId: string | null;
   liffAppId: string | null;
   liffBaseUrl: string | null;
+  firebaseTenantId: string | null;
 }
 
 export interface CommunityDocument {
@@ -55,7 +56,10 @@ export default class CommunityPortalConfigService {
       throw new NotFoundError("Portal config not found", { communityId });
     }
 
-    const lineConfig = await this.configRepository.getLineConfig(ctx, communityId);
+    const [lineConfig, firebaseConfig] = await Promise.all([
+      this.configRepository.getLineConfig(ctx, communityId),
+      this.configRepository.getFirebaseConfig(ctx.issuer, communityId),
+    ]);
 
     return {
       communityId,
@@ -78,6 +82,7 @@ export default class CommunityPortalConfigService {
       liffId: lineConfig?.liffId ?? null,
       liffAppId: lineConfig?.liffAppId ?? null,
       liffBaseUrl: lineConfig?.liffBaseUrl ?? null,
+      firebaseTenantId: firebaseConfig?.tenantId ?? null,
     };
   }
 }

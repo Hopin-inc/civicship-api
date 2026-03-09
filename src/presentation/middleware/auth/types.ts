@@ -29,6 +29,7 @@ export interface AuthResultBase {
   loaders: Loaders;
 
   communityId: string;
+  tenantId?: string;
   platform?: IdentityPlatform;
   uid?: string;
   phoneUid?: string;
