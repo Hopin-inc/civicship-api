@@ -24,7 +24,6 @@ import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
-import { AuthenticationError } from "@/errors/graphql";
 import { User } from "@prisma/client";
 
 @injectable()
