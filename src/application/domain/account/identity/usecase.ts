@@ -24,6 +24,7 @@ import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
+import { AuthenticationError } from "@/errors/graphql";
 import { User } from "@prisma/client";
 
 @injectable()
@@ -66,7 +67,7 @@ export default class IdentityUseCase {
 
   async userDeleteAccount(context: IContext): Promise<GqlUserDeletePayload> {
     if (!context.uid || !context.platform || !context.tenantId) {
-      throw new Error("Authentication required (uid or platform missing)");
+      throw new AuthenticationError("Authentication required (uid, platform, or tenantId missing)");
     }
     const uid = context.uid;
     const communityId = context.platform === IdentityPlatform.Line ? context.communityId : null;

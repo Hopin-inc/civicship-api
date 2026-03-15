@@ -104,7 +104,7 @@ export async function handleFirebaseAuth(
       throw err;
     }
     const error = err as any;
-    logger.error("🔥 Firebase verification failed", {
+    logger.warn("⚠️ Firebase verification failed, falling back to anonymous", {
       method: verificationMethod,
       tenantId,
       communityId,
@@ -112,6 +112,6 @@ export async function handleFirebaseAuth(
       errorMessage: error.message,
       tokenLength: idToken.length,
     });
-    throw new AuthenticationError("Firebase verification failed");
+    return { issuer, loaders, communityId, authMeta: { ...authMeta, authMode: "anonymous" as const, hasIdToken: false } };
   }
 }
