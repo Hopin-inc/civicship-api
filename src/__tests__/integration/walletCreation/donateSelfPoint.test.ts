@@ -63,7 +63,7 @@ describe("Transaction DonateSelfPoint Integration Tests", () => {
       establishedAt: undefined,
       website: undefined,
     };
-    const prismaCreateInput = communityConverter.create(createCommunityInput, ctx.uid!);
+    const prismaCreateInput = communityConverter.create(createCommunityInput, ctx.uid!, "test-tenant-id");
     const communityInserted = await TestDataSourceHelper.createCommunity(prismaCreateInput.data);
     const communityId = communityInserted.id;
 
