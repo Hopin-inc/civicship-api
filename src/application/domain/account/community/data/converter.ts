@@ -39,6 +39,7 @@ export default class CommunityConverter {
   create(
     input: GqlCommunityCreateInput,
     currentUserId: string,
+    tenantId: string,
   ): {
     data: Prisma.CommunityCreateInput;
     image?: GqlImageInput;
@@ -68,36 +69,30 @@ export default class CommunityConverter {
             },
           ],
         },
-        ...(config && {
-          config: {
-            create: {
-              ...(config.firebaseConfig && {
-                firebaseConfig: {
-                  create: {
-                    tenantId: config.firebaseConfig.tenantId,
-                  },
-                },
-              }),
-              ...(config.lineConfig && {
-                lineConfig: {
-                  create: {
-                    channelId: config.lineConfig.channelId,
-                    channelSecret: config.lineConfig.channelSecret,
-                    accessToken: config.lineConfig.accessToken,
-                    liffId: config.lineConfig.liffId,
-                    liffBaseUrl: config.lineConfig.liffBaseUrl,
-                    richMenus: {
-                      create: config.lineConfig.richMenus.map((menu) => ({
-                        type: menu.type,
-                        richMenuId: menu.richMenuId,
-                      })),
-                    },
-                  },
-                },
-              }),
+        config: {
+          create: {
+            firebaseConfig: {
+              create: { tenantId },
             },
+            ...(config?.lineConfig && {
+              lineConfig: {
+                create: {
+                  channelId: config.lineConfig.channelId,
+                  channelSecret: config.lineConfig.channelSecret,
+                  accessToken: config.lineConfig.accessToken,
+                  liffId: config.lineConfig.liffId,
+                  liffBaseUrl: config.lineConfig.liffBaseUrl,
+                  richMenus: {
+                    create: config.lineConfig.richMenus.map((menu) => ({
+                      type: menu.type,
+                      richMenuId: menu.richMenuId,
+                    })),
+                  },
+                },
+              },
+            }),
           },
-        }),
+        },
       },
       image,
     };

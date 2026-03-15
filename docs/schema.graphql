@@ -212,7 +212,6 @@ type CommunityConfig {
 }
 
 input CommunityConfigInput {
-  firebaseConfig: CommunityFirebaseConfigInput
   lineConfig: CommunityLineConfigInput
 }
 
@@ -261,10 +260,6 @@ input CommunityFilterInput {
 
 type CommunityFirebaseConfig {
   tenantId: String
-}
-
-input CommunityFirebaseConfigInput {
-  tenantId: String!
 }
 
 type CommunityLineConfig {

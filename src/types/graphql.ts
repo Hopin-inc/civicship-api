@@ -248,7 +248,6 @@ export type GqlCommunityConfig = {
 };
 
 export type GqlCommunityConfigInput = {
-  firebaseConfig?: InputMaybe<GqlCommunityFirebaseConfigInput>;
   lineConfig?: InputMaybe<GqlCommunityLineConfigInput>;
 };
 
@@ -302,10 +301,6 @@ export type GqlCommunityFilterInput = {
 export type GqlCommunityFirebaseConfig = {
   __typename?: 'CommunityFirebaseConfig';
   tenantId?: Maybe<Scalars['String']['output']>;
-};
-
-export type GqlCommunityFirebaseConfigInput = {
-  tenantId: Scalars['String']['input'];
 };
 
 export type GqlCommunityLineConfig = {
@@ -3316,7 +3311,6 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityEdge: ResolverTypeWrapper<Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Community']> }>;
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityFirebaseConfig: ResolverTypeWrapper<GqlCommunityFirebaseConfig>;
-  CommunityFirebaseConfigInput: GqlCommunityFirebaseConfigInput;
   CommunityLineConfig: ResolverTypeWrapper<GqlCommunityLineConfig>;
   CommunityLineConfigInput: GqlCommunityLineConfigInput;
   CommunityLineRichMenuConfig: ResolverTypeWrapper<GqlCommunityLineRichMenuConfig>;
@@ -3660,7 +3654,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityEdge: Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Community']> };
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityFirebaseConfig: GqlCommunityFirebaseConfig;
-  CommunityFirebaseConfigInput: GqlCommunityFirebaseConfigInput;
   CommunityLineConfig: GqlCommunityLineConfig;
   CommunityLineConfigInput: GqlCommunityLineConfigInput;
   CommunityLineRichMenuConfig: GqlCommunityLineRichMenuConfig;

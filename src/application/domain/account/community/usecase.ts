@@ -19,6 +19,7 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class CommunityUseCase {
@@ -52,20 +53,30 @@ export default class CommunityUseCase {
     { input }: GqlMutationCommunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlCommunityCreatePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
-      const currentUserId = getCurrentUserId(ctx, input.createdBy);
-      const community = await this.communityService.createCommunityAndJoinAsOwner(
-        ctx,
-        currentUserId,
-        input,
-        tx,
-      );
+    const tenantId = await this.communityService.createFirebaseTenant(input.name);
 
-      await this.walletService.createCommunityWallet(ctx, community.id, tx);
-      await this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, community.id, tx);
+    try {
+      return await ctx.issuer.public(ctx, async (tx) => {
+        const currentUserId = getCurrentUserId(ctx, input.createdBy);
+        const community = await this.communityService.createCommunityAndJoinAsOwner(
+          ctx,
+          currentUserId,
+          input,
+          tenantId,
+          tx,
+        );
 
-      return CommunityPresenter.create(community);
-    });
+        await this.walletService.createCommunityWallet(ctx, community.id, tx);
+        await this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, community.id, tx);
+
+        return CommunityPresenter.create(community);
+      });
+    } catch (err) {
+      await this.communityService.deleteFirebaseTenant(tenantId).catch((cleanupErr) => {
+        logger.error("orphaned Firebase tenant, manual cleanup needed", { tenantId, cleanupErr });
+      });
+      throw err;
+    }
   }
 
   async ownerDeleteCommunity(
