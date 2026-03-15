@@ -103,6 +103,6 @@ export async function handleSessionLogin(req: Request, res: Response) {
       tenantMismatch: tenantId !== undefined && tokenTenantId !== tenantId,
       timestamp: new Date().toISOString(),
     });
-    return res.status(401).json({ error: err.message || "Unauthorized" });
+    return res.status(401).json({ error: "Unauthorized" });
   }
 }

@@ -126,6 +126,11 @@ export const CommunityConfigFactory = defineCommunityConfigFactory.withTransient
   transientCommunity: undefined,
 })({
   defaultData: async ({ transientCommunity }) => {
+    const firebaseAuthTenantId = process.env.FIREBASE_AUTH_TENANT_ID;
+    if (!firebaseAuthTenantId) {
+      throw new Error("FIREBASE_AUTH_TENANT_ID is required but not set. Cannot create CommunityConfig with empty tenantId.");
+    }
+
     const community = transientCommunity ?? (await CommunityFactory.create());
 
     return {
@@ -152,7 +157,7 @@ export const CommunityConfigFactory = defineCommunityConfigFactory.withTransient
       },
       firebaseConfig: {
         create: {
-          tenantId: process.env.FIREBASE_AUTH_TENANT_ID ?? "",
+          tenantId: firebaseAuthTenantId,
         },
       },
       lineConfig: {
