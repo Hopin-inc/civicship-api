@@ -73,7 +73,7 @@ export default class CommunityUseCase {
       });
     } catch (err) {
       await this.communityService.deleteFirebaseTenant(tenantId).catch((cleanupErr) => {
-        logger.error("orphaned Firebase tenant, manual cleanup needed", { tenantId, cleanupErr });
+        logger.error("Failed to clean up Firebase tenant after community creation failure; manual cleanup required", { tenantId, cleanupErr });
       });
       throw err;
     }
