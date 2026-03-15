@@ -71,7 +71,11 @@ export default class IdentityUseCase {
     const uid = context.uid;
     const communityId = context.platform === IdentityPlatform.Line ? context.communityId : null;
     const user = await this.identityService.deleteUserAndIdentity(uid, communityId);
-    await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
+    try {
+      await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
+    } catch (error) {
+      logger.error("Failed to delete Firebase Auth user during account deletion", { uid: uid.slice(-6), error });
+    }
     return IdentityPresenter.delete(user);
   }
 
