@@ -4,6 +4,11 @@ export interface FetchOptions extends RequestInit {
   timeout?: number;
 }
 
+const DEFAULT_HEADERS = {
+  'User-Agent': 'civicship-api/1.0 (NFT Sync)',
+  'Accept': 'application/json',
+};
+
 export const fetchData = async <T = unknown>(
   url: string,
   init?: FetchOptions,
@@ -16,9 +21,13 @@ export const fetchData = async <T = unknown>(
   try {
     const response = await fetch(url, {
       ...init,
+      headers: {
+        ...DEFAULT_HEADERS,
+        ...init?.headers,
+      },
       signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
 
     if (!response.ok) {
@@ -32,11 +41,14 @@ export const fetchData = async <T = unknown>(
     return await response.json() as T;
   } catch (error) {
     clearTimeout(timeoutId);
-    
-    if (error instanceof Error && error.name === 'AbortError') {
+
+    if (
+      (error instanceof Error && error.name === 'AbortError') ||
+      (error as any)?.type === 'aborted'
+    ) {
       throw new Error(`Request timeout after ${timeout}ms`);
     }
-    
+
     throw error;
   }
 };

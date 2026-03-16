@@ -78,6 +78,8 @@ export async function syncNftMetadata() {
           logger.warn("⚠️ Wallet sync error", {
             walletAddress: wallet.walletAddress,
             error: result.error,
+            errorCode: result.errorCode,
+            errorType: result.errorType,
           });
         }
 
