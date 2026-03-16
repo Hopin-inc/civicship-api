@@ -5,9 +5,19 @@ export interface FetchOptions extends RequestInit {
 }
 
 const DEFAULT_HEADERS = {
-  'User-Agent': 'civicship-api/1.0 (NFT Sync)',
+  'User-Agent': 'civicship-api/1.0',
   'Accept': 'application/json',
 };
+
+function isAbortError(error: unknown): boolean {
+  if (error instanceof Error && error.name === 'AbortError') {
+    return true;
+  }
+  if (typeof error === 'object' && error !== null && (error as { type?: string }).type === 'aborted') {
+    return true;
+  }
+  return false;
+}
 
 export const fetchData = async <T = unknown>(
   url: string,
@@ -42,10 +52,7 @@ export const fetchData = async <T = unknown>(
   } catch (error) {
     clearTimeout(timeoutId);
 
-    if (
-      (error instanceof Error && error.name === 'AbortError') ||
-      (error as any)?.type === 'aborted'
-    ) {
+    if (isAbortError(error)) {
       throw new Error(`Request timeout after ${timeout}ms`);
     }
 

@@ -150,9 +150,9 @@ export default class NFTWalletUsecase {
       return {
         success: false,
         itemsProcessed: 0,
-        error: error instanceof Error ? error.message : JSON.stringify(error),
-        errorCode: (error as any)?.code,
-        errorType: (error as any)?.type,
+        error: errorDetails.errorMessage,
+        errorCode: errorDetails.errorCode,
+        errorType: errorDetails.errorType,
       };
     }
   }
