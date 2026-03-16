@@ -8,6 +8,8 @@ export type SyncMetadataResult = {
   success: boolean;
   itemsProcessed: number;
   error?: string;
+  errorCode?: string;
+  errorType?: string;
 };
 
 export type RegisterWalletResult = {
@@ -148,7 +150,9 @@ export default class NFTWalletUsecase {
       return {
         success: false,
         itemsProcessed: 0,
-        error: error instanceof Error ? error.message : JSON.stringify(error),
+        error: errorDetails.errorMessage,
+        errorCode: errorDetails.errorCode,
+        errorType: errorDetails.errorType,
       };
     }
   }
