@@ -61,8 +61,10 @@ export function authHandler(server: ApolloServer<IContext>) {
     const originalEnd = res.end.bind(res);
     (res.end as any) = function (...args: any[]) {
       const cookieName = (req as any).__clearSessionCookie;
-      if (cookieName) {
+      if (cookieName && !res.headersSent) {
         res.clearCookie(cookieName, { path: "/", secure: true, sameSite: "none", httpOnly: true });
+      } else if (cookieName && res.headersSent) {
+        logger.warn("Cannot clear session cookie — headers already sent", { cookieName });
       }
       return (originalEnd as any)(...args);
     };
