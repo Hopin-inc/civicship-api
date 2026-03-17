@@ -58,7 +58,9 @@ export const sessionLoginRateLimit = rateLimit({
   // Key by IP + communityId to avoid different communities sharing the same rate limit bucket.
   // Cloud Run users behind the same NAT/proxy share an IP, so per-IP-only limits are too strict.
   keyGenerator: (req: Request) => {
-    const communityId = req.headers['x-community-id'] as string | undefined;
+    const rawCommunityId = req.headers['x-community-id'] as string | undefined;
+    const isValid = !rawCommunityId || /^[a-zA-Z0-9_-]+$/.test(rawCommunityId);
+    const communityId = isValid ? rawCommunityId : undefined;
     return `${req.ip}:${communityId || 'unknown'}`;
   },
 });

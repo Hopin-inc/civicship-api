@@ -7,7 +7,7 @@ import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta } from "@/types/server";
 import { AuthenticationError } from "@/errors/graphql";
-import { getSessionCookieName } from "@/config/constants";
+import { getSessionCookieName, SESSION_COOKIE_NAME } from "@/config/constants";
 
 export async function handleFirebaseAuth(
   headers: AuthHeaders,
@@ -124,7 +124,7 @@ export async function handleFirebaseAuth(
       loaders,
       communityId,
       authMeta: { ...authMeta, authMode: "anonymous" as const, hasIdToken: false },
-      ...(clearSessionCookie ? { clearSessionCookie: getSessionCookieName(communityId) } : {}),
+      ...(clearSessionCookie ? { clearSessionCookie: communityId ? getSessionCookieName(communityId) : SESSION_COOKIE_NAME } : {}),
     };
   }
 }
