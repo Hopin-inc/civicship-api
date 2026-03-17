@@ -75,7 +75,7 @@ async function startServer() {
   // Error handler — must be registered after all routes.
   // Distinguishes client errors (4xx) from server errors (5xx) so that
   // malformed multipart requests return 400 instead of 500.
-  app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  app.use((err: Error & { status?: number; expose?: boolean }, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const status = typeof err.status === "number" ? err.status : 500;
     if (status < 500) {
       logger.warn("Client error:", {
