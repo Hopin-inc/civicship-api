@@ -50,30 +50,46 @@ async function startServer() {
 
   app.use(corsHandler);
   app.use(express.json({ limit: "50mb" }));
+  app.use(cookieParser());
+
+  app.post("/sessionLogin", sessionLoginRateLimit, handleSessionLogin);
+
+  // Scope multipart upload processing to /graphql only.
+  // Previously this was global, causing scanner POST requests to arbitrary
+  // paths (e.g. /, /api/upload) to trigger graphql-upload validation errors.
   app.use(
+    "/graphql",
     graphqlUploadExpress({
       maxFileSize: 10_000_000,
       maxFiles: 10,
       processRequest: customProcessRequest,
     }),
+    authHandler(apolloServer),
   );
-
-  app.use((err, req, res, _next) => {
-    logger.error("Unhandled Express Error:", {
-      message: err.message,
-      stack: err.stack,
-    });
-    res.status(500).json({ error: "Internal Server Error" });
-  });
-
-  app.use(cookieParser());
-  app.post("/sessionLogin", sessionLoginRateLimit, handleSessionLogin);
-
-  app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });
+  });
+
+  // Error handler — must be registered after all routes.
+  // Distinguishes client errors (4xx) from server errors (5xx) so that
+  // malformed multipart requests return 400 instead of 500.
+  app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const status = typeof err.status === "number" ? err.status : 500;
+    if (status < 500) {
+      logger.warn("Client error:", {
+        status,
+        message: err.message,
+        url: req.originalUrl,
+      });
+    } else {
+      logger.error("Unhandled Express Error:", {
+        message: err.message,
+        stack: err.stack,
+      });
+    }
+    res.status(status).json({ error: err.expose ? err.message : "Internal Server Error" });
   });
 
   server.listen(port, () => {

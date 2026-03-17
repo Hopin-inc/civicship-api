@@ -3,6 +3,22 @@ import defaultProcessRequest from "graphql-upload/processRequest.mjs";
 import logger from "@/infrastructure/logging";
 import Busboy from "busboy";
 
+const SPEC_URL = "https://github.com/jaydenseric/graphql-multipart-request-spec";
+
+/**
+ * HTTP 400 error for malformed multipart requests.
+ * Properties `status` and `expose` are recognised by graphqlUploadExpress
+ * so the correct status code propagates to the client.
+ */
+class MultipartBadRequestError extends Error {
+  status = 400;
+  expose = true;
+  constructor(message: string) {
+    super(message);
+    this.name = "MultipartBadRequestError";
+  }
+}
+
 interface ProcessRequestOptions {
   maxFieldSize?: number;
   maxFileSize?: number;
@@ -122,6 +138,7 @@ export const customProcessRequest = async (
     const fileKeys = new Set<string>();
     const textFields = new Map<string, string>();
     const originalBodyChunks: Buffer[] = [];
+    const fieldOrder: string[] = [];
     let operations: GraphQLOperations | GraphQLOperations[];
     let map: MapShape;
 
@@ -139,30 +156,15 @@ export const customProcessRequest = async (
     });
 
     busboy.on('field', (name: string, value: string) => {
-      logger.debug('[CustomProcessRequest] Field detected', { 
-        name, 
-        size: value.length 
-      });
-      
+      fieldOrder.push(`field:${name}`);
       if (name === 'operations' || name === 'map') {
         textFields.set(name, value);
       }
     });
 
     busboy.on('file', (name: string, stream: NodeJS.ReadableStream, info: { filename: string; encoding: string; mimeType: string }) => {
-      const { filename, mimeType } = info;
-      
-      const safeFilename = filename ? filename.substring(0, 50) + (filename.length > 50 ? '...' : '') : 'none';
-      
-      logger.debug('[CustomProcessRequest] File detected', {
-        name,
-        filename: safeFilename,
-        mimeType,
-        hasFilename: Boolean(filename)
-      });
-      
+      fieldOrder.push(`file:${name}`);
       fileKeys.add(name);
-      
       stream.resume();
     });
 
@@ -171,20 +173,50 @@ export const customProcessRequest = async (
         const operationsStr = textFields.get('operations');
         const mapStr = textFields.get('map');
 
-        if (!operationsStr || !mapStr) {
-          const originalBody = Buffer.concat(originalBodyChunks);
-          const fallbackRequest = await createReconstructedRequest(originalBody, request);
-          return resolve(await defaultProcessRequest(fallbackRequest, response, options));
+        // ── Validate required fields per graphql-multipart-request-spec ──
+
+        if (!operationsStr) {
+          return reject(
+            new MultipartBadRequestError(`Missing multipart field 'operations' (${SPEC_URL})`),
+          );
         }
 
         try {
           operations = JSON.parse(operationsStr);
+        } catch {
+          return reject(
+            new MultipartBadRequestError("Invalid JSON in multipart field 'operations'"),
+          );
+        }
+
+        // No 'map' field → treat as JSON-over-multipart (no file uploads)
+        if (!mapStr) {
+          logger.debug('[CustomProcessRequest] No map field, returning operations directly');
+          return resolve(operations);
+        }
+
+        try {
           map = JSON.parse(mapStr);
         } catch {
-          const originalBody = Buffer.concat(originalBodyChunks);
-          const fallbackRequest = await createReconstructedRequest(originalBody, request);
-          return resolve(await defaultProcessRequest(fallbackRequest, response, options));
+          return reject(
+            new MultipartBadRequestError("Invalid JSON in multipart field 'map'"),
+          );
         }
+
+        // Validate field order: files must follow 'map' per spec
+        const mapIndex = fieldOrder.indexOf('field:map');
+        const hasFilesBeforeMap = fieldOrder.some(
+          (entry, i) => entry.startsWith('file:') && i < mapIndex,
+        );
+        if (hasFilesBeforeMap) {
+          return reject(
+            new MultipartBadRequestError(
+              `Misordered multipart fields; files should follow 'map' (${SPEC_URL})`,
+            ),
+          );
+        }
+
+        // ── Sanitize map (remove entries whose variable value is null and no real file was sent) ──
 
         const sanitizedMap = sanitizeMap(map, operations, fileKeys);
         const removedCount = Object.keys(map).length - Object.keys(sanitizedMap).length;
@@ -202,19 +234,8 @@ export const customProcessRequest = async (
             return resolve(operations);
           }
           
-          logger.debug('[CustomProcessRequest] Filtering multipart request', {
-            uploadCount: Object.keys(sanitizedMap).length,
-            removedNullFiles: removedCount
-          });
-          
           const originalBody = Buffer.concat(originalBodyChunks);
           const sanitizedMapStr = JSON.stringify(sanitizedMap);
-          
-          logger.debug('[CustomProcessRequest] Starting multipart reconstruction', {
-            originalSize: originalBody.length,
-            sanitizedMapKeys: Object.keys(sanitizedMap),
-            originalMapKeys: Object.keys(map)
-          });
           
           let updatedBody: Buffer;
           const mapFieldStart = originalBody.indexOf(Buffer.from('Content-Disposition: form-data; name="map"'));
@@ -231,28 +252,6 @@ export const customProcessRequest = async (
               const sanitizedMapBuffer = Buffer.from(sanitizedMapStr, 'utf8');
               
               updatedBody = Buffer.concat([beforeMap, sanitizedMapBuffer, afterMap]);
-              
-              logger.debug('[CustomProcessRequest] Multipart body reconstructed with Buffer operations', {
-                originalSize: originalBody.length,
-                updatedSize: updatedBody.length,
-                mapFieldFound: true,
-                beforeMapLength: beforeMap.length,
-                afterMapLength: afterMap.length,
-                sanitizedMapLength: sanitizedMapBuffer.length,
-                mapContentStart,
-                mapContentEnd,
-                originalMapContent: originalBody.subarray(mapContentStart, mapContentEnd).toString('utf8'),
-                sanitizedMapContent: sanitizedMapStr
-              });
-              
-              const filePartCount = (updatedBody.toString('utf8').match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
-              const originalFilePartCount = (originalBody.toString('utf8').match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
-              logger.debug('[CustomProcessRequest] File parts verification', {
-                filePartsInReconstructedBody: filePartCount,
-                filePartsInOriginalBody: originalFilePartCount,
-                expectedFileParts: Object.keys(sanitizedMap).length,
-                filePartsPreserved: filePartCount === originalFilePartCount
-              });
             } else {
               logger.warn('[CustomProcessRequest] Could not locate map content boundaries, using original');
               updatedBody = originalBody;
@@ -262,15 +261,15 @@ export const customProcessRequest = async (
           const filteredRequest = await createReconstructedRequest(updatedBody, request, true);
           return resolve(await defaultProcessRequest(filteredRequest, response, options));
         } else {
-          logger.debug('[CustomProcessRequest] Passing through unmodified multipart request', {
-            uploadCount: Object.keys(map).length
-          });
-          
+          // No sanitization needed — pass through to default processor
           const originalBody = Buffer.concat(originalBodyChunks);
           const passthroughRequest = await createReconstructedRequest(originalBody, request);
           return resolve(await defaultProcessRequest(passthroughRequest, response, options));
         }
       } catch (error) {
+        if (error instanceof MultipartBadRequestError) {
+          return reject(error);
+        }
         logger.error('[CustomProcessRequest] Error in busboy finish handler:', error);
         reject(error);
       }
