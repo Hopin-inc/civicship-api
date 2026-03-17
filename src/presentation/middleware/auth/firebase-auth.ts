@@ -7,6 +7,7 @@ import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta } from "@/types/server";
 import { AuthenticationError } from "@/errors/graphql";
+import { getSessionCookieName } from "@/config/constants";
 
 export async function handleFirebaseAuth(
   headers: AuthHeaders,
@@ -112,6 +113,18 @@ export async function handleFirebaseAuth(
       errorMessage: error.message,
       tokenLength: idToken.length,
     });
-    return { issuer, loaders, communityId, authMeta: { ...authMeta, authMode: "anonymous" as const, hasIdToken: false } };
+
+    // If the user was deleted from Firebase (user-not-found), clear the session
+    // cookie so the client stops sending it on every request.
+    const clearSessionCookie =
+      error.code === "auth/user-not-found" || error.code === "auth/user-disabled";
+
+    return {
+      issuer,
+      loaders,
+      communityId,
+      authMeta: { ...authMeta, authMode: "anonymous" as const, hasIdToken: false },
+      ...(clearSessionCookie ? { clearSessionCookie: getSessionCookieName(communityId) } : {}),
+    };
   }
 }

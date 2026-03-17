@@ -30,10 +30,22 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
       .map(([k, v]) => [k, safeDecodeURIComponent(v || "")]),
   );
 
+  // Validate communityId format: allow only alphanumeric, hyphens, and underscores.
+  // Reject values like ".env" or other obviously invalid/malicious inputs.
+  const rawCommunityId = getHeader("x-community-id");
+  const isValidCommunityId = !rawCommunityId || /^[a-zA-Z0-9_-]+$/.test(rawCommunityId);
+  const communityId = isValidCommunityId ? rawCommunityId : "";
+
+  if (rawCommunityId && !isValidCommunityId) {
+    logger.warn("Invalid communityId format rejected", {
+      rawCommunityId,
+      component: "extractAuthHeaders",
+    });
+  }
+
   // Prefer community-scoped cookie, fall back to legacy "__session" / "session" for backward compatibility
-  const communityIdForCookie = getHeader("x-community-id");
-  const sessionCookie = communityIdForCookie
-    ? cookies[getSessionCookieName(communityIdForCookie)] ||
+  const sessionCookie = communityId
+    ? cookies[getSessionCookieName(communityId)] ||
       cookies[SESSION_COOKIE_NAME] ||
       cookies["session"]
     : cookies[SESSION_COOKIE_NAME] || cookies["session"];
@@ -47,7 +59,7 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
     authMode,
     idToken,
     adminApiKey: getHeader("x-civicship-admin-api-key"),
-    communityId: getHeader("x-community-id"),
+    communityId,
     hasCookie: !!req.headers.cookie,
   };
 

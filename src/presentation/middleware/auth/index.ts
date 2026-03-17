@@ -8,6 +8,7 @@ import { handleFirebaseAuth } from "@/presentation/middleware/auth/firebase-auth
 import logger from "@/infrastructure/logging";
 import { trace, context } from "@opentelemetry/api";
 import { runRequestSecurityChecks } from "@/presentation/middleware/auth/security";
+import express from "express";
 
 async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
   const currentSpan = trace.getSpan(context.active());
@@ -41,9 +42,32 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
   if (adminContext) return adminContext;
 
   // Use the same issuer for Firebase auth if admin auth didn't handle the request
-  return await handleFirebaseAuth(headers, issuer);
+  const result = await handleFirebaseAuth(headers, issuer);
+
+  // Store clearSessionCookie flag on req so the wrapper middleware can set the header
+  if (result.clearSessionCookie) {
+    (req as any).__clearSessionCookie = result.clearSessionCookie;
+  }
+
+  return result;
 }
 
 export function authHandler(server: ApolloServer<IContext>) {
-  return expressMiddleware(server, { context: createContext });
+  const gqlMiddleware = expressMiddleware(server, { context: createContext });
+
+  // Middleware that clears stale session cookies (e.g. deleted Firebase user)
+  // after the GraphQL response is prepared but before it's sent.
+  const clearCookieMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const originalEnd = res.end.bind(res);
+    (res.end as any) = function (...args: any[]) {
+      const cookieName = (req as any).__clearSessionCookie;
+      if (cookieName) {
+        res.clearCookie(cookieName, { path: "/", secure: true, sameSite: "none", httpOnly: true });
+      }
+      return (originalEnd as any)(...args);
+    };
+    next();
+  };
+
+  return [clearCookieMiddleware, gqlMiddleware];
 }
