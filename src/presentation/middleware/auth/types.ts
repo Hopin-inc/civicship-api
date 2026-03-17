@@ -43,6 +43,9 @@ export interface AuthResultBase {
   refreshToken?: string;
   tokenExpiresAt?: string;
   idToken?: string;
+
+  /** Cookie name to clear (e.g. when Firebase user is deleted) */
+  clearSessionCookie?: string;
 }
 
 /**
