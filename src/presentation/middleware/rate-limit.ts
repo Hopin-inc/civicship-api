@@ -47,11 +47,11 @@ export const walletRateLimit = rateLimit({
   skip: skipRateLimitForAdminApiKey,
 });
 
-function extractUidFromIdToken(idToken: string): string | null {
+export function extractUidFromIdToken(idToken: string): string | null {
   try {
-    const payloadBase64 = idToken.split('.')[1];
-    if (!payloadBase64) return null;
-    const payload = JSON.parse(Buffer.from(payloadBase64, 'base64url').toString('utf-8'));
+    const parts = idToken.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'));
     return typeof payload.sub === 'string' ? payload.sub : null;
   } catch {
     return null;
