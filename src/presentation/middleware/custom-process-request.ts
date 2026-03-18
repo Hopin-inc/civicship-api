@@ -203,6 +203,24 @@ export const customProcessRequest = async (
           );
         }
 
+        // Validate map structure
+        if (typeof map !== 'object' || map === null || Array.isArray(map)) {
+          return reject(
+            new MultipartBadRequestError(
+              `Invalid multipart field 'map'. It must be a JSON object. (${SPEC_URL})`,
+            ),
+          );
+        }
+        for (const value of Object.values(map)) {
+          if (!Array.isArray(value)) {
+            return reject(
+              new MultipartBadRequestError(
+                `Invalid multipart field 'map'. Its values must be arrays. (${SPEC_URL})`,
+              ),
+            );
+          }
+        }
+
         // Validate field order: files must follow 'map' per spec
         const mapIndex = fieldOrder.indexOf('field:map');
         const hasFilesBeforeMap = fieldOrder.some(
