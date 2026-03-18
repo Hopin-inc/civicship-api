@@ -47,14 +47,33 @@ export const walletRateLimit = rateLimit({
   skip: skipRateLimitForAdminApiKey,
 });
 
+function extractUidFromIdToken(idToken: string): string | null {
+  try {
+    const payloadBase64 = idToken.split('.')[1];
+    if (!payloadBase64) return null;
+    const payload = JSON.parse(Buffer.from(payloadBase64, 'base64url').toString('utf-8'));
+    return typeof payload.sub === 'string' ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 export const sessionLoginRateLimit = rateLimit({
   windowMs: RATE_LIMIT_CONFIG.SESSION_LOGIN.windowMs,
   max: RATE_LIMIT_CONFIG.SESSION_LOGIN.max,
   message: {
-    error: 'Too many login attempts from this IP, please try again later.',
+    error: 'Too many login attempts, please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req: Request): string => {
+    const idToken = req.body?.idToken;
+    if (typeof idToken === 'string') {
+      const uid = extractUidFromIdToken(idToken);
+      if (uid) return uid;
+    }
+    return req.ip ?? req.socket.remoteAddress ?? 'unknown';
+  },
 });
 
 export const apiRateLimit = rateLimit({
