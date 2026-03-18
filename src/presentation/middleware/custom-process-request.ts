@@ -285,10 +285,6 @@ export const customProcessRequest = async (
           return resolve(await defaultProcessRequest(passthroughRequest, response, options));
         }
       } catch (error) {
-        if (error instanceof MultipartBadRequestError) {
-          return reject(error);
-        }
-        logger.error('[CustomProcessRequest] Error in busboy finish handler:', error);
         reject(error);
       }
     });
