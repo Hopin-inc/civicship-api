@@ -67,12 +67,13 @@ export const sessionLoginRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request): string => {
+    const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
     const idToken = req.body?.idToken;
     if (typeof idToken === 'string') {
       const uid = extractUidFromIdToken(idToken);
-      if (uid) return uid;
+      if (uid) return `${ip}:${uid}`;
     }
-    return req.ip ?? req.socket.remoteAddress ?? 'unknown';
+    return ip;
   },
 });
 
