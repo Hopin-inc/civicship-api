@@ -69,7 +69,7 @@ async function startServer() {
     }),
     authHandler(apolloServer),
   );
-  app.use("/line", express.json(), lineRouter);
+  app.use("/line", lineRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });
