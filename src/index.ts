@@ -50,17 +50,18 @@ async function startServer() {
   app.use(requestLogger);
 
   app.use(corsHandler);
-  app.use(express.json({ limit: "50mb" }));
   app.use(cookieParser());
 
-  app.post("/sessionLogin", sessionLoginRateLimit, handleSessionLogin);
+  app.post("/sessionLogin", express.json(), sessionLoginRateLimit, handleSessionLogin);
 
   // Scope multipart upload processing to /graphql only.
   // Previously this was global, causing scanner POST requests to arbitrary
   // paths (e.g. /, /api/upload) to trigger graphql-upload validation errors.
+  // botBlocker runs first so bot requests are rejected before body parsing.
   app.use(
     "/graphql",
     botBlocker,
+    express.json({ limit: "50mb" }),
     graphqlUploadExpress({
       maxFileSize: 10_000_000,
       maxFiles: 10,
@@ -68,7 +69,7 @@ async function startServer() {
     }),
     authHandler(apolloServer),
   );
-  app.use("/line", lineRouter);
+  app.use("/line", express.json(), lineRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });
