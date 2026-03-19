@@ -16,6 +16,7 @@ import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import cookieParser from "cookie-parser";
 import { handleSessionLogin } from "@/presentation/middleware/session";
 import { sessionLoginRateLimit } from "@/presentation/middleware/rate-limit";
+import { botBlocker } from "@/presentation/middleware/bot-blocker";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -59,6 +60,7 @@ async function startServer() {
   // paths (e.g. /, /api/upload) to trigger graphql-upload validation errors.
   app.use(
     "/graphql",
+    botBlocker,
     graphqlUploadExpress({
       maxFileSize: 10_000_000,
       maxFiles: 10,
