@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { isBot, getBotName } from "@/presentation/middleware/auth/security/bot-detection";
+import { getBotName } from "@/presentation/middleware/auth/security/bot-detection";
 import logger from "@/infrastructure/logging";
 
 /**
@@ -15,8 +15,8 @@ export function botBlocker(req: Request, res: Response, next: NextFunction): voi
   const rawUA = req.headers["user-agent"];
   const userAgent = Array.isArray(rawUA) ? rawUA[0] : rawUA;
 
-  if (isBot(userAgent)) {
-    const botName = getBotName(userAgent);
+  const botName = getBotName(userAgent);
+  if (botName) {
     logger.debug("🤖 Bot blocked at HTTP layer", { botName, url: req.originalUrl });
     res.status(403).json({ error: "Bot access blocked" });
     return;
