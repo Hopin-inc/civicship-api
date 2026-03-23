@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { botBlocker } from "@/presentation/middleware/bot-blocker";
 
-function makeReq(userAgent: string | string[] | undefined): Partial<Request> {
+function makeReq(userAgent: string | undefined): Partial<Request> {
   return {
     headers: userAgent !== undefined ? { "user-agent": userAgent } : {},
     originalUrl: "/graphql",
@@ -89,7 +89,12 @@ describe("botBlocker", () => {
 
     it("User-Agent が配列の場合、先頭要素で判定する", () => {
       // 配列の先頭が Bot UA → ブロック
-      const req = makeReq(["Googlebot/2.1", "Mozilla/5.0"]);
+      // Express の IncomingHttpHeaders は user-agent を string | undefined としか定義しないが、
+      // Node.js の HTTP パーサーは実際に配列を返すケースがあるため unknown 経由でキャストする
+      const req = {
+        headers: { "user-agent": ["Googlebot/2.1", "Mozilla/5.0"] },
+        originalUrl: "/graphql",
+      } as unknown as Request;
       const { res } = makeRes();
 
       botBlocker(req as Request, res as Response, next);
