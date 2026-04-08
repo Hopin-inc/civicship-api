@@ -853,6 +853,7 @@ type Mutation {
   ticketRefund(id: ID!, input: TicketRefundInput!, permission: CheckIsSelfPermissionInput!): TicketRefundPayload
   ticketUse(id: ID!, permission: CheckIsSelfPermissionInput!): TicketUsePayload
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
+  transactionDonateSelfPointToCommunity(input: TransactionDonateSelfPointToCommunityInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointToCommunityPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
   updatePortalConfig(input: CommunityPortalConfigInput!, permission: CheckCommunityPermissionInput!): CommunityPortalConfig!
@@ -1931,6 +1932,18 @@ input TransactionDonateSelfPointInput {
 union TransactionDonateSelfPointPayload = TransactionDonateSelfPointSuccess
 
 type TransactionDonateSelfPointSuccess {
+  transaction: Transaction!
+}
+
+input TransactionDonateSelfPointToCommunityInput {
+  comment: String
+  communityId: ID!
+  transferPoints: Int!
+}
+
+union TransactionDonateSelfPointToCommunityPayload = TransactionDonateSelfPointToCommunitySuccess
+
+type TransactionDonateSelfPointToCommunitySuccess {
   transaction: Transaction!
 }
 

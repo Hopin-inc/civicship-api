@@ -75,6 +75,19 @@ export default class WalletValidator {
     };
   }
 
+  async validateTransferMemberToCommunity(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    communityId: string,
+    userId: string,
+    transferPoints: number,
+  ) {
+    const memberWallet = await this.service.findMemberWalletOrThrow(ctx, userId, communityId, tx);
+    const communityWallet = await this.service.findCommunityWalletOrThrow(ctx, communityId, tx);
+    await this.validateTransfer(transferPoints, memberWallet, communityWallet);
+    return { fromWalletId: memberWallet.id, toWalletId: communityWallet.id };
+  }
+
   async validateTransfer(
     transferPoints: number,
     fromWallet: Pick<PrismaWallet, "currentPointView"> | null,

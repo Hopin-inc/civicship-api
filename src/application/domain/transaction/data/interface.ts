@@ -49,6 +49,15 @@ export interface ITransactionService {
     comment?: string,
   ): Promise<PrismaTransactionDetail>;
 
+  donateSelfPointToCommunity(
+    ctx: IContext,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    tx: Prisma.TransactionClient,
+    comment?: string,
+  ): Promise<PrismaTransactionDetail>;
+
   reservationCreated(
     ctx: IContext,
     tx: Prisma.TransactionClient,

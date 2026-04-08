@@ -933,6 +933,7 @@ export type GqlMutation = {
   ticketRefund?: Maybe<GqlTicketRefundPayload>;
   ticketUse?: Maybe<GqlTicketUsePayload>;
   transactionDonateSelfPoint?: Maybe<GqlTransactionDonateSelfPointPayload>;
+  transactionDonateSelfPointToCommunity?: Maybe<GqlTransactionDonateSelfPointToCommunityPayload>;
   transactionGrantCommunityPoint?: Maybe<GqlTransactionGrantCommunityPointPayload>;
   transactionIssueCommunityPoint?: Maybe<GqlTransactionIssueCommunityPointPayload>;
   updatePortalConfig: GqlCommunityPortalConfig;
@@ -1211,6 +1212,12 @@ export type GqlMutationTicketUseArgs = {
 
 export type GqlMutationTransactionDonateSelfPointArgs = {
   input: GqlTransactionDonateSelfPointInput;
+  permission: GqlCheckIsSelfPermissionInput;
+};
+
+
+export type GqlMutationTransactionDonateSelfPointToCommunityArgs = {
+  input: GqlTransactionDonateSelfPointToCommunityInput;
   permission: GqlCheckIsSelfPermissionInput;
 };
 
@@ -2778,6 +2785,19 @@ export type GqlTransactionDonateSelfPointSuccess = {
   transaction: GqlTransaction;
 };
 
+export type GqlTransactionDonateSelfPointToCommunityInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
+  communityId: Scalars['ID']['input'];
+  transferPoints: Scalars['Int']['input'];
+};
+
+export type GqlTransactionDonateSelfPointToCommunityPayload = GqlTransactionDonateSelfPointToCommunitySuccess;
+
+export type GqlTransactionDonateSelfPointToCommunitySuccess = {
+  __typename?: 'TransactionDonateSelfPointToCommunitySuccess';
+  transaction: GqlTransaction;
+};
+
 export type GqlTransactionEdge = GqlEdge & {
   __typename?: 'TransactionEdge';
   cursor: Scalars['String']['output'];
@@ -3293,6 +3313,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   TicketRefundPayload: ( Omit<GqlTicketRefundSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
   TicketUsePayload: ( Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
   TransactionDonateSelfPointPayload: ( Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
+  TransactionDonateSelfPointToCommunityPayload: ( Omit<GqlTransactionDonateSelfPointToCommunitySuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   TransactionGrantCommunityPointPayload: ( Omit<GqlTransactionGrantCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   TransactionIssueCommunityPointPayload: ( Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   UserUpdateProfilePayload: ( Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<_RefType['User']> } );
@@ -3600,6 +3621,9 @@ export type GqlResolversTypes = ResolversObject<{
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionDonateSelfPointPayload']>;
   TransactionDonateSelfPointSuccess: ResolverTypeWrapper<Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
+  TransactionDonateSelfPointToCommunityInput: GqlTransactionDonateSelfPointToCommunityInput;
+  TransactionDonateSelfPointToCommunityPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionDonateSelfPointToCommunityPayload']>;
+  TransactionDonateSelfPointToCommunitySuccess: ResolverTypeWrapper<Omit<GqlTransactionDonateSelfPointToCommunitySuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
   TransactionEdge: ResolverTypeWrapper<Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Transaction']> }>;
   TransactionFilterInput: GqlTransactionFilterInput;
   TransactionGrantCommunityPointInput: GqlTransactionGrantCommunityPointInput;
@@ -3917,6 +3941,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionDonateSelfPointPayload'];
   TransactionDonateSelfPointSuccess: Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
+  TransactionDonateSelfPointToCommunityInput: GqlTransactionDonateSelfPointToCommunityInput;
+  TransactionDonateSelfPointToCommunityPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionDonateSelfPointToCommunityPayload'];
+  TransactionDonateSelfPointToCommunitySuccess: Omit<GqlTransactionDonateSelfPointToCommunitySuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
   TransactionEdge: Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Transaction']> };
   TransactionFilterInput: GqlTransactionFilterInput;
   TransactionGrantCommunityPointInput: GqlTransactionGrantCommunityPointInput;
@@ -4507,6 +4534,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   ticketRefund?: Resolver<Maybe<GqlResolversTypes['TicketRefundPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketRefundArgs, 'id' | 'input' | 'permission'>>;
   ticketUse?: Resolver<Maybe<GqlResolversTypes['TicketUsePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketUseArgs, 'id' | 'permission'>>;
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input' | 'permission'>>;
+  transactionDonateSelfPointToCommunity?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointToCommunityPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointToCommunityArgs, 'input' | 'permission'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input' | 'permission'>>;
   transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input' | 'permission'>>;
   updatePortalConfig?: Resolver<GqlResolversTypes['CommunityPortalConfig'], ParentType, ContextType, RequireFields<GqlMutationUpdatePortalConfigArgs, 'input' | 'permission'>>;
@@ -5208,6 +5236,15 @@ export type GqlTransactionDonateSelfPointSuccessResolvers<ContextType = any, Par
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlTransactionDonateSelfPointToCommunityPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionDonateSelfPointToCommunityPayload'] = GqlResolversParentTypes['TransactionDonateSelfPointToCommunityPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'TransactionDonateSelfPointToCommunitySuccess', ParentType, ContextType>;
+}>;
+
+export type GqlTransactionDonateSelfPointToCommunitySuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionDonateSelfPointToCommunitySuccess'] = GqlResolversParentTypes['TransactionDonateSelfPointToCommunitySuccess']> = ResolversObject<{
+  transaction?: Resolver<GqlResolversTypes['Transaction'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlTransactionEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionEdge'] = GqlResolversParentTypes['TransactionEdge']> = ResolversObject<{
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<Maybe<GqlResolversTypes['Transaction']>, ParentType, ContextType>;
@@ -5600,6 +5637,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   Transaction?: GqlTransactionResolvers<ContextType>;
   TransactionDonateSelfPointPayload?: GqlTransactionDonateSelfPointPayloadResolvers<ContextType>;
   TransactionDonateSelfPointSuccess?: GqlTransactionDonateSelfPointSuccessResolvers<ContextType>;
+  TransactionDonateSelfPointToCommunityPayload?: GqlTransactionDonateSelfPointToCommunityPayloadResolvers<ContextType>;
+  TransactionDonateSelfPointToCommunitySuccess?: GqlTransactionDonateSelfPointToCommunitySuccessResolvers<ContextType>;
   TransactionEdge?: GqlTransactionEdgeResolvers<ContextType>;
   TransactionGrantCommunityPointPayload?: GqlTransactionGrantCommunityPointPayloadResolvers<ContextType>;
   TransactionGrantCommunityPointSuccess?: GqlTransactionGrantCommunityPointSuccessResolvers<ContextType>;

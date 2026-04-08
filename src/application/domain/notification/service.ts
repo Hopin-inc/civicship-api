@@ -22,6 +22,7 @@ import "dayjs/locale/ja.js";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
 import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
+import { buildPointDonationToCommunityReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationToCommunityReceivedMessage";
 import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
 import { buildSignupBonusGrantedMessage } from "@/application/domain/notification/presenter/message/signupBonusGrantedMessage";
 import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
@@ -400,6 +401,44 @@ export default class NotificationService {
     });
 
     await safePushMessage(client, { to: uid, messages: [message] });
+  }
+
+  async pushPointDonationToCommunityReceivedMessage(
+    ctx: IContext,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    fromUserName: string,
+    ownerUserIds: string[],
+  ) {
+    await Promise.all(
+      ownerUserIds.map(async (ownerId) => {
+        const preparedData = await this.prepareLinePush(
+          ctx,
+          ownerId,
+          transactionId,
+          "pushPointDonationToCommunityReceivedMessage",
+          { includeLanguage: true },
+        );
+
+        if (!preparedData) {
+          return;
+        }
+
+        const { uid, liffBaseUrl, client, language } = preparedData;
+        const redirectUrl = `${liffBaseUrl}/wallets`;
+
+        const message = buildPointDonationToCommunityReceivedMessage({
+          fromUserName,
+          transferPoints: toPointChange,
+          comment: comment ?? undefined,
+          redirectUrl,
+          language,
+        });
+
+        await safePushMessage(client, { to: uid, messages: [message] });
+      }),
+    );
   }
 
   async pushPointGrantReceivedMessage(

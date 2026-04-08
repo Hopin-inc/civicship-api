@@ -1,4 +1,4 @@
-import { Prisma, TransactionReason } from "@prisma/client";
+import { MembershipStatus, Prisma, Role, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TransactionPresenter from "@/application/domain/transaction/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
@@ -10,12 +10,14 @@ import { ITransactionService } from "@/application/domain/transaction/data/inter
 import logger from "@/infrastructure/logging";
 import {
   GqlMutationTransactionDonateSelfPointArgs,
+  GqlMutationTransactionDonateSelfPointToCommunityArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlQueryTransactionArgs,
   GqlQueryTransactionsArgs,
   GqlTransaction,
   GqlTransactionDonateSelfPointPayload,
+  GqlTransactionDonateSelfPointToCommunityPayload,
   GqlTransactionGrantCommunityPointPayload,
   GqlTransactionIssueCommunityPointPayload,
   GqlTransactionsConnection,
@@ -215,5 +217,63 @@ export default class TransactionUseCase {
       });
 
     return TransactionPresenter.giveUserPoint(transaction);
+  }
+
+  async userDonateSelfPointToCommunity(
+    ctx: IContext,
+    { input }: GqlMutationTransactionDonateSelfPointToCommunityArgs,
+  ): Promise<GqlTransactionDonateSelfPointToCommunityPayload> {
+    const { communityId, transferPoints, comment } = input;
+    const currentUserId = getCurrentUserId(ctx);
+
+    const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
+      const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToCommunity(
+        ctx,
+        tx,
+        communityId,
+        currentUserId,
+        transferPoints,
+      );
+
+      return await this.transactionService.donateSelfPointToCommunity(
+        ctx,
+        fromWalletId,
+        toWalletId,
+        transferPoints,
+        tx,
+        comment,
+      );
+    });
+
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
+    const ownerUserIds = await ctx.issuer.internal(async (tx) => {
+      const memberships = await tx.membership.findMany({
+        where: { communityId, role: Role.OWNER, status: MembershipStatus.JOINED },
+        select: { userId: true },
+      });
+      return memberships.map((m) => m.userId);
+    });
+
+    const fromUserName = ctx.currentUser?.name ?? "ユーザー";
+    this.notificationService
+      .pushPointDonationToCommunityReceivedMessage(
+        ctx,
+        transaction.id,
+        transaction.toPointChange,
+        transaction.comment,
+        fromUserName,
+        ownerUserIds,
+      )
+      .catch((error) => {
+        logger.error("Failed to send point donation to community notification", {
+          transactionId: transaction.id,
+          error,
+        });
+      });
+
+    return TransactionPresenter.donateToCommunity(transaction);
   }
 }

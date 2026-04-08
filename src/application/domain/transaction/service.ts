@@ -87,6 +87,20 @@ export default class TransactionService implements ITransactionService {
     return transaction;
   }
 
+  async donateSelfPointToCommunity(
+    ctx: IContext,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    tx: Prisma.TransactionClient,
+    comment?: string,
+  ): Promise<PrismaTransactionDetail> {
+    const currentUserId = getCurrentUserId(ctx);
+    const data = this.converter.donateSelfPointToCommunity(fromWalletId, toWalletId, transferPoints, currentUserId, comment);
+    const transaction = await this.repository.create(ctx, data, tx);
+    return transaction;
+  }
+
   async reservationCreated(
     ctx: IContext,
     tx: Prisma.TransactionClient,

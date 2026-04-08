@@ -19,6 +19,12 @@ extend type Mutation {
         permission:CheckIsSelfPermissionInput!
     ): TransactionDonateSelfPointPayload
     @authz(rules: [IsSelf])
+
+    transactionDonateSelfPointToCommunity(
+        input: TransactionDonateSelfPointToCommunityInput!
+        permission:CheckIsSelfPermissionInput!
+    ): TransactionDonateSelfPointToCommunityPayload
+    @authz(rules: [IsSelf])
 }
 
 # ------------------------------
@@ -42,6 +48,12 @@ input TransactionDonateSelfPointInput {
   comment: String
 }
 
+input TransactionDonateSelfPointToCommunityInput {
+  communityId: ID!
+  transferPoints: Int!
+  comment: String
+}
+
 # ------------------------------
 # Transaction Mutation Success Type Definitions
 # ------------------------------
@@ -57,6 +69,10 @@ type TransactionDonateSelfPointSuccess {
     transaction: Transaction!
 }
 
+type TransactionDonateSelfPointToCommunitySuccess {
+    transaction: Transaction!
+}
+
 # ------------------------------
 # Transaction Mutation Union (Payload) Definitions
 # ------------------------------
@@ -68,3 +84,6 @@ union TransactionGrantCommunityPointPayload =
 
 union TransactionDonateSelfPointPayload =
     TransactionDonateSelfPointSuccess
+
+union TransactionDonateSelfPointToCommunityPayload =
+    TransactionDonateSelfPointToCommunitySuccess
