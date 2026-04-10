@@ -5,6 +5,7 @@ import {
   GqlMutationCommunityDeleteArgs,
   GqlMutationCommunityUpdateProfileArgs,
   GqlMutationUpdateSignupBonusConfigArgs,
+  GqlMutationUpdatePortalConfigArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
@@ -43,6 +44,9 @@ export default class CommunityResolver {
       ctx: IContext,
     ) => {
       return this.communityUseCase.managerUpdateSignupBonusConfig(args, ctx);
+    },
+    updatePortalConfig: async (_: unknown, args: GqlMutationUpdatePortalConfigArgs, ctx: IContext) => {
+      return this.communityUseCase.managerUpdatePortalConfig(args, ctx);
     },
   };
 

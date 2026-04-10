@@ -10,8 +10,10 @@ import {
   GqlMutationCommunityUpdateProfileArgs,
   GqlCommunityUpdateProfilePayload,
   GqlMutationUpdateSignupBonusConfigArgs,
+  GqlMutationUpdatePortalConfigArgs,
 } from "@/types/graphql";
 import { CommunitySignupBonusConfig } from "@prisma/client";
+import { CommunityPortalConfigResult } from "@/application/domain/account/community/config/portal/service";
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/domain/account/community/service";
 import CommunityPresenter from "@/application/domain/account/community/presenter";
@@ -19,6 +21,7 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
+import CommunityPortalConfigService from "@/application/domain/account/community/config/portal/service";
 import logger from "@/infrastructure/logging";
 
 @injectable()
@@ -28,6 +31,8 @@ export default class CommunityUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("CommunitySignupBonusConfigService")
     private readonly signupBonusConfigService: CommunitySignupBonusConfigService,
+    @inject("CommunityPortalConfigService")
+    private readonly portalConfigService: CommunityPortalConfigService,
   ) {}
 
   async userBrowseCommunities(
@@ -106,5 +111,15 @@ export default class CommunityUseCase {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return this.signupBonusConfigService.update(ctx, permission.communityId, input, tx);
     });
+  }
+
+  async managerUpdatePortalConfig(
+    { input, permission }: GqlMutationUpdatePortalConfigArgs,
+    ctx: IContext,
+  ): Promise<CommunityPortalConfigResult> {
+    await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      await this.portalConfigService.update(ctx, permission.communityId, input, tx);
+    });
+    return this.portalConfigService.getPortalConfig(ctx, permission.communityId);
   }
 }
