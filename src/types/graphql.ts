@@ -212,6 +212,11 @@ export type GqlCommonDocumentOverrides = {
   terms?: Maybe<GqlCommunityDocument>;
 };
 
+export type GqlCommonDocumentOverridesInput = {
+  privacy?: InputMaybe<GqlCommunityDocumentInput>;
+  terms?: InputMaybe<GqlCommunityDocumentInput>;
+};
+
 export type GqlCommunitiesConnection = {
   __typename?: 'CommunitiesConnection';
   edges?: Maybe<Array<GqlCommunityEdge>>;
@@ -285,6 +290,14 @@ export type GqlCommunityDocument = {
   path: Scalars['String']['output'];
   title: Scalars['String']['output'];
   type: Scalars['String']['output'];
+};
+
+export type GqlCommunityDocumentInput = {
+  id: Scalars['String']['input'];
+  order?: InputMaybe<Scalars['Int']['input']>;
+  path: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+  type: Scalars['String']['input'];
 };
 
 export type GqlCommunityEdge = GqlEdge & {
@@ -363,7 +376,9 @@ export type GqlCommunityPortalConfig = {
 
 export type GqlCommunityPortalConfigInput = {
   adminRootPath?: InputMaybe<Scalars['String']['input']>;
+  commonDocumentOverrides?: InputMaybe<GqlCommonDocumentOverridesInput>;
   description?: InputMaybe<Scalars['String']['input']>;
+  documents?: InputMaybe<Array<GqlCommunityDocumentInput>>;
   domain?: InputMaybe<Scalars['String']['input']>;
   enableFeatures?: InputMaybe<Array<Scalars['String']['input']>>;
   faviconPrefix?: InputMaybe<Scalars['String']['input']>;
@@ -3324,6 +3339,7 @@ export type GqlResolversTypes = ResolversObject<{
   CityEdge: ResolverTypeWrapper<Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['City']> }>;
   ClaimLinkStatus: GqlClaimLinkStatus;
   CommonDocumentOverrides: ResolverTypeWrapper<GqlCommonDocumentOverrides>;
+  CommonDocumentOverridesInput: GqlCommonDocumentOverridesInput;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversTypes['CommunityEdge']>> }>;
   Community: ResolverTypeWrapper<Community>;
   CommunityConfig: ResolverTypeWrapper<GqlCommunityConfig>;
@@ -3334,6 +3350,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityDeletePayload']>;
   CommunityDeleteSuccess: ResolverTypeWrapper<GqlCommunityDeleteSuccess>;
   CommunityDocument: ResolverTypeWrapper<GqlCommunityDocument>;
+  CommunityDocumentInput: GqlCommunityDocumentInput;
   CommunityEdge: ResolverTypeWrapper<Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Community']> }>;
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityFirebaseConfig: ResolverTypeWrapper<GqlCommunityFirebaseConfig>;
@@ -3668,6 +3685,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   City: City;
   CityEdge: Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['City']> };
   CommonDocumentOverrides: GqlCommonDocumentOverrides;
+  CommonDocumentOverridesInput: GqlCommonDocumentOverridesInput;
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };
   Community: Community;
   CommunityConfig: GqlCommunityConfig;
@@ -3678,6 +3696,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityDeletePayload'];
   CommunityDeleteSuccess: GqlCommunityDeleteSuccess;
   CommunityDocument: GqlCommunityDocument;
+  CommunityDocumentInput: GqlCommunityDocumentInput;
   CommunityEdge: Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Community']> };
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityFirebaseConfig: GqlCommunityFirebaseConfig;

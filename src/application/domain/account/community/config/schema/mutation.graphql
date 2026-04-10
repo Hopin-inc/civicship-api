@@ -33,6 +33,21 @@ input CommunityPortalConfigInput {
     adminRootPath: String
     regionName: String
     regionKey: String
+    documents: [CommunityDocumentInput!]
+    commonDocumentOverrides: CommonDocumentOverridesInput
+}
+
+input CommunityDocumentInput {
+    id: String!
+    title: String!
+    path: String!
+    type: String!
+    order: Int
+}
+
+input CommonDocumentOverridesInput {
+    terms: CommunityDocumentInput
+    privacy: CommunityDocumentInput
 }
 
 input UpdateSignupBonusConfigInput {

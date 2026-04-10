@@ -43,6 +43,23 @@ export interface CommonDocumentOverrides {
   privacy?: CommunityDocument;
 }
 
+const DEFAULT_ENABLE_FEATURES = ["points", "justDaoIt", "languageSwitcher"];
+
+// Fallback defaults for the create path when no portal config exists yet
+const PORTAL_CONFIG_CREATE_DEFAULTS: Prisma.CommunityPortalConfigCreateWithoutConfigInput = {
+  tokenName: "",
+  title: "",
+  description: "",
+  domain: "",
+  faviconPrefix: "",
+  logoPath: "",
+  squareLogoPath: "",
+  ogImagePath: "",
+  enableFeatures: DEFAULT_ENABLE_FEATURES,
+  rootPath: "/",
+  adminRootPath: "/admin",
+};
+
 @injectable()
 export default class CommunityPortalConfigService {
   constructor(
@@ -57,24 +74,35 @@ export default class CommunityPortalConfigService {
     communityId: string,
     input: GqlCommunityPortalConfigInput,
     tx: Prisma.TransactionClient,
-  ): Promise<CommunityPortalConfig> {
-    const data: Prisma.CommunityPortalConfigCreateWithoutConfigInput = {
-      ...(input.tokenName      !== undefined && input.tokenName      !== null && { tokenName: input.tokenName }),
-      ...(input.title          !== undefined && input.title          !== null && { title: input.title }),
-      ...(input.description    !== undefined && input.description    !== null && { description: input.description }),
+  ): Promise<void> {
+    const updateData: Prisma.CommunityPortalConfigUpdateWithoutConfigInput = {
+      ...(input.tokenName       != null && { tokenName: input.tokenName }),
+      ...(input.title           != null && { title: input.title }),
+      ...(input.description     != null && { description: input.description }),
       ...(input.shortDescription !== undefined && { shortDescription: input.shortDescription }),
-      ...(input.domain         !== undefined && input.domain         !== null && { domain: input.domain }),
-      ...(input.faviconPrefix  !== undefined && input.faviconPrefix  !== null && { faviconPrefix: input.faviconPrefix }),
-      ...(input.logoPath       !== undefined && input.logoPath       !== null && { logoPath: input.logoPath }),
-      ...(input.squareLogoPath !== undefined && input.squareLogoPath !== null && { squareLogoPath: input.squareLogoPath }),
-      ...(input.ogImagePath    !== undefined && input.ogImagePath    !== null && { ogImagePath: input.ogImagePath }),
-      ...(input.enableFeatures !== undefined && input.enableFeatures !== null && { enableFeatures: input.enableFeatures }),
-      ...(input.rootPath       !== undefined && input.rootPath       !== null && { rootPath: input.rootPath }),
-      ...(input.adminRootPath  !== undefined && input.adminRootPath  !== null && { adminRootPath: input.adminRootPath }),
-      ...(input.regionName     !== undefined && { regionName: input.regionName }),
-      ...(input.regionKey      !== undefined && { regionKey: input.regionKey }),
+      ...(input.domain          != null && { domain: input.domain }),
+      ...(input.faviconPrefix   != null && { faviconPrefix: input.faviconPrefix }),
+      ...(input.logoPath        != null && { logoPath: input.logoPath }),
+      ...(input.squareLogoPath  != null && { squareLogoPath: input.squareLogoPath }),
+      ...(input.ogImagePath     != null && { ogImagePath: input.ogImagePath }),
+      ...(input.enableFeatures  != null && { enableFeatures: input.enableFeatures }),
+      ...(input.rootPath        != null && { rootPath: input.rootPath }),
+      ...(input.adminRootPath   != null && { adminRootPath: input.adminRootPath }),
+      ...(input.regionName      !== undefined && { regionName: input.regionName }),
+      ...(input.regionKey       !== undefined && { regionKey: input.regionKey }),
+      ...(input.documents       !== undefined && { documents: input.documents ?? Prisma.JsonNull }),
+      ...(input.commonDocumentOverrides !== undefined && {
+        commonDocumentOverrides: input.commonDocumentOverrides ?? Prisma.JsonNull,
+      }),
     };
-    return this.portalRepository.upsert(ctx, communityId, data, tx);
+
+    // create path: fill required fields with defaults so NOT NULL constraints are satisfied
+    const createData: Prisma.CommunityPortalConfigCreateWithoutConfigInput = {
+      ...PORTAL_CONFIG_CREATE_DEFAULTS,
+      ...updateData,
+    };
+
+    await this.portalRepository.upsert(ctx, communityId, createData, updateData, tx);
   }
 
   async getPortalConfig(ctx: IContext, communityId: string): Promise<CommunityPortalConfigResult> {

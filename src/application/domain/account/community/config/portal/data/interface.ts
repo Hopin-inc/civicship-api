@@ -6,7 +6,8 @@ export default interface ICommunityPortalConfigRepository {
   upsert(
     ctx: IContext,
     communityId: string,
-    data: Prisma.CommunityPortalConfigCreateWithoutConfigInput,
+    createData: Prisma.CommunityPortalConfigCreateWithoutConfigInput,
+    updateData: Prisma.CommunityPortalConfigUpdateWithoutConfigInput,
     tx: Prisma.TransactionClient,
   ): Promise<CommunityPortalConfig>;
 }

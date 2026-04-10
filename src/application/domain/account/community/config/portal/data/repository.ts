@@ -21,14 +21,15 @@ export default class CommunityPortalConfigRepository implements ICommunityPortal
   async upsert(
     ctx: IContext,
     communityId: string,
-    data: Prisma.CommunityPortalConfigCreateWithoutConfigInput,
+    createData: Prisma.CommunityPortalConfigCreateWithoutConfigInput,
+    updateData: Prisma.CommunityPortalConfigUpdateWithoutConfigInput,
     tx: Prisma.TransactionClient,
   ): Promise<CommunityPortalConfig> {
     const result = await tx.communityConfig.update({
       where: { communityId },
       data: {
         portalConfig: {
-          upsert: { create: data, update: data },
+          upsert: { create: createData, update: updateData },
         },
       },
       include: { portalConfig: true },

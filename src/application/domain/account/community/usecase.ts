@@ -12,7 +12,8 @@ import {
   GqlMutationUpdateSignupBonusConfigArgs,
   GqlMutationUpdatePortalConfigArgs,
 } from "@/types/graphql";
-import { CommunityPortalConfig, CommunitySignupBonusConfig } from "@prisma/client";
+import { CommunitySignupBonusConfig } from "@prisma/client";
+import { CommunityPortalConfigResult } from "@/application/domain/account/community/config/portal/service";
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/domain/account/community/service";
 import CommunityPresenter from "@/application/domain/account/community/presenter";
@@ -115,9 +116,10 @@ export default class CommunityUseCase {
   async managerUpdatePortalConfig(
     { input, permission }: GqlMutationUpdatePortalConfigArgs,
     ctx: IContext,
-  ): Promise<CommunityPortalConfig> {
-    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      return this.portalConfigService.update(ctx, permission.communityId, input, tx);
+  ): Promise<CommunityPortalConfigResult> {
+    await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      await this.portalConfigService.update(ctx, permission.communityId, input, tx);
     });
+    return this.portalConfigService.getPortalConfig(ctx, permission.communityId);
   }
 }
