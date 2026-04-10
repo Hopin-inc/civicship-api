@@ -1,7 +1,7 @@
 import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
 import { inject, injectable } from "tsyringe";
-import { CommunityPortalConfig, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { GqlCommunityPortalConfigInput } from "@/types/graphql";
 import ICommunityPortalConfigRepository from "@/application/domain/account/community/config/portal/data/interface";
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
@@ -75,7 +75,8 @@ export default class CommunityPortalConfigService {
     input: GqlCommunityPortalConfigInput,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-    const updateData: Prisma.CommunityPortalConfigUpdateWithoutConfigInput = {
+    // Plain values only — avoids type incompatibility between UpdateInput and CreateInput
+    const plainValues: Partial<Prisma.CommunityPortalConfigCreateWithoutConfigInput> = {
       ...(input.tokenName       != null && { tokenName: input.tokenName }),
       ...(input.title           != null && { title: input.title }),
       ...(input.description     != null && { description: input.description }),
@@ -90,16 +91,18 @@ export default class CommunityPortalConfigService {
       ...(input.adminRootPath   != null && { adminRootPath: input.adminRootPath }),
       ...(input.regionName      !== undefined && { regionName: input.regionName }),
       ...(input.regionKey       !== undefined && { regionKey: input.regionKey }),
-      ...(input.documents       !== undefined && { documents: input.documents ?? Prisma.JsonNull }),
+      // DbNull = SQL NULL（列を null にする）。JsonNull は JSON リテラルの null を格納するため不適切
+      ...(input.documents !== undefined && { documents: input.documents ?? Prisma.DbNull }),
       ...(input.commonDocumentOverrides !== undefined && {
-        commonDocumentOverrides: input.commonDocumentOverrides ?? Prisma.JsonNull,
+        commonDocumentOverrides: input.commonDocumentOverrides ?? Prisma.DbNull,
       }),
     };
 
-    // create path: fill required fields with defaults so NOT NULL constraints are satisfied
+    const updateData: Prisma.CommunityPortalConfigUpdateWithoutConfigInput = plainValues;
+    // create path: defaults + input values to satisfy NOT NULL constraints
     const createData: Prisma.CommunityPortalConfigCreateWithoutConfigInput = {
       ...PORTAL_CONFIG_CREATE_DEFAULTS,
-      ...updateData,
+      ...plainValues,
     };
 
     await this.portalRepository.upsert(ctx, communityId, createData, updateData, tx);
