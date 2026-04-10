@@ -212,6 +212,11 @@ export type GqlCommonDocumentOverrides = {
   terms?: Maybe<GqlCommunityDocument>;
 };
 
+export type GqlCommonDocumentOverridesInput = {
+  privacy?: InputMaybe<GqlCommunityDocumentInput>;
+  terms?: InputMaybe<GqlCommunityDocumentInput>;
+};
+
 export type GqlCommunitiesConnection = {
   __typename?: 'CommunitiesConnection';
   edges?: Maybe<Array<GqlCommunityEdge>>;
@@ -249,6 +254,7 @@ export type GqlCommunityConfig = {
 
 export type GqlCommunityConfigInput = {
   lineConfig?: InputMaybe<GqlCommunityLineConfigInput>;
+  portalConfig?: InputMaybe<GqlCommunityPortalConfigInput>;
 };
 
 export type GqlCommunityCreateInput = {
@@ -286,6 +292,14 @@ export type GqlCommunityDocument = {
   type: Scalars['String']['output'];
 };
 
+export type GqlCommunityDocumentInput = {
+  id: Scalars['String']['input'];
+  order?: InputMaybe<Scalars['Int']['input']>;
+  path: Scalars['String']['input'];
+  title: Scalars['String']['input'];
+  type: Scalars['String']['input'];
+};
+
 export type GqlCommunityEdge = GqlEdge & {
   __typename?: 'CommunityEdge';
   cursor: Scalars['String']['output'];
@@ -318,6 +332,7 @@ export type GqlCommunityLineConfigInput = {
   accessToken: Scalars['String']['input'];
   channelId: Scalars['String']['input'];
   channelSecret: Scalars['String']['input'];
+  liffAppId?: InputMaybe<Scalars['String']['input']>;
   liffBaseUrl: Scalars['String']['input'];
   liffId: Scalars['String']['input'];
   richMenus: Array<GqlCommunityLineRichMenuConfigInput>;
@@ -357,6 +372,25 @@ export type GqlCommunityPortalConfig = {
   squareLogoPath: Scalars['String']['output'];
   title: Scalars['String']['output'];
   tokenName: Scalars['String']['output'];
+};
+
+export type GqlCommunityPortalConfigInput = {
+  adminRootPath?: InputMaybe<Scalars['String']['input']>;
+  commonDocumentOverrides?: InputMaybe<GqlCommonDocumentOverridesInput>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  documents?: InputMaybe<Array<GqlCommunityDocumentInput>>;
+  domain?: InputMaybe<Scalars['String']['input']>;
+  enableFeatures?: InputMaybe<Array<Scalars['String']['input']>>;
+  faviconPrefix?: InputMaybe<Scalars['String']['input']>;
+  logoPath?: InputMaybe<Scalars['String']['input']>;
+  ogImagePath?: InputMaybe<Scalars['String']['input']>;
+  regionKey?: InputMaybe<Scalars['String']['input']>;
+  regionName?: InputMaybe<Scalars['String']['input']>;
+  rootPath?: InputMaybe<Scalars['String']['input']>;
+  shortDescription?: InputMaybe<Scalars['String']['input']>;
+  squareLogoPath?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  tokenName?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlCommunitySignupBonusConfig = {
@@ -901,6 +935,7 @@ export type GqlMutation = {
   transactionDonateSelfPoint?: Maybe<GqlTransactionDonateSelfPointPayload>;
   transactionGrantCommunityPoint?: Maybe<GqlTransactionGrantCommunityPointPayload>;
   transactionIssueCommunityPoint?: Maybe<GqlTransactionIssueCommunityPointPayload>;
+  updatePortalConfig: GqlCommunityPortalConfig;
   updateSignupBonusConfig: GqlCommunitySignupBonusConfig;
   userDeleteMe?: Maybe<GqlUserDeletePayload>;
   userSignUp?: Maybe<GqlCurrentUserPayload>;
@@ -1188,6 +1223,12 @@ export type GqlMutationTransactionGrantCommunityPointArgs = {
 
 export type GqlMutationTransactionIssueCommunityPointArgs = {
   input: GqlTransactionIssueCommunityPointInput;
+  permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationUpdatePortalConfigArgs = {
+  input: GqlCommunityPortalConfigInput;
   permission: GqlCheckCommunityPermissionInput;
 };
 
@@ -3298,6 +3339,7 @@ export type GqlResolversTypes = ResolversObject<{
   CityEdge: ResolverTypeWrapper<Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['City']> }>;
   ClaimLinkStatus: GqlClaimLinkStatus;
   CommonDocumentOverrides: ResolverTypeWrapper<GqlCommonDocumentOverrides>;
+  CommonDocumentOverridesInput: GqlCommonDocumentOverridesInput;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversTypes['CommunityEdge']>> }>;
   Community: ResolverTypeWrapper<Community>;
   CommunityConfig: ResolverTypeWrapper<GqlCommunityConfig>;
@@ -3308,6 +3350,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityDeletePayload']>;
   CommunityDeleteSuccess: ResolverTypeWrapper<GqlCommunityDeleteSuccess>;
   CommunityDocument: ResolverTypeWrapper<GqlCommunityDocument>;
+  CommunityDocumentInput: GqlCommunityDocumentInput;
   CommunityEdge: ResolverTypeWrapper<Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Community']> }>;
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityFirebaseConfig: ResolverTypeWrapper<GqlCommunityFirebaseConfig>;
@@ -3316,6 +3359,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityLineRichMenuConfig: ResolverTypeWrapper<GqlCommunityLineRichMenuConfig>;
   CommunityLineRichMenuConfigInput: GqlCommunityLineRichMenuConfigInput;
   CommunityPortalConfig: ResolverTypeWrapper<GqlCommunityPortalConfig>;
+  CommunityPortalConfigInput: GqlCommunityPortalConfigInput;
   CommunitySignupBonusConfig: ResolverTypeWrapper<GqlCommunitySignupBonusConfig>;
   CommunitySortInput: GqlCommunitySortInput;
   CommunityUpdateProfileInput: GqlCommunityUpdateProfileInput;
@@ -3641,6 +3685,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   City: City;
   CityEdge: Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['City']> };
   CommonDocumentOverrides: GqlCommonDocumentOverrides;
+  CommonDocumentOverridesInput: GqlCommonDocumentOverridesInput;
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };
   Community: Community;
   CommunityConfig: GqlCommunityConfig;
@@ -3651,6 +3696,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityDeletePayload'];
   CommunityDeleteSuccess: GqlCommunityDeleteSuccess;
   CommunityDocument: GqlCommunityDocument;
+  CommunityDocumentInput: GqlCommunityDocumentInput;
   CommunityEdge: Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Community']> };
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityFirebaseConfig: GqlCommunityFirebaseConfig;
@@ -3659,6 +3705,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityLineRichMenuConfig: GqlCommunityLineRichMenuConfig;
   CommunityLineRichMenuConfigInput: GqlCommunityLineRichMenuConfigInput;
   CommunityPortalConfig: GqlCommunityPortalConfig;
+  CommunityPortalConfigInput: GqlCommunityPortalConfigInput;
   CommunitySignupBonusConfig: GqlCommunitySignupBonusConfig;
   CommunitySortInput: GqlCommunitySortInput;
   CommunityUpdateProfileInput: GqlCommunityUpdateProfileInput;
@@ -4462,6 +4509,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input' | 'permission'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input' | 'permission'>>;
   transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input' | 'permission'>>;
+  updatePortalConfig?: Resolver<GqlResolversTypes['CommunityPortalConfig'], ParentType, ContextType, RequireFields<GqlMutationUpdatePortalConfigArgs, 'input' | 'permission'>>;
   updateSignupBonusConfig?: Resolver<GqlResolversTypes['CommunitySignupBonusConfig'], ParentType, ContextType, RequireFields<GqlMutationUpdateSignupBonusConfigArgs, 'input' | 'permission'>>;
   userDeleteMe?: Resolver<Maybe<GqlResolversTypes['UserDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserDeleteMeArgs, 'permission'>>;
   userSignUp?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserSignUpArgs, 'input'>>;
