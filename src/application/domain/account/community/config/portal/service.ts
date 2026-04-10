@@ -76,7 +76,7 @@ export default class CommunityPortalConfigService {
     tx: Prisma.TransactionClient,
   ): Promise<void> {
     // Plain values only — avoids type incompatibility between UpdateInput and CreateInput
-    const plainValues = {
+    const plainValues: Partial<Prisma.CommunityPortalConfigCreateWithoutConfigInput> = {
       ...(input.tokenName       != null && { tokenName: input.tokenName }),
       ...(input.title           != null && { title: input.title }),
       ...(input.description     != null && { description: input.description }),
@@ -91,9 +91,10 @@ export default class CommunityPortalConfigService {
       ...(input.adminRootPath   != null && { adminRootPath: input.adminRootPath }),
       ...(input.regionName      !== undefined && { regionName: input.regionName }),
       ...(input.regionKey       !== undefined && { regionKey: input.regionKey }),
-      ...(input.documents       !== undefined && { documents: input.documents ?? Prisma.JsonNull }),
+      // DbNull = SQL NULL（列を null にする）。JsonNull は JSON リテラルの null を格納するため不適切
+      ...(input.documents !== undefined && { documents: input.documents ?? Prisma.DbNull }),
       ...(input.commonDocumentOverrides !== undefined && {
-        commonDocumentOverrides: input.commonDocumentOverrides ?? Prisma.JsonNull,
+        commonDocumentOverrides: input.commonDocumentOverrides ?? Prisma.DbNull,
       }),
     };
 
