@@ -5,6 +5,8 @@ import {
   GqlCommunitySortInput,
   GqlImageInput,
 } from "@/types/graphql";
+
+const DEFAULT_ENABLE_FEATURES = ["points", "justDaoIt", "languageSwitcher"];
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
 import { injectable } from "tsyringe";
 
@@ -81,6 +83,7 @@ export default class CommunityConverter {
                   channelSecret: config.lineConfig.channelSecret,
                   accessToken: config.lineConfig.accessToken,
                   liffId: config.lineConfig.liffId,
+                  liffAppId: config.lineConfig.liffAppId ?? null,
                   liffBaseUrl: config.lineConfig.liffBaseUrl,
                   richMenus: {
                     create: config.lineConfig.richMenus.map((menu) => ({
@@ -91,6 +94,24 @@ export default class CommunityConverter {
                 },
               },
             }),
+            portalConfig: {
+              create: {
+                tokenName:        config?.portalConfig?.tokenName      ?? prop.pointName,
+                title:            config?.portalConfig?.title          ?? prop.name,
+                description:      config?.portalConfig?.description    ?? "",
+                shortDescription: config?.portalConfig?.shortDescription ?? null,
+                domain:           config?.portalConfig?.domain         ?? "",
+                faviconPrefix:    config?.portalConfig?.faviconPrefix  ?? "",
+                logoPath:         config?.portalConfig?.logoPath       ?? "",
+                squareLogoPath:   config?.portalConfig?.squareLogoPath ?? "",
+                ogImagePath:      config?.portalConfig?.ogImagePath    ?? "",
+                enableFeatures:   config?.portalConfig?.enableFeatures ?? DEFAULT_ENABLE_FEATURES,
+                rootPath:         config?.portalConfig?.rootPath       ?? "/",
+                adminRootPath:    config?.portalConfig?.adminRootPath  ?? "/admin",
+                regionName:       config?.portalConfig?.regionName     ?? null,
+                regionKey:        config?.portalConfig?.regionKey      ?? null,
+              },
+            },
           },
         },
       },

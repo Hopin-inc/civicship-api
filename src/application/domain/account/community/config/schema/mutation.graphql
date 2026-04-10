@@ -1,5 +1,6 @@
 input CommunityConfigInput {
     lineConfig: CommunityLineConfigInput
+    portalConfig: CommunityPortalConfigInput
 }
 
 input CommunityLineConfigInput {
@@ -7,6 +8,7 @@ input CommunityLineConfigInput {
     channelSecret: String!
     accessToken: String!
     liffId: String!
+    liffAppId: String
     liffBaseUrl: String!
     richMenus: [CommunityLineRichMenuConfigInput!]!
 }
@@ -14,6 +16,23 @@ input CommunityLineConfigInput {
 input CommunityLineRichMenuConfigInput {
     type: LineRichMenuType!
     richMenuId: String!
+}
+
+input CommunityPortalConfigInput {
+    tokenName: String
+    title: String
+    description: String
+    shortDescription: String
+    domain: String
+    faviconPrefix: String
+    logoPath: String
+    squareLogoPath: String
+    ogImagePath: String
+    enableFeatures: [String!]
+    rootPath: String
+    adminRootPath: String
+    regionName: String
+    regionKey: String
 }
 
 input UpdateSignupBonusConfigInput {
@@ -27,4 +46,9 @@ extend type Mutation {
         input: UpdateSignupBonusConfigInput!,
         permission: CheckCommunityPermissionInput!
     ): CommunitySignupBonusConfig! @authz(rules: [IsCommunityManager])
+
+    updatePortalConfig(
+        input: CommunityPortalConfigInput!,
+        permission: CheckCommunityPermissionInput!
+    ): CommunityPortalConfig! @authz(rules: [IsCommunityManager])
 }

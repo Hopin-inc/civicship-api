@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { CommunityPortalConfig } from "@prisma/client";
+import { CommunityPortalConfig, Prisma } from "@prisma/client";
 import ICommunityPortalConfigRepository from "@/application/domain/account/community/config/portal/data/interface";
 import { injectable } from "tsyringe";
 
@@ -16,5 +16,23 @@ export default class CommunityPortalConfigRepository implements ICommunityPortal
       });
       return result?.portalConfig ?? null;
     });
+  }
+
+  async upsert(
+    ctx: IContext,
+    communityId: string,
+    data: Prisma.CommunityPortalConfigCreateWithoutConfigInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<CommunityPortalConfig> {
+    const result = await tx.communityConfig.update({
+      where: { communityId },
+      data: {
+        portalConfig: {
+          upsert: { create: data, update: data },
+        },
+      },
+      include: { portalConfig: true },
+    });
+    return result.portalConfig!;
   }
 }
