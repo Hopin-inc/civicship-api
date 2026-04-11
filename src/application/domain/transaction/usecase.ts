@@ -1,4 +1,4 @@
-import { MembershipStatus, Prisma, Role, TransactionReason } from "@prisma/client";
+import { Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TransactionPresenter from "@/application/domain/transaction/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
@@ -249,13 +249,7 @@ export default class TransactionUseCase {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
-    const ownerUserIds = await ctx.issuer.internal(async (tx) => {
-      const memberships = await tx.membership.findMany({
-        where: { communityId, role: Role.OWNER, status: MembershipStatus.JOINED },
-        select: { userId: true },
-      });
-      return memberships.map((m) => m.userId);
-    });
+    const ownerUserIds = await this.membershipService.findOwnerUserIdsByCommunity(ctx, communityId);
 
     const fromUserName = ctx.currentUser?.name ?? "ユーザー";
     this.notificationService

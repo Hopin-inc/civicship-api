@@ -81,7 +81,7 @@ export default class WalletValidator {
     communityId: string,
     userId: string,
     transferPoints: number,
-  ) {
+  ): Promise<{ fromWalletId: string; toWalletId: string }> {
     const memberWallet = await this.service.findMemberWalletOrThrow(ctx, userId, communityId, tx);
     const communityWallet = await this.service.findCommunityWalletOrThrow(ctx, communityId, tx);
     await this.validateTransfer(transferPoints, memberWallet, communityWallet);

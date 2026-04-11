@@ -411,23 +411,44 @@ export default class NotificationService {
     fromUserName: string,
     ownerUserIds: string[],
   ) {
-    await Promise.all(
+    if (ownerUserIds.length === 0) return;
+
+    let liffBaseUrl: string;
+    let client: MessagingApiClient;
+
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+      client = await createLineClient(ctx.communityId);
+    } catch (error) {
+      logger.error("pushPointDonationToCommunityReceivedMessage: failed to get LIFF config or LINE client", {
+        transactionId,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return;
+    }
+
+    const redirectUrl = `${liffBaseUrl}/admin/wallet`;
+
+    const results = await Promise.allSettled(
       ownerUserIds.map(async (ownerId) => {
-        const preparedData = await this.prepareLinePush(
+        const result = await this.userService.findLineUidAndLanguageForCommunity(
           ctx,
           ownerId,
-          transactionId,
-          "pushPointDonationToCommunityReceivedMessage",
-          { includeLanguage: true },
+          ctx.communityId,
         );
 
-        if (!preparedData) {
+        if (!result) {
+          logger.warn("pushPointDonationToCommunityReceivedMessage: lineUid is missing", {
+            transactionId,
+            ownerId,
+            communityId: ctx.communityId,
+          });
           return;
         }
 
-        const { uid, liffBaseUrl, client, language } = preparedData;
-        const redirectUrl = `${liffBaseUrl}/wallets`;
-
+        const { uid, language } = result;
         const message = buildPointDonationToCommunityReceivedMessage({
           fromUserName,
           transferPoints: toPointChange,
@@ -439,6 +460,15 @@ export default class NotificationService {
         await safePushMessage(client, { to: uid, messages: [message] });
       }),
     );
+
+    results.forEach((result) => {
+      if (result.status === "rejected") {
+        logger.error("pushPointDonationToCommunityReceivedMessage: failed to push notification", {
+          transactionId,
+          err: result.reason,
+        });
+      }
+    });
   }
 
   async pushPointGrantReceivedMessage(

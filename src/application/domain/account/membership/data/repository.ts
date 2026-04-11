@@ -35,6 +35,15 @@ export default class MembershipRepository implements IMembershipRepository {
     });
   }
 
+  async findOwnersByCommunity(ctx: IContext, communityId: string): Promise<{ userId: string }[]> {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.membership.findMany({
+        where: { communityId, role: "OWNER", status: "JOINED" },
+        select: { userId: true },
+      }),
+    );
+  }
+
   async findDetail(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.membership.findUnique({

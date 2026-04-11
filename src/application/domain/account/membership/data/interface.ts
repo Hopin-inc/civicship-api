@@ -16,6 +16,8 @@ export interface IMembershipRepository {
 
   find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput, tx?: Prisma.TransactionClient): Promise<PrismaMembership | null>;
 
+  findOwnersByCommunity(ctx: IContext, communityId: string): Promise<{ userId: string }[]>;
+
   findDetail(
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
