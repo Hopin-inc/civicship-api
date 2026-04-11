@@ -249,12 +249,14 @@ export default class TransactionUseCase {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
-    const ownerUserIds = await this.membershipService.findOwnerUserIdsByCommunity(ctx, communityId);
+    const ownerUserIds = (await this.membershipService.findOwnerUserIdsByCommunity(ctx, communityId))
+      .filter((id) => id !== currentUserId);
 
     const fromUserName = ctx.currentUser?.name ?? "ユーザー";
     this.notificationService
       .pushPointDonationToCommunityReceivedMessage(
         ctx,
+        communityId,
         transaction.id,
         transaction.toPointChange,
         transaction.comment,

@@ -405,6 +405,7 @@ export default class NotificationService {
 
   async pushPointDonationToCommunityReceivedMessage(
     ctx: IContext,
+    communityId: string,
     transactionId: string,
     toPointChange: number,
     comment: string | null,
@@ -417,13 +418,13 @@ export default class NotificationService {
     let client: MessagingApiClient;
 
     try {
-      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, communityId);
       liffBaseUrl = liffConfig.liffBaseUrl;
-      client = await createLineClient(ctx.communityId);
+      client = await createLineClient(communityId);
     } catch (error) {
       logger.error("pushPointDonationToCommunityReceivedMessage: failed to get LIFF config or LINE client", {
         transactionId,
-        communityId: ctx.communityId,
+        communityId,
         err: error,
       });
       return;
@@ -436,14 +437,14 @@ export default class NotificationService {
         const result = await this.userService.findLineUidAndLanguageForCommunity(
           ctx,
           ownerId,
-          ctx.communityId,
+          communityId,
         );
 
         if (!result) {
           logger.warn("pushPointDonationToCommunityReceivedMessage: lineUid is missing", {
             transactionId,
             ownerId,
-            communityId: ctx.communityId,
+            communityId,
           });
           return;
         }
