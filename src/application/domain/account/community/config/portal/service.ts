@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { GqlCommunityPortalConfigInput } from "@/types/graphql";
 import ICommunityPortalConfigRepository from "@/application/domain/account/community/config/portal/data/interface";
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
+import ImageService from "@/application/domain/content/image/service";
 
 export interface CommunityPortalConfigResult {
   communityId: string;
@@ -67,6 +68,8 @@ export default class CommunityPortalConfigService {
     private readonly portalRepository: ICommunityPortalConfigRepository,
     @inject("CommunityConfigRepository")
     private readonly configRepository: ICommunityConfigRepository,
+    @inject("ImageService")
+    private readonly imageService: ImageService,
   ) {}
 
   async update(
@@ -75,6 +78,13 @@ export default class CommunityPortalConfigService {
     input: GqlCommunityPortalConfigInput,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
+    // GCS アップロード（並列実行、トランザクション外で実行）
+    const [uploadedLogo, uploadedSquareLogo, uploadedFavicon] = await Promise.all([
+      input.logo       ? this.imageService.uploadPublicImage(input.logo,       "community-portal") : Promise.resolve(null),
+      input.squareLogo ? this.imageService.uploadPublicImage(input.squareLogo, "community-portal") : Promise.resolve(null),
+      input.favicon    ? this.imageService.uploadPublicImage(input.favicon,    "community-portal") : Promise.resolve(null),
+    ]);
+
     // Plain values only — avoids type incompatibility between UpdateInput and CreateInput
     const plainValues: Partial<Prisma.CommunityPortalConfigCreateWithoutConfigInput> = {
       ...(input.tokenName       != null && { tokenName: input.tokenName }),
@@ -83,8 +93,11 @@ export default class CommunityPortalConfigService {
       ...(input.shortDescription !== undefined && { shortDescription: input.shortDescription }),
       ...(input.domain          != null && { domain: input.domain }),
       ...(input.faviconPrefix   != null && { faviconPrefix: input.faviconPrefix }),
+      ...(uploadedFavicon       != null && { faviconPrefix: uploadedFavicon.url }),
       ...(input.logoPath        != null && { logoPath: input.logoPath }),
+      ...(uploadedLogo          != null && { logoPath: uploadedLogo.url }),
       ...(input.squareLogoPath  != null && { squareLogoPath: input.squareLogoPath }),
+      ...(uploadedSquareLogo    != null && { squareLogoPath: uploadedSquareLogo.url }),
       ...(input.ogImagePath     != null && { ogImagePath: input.ogImagePath }),
       ...(input.enableFeatures  != null && { enableFeatures: input.enableFeatures }),
       ...(input.rootPath        != null && { rootPath: input.rootPath }),

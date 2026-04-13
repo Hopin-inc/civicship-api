@@ -25,8 +25,11 @@ input CommunityPortalConfigInput {
     shortDescription: String
     domain: String
     faviconPrefix: String
+    favicon: ImageInput
     logoPath: String
+    logo: ImageInput
     squareLogoPath: String
+    squareLogo: ImageInput
     ogImagePath: String
     enableFeatures: [String!]
     rootPath: String

@@ -381,13 +381,16 @@ export type GqlCommunityPortalConfigInput = {
   documents?: InputMaybe<Array<GqlCommunityDocumentInput>>;
   domain?: InputMaybe<Scalars['String']['input']>;
   enableFeatures?: InputMaybe<Array<Scalars['String']['input']>>;
+  favicon?: InputMaybe<GqlImageInput>;
   faviconPrefix?: InputMaybe<Scalars['String']['input']>;
+  logo?: InputMaybe<GqlImageInput>;
   logoPath?: InputMaybe<Scalars['String']['input']>;
   ogImagePath?: InputMaybe<Scalars['String']['input']>;
   regionKey?: InputMaybe<Scalars['String']['input']>;
   regionName?: InputMaybe<Scalars['String']['input']>;
   rootPath?: InputMaybe<Scalars['String']['input']>;
   shortDescription?: InputMaybe<Scalars['String']['input']>;
+  squareLogo?: InputMaybe<GqlImageInput>;
   squareLogoPath?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
   tokenName?: InputMaybe<Scalars['String']['input']>;

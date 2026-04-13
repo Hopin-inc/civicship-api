@@ -337,13 +337,16 @@ input CommunityPortalConfigInput {
   documents: [CommunityDocumentInput!]
   domain: String
   enableFeatures: [String!]
+  favicon: ImageInput
   faviconPrefix: String
+  logo: ImageInput
   logoPath: String
   ogImagePath: String
   regionKey: String
   regionName: String
   rootPath: String
   shortDescription: String
+  squareLogo: ImageInput
   squareLogoPath: String
   title: String
   tokenName: String
