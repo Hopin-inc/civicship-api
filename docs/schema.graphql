@@ -855,6 +855,7 @@ type Mutation {
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
+  transactionUpdateMetadata(id: ID!, input: TransactionUpdateMetadataInput!): TransactionUpdateMetadataPayload
   updatePortalConfig(input: CommunityPortalConfigInput!, permission: CheckCommunityPermissionInput!): CommunityPortalConfig!
   updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
@@ -1912,6 +1913,7 @@ type Transaction {
   fromPointChange: Int
   fromWallet: Wallet
   id: ID!
+  images: [String!]
   participation: Participation
   reason: TransactionReason!
   reservation: Reservation
@@ -1995,6 +1997,17 @@ enum TransactionReason {
 
 input TransactionSortInput {
   createdAt: SortDirection
+}
+
+input TransactionUpdateMetadataInput {
+  comment: String
+  images: [ImageInput!]
+}
+
+union TransactionUpdateMetadataPayload = TransactionUpdateMetadataSuccess
+
+type TransactionUpdateMetadataSuccess {
+  transaction: Transaction!
 }
 
 type TransactionVerificationResult {

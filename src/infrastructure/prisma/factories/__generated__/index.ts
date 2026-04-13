@@ -134,6 +134,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "utilities",
                 type: "Utility",
                 relationName: "t_images_on_utilities"
+            }, {
+                name: "transactions",
+                type: "Transaction",
+                relationName: "t_images_on_transactions"
             }]
     }, {
         name: "State",
@@ -802,6 +806,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "merkleProofs",
                 type: "MerkleProof",
                 relationName: "MerkleProofToTransaction"
+            }, {
+                name: "images",
+                type: "Image",
+                relationName: "t_images_on_transactions"
             }]
     }, {
         name: "IncentiveGrant",
@@ -990,6 +998,7 @@ type ImageFactoryDefineInput = {
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutImagesInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutImagesInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutImagesInput;
+    transactions?: Prisma.TransactionCreateNestedManyWithoutImagesInput;
 };
 
 type ImageTransientFields = Record<string, unknown> & Partial<Record<keyof ImageFactoryDefineInput, never>>;
@@ -6669,6 +6678,7 @@ type TransactionFactoryDefineInput = {
     incentiveGrant?: TransactionincentiveGrantFactory | Prisma.IncentiveGrantCreateNestedOneWithoutTransactionInput;
     createdByUser?: TransactioncreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput;
     merkleProofs?: Prisma.MerkleProofCreateNestedManyWithoutTxInput;
+    images?: Prisma.ImageCreateNestedManyWithoutTransactionsInput;
 };
 
 type TransactionTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionFactoryDefineInput, never>>;

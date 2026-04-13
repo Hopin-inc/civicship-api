@@ -7,17 +7,20 @@ import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import {
   GqlMutationTransactionDonateSelfPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
+  GqlMutationTransactionUpdateMetadataArgs,
   GqlQueryTransactionArgs,
   GqlQueryTransactionsArgs,
   GqlTransaction,
   GqlTransactionDonateSelfPointPayload,
   GqlTransactionGrantCommunityPointPayload,
   GqlTransactionIssueCommunityPointPayload,
+  GqlTransactionUpdateMetadataPayload,
   GqlTransactionsConnection,
 } from "@/types/graphql";
 import { inject, injectable } from "tsyringe";
@@ -215,5 +218,29 @@ export default class TransactionUseCase {
       });
 
     return TransactionPresenter.giveUserPoint(transaction);
+  }
+
+  async userUpdateTransactionMetadata(
+    ctx: IContext,
+    { id, input }: GqlMutationTransactionUpdateMetadataArgs,
+  ): Promise<GqlTransactionUpdateMetadataPayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const existing = await this.transactionService.findTransaction(ctx, id);
+    if (!existing) {
+      throw new NotFoundError(`TransactionNotFound: ID=${id}`);
+    }
+    if (existing.createdBy !== currentUserId) {
+      throw new AuthorizationError("User is not the creator of this transaction");
+    }
+
+    const transaction = await ctx.issuer.onlyBelongingCommunity(
+      ctx,
+      async (tx: Prisma.TransactionClient) => {
+        return this.transactionService.updateMetadata(ctx, id, input, tx);
+      },
+    );
+
+    return TransactionPresenter.updateMetadata(transaction);
   }
 }

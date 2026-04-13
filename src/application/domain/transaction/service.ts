@@ -6,15 +6,17 @@ import {
 } from "@/application/domain/transaction/data/interface";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
-import { GqlQueryTransactionsArgs } from "@/types/graphql";
+import { GqlQueryTransactionsArgs, GqlTransactionUpdateMetadataInput } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
+import ImageService from "@/application/domain/content/image/service";
 
 @injectable()
 export default class TransactionService implements ITransactionService {
   constructor(
     @inject("TransactionRepository") private readonly repository: ITransactionRepository,
     @inject("TransactionConverter") private readonly converter: TransactionConverter,
+    @inject("ImageService") private readonly imageService: ImageService,
   ) {}
 
   async fetchTransactions(
@@ -146,6 +148,29 @@ export default class TransactionService implements ITransactionService {
     const data = this.converter.refundTicket(fromWalletId, toWalletId, transferPoints, currentUserId);
     const res = await this.repository.create(ctx, data, tx);
     return res;
+  }
+
+  async updateMetadata(
+    ctx: IContext,
+    id: string,
+    input: GqlTransactionUpdateMetadataInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTransactionDetail> {
+    const uploadedImages = (
+      await Promise.all(
+        (input.images ?? []).map((img) => this.imageService.uploadPublicImage(img, "transactions")),
+      )
+    ).filter((img): img is Prisma.ImageCreateWithoutUsersInput => img !== null);
+
+    const data: Prisma.TransactionUpdateInput = {
+      comment: input.comment,
+      images: {
+        deleteMany: {},
+        ...(uploadedImages.length > 0 && { create: uploadedImages }),
+      },
+    };
+
+    return this.repository.update(ctx, id, data, tx);
   }
 
   async refreshCurrentPoint(ctx: IContext, tx: Prisma.TransactionClient) {
