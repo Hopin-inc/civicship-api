@@ -16,6 +16,7 @@ import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import cookieParser from "cookie-parser";
 import { handleSessionLogin } from "@/presentation/middleware/session";
 import { sessionLoginRateLimit } from "@/presentation/middleware/rate-limit";
+import { botBlocker } from "@/presentation/middleware/bot-blocker";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -49,16 +50,18 @@ async function startServer() {
   app.use(requestLogger);
 
   app.use(corsHandler);
-  app.use(express.json({ limit: "50mb" }));
   app.use(cookieParser());
 
-  app.post("/sessionLogin", sessionLoginRateLimit, handleSessionLogin);
+  app.post("/sessionLogin", express.json(), sessionLoginRateLimit, handleSessionLogin);
 
   // Scope multipart upload processing to /graphql only.
   // Previously this was global, causing scanner POST requests to arbitrary
   // paths (e.g. /, /api/upload) to trigger graphql-upload validation errors.
+  // botBlocker runs first so bot requests are rejected before body parsing.
   app.use(
     "/graphql",
+    botBlocker,
+    express.json({ limit: "50mb" }),
     graphqlUploadExpress({
       maxFileSize: 10_000_000,
       maxFiles: 10,

@@ -84,6 +84,14 @@ export interface ITransactionService {
     transferPoints: number,
   ): Promise<PrismaTransactionDetail>;
 
+  updateMetadata(
+    ctx: IContext,
+    id: string,
+    comment: string | null | undefined,
+    uploadedImages: Prisma.ImageCreateWithoutTransactionsInput[] | undefined,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTransactionDetail>;
+
   refreshCurrentPoint(
     ctx: IContext,
     tx: Prisma.TransactionClient,
@@ -109,6 +117,13 @@ export interface ITransactionRepository {
   create(
     ctx: IContext,
     data: Prisma.TransactionCreateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTransactionDetail>;
+
+  update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.TransactionUpdateInput,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail>;
 }

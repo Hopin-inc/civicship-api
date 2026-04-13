@@ -14,5 +14,6 @@ export function createContentLoaders(prisma: PrismaClient) {
     imagesByParticipation: ImageLoaders.createImagesByParticipationLoader(prisma),
     imagesByOpportunity: ImageLoaders.createImagesByOpportunityLoader(prisma),
     imagesByUtility: ImageLoaders.createImagesByUtilityLoader(prisma),
+    imagesByTransaction: ImageLoaders.createImagesByTransactionLoader(prisma),
   };
 }

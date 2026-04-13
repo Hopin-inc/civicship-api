@@ -12,6 +12,22 @@ export default class TransactionConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
+  updateMetadata(
+    comment: string | null | undefined,
+    uploadedImages: Prisma.ImageCreateWithoutTransactionsInput[] | undefined,
+  ): Prisma.TransactionUpdateInput {
+    const data: Prisma.TransactionUpdateInput = { comment };
+
+    if (uploadedImages !== undefined) {
+      data.images = {
+        set: [],
+        ...(uploadedImages.length > 0 && { create: uploadedImages }),
+      };
+    }
+
+    return data;
+  }
+
   issueCommunityPoint(
     toWalletId: string,
     transferPoints: number,

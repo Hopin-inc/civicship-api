@@ -16,6 +16,8 @@ type Transaction {
 
   ticketStatusHistories: [TicketStatusHistory!]
 
+  images: [String!]
+
   createdByUser: User
 
   createdAt: Datetime

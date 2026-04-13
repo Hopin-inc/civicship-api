@@ -4,6 +4,7 @@ import {
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionDonateSelfPointArgs,
+  GqlMutationTransactionUpdateMetadataArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
@@ -45,6 +46,13 @@ export default class TransactionResolver {
     ) => {
       return this.useCase.userDonateSelfPointToAnother(ctx, args);
     },
+    transactionUpdateMetadata: async (
+      _: unknown,
+      args: GqlMutationTransactionUpdateMetadataArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.userUpdateTransactionMetadata(ctx, args);
+    },
   };
 
   Transaction = {
@@ -62,6 +70,10 @@ export default class TransactionResolver {
 
     ticketStatusHistories: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.ticketStatusHistoriesByTransaction.load(parent.id);
+    },
+
+    images: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.imagesByTransaction.load(parent.id);
     },
   };
 }
