@@ -23,8 +23,9 @@ extend type Mutation {
     transactionUpdateMetadata(
         id: ID!
         input: TransactionUpdateMetadataInput!
+        permission: CheckIsSelfPermissionInput!
     ): TransactionUpdateMetadataPayload
-    @authz(rules: [IsUser])
+    @authz(rules: [IsSelf])
 }
 
 # ------------------------------

@@ -1231,6 +1231,7 @@ export type GqlMutationTransactionIssueCommunityPointArgs = {
 export type GqlMutationTransactionUpdateMetadataArgs = {
   id: Scalars['ID']['input'];
   input: GqlTransactionUpdateMetadataInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
@@ -4536,7 +4537,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input' | 'permission'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input' | 'permission'>>;
   transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input' | 'permission'>>;
-  transactionUpdateMetadata?: Resolver<Maybe<GqlResolversTypes['TransactionUpdateMetadataPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionUpdateMetadataArgs, 'id' | 'input'>>;
+  transactionUpdateMetadata?: Resolver<Maybe<GqlResolversTypes['TransactionUpdateMetadataPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionUpdateMetadataArgs, 'id' | 'input' | 'permission'>>;
   updatePortalConfig?: Resolver<GqlResolversTypes['CommunityPortalConfig'], ParentType, ContextType, RequireFields<GqlMutationUpdatePortalConfigArgs, 'input' | 'permission'>>;
   updateSignupBonusConfig?: Resolver<GqlResolversTypes['CommunitySignupBonusConfig'], ParentType, ContextType, RequireFields<GqlMutationUpdateSignupBonusConfigArgs, 'input' | 'permission'>>;
   userDeleteMe?: Resolver<Maybe<GqlResolversTypes['UserDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserDeleteMeArgs, 'permission'>>;
