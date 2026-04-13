@@ -152,18 +152,10 @@ export default class TransactionService implements ITransactionService {
     ctx: IContext,
     id: string,
     comment: string | null | undefined,
-    uploadedImages: Prisma.ImageCreateWithoutUsersInput[] | undefined,
+    uploadedImages: Prisma.ImageCreateWithoutTransactionsInput[] | undefined,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail> {
-    const data: Prisma.TransactionUpdateInput = { comment };
-
-    if (uploadedImages !== undefined) {
-      data.images = {
-        set: [],
-        ...(uploadedImages.length > 0 && { create: uploadedImages }),
-      };
-    }
-
+    const data = this.converter.updateMetadata(comment, uploadedImages);
     return this.repository.update(ctx, id, data, tx);
   }
 

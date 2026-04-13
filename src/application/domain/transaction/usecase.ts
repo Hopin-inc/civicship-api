@@ -237,10 +237,11 @@ export default class TransactionUseCase {
     }
 
     // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
-    const uploadedImages = input.images != null
+    // undefined = 変更なし、null/[] = 画像をクリア（GraphQL慣習）
+    const uploadedImages = input.images !== undefined
       ? (await Promise.all(
-          input.images.map((img) => this.imageService.uploadPublicImage(img, "transactions")),
-        )).filter((img): img is Prisma.ImageCreateWithoutUsersInput => img !== null)
+          (input.images ?? []).map((img) => this.imageService.uploadPublicImage(img, "transactions")),
+        )).filter((img): img is Prisma.ImageCreateWithoutTransactionsInput => img !== null)
       : undefined;
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(

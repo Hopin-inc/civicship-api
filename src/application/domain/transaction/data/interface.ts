@@ -88,7 +88,7 @@ export interface ITransactionService {
     ctx: IContext,
     id: string,
     comment: string | null | undefined,
-    uploadedImages: Prisma.ImageCreateWithoutUsersInput[] | undefined,
+    uploadedImages: Prisma.ImageCreateWithoutTransactionsInput[] | undefined,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail>;
 
