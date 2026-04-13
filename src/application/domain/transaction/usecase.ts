@@ -8,6 +8,7 @@ import NotificationService from "@/application/domain/notification/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import { AuthorizationError, NotFoundError } from "@/errors/graphql";
+import ImageService from "@/application/domain/content/image/service";
 import logger from "@/infrastructure/logging";
 import {
   GqlMutationTransactionDonateSelfPointArgs,
@@ -33,6 +34,7 @@ export default class TransactionUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
     @inject("NotificationService") private readonly notificationService: NotificationService,
+    @inject("ImageService") private readonly imageService: ImageService,
   ) { }
 
   async visitorBrowseTransactions(
@@ -234,10 +236,17 @@ export default class TransactionUseCase {
       throw new AuthorizationError("User is not the creator of this transaction");
     }
 
+    // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
+    const uploadedImages = input.images != null
+      ? (await Promise.all(
+          input.images.map((img) => this.imageService.uploadPublicImage(img, "transactions")),
+        )).filter((img): img is Prisma.ImageCreateWithoutUsersInput => img !== null)
+      : undefined;
+
     const transaction = await ctx.issuer.onlyBelongingCommunity(
       ctx,
       async (tx: Prisma.TransactionClient) => {
-        return this.transactionService.updateMetadata(ctx, id, input, tx);
+        return this.transactionService.updateMetadata(ctx, id, input.comment, uploadedImages, tx);
       },
     );
 

@@ -6,17 +6,15 @@ import {
 } from "@/application/domain/transaction/data/interface";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
-import { GqlQueryTransactionsArgs, GqlTransactionUpdateMetadataInput } from "@/types/graphql";
+import { GqlQueryTransactionsArgs } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
-import ImageService from "@/application/domain/content/image/service";
 
 @injectable()
 export default class TransactionService implements ITransactionService {
   constructor(
     @inject("TransactionRepository") private readonly repository: ITransactionRepository,
     @inject("TransactionConverter") private readonly converter: TransactionConverter,
-    @inject("ImageService") private readonly imageService: ImageService,
   ) {}
 
   async fetchTransactions(
@@ -153,22 +151,18 @@ export default class TransactionService implements ITransactionService {
   async updateMetadata(
     ctx: IContext,
     id: string,
-    input: GqlTransactionUpdateMetadataInput,
+    comment: string | null | undefined,
+    uploadedImages: Prisma.ImageCreateWithoutUsersInput[] | undefined,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail> {
-    const uploadedImages = (
-      await Promise.all(
-        (input.images ?? []).map((img) => this.imageService.uploadPublicImage(img, "transactions")),
-      )
-    ).filter((img): img is Prisma.ImageCreateWithoutUsersInput => img !== null);
+    const data: Prisma.TransactionUpdateInput = { comment };
 
-    const data: Prisma.TransactionUpdateInput = {
-      comment: input.comment,
-      images: {
-        deleteMany: {},
+    if (uploadedImages !== undefined) {
+      data.images = {
+        set: [],
         ...(uploadedImages.length > 0 && { create: uploadedImages }),
-      },
-    };
+      };
+    }
 
     return this.repository.update(ctx, id, data, tx);
   }
