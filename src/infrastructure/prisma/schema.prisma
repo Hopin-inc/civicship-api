@@ -77,6 +77,7 @@ model Image {
   opportunities  Opportunity[]   @relation("t_images_on_opportunities")
   participations Participation[] @relation("t_images_on_participations")
   utilities      Utility[]       @relation("t_images_on_utilities")
+  transactions   Transaction[]   @relation("t_images_on_transactions")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1161,6 +1162,7 @@ model Transaction {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   merkleProofs MerkleProof[]
+  images       Image[]       @relation("t_images_on_transactions")
 
   @@map("t_transactions")
 }

@@ -19,6 +19,13 @@ extend type Mutation {
         permission:CheckIsSelfPermissionInput!
     ): TransactionDonateSelfPointPayload
     @authz(rules: [IsSelf])
+
+    transactionUpdateMetadata(
+        id: ID!
+        input: TransactionUpdateMetadataInput!
+        permission: CheckIsSelfPermissionInput!
+    ): TransactionUpdateMetadataPayload
+    @authz(rules: [IsSelf])
 }
 
 # ------------------------------
@@ -40,6 +47,11 @@ input TransactionDonateSelfPointInput {
   toUserId: ID!
   transferPoints: Int!
   comment: String
+}
+
+input TransactionUpdateMetadataInput {
+  comment: String
+  images: [ImageInput!]
 }
 
 # ------------------------------
@@ -68,3 +80,13 @@ union TransactionGrantCommunityPointPayload =
 
 union TransactionDonateSelfPointPayload =
     TransactionDonateSelfPointSuccess
+
+# ------------------------------
+# TransactionUpdateMetadata Success / Payload
+# ------------------------------
+type TransactionUpdateMetadataSuccess {
+    transaction: Transaction!
+}
+
+union TransactionUpdateMetadataPayload =
+    TransactionUpdateMetadataSuccess
