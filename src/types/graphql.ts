@@ -382,8 +382,10 @@ export type GqlCommunityPortalConfigInput = {
   domain?: InputMaybe<Scalars['String']['input']>;
   enableFeatures?: InputMaybe<Array<Scalars['String']['input']>>;
   favicon?: InputMaybe<GqlImageInput>;
+  /** @deprecated Use favicon instead */
   faviconPrefix?: InputMaybe<Scalars['String']['input']>;
   logo?: InputMaybe<GqlImageInput>;
+  /** @deprecated Use logo instead */
   logoPath?: InputMaybe<Scalars['String']['input']>;
   ogImagePath?: InputMaybe<Scalars['String']['input']>;
   regionKey?: InputMaybe<Scalars['String']['input']>;
@@ -391,6 +393,7 @@ export type GqlCommunityPortalConfigInput = {
   rootPath?: InputMaybe<Scalars['String']['input']>;
   shortDescription?: InputMaybe<Scalars['String']['input']>;
   squareLogo?: InputMaybe<GqlImageInput>;
+  /** @deprecated Use squareLogo instead */
   squareLogoPath?: InputMaybe<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
   tokenName?: InputMaybe<Scalars['String']['input']>;

@@ -338,16 +338,16 @@ input CommunityPortalConfigInput {
   domain: String
   enableFeatures: [String!]
   favicon: ImageInput
-  faviconPrefix: String
+  faviconPrefix: String @deprecated(reason: "Use favicon instead")
   logo: ImageInput
-  logoPath: String
+  logoPath: String @deprecated(reason: "Use logo instead")
   ogImagePath: String
   regionKey: String
   regionName: String
   rootPath: String
   shortDescription: String
   squareLogo: ImageInput
-  squareLogoPath: String
+  squareLogoPath: String @deprecated(reason: "Use squareLogo instead")
   title: String
   tokenName: String
 }
