@@ -85,7 +85,7 @@ const IsCommunityOwner = preExecRule({
   if (!communityId) {
     logger.error("IsCommunityOwner authorization FAILED", {
       rule: "IsCommunityOwner",
-      reason: "no_community_id_in_permission",
+      reason: "no_community_id_in_args",
     });
     return false;
   }
