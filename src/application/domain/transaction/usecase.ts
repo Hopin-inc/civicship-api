@@ -11,6 +11,7 @@ import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
 import logger from "@/infrastructure/logging";
 import {
+  GqlImageInput,
   GqlMutationTransactionDonateSelfPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
@@ -36,6 +37,18 @@ export default class TransactionUseCase {
     @inject("NotificationService") private readonly notificationService: NotificationService,
     @inject("ImageService") private readonly imageService: ImageService,
   ) { }
+
+  // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
+  // undefined = 変更なし（updateMetadata用）、null/[] = 画像なし
+  private async uploadTransactionImages(
+    images: GqlImageInput[] | null | undefined,
+  ): Promise<Prisma.ImageCreateWithoutTransactionsInput[] | undefined> {
+    if (images === undefined) return undefined;
+    const results = await Promise.all(
+      (images ?? []).map((img) => this.imageService.uploadPublicImage(img, "transactions")),
+    );
+    return results.filter((img): img is Prisma.ImageCreateWithoutTransactionsInput => img !== null);
+  }
 
   async visitorBrowseTransactions(
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
@@ -74,6 +87,8 @@ export default class TransactionUseCase {
       ctx,
       permission.communityId,
     );
+    const uploadedImages = await this.uploadTransactionImages(input.images);
+
     const res = await ctx.issuer.onlyBelongingCommunity(
       ctx,
       async (tx: Prisma.TransactionClient) => {
@@ -82,7 +97,8 @@ export default class TransactionUseCase {
           input.transferPoints,
           communityWallet.id,
           tx,
-          input.comment,
+          input.comment ?? undefined,
+          uploadedImages,
         );
       },
     );
@@ -102,6 +118,7 @@ export default class TransactionUseCase {
       ctx,
       permission.communityId,
     );
+    const uploadedImages = await this.uploadTransactionImages(input.images);
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.membershipService.joinIfNeeded(
@@ -126,7 +143,8 @@ export default class TransactionUseCase {
         communityWallet.id,
         toWalletId,
         tx,
-        comment,
+        comment ?? undefined,
+        uploadedImages,
       );
     });
 
@@ -138,11 +156,11 @@ export default class TransactionUseCase {
     });
 
     const communityName = community?.name ?? "コミュニティ";
-    
+
     await ctx.issuer.internal(async (tx) => {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
-    
+
     this.notificationService
       .pushPointGrantReceivedMessage(
         ctx,
@@ -173,6 +191,7 @@ export default class TransactionUseCase {
       currentUserId,
       communityId,
     );
+    const uploadedImages = await this.uploadTransactionImages(input.images);
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       const toWallet = await this.walletService.findMemberWalletOrThrow(
@@ -194,7 +213,8 @@ export default class TransactionUseCase {
         toWalletId,
         transferPoints,
         tx,
-        comment,
+        comment ?? undefined,
+        uploadedImages,
       );
     });
 
@@ -257,13 +277,8 @@ export default class TransactionUseCase {
       throw new AuthorizationError("Insufficient permissions to update transaction metadata");
     }
 
-    // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
     // undefined = 変更なし、null/[] = 画像をクリア（GraphQL慣習）
-    const uploadedImages = input.images !== undefined
-      ? (await Promise.all(
-          (input.images ?? []).map((img) => this.imageService.uploadPublicImage(img, "transactions")),
-        )).filter((img): img is Prisma.ImageCreateWithoutTransactionsInput => img !== null)
-      : undefined;
+    const uploadedImages = await this.uploadTransactionImages(input.images);
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(
       ctx,

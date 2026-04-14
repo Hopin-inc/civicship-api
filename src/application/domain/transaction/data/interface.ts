@@ -19,6 +19,7 @@ export interface ITransactionService {
     toWalletId: string,
     tx: Prisma.TransactionClient,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Promise<PrismaTransactionDetail>;
 
   grantCommunityPoint(
@@ -28,6 +29,7 @@ export interface ITransactionService {
     memberWalletId: string,
     tx: Prisma.TransactionClient,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Promise<PrismaTransactionDetail>;
 
   grantSignupBonus(
@@ -47,6 +49,7 @@ export interface ITransactionService {
     transferPoints: number,
     tx: Prisma.TransactionClient,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Promise<PrismaTransactionDetail>;
 
   reservationCreated(

@@ -33,6 +33,7 @@ export default class TransactionConverter {
     transferPoints: number,
     createdBy: string,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.POINT_ISSUED,
@@ -41,6 +42,7 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
       comment,
+      ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
     };
   }
 
@@ -50,6 +52,7 @@ export default class TransactionConverter {
     toWalletId: string,
     createdBy: string,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.GRANT,
@@ -59,6 +62,7 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
       comment,
+      ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
     };
   }
 
@@ -86,6 +90,7 @@ export default class TransactionConverter {
     transferPoints: number,
     createdBy: string,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.DONATION,
@@ -95,6 +100,7 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
       comment,
+      ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
     };
   }
 

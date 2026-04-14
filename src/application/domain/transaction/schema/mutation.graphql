@@ -35,12 +35,14 @@ extend type Mutation {
 input TransactionIssueCommunityPointInput {
   transferPoints: Int!
   comment: String
+  images: [ImageInput!]
 }
 
 input TransactionGrantCommunityPointInput {
   toUserId: ID!
   transferPoints: Int!
   comment: String
+  images: [ImageInput!]
 }
 
 input TransactionDonateSelfPointInput {
@@ -48,6 +50,7 @@ input TransactionDonateSelfPointInput {
   toUserId: ID!
   transferPoints: Int!
   comment: String
+  images: [ImageInput!]
 }
 
 input TransactionUpdateMetadataInput {
