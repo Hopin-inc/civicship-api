@@ -1,4 +1,4 @@
-import { Prisma, TransactionReason } from "@prisma/client";
+import { Prisma, Role, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TransactionPresenter from "@/application/domain/transaction/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
@@ -224,7 +224,7 @@ export default class TransactionUseCase {
 
   async userUpdateTransactionMetadata(
     ctx: IContext,
-    { id, input }: GqlMutationTransactionUpdateMetadataArgs,
+    { id, input, permission, communityPermission }: GqlMutationTransactionUpdateMetadataArgs,
   ): Promise<GqlTransactionUpdateMetadataPayload> {
     const currentUserId = getCurrentUserId(ctx);
 
@@ -232,8 +232,29 @@ export default class TransactionUseCase {
     if (!existing) {
       throw new NotFoundError(`TransactionNotFound: ID=${id}`);
     }
-    if (existing.createdBy !== currentUserId) {
-      throw new AuthorizationError("User is not the creator of this transaction");
+
+    if (communityPermission?.communityId) {
+      const isOwner =
+        ctx.isAdmin ||
+        ctx.currentUser?.memberships?.some(
+          (m) => m.communityId === communityPermission.communityId && m.role === Role.OWNER,
+        ) === true;
+      if (!isOwner) {
+        throw new AuthorizationError("User must be community owner");
+      }
+      const communityWallet = await this.walletService.findCommunityWalletOrThrow(
+        ctx,
+        communityPermission.communityId,
+      );
+      if (existing.from !== communityWallet.id) {
+        throw new AuthorizationError("Transaction is not from the community wallet");
+      }
+    } else if (permission?.userId) {
+      if (existing.createdBy !== currentUserId) {
+        throw new AuthorizationError("User is not the creator of this transaction");
+      }
+    } else {
+      throw new AuthorizationError("Insufficient permissions to update transaction metadata");
     }
 
     // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
