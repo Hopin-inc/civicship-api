@@ -79,6 +79,10 @@ model Image {
   utilities      Utility[]       @relation("t_images_on_utilities")
   transactions   Transaction[]   @relation("t_images_on_transactions")
 
+  portalLogoConfigs       CommunityPortalConfig[] @relation("portal_logo")
+  portalSquareLogoConfigs CommunityPortalConfig[] @relation("portal_square_logo")
+  portalFaviconConfigs    CommunityPortalConfig[] @relation("portal_favicon")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -287,11 +291,19 @@ model CommunityPortalConfig {
   // ドメイン・URL
   domain String
 
-  // アセットパス
+  // アセットパス (deprecated - use image relations below)
   faviconPrefix  String @map("favicon_prefix")
   logoPath       String @map("logo_path")
   squareLogoPath String @map("square_logo_path")
   ogImagePath    String @map("og_image_path")
+
+  // 画像リレーション
+  logoImageId       String? @map("logo_image_id")
+  logoImage         Image?  @relation("portal_logo", fields: [logoImageId], references: [id])
+  squareLogoImageId String? @map("square_logo_image_id")
+  squareLogoImage   Image?  @relation("portal_square_logo", fields: [squareLogoImageId], references: [id])
+  faviconImageId    String? @map("favicon_image_id")
+  faviconImage      Image?  @relation("portal_favicon", fields: [faviconImageId], references: [id])
 
   // 機能設定
   /// [FeaturesType]

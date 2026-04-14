@@ -111,11 +111,31 @@ export default class CommunityPortalConfigService {
       }),
     };
 
-    const updateData: Prisma.CommunityPortalConfigUpdateWithoutConfigInput = plainValues;
+    const updateData: Prisma.CommunityPortalConfigUpdateWithoutConfigInput = {
+      ...plainValues,
+      ...(uploadedLogo != null && {
+        logoImage: { create: uploadedLogo as Prisma.ImageCreateWithoutPortalLogoConfigsInput },
+      }),
+      ...(uploadedSquareLogo != null && {
+        squareLogoImage: { create: uploadedSquareLogo as Prisma.ImageCreateWithoutPortalSquareLogoConfigsInput },
+      }),
+      ...(uploadedFavicon != null && {
+        faviconImage: { create: uploadedFavicon as Prisma.ImageCreateWithoutPortalFaviconConfigsInput },
+      }),
+    };
     // create path: defaults + input values to satisfy NOT NULL constraints
     const createData: Prisma.CommunityPortalConfigCreateWithoutConfigInput = {
       ...PORTAL_CONFIG_CREATE_DEFAULTS,
       ...plainValues,
+      ...(uploadedLogo != null && {
+        logoImage: { create: uploadedLogo as Prisma.ImageCreateWithoutPortalLogoConfigsInput },
+      }),
+      ...(uploadedSquareLogo != null && {
+        squareLogoImage: { create: uploadedSquareLogo as Prisma.ImageCreateWithoutPortalSquareLogoConfigsInput },
+      }),
+      ...(uploadedFavicon != null && {
+        faviconImage: { create: uploadedFavicon as Prisma.ImageCreateWithoutPortalFaviconConfigsInput },
+      }),
     };
 
     await this.portalRepository.upsert(ctx, communityId, createData, updateData, tx);
