@@ -74,6 +74,14 @@ export default class TransactionUseCase {
       ctx,
       permission.communityId,
     );
+
+    // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
+    const uploadedImages = input.images?.length
+      ? (await Promise.all(
+          input.images.map((img) => this.imageService.uploadPublicImage(img, "transactions")),
+        )).filter((img): img is Prisma.ImageCreateWithoutTransactionsInput => img !== null)
+      : undefined;
+
     const res = await ctx.issuer.onlyBelongingCommunity(
       ctx,
       async (tx: Prisma.TransactionClient) => {
@@ -82,7 +90,8 @@ export default class TransactionUseCase {
           input.transferPoints,
           communityWallet.id,
           tx,
-          input.comment,
+          input.comment ?? undefined,
+          uploadedImages,
         );
       },
     );
@@ -102,6 +111,13 @@ export default class TransactionUseCase {
       ctx,
       permission.communityId,
     );
+
+    // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
+    const uploadedImages = input.images?.length
+      ? (await Promise.all(
+          input.images.map((img) => this.imageService.uploadPublicImage(img, "transactions")),
+        )).filter((img): img is Prisma.ImageCreateWithoutTransactionsInput => img !== null)
+      : undefined;
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.membershipService.joinIfNeeded(
@@ -127,6 +143,7 @@ export default class TransactionUseCase {
         toWalletId,
         tx,
         comment,
+        uploadedImages,
       );
     });
 
@@ -174,6 +191,13 @@ export default class TransactionUseCase {
       communityId,
     );
 
+    // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
+    const uploadedImages = input.images?.length
+      ? (await Promise.all(
+          input.images.map((img) => this.imageService.uploadPublicImage(img, "transactions")),
+        )).filter((img): img is Prisma.ImageCreateWithoutTransactionsInput => img !== null)
+      : undefined;
+
     const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       const toWallet = await this.walletService.findMemberWalletOrThrow(
         ctx,
@@ -195,6 +219,7 @@ export default class TransactionUseCase {
         transferPoints,
         tx,
         comment,
+        uploadedImages,
       );
     });
 

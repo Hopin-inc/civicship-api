@@ -2777,6 +2777,7 @@ export type GqlTransaction = {
 export type GqlTransactionDonateSelfPointInput = {
   comment?: InputMaybe<Scalars['String']['input']>;
   communityId: Scalars['ID']['input'];
+  images?: InputMaybe<Array<GqlImageInput>>;
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
@@ -2814,6 +2815,7 @@ export type GqlTransactionFilterInput = {
 
 export type GqlTransactionGrantCommunityPointInput = {
   comment?: InputMaybe<Scalars['String']['input']>;
+  images?: InputMaybe<Array<GqlImageInput>>;
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
@@ -2827,6 +2829,7 @@ export type GqlTransactionGrantCommunityPointSuccess = {
 
 export type GqlTransactionIssueCommunityPointInput = {
   comment?: InputMaybe<Scalars['String']['input']>;
+  images?: InputMaybe<Array<GqlImageInput>>;
   transferPoints: Scalars['Int']['input'];
 };
 
