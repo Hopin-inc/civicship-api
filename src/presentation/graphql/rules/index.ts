@@ -78,10 +78,10 @@ const IsSelf = preExecRule({
 // 🔐 コミュニティのオーナーか
 const IsCommunityOwner = preExecRule({
   error: new AuthorizationError("User must be community owner"),
-})((context: IContext, args: { permission?: { communityId?: string } }) => {
+})((context: IContext, args: { permission?: { communityId?: string }; communityPermission?: { communityId?: string } }) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId;
+  const communityId = args.permission?.communityId ?? args.communityPermission?.communityId;
   if (!communityId) {
     logger.error("IsCommunityOwner authorization FAILED", {
       rule: "IsCommunityOwner",

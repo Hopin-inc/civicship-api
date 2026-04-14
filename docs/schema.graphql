@@ -855,7 +855,7 @@ type Mutation {
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
-  transactionUpdateMetadata(id: ID!, input: TransactionUpdateMetadataInput!, permission: CheckIsSelfPermissionInput!): TransactionUpdateMetadataPayload
+  transactionUpdateMetadata(communityPermission: CheckCommunityPermissionInput, id: ID!, input: TransactionUpdateMetadataInput!, permission: CheckIsSelfPermissionInput): TransactionUpdateMetadataPayload
   updatePortalConfig(input: CommunityPortalConfigInput!, permission: CheckCommunityPermissionInput!): CommunityPortalConfig!
   updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload

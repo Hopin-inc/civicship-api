@@ -224,7 +224,7 @@ export default class TransactionUseCase {
 
   async userUpdateTransactionMetadata(
     ctx: IContext,
-    { id, input }: GqlMutationTransactionUpdateMetadataArgs,
+    { id, input, communityPermission }: GqlMutationTransactionUpdateMetadataArgs,
   ): Promise<GqlTransactionUpdateMetadataPayload> {
     const currentUserId = getCurrentUserId(ctx);
 
@@ -232,8 +232,19 @@ export default class TransactionUseCase {
     if (!existing) {
       throw new NotFoundError(`TransactionNotFound: ID=${id}`);
     }
-    if (existing.createdBy !== currentUserId) {
-      throw new AuthorizationError("User is not the creator of this transaction");
+
+    if (communityPermission?.communityId) {
+      const communityWallet = await this.walletService.findCommunityWalletOrThrow(
+        ctx,
+        communityPermission.communityId,
+      );
+      if (existing.from !== communityWallet.id) {
+        throw new AuthorizationError("Transaction is not from the community wallet");
+      }
+    } else {
+      if (existing.createdBy !== currentUserId) {
+        throw new AuthorizationError("User is not the creator of this transaction");
+      }
     }
 
     // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
