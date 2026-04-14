@@ -26,9 +26,6 @@ Table t_images {
   participations t_participations [not null]
   utilities t_utilities [not null]
   transactions t_transactions [not null]
-  portalLogoConfigs t_community_portal_configs [not null]
-  portalSquareLogoConfigs t_community_portal_configs [not null]
-  portalFaviconConfigs t_community_portal_configs [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -162,12 +159,6 @@ Table t_community_portal_configs {
   logoPath String [not null]
   squareLogoPath String [not null]
   ogImagePath String [not null]
-  logoImageId String
-  logoImage t_images
-  squareLogoImageId String
-  squareLogoImage t_images
-  faviconImageId String
-  faviconImage t_images
   enableFeatures Json [not null, note: '[FeaturesType]']
   rootPath String [not null, default: '/']
   adminRootPath String [not null, default: '/admin']
@@ -1052,12 +1043,6 @@ Ref: t_community_line_configs.configId - t_community_configs.id
 Ref: t_community_line_rich_menus.configId > t_community_line_configs.id [delete: Cascade]
 
 Ref: t_community_portal_configs.configId - t_community_configs.id
-
-Ref: t_community_portal_configs.logoImageId > t_images.id
-
-Ref: t_community_portal_configs.squareLogoImageId > t_images.id
-
-Ref: t_community_portal_configs.faviconImageId > t_images.id
 
 Ref: t_community_signup_bonus_configs.communityId - t_communities.id [delete: Cascade]
 

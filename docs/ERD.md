@@ -396,9 +396,6 @@ RIGHT RIGHT
     String logo_path 
     String square_logo_path 
     String og_image_path 
-    String logo_image_id "❓"
-    String square_logo_image_id "❓"
-    String favicon_image_id "❓"
     Json enable_features 
     String root_path 
     String admin_root_path 
@@ -894,9 +891,6 @@ RIGHT RIGHT
     "t_images" o{--}o "t_participations" : "participations"
     "t_images" o{--}o "t_utilities" : "utilities"
     "t_images" o{--}o "t_transactions" : "transactions"
-    "t_images" o{--}o "t_community_portal_configs" : "portalLogoConfigs"
-    "t_images" o{--}o "t_community_portal_configs" : "portalSquareLogoConfigs"
-    "t_images" o{--}o "t_community_portal_configs" : "portalFaviconConfigs"
     "m_states" o{--}o "m_cities" : "cities"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
@@ -929,9 +923,6 @@ RIGHT RIGHT
     "t_community_line_rich_menus" o|--|| "t_community_line_configs" : "config"
     "t_community_line_rich_menus" o|--|| "LineRichMenuType" : "enum:type"
     "t_community_portal_configs" o|--|| "t_community_configs" : "config"
-    "t_community_portal_configs" o|--|o "t_images" : "logoImage"
-    "t_community_portal_configs" o|--|o "t_images" : "squareLogoImage"
-    "t_community_portal_configs" o|--|o "t_images" : "faviconImage"
     "t_community_signup_bonus_configs" o|--|| "t_communities" : "community"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"

@@ -138,18 +138,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "transactions",
                 type: "Transaction",
                 relationName: "t_images_on_transactions"
-            }, {
-                name: "portalLogoConfigs",
-                type: "CommunityPortalConfig",
-                relationName: "portal_logo"
-            }, {
-                name: "portalSquareLogoConfigs",
-                type: "CommunityPortalConfig",
-                relationName: "portal_square_logo"
-            }, {
-                name: "portalFaviconConfigs",
-                type: "CommunityPortalConfig",
-                relationName: "portal_favicon"
             }]
     }, {
         name: "State",
@@ -301,18 +289,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "config",
                 type: "CommunityConfig",
                 relationName: "CommunityConfigToCommunityPortalConfig"
-            }, {
-                name: "logoImage",
-                type: "Image",
-                relationName: "portal_logo"
-            }, {
-                name: "squareLogoImage",
-                type: "Image",
-                relationName: "portal_square_logo"
-            }, {
-                name: "faviconImage",
-                type: "Image",
-                relationName: "portal_favicon"
             }]
     }, {
         name: "CommunitySignupBonusConfig",
@@ -1023,9 +999,6 @@ type ImageFactoryDefineInput = {
     participations?: Prisma.ParticipationCreateNestedManyWithoutImagesInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutImagesInput;
     transactions?: Prisma.TransactionCreateNestedManyWithoutImagesInput;
-    portalLogoConfigs?: Prisma.CommunityPortalConfigCreateNestedManyWithoutLogoImageInput;
-    portalSquareLogoConfigs?: Prisma.CommunityPortalConfigCreateNestedManyWithoutSquareLogoImageInput;
-    portalFaviconConfigs?: Prisma.CommunityPortalConfigCreateNestedManyWithoutFaviconImageInput;
 };
 
 type ImageTransientFields = Record<string, unknown> & Partial<Record<keyof ImageFactoryDefineInput, never>>;
@@ -2564,21 +2537,6 @@ type CommunityPortalConfigconfigFactory = {
     build: () => PromiseLike<Prisma.CommunityConfigCreateNestedOneWithoutPortalConfigInput["create"]>;
 };
 
-type CommunityPortalConfiglogoImageFactory = {
-    _factoryFor: "Image";
-    build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutPortalLogoConfigsInput["create"]>;
-};
-
-type CommunityPortalConfigsquareLogoImageFactory = {
-    _factoryFor: "Image";
-    build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutPortalSquareLogoConfigsInput["create"]>;
-};
-
-type CommunityPortalConfigfaviconImageFactory = {
-    _factoryFor: "Image";
-    build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutPortalFaviconConfigsInput["create"]>;
-};
-
 type CommunityPortalConfigFactoryDefineInput = {
     id?: string;
     tokenName?: string;
@@ -2600,9 +2558,6 @@ type CommunityPortalConfigFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     config: CommunityPortalConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutPortalConfigInput;
-    logoImage?: CommunityPortalConfiglogoImageFactory | Prisma.ImageCreateNestedOneWithoutPortalLogoConfigsInput;
-    squareLogoImage?: CommunityPortalConfigsquareLogoImageFactory | Prisma.ImageCreateNestedOneWithoutPortalSquareLogoConfigsInput;
-    faviconImage?: CommunityPortalConfigfaviconImageFactory | Prisma.ImageCreateNestedOneWithoutPortalFaviconConfigsInput;
 };
 
 type CommunityPortalConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityPortalConfigFactoryDefineInput, never>>;
@@ -2620,18 +2575,6 @@ type CommunityPortalConfigFactoryDefineOptions<TTransients extends Record<string
 
 function isCommunityPortalConfigconfigFactory(x: CommunityPortalConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutPortalConfigInput | undefined): x is CommunityPortalConfigconfigFactory {
     return (x as any)?._factoryFor === "CommunityConfig";
-}
-
-function isCommunityPortalConfiglogoImageFactory(x: CommunityPortalConfiglogoImageFactory | Prisma.ImageCreateNestedOneWithoutPortalLogoConfigsInput | undefined): x is CommunityPortalConfiglogoImageFactory {
-    return (x as any)?._factoryFor === "Image";
-}
-
-function isCommunityPortalConfigsquareLogoImageFactory(x: CommunityPortalConfigsquareLogoImageFactory | Prisma.ImageCreateNestedOneWithoutPortalSquareLogoConfigsInput | undefined): x is CommunityPortalConfigsquareLogoImageFactory {
-    return (x as any)?._factoryFor === "Image";
-}
-
-function isCommunityPortalConfigfaviconImageFactory(x: CommunityPortalConfigfaviconImageFactory | Prisma.ImageCreateNestedOneWithoutPortalFaviconConfigsInput | undefined): x is CommunityPortalConfigfaviconImageFactory {
-    return (x as any)?._factoryFor === "Image";
 }
 
 type CommunityPortalConfigTraitKeys<TOptions extends CommunityPortalConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -2704,16 +2647,7 @@ function defineCommunityPortalConfigFactoryInternal<TTransients extends Record<s
             const defaultAssociations = {
                 config: isCommunityPortalConfigconfigFactory(defaultData.config) ? {
                     create: await defaultData.config.build()
-                } : defaultData.config,
-                logoImage: isCommunityPortalConfiglogoImageFactory(defaultData.logoImage) ? {
-                    create: await defaultData.logoImage.build()
-                } : defaultData.logoImage,
-                squareLogoImage: isCommunityPortalConfigsquareLogoImageFactory(defaultData.squareLogoImage) ? {
-                    create: await defaultData.squareLogoImage.build()
-                } : defaultData.squareLogoImage,
-                faviconImage: isCommunityPortalConfigfaviconImageFactory(defaultData.faviconImage) ? {
-                    create: await defaultData.faviconImage.build()
-                } : defaultData.faviconImage
+                } : defaultData.config
             } as Prisma.CommunityPortalConfigCreateInput;
             const data: Prisma.CommunityPortalConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
