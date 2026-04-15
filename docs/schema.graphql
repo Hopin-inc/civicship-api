@@ -339,7 +339,8 @@ input CommunityPortalConfigInput {
   enableFeatures: [String!]
   faviconPrefix: String
   logoPath: String
-  ogImagePath: String
+  ogImage: ImageInput
+  ogImagePath: String @deprecated(reason: "Use ogImage instead")
   regionKey: String
   regionName: String
   rootPath: String

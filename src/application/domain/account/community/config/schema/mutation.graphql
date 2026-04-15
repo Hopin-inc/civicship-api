@@ -27,7 +27,8 @@ input CommunityPortalConfigInput {
     faviconPrefix: String
     logoPath: String
     squareLogoPath: String
-    ogImagePath: String
+    ogImagePath: String @deprecated(reason: "Use ogImage instead")
+    ogImage: ImageInput
     enableFeatures: [String!]
     rootPath: String
     adminRootPath: String
