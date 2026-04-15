@@ -86,7 +86,7 @@ export default class TransactionService implements ITransactionService {
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
     const parentTx = await this.repository.findLatestReceivedTx(ctx, fromWalletId, tx);
-    const chainDepth = (parentTx?.chainDepth ?? 0) + 1;
+    const chainDepth = parentTx ? (parentTx.chainDepth ?? 0) + 1 : undefined;
     const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId, comment, parentTx?.id, chainDepth, uploadedImages);
     return this.repository.create(ctx, data, tx);
   }
@@ -116,7 +116,7 @@ export default class TransactionService implements ITransactionService {
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
     const parentTx = await this.repository.findLatestReceivedTx(ctx, fromWalletId, tx);
-    const chainDepth = (parentTx?.chainDepth ?? 0) + 1;
+    const chainDepth = parentTx ? (parentTx.chainDepth ?? 0) + 1 : undefined;
     const data = this.converter.giveRewardPoint(
       fromWalletId,
       toWalletId,

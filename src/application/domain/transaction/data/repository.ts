@@ -36,7 +36,7 @@ export default class TransactionRepository implements ITransactionRepository {
   }
 
   async findLatestReceivedTx(
-    ctx: IContext,
+    _ctx: IContext,
     walletId: string,
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string; chainDepth: number | null } | null> {
