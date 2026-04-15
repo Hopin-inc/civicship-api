@@ -78,47 +78,43 @@ export default class CommunityPortalConfigService {
     input: GqlCommunityPortalConfigInput,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-<<<<<<< HEAD
     // GCS アップロード（並列実行、トランザクション外で実行）
-    const [uploadedLogo, uploadedSquareLogo, uploadedFavicon] = await Promise.all([
-      input.logo       ? this.imageService.uploadPublicImage(input.logo,       "community-portal") : Promise.resolve(null),
-      input.squareLogo ? this.imageService.uploadPublicImage(input.squareLogo, "community-portal") : Promise.resolve(null),
-      input.favicon    ? this.imageService.uploadPublicImage(input.favicon,    "community-portal") : Promise.resolve(null),
+    const [uploadedLogo, uploadedSquareLogo, uploadedFavicon, uploadedOgImage] = await Promise.all([
+      input.logo
+        ? this.imageService.uploadPublicImage(input.logo, "community-portal")
+        : Promise.resolve(null),
+      input.squareLogo
+        ? this.imageService.uploadPublicImage(input.squareLogo, "community-portal")
+        : Promise.resolve(null),
+      input.favicon
+        ? this.imageService.uploadPublicImage(input.favicon, "community-portal")
+        : Promise.resolve(null),
+      input.ogImage
+        ? this.imageService.uploadPublicImage(input.ogImage, "community-portal")
+        : Promise.resolve(null),
     ]);
-=======
-    // ogImage (file upload) takes priority over ogImagePath (legacy string)
-    let resolvedOgImagePath: string | undefined;
-    if (input.ogImage != null) {
-      const result = await this.imageService.uploadPublicImage(input.ogImage, "community-portal");
-      if (result) resolvedOgImagePath = result.url;
-    } else if (input.ogImagePath != null) {
-      resolvedOgImagePath = input.ogImagePath;
-    }
->>>>>>> 1bbf14fcf65e435090b57ceba642d2a92e3f37a6
+
+    const resolvedOgImagePath = uploadedOgImage?.url ?? input.ogImagePath ?? undefined;
 
     // Plain values only — avoids type incompatibility between UpdateInput and CreateInput
     const plainValues: Partial<Prisma.CommunityPortalConfigCreateWithoutConfigInput> = {
-      ...(input.tokenName       != null && { tokenName: input.tokenName }),
-      ...(input.title           != null && { title: input.title }),
-      ...(input.description     != null && { description: input.description }),
+      ...(input.tokenName != null && { tokenName: input.tokenName }),
+      ...(input.title != null && { title: input.title }),
+      ...(input.description != null && { description: input.description }),
       ...(input.shortDescription !== undefined && { shortDescription: input.shortDescription }),
-      ...(input.domain          != null && { domain: input.domain }),
-      ...(input.faviconPrefix   != null && { faviconPrefix: input.faviconPrefix }),
-      ...(uploadedFavicon       != null && { faviconPrefix: uploadedFavicon.url }),
-      ...(input.logoPath        != null && { logoPath: input.logoPath }),
-      ...(uploadedLogo          != null && { logoPath: uploadedLogo.url }),
-      ...(input.squareLogoPath  != null && { squareLogoPath: input.squareLogoPath }),
-<<<<<<< HEAD
-      ...(uploadedSquareLogo    != null && { squareLogoPath: uploadedSquareLogo.url }),
-      ...(input.ogImagePath     != null && { ogImagePath: input.ogImagePath }),
-=======
-      ...(resolvedOgImagePath   != null && { ogImagePath: resolvedOgImagePath }),
->>>>>>> 1bbf14fcf65e435090b57ceba642d2a92e3f37a6
-      ...(input.enableFeatures  != null && { enableFeatures: input.enableFeatures }),
-      ...(input.rootPath        != null && { rootPath: input.rootPath }),
-      ...(input.adminRootPath   != null && { adminRootPath: input.adminRootPath }),
-      ...(input.regionName      !== undefined && { regionName: input.regionName }),
-      ...(input.regionKey       !== undefined && { regionKey: input.regionKey }),
+      ...(input.domain != null && { domain: input.domain }),
+      ...(input.faviconPrefix != null && { faviconPrefix: input.faviconPrefix }),
+      ...(uploadedFavicon != null && { faviconPrefix: uploadedFavicon.url }),
+      ...(input.logoPath != null && { logoPath: input.logoPath }),
+      ...(uploadedLogo != null && { logoPath: uploadedLogo.url }),
+      ...(input.squareLogoPath != null && { squareLogoPath: input.squareLogoPath }),
+      ...(uploadedSquareLogo != null && { squareLogoPath: uploadedSquareLogo.url }),
+      ...(resolvedOgImagePath != null && { ogImagePath: resolvedOgImagePath }),
+      ...(input.enableFeatures != null && { enableFeatures: input.enableFeatures }),
+      ...(input.rootPath != null && { rootPath: input.rootPath }),
+      ...(input.adminRootPath != null && { adminRootPath: input.adminRootPath }),
+      ...(input.regionName !== undefined && { regionName: input.regionName }),
+      ...(input.regionKey !== undefined && { regionKey: input.regionKey }),
       // DbNull = SQL NULL（列を null にする）。JsonNull は JSON リテラルの null を格納するため不適切
       ...(input.documents !== undefined && { documents: input.documents ?? Prisma.DbNull }),
       ...(input.commonDocumentOverrides !== undefined && {
@@ -162,7 +158,8 @@ export default class CommunityPortalConfigService {
       rootPath: portalConfig.rootPath,
       adminRootPath: portalConfig.adminRootPath,
       documents: portalConfig.documents as CommunityDocument[] | null,
-      commonDocumentOverrides: portalConfig.commonDocumentOverrides as CommonDocumentOverrides | null,
+      commonDocumentOverrides:
+        portalConfig.commonDocumentOverrides as CommonDocumentOverrides | null,
       regionName: portalConfig.regionName,
       regionKey: portalConfig.regionKey,
       liffId: lineConfig?.liffId ?? null,
