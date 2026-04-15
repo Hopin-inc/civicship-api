@@ -63,7 +63,7 @@ export default class TransactionRepository implements ITransactionRepository {
           SELECT t.id, t.parent_tx_id, t.reason, t."from", t."to", t.to_point_change, t.created_at, c.seq + 1
           FROM t_transactions t
           INNER JOIN chain c ON t.id = c.parent_tx_id
-          WHERE c.seq < 100
+          WHERE c.seq < 10
         )
         SELECT
           c.id,
