@@ -1544,7 +1544,7 @@ type Query {
   """
   verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]
   voteTopic(id: ID!): VoteTopic
-  voteTopics(after: String, communityId: ID!, first: Int): VoteTopicsConnection!
+  voteTopics(communityId: ID!, cursor: String, first: Int): VoteTopicsConnection!
   wallet(id: ID!): Wallet
   wallets(cursor: String, filter: WalletFilterInput, first: Int, sort: WalletSortInput): WalletsConnection!
 }
