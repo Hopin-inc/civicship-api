@@ -19,7 +19,6 @@ import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/applica
 import VoteService from "./service";
 import VotePresenter from "./presenter";
 import { IVoteRepository } from "./data/interface";
-import { PrismaVoteBallot } from "./data/type";
 
 @injectable()
 export default class VoteUseCase {
@@ -66,12 +65,9 @@ export default class VoteUseCase {
     const { isManager } = getMembershipRolesByCtx(ctx, [topic.communityId], currentUserId);
     const isManagerOfCommunity = !!isManager[topic.communityId];
 
-    let myBallot: PrismaVoteBallot | null = null;
-    if (currentUserId) {
-      myBallot = await this.repo.findBallot(ctx, currentUserId, topic.id);
-    }
-
-    return VotePresenter.topic(topic, isManagerOfCommunity, myBallot);
+    // myBallot は VoteTopic.myBallot フィールドリゾルバー（DataLoader）が取得するため
+    // ここで個別に findBallot を呼ばない（二重クエリを防ぐ）
+    return VotePresenter.topic(topic, isManagerOfCommunity);
   }
 
   async userGetMyVoteEligibility(

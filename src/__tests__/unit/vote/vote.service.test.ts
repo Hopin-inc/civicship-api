@@ -230,7 +230,7 @@ describe("VoteService.checkEligibility", () => {
       mockNftInstanceRepo.existsByUserAndToken.mockResolvedValue(true);
       const result = await service.checkEligibility(mockCtx, userId, topicNft);
       expect(result.eligible).toBe(true);
-      expect(mockNftInstanceRepo.existsByUserAndToken).toHaveBeenCalledWith(mockCtx, userId, nftTokenId);
+      expect(mockNftInstanceRepo.existsByUserAndToken).toHaveBeenCalledWith(mockCtx, userId, nftTokenId, undefined);
     });
 
     it("returns ineligible when user does not own the required NFT", async () => {
@@ -274,7 +274,7 @@ describe("VoteService.calculatePower", () => {
     mockNftInstanceRepo.countByUserAndToken.mockResolvedValue(3);
     const power = await service.calculatePower(mockCtx, userId, topic);
     expect(power).toBe(3);
-    expect(mockNftInstanceRepo.countByUserAndToken).toHaveBeenCalledWith(mockCtx, userId, nftTokenId);
+    expect(mockNftInstanceRepo.countByUserAndToken).toHaveBeenCalledWith(mockCtx, userId, nftTokenId, undefined);
   });
 
   it("throws ValidationError when NFT_COUNT policy has no nftTokenId", async () => {

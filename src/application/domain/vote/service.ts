@@ -68,7 +68,8 @@ export default class VoteService {
   }
 
   validateTopicRelations(topic: PrismaVoteTopic): void {
-    // gate と powerPolicy はスキーマ上 non-null のため、欠落はデータ不整合を示す
+    // gate と powerPolicy は Prisma スキーマ上 optional だが、ドメイン上は必須の不変条件
+    // 欠落している場合はデータ不整合を示す
     if (!topic.gate) {
       throw new ValidationError(`VoteTopic(${topic.id}) has no gate configured`, []);
     }
