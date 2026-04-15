@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { MembershipStatus, Prisma, Role } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
   membershipInclude,
@@ -38,7 +38,7 @@ export default class MembershipRepository implements IMembershipRepository {
   async findOwnersByCommunity(ctx: IContext, communityId: string): Promise<{ userId: string }[]> {
     return ctx.issuer.public(ctx, (tx) =>
       tx.membership.findMany({
-        where: { communityId, role: "OWNER", status: "JOINED" },
+        where: { communityId, role: Role.OWNER, status: MembershipStatus.JOINED },
         select: { userId: true },
       }),
     );
