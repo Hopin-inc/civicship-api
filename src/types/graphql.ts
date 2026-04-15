@@ -387,6 +387,8 @@ export type GqlCommunityPortalConfigInput = {
   logo?: InputMaybe<GqlImageInput>;
   /** @deprecated Use logo instead */
   logoPath?: InputMaybe<Scalars['String']['input']>;
+  ogImage?: InputMaybe<GqlImageInput>;
+  /** @deprecated Use ogImage instead */
   ogImagePath?: InputMaybe<Scalars['String']['input']>;
   regionKey?: InputMaybe<Scalars['String']['input']>;
   regionName?: InputMaybe<Scalars['String']['input']>;

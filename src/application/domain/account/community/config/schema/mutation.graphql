@@ -24,6 +24,7 @@ input CommunityPortalConfigInput {
     description: String
     shortDescription: String
     domain: String
+<<<<<<< HEAD
     faviconPrefix: String @deprecated(reason: "Use favicon instead")
     favicon: ImageInput
     logoPath: String @deprecated(reason: "Use logo instead")
@@ -31,6 +32,13 @@ input CommunityPortalConfigInput {
     squareLogoPath: String @deprecated(reason: "Use squareLogo instead")
     squareLogo: ImageInput
     ogImagePath: String
+=======
+    faviconPrefix: String
+    logoPath: String
+    squareLogoPath: String
+    ogImagePath: String @deprecated(reason: "Use ogImage instead")
+    ogImage: ImageInput
+>>>>>>> 1bbf14fcf65e435090b57ceba642d2a92e3f37a6
     enableFeatures: [String!]
     rootPath: String
     adminRootPath: String

@@ -78,12 +78,23 @@ export default class CommunityPortalConfigService {
     input: GqlCommunityPortalConfigInput,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
+<<<<<<< HEAD
     // GCS アップロード（並列実行、トランザクション外で実行）
     const [uploadedLogo, uploadedSquareLogo, uploadedFavicon] = await Promise.all([
       input.logo       ? this.imageService.uploadPublicImage(input.logo,       "community-portal") : Promise.resolve(null),
       input.squareLogo ? this.imageService.uploadPublicImage(input.squareLogo, "community-portal") : Promise.resolve(null),
       input.favicon    ? this.imageService.uploadPublicImage(input.favicon,    "community-portal") : Promise.resolve(null),
     ]);
+=======
+    // ogImage (file upload) takes priority over ogImagePath (legacy string)
+    let resolvedOgImagePath: string | undefined;
+    if (input.ogImage != null) {
+      const result = await this.imageService.uploadPublicImage(input.ogImage, "community-portal");
+      if (result) resolvedOgImagePath = result.url;
+    } else if (input.ogImagePath != null) {
+      resolvedOgImagePath = input.ogImagePath;
+    }
+>>>>>>> 1bbf14fcf65e435090b57ceba642d2a92e3f37a6
 
     // Plain values only — avoids type incompatibility between UpdateInput and CreateInput
     const plainValues: Partial<Prisma.CommunityPortalConfigCreateWithoutConfigInput> = {
@@ -97,8 +108,12 @@ export default class CommunityPortalConfigService {
       ...(input.logoPath        != null && { logoPath: input.logoPath }),
       ...(uploadedLogo          != null && { logoPath: uploadedLogo.url }),
       ...(input.squareLogoPath  != null && { squareLogoPath: input.squareLogoPath }),
+<<<<<<< HEAD
       ...(uploadedSquareLogo    != null && { squareLogoPath: uploadedSquareLogo.url }),
       ...(input.ogImagePath     != null && { ogImagePath: input.ogImagePath }),
+=======
+      ...(resolvedOgImagePath   != null && { ogImagePath: resolvedOgImagePath }),
+>>>>>>> 1bbf14fcf65e435090b57ceba642d2a92e3f37a6
       ...(input.enableFeatures  != null && { enableFeatures: input.enableFeatures }),
       ...(input.rootPath        != null && { rootPath: input.rootPath }),
       ...(input.adminRootPath   != null && { adminRootPath: input.adminRootPath }),
