@@ -36,7 +36,7 @@ export default class TransactionUseCase {
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
     @inject("NotificationService") private readonly notificationService: NotificationService,
     @inject("ImageService") private readonly imageService: ImageService,
-  ) { }
+  ) {}
 
   // GCSアップロードはDBトランザクション外で実行（長時間ロック防止）
   // undefined = 変更なし（updateMetadata用）、null/[] = 画像なし
@@ -126,56 +126,43 @@ export default class TransactionUseCase {
     );
     const uploadedImages = await this.uploadTransactionImages(input.images);
 
-    const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      await this.membershipService.joinIfNeeded(
-        ctx,
-        currentUserId,
-        permission.communityId,
-        tx,
-        toUserId,
-      );
-      const { toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
-        ctx,
-        tx,
-        permission.communityId,
-        toUserId,
-        transferPoints,
-        TransactionReason.GRANT,
-      );
+    const transaction = await ctx.issuer.onlyBelongingCommunity(
+      ctx,
+      async (tx: Prisma.TransactionClient) => {
+        await this.membershipService.joinIfNeeded(
+          ctx,
+          currentUserId,
+          permission.communityId,
+          tx,
+          toUserId,
+        );
+        const { toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+          ctx,
+          tx,
+          permission.communityId,
+          toUserId,
+          transferPoints,
+          TransactionReason.GRANT,
+        );
 
-      return await this.transactionService.grantCommunityPoint(
-        ctx,
-        transferPoints,
-        communityWallet.id,
-        toWalletId,
-        tx,
-        comment ?? undefined,
-        uploadedImages,
-      );
-    });
-
-    const community = await ctx.issuer.internal(async (tx) => {
-      return tx.community.findUnique({
-        where: { id: permission.communityId },
-        select: { name: true },
-      });
-    });
-
-    const communityName = community?.name ?? "コミュニティ";
+        return await this.transactionService.grantCommunityPoint(
+          ctx,
+          transferPoints,
+          communityWallet.id,
+          toWalletId,
+          tx,
+          comment ?? undefined,
+          uploadedImages,
+        );
+      },
+    );
 
     await ctx.issuer.internal(async (tx) => {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
     this.notificationService
-      .pushPointGrantReceivedMessage(
-        ctx,
-        transaction.id,
-        transaction.toPointChange,
-        transaction.comment,
-        communityName,
-        toUserId,
-      )
+      .pushPointGrantReceivedMessage(ctx, transaction.id, toUserId)
       .catch((error) => {
         logger.error("Failed to send point grant notification", {
           transactionId: transaction.id,
@@ -199,45 +186,40 @@ export default class TransactionUseCase {
     );
     const uploadedImages = await this.uploadTransactionImages(input.images);
 
-    const transaction = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      const toWallet = await this.walletService.findMemberWalletOrThrow(
-        ctx,
-        toUserId,
-        communityId,
-        tx,
-      );
+    const transaction = await ctx.issuer.onlyBelongingCommunity(
+      ctx,
+      async (tx: Prisma.TransactionClient) => {
+        const toWallet = await this.walletService.findMemberWalletOrThrow(
+          ctx,
+          toUserId,
+          communityId,
+          tx,
+        );
 
-      const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
-        fromWallet,
-        toWallet,
-        transferPoints,
-      );
+        const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+          fromWallet,
+          toWallet,
+          transferPoints,
+        );
 
-      return await this.transactionService.donateSelfPoint(
-        ctx,
-        fromWallet.id,
-        toWalletId,
-        transferPoints,
-        tx,
-        comment ?? undefined,
-        uploadedImages,
-      );
-    });
+        return await this.transactionService.donateSelfPoint(
+          ctx,
+          fromWallet.id,
+          toWalletId,
+          transferPoints,
+          tx,
+          comment ?? undefined,
+          uploadedImages,
+        );
+      },
+    );
 
     await ctx.issuer.internal(async (tx) => {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
-    const fromUserName = ctx.currentUser?.name ?? "ユーザー";
     this.notificationService
-      .pushPointDonationReceivedMessage(
-        ctx,
-        transaction.id,
-        transaction.toPointChange,
-        transaction.comment,
-        fromUserName,
-        toUserId,
-      )
+      .pushPointDonationReceivedMessage(ctx, transaction.id, toUserId)
       .catch((error) => {
         logger.error("Failed to send point donation notification", {
           transactionId: transaction.id,
