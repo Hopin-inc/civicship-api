@@ -13,7 +13,7 @@ SET parent_tx_id = (
   FROM "t_transactions" t2
   WHERE t2."to" = t1."from"
     AND t2.created_at < t1.created_at
-    AND t2.reason IN ('GRANT', 'ONBOARDING', 'DONATION')
+    AND t2.reason IN ('GRANT', 'ONBOARDING', 'POINT_REWARD', 'DONATION')
   ORDER BY t2.created_at DESC
   LIMIT 1
 )

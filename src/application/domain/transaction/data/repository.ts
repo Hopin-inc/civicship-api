@@ -43,7 +43,7 @@ export default class TransactionRepository implements ITransactionRepository {
     return tx.transaction.findFirst({
       where: {
         to: walletId,
-        reason: { in: ["GRANT", "ONBOARDING", "DONATION"] },
+        reason: { in: ["GRANT", "ONBOARDING", "POINT_REWARD", "DONATION"] },
       },
       orderBy: { createdAt: "desc" },
       select: { id: true },
