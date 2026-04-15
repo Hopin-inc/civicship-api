@@ -21,6 +21,17 @@ export interface EligibilityResult {
   reason?: string;
 }
 
+// checkEligibility / calculatePower が実際に参照するフィールドのみを定義した最小インターフェース
+// PrismaVoteTopic / GqlVoteTopicWithMeta どちらも構造的に満たすため、型アサーション不要
+export interface TopicForEligibilityCheck {
+  communityId: string;
+  gate: { type: string; nftTokenId: string | null; requiredRole?: string | null } | null;
+}
+
+export interface TopicForPowerCalculation {
+  powerPolicy: { type: string; nftTokenId: string | null } | null;
+}
+
 @injectable()
 export default class VoteService {
   constructor(
@@ -105,7 +116,7 @@ export default class VoteService {
   async checkEligibility(
     ctx: IContext,
     userId: string,
-    topic: PrismaVoteTopic,
+    topic: TopicForEligibilityCheck,
     tx?: Prisma.TransactionClient,
   ): Promise<EligibilityResult> {
     const gate = topic.gate;
@@ -142,7 +153,7 @@ export default class VoteService {
   async calculatePower(
     ctx: IContext,
     userId: string,
-    topic: PrismaVoteTopic,
+    topic: TopicForPowerCalculation,
     tx?: Prisma.TransactionClient,
   ): Promise<number> {
     const policy = topic.powerPolicy;

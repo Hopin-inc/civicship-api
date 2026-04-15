@@ -16,7 +16,6 @@ import {
 import { IContext } from "@/types/server";
 import { AuthorizationError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
-import { PrismaVoteTopic } from "./data/type";
 import VoteService from "./service";
 import VotePresenter, { GqlVoteTopicWithMeta } from "./presenter";
 
@@ -170,15 +169,13 @@ export default class VoteUseCase {
     if (!ctx.currentUser) return null;
     const userId = ctx.currentUser.id;
 
-    // GQL enum と Prisma enum は同じ文字列値を持つため as unknown as PrismaVoteTopic で変換可能
-    // checkEligibility / calculatePower が参照するのは gate, powerPolicy, communityId のみ
-    const topicLike = parent as unknown as PrismaVoteTopic;
-
-    const eligibility = await this.service.checkEligibility(ctx, userId, topicLike);
+    // GqlVoteTopicWithMeta は TopicForEligibilityCheck / TopicForPowerCalculation を
+    // 構造的に満たすため、型アサーションなしで直接渡せる
+    const eligibility = await this.service.checkEligibility(ctx, userId, parent);
 
     let currentPower: number | null = null;
     if (eligibility.eligible) {
-      currentPower = await this.service.calculatePower(ctx, userId, topicLike);
+      currentPower = await this.service.calculatePower(ctx, userId, parent);
     }
 
     const myBallot = await this.service.findBallot(ctx, userId, parent.id);
