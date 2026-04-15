@@ -67,7 +67,16 @@ export default class VoteResolver {
   };
 
   VoteBallot = {
-    option: (parent: PrismaVoteBallot, _: unknown, ctx: IContext) =>
-      ctx.loaders.voteOption.load(parent.optionId),
+    option: async (parent: PrismaVoteBallot & { optionId: string; resultVisible?: boolean }, _: unknown, ctx: IContext) => {
+      const option = await ctx.loaders.voteOption.load(parent.optionId);
+      if (!option) return null;
+      // 結果秘匿: 投票期間中 (resultVisible=false) は voteCount/totalPower をマスク
+      const resultVisible = parent.resultVisible ?? false;
+      return {
+        ...option,
+        voteCount: resultVisible ? option.voteCount : null,
+        totalPower: resultVisible ? option.totalPower : null,
+      };
+    },
   };
 }

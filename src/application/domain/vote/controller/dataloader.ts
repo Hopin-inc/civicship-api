@@ -15,12 +15,34 @@ export function createVoteOptionLoader(prisma: PrismaClient) {
 }
 
 // NftToken を id でバッチロード（VoteGate / VotePowerPolicy の nftToken フィールドリゾルバー用）
+// GQL NftToken 型の必須フィールド（createdAt: Datetime!）を含む完全な select を使用
 export function createNftTokenLoader(prisma: PrismaClient) {
-  return new DataLoader<string, { id: string; address: string; name: string | null; symbol: string | null; type: string } | null>(
+  return new DataLoader<
+    string,
+    {
+      id: string;
+      address: string;
+      name: string | null;
+      symbol: string | null;
+      type: string;
+      json: unknown;
+      createdAt: Date;
+      updatedAt: Date | null;
+    } | null
+  >(
     async (tokenIds) => {
       const tokens = await prisma.nftToken.findMany({
         where: { id: { in: [...tokenIds] } },
-        select: { id: true, address: true, name: true, symbol: true, type: true },
+        select: {
+          id: true,
+          address: true,
+          name: true,
+          symbol: true,
+          type: true,
+          json: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
       const map = new Map(tokens.map((t) => [t.id, t]));
       return tokenIds.map((id) => map.get(id) ?? null);

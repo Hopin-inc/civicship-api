@@ -68,7 +68,7 @@ export default class VotePresenter {
     };
   }
 
-  static ballot(ballot: PrismaVoteBallot): GqlVoteBallot {
+  static ballot(ballot: PrismaVoteBallot, resultVisible: boolean = false): GqlVoteBallot {
     return {
       __typename: "VoteBallot",
       id: ballot.id,
@@ -76,8 +76,10 @@ export default class VotePresenter {
       power: ballot.power,
       createdAt: ballot.createdAt,
       updatedAt: ballot.updatedAt ?? null,
-      // フィールドリゾルバー (VoteBallot.option) が parent.optionId を参照するため保持
+      // フィールドリゾルバー (VoteBallot.option) が参照するメタデータ
       optionId: ballot.optionId,
+      // VoteBallot.option リゾルバーが voteCount/totalPower を秘匿するために使用
+      resultVisible,
     } as GqlVoteBallot;
   }
 
@@ -110,20 +112,25 @@ export default class VotePresenter {
       gate: this.gate(topic.gate),
       powerPolicy: this.powerPolicy(topic.powerPolicy),
       options: topic.options.map((opt) => this.option(opt, resultVisible)),
-      myBallot: myBallot ? this.ballot(myBallot) : null,
+      myBallot: myBallot ? this.ballot(myBallot, resultVisible) : null,
       myEligibility: null, // フィールドリゾルバーで解決
       createdAt: topic.createdAt,
       updatedAt: topic.updatedAt ?? null,
     } as GqlVoteTopic;
   }
 
-  static eligibility(result: EligibilityResult, currentPower: number | null, myBallot: PrismaVoteBallot | null): GqlMyVoteEligibility {
+  static eligibility(
+    result: EligibilityResult,
+    currentPower: number | null,
+    myBallot: PrismaVoteBallot | null,
+    resultVisible: boolean = false,
+  ): GqlMyVoteEligibility {
     return {
       __typename: "MyVoteEligibility",
       eligible: result.eligible,
       reason: result.reason ?? null,
       currentPower: result.eligible ? currentPower : null,
-      myBallot: myBallot ? this.ballot(myBallot) : null,
+      myBallot: myBallot ? this.ballot(myBallot, resultVisible) : null,
     };
   }
 

@@ -41,6 +41,13 @@ export default class VoteService {
     if (!input.options || input.options.length < 2) {
       throw new ValidationError("At least 2 options are required", []);
     }
+    const orderIndices = input.options.map((o) => o.orderIndex);
+    if (orderIndices.some((i) => i < 0)) {
+      throw new ValidationError("Option orderIndex must be non-negative", []);
+    }
+    if (new Set(orderIndices).size !== orderIndices.length) {
+      throw new ValidationError("Option orderIndex values must be unique", []);
+    }
     if (input.gate.type === "NFT" && !input.gate.nftTokenId) {
       throw new ValidationError("nftTokenId is required for NFT gate", []);
     }
@@ -54,7 +61,8 @@ export default class VoteService {
     if (now < topic.startsAt) {
       throw new ValidationError("Voting has not started yet", []);
     }
-    if (now > topic.endsAt) {
+    // >= で isResultVisible の境界と一致させる（endsAt の瞬間に結果が見えてから投票できる抜け穴を防ぐ）
+    if (now >= topic.endsAt) {
       throw new ValidationError("Voting period has ended", []);
     }
   }
@@ -70,6 +78,7 @@ export default class VoteService {
     ctx: IContext,
     userId: string,
     topic: PrismaVoteTopic,
+    tx?: Prisma.TransactionClient,
   ): Promise<EligibilityResult> {
     const gate = topic.gate;
     if (!gate) {
@@ -81,14 +90,15 @@ export default class VoteService {
         return { eligible: false, reason: "GATE_NFT_TOKEN_NOT_CONFIGURED" };
       }
       // EXISTS クエリで判定（COUNT より効率的・意味が明確）
-      const exists = await this.nftInstanceRepo.existsByUserAndToken(ctx, userId, gate.nftTokenId);
+      // tx を渡すことで投票トランザクション内での読み取りを保証（TOCTOU 防止）
+      const exists = await this.nftInstanceRepo.existsByUserAndToken(ctx, userId, gate.nftTokenId, tx);
       return exists
         ? { eligible: true }
         : { eligible: false, reason: "REQUIRED_NFT_NOT_FOUND" };
     }
 
     if (gate.type === "MEMBERSHIP") {
-      const membership = await this.membershipService.findMembership(ctx, userId, topic.communityId);
+      const membership = await this.membershipService.findMembership(ctx, userId, topic.communityId, tx);
       if (!membership || membership.status !== MembershipStatus.JOINED) {
         return { eligible: false, reason: "NOT_A_MEMBER" };
       }
@@ -105,6 +115,7 @@ export default class VoteService {
     ctx: IContext,
     userId: string,
     topic: PrismaVoteTopic,
+    tx?: Prisma.TransactionClient,
   ): Promise<number> {
     const policy = topic.powerPolicy;
     if (!policy || policy.type === "FLAT") {
@@ -114,7 +125,8 @@ export default class VoteService {
     if (!policy.nftTokenId) {
       return 1; // フォールバック: nftTokenId 未設定の場合は 1 票
     }
-    const count = await this.nftInstanceRepo.countByUserAndToken(ctx, userId, policy.nftTokenId);
+    // tx を渡すことで投票トランザクション内での読み取りを保証（TOCTOU 防止）
+    const count = await this.nftInstanceRepo.countByUserAndToken(ctx, userId, policy.nftTokenId, tx);
     return count;
   }
 

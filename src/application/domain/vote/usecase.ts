@@ -85,7 +85,9 @@ export default class VoteUseCase {
 
     const myBallot = await this.repo.findBallot(ctx, userId, topicId);
 
-    return VotePresenter.eligibility(eligibility, currentPower, myBallot);
+    // endsAt を超えていれば結果を公開（myEligibility context では manager 判定は行わない）
+    const resultVisible = new Date() >= topic.endsAt;
+    return VotePresenter.eligibility(eligibility, currentPower, myBallot, resultVisible);
   }
 
   async managerCreateVoteTopic(
@@ -121,8 +123,8 @@ export default class VoteUseCase {
       // 2. 期間バリデーション
       this.service.validateVotingPeriod(topic);
 
-      // 3. 資格チェック（初回・再投票とも必ず実行）
-      const eligibility = await this.service.checkEligibility(ctx, userId, topic);
+      // 3. 資格チェック（初回・再投票とも必ず実行、tx で TOCTOU を防止）
+      const eligibility = await this.service.checkEligibility(ctx, userId, topic, tx);
       if (!eligibility.eligible) {
         throw new AuthorizationError(eligibility.reason ?? "VOTE_NOT_ELIGIBLE");
       }
@@ -130,8 +132,8 @@ export default class VoteUseCase {
       // 4. 選択肢の所属チェック
       this.service.validateOptionBelongsToTopic(input.optionId, topic);
 
-      // 5. Power 計算（再投票時は最新保有数で再計算）
-      const power = await this.service.calculatePower(ctx, userId, topic);
+      // 5. Power 計算（再投票時は最新保有数で再計算、tx で TOCTOU を防止）
+      const power = await this.service.calculatePower(ctx, userId, topic, tx);
 
       // 6. 既存投票を取得（再投票のデクリメント判定用）
       const existingBallot = await this.service.findBallot(ctx, userId, topic.id, tx);
@@ -142,7 +144,8 @@ export default class VoteUseCase {
       // 8. VoteOption 非正規化カラム更新（同トランザクション内）
       await this.service.updateOptionCounts(ctx, existingBallot, ballot, power, tx);
 
-      const ballotGql = VotePresenter.ballot(ballot);
+      // 投票期間中のため resultVisible=false（集計値は秘匿）
+      const ballotGql = VotePresenter.ballot(ballot, VotePresenter.isResultVisible(topic, false));
       return VotePresenter.castBallot(ballotGql);
     });
   }
