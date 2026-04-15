@@ -62,6 +62,7 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
       comment,
+      chainDepth: 1,
       ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
     };
   }
@@ -81,6 +82,7 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
       comment: comment ?? undefined,
+      chainDepth: 1,
     };
   }
 
@@ -90,6 +92,8 @@ export default class TransactionConverter {
     transferPoints: number,
     createdBy: string,
     comment?: string,
+    parentTxId?: string,
+    chainDepth?: number,
     uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Prisma.TransactionCreateInput {
     return {
@@ -100,6 +104,8 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
       comment,
+      ...(parentTxId ? { parentTx: { connect: { id: parentTxId } } } : {}),
+      ...(chainDepth !== undefined ? { chainDepth } : {}),
       ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
     };
   }
@@ -129,6 +135,8 @@ export default class TransactionConverter {
     participationId: string,
     transferPoints: number,
     createdBy: string,
+    parentTxId?: string,
+    chainDepth?: number,
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.POINT_REWARD,
@@ -138,6 +146,8 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       participation: { connect: { id: participationId } },
       createdByUser: { connect: { id: createdBy } },
+      ...(parentTxId ? { parentTx: { connect: { id: parentTxId } } } : {}),
+      ...(chainDepth !== undefined ? { chainDepth } : {}),
     };
   }
 

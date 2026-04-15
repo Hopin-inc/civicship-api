@@ -1911,6 +1911,14 @@ type TicketsConnection {
 }
 
 type Transaction {
+  """
+  ポイントの旅の全ステップを返します。
+  親トランザクションの探索自体は再帰CTEによる単一クエリで行われますが、
+  transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこの再帰クエリが実行されるため高コストになりえます。
+  transaction(id) での単体取得時のみ使用し、深さだけ必要な場合は chainDepth を使用してください。
+  """
+  chain: TransactionChain
+  chainDepth: Int
   comment: String
   createdAt: Datetime
   createdByUser: User
@@ -1925,6 +1933,26 @@ type Transaction {
   toPointChange: Int
   toWallet: Wallet
   updatedAt: Datetime
+}
+
+type TransactionChain {
+  depth: Int!
+  steps: [TransactionChainStep!]!
+}
+
+type TransactionChainStep {
+  createdAt: Datetime!
+  fromUser: TransactionChainUser
+  id: ID!
+  points: Int!
+  reason: TransactionReason!
+  toUser: TransactionChainUser
+}
+
+type TransactionChainUser {
+  id: ID!
+  image: String
+  name: String!
 }
 
 input TransactionDonateSelfPointInput {

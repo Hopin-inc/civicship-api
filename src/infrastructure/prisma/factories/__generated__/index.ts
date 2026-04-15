@@ -783,6 +783,14 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Wallet",
                 relationName: "to_wallet"
             }, {
+                name: "parentTx",
+                type: "Transaction",
+                relationName: "TransactionChain"
+            }, {
+                name: "childTxs",
+                type: "Transaction",
+                relationName: "TransactionChain"
+            }, {
                 name: "participation",
                 type: "Participation",
                 relationName: "ParticipationToTransaction"
@@ -6637,6 +6645,11 @@ type TransactiontoWalletFactory = {
     build: () => PromiseLike<Prisma.WalletCreateNestedOneWithoutToTransactionsInput["create"]>;
 };
 
+type TransactionparentTxFactory = {
+    _factoryFor: "Transaction";
+    build: () => PromiseLike<Prisma.TransactionCreateNestedOneWithoutChildTxsInput["create"]>;
+};
+
 type TransactionparticipationFactory = {
     _factoryFor: "Participation";
     build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutTransactionsInput["create"]>;
@@ -6668,10 +6681,13 @@ type TransactionFactoryDefineInput = {
     comment?: string | null;
     fromPointChange?: number;
     toPointChange?: number;
+    chainDepth?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     fromWallet?: TransactionfromWalletFactory | Prisma.WalletCreateNestedOneWithoutFromTransactionsInput;
     toWallet?: TransactiontoWalletFactory | Prisma.WalletCreateNestedOneWithoutToTransactionsInput;
+    parentTx?: TransactionparentTxFactory | Prisma.TransactionCreateNestedOneWithoutChildTxsInput;
+    childTxs?: Prisma.TransactionCreateNestedManyWithoutParentTxInput;
     participation?: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput;
     reservation?: TransactionreservationFactory | Prisma.ReservationCreateNestedOneWithoutTransactionsInput;
     ticketStatusHistory?: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput;
@@ -6700,6 +6716,10 @@ function isTransactionfromWalletFactory(x: TransactionfromWalletFactory | Prisma
 
 function isTransactiontoWalletFactory(x: TransactiontoWalletFactory | Prisma.WalletCreateNestedOneWithoutToTransactionsInput | undefined): x is TransactiontoWalletFactory {
     return (x as any)?._factoryFor === "Wallet";
+}
+
+function isTransactionparentTxFactory(x: TransactionparentTxFactory | Prisma.TransactionCreateNestedOneWithoutChildTxsInput | undefined): x is TransactionparentTxFactory {
+    return (x as any)?._factoryFor === "Transaction";
 }
 
 function isTransactionparticipationFactory(x: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput | undefined): x is TransactionparticipationFactory {
@@ -6790,6 +6810,9 @@ function defineTransactionFactoryInternal<TTransients extends Record<string, unk
                 toWallet: isTransactiontoWalletFactory(defaultData.toWallet) ? {
                     create: await defaultData.toWallet.build()
                 } : defaultData.toWallet,
+                parentTx: isTransactionparentTxFactory(defaultData.parentTx) ? {
+                    create: await defaultData.parentTx.build()
+                } : defaultData.parentTx,
                 participation: isTransactionparticipationFactory(defaultData.participation) ? {
                     create: await defaultData.participation.build()
                 } : defaultData.participation,

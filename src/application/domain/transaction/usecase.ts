@@ -79,6 +79,12 @@ export default class TransactionUseCase {
     return TransactionPresenter.get(res);
   }
 
+  async getTransactionChain(id: string, ctx: IContext) {
+    const rows = await this.transactionService.getTransactionChain(ctx, id);
+    if (!rows.length) return null;
+    return TransactionPresenter.chain(rows);
+  }
+
   async ownerIssueCommunityPoint(
     { input, permission }: GqlMutationTransactionIssueCommunityPointArgs,
     ctx: IContext,

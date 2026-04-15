@@ -561,6 +561,8 @@ Table t_transactions {
   to String
   toWallet t_wallets
   toPointChange Int [not null]
+  parentTxId String
+  chainDepth Int
   participationId String
   participation t_participations
   reservationId String
@@ -1137,6 +1139,8 @@ Ref: t_ticket_status_histories.createdBy > t_users.id [delete: Set Null]
 Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.to > t_wallets.id [delete: Set Null]
+
+Ref: t_transactions.parentTxId - t_transactions.id [delete: Set Null]
 
 Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
 

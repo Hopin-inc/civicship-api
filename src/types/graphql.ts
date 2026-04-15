@@ -2766,6 +2766,14 @@ export type GqlTicketsConnection = {
 
 export type GqlTransaction = {
   __typename?: 'Transaction';
+  /**
+   * ポイントの旅の全ステップを返します。
+   * 親トランザクションの探索自体は再帰CTEによる単一クエリで行われますが、
+   * transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこの再帰クエリが実行されるため高コストになりえます。
+   * transaction(id) での単体取得時のみ使用し、深さだけ必要な場合は chainDepth を使用してください。
+   */
+  chain?: Maybe<GqlTransactionChain>;
+  chainDepth?: Maybe<Scalars['Int']['output']>;
   comment?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   createdByUser?: Maybe<GqlUser>;
@@ -2780,6 +2788,29 @@ export type GqlTransaction = {
   toPointChange?: Maybe<Scalars['Int']['output']>;
   toWallet?: Maybe<GqlWallet>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
+};
+
+export type GqlTransactionChain = {
+  __typename?: 'TransactionChain';
+  depth: Scalars['Int']['output'];
+  steps: Array<GqlTransactionChainStep>;
+};
+
+export type GqlTransactionChainStep = {
+  __typename?: 'TransactionChainStep';
+  createdAt: Scalars['Datetime']['output'];
+  fromUser?: Maybe<GqlTransactionChainUser>;
+  id: Scalars['ID']['output'];
+  points: Scalars['Int']['output'];
+  reason: GqlTransactionReason;
+  toUser?: Maybe<GqlTransactionChainUser>;
+};
+
+export type GqlTransactionChainUser = {
+  __typename?: 'TransactionChainUser';
+  id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
 };
 
 export type GqlTransactionDonateSelfPointInput = {
@@ -3631,6 +3662,9 @@ export type GqlResolversTypes = ResolversObject<{
   TicketUseSuccess: ResolverTypeWrapper<Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversTypes['Ticket'] }>;
   TicketsConnection: ResolverTypeWrapper<Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TicketEdge']>>> }>;
   Transaction: ResolverTypeWrapper<Transaction>;
+  TransactionChain: ResolverTypeWrapper<GqlTransactionChain>;
+  TransactionChainStep: ResolverTypeWrapper<GqlTransactionChainStep>;
+  TransactionChainUser: ResolverTypeWrapper<GqlTransactionChainUser>;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionDonateSelfPointPayload']>;
   TransactionDonateSelfPointSuccess: ResolverTypeWrapper<Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
@@ -3951,6 +3985,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   TicketUseSuccess: Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversParentTypes['Ticket'] };
   TicketsConnection: Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TicketEdge']>>> };
   Transaction: Transaction;
+  TransactionChain: GqlTransactionChain;
+  TransactionChainStep: GqlTransactionChainStep;
+  TransactionChainUser: GqlTransactionChainUser;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionDonateSelfPointPayload'];
   TransactionDonateSelfPointSuccess: Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
@@ -5224,6 +5261,8 @@ export type GqlTicketsConnectionResolvers<ContextType = any, ParentType extends 
 }>;
 
 export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Transaction'] = GqlResolversParentTypes['Transaction']> = ResolversObject<{
+  chain?: Resolver<Maybe<GqlResolversTypes['TransactionChain']>, ParentType, ContextType>;
+  chainDepth?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   comment?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
@@ -5238,6 +5277,29 @@ export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlRes
   toPointChange?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   toWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlTransactionChainResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionChain'] = GqlResolversParentTypes['TransactionChain']> = ResolversObject<{
+  depth?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  steps?: Resolver<Array<GqlResolversTypes['TransactionChainStep']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlTransactionChainStepResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionChainStep'] = GqlResolversParentTypes['TransactionChainStep']> = ResolversObject<{
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  fromUser?: Resolver<Maybe<GqlResolversTypes['TransactionChainUser']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  points?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  reason?: Resolver<GqlResolversTypes['TransactionReason'], ParentType, ContextType>;
+  toUser?: Resolver<Maybe<GqlResolversTypes['TransactionChainUser']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlTransactionChainUserResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionChainUser'] = GqlResolversParentTypes['TransactionChainUser']> = ResolversObject<{
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5649,6 +5711,9 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   TicketUseSuccess?: GqlTicketUseSuccessResolvers<ContextType>;
   TicketsConnection?: GqlTicketsConnectionResolvers<ContextType>;
   Transaction?: GqlTransactionResolvers<ContextType>;
+  TransactionChain?: GqlTransactionChainResolvers<ContextType>;
+  TransactionChainStep?: GqlTransactionChainStepResolvers<ContextType>;
+  TransactionChainUser?: GqlTransactionChainUserResolvers<ContextType>;
   TransactionDonateSelfPointPayload?: GqlTransactionDonateSelfPointPayloadResolvers<ContextType>;
   TransactionDonateSelfPointSuccess?: GqlTransactionDonateSelfPointSuccessResolvers<ContextType>;
   TransactionEdge?: GqlTransactionEdgeResolvers<ContextType>;

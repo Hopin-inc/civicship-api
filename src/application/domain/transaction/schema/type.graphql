@@ -20,8 +20,38 @@ type Transaction {
 
   createdByUser: User
 
+  """
+  ポイントの旅の全ステップを返します。
+  親トランザクションの探索自体は再帰CTEによる単一クエリで行われますが、
+  transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこの再帰クエリが実行されるため高コストになりえます。
+  transaction(id) での単体取得時のみ使用し、深さだけ必要な場合は chainDepth を使用してください。
+  """
+  chain: TransactionChain
+
+  chainDepth: Int
+
   createdAt: Datetime
   updatedAt: Datetime
+}
+
+type TransactionChain {
+  depth: Int!
+  steps: [TransactionChainStep!]!
+}
+
+type TransactionChainStep {
+  id: ID!
+  reason: TransactionReason!
+  points: Int!
+  fromUser: TransactionChainUser
+  toUser: TransactionChainUser
+  createdAt: Datetime!
+}
+
+type TransactionChainUser {
+  id: ID!
+  name: String!
+  image: String
 }
 
 # ------------------------------
