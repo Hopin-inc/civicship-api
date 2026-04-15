@@ -21,6 +21,33 @@ import {
 } from "./data/type";
 import { EligibilityResult } from "./service";
 
+// ─── フィールドリゾルバー向けメタデータ付き GQL 型 ──────────────────────────
+// フィールドリゾルバーは parent オブジェクト経由でこれらを参照する
+// GQL スキーマ上には存在しないが、Presenter → Resolver 間の型安全な受け渡しに使用
+
+export type GqlVoteGateWithMeta = GqlVoteGate & {
+  nftTokenId: string | null; // VoteGate.nftToken リゾルバーが参照
+};
+
+export type GqlVotePowerPolicyWithMeta = GqlVotePowerPolicy & {
+  nftTokenId: string | null; // VotePowerPolicy.nftToken リゾルバーが参照
+};
+
+export type GqlVoteBallotWithMeta = GqlVoteBallot & {
+  optionId: string;      // VoteBallot.option リゾルバーが参照
+  resultVisible: boolean; // VoteOption の集計マスキングに使用
+};
+
+// gate/powerPolicy は実態として常に WithMeta 版が入るため Omit して上書き
+export type GqlVoteTopicWithMeta = Omit<GqlVoteTopic, "gate" | "powerPolicy"> & {
+  communityId: string;            // VoteTopic.community リゾルバーが参照
+  resultVisible: boolean;         // VoteTopic.myBallot リゾルバーが参照
+  gate: GqlVoteGateWithMeta;
+  powerPolicy: GqlVotePowerPolicyWithMeta;
+};
+
+// ─── Presenter ────────────────────────────────────────────────────────────────
+
 export default class VotePresenter {
   static phase(topic: Pick<PrismaVoteTopicBase, "startsAt" | "endsAt">): GqlVoteTopicPhase {
     const now = new Date();
@@ -34,27 +61,25 @@ export default class VotePresenter {
     return isManager || new Date() >= topic.endsAt;
   }
 
-  static gate(gate: PrismaVoteGate): GqlVoteGate {
+  static gate(gate: PrismaVoteGate): GqlVoteGateWithMeta {
     return {
       __typename: "VoteGate",
       id: gate.id,
       type: gate.type,
       nftToken: null, // フィールドリゾルバーで解決
       requiredRole: gate.requiredRole ?? null,
-      // フィールドリゾルバー (VoteGate.nftToken) が parent.nftTokenId を参照するため保持
       nftTokenId: gate.nftTokenId,
-    } as GqlVoteGate;
+    };
   }
 
-  static powerPolicy(policy: PrismaVotePowerPolicy): GqlVotePowerPolicy {
+  static powerPolicy(policy: PrismaVotePowerPolicy): GqlVotePowerPolicyWithMeta {
     return {
       __typename: "VotePowerPolicy",
       id: policy.id,
       type: policy.type,
       nftToken: null, // フィールドリゾルバーで解決
-      // フィールドリゾルバー (VotePowerPolicy.nftToken) が parent.nftTokenId を参照するため保持
       nftTokenId: policy.nftTokenId,
-    } as GqlVotePowerPolicy;
+    };
   }
 
   static option(option: PrismaVoteOption, resultVisible: boolean): GqlVoteOption {
@@ -68,7 +93,7 @@ export default class VotePresenter {
     };
   }
 
-  static ballot(ballot: PrismaVoteBallot, resultVisible: boolean = false): GqlVoteBallot {
+  static ballot(ballot: PrismaVoteBallot, resultVisible: boolean = false): GqlVoteBallotWithMeta {
     return {
       __typename: "VoteBallot",
       id: ballot.id,
@@ -76,26 +101,21 @@ export default class VotePresenter {
       power: ballot.power,
       createdAt: ballot.createdAt,
       updatedAt: ballot.updatedAt ?? null,
-      // フィールドリゾルバー (VoteBallot.option) が参照するメタデータ
       optionId: ballot.optionId,
-      // VoteBallot.option リゾルバーが voteCount/totalPower を秘匿するために使用
       resultVisible,
-    } as GqlVoteBallot;
+    };
   }
 
   static topic(
     topic: PrismaVoteTopic,
     isManager: boolean,
-    myBallot: PrismaVoteBallot | null = null,
-  ): GqlVoteTopic {
+  ): GqlVoteTopicWithMeta {
     const resultVisible = this.isResultVisible(topic, isManager);
     return {
       __typename: "VoteTopic",
       id: topic.id,
       community: null as unknown as GqlVoteTopic["community"], // フィールドリゾルバーで解決
-      // フィールドリゾルバー (VoteTopic.community) が parent.communityId を参照するため保持
       communityId: topic.communityId,
-      // フィールドリゾルバー (VoteTopic.myBallot) が parent.resultVisible を参照するため保持
       resultVisible,
       title: topic.title,
       description: topic.description ?? null,
@@ -106,11 +126,11 @@ export default class VotePresenter {
       gate: this.gate(topic.gate!),
       powerPolicy: this.powerPolicy(topic.powerPolicy!),
       options: topic.options.map((opt) => this.option(opt, resultVisible)),
-      myBallot: myBallot ? this.ballot(myBallot, resultVisible) : null,
+      myBallot: null, // フィールドリゾルバー（DataLoader）で解決
       myEligibility: null, // フィールドリゾルバーで解決
       createdAt: topic.createdAt,
       updatedAt: topic.updatedAt ?? null,
-    } as GqlVoteTopic;
+    };
   }
 
   static eligibility(
@@ -129,7 +149,7 @@ export default class VotePresenter {
   }
 
   static query(
-    topics: GqlVoteTopic[],
+    topics: GqlVoteTopicWithMeta[],
     totalCount: number,
     hasNextPage: boolean,
     cursor?: string,
@@ -151,14 +171,14 @@ export default class VotePresenter {
     };
   }
 
-  static create(topic: GqlVoteTopic): GqlVoteTopicCreatePayload {
+  static create(topic: GqlVoteTopicWithMeta): GqlVoteTopicCreatePayload {
     return {
       __typename: "VoteTopicCreatePayload",
       voteTopic: topic,
     };
   }
 
-  static castBallot(ballot: GqlVoteBallot): GqlVoteCastPayload {
+  static castBallot(ballot: GqlVoteBallotWithMeta): GqlVoteCastPayload {
     return {
       __typename: "VoteCastPayload",
       ballot,

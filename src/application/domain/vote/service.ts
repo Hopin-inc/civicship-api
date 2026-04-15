@@ -233,6 +233,10 @@ export default class VoteService {
     return this.repo.findTopicOrThrow(ctx, topic.id, tx);
   }
 
+  async acquireVoteLock(userId: string, topicId: string, tx: Prisma.TransactionClient): Promise<void> {
+    await this.repo.acquireVoteLock(userId, topicId, tx);
+  }
+
   async deleteTopic(
     ctx: IContext,
     id: string,

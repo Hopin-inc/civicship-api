@@ -6,7 +6,6 @@ import {
   voteTopicWithRelationsSelect,
   voteGateSelect,
   votePowerPolicySelect,
-  voteOptionSelect,
   voteBallotSelect,
   PrismaVoteTopic,
   PrismaVoteGate,
@@ -199,6 +198,16 @@ export default class VoteRepository implements IVoteRepository {
         totalPower: { decrement: power },
       },
     });
+  }
+
+  // 同一 (userId, topicId) への並行投票を完全にシリアライズするアドバイザリーロック
+  // pg_advisory_xact_lock はトランザクション終了時に自動解放される
+  async acquireVoteLock(
+    userId: string,
+    topicId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${userId + ":" + topicId}))`;
   }
 
   // 同じ選択肢への再投票時に totalPower のみ差分更新（voteCount は変化なし）

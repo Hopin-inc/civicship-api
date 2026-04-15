@@ -16,8 +16,9 @@ import {
 import { IContext } from "@/types/server";
 import { AuthorizationError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { PrismaVoteTopic } from "./data/type";
 import VoteService from "./service";
-import VotePresenter from "./presenter";
+import VotePresenter, { GqlVoteTopicWithMeta } from "./presenter";
 
 @injectable()
 export default class VoteUseCase {
@@ -117,6 +118,11 @@ export default class VoteUseCase {
     const userId = getCurrentUserId(ctx);
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      // 0. 同一ユーザー・同一トピックへの並行投票を TOCTOU から守るアドバイザリーロック
+      //    findBallot(null) → upsert(INSERT) の間に別トランザクションが割り込むと
+      //    voteCount が二重増分される。ロックでこのウィンドウを完全に閉じる
+      await this.service.acquireVoteLock(userId, input.topicId, tx);
+
       // 1. テーマ取得（トランザクション内）
       const topic = await this.service.getTopicWithRelations(ctx, input.topicId, tx);
       this.service.validateTopicRelations(topic);
@@ -153,6 +159,33 @@ export default class VoteUseCase {
       const ballotGql = VotePresenter.ballot(ballot, VotePresenter.isResultVisible(topic, false));
       return VotePresenter.castBallot(ballotGql);
     });
+  }
+
+  // フィールドリゾルバー専用: VoteTopic.myEligibility の N+1 を回避するため
+  // parent（既に DB から取得済みのメタ付き GQL オブジェクト）を直接使用し DB 再取得しない
+  async resolveMyEligibilityForParent(
+    ctx: IContext,
+    parent: GqlVoteTopicWithMeta,
+  ): Promise<GqlMyVoteEligibility | null> {
+    if (!ctx.currentUser) return null;
+    const userId = ctx.currentUser.id;
+
+    // GQL enum と Prisma enum は同じ文字列値を持つため as unknown as PrismaVoteTopic で変換可能
+    // checkEligibility / calculatePower が参照するのは gate, powerPolicy, communityId のみ
+    const topicLike = parent as unknown as PrismaVoteTopic;
+
+    const eligibility = await this.service.checkEligibility(ctx, userId, topicLike);
+
+    let currentPower: number | null = null;
+    if (eligibility.eligible) {
+      currentPower = await this.service.calculatePower(ctx, userId, topicLike);
+    }
+
+    const myBallot = await this.service.findBallot(ctx, userId, parent.id);
+
+    // myEligibility コンテキストでは manager 判定は行わず、時刻のみで結果公開を判定
+    const resultVisible = new Date() >= parent.endsAt;
+    return VotePresenter.eligibility(eligibility, currentPower, myBallot, resultVisible);
   }
 
   async managerDeleteVoteTopic(

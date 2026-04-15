@@ -95,4 +95,10 @@ export interface IVoteRepository {
     delta: number,
     tx: Prisma.TransactionClient,
   ): Promise<void>;
+
+  acquireVoteLock(
+    userId: string,
+    topicId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void>;
 }

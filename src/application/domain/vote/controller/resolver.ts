@@ -9,14 +9,13 @@ import {
   GqlMutationVoteCastArgs,
   GqlMutationVoteTopicDeleteArgs,
 } from "@/types/graphql";
-import {
-  PrismaVoteTopic,
-  PrismaVoteGate,
-  PrismaVotePowerPolicy,
-  PrismaVoteBallot,
-} from "@/application/domain/vote/data/type";
 import VoteUseCase from "@/application/domain/vote/usecase";
-import VotePresenter from "@/application/domain/vote/presenter";
+import VotePresenter, {
+  GqlVoteTopicWithMeta,
+  GqlVoteGateWithMeta,
+  GqlVotePowerPolicyWithMeta,
+  GqlVoteBallotWithMeta,
+} from "@/application/domain/vote/presenter";
 
 @injectable()
 export default class VoteResolver {
@@ -45,10 +44,10 @@ export default class VoteResolver {
   };
 
   VoteTopic = {
-    community: (parent: PrismaVoteTopic, _: unknown, ctx: IContext) =>
+    community: (parent: GqlVoteTopicWithMeta, _: unknown, ctx: IContext) =>
       ctx.loaders.community.load(parent.communityId),
 
-    myBallot: async (parent: PrismaVoteTopic & { resultVisible?: boolean }, _: unknown, ctx: IContext) => {
+    myBallot: async (parent: GqlVoteTopicWithMeta, _: unknown, ctx: IContext) => {
       if (!ctx.currentUser) return null;
       const ballot = await ctx.loaders.myVoteBallot.load({
         userId: ctx.currentUser.id,
@@ -56,35 +55,34 @@ export default class VoteResolver {
       });
       if (!ballot) return null;
       // resultVisible は VotePresenter.topic() が親オブジェクトに付加したメタデータ
-      return VotePresenter.ballot(ballot, parent.resultVisible ?? false);
+      return VotePresenter.ballot(ballot, parent.resultVisible);
     },
 
-    myEligibility: (parent: PrismaVoteTopic, _: unknown, ctx: IContext) => {
-      if (!ctx.currentUser) return null;
-      return this.voteUseCase.userGetMyVoteEligibility(ctx, { topicId: parent.id });
-    },
+    myEligibility: (parent: GqlVoteTopicWithMeta, _: unknown, ctx: IContext) =>
+      // DB 再取得を避けるため parent のメタデータを直接利用する（N+1 防止）
+      this.voteUseCase.resolveMyEligibilityForParent(ctx, parent),
   };
 
   VoteGate = {
-    nftToken: (parent: PrismaVoteGate, _: unknown, ctx: IContext) => {
+    nftToken: (parent: GqlVoteGateWithMeta, _: unknown, ctx: IContext) => {
       if (!parent.nftTokenId) return null;
       return ctx.loaders.nftToken.load(parent.nftTokenId);
     },
   };
 
   VotePowerPolicy = {
-    nftToken: (parent: PrismaVotePowerPolicy, _: unknown, ctx: IContext) => {
+    nftToken: (parent: GqlVotePowerPolicyWithMeta, _: unknown, ctx: IContext) => {
       if (!parent.nftTokenId) return null;
       return ctx.loaders.nftToken.load(parent.nftTokenId);
     },
   };
 
   VoteBallot = {
-    option: async (parent: PrismaVoteBallot & { optionId: string; resultVisible?: boolean }, _: unknown, ctx: IContext) => {
+    option: async (parent: GqlVoteBallotWithMeta, _: unknown, ctx: IContext) => {
       const option = await ctx.loaders.voteOption.load(parent.optionId);
       if (!option) throw new NotFoundError("VoteOption", { id: parent.optionId });
       // 結果秘匿の適用は Presenter に委譲（resolver にマスクロジックを持たない）
-      return VotePresenter.option(option, parent.resultVisible ?? false);
+      return VotePresenter.option(option, parent.resultVisible);
     },
   };
 }

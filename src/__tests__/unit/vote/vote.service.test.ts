@@ -25,6 +25,7 @@ class MockVoteRepository implements IVoteRepository {
   incrementOptionCount = jest.fn();
   decrementOptionCount = jest.fn();
   adjustOptionTotalPower = jest.fn();
+  acquireVoteLock = jest.fn();
 }
 
 class MockMembershipService {
