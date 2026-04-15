@@ -4,7 +4,6 @@ import {
   PrismaVoteTopic,
   PrismaVoteGate,
   PrismaVotePowerPolicy,
-  PrismaVoteOption,
   PrismaVoteBallot,
 } from "./type";
 import {
@@ -53,7 +52,7 @@ export interface IVoteRepository {
     topicId: string,
     options: GqlVoteOptionInput[],
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaVoteOption[]>;
+  ): Promise<void>;
 
   deleteTopic(
     ctx: IContext,

@@ -193,10 +193,20 @@ export default class VoteService {
     }
 
     if (existingBallot) {
-      // 別選択肢への再投票: 旧選択肢を全デクリメント
-      await this.repo.decrementOptionCount(ctx, existingBallot.optionId, existingBallot.power, tx);
+      // 別選択肢への再投票: optionId 昇順でロック取得順を固定しデッドロックを防止
+      // （複数ユーザーが同時に A→B と B→A へ再投票するケースでの相互ロック待ちを回避）
+      const oldId = existingBallot.optionId;
+      const newId = newBallot.optionId;
+      if (oldId < newId) {
+        await this.repo.decrementOptionCount(ctx, oldId, existingBallot.power, tx);
+        await this.repo.incrementOptionCount(ctx, newId, newPower, tx);
+      } else {
+        await this.repo.incrementOptionCount(ctx, newId, newPower, tx);
+        await this.repo.decrementOptionCount(ctx, oldId, existingBallot.power, tx);
+      }
+      return;
     }
-    // 新選択肢をインクリメント
+    // 新選択肢をインクリメント（初回投票）
     await this.repo.incrementOptionCount(ctx, newBallot.optionId, newPower, tx);
   }
 

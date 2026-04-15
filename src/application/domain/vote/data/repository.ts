@@ -11,7 +11,6 @@ import {
   PrismaVoteTopic,
   PrismaVoteGate,
   PrismaVotePowerPolicy,
-  PrismaVoteOption,
   PrismaVoteBallot,
 } from "./type";
 import { NotFoundError } from "@/errors/graphql";
@@ -114,19 +113,14 @@ export default class VoteRepository implements IVoteRepository {
     topicId: string,
     options: GqlVoteOptionInput[],
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaVoteOption[]> {
-    return Promise.all(
-      options.map((opt) =>
-        tx.voteOption.create({
-          data: {
-            topicId,
-            label: opt.label,
-            orderIndex: opt.orderIndex,
-          },
-          select: voteOptionSelect,
-        }),
-      ),
-    );
+  ): Promise<void> {
+    await tx.voteOption.createMany({
+      data: options.map((opt) => ({
+        topicId,
+        label: opt.label,
+        orderIndex: opt.orderIndex,
+      })),
+    });
   }
 
   async deleteTopic(
