@@ -18,13 +18,11 @@ import { AuthorizationError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
 import VoteService from "./service";
 import VotePresenter from "./presenter";
-import { IVoteRepository } from "./data/interface";
 
 @injectable()
 export default class VoteUseCase {
   constructor(
     @inject("VoteService") private readonly service: VoteService,
-    @inject("VoteRepository") private readonly repo: IVoteRepository,
   ) {}
 
   async anyoneBrowseVoteTopics(
@@ -37,14 +35,14 @@ export default class VoteUseCase {
     const isManagerOfCommunity = !!isManager[communityId];
 
     const [records, totalCount] = await Promise.all([
-      this.repo.queryTopics(ctx, communityId, take, cursor ?? undefined),
-      this.repo.countTopics(ctx, communityId),
+      this.service.browseTopics(ctx, communityId, take, cursor ?? undefined),
+      this.service.countTopics(ctx, communityId),
     ]);
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take);
 
-    // queryTopics はリレーション付きで返すので N+1 なし
+    // browseTopics はリレーション付きで返すので N+1 なし
     // gate/powerPolicy が欠落しているトピックはデータ不整合 → 早期エラーで一覧全体を守る
     data.forEach((topic) => this.service.validateTopicRelations(topic));
     const topicGqls = data.map((topic) => VotePresenter.topic(topic, isManagerOfCommunity));
@@ -56,7 +54,7 @@ export default class VoteUseCase {
     ctx: IContext,
     { id }: GqlQueryVoteTopicArgs,
   ): Promise<GqlVoteTopic | null> {
-    const topic = await this.repo.findTopic(ctx, id);
+    const topic = await this.service.findTopic(ctx, id);
     if (!topic) return null;
 
     this.service.validateTopicRelations(topic);
@@ -84,7 +82,7 @@ export default class VoteUseCase {
       currentPower = await this.service.calculatePower(ctx, userId, topic);
     }
 
-    const myBallot = await this.repo.findBallot(ctx, userId, topicId);
+    const myBallot = await this.service.findBallot(ctx, userId, topicId);
 
     // endsAt を超えていれば結果を公開（myEligibility context では manager 判定は行わない）
     const resultVisible = new Date() >= topic.endsAt;
@@ -163,7 +161,7 @@ export default class VoteUseCase {
   ): Promise<GqlVoteTopicDeletePayload> {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       // 削除前にコミュニティ所有チェック
-      const topic = await this.repo.findTopicOrThrow(ctx, id, tx);
+      const topic = await this.service.getTopicWithRelations(ctx, id, tx);
       if (topic.communityId !== permission.communityId) {
         throw new AuthorizationError("TOPIC_NOT_IN_COMMUNITY");
       }

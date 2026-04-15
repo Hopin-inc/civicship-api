@@ -34,6 +34,23 @@ export default class VoteService {
     return this.repo.findTopicOrThrow(ctx, id, tx);
   }
 
+  async findTopic(ctx: IContext, id: string): Promise<PrismaVoteTopic | null> {
+    return this.repo.findTopic(ctx, id);
+  }
+
+  async browseTopics(
+    ctx: IContext,
+    communityId: string,
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaVoteTopic[]> {
+    return this.repo.queryTopics(ctx, communityId, take, cursor);
+  }
+
+  async countTopics(ctx: IContext, communityId: string): Promise<number> {
+    return this.repo.countTopics(ctx, communityId);
+  }
+
   validateTopicInput(input: GqlVoteTopicCreateInput): void {
     if (new Date(input.startsAt) >= new Date(input.endsAt)) {
       throw new ValidationError("startsAt must be before endsAt", []);
