@@ -6,11 +6,8 @@ import VoteUseCase from "@/application/domain/vote/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
-import { AuthorizationError, ValidationError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError, ValidationError } from "@/errors/graphql";
 
-// topicId の DB レコードを直接作成するユーティリティ
-// (vote topic は usecase 経由で作成するので不要だが、
-//  startsAt/endsAt を任意に制御したいケースでは直接 Prisma 操作を使う)
 async function createVoteTopic(params: {
   communityId: string;
   createdBy: string;
@@ -29,27 +26,15 @@ async function createVoteTopic(params: {
   } = params;
 
   const topic = await prismaClient.voteTopic.create({
-    data: {
-      communityId,
-      createdBy,
-      title: "Integration Test Vote",
-      startsAt,
-      endsAt,
-    },
+    data: { communityId, createdBy, title: "Integration Test Vote", startsAt, endsAt },
   });
 
-  await prismaClient.voteGate.create({
-    data: { type: gateType, topicId: topic.id },
-  });
-
-  await prismaClient.votePowerPolicy.create({
-    data: { type: policyType, topicId: topic.id },
-  });
+  await prismaClient.voteGate.create({ data: { type: gateType, topicId: topic.id } });
+  await prismaClient.votePowerPolicy.create({ data: { type: policyType, topicId: topic.id } });
 
   const optionA = await prismaClient.voteOption.create({
     data: { topicId: topic.id, label: "Option A", orderIndex: 0 },
   });
-
   const optionB = await prismaClient.voteOption.create({
     data: { topicId: topic.id, label: "Option B", orderIndex: 1 },
   });
@@ -100,33 +85,26 @@ describe("Vote Integration: VoteCast", () => {
       const { topic, optionA } = await createVoteTopic({
         communityId: community.id,
         createdBy: member.id,
-        startsAt: new Date(now.getTime() - 60_000), // 1 min ago
-        endsAt: new Date(now.getTime() + 3_600_000), // 1 hour from now
+        startsAt: new Date(now.getTime() - 60_000),
+        endsAt: new Date(now.getTime() + 3_600_000),
       });
 
-      const ctx = {
-        currentUser: { id: member.id },
-        issuer,
-      } as unknown as IContext;
+      const ctx = { currentUser: { id: member.id }, issuer } as unknown as IContext;
 
       const result = await voteUseCase.userCastVote(ctx, {
         input: { topicId: topic.id, optionId: optionA.id },
       });
 
-      expect(result.ballot).toBeDefined();
       expect(result.ballot.power).toBe(1);
 
-      // VoteOption の集計カラムが更新されているかを確認
-      const updatedOption = await prismaClient.voteOption.findUniqueOrThrow({
-        where: { id: optionA.id },
-      });
-      expect(updatedOption.voteCount).toBe(1);
-      expect(updatedOption.totalPower).toBe(1);
+      const updated = await prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } });
+      expect(updated.voteCount).toBe(1);
+      expect(updated.totalPower).toBe(1);
     });
   });
 
-  describe("revote (changing option)", () => {
-    it("should update ballot and adjust option counts correctly on revote", async () => {
+  describe("revote", () => {
+    it("should decrement old option and increment new option when changing option", async () => {
       const member = await TestDataSourceHelper.createUser({
         name: "Revote User",
         slug: "revote-slug",
@@ -154,33 +132,64 @@ describe("Vote Integration: VoteCast", () => {
         endsAt: new Date(now.getTime() + 3_600_000),
       });
 
-      const ctx = {
-        currentUser: { id: member.id },
-        issuer,
-      } as unknown as IContext;
+      const ctx = { currentUser: { id: member.id }, issuer } as unknown as IContext;
 
-      // 1st vote: Option A
-      await voteUseCase.userCastVote(ctx, {
-        input: { topicId: topic.id, optionId: optionA.id },
-      });
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } });
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionB.id } });
 
-      // 2nd vote: Option B (revote)
-      const revoteResult = await voteUseCase.userCastVote(ctx, {
-        input: { topicId: topic.id, optionId: optionB.id },
-      });
-
-      expect(revoteResult.ballot).toBeDefined();
-
-      // Option A の count が 0 に戻り、Option B が 1 になっているかを確認
       const [updatedA, updatedB] = await Promise.all([
         prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } }),
         prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionB.id } }),
       ]);
 
+      // Option A の投票が取り消され Option B に移っていること
       expect(updatedA.voteCount).toBe(0);
       expect(updatedA.totalPower).toBe(0);
       expect(updatedB.voteCount).toBe(1);
       expect(updatedB.totalPower).toBe(1);
+    });
+
+    it("should NOT change voteCount when re-voting for the same option (adjustOptionTotalPower path)", async () => {
+      // FLAT policy では power=1 が固定なので delta=0 となり DB 更新は何も起きない
+      // このテストは「同一選択肢への再投票でも voteCount が二重加算されない」ことを保証する
+      const member = await TestDataSourceHelper.createUser({
+        name: "Same Option Voter",
+        slug: "same-option-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+
+      const community = await TestDataSourceHelper.createCommunity({
+        name: "same-option-community",
+        pointName: "pt",
+      });
+
+      await TestDataSourceHelper.createMembership({
+        user: { connect: { id: member.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        reason: MembershipStatusReason.INVITED,
+        role: Role.MEMBER,
+      });
+
+      const now = new Date();
+      const { topic, optionA } = await createVoteTopic({
+        communityId: community.id,
+        createdBy: member.id,
+        startsAt: new Date(now.getTime() - 60_000),
+        endsAt: new Date(now.getTime() + 3_600_000),
+      });
+
+      const ctx = { currentUser: { id: member.id }, issuer } as unknown as IContext;
+
+      // 同じ選択肢に2回投票
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } });
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } });
+
+      const updated = await prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } });
+
+      // voteCount は 1 のまま（2 にならない）
+      expect(updated.voteCount).toBe(1);
+      expect(updated.totalPower).toBe(1);
     });
   });
 
@@ -203,7 +212,6 @@ describe("Vote Integration: VoteCast", () => {
         pointName: "pt",
       });
 
-      // nonMember は membership を持たない
       const now = new Date();
       const { topic, optionA } = await createVoteTopic({
         communityId: community.id,
@@ -212,15 +220,46 @@ describe("Vote Integration: VoteCast", () => {
         endsAt: new Date(now.getTime() + 3_600_000),
       });
 
-      const ctx = {
-        currentUser: { id: nonMember.id },
-        issuer,
-      } as unknown as IContext;
+      const ctx = { currentUser: { id: nonMember.id }, issuer } as unknown as IContext;
 
       await expect(
-        voteUseCase.userCastVote(ctx, {
-          input: { topicId: topic.id, optionId: optionA.id },
-        }),
+        voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } }),
+      ).rejects.toThrow(AuthorizationError);
+    });
+
+    it("should reject a user whose membership status is not JOINED", async () => {
+      const pendingUser = await TestDataSourceHelper.createUser({
+        name: "Pending User",
+        slug: "pending-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+
+      const community = await TestDataSourceHelper.createCommunity({
+        name: "pending-community",
+        pointName: "pt",
+      });
+
+      // PENDING（未承認）状態のメンバーシップ
+      await TestDataSourceHelper.createMembership({
+        user: { connect: { id: pendingUser.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.PENDING,
+        reason: MembershipStatusReason.INVITED,
+        role: Role.MEMBER,
+      });
+
+      const now = new Date();
+      const { topic, optionA } = await createVoteTopic({
+        communityId: community.id,
+        createdBy: pendingUser.id,
+        startsAt: new Date(now.getTime() - 60_000),
+        endsAt: new Date(now.getTime() + 3_600_000),
+      });
+
+      const ctx = { currentUser: { id: pendingUser.id }, issuer } as unknown as IContext;
+
+      await expect(
+        voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } }),
       ).rejects.toThrow(AuthorizationError);
     });
   });
@@ -250,19 +289,14 @@ describe("Vote Integration: VoteCast", () => {
       const { topic, optionA } = await createVoteTopic({
         communityId: community.id,
         createdBy: member.id,
-        startsAt: new Date(now.getTime() + 3_600_000), // starts 1 hour in the future
+        startsAt: new Date(now.getTime() + 3_600_000),
         endsAt: new Date(now.getTime() + 7_200_000),
       });
 
-      const ctx = {
-        currentUser: { id: member.id },
-        issuer,
-      } as unknown as IContext;
+      const ctx = { currentUser: { id: member.id }, issuer } as unknown as IContext;
 
       await expect(
-        voteUseCase.userCastVote(ctx, {
-          input: { topicId: topic.id, optionId: optionA.id },
-        }),
+        voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } }),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -290,39 +324,73 @@ describe("Vote Integration: VoteCast", () => {
       const { topic, optionA } = await createVoteTopic({
         communityId: community.id,
         createdBy: member.id,
-        startsAt: new Date(now.getTime() - 7_200_000), // started 2 hours ago
-        endsAt: new Date(now.getTime() - 3_600_000), // ended 1 hour ago
+        startsAt: new Date(now.getTime() - 7_200_000),
+        endsAt: new Date(now.getTime() - 3_600_000),
       });
 
-      const ctx = {
-        currentUser: { id: member.id },
-        issuer,
-      } as unknown as IContext;
+      const ctx = { currentUser: { id: member.id }, issuer } as unknown as IContext;
 
       await expect(
-        voteUseCase.userCastVote(ctx, {
-          input: { topicId: topic.id, optionId: optionA.id },
-        }),
+        voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } }),
       ).rejects.toThrow(ValidationError);
     });
   });
 
-  describe("result masking", () => {
-    it("should hide voteCount/totalPower during active voting period when browsing topics", async () => {
-      const manager = await TestDataSourceHelper.createUser({
-        name: "Manager Result",
-        slug: "manager-result-slug",
-        currentPrefecture: CurrentPrefecture.KAGAWA,
-      });
-
+  describe("option validation", () => {
+    it("should reject a vote for an optionId that does not belong to the topic", async () => {
       const member = await TestDataSourceHelper.createUser({
-        name: "Member Result",
-        slug: "member-result-slug",
+        name: "WrongOption Voter",
+        slug: "wrong-option-slug",
         currentPrefecture: CurrentPrefecture.KAGAWA,
       });
 
       const community = await TestDataSourceHelper.createCommunity({
-        name: "result-community",
+        name: "wrong-option-community",
+        pointName: "pt",
+      });
+
+      await TestDataSourceHelper.createMembership({
+        user: { connect: { id: member.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        reason: MembershipStatusReason.INVITED,
+        role: Role.MEMBER,
+      });
+
+      const now = new Date();
+      const { topic } = await createVoteTopic({
+        communityId: community.id,
+        createdBy: member.id,
+        startsAt: new Date(now.getTime() - 60_000),
+        endsAt: new Date(now.getTime() + 3_600_000),
+      });
+
+      const ctx = { currentUser: { id: member.id }, issuer } as unknown as IContext;
+
+      await expect(
+        voteUseCase.userCastVote(ctx, {
+          input: { topicId: topic.id, optionId: "nonexistent-option-id" },
+        }),
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe("result masking", () => {
+    it("should hide voteCount/totalPower from a regular member during active voting period", async () => {
+      const manager = await TestDataSourceHelper.createUser({
+        name: "Manager",
+        slug: "manager-masking-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+
+      const member = await TestDataSourceHelper.createUser({
+        name: "Member",
+        slug: "member-masking-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+
+      const community = await TestDataSourceHelper.createCommunity({
+        name: "masking-community",
         pointName: "pt",
       });
 
@@ -348,7 +416,7 @@ describe("Vote Integration: VoteCast", () => {
         communityId: community.id,
         createdBy: manager.id,
         startsAt: new Date(now.getTime() - 60_000),
-        endsAt: new Date(now.getTime() + 3_600_000), // still active
+        endsAt: new Date(now.getTime() + 3_600_000),
       });
 
       const memberCtx = {
@@ -359,33 +427,31 @@ describe("Vote Integration: VoteCast", () => {
         issuer,
       } as unknown as IContext;
 
-      // 投票を実施
       await voteUseCase.userCastVote(memberCtx, {
         input: { topicId: topic.id, optionId: optionA.id },
       });
 
-      // 一般ユーザー（非マネージャー）として一覧取得 → 集計値は null であるべき
-      const browseResult = await voteUseCase.anyoneBrowseVoteTopics(memberCtx, {
+      const result = await voteUseCase.anyoneBrowseVoteTopics(memberCtx, {
         communityId: community.id,
         first: 10,
       });
 
-      expect(browseResult.nodes).toHaveLength(1);
-      const topicNode = browseResult.nodes[0];
-      const optionANode = topicNode.options.find((o) => o.orderIndex === 0);
-      expect(optionANode?.voteCount).toBeNull();
-      expect(optionANode?.totalPower).toBeNull();
+      const optionNode = result.nodes[0].options.find((o) => o.orderIndex === 0);
+      // 投票期間中は一般メンバーには集計値が隠される
+      expect(optionNode?.voteCount).toBeNull();
+      expect(optionNode?.totalPower).toBeNull();
     });
 
-    it("should show voteCount/totalPower after voting period ends", async () => {
+    it("should show voteCount/totalPower to a manager during active voting period", async () => {
+      // マネージャーは投票期間中でも集計値を参照できる（isResultVisible = true）
       const manager = await TestDataSourceHelper.createUser({
-        name: "Manager Ended",
-        slug: "manager-ended-slug",
+        name: "Manager Visible",
+        slug: "manager-visible-slug",
         currentPrefecture: CurrentPrefecture.KAGAWA,
       });
 
       const community = await TestDataSourceHelper.createCommunity({
-        name: "ended-community",
+        name: "manager-visible-community",
         pointName: "pt",
       });
 
@@ -398,36 +464,85 @@ describe("Vote Integration: VoteCast", () => {
       });
 
       const now = new Date();
-      // 終了済みトピックを直接 DB に作成（usecase を使うと startsAt バリデーションが通らないため）
-      const { optionA } = await createVoteTopic({
+      const { topic, optionA } = await createVoteTopic({
         communityId: community.id,
         createdBy: manager.id,
-        startsAt: new Date(now.getTime() - 7_200_000), // 2 hours ago
-        endsAt: new Date(now.getTime() - 3_600_000), // ended 1 hour ago
+        startsAt: new Date(now.getTime() - 60_000),
+        endsAt: new Date(now.getTime() + 3_600_000), // 投票期間中
       });
 
-      // 集計カラムを直接更新して「投票済み」状態を再現
+      const managerCtx = {
+        currentUser: {
+          id: manager.id,
+          memberships: [{ communityId: community.id, role: Role.MANAGER, status: MembershipStatus.JOINED }],
+        },
+        issuer,
+      } as unknown as IContext;
+
+      await voteUseCase.userCastVote(managerCtx, {
+        input: { topicId: topic.id, optionId: optionA.id },
+      });
+
+      const result = await voteUseCase.anyoneBrowseVoteTopics(managerCtx, {
+        communityId: community.id,
+        first: 10,
+      });
+
+      const optionNode = result.nodes[0].options.find((o) => o.orderIndex === 0);
+      // マネージャーは投票期間中でも集計値が見える
+      expect(optionNode?.voteCount).toBe(1);
+      expect(optionNode?.totalPower).toBe(1);
+    });
+
+    it("should show voteCount/totalPower to any user after voting period ends", async () => {
+      const user = await TestDataSourceHelper.createUser({
+        name: "Regular User",
+        slug: "regular-user-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+
+      const community = await TestDataSourceHelper.createCommunity({
+        name: "ended-community",
+        pointName: "pt",
+      });
+
+      await TestDataSourceHelper.createMembership({
+        user: { connect: { id: user.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        reason: MembershipStatusReason.INVITED,
+        role: Role.MEMBER,
+      });
+
+      const now = new Date();
+      const { optionA } = await createVoteTopic({
+        communityId: community.id,
+        createdBy: user.id,
+        startsAt: new Date(now.getTime() - 7_200_000),
+        endsAt: new Date(now.getTime() - 3_600_000), // 終了済み
+      });
+
+      // 集計カラムを直接設定（終了済みトピックには投票できないため）
       await prismaClient.voteOption.update({
         where: { id: optionA.id },
         data: { voteCount: 3, totalPower: 5 },
       });
 
-      // 非マネージャーとして閲覧 → endsAt 経過後は集計値が見えるべき
-      const ctx = {
+      const memberCtx = {
         currentUser: {
-          id: manager.id,
+          id: user.id,
           memberships: [{ communityId: community.id, role: Role.MEMBER, status: MembershipStatus.JOINED }],
         },
         issuer,
       } as unknown as IContext;
 
-      const browseResult = await voteUseCase.anyoneBrowseVoteTopics(ctx, {
+      const result = await voteUseCase.anyoneBrowseVoteTopics(memberCtx, {
         communityId: community.id,
         first: 10,
       });
 
-      expect(browseResult.nodes).toHaveLength(1);
-      const optionNode = browseResult.nodes[0].options.find((o) => o.orderIndex === 0);
+      const optionNode = result.nodes[0].options.find((o) => o.orderIndex === 0);
+      // endsAt 後は一般ユーザーにも集計値が公開される
       expect(optionNode?.voteCount).toBe(3);
       expect(optionNode?.totalPower).toBe(5);
     });
