@@ -126,13 +126,38 @@ export const CommunityConfigFactory = defineCommunityConfigFactory.withTransient
   transientCommunity: undefined,
 })({
   defaultData: async ({ transientCommunity }) => {
+    const firebaseAuthTenantId = process.env.FIREBASE_AUTH_TENANT_ID;
+    if (!firebaseAuthTenantId) {
+      throw new Error("FIREBASE_AUTH_TENANT_ID is required but not set. Cannot create CommunityConfig with empty tenantId.");
+    }
+
     const community = transientCommunity ?? (await CommunityFactory.create());
 
     return {
       community: { connect: { id: community.id } },
+      portalConfig: {
+        create: {
+          tokenName: "姫路YMCA",
+          title: "姫路YMCA",
+          description: "姫路YMCA",
+          shortDescription: "姫路YMCA",
+          domain: "https://himeji-ymca.civicship.jp",
+          faviconPrefix:
+            "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/communities/himeji-ymca/favicon-32.png",
+          logoPath:
+            "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/communities/himeji-ymca/logo.jpg",
+          squareLogoPath:
+            "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/communities/himeji-ymca/logo-square.jpg",
+          ogImagePath:
+            "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/communities/himeji-ymca/ogp.jpg",
+          enableFeatures: ["points", "opportunities", "quests"],
+          rootPath: "/users/me",
+          adminRootPath: "/admin/wallet",
+        },
+      },
       firebaseConfig: {
         create: {
-          tenantId: process.env.FIREBASE_AUTH_TENANT_ID ?? "",
+          tenantId: firebaseAuthTenantId,
         },
       },
       lineConfig: {

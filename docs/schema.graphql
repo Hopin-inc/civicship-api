@@ -179,6 +179,11 @@ type CommonDocumentOverrides {
   terms: CommunityDocument
 }
 
+input CommonDocumentOverridesInput {
+  privacy: CommunityDocumentInput
+  terms: CommunityDocumentInput
+}
+
 type CommunitiesConnection {
   edges: [CommunityEdge!]
   pageInfo: PageInfo!
@@ -212,8 +217,8 @@ type CommunityConfig {
 }
 
 input CommunityConfigInput {
-  firebaseConfig: CommunityFirebaseConfigInput
   lineConfig: CommunityLineConfigInput
+  portalConfig: CommunityPortalConfigInput
 }
 
 input CommunityCreateInput {
@@ -248,6 +253,14 @@ type CommunityDocument {
   type: String!
 }
 
+input CommunityDocumentInput {
+  id: String!
+  order: Int
+  path: String!
+  title: String!
+  type: String!
+}
+
 type CommunityEdge implements Edge {
   cursor: String!
   node: Community
@@ -261,10 +274,6 @@ input CommunityFilterInput {
 
 type CommunityFirebaseConfig {
   tenantId: String
-}
-
-input CommunityFirebaseConfigInput {
-  tenantId: String!
 }
 
 type CommunityLineConfig {
@@ -281,6 +290,7 @@ input CommunityLineConfigInput {
   accessToken: String!
   channelId: String!
   channelSecret: String!
+  liffAppId: String
   liffBaseUrl: String!
   liffId: String!
   richMenus: [CommunityLineRichMenuConfigInput!]!
@@ -318,6 +328,26 @@ type CommunityPortalConfig {
   squareLogoPath: String!
   title: String!
   tokenName: String!
+}
+
+input CommunityPortalConfigInput {
+  adminRootPath: String
+  commonDocumentOverrides: CommonDocumentOverridesInput
+  description: String
+  documents: [CommunityDocumentInput!]
+  domain: String
+  enableFeatures: [String!]
+  faviconPrefix: String
+  logoPath: String
+  ogImage: ImageInput
+  ogImagePath: String @deprecated(reason: "Use ogImage instead")
+  regionKey: String
+  regionName: String
+  rootPath: String
+  shortDescription: String
+  squareLogoPath: String
+  title: String
+  tokenName: String
 }
 
 type CommunitySignupBonusConfig {
@@ -826,6 +856,8 @@ type Mutation {
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
+  transactionUpdateMetadata(communityPermission: CheckCommunityPermissionInput, id: ID!, input: TransactionUpdateMetadataInput!, permission: CheckIsSelfPermissionInput): TransactionUpdateMetadataPayload
+  updatePortalConfig(input: CommunityPortalConfigInput!, permission: CheckCommunityPermissionInput!): CommunityPortalConfig!
   updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
   userSignUp(input: UserSignUpInput!): CurrentUserPayload
@@ -1098,6 +1130,7 @@ input OpportunitySlotSortInput {
 }
 
 input OpportunitySlotUpdateInput {
+  capacity: Int
   endsAt: Datetime!
   id: ID!
   startsAt: Datetime!
@@ -1888,6 +1921,7 @@ type Transaction {
   fromPointChange: Int
   fromWallet: Wallet
   id: ID!
+  images: [String!]
   participation: Participation
   reason: TransactionReason!
   reservation: Reservation
@@ -1920,6 +1954,7 @@ type TransactionChainUser {
 input TransactionDonateSelfPointInput {
   comment: String
   communityId: ID!
+  images: [ImageInput!]
   toUserId: ID!
   transferPoints: Int!
 }
@@ -1955,6 +1990,7 @@ input TransactionFilterInput {
 
 input TransactionGrantCommunityPointInput {
   comment: String
+  images: [ImageInput!]
   toUserId: ID!
   transferPoints: Int!
 }
@@ -1967,6 +2003,7 @@ type TransactionGrantCommunityPointSuccess {
 
 input TransactionIssueCommunityPointInput {
   comment: String
+  images: [ImageInput!]
   transferPoints: Int!
 }
 
@@ -1991,6 +2028,17 @@ enum TransactionReason {
 
 input TransactionSortInput {
   createdAt: SortDirection
+}
+
+input TransactionUpdateMetadataInput {
+  comment: String
+  images: [ImageInput!]
+}
+
+union TransactionUpdateMetadataPayload = TransactionUpdateMetadataSuccess
+
+type TransactionUpdateMetadataSuccess {
+  transaction: Transaction!
 }
 
 type TransactionVerificationResult {

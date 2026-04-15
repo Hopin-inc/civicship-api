@@ -10,8 +10,10 @@ import {
   GqlMutationCommunityUpdateProfileArgs,
   GqlCommunityUpdateProfilePayload,
   GqlMutationUpdateSignupBonusConfigArgs,
+  GqlMutationUpdatePortalConfigArgs,
 } from "@/types/graphql";
 import { CommunitySignupBonusConfig } from "@prisma/client";
+import { CommunityPortalConfigResult } from "@/application/domain/account/community/config/portal/service";
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/domain/account/community/service";
 import CommunityPresenter from "@/application/domain/account/community/presenter";
@@ -19,6 +21,8 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
+import CommunityPortalConfigService from "@/application/domain/account/community/config/portal/service";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class CommunityUseCase {
@@ -27,6 +31,8 @@ export default class CommunityUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("CommunitySignupBonusConfigService")
     private readonly signupBonusConfigService: CommunitySignupBonusConfigService,
+    @inject("CommunityPortalConfigService")
+    private readonly portalConfigService: CommunityPortalConfigService,
   ) {}
 
   async userBrowseCommunities(
@@ -52,20 +58,30 @@ export default class CommunityUseCase {
     { input }: GqlMutationCommunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlCommunityCreatePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
-      const currentUserId = getCurrentUserId(ctx, input.createdBy);
-      const community = await this.communityService.createCommunityAndJoinAsOwner(
-        ctx,
-        currentUserId,
-        input,
-        tx,
-      );
+    const tenantId = await this.communityService.createFirebaseTenant(input.name);
 
-      await this.walletService.createCommunityWallet(ctx, community.id, tx);
-      await this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, community.id, tx);
+    try {
+      return await ctx.issuer.public(ctx, async (tx) => {
+        const currentUserId = getCurrentUserId(ctx, input.createdBy);
+        const community = await this.communityService.createCommunityAndJoinAsOwner(
+          ctx,
+          currentUserId,
+          input,
+          tenantId,
+          tx,
+        );
 
-      return CommunityPresenter.create(community);
-    });
+        await this.walletService.createCommunityWallet(ctx, community.id, tx);
+        await this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, community.id, tx);
+
+        return CommunityPresenter.create(community);
+      });
+    } catch (err) {
+      await this.communityService.deleteFirebaseTenant(tenantId).catch((cleanupErr) => {
+        logger.error("Failed to clean up Firebase tenant after community creation failure; manual cleanup required", { tenantId, cleanupErr });
+      });
+      throw err;
+    }
   }
 
   async ownerDeleteCommunity(
@@ -95,5 +111,15 @@ export default class CommunityUseCase {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return this.signupBonusConfigService.update(ctx, permission.communityId, input, tx);
     });
+  }
+
+  async managerUpdatePortalConfig(
+    { input, permission }: GqlMutationUpdatePortalConfigArgs,
+    ctx: IContext,
+  ): Promise<CommunityPortalConfigResult> {
+    await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      await this.portalConfigService.update(ctx, permission.communityId, input, tx);
+    });
+    return this.portalConfigService.getPortalConfig(ctx, permission.communityId);
   }
 }

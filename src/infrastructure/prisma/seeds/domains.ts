@@ -125,7 +125,7 @@ export async function seedUsecase() {
 
 // STEP 1
 async function createBaseEntitiesForUsers(imagePool: { id: string }[]) {
-  const community = await CommunityFactory.create({ id: "neo88" });
+  const community = await CommunityFactory.create({ id: "himeji-ymca" });
   await CommunityConfigFactory.create({ transientCommunity: community });
 
   const users: User[] = [];

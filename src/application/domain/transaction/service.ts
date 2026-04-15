@@ -39,9 +39,10 @@ export default class TransactionService implements ITransactionService {
     toWalletId: string,
     tx: Prisma.TransactionClient,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.issueCommunityPoint(toWalletId, transferPoints, currentUserId, comment);
+    const data = this.converter.issueCommunityPoint(toWalletId, transferPoints, currentUserId, comment, uploadedImages);
     const res = await this.repository.create(ctx, data, tx);
     return res;
   }
@@ -53,9 +54,10 @@ export default class TransactionService implements ITransactionService {
     memberWalletId: string,
     tx: Prisma.TransactionClient,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.grantCommunityPoint(fromWalletId, transferPoints, memberWalletId, currentUserId, comment);
+    const data = this.converter.grantCommunityPoint(fromWalletId, transferPoints, memberWalletId, currentUserId, comment, uploadedImages);
     const res = await this.repository.create(ctx, data, tx);
     return res;
   }
@@ -81,11 +83,12 @@ export default class TransactionService implements ITransactionService {
     transferPoints: number,
     tx: Prisma.TransactionClient,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
     const parentTx = await this.repository.findLatestReceivedTx(ctx, fromWalletId, tx);
     const chainDepth = (parentTx?.chainDepth ?? 0) + 1;
-    const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId, comment, parentTx?.id, chainDepth);
+    const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId, comment, parentTx?.id, chainDepth, uploadedImages);
     return this.repository.create(ctx, data, tx);
   }
 
@@ -151,6 +154,17 @@ export default class TransactionService implements ITransactionService {
     const data = this.converter.refundTicket(fromWalletId, toWalletId, transferPoints, currentUserId);
     const res = await this.repository.create(ctx, data, tx);
     return res;
+  }
+
+  async updateMetadata(
+    ctx: IContext,
+    id: string,
+    comment: string | null | undefined,
+    uploadedImages: Prisma.ImageCreateWithoutTransactionsInput[] | undefined,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTransactionDetail> {
+    const data = this.converter.updateMetadata(comment, uploadedImages);
+    return this.repository.update(ctx, id, data, tx);
   }
 
   async refreshCurrentPoint(ctx: IContext, tx: Prisma.TransactionClient) {

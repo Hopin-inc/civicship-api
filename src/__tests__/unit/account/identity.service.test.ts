@@ -123,9 +123,9 @@ describe("IdentityService", () => {
       mockIdentityRepository.find.mockResolvedValue(TEST_IDENTITY);
       mockUserRepository.delete.mockResolvedValue(TEST_USER);
 
-      const result = await service.deleteUserAndIdentity(TEST_IDENTITY.uid);
+      const result = await service.deleteUserAndIdentity(TEST_IDENTITY.uid, TEST_IDENTITY.communityId);
 
-      expect(mockIdentityRepository.find).toHaveBeenCalledWith(TEST_IDENTITY.uid);
+      expect(mockIdentityRepository.find).toHaveBeenCalledWith(TEST_IDENTITY.uid, TEST_IDENTITY.communityId);
       expect(mockUserRepository.delete).toHaveBeenCalledWith(TEST_IDENTITY.userId);
       expect(result).toEqual(TEST_USER);
     });
@@ -133,9 +133,9 @@ describe("IdentityService", () => {
     it("should return null when identity does not exist", async () => {
       mockIdentityRepository.find.mockResolvedValue(null);
 
-      const result = await service.deleteUserAndIdentity("nonexistent-uid");
+      const result = await service.deleteUserAndIdentity("nonexistent-uid", TEST_COMMUNITY_ID);
 
-      expect(mockIdentityRepository.find).toHaveBeenCalledWith("nonexistent-uid");
+      expect(mockIdentityRepository.find).toHaveBeenCalledWith("nonexistent-uid", TEST_COMMUNITY_ID);
       expect(result).toBeNull();
     });
 
@@ -144,7 +144,7 @@ describe("IdentityService", () => {
       const error = new Error("User deletion failed");
       mockUserRepository.delete.mockRejectedValue(error);
 
-      await expect(service.deleteUserAndIdentity(TEST_IDENTITY.uid)).rejects.toThrow(
+      await expect(service.deleteUserAndIdentity(TEST_IDENTITY.uid, TEST_IDENTITY.communityId)).rejects.toThrow(
         "User deletion failed",
       );
     });

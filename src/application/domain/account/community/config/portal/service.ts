@@ -1,8 +1,11 @@
 import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
 import { inject, injectable } from "tsyringe";
+import { Prisma } from "@prisma/client";
+import { GqlCommunityPortalConfigInput } from "@/types/graphql";
 import ICommunityPortalConfigRepository from "@/application/domain/account/community/config/portal/data/interface";
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
+import ImageService from "@/application/domain/content/image/service";
 
 export interface CommunityPortalConfigResult {
   communityId: string;
@@ -41,6 +44,23 @@ export interface CommonDocumentOverrides {
   privacy?: CommunityDocument;
 }
 
+const DEFAULT_ENABLE_FEATURES = ["points", "justDaoIt", "languageSwitcher"];
+
+// Fallback defaults for the create path when no portal config exists yet
+const PORTAL_CONFIG_CREATE_DEFAULTS: Prisma.CommunityPortalConfigCreateWithoutConfigInput = {
+  tokenName: "",
+  title: "",
+  description: "",
+  domain: "",
+  faviconPrefix: "",
+  logoPath: "",
+  squareLogoPath: "",
+  ogImagePath: "",
+  enableFeatures: DEFAULT_ENABLE_FEATURES,
+  rootPath: "/",
+  adminRootPath: "/admin",
+};
+
 @injectable()
 export default class CommunityPortalConfigService {
   constructor(
@@ -48,7 +68,57 @@ export default class CommunityPortalConfigService {
     private readonly portalRepository: ICommunityPortalConfigRepository,
     @inject("CommunityConfigRepository")
     private readonly configRepository: ICommunityConfigRepository,
+    @inject("ImageService")
+    private readonly imageService: ImageService,
   ) {}
+
+  async update(
+    ctx: IContext,
+    communityId: string,
+    input: GqlCommunityPortalConfigInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    // ogImage (file upload) takes priority over ogImagePath (legacy string)
+    let resolvedOgImagePath: string | undefined;
+    if (input.ogImage != null) {
+      const result = await this.imageService.uploadPublicImage(input.ogImage, "community-portal");
+      if (result) resolvedOgImagePath = result.url;
+    } else if (input.ogImagePath != null) {
+      resolvedOgImagePath = input.ogImagePath;
+    }
+
+    // Plain values only — avoids type incompatibility between UpdateInput and CreateInput
+    const plainValues: Partial<Prisma.CommunityPortalConfigCreateWithoutConfigInput> = {
+      ...(input.tokenName       != null && { tokenName: input.tokenName }),
+      ...(input.title           != null && { title: input.title }),
+      ...(input.description     != null && { description: input.description }),
+      ...(input.shortDescription !== undefined && { shortDescription: input.shortDescription }),
+      ...(input.domain          != null && { domain: input.domain }),
+      ...(input.faviconPrefix   != null && { faviconPrefix: input.faviconPrefix }),
+      ...(input.logoPath        != null && { logoPath: input.logoPath }),
+      ...(input.squareLogoPath  != null && { squareLogoPath: input.squareLogoPath }),
+      ...(resolvedOgImagePath   != null && { ogImagePath: resolvedOgImagePath }),
+      ...(input.enableFeatures  != null && { enableFeatures: input.enableFeatures }),
+      ...(input.rootPath        != null && { rootPath: input.rootPath }),
+      ...(input.adminRootPath   != null && { adminRootPath: input.adminRootPath }),
+      ...(input.regionName      !== undefined && { regionName: input.regionName }),
+      ...(input.regionKey       !== undefined && { regionKey: input.regionKey }),
+      // DbNull = SQL NULL（列を null にする）。JsonNull は JSON リテラルの null を格納するため不適切
+      ...(input.documents !== undefined && { documents: input.documents ?? Prisma.DbNull }),
+      ...(input.commonDocumentOverrides !== undefined && {
+        commonDocumentOverrides: input.commonDocumentOverrides ?? Prisma.DbNull,
+      }),
+    };
+
+    const updateData: Prisma.CommunityPortalConfigUpdateWithoutConfigInput = plainValues;
+    // create path: defaults + input values to satisfy NOT NULL constraints
+    const createData: Prisma.CommunityPortalConfigCreateWithoutConfigInput = {
+      ...PORTAL_CONFIG_CREATE_DEFAULTS,
+      ...plainValues,
+    };
+
+    await this.portalRepository.upsert(ctx, communityId, createData, updateData, tx);
+  }
 
   async getPortalConfig(ctx: IContext, communityId: string): Promise<CommunityPortalConfigResult> {
     const portalConfig = await this.portalRepository.getPortalConfig(ctx, communityId);
@@ -58,7 +128,7 @@ export default class CommunityPortalConfigService {
 
     const [lineConfig, firebaseConfig] = await Promise.all([
       this.configRepository.getLineConfig(ctx, communityId),
-      this.configRepository.getFirebaseConfig(ctx, communityId),
+      this.configRepository.getFirebaseConfig(ctx.issuer, communityId),
     ]);
 
     return {

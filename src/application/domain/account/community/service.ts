@@ -10,6 +10,7 @@ import { NotFoundError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
 import { inject, injectable } from "tsyringe";
 import ICommunityRepository from "@/application/domain/account/community/data/interface";
+import { auth } from "@/infrastructure/libs/firebase";
 
 @injectable()
 export default class CommunityService {
@@ -41,13 +42,23 @@ export default class CommunityService {
     return community;
   }
 
+  async createFirebaseTenant(displayName: string): Promise<string> {
+    const tenant = await auth.tenantManager().createTenant({ displayName });
+    return tenant.tenantId;
+  }
+
+  async deleteFirebaseTenant(tenantId: string): Promise<void> {
+    await auth.tenantManager().deleteTenant(tenantId);
+  }
+
   async createCommunityAndJoinAsOwner(
     ctx: IContext,
     currentUserId: string,
     input: GqlCommunityCreateInput,
+    tenantId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const { data, image } = this.converter.create(input, currentUserId);
+    const { data, image } = this.converter.create(input, currentUserId, tenantId);
 
     let uploadedImageData: Prisma.ImageCreateWithoutCommunitiesInput | undefined = undefined;
     if (image) {

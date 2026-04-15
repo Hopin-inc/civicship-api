@@ -27,7 +27,7 @@ export class LIFFAuthUseCase {
 
     const profile = await LIFFService.getProfile(request.accessToken);
 
-    const tenantId = await configService.getFirebaseTenantId(ctx, request.communityId);
+    const tenantId = await configService.getFirebaseTenantId(issuer, request.communityId);
     const customToken = await LIFFService.createFirebaseCustomToken(profile, tenantId);
 
     const expiryTime = new Date();

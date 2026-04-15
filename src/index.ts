@@ -15,6 +15,8 @@ import { customProcessRequest } from "@/presentation/middleware/custom-process-r
 import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 import cookieParser from "cookie-parser";
 import { handleSessionLogin } from "@/presentation/middleware/session";
+import { sessionLoginRateLimit } from "@/presentation/middleware/rate-limit";
+import { botBlocker } from "@/presentation/middleware/bot-blocker";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -48,31 +50,49 @@ async function startServer() {
   app.use(requestLogger);
 
   app.use(corsHandler);
-  app.use(express.json({ limit: "50mb" }));
+  app.use(cookieParser());
+
+  app.post("/sessionLogin", express.json(), sessionLoginRateLimit, handleSessionLogin);
+
+  // Scope multipart upload processing to /graphql only.
+  // Previously this was global, causing scanner POST requests to arbitrary
+  // paths (e.g. /, /api/upload) to trigger graphql-upload validation errors.
+  // botBlocker runs first so bot requests are rejected before body parsing.
   app.use(
+    "/graphql",
+    botBlocker,
+    express.json({ limit: "50mb" }),
     graphqlUploadExpress({
       maxFileSize: 10_000_000,
       maxFiles: 10,
       processRequest: customProcessRequest,
     }),
+    authHandler(apolloServer),
   );
-
-  app.use((err, req, res, _next) => {
-    logger.error("Unhandled Express Error:", {
-      message: err.message,
-      stack: err.stack,
-    });
-    res.status(500).json({ error: "Internal Server Error" });
-  });
-
-  app.use(cookieParser());
-  app.post("/sessionLogin", handleSessionLogin);
-
-  app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });
+  });
+
+  // Error handler — must be registered after all routes.
+  // Distinguishes client errors (4xx) from server errors (5xx) so that
+  // malformed multipart requests return 400 instead of 500.
+  app.use((err: Error & { status?: number; expose?: boolean }, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    const status = typeof err.status === "number" ? err.status : 500;
+    if (status < 500) {
+      logger.warn("Client error:", {
+        status,
+        message: err.message,
+        url: req.originalUrl,
+      });
+    } else {
+      logger.error("Unhandled Express Error:", {
+        message: err.message,
+        stack: err.stack,
+      });
+    }
+    res.status(status).json({ error: err.expose ? err.message : "Internal Server Error" });
   });
 
   server.listen(port, () => {

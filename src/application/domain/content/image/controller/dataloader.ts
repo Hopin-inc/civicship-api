@@ -72,3 +72,22 @@ export function createImagesByUtilityLoader(prisma: PrismaClient) {
     return utilityIds.map((id) => map.get(id) ?? []);
   });
 }
+
+export function createImagesByTransactionLoader(prisma: PrismaClient) {
+  return new DataLoader<string, string[]>(async (transactionIds) => {
+    const transactions = await prisma.transaction.findMany({
+      where: { id: { in: [...transactionIds] } },
+      include: { images: true },
+    });
+
+    const map = new Map<string, string[]>();
+    for (const t of transactions) {
+      map.set(
+        t.id,
+        t.images.map((img) => img.url)
+      );
+    }
+
+    return transactionIds.map((id) => map.get(id) ?? []);
+  });
+}

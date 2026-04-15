@@ -1,11 +1,10 @@
 import { CommunityRichMenuConfig } from "../types";
-import { adminMenu } from "./definitions/admin";
-import { userMenu } from "./definitions/user";
-import { publicMenu } from "./definitions/public";
+import { kibotchaMain } from "@/infrastructure/richmenu/kibotcha/definitions/main";
+import { kibotchaNft } from "@/infrastructure/richmenu/kibotcha/definitions/nft";
 
 export const kibotchaConfig: CommunityRichMenuConfig = {
   communityId: "kibotcha",
-  menus: [adminMenu, userMenu, publicMenu],
+  menus: [kibotchaMain, kibotchaNft],
 };
 
-export { adminMenu, userMenu, publicMenu };
+export { kibotchaMain, kibotchaNft };

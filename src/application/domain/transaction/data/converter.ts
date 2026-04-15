@@ -12,11 +12,28 @@ export default class TransactionConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
+  updateMetadata(
+    comment: string | null | undefined,
+    uploadedImages: Prisma.ImageCreateWithoutTransactionsInput[] | undefined,
+  ): Prisma.TransactionUpdateInput {
+    const data: Prisma.TransactionUpdateInput = { comment };
+
+    if (uploadedImages !== undefined) {
+      data.images = {
+        set: [],
+        ...(uploadedImages.length > 0 && { create: uploadedImages }),
+      };
+    }
+
+    return data;
+  }
+
   issueCommunityPoint(
     toWalletId: string,
     transferPoints: number,
     createdBy: string,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.POINT_ISSUED,
@@ -25,6 +42,7 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
       comment,
+      ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
     };
   }
 
@@ -34,6 +52,7 @@ export default class TransactionConverter {
     toWalletId: string,
     createdBy: string,
     comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.GRANT,
@@ -44,6 +63,7 @@ export default class TransactionConverter {
       createdByUser: { connect: { id: createdBy } },
       comment,
       chainDepth: 1,
+      ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
     };
   }
 
@@ -73,6 +93,7 @@ export default class TransactionConverter {
     comment?: string,
     parentTxId?: string,
     chainDepth?: number,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.DONATION,
@@ -84,6 +105,7 @@ export default class TransactionConverter {
       comment,
       ...(parentTxId ? { parentTx: { connect: { id: parentTxId } } } : {}),
       ...(chainDepth !== undefined ? { chainDepth } : {}),
+      ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
     };
   }
 

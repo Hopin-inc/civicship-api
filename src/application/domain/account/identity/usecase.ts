@@ -16,7 +16,7 @@ import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
-import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import IncentiveGrantService, { SignupBonusGrantResult } from "@/application/domain/transaction/incentiveGrant/service";
 import TransactionService from "@/application/domain/transaction/service";
 import NotificationService from "@/application/domain/notification/service";
 import CommunityService from "@/application/domain/account/community/service";
@@ -37,7 +37,7 @@ export default class IdentityUseCase {
     @inject("TransactionService") private readonly transactionService: TransactionService,
     @inject("NotificationService") private readonly notificationService: NotificationService,
     @inject("CommunityService") private readonly communityService: CommunityService,
-  ) {}
+  ) { }
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
     return {
@@ -66,12 +66,16 @@ export default class IdentityUseCase {
 
   async userDeleteAccount(context: IContext): Promise<GqlUserDeletePayload> {
     if (!context.uid || !context.platform || !context.tenantId) {
-      throw new Error("Authentication required (uid or platform missing)");
+      throw new AuthenticationError("Authentication required (uid, platform, or tenantId missing)");
     }
     const uid = context.uid;
     const communityId = context.platform === IdentityPlatform.Line ? context.communityId : null;
     const user = await this.identityService.deleteUserAndIdentity(uid, communityId);
-    await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
+    try {
+      await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
+    } catch (error) {
+      logger.error("Failed to delete Firebase Auth user during account deletion", { uid: uid.slice(-6), error });
+    }
     return IdentityPresenter.delete(user);
   }
 
@@ -173,28 +177,7 @@ export default class IdentityUseCase {
       }
 
       // Send signup bonus notification (best-effort)
-      if (signupBonusResult.granted && signupBonusResult.transaction) {
-        const transaction = signupBonusResult.transaction;
-        const community = await this.communityService.findCommunityOrThrow(ctx, communityId);
-
-        this.notificationService
-          .pushSignupBonusGrantedMessage(
-            ctx,
-            transaction.id,
-            transaction.toPointChange,
-            transaction.comment,
-            community.name,
-            userId,
-          )
-          .catch((error) => {
-            logger.error("Failed to send signup bonus notification", {
-              transactionId: transaction.id,
-              userId,
-              communityId,
-              error,
-            });
-          });
-      }
+      this.sendSignupBonusNotification(ctx, signupBonusResult, userId);
 
       return user;
     } catch (error) {
@@ -313,12 +296,12 @@ export default class IdentityUseCase {
               communityId: ctx.communityId,
             });
 
-            const membership = await ctx.issuer.public(ctx, async (tx) => {
+            const joinResult = await ctx.issuer.public(ctx, async (tx) => {
               // Link phone identity to existing user
               await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
 
               // Create membership
-              const newMembership = await this.membershipService.joinIfNeeded(
+              const membership = await this.membershipService.joinIfNeeded(
                 ctx,
                 userByLineIdentity.id,
                 ctx.communityId,
@@ -333,7 +316,19 @@ export default class IdentityUseCase {
                 tx,
               );
 
-              return newMembership;
+              // Use composite key as sourceId for idempotency
+              const initializationSourceId = `${userByLineIdentity.id}_${ctx.communityId}`;
+
+              // Grant signup bonus if enabled (returns transaction details)
+              const signupBonusResult = await this.incentiveGrantService.grantSignupBonusIfEnabled(
+                ctx,
+                userByLineIdentity.id,
+                ctx.communityId,
+                initializationSourceId,
+                tx,
+              );
+
+              return { membership, signupBonusResult };
             });
 
             logger.debug("[checkPhoneUser] Created membership for LINE user without membership", {
@@ -341,13 +336,16 @@ export default class IdentityUseCase {
               lineUid: ctx.uid,
               userId: userByLineIdentity.id,
               communityId: ctx.communityId,
-              membershipUserId: membership?.userId,
+              membershipUserId: joinResult.membership?.userId,
             });
+
+            // Send signup bonus notification (best-effort, after transaction commits)
+            this.sendSignupBonusNotification(ctx, joinResult.signupBonusResult, userByLineIdentity.id);
 
             return {
               status: GqlPhoneUserStatus.ExistingDifferentCommunity,
               user: userByLineIdentity,
-              membership: membership,
+              membership: joinResult.membership,
             };
           }
         }
@@ -465,7 +463,7 @@ export default class IdentityUseCase {
       },
     );
 
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const joinResult = await ctx.issuer.public(ctx, async (tx) => {
       if (!ctx.uid || !ctx.platform) {
         logger.error("[checkPhoneUser] Missing uid or platform in context", {
           phoneUid,
@@ -563,21 +561,71 @@ export default class IdentityUseCase {
         communityId: ctx.communityId,
       });
 
-      return membership;
+      // Use composite key as sourceId for idempotency
+      const initializationSourceId = `${existingUser.id}_${ctx.communityId}`;
+
+      // Grant signup bonus if enabled (returns transaction details)
+      const signupBonusResult = await this.incentiveGrantService.grantSignupBonusIfEnabled(
+        ctx,
+        existingUser.id,
+        ctx.communityId,
+        initializationSourceId,
+        tx,
+      );
+
+      return { membership, signupBonusResult };
     });
 
     logger.debug("[checkPhoneUser] Returning EXISTING_DIFFERENT_COMMUNITY status", {
       phoneUid,
       userId: existingUser.id,
       communityId: ctx.communityId,
-      membershipUserId: membership?.userId,
-      membershipCommunityId: membership?.communityId,
+      membershipUserId: joinResult.membership?.userId,
+      membershipCommunityId: joinResult.membership?.communityId,
     });
+
+    // Send signup bonus notification (best-effort, after transaction commits)
+    this.sendSignupBonusNotification(ctx, joinResult.signupBonusResult, existingUser.id);
 
     return {
       status: GqlPhoneUserStatus.ExistingDifferentCommunity,
       user: existingUser,
-      membership: membership,
+      membership: joinResult.membership,
     };
+  }
+
+  private sendSignupBonusNotification(
+    ctx: IContext,
+    signupBonusResult: SignupBonusGrantResult,
+    userId: string,
+  ): void {
+    if (!signupBonusResult.granted || !signupBonusResult.transaction) {
+      return;
+    }
+
+    const { transaction } = signupBonusResult;
+
+    // 通知処理は fire-and-forget で実行し、メインフローをブロックしない
+    (async () => {
+      try {
+        const communityId = ctx.communityId;
+        const community = await this.communityService.findCommunityOrThrow(ctx, communityId);
+        await this.notificationService.pushSignupBonusGrantedMessage(
+          ctx,
+          transaction.id,
+          transaction.toPointChange,
+          transaction.comment,
+          community.name,
+          userId,
+        );
+      } catch (error) {
+        logger.error("Failed to send signup bonus notification", {
+          transactionId: transaction.id,
+          userId,
+          communityId: ctx.communityId,
+          error,
+        });
+      }
+    })();
   }
 }

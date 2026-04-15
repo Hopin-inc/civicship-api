@@ -25,6 +25,7 @@ Table t_images {
   opportunities t_opportunities [not null]
   participations t_participations [not null]
   utilities t_utilities [not null]
+  transactions t_transactions [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -575,6 +576,7 @@ Table t_transactions {
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
   merkleProofs t_merkle_proofs [not null]
+  images t_images [not null]
 }
 
 Table t_incentive_grants {
@@ -784,6 +786,11 @@ Table t_images_on_participations {
 
 Table t_images_on_utilities {
   utilitiesId String [ref: > t_utilities.id]
+  imagesId String [ref: > t_images.id]
+}
+
+Table t_images_on_transactions {
+  transactionsId String [ref: > t_transactions.id]
   imagesId String [ref: > t_images.id]
 }
 

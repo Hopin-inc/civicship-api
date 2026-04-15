@@ -2,6 +2,7 @@ import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
 import { inject, injectable } from "tsyringe";
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { LineRichMenuType } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 
@@ -12,8 +13,8 @@ export default class CommunityConfigService {
     private readonly repository: ICommunityConfigRepository,
   ) { }
 
-  async getFirebaseTenantId(ctx: IContext, communityId: string): Promise<string> {
-    const config = await this.repository.getFirebaseConfig(ctx, communityId);
+  async getFirebaseTenantId(issuer: PrismaClientIssuer, communityId: string): Promise<string> {
+    const config = await this.repository.getFirebaseConfig(issuer, communityId);
     if (!config?.tenantId) {
       throw new NotFoundError("Firebase tenantId not found", { communityId });
     }

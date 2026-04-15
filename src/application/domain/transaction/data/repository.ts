@@ -102,4 +102,17 @@ export default class TransactionRepository implements ITransactionRepository {
       select: transactionSelectDetail,
     });
   }
+
+  async update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.TransactionUpdateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTransactionDetail> {
+    return tx.transaction.update({
+      where: { id },
+      data,
+      select: transactionSelectDetail,
+    });
+  }
 }

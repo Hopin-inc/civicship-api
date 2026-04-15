@@ -1,4 +1,15 @@
 import "reflect-metadata";
+
+jest.mock("@/infrastructure/libs/firebase", () => ({
+  auth: {
+    tenantManager: jest.fn(() => ({
+      createTenant: jest.fn().mockResolvedValue({ tenantId: "mock-tenant-id" }),
+      deleteTenant: jest.fn().mockResolvedValue(undefined),
+    })),
+  },
+  __esModule: true,
+}));
+
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { GqlCommunityCreateInput } from "@/types/graphql";

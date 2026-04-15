@@ -9,6 +9,16 @@ import ICommunityRepository from "@/application/domain/account/community/data/in
 import { GqlCommunityCreateInput, GqlCommunityUpdateProfileInput } from "@/types/graphql";
 import CommunityConverter from "@/application/domain/account/community/data/converter";
 
+jest.mock("@/infrastructure/libs/firebase", () => ({
+  auth: {
+    tenantManager: jest.fn(() => ({
+      createTenant: jest.fn().mockResolvedValue({ tenantId: "mock-tenant-id" }),
+      deleteTenant: jest.fn().mockResolvedValue(undefined),
+    })),
+  },
+  __esModule: true,
+}));
+
 describe("CommunityService", () => {
   class MockCommunityRepository implements ICommunityRepository {
     query = jest.fn();
@@ -98,10 +108,11 @@ describe("CommunityService", () => {
         ctxWithUser,
         "test-user",
         input,
+        "test-tenant-id",
         {} as Prisma.TransactionClient,
       );
 
-      expect(mockConverter.create).toHaveBeenCalledWith(input, "test-user");
+      expect(mockConverter.create).toHaveBeenCalledWith(input, "test-user", "test-tenant-id");
       expect(mockRepository.create).toHaveBeenCalledWith(
         ctxWithUser,
         {

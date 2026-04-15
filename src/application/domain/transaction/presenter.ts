@@ -6,6 +6,7 @@ import {
   GqlTransactionDonateSelfPointSuccess,
   GqlTransactionChain,
   GqlTransactionReason,
+  GqlTransactionUpdateMetadataSuccess,
 } from "@/types/graphql";
 import { PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
 
@@ -51,6 +52,13 @@ export default class TransactionPresenter {
   static giveUserPoint(r: PrismaTransactionDetail): GqlTransactionDonateSelfPointSuccess {
     return {
       __typename: "TransactionDonateSelfPointSuccess",
+      transaction: this.get(r),
+    };
+  }
+
+  static updateMetadata(r: PrismaTransactionDetail): GqlTransactionUpdateMetadataSuccess {
+    return {
+      __typename: "TransactionUpdateMetadataSuccess",
       transaction: this.get(r),
     };
   }
