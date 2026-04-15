@@ -82,6 +82,7 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
       comment: comment ?? undefined,
+      chainDepth: 1,
     };
   }
 
