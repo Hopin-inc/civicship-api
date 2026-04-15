@@ -11,6 +11,10 @@ jest.mock("@/application/domain/utils", () => ({
 
 class MockTransactionRepository {
   create = jest.fn();
+  find = jest.fn();
+  query = jest.fn();
+  findLatestReceivedTx = jest.fn().mockResolvedValue(null);
+  findChain = jest.fn();
   refreshCurrentPoints = jest.fn();
 }
 
@@ -159,16 +163,18 @@ describe("TransactionService", () => {
         comment,
       );
 
+      expect(mockRepository.findLatestReceivedTx).toHaveBeenCalledWith(mockCtx, walletId, mockTx);
       expect(mockConverter.donateSelfPoint).toHaveBeenCalledWith(
         walletId,
         walletId,
         transferPoints,
         "test-user-id",
         comment,
-        undefined,
+        undefined, // parentTxId (null → undefined)
+        1,         // chainDepth (no parent → 1)
+        undefined, // uploadedImages
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
-      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
@@ -205,15 +211,17 @@ describe("TransactionService", () => {
         walletId,
       );
 
+      expect(mockRepository.findLatestReceivedTx).toHaveBeenCalledWith(mockCtx, walletId, mockTx);
       expect(mockConverter.giveRewardPoint).toHaveBeenCalledWith(
         walletId,
         walletId,
         participationId,
         transferPoints,
         "test-user-id",
+        undefined, // parentTxId (null → undefined)
+        1,         // chainDepth (no parent → 1)
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
-      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });

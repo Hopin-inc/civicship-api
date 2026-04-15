@@ -80,7 +80,9 @@ export default class TransactionUseCase {
   }
 
   async getTransactionChain(id: string, ctx: IContext) {
-    return this.transactionService.getTransactionChain(ctx, id);
+    const rows = await this.transactionService.getTransactionChain(ctx, id);
+    if (!rows.length) return null;
+    return TransactionPresenter.chain(rows);
   }
 
   async ownerIssueCommunityPoint(

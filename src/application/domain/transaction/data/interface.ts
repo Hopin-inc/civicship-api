@@ -2,7 +2,7 @@ import { Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
-import { GqlQueryTransactionsArgs, GqlTransactionChain } from "@/types/graphql";
+import { GqlQueryTransactionsArgs } from "@/types/graphql";
 
 export interface ITransactionService {
   fetchTransactions(
@@ -13,7 +13,7 @@ export interface ITransactionService {
 
   findTransaction(ctx: IContext, id: string): Promise<PrismaTransactionDetail | null>;
 
-  getTransactionChain(ctx: IContext, txId: string): Promise<GqlTransactionChain | null>;
+  getTransactionChain(ctx: IContext, txId: string): Promise<TransactionChainRow[]>;
 
   issueCommunityPoint(
     ctx: IContext,

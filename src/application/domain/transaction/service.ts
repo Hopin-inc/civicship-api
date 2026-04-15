@@ -5,10 +5,9 @@ import {
   ITransactionService,
 } from "@/application/domain/transaction/data/interface";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
-import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
-import { GqlQueryTransactionsArgs, GqlTransactionChain } from "@/types/graphql";
+import { PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
+import { GqlQueryTransactionsArgs } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
-import TransactionPresenter from "@/application/domain/transaction/presenter";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
@@ -171,9 +170,7 @@ export default class TransactionService implements ITransactionService {
     return this.repository.refreshCurrentPoints(ctx, tx);
   }
 
-  async getTransactionChain(ctx: IContext, txId: string): Promise<GqlTransactionChain | null> {
-    const rows = await this.repository.findChain(ctx, txId);
-    if (!rows.length) return null;
-    return TransactionPresenter.chain(rows);
+  async getTransactionChain(ctx: IContext, txId: string): Promise<TransactionChainRow[]> {
+    return this.repository.findChain(ctx, txId);
   }
 }

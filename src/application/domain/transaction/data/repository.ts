@@ -71,15 +71,17 @@ export default class TransactionRepository implements ITransactionRepository {
           c.created_at,
           fu.id   AS from_user_id,
           fu.name AS from_user_name,
-          fu.image AS from_user_image,
+          fi.url  AS from_user_image,
           tu.id   AS to_user_id,
           tu.name AS to_user_name,
-          tu.image AS to_user_image
+          ti.url  AS to_user_image
         FROM chain c
         LEFT JOIN t_wallets fw ON fw.id = c."from"
         LEFT JOIN t_users   fu ON fu.id = fw.user_id
+        LEFT JOIN t_images  fi ON fi.id = fu.image_id
         LEFT JOIN t_wallets tw ON tw.id = c."to"
         LEFT JOIN t_users   tu ON tu.id = tw.user_id
+        LEFT JOIN t_images  ti ON ti.id = tu.image_id
         ORDER BY c.seq DESC
       `;
     });

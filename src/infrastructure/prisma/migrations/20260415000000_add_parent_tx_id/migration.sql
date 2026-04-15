@@ -4,6 +4,9 @@ ALTER TABLE "t_transactions" ADD COLUMN "parent_tx_id" TEXT REFERENCES "t_transa
 -- Index for traversing the chain upward (child → parent)
 CREATE INDEX "idx_t_transactions_parent_tx_id" ON "t_transactions"("parent_tx_id");
 
+-- Index for findLatestReceivedTx: WHERE to = ? ORDER BY created_at DESC
+CREATE INDEX "idx_t_transactions_to_created_at" ON "t_transactions"("to", "created_at" DESC);
+
 -- Backfill parent_tx_id: 既存DONATION/POINT_REWARDの過去分を直近受信txで埋める
 -- チェーンを構成するreason（GRANT/POINT_REWARD/DONATION）のみを親候補にすることで
 -- 必ずGRANTまで辿れるチェーンを保証する
