@@ -207,7 +207,9 @@ export default class VoteRepository implements IVoteRepository {
     topicId: string,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${userId + ":" + topicId}))`;
+    // pg_advisory_xact_lock は void を返すため $queryRaw では deserialize できない
+    // $executeRaw はクエリ実行のみ行い戻り値を無視するため void 関数に適切
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId + ":" + topicId}))`;
   }
 
   // 同じ選択肢への再投票時に totalPower のみ差分更新（voteCount は変化なし）
