@@ -257,10 +257,6 @@ export default class TestDataSourceHelper {
     return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
-  static async refreshTransactionChains() {
-    return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_transaction_chains"`;
-  }
-
   static async getCurrentPoints(walletId: string): Promise<number | null> {
     const result = await this.db.currentPointView.findUnique({
       where: { walletId },
@@ -268,10 +264,12 @@ export default class TestDataSourceHelper {
     return result?.currentPoint ? Number(result.currentPoint) : null;
   }
 
-  static async getTransactionChain(transactionId: string) {
-    return this.db.transactionChainView.findUnique({
-      where: { transactionId },
+  static async getParentTxId(transactionId: string): Promise<string | null> {
+    const tx = await this.db.transaction.findUnique({
+      where: { id: transactionId },
+      select: { parentTxId: true },
     });
+    return tx?.parentTxId ?? null;
   }
 
   // ========== Participation関連 (不要になれば削除) =========

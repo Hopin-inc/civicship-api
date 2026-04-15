@@ -21,10 +21,6 @@ export async function refreshPointViews() {
       logger.debug(
         `✅ Successfully refreshed current points view. Processed ${result.length} records.`,
       );
-
-      logger.debug("📜 Refreshing materialized view for transaction chains...");
-      await transactionRepository.refreshTransactionChains(ctx, tx);
-      logger.debug("✅ Successfully refreshed transaction chains view.");
     });
 
     logger.debug("✅ Point views refresh batch completed successfully");
