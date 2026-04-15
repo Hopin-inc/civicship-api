@@ -337,15 +337,18 @@ input CommunityPortalConfigInput {
   documents: [CommunityDocumentInput!]
   domain: String
   enableFeatures: [String!]
-  faviconPrefix: String
-  logoPath: String
+  favicon: ImageInput
+  faviconPrefix: String @deprecated(reason: "Use favicon instead")
+  logo: ImageInput
+  logoPath: String @deprecated(reason: "Use logo instead")
   ogImage: ImageInput
   ogImagePath: String @deprecated(reason: "Use ogImage instead")
   regionKey: String
   regionName: String
   rootPath: String
   shortDescription: String
-  squareLogoPath: String
+  squareLogo: ImageInput
+  squareLogoPath: String @deprecated(reason: "Use squareLogo instead")
   title: String
   tokenName: String
 }
@@ -1908,6 +1911,14 @@ type TicketsConnection {
 }
 
 type Transaction {
+  """
+  ポイントの旅のステップを返します（最大10段階）。
+  再帰CTEによる単一クエリで取得しますが、循環・異常データ対策のため深さ上限を10としています。
+  transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこのクエリが実行されるため高コストになりえます。
+  transaction(id) での単体取得時のみ使用し、深さだけ必要な場合は chainDepth を使用してください。
+  """
+  chain: TransactionChain
+  chainDepth: Int
   comment: String
   createdAt: Datetime
   createdByUser: User
@@ -1922,6 +1933,26 @@ type Transaction {
   toPointChange: Int
   toWallet: Wallet
   updatedAt: Datetime
+}
+
+type TransactionChain {
+  depth: Int!
+  steps: [TransactionChainStep!]!
+}
+
+type TransactionChainStep {
+  createdAt: Datetime!
+  fromUser: TransactionChainUser
+  id: ID!
+  points: Int!
+  reason: TransactionReason!
+  toUser: TransactionChainUser
+}
+
+type TransactionChainUser {
+  id: ID!
+  image: String
+  name: String!
 }
 
 input TransactionDonateSelfPointInput {

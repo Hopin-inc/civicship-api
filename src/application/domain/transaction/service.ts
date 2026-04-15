@@ -5,7 +5,7 @@ import {
   ITransactionService,
 } from "@/application/domain/transaction/data/interface";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
-import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
+import { PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
 import { GqlQueryTransactionsArgs } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
@@ -85,9 +85,10 @@ export default class TransactionService implements ITransactionService {
     uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId, comment, uploadedImages);
-    const transaction = await this.repository.create(ctx, data, tx);
-    return transaction;
+    const parentTx = await this.repository.findLatestReceivedTx(ctx, fromWalletId, tx);
+    const chainDepth = parentTx ? (parentTx.chainDepth ?? 0) + 1 : undefined;
+    const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId, comment, parentTx?.id, chainDepth, uploadedImages);
+    return this.repository.create(ctx, data, tx);
   }
 
   async reservationCreated(
@@ -114,15 +115,18 @@ export default class TransactionService implements ITransactionService {
     toWalletId: string,
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
+    const parentTx = await this.repository.findLatestReceivedTx(ctx, fromWalletId, tx);
+    const chainDepth = parentTx ? (parentTx.chainDepth ?? 0) + 1 : undefined;
     const data = this.converter.giveRewardPoint(
       fromWalletId,
       toWalletId,
       participationId,
       transferPoints,
       currentUserId,
+      parentTx?.id,
+      chainDepth,
     );
-    const res = await this.repository.create(ctx, data, tx);
-    return res;
+    return this.repository.create(ctx, data, tx);
   }
 
   async purchaseTicket(
@@ -164,5 +168,9 @@ export default class TransactionService implements ITransactionService {
 
   async refreshCurrentPoint(ctx: IContext, tx: Prisma.TransactionClient) {
     return this.repository.refreshCurrentPoints(ctx, tx);
+  }
+
+  async getTransactionChain(ctx: IContext, txId: string): Promise<TransactionChainRow[]> {
+    return this.repository.findChain(ctx, txId);
   }
 }

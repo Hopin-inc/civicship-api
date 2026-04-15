@@ -56,6 +56,11 @@ export default class TransactionResolver {
   };
 
   Transaction = {
+    chain: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      if (parent.chainDepth == null) return null;
+      return this.useCase.getTransactionChain(parent.id, ctx);
+    },
+
     fromWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
       return parent.from ? ctx.loaders.wallet.load(parent.from) : null;
     },

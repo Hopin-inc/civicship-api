@@ -707,6 +707,8 @@ RIGHT RIGHT
     Int from_point_change 
     String to "❓"
     Int to_point_change 
+    String parent_tx_id "❓"
+    Int chain_depth "❓"
     String participation_id "❓"
     String reservation_id "❓"
     String created_by "❓"
@@ -1063,6 +1065,8 @@ RIGHT RIGHT
     "t_transactions" o|--|| "TransactionReason" : "enum:reason"
     "t_transactions" o|--|o "t_wallets" : "fromWallet"
     "t_transactions" o|--|o "t_wallets" : "toWallet"
+    "t_transactions" o|--|o "t_transactions" : "parentTx"
+    "t_transactions" o{--}o "t_transactions" : "childTxs"
     "t_transactions" o|--|o "t_participations" : "participation"
     "t_transactions" o|--|o "t_reservations" : "reservation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"

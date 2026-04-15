@@ -1,6 +1,6 @@
 import { Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
+import { PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { GqlQueryTransactionsArgs } from "@/types/graphql";
 
@@ -12,6 +12,8 @@ export interface ITransactionService {
   ): Promise<PrismaTransactionDetail[]>;
 
   findTransaction(ctx: IContext, id: string): Promise<PrismaTransactionDetail | null>;
+
+  getTransactionChain(ctx: IContext, txId: string): Promise<TransactionChainRow[]>;
 
   issueCommunityPoint(
     ctx: IContext,
@@ -111,6 +113,14 @@ export interface ITransactionRepository {
   ): Promise<PrismaTransactionDetail[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaTransactionDetail | null>;
+
+  findLatestReceivedTx(
+    ctx: IContext,
+    walletId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ id: string; chainDepth: number | null } | null>;
+
+  findChain(ctx: IContext, txId: string): Promise<TransactionChainRow[]>;
 
   refreshCurrentPoints(
     ctx: IContext,

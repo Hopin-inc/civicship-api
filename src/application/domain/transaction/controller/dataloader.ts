@@ -9,7 +9,6 @@ import {
   createHasManyLoaderByKey,
   createLoaderById,
 } from "@/presentation/graphql/dataloader/utils";
-import { Transaction } from "@prisma/client";
 
 export function createTransactionLoader(prisma: PrismaClient) {
   return createLoaderById<PrismaTransactionDetail, GqlTransaction>(
@@ -23,7 +22,7 @@ export function createTransactionLoader(prisma: PrismaClient) {
 }
 
 export function createTransactionsByParticipationLoader(prisma: PrismaClient) {
-  return createHasManyLoaderByKey<"participationId", Transaction, GqlTransaction>(
+  return createHasManyLoaderByKey<"participationId", PrismaTransactionDetail, GqlTransaction>(
     "participationId",
     async (participationIds) => {
       return prisma.transaction.findMany({
