@@ -1169,7 +1169,6 @@ model Transaction {
   merkleProofs MerkleProof[]
   images       Image[]       @relation("t_images_on_transactions")
 
-  @@index([from, createdAt])
   @@index([to, createdAt(sort: Desc)])
   @@index([parentTxId])
   @@map("t_transactions")

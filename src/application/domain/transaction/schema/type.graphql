@@ -21,9 +21,10 @@ type Transaction {
   createdByUser: User
 
   """
-  ポイントの旅の全ステップを返します（GRANT起点まで遡るN+1クエリが発生します）。
-  transactionsなどのリスト取得での使用は避け、transaction(id) での単体取得時のみ使用してください。
-  深さだけ必要な場合は chainDepth を使用してください。
+  ポイントの旅の全ステップを返します。
+  親トランザクションの探索自体は再帰CTEによる単一クエリで行われますが、
+  transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこの再帰クエリが実行されるため高コストになりえます。
+  transaction(id) での単体取得時のみ使用し、深さだけ必要な場合は chainDepth を使用してください。
   """
   chain: TransactionChain
 

@@ -125,6 +125,8 @@ describe("Transaction Chain (parentTxId)", () => {
       const { wallet: walletB } = await createUser("User B", "user-b", community);
       const { wallet: walletC } = await createUser("User C", "user-c", community);
 
+      const baseTime = new Date();
+
       // walletB が2回受信する
       const grant1 = await TestDataSourceHelper.createTransaction({
         fromWallet: { connect: { id: communityWallet.id } },
@@ -132,9 +134,8 @@ describe("Transaction Chain (parentTxId)", () => {
         fromPointChange: -100,
         toPointChange: 100,
         reason: TransactionReason.GRANT,
+        createdAt: new Date(baseTime.getTime()),
       });
-
-      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const grant2 = await TestDataSourceHelper.createTransaction({
         fromWallet: { connect: { id: communityWallet.id } },
@@ -142,9 +143,8 @@ describe("Transaction Chain (parentTxId)", () => {
         fromPointChange: -50,
         toPointChange: 50,
         reason: TransactionReason.GRANT,
+        createdAt: new Date(baseTime.getTime() + 100),
       });
-
-      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // walletB から walletC へ送る → 直近受信の grant2 が parent になる
       const donation = await TestDataSourceHelper.createTransaction({
@@ -154,6 +154,7 @@ describe("Transaction Chain (parentTxId)", () => {
         toPointChange: 30,
         reason: TransactionReason.DONATION,
         parentTx: { connect: { id: grant2.id } },
+        createdAt: new Date(baseTime.getTime() + 200),
       });
 
       const parentTxId = await TestDataSourceHelper.getParentTxId(donation.id);
@@ -272,19 +273,21 @@ describe("Transaction Chain (parentTxId)", () => {
         ),
       );
 
+      const baseTime = new Date();
+
       const grant = await TestDataSourceHelper.createTransaction({
         fromWallet: { connect: { id: communityWallet.id } },
         toWallet: { connect: { id: users[0].wallet.id } },
         fromPointChange: -1000,
         toPointChange: 1000,
         reason: TransactionReason.GRANT,
+        createdAt: new Date(baseTime.getTime()),
       });
 
       let prevTxId = grant.id;
       let lastTxId = grant.id;
 
       for (let i = 1; i < CHAIN_LENGTH; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 5));
         const tx = await TestDataSourceHelper.createTransaction({
           fromWallet: { connect: { id: users[i - 1].wallet.id } },
           toWallet: { connect: { id: users[i].wallet.id } },
@@ -292,6 +295,7 @@ describe("Transaction Chain (parentTxId)", () => {
           toPointChange: 100,
           reason: TransactionReason.DONATION,
           parentTx: { connect: { id: prevTxId } },
+          createdAt: new Date(baseTime.getTime() + i * 100),
         });
         prevTxId = tx.id;
         lastTxId = tx.id;
