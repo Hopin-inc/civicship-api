@@ -40,7 +40,9 @@ export default class VotePresenter {
       type: gate.type,
       nftToken: null, // フィールドリゾルバーで解決
       requiredRole: gate.requiredRole ?? null,
-    };
+      // フィールドリゾルバー (VoteGate.nftToken) が parent.nftTokenId を参照するため保持
+      nftTokenId: gate.nftTokenId,
+    } as GqlVoteGate;
   }
 
   static powerPolicy(policy: PrismaVotePowerPolicy): GqlVotePowerPolicy {
@@ -49,7 +51,9 @@ export default class VotePresenter {
       id: policy.id,
       type: policy.type,
       nftToken: null, // フィールドリゾルバーで解決
-    };
+      // フィールドリゾルバー (VotePowerPolicy.nftToken) が parent.nftTokenId を参照するため保持
+      nftTokenId: policy.nftTokenId,
+    } as GqlVotePowerPolicy;
   }
 
   static option(option: PrismaVoteOption, resultVisible: boolean): GqlVoteOption {
@@ -71,7 +75,9 @@ export default class VotePresenter {
       power: ballot.power,
       createdAt: ballot.createdAt,
       updatedAt: ballot.updatedAt ?? null,
-    };
+      // フィールドリゾルバー (VoteBallot.option) が parent.optionId を参照するため保持
+      optionId: ballot.optionId,
+    } as GqlVoteBallot;
   }
 
   static topic(
@@ -84,6 +90,8 @@ export default class VotePresenter {
       __typename: "VoteTopic",
       id: topic.id,
       community: null as unknown as GqlVoteTopic["community"], // フィールドリゾルバーで解決
+      // フィールドリゾルバー (VoteTopic.community) が parent.communityId を参照するため保持
+      communityId: topic.communityId,
       title: topic.title,
       description: topic.description ?? null,
       startsAt: topic.startsAt,
@@ -96,7 +104,7 @@ export default class VotePresenter {
       myEligibility: null, // フィールドリゾルバーで解決
       createdAt: topic.createdAt,
       updatedAt: topic.updatedAt ?? null,
-    };
+    } as GqlVoteTopic;
   }
 
   static eligibility(result: EligibilityResult, currentPower: number | null, myBallot: PrismaVoteBallot | null): GqlMyVoteEligibility {

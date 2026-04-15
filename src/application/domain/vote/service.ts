@@ -31,8 +31,7 @@ export default class VoteService {
   ) {}
 
   async getTopicWithRelations(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic> {
-    const topic = await this.repo.findTopicOrThrow(ctx, id);
-    return topic;
+    return this.repo.findTopicOrThrow(ctx, id, tx);
   }
 
   validateTopicInput(input: GqlVoteTopicCreateInput): void {
@@ -145,11 +144,18 @@ export default class VoteService {
     newPower: number,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
+    if (existingBallot && existingBallot.optionId === newBallot.optionId) {
+      // 同じ選択肢への再投票: voteCount は変化なし、totalPower のみ差分更新
+      const delta = newPower - existingBallot.power;
+      await this.repo.adjustOptionTotalPower(ctx, newBallot.optionId, delta, tx);
+      return;
+    }
+
     if (existingBallot) {
-      // 再投票: 旧選択肢のカウントをデクリメント
+      // 別選択肢への再投票: 旧選択肢を全デクリメント
       await this.repo.decrementOptionCount(ctx, existingBallot.optionId, existingBallot.power, tx);
     }
-    // 新選択肢のカウントをインクリメント
+    // 新選択肢をインクリメント
     await this.repo.incrementOptionCount(ctx, newBallot.optionId, newPower, tx);
   }
 
@@ -172,8 +178,8 @@ export default class VoteService {
     // 4. Options を作成
     await this.repo.createOptions(ctx, topic.id, input.options, tx);
 
-    // 5. リレーション付きで再取得
-    return this.repo.findTopicOrThrow(ctx, topic.id);
+    // 5. リレーション付きで再取得（同じトランザクション内で取得）
+    return this.repo.findTopicOrThrow(ctx, topic.id, tx);
   }
 
   async deleteTopic(
@@ -181,7 +187,6 @@ export default class VoteService {
     id: string,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-    await this.repo.findTopicOrThrow(ctx, id);
     await this.repo.deleteTopic(ctx, id, tx);
   }
 }

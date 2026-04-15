@@ -2,7 +2,6 @@ import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import {
   PrismaVoteTopic,
-  PrismaVoteTopicBase,
   PrismaVoteGate,
   PrismaVotePowerPolicy,
   PrismaVoteOption,
@@ -16,16 +15,16 @@ import {
 } from "@/types/graphql";
 
 export interface IVoteRepository {
-  findTopic(ctx: IContext, id: string): Promise<PrismaVoteTopic | null>;
+  findTopic(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic | null>;
 
-  findTopicOrThrow(ctx: IContext, id: string): Promise<PrismaVoteTopic>;
+  findTopicOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic>;
 
   queryTopics(
     ctx: IContext,
     communityId: string,
     take: number,
     cursor?: string,
-  ): Promise<PrismaVoteTopicBase[]>;
+  ): Promise<PrismaVoteTopic[]>;
 
   countTopics(ctx: IContext, communityId: string): Promise<number>;
 
@@ -47,7 +46,7 @@ export interface IVoteRepository {
     ctx: IContext,
     data: Prisma.VoteTopicCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaVoteTopicBase>;
+  ): Promise<{ id: string }>;
 
   createOptions(
     ctx: IContext,
@@ -60,7 +59,7 @@ export interface IVoteRepository {
     ctx: IContext,
     id: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaVoteTopicBase>;
+  ): Promise<{ id: string }>;
 
   findBallot(
     ctx: IContext,
@@ -88,6 +87,13 @@ export interface IVoteRepository {
     ctx: IContext,
     optionId: string,
     power: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<void>;
+
+  adjustOptionTotalPower(
+    ctx: IContext,
+    optionId: string,
+    delta: number,
     tx: Prisma.TransactionClient,
   ): Promise<void>;
 }

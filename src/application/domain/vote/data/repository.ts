@@ -4,13 +4,11 @@ import { IContext } from "@/types/server";
 import { IVoteRepository } from "./interface";
 import {
   voteTopicWithRelationsSelect,
-  voteTopicSelect,
   voteGateSelect,
   votePowerPolicySelect,
   voteOptionSelect,
   voteBallotSelect,
   PrismaVoteTopic,
-  PrismaVoteTopicBase,
   PrismaVoteGate,
   PrismaVotePowerPolicy,
   PrismaVoteOption,
@@ -26,17 +24,17 @@ import {
 
 @injectable()
 export default class VoteRepository implements IVoteRepository {
-  async findTopic(ctx: IContext, id: string): Promise<PrismaVoteTopic | null> {
-    return ctx.issuer.public(ctx, (tx) =>
-      tx.voteTopic.findUnique({
+  async findTopic(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic | null> {
+    const query = (t: Prisma.TransactionClient) =>
+      t.voteTopic.findUnique({
         where: { id },
         select: voteTopicWithRelationsSelect,
-      }),
-    );
+      });
+    return tx ? query(tx) : ctx.issuer.public(ctx, query);
   }
 
-  async findTopicOrThrow(ctx: IContext, id: string): Promise<PrismaVoteTopic> {
-    const topic = await this.findTopic(ctx, id);
+  async findTopicOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic> {
+    const topic = await this.findTopic(ctx, id, tx);
     if (!topic) throw new NotFoundError("VoteTopic", { id });
     return topic;
   }
@@ -46,12 +44,12 @@ export default class VoteRepository implements IVoteRepository {
     communityId: string,
     take: number,
     cursor?: string,
-  ): Promise<PrismaVoteTopicBase[]> {
+  ): Promise<PrismaVoteTopic[]> {
     return ctx.issuer.public(ctx, (tx) =>
       tx.voteTopic.findMany({
         where: { communityId },
-        select: voteTopicSelect,
-        orderBy: { endsAt: "desc" },
+        select: voteTopicWithRelationsSelect,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -102,10 +100,10 @@ export default class VoteRepository implements IVoteRepository {
     ctx: IContext,
     data: Prisma.VoteTopicCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaVoteTopicBase> {
+  ): Promise<{ id: string }> {
     return tx.voteTopic.create({
       data,
-      select: voteTopicSelect,
+      select: { id: true },
     });
   }
 
@@ -133,10 +131,10 @@ export default class VoteRepository implements IVoteRepository {
     ctx: IContext,
     id: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaVoteTopicBase> {
+  ): Promise<{ id: string }> {
     return tx.voteTopic.delete({
       where: { id },
-      select: voteTopicSelect,
+      select: { id: true },
     });
   }
 
@@ -203,6 +201,22 @@ export default class VoteRepository implements IVoteRepository {
       data: {
         voteCount: { decrement: 1 },
         totalPower: { decrement: power },
+      },
+    });
+  }
+
+  // 同じ選択肢への再投票時に totalPower のみ差分更新（voteCount は変化なし）
+  async adjustOptionTotalPower(
+    ctx: IContext,
+    optionId: string,
+    delta: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (delta === 0) return;
+    await tx.voteOption.update({
+      where: { id: optionId },
+      data: {
+        totalPower: delta > 0 ? { increment: delta } : { decrement: -delta },
       },
     });
   }

@@ -14,7 +14,7 @@ import {
   GqlVoteTopicDeletePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { AuthorizationError } from "@/errors/graphql";
+import { AuthorizationError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
 import VoteService from "./service";
 import VotePresenter from "./presenter";
@@ -45,14 +45,8 @@ export default class VoteUseCase {
     const hasNextPage = records.length > take;
     const data = records.slice(0, take);
 
-    // 各 topic の詳細（gate/options含む）を取得してプレゼンター変換
-    const topicDetails = await Promise.all(
-      data.map((t) => this.repo.findTopicOrThrow(ctx, t.id)),
-    );
-
-    const topicGqls = topicDetails.map((topic) =>
-      VotePresenter.topic(topic, isManagerOfCommunity),
-    );
+    // queryTopics はリレーション付きで返すので N+1 なし
+    const topicGqls = data.map((topic) => VotePresenter.topic(topic, isManagerOfCommunity));
 
     return VotePresenter.query(topicGqls, totalCount, hasNextPage, after ?? undefined);
   }
@@ -100,6 +94,11 @@ export default class VoteUseCase {
   ): Promise<GqlVoteTopicCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
 
+    // permission で指定されたコミュニティと input のコミュニティが一致することを確認
+    if (permission.communityId !== input.communityId) {
+      throw new ValidationError("communityId in input does not match permission.communityId", []);
+    }
+
     this.service.validateTopicInput(input);
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
@@ -116,8 +115,8 @@ export default class VoteUseCase {
     const userId = getCurrentUserId(ctx);
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      // 1. テーマ取得
-      const topic = await this.service.getTopicWithRelations(ctx, input.topicId);
+      // 1. テーマ取得（トランザクション内）
+      const topic = await this.service.getTopicWithRelations(ctx, input.topicId, tx);
 
       // 2. 期間バリデーション
       this.service.validateVotingPeriod(topic);
@@ -153,6 +152,11 @@ export default class VoteUseCase {
     { id, permission }: GqlMutationVoteTopicDeleteArgs,
   ): Promise<GqlVoteTopicDeletePayload> {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      // 削除前にコミュニティ所有チェック
+      const topic = await this.repo.findTopicOrThrow(ctx, id, tx);
+      if (topic.communityId !== permission.communityId) {
+        throw new AuthorizationError("TOPIC_NOT_IN_COMMUNITY");
+      }
       await this.service.deleteTopic(ctx, id, tx);
       return VotePresenter.deleteTopic(id);
     });

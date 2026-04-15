@@ -1,12 +1,8 @@
-// Vote domain DataLoaders
-// 現時点では VoteOption の個別取得用ローダーを定義
-// 集計カラム（voteCount / totalPower）は VoteOption テーブルに非正規化済みのため
-// 追加の集計クエリは不要
-
-import DataLoader from "dataloader";
 import { PrismaClient } from "@prisma/client";
+import DataLoader from "dataloader";
 import { voteOptionSelect, PrismaVoteOption } from "@/application/domain/vote/data/type";
 
+// VoteOption を id でバッチロード（VoteBallot.option フィールドリゾルバー用）
 export function createVoteOptionLoader(prisma: PrismaClient) {
   return new DataLoader<string, PrismaVoteOption | null>(async (optionIds) => {
     const options = await prisma.voteOption.findMany({
@@ -18,25 +14,16 @@ export function createVoteOptionLoader(prisma: PrismaClient) {
   });
 }
 
-export function createMyVoteBallotLoader(prisma: PrismaClient, userId: string) {
-  return new DataLoader<string, { id: string; optionId: string; power: number; createdAt: Date; updatedAt: Date | null } | null>(
-    async (topicIds) => {
-      const ballots = await prisma.voteBallot.findMany({
-        where: {
-          userId,
-          topicId: { in: [...topicIds] },
-        },
-        select: {
-          id: true,
-          topicId: true,
-          optionId: true,
-          power: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+// NftToken を id でバッチロード（VoteGate / VotePowerPolicy の nftToken フィールドリゾルバー用）
+export function createNftTokenLoader(prisma: PrismaClient) {
+  return new DataLoader<string, { id: string; address: string; name: string | null; symbol: string | null; type: string } | null>(
+    async (tokenIds) => {
+      const tokens = await prisma.nftToken.findMany({
+        where: { id: { in: [...tokenIds] } },
+        select: { id: true, address: true, name: true, symbol: true, type: true },
       });
-      const map = new Map(ballots.map((b) => [b.topicId, b]));
-      return topicIds.map((id) => map.get(id) ?? null);
+      const map = new Map(tokens.map((t) => [t.id, t]));
+      return tokenIds.map((id) => map.get(id) ?? null);
     },
   );
 }
