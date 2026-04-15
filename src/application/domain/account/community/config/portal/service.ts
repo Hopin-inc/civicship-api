@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { GqlCommunityPortalConfigInput } from "@/types/graphql";
 import ICommunityPortalConfigRepository from "@/application/domain/account/community/config/portal/data/interface";
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
+import ImageService from "@/application/domain/content/image/service";
 
 export interface CommunityPortalConfigResult {
   communityId: string;
@@ -67,6 +68,8 @@ export default class CommunityPortalConfigService {
     private readonly portalRepository: ICommunityPortalConfigRepository,
     @inject("CommunityConfigRepository")
     private readonly configRepository: ICommunityConfigRepository,
+    @inject("ImageService")
+    private readonly imageService: ImageService,
   ) {}
 
   async update(
@@ -75,6 +78,15 @@ export default class CommunityPortalConfigService {
     input: GqlCommunityPortalConfigInput,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
+    // ogImage (file upload) takes priority over ogImagePath (legacy string)
+    let resolvedOgImagePath: string | undefined;
+    if (input.ogImage != null) {
+      const result = await this.imageService.uploadPublicImage(input.ogImage, "community-portal");
+      if (result) resolvedOgImagePath = result.url;
+    } else if (input.ogImagePath != null) {
+      resolvedOgImagePath = input.ogImagePath;
+    }
+
     // Plain values only — avoids type incompatibility between UpdateInput and CreateInput
     const plainValues: Partial<Prisma.CommunityPortalConfigCreateWithoutConfigInput> = {
       ...(input.tokenName       != null && { tokenName: input.tokenName }),
@@ -85,7 +97,7 @@ export default class CommunityPortalConfigService {
       ...(input.faviconPrefix   != null && { faviconPrefix: input.faviconPrefix }),
       ...(input.logoPath        != null && { logoPath: input.logoPath }),
       ...(input.squareLogoPath  != null && { squareLogoPath: input.squareLogoPath }),
-      ...(input.ogImagePath     != null && { ogImagePath: input.ogImagePath }),
+      ...(resolvedOgImagePath   != null && { ogImagePath: resolvedOgImagePath }),
       ...(input.enableFeatures  != null && { enableFeatures: input.enableFeatures }),
       ...(input.rootPath        != null && { rootPath: input.rootPath }),
       ...(input.adminRootPath   != null && { adminRootPath: input.adminRootPath }),

@@ -383,6 +383,8 @@ export type GqlCommunityPortalConfigInput = {
   enableFeatures?: InputMaybe<Array<Scalars['String']['input']>>;
   faviconPrefix?: InputMaybe<Scalars['String']['input']>;
   logoPath?: InputMaybe<Scalars['String']['input']>;
+  ogImage?: InputMaybe<GqlImageInput>;
+  /** @deprecated Use ogImage instead */
   ogImagePath?: InputMaybe<Scalars['String']['input']>;
   regionKey?: InputMaybe<Scalars['String']['input']>;
   regionName?: InputMaybe<Scalars['String']['input']>;
