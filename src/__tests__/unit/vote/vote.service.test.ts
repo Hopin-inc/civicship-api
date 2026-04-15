@@ -277,12 +277,11 @@ describe("VoteService.calculatePower", () => {
     expect(mockNftInstanceRepo.countByUserAndToken).toHaveBeenCalledWith(mockCtx, userId, nftTokenId);
   });
 
-  it("falls back to 1 when NFT_COUNT policy has no nftTokenId", async () => {
+  it("throws ValidationError when NFT_COUNT policy has no nftTokenId", async () => {
     const topic = makeTopic({
       powerPolicy: { id: "policy-1", type: "NFT_COUNT", nftTokenId: null, topicId },
     } as Partial<PrismaVoteTopic>);
-    const power = await service.calculatePower(mockCtx, userId, topic);
-    expect(power).toBe(1);
+    await expect(service.calculatePower(mockCtx, userId, topic)).rejects.toThrow(ValidationError);
     expect(mockNftInstanceRepo.countByUserAndToken).not.toHaveBeenCalled();
   });
 
