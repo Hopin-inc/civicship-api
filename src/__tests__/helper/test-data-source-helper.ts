@@ -53,6 +53,9 @@ export default class TestDataSourceHelper {
     await this.db.communityLineConfig.deleteMany();
     await this.db.communityConfig.deleteMany();
 
+    await this.db.voteBallot.deleteMany();
+    await this.db.voteTopic.deleteMany();
+
     await this.db.community.deleteMany();
     await this.db.user.deleteMany();
     await this.db.place.deleteMany();
