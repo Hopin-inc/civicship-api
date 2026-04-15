@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import DataLoader from "dataloader";
-import { voteOptionSelect, PrismaVoteOption } from "@/application/domain/vote/data/type";
+import { voteOptionSelect, voteBallotSelect, PrismaVoteOption, PrismaVoteBallot } from "@/application/domain/vote/data/type";
 
 // VoteOption を id でバッチロード（VoteBallot.option フィールドリゾルバー用）
 export function createVoteOptionLoader(prisma: PrismaClient) {
@@ -12,6 +12,23 @@ export function createVoteOptionLoader(prisma: PrismaClient) {
     const map = new Map(options.map((o) => [o.id, o]));
     return optionIds.map((id) => map.get(id) ?? null);
   });
+}
+
+// VoteBallot を { userId, topicId } でバッチロード（VoteTopic.myBallot フィールドリゾルバー用）
+// 1リクエスト内で複数 VoteTopic を表示する場合でも、全投票をまとめて1クエリで取得する
+export function createMyVoteBallotLoader(prisma: PrismaClient) {
+  return new DataLoader<{ userId: string; topicId: string }, PrismaVoteBallot | null>(
+    async (keys) => {
+      const ballots = await prisma.voteBallot.findMany({
+        where: { OR: keys.map((k) => ({ userId: k.userId, topicId: k.topicId })) },
+        select: voteBallotSelect,
+      });
+      return keys.map(
+        (k) => ballots.find((b) => b.userId === k.userId && b.topicId === k.topicId) ?? null,
+      );
+    },
+    { cacheKeyFn: (k) => `${k.userId}:${k.topicId}` },
+  );
 }
 
 // NftToken を id でバッチロード（VoteGate / VotePowerPolicy の nftToken フィールドリゾルバー用）

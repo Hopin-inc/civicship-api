@@ -123,7 +123,8 @@ export default class VoteService {
     }
     // NFT_COUNT: 保有 NftInstance 数を票数とする
     if (!policy.nftTokenId) {
-      return 1; // フォールバック: nftTokenId 未設定の場合は 1 票
+      // validateTopicInput で nftTokenId を必須としているため、ここに到達するのはデータ不整合
+      throw new ValidationError("nftTokenId is required for NFT_COUNT power policy", []);
     }
     // tx を渡すことで投票トランザクション内での読み取りを保証（TOCTOU 防止）
     const count = await this.nftInstanceRepo.countByUserAndToken(ctx, userId, policy.nftTokenId, tx);
