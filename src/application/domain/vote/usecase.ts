@@ -80,6 +80,7 @@ export default class VoteUseCase {
   ): Promise<GqlMyVoteEligibility> {
     const userId = getCurrentUserId(ctx);
     const topic = await this.service.getTopicWithRelations(ctx, topicId);
+    this.service.validateTopicRelations(topic);
     const eligibility = await this.service.checkEligibility(ctx, userId, topic);
 
     let currentPower: number | null = null;
@@ -124,6 +125,7 @@ export default class VoteUseCase {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       // 1. テーマ取得（トランザクション内）
       const topic = await this.service.getTopicWithRelations(ctx, input.topicId, tx);
+      this.service.validateTopicRelations(topic);
 
       // 2. 期間バリデーション
       this.service.validateVotingPeriod(topic);

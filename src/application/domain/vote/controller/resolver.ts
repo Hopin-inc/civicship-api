@@ -1,7 +1,6 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
-import { getMembershipRolesByCtx } from "@/application/domain/utils";
 import {
   GqlQueryVoteTopicsArgs,
   GqlQueryVoteTopicArgs,
@@ -49,16 +48,15 @@ export default class VoteResolver {
     community: (parent: PrismaVoteTopic, _: unknown, ctx: IContext) =>
       ctx.loaders.community.load(parent.communityId),
 
-    myBallot: async (parent: PrismaVoteTopic, _: unknown, ctx: IContext) => {
+    myBallot: async (parent: PrismaVoteTopic & { resultVisible?: boolean }, _: unknown, ctx: IContext) => {
       if (!ctx.currentUser) return null;
       const ballot = await ctx.loaders.myVoteBallot.load({
         userId: ctx.currentUser.id,
         topicId: parent.id,
       });
       if (!ballot) return null;
-      const { isManager } = getMembershipRolesByCtx(ctx, [parent.communityId], ctx.currentUser.id);
-      const resultVisible = VotePresenter.isResultVisible(parent, !!isManager[parent.communityId]);
-      return VotePresenter.ballot(ballot, resultVisible);
+      // resultVisible は VotePresenter.topic() が親オブジェクトに付加したメタデータ
+      return VotePresenter.ballot(ballot, parent.resultVisible ?? false);
     },
 
     myEligibility: (parent: PrismaVoteTopic, _: unknown, ctx: IContext) => {
@@ -85,13 +83,8 @@ export default class VoteResolver {
     option: async (parent: PrismaVoteBallot & { optionId: string; resultVisible?: boolean }, _: unknown, ctx: IContext) => {
       const option = await ctx.loaders.voteOption.load(parent.optionId);
       if (!option) throw new NotFoundError("VoteOption", { id: parent.optionId });
-      // 結果秘匿: 投票期間中 (resultVisible=false) は voteCount/totalPower をマスク
-      const resultVisible = parent.resultVisible ?? false;
-      return {
-        ...option,
-        voteCount: resultVisible ? option.voteCount : null,
-        totalPower: resultVisible ? option.totalPower : null,
-      };
+      // 結果秘匿の適用は Presenter に委譲（resolver にマスクロジックを持たない）
+      return VotePresenter.option(option, parent.resultVisible ?? false);
     },
   };
 }

@@ -49,6 +49,8 @@ export default class VoteRepository implements IVoteRepository {
       tx.voteTopic.findMany({
         where: { communityId },
         select: voteTopicWithRelationsSelect,
+        // endsAt ではなく createdAt でソート: id カーソルと組み合わせた場合に
+        // endsAt が同値のレコードでカーソル位置が一意に定まらない問題を防ぐ
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: take + 1,
         skip: cursor ? 1 : 0,

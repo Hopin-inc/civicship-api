@@ -95,6 +95,8 @@ export default class VotePresenter {
       community: null as unknown as GqlVoteTopic["community"], // フィールドリゾルバーで解決
       // フィールドリゾルバー (VoteTopic.community) が parent.communityId を参照するため保持
       communityId: topic.communityId,
+      // フィールドリゾルバー (VoteTopic.myBallot) が parent.resultVisible を参照するため保持
+      resultVisible,
       title: topic.title,
       description: topic.description ?? null,
       startsAt: topic.startsAt,
