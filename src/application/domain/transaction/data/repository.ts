@@ -41,7 +41,10 @@ export default class TransactionRepository implements ITransactionRepository {
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string } | null> {
     return tx.transaction.findFirst({
-      where: { to: walletId },
+      where: {
+        to: walletId,
+        reason: { in: ["GRANT", "ONBOARDING", "DONATION"] },
+      },
       orderBy: { createdAt: "desc" },
       select: { id: true },
     });
