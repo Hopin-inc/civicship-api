@@ -1875,6 +1875,7 @@ type TicketsConnection {
 }
 
 type Transaction {
+  chain: TransactionChain
   comment: String
   createdAt: Datetime
   createdByUser: User
@@ -1888,6 +1889,26 @@ type Transaction {
   toPointChange: Int
   toWallet: Wallet
   updatedAt: Datetime
+}
+
+type TransactionChain {
+  depth: Int!
+  steps: [TransactionChainStep!]!
+}
+
+type TransactionChainStep {
+  createdAt: Datetime!
+  fromUser: TransactionChainUser
+  id: ID!
+  points: Int!
+  reason: TransactionReason!
+  toUser: TransactionChainUser
+}
+
+type TransactionChainUser {
+  id: ID!
+  image: String
+  name: String!
 }
 
 input TransactionDonateSelfPointInput {

@@ -700,13 +700,14 @@ RIGHT RIGHT
   
 
   "t_transactions" {
-    String transaction_id "🗝️"
+    String id "🗝️"
     TransactionReason reason 
     String comment "❓"
     String from "❓"
     Int from_point_change 
     String to "❓"
     Int to_point_change 
+    String parent_tx_id "❓"
     String participation_id "❓"
     String reservation_id "❓"
     String created_by "❓"
@@ -881,14 +882,6 @@ RIGHT RIGHT
   "v_slot_remaining_capacity" {
     String slotId "🗝️"
     Int remainingCapacity "❓"
-    }
-  
-
-  "mv_transaction_chains" {
-    String transactionId "🗝️"
-    Int depth 
-    String rootTxId 
-    String chainTxIds 
     }
   
     "t_images" o{--}o "t_users" : "users"
@@ -1070,7 +1063,8 @@ RIGHT RIGHT
     "t_transactions" o|--|| "TransactionReason" : "enum:reason"
     "t_transactions" o|--|o "t_wallets" : "fromWallet"
     "t_transactions" o|--|o "t_wallets" : "toWallet"
-    "t_transactions" o{--}o "mv_transaction_chains" : "chainInfo"
+    "t_transactions" o|--|o "t_transactions" : "parentTx"
+    "t_transactions" o{--}o "t_transactions" : "childTxs"
     "t_transactions" o|--|o "t_participations" : "participation"
     "t_transactions" o|--|o "t_reservations" : "reservation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
@@ -1110,5 +1104,4 @@ RIGHT RIGHT
     "v_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
     "v_opportunity_accumulated_participants" o|--|| "t_opportunities" : "opportunity"
     "v_slot_remaining_capacity" o|--|| "t_opportunity_slots" : "slot"
-    "mv_transaction_chains" o|--|| "t_transactions" : "transaction"
 ```

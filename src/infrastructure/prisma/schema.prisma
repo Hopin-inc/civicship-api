@@ -1145,8 +1145,8 @@ model Transaction {
   toWallet      Wallet? @relation("to_wallet", fields: [to], references: [id], onDelete: SetNull)
   toPointChange Int     @map("to_point_change")
 
-  parentTxId String?      @map("parent_tx_id")
-  parentTx   Transaction? @relation("TransactionChain", fields: [parentTxId], references: [id], onDelete: SetNull)
+  parentTxId String?       @map("parent_tx_id")
+  parentTx   Transaction?  @relation("TransactionChain", fields: [parentTxId], references: [id], onDelete: SetNull)
   childTxs   Transaction[] @relation("TransactionChain")
 
   participationId String?        @map("participation_id")
@@ -1186,7 +1186,6 @@ enum TransactionReason {
   OPPORTUNITY_RESERVATION_CANCELED
   OPPORTUNITY_RESERVATION_REJECTED
 }
-
 
 model IncentiveGrant {
   id       String               @id @default(cuid())

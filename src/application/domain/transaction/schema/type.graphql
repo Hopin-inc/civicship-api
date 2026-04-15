@@ -18,8 +18,30 @@ type Transaction {
 
   createdByUser: User
 
+  chain: TransactionChain
+
   createdAt: Datetime
   updatedAt: Datetime
+}
+
+type TransactionChain {
+  depth: Int!
+  steps: [TransactionChainStep!]!
+}
+
+type TransactionChainStep {
+  id: ID!
+  reason: TransactionReason!
+  points: Int!
+  fromUser: TransactionChainUser
+  toUser: TransactionChainUser
+  createdAt: Datetime!
+}
+
+type TransactionChainUser {
+  id: ID!
+  name: String!
+  image: String
 }
 
 # ------------------------------

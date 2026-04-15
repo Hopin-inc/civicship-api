@@ -560,7 +560,9 @@ Table t_transactions {
   to String
   toWallet t_wallets
   toPointChange Int [not null]
-  chainInfo mv_transaction_chains
+  parentTxId String
+  parentTx t_transactions
+  childTxs t_transactions [not null]
   participationId String
   participation t_participations
   reservationId String
@@ -767,14 +769,6 @@ Table v_slot_remaining_capacity {
   slotId String [pk]
   slot t_opportunity_slots [not null]
   remainingCapacity Int
-}
-
-Table mv_transaction_chains {
-  transactionId String [pk]
-  transaction t_transactions [not null]
-  depth Int [not null]
-  rootTxId String [not null]
-  chainTxIds String[] [not null]
 }
 
 Table t_images_on_opportunities {
@@ -1140,6 +1134,8 @@ Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.to > t_wallets.id [delete: Set Null]
 
+Ref: t_transactions.parentTxId - t_transactions.id [delete: Set Null]
+
 Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
 
 Ref: t_transactions.reservationId > t_reservations.id [delete: Set Null]
@@ -1185,5 +1181,3 @@ Ref: v_earliest_reservable_slot.opportunityId - t_opportunities.id
 Ref: v_opportunity_accumulated_participants.opportunityId - t_opportunities.id [delete: Cascade]
 
 Ref: v_slot_remaining_capacity.slotId - t_opportunity_slots.id
-
-Ref: mv_transaction_chains.transactionId - t_transactions.id
