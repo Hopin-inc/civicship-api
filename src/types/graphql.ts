@@ -2382,8 +2382,8 @@ export type GqlQueryVoteTopicArgs = {
 
 
 export type GqlQueryVoteTopicsArgs = {
-  after?: InputMaybe<Scalars['String']['input']>;
   communityId: Scalars['ID']['input'];
+  cursor?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
 };
 

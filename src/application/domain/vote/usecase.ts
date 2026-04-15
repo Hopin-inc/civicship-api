@@ -30,7 +30,7 @@ export default class VoteUseCase {
 
   async anyoneBrowseVoteTopics(
     ctx: IContext,
-    { communityId, first, after }: GqlQueryVoteTopicsArgs,
+    { communityId, first, cursor }: GqlQueryVoteTopicsArgs,
   ): Promise<GqlVoteTopicsConnection> {
     const take = clampFirst(first);
     const currentUserId = ctx.currentUser?.id;
@@ -38,7 +38,7 @@ export default class VoteUseCase {
     const isManagerOfCommunity = !!isManager[communityId];
 
     const [records, totalCount] = await Promise.all([
-      this.repo.queryTopics(ctx, communityId, take, after ?? undefined),
+      this.repo.queryTopics(ctx, communityId, take, cursor ?? undefined),
       this.repo.countTopics(ctx, communityId),
     ]);
 
@@ -46,9 +46,11 @@ export default class VoteUseCase {
     const data = records.slice(0, take);
 
     // queryTopics はリレーション付きで返すので N+1 なし
+    // gate/powerPolicy が欠落しているトピックはデータ不整合 → 早期エラーで一覧全体を守る
+    data.forEach((topic) => this.service.validateTopicRelations(topic));
     const topicGqls = data.map((topic) => VotePresenter.topic(topic, isManagerOfCommunity));
 
-    return VotePresenter.query(topicGqls, totalCount, hasNextPage, after ?? undefined);
+    return VotePresenter.query(topicGqls, totalCount, hasNextPage, cursor ?? undefined);
   }
 
   async anyoneViewVoteTopic(
@@ -57,6 +59,8 @@ export default class VoteUseCase {
   ): Promise<GqlVoteTopic | null> {
     const topic = await this.repo.findTopic(ctx, id);
     if (!topic) return null;
+
+    this.service.validateTopicRelations(topic);
 
     const currentUserId = ctx.currentUser?.id;
     const { isManager } = getMembershipRolesByCtx(ctx, [topic.communityId], currentUserId);
@@ -105,6 +109,7 @@ export default class VoteUseCase {
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const topic = await this.service.createTopicWithRelations(ctx, input, currentUserId, tx);
+      this.service.validateTopicRelations(topic);
       const topicGql = VotePresenter.topic(topic, true);
       return VotePresenter.create(topicGql);
     });

@@ -67,6 +67,16 @@ export default class VoteService {
     }
   }
 
+  validateTopicRelations(topic: PrismaVoteTopic): void {
+    // gate と powerPolicy はスキーマ上 non-null のため、欠落はデータ不整合を示す
+    if (!topic.gate) {
+      throw new ValidationError(`VoteTopic(${topic.id}) has no gate configured`, []);
+    }
+    if (!topic.powerPolicy) {
+      throw new ValidationError(`VoteTopic(${topic.id}) has no powerPolicy configured`, []);
+    }
+  }
+
   validateOptionBelongsToTopic(optionId: string, topic: PrismaVoteTopic): void {
     const option = topic.options.find((o) => o.id === optionId);
     if (!option) {

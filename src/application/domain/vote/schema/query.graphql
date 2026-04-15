@@ -7,7 +7,7 @@ extend type Query {
     voteTopics(
         communityId: ID!
         first: Int
-        after: String
+        cursor: String
     ): VoteTopicsConnection!
 
     # 投票テーマ詳細（myBallot / myEligibility はフィールドリゾルバー経由）

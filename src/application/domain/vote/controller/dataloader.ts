@@ -17,7 +17,7 @@ export function createVoteOptionLoader(prisma: PrismaClient) {
 // VoteBallot を { userId, topicId } でバッチロード（VoteTopic.myBallot フィールドリゾルバー用）
 // 1リクエスト内で複数 VoteTopic を表示する場合でも、全投票をまとめて1クエリで取得する
 export function createMyVoteBallotLoader(prisma: PrismaClient) {
-  return new DataLoader<{ userId: string; topicId: string }, PrismaVoteBallot | null>(
+  return new DataLoader<{ userId: string; topicId: string }, PrismaVoteBallot | null, string>(
     async (keys) => {
       const ballots = await prisma.voteBallot.findMany({
         where: { OR: keys.map((k) => ({ userId: k.userId, topicId: k.topicId })) },
