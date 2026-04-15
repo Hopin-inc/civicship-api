@@ -17,5 +17,5 @@ SET parent_tx_id = (
   ORDER BY t2.created_at DESC
   LIMIT 1
 )
-WHERE t1.reason = 'DONATION'
+WHERE t1.reason IN ('DONATION', 'POINT_REWARD')
   AND t1."from" IS NOT NULL;

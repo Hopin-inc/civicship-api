@@ -109,6 +109,7 @@ export default class TransactionConverter {
     participationId: string,
     transferPoints: number,
     createdBy: string,
+    parentTxId?: string,
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.POINT_REWARD,
@@ -118,6 +119,7 @@ export default class TransactionConverter {
       toPointChange: transferPoints,
       participation: { connect: { id: participationId } },
       createdByUser: { connect: { id: createdBy } },
+      ...(parentTxId ? { parentTx: { connect: { id: parentTxId } } } : {}),
     };
   }
 

@@ -111,15 +111,16 @@ export default class TransactionService implements ITransactionService {
     toWalletId: string,
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
+    const parentTx = await this.repository.findLatestReceivedTx(ctx, fromWalletId, tx);
     const data = this.converter.giveRewardPoint(
       fromWalletId,
       toWalletId,
       participationId,
       transferPoints,
       currentUserId,
+      parentTx?.id,
     );
-    const res = await this.repository.create(ctx, data, tx);
-    return res;
+    return this.repository.create(ctx, data, tx);
   }
 
   async purchaseTicket(
