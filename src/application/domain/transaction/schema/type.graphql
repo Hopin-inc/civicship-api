@@ -21,9 +21,9 @@ type Transaction {
   createdByUser: User
 
   """
-  ポイントの旅の全ステップを返します。
-  親トランザクションの探索自体は再帰CTEによる単一クエリで行われますが、
-  transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこの再帰クエリが実行されるため高コストになりえます。
+  ポイントの旅のステップを返します（最大10段階）。
+  再帰CTEによる単一クエリで取得しますが、循環・異常データ対策のため深さ上限を10としています。
+  transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこのクエリが実行されるため高コストになりえます。
   transaction(id) での単体取得時のみ使用し、深さだけ必要な場合は chainDepth を使用してください。
   """
   chain: TransactionChain

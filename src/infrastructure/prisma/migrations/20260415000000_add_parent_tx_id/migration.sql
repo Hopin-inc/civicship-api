@@ -25,7 +25,7 @@ ALTER TABLE "t_transactions" ADD COLUMN "chain_depth" INTEGER;
 
 -- Backfill chain_depth via recursive CTE traversal from GRANT roots
 WITH RECURSIVE depth_calc AS (
-  -- Base: GRANT (root) and any orphaned DONATION/POINT_REWARD with no parent
+  -- Base: GRANT のみをチェーンの根（depth=1）として扱う
   SELECT id, 1 AS depth
   FROM "t_transactions"
   WHERE reason = 'GRANT'
