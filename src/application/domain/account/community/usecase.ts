@@ -117,8 +117,12 @@ export default class CommunityUseCase {
     { input, permission }: GqlMutationUpdatePortalConfigArgs,
     ctx: IContext,
   ): Promise<CommunityPortalConfigResult> {
+    // GCS アップロードはトランザクション開始前に実行し、DB ロック保持時間を最小化する。
+    // アップロード後に DB 更新が失敗した場合、GCS 上のファイルは孤児になる可能性があるが、
+    // これはトランザクション内でアップロードするより許容しやすいトレードオフである。
+    const uploadedImages = await this.portalConfigService.uploadImages(input);
     await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      await this.portalConfigService.update(ctx, permission.communityId, input, tx);
+      await this.portalConfigService.update(ctx, permission.communityId, input, uploadedImages, tx);
     });
     return this.portalConfigService.getPortalConfig(ctx, permission.communityId);
   }

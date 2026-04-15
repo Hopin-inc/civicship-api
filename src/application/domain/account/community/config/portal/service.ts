@@ -7,6 +7,13 @@ import ICommunityPortalConfigRepository from "@/application/domain/account/commu
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
 import ImageService from "@/application/domain/content/image/service";
 
+export interface UploadedPortalImages {
+  logo: Prisma.ImageCreateWithoutUsersInput | null;
+  squareLogo: Prisma.ImageCreateWithoutUsersInput | null;
+  favicon: Prisma.ImageCreateWithoutUsersInput | null;
+  ogImage: Prisma.ImageCreateWithoutUsersInput | null;
+}
+
 export interface CommunityPortalConfigResult {
   communityId: string;
   tokenName: string;
@@ -72,14 +79,11 @@ export default class CommunityPortalConfigService {
     private readonly imageService: ImageService,
   ) {}
 
-  async update(
-    ctx: IContext,
-    communityId: string,
-    input: GqlCommunityPortalConfigInput,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
-    // GCS アップロード（並列実行、トランザクション外で実行）
-    const [uploadedLogo, uploadedSquareLogo, uploadedFavicon, uploadedOgImage] = await Promise.all([
+  // GCS アップロードをトランザクション開始前に並列実行する。
+  // 呼び出し元（UseCase）がこのメソッドをトランザクション外で呼び出し、
+  // 結果を update() に渡すことで、DB ロック保持時間を最小化する。
+  async uploadImages(input: GqlCommunityPortalConfigInput): Promise<UploadedPortalImages> {
+    const [logo, squareLogo, favicon, ogImage] = await Promise.all([
       input.logo
         ? this.imageService.uploadPublicImage(input.logo, "community-portal")
         : Promise.resolve(null),
@@ -93,8 +97,17 @@ export default class CommunityPortalConfigService {
         ? this.imageService.uploadPublicImage(input.ogImage, "community-portal")
         : Promise.resolve(null),
     ]);
+    return { logo, squareLogo, favicon, ogImage };
+  }
 
-    const resolvedOgImagePath = uploadedOgImage?.url ?? input.ogImagePath ?? undefined;
+  async update(
+    ctx: IContext,
+    communityId: string,
+    input: GqlCommunityPortalConfigInput,
+    uploadedImages: UploadedPortalImages,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    const resolvedOgImagePath = uploadedImages.ogImage?.url ?? input.ogImagePath ?? undefined;
 
     // Plain values only — avoids type incompatibility between UpdateInput and CreateInput
     const plainValues: Partial<Prisma.CommunityPortalConfigCreateWithoutConfigInput> = {
@@ -104,11 +117,11 @@ export default class CommunityPortalConfigService {
       ...(input.shortDescription !== undefined && { shortDescription: input.shortDescription }),
       ...(input.domain != null && { domain: input.domain }),
       ...(input.faviconPrefix != null && { faviconPrefix: input.faviconPrefix }),
-      ...(uploadedFavicon != null && { faviconPrefix: uploadedFavicon.url }),
+      ...(uploadedImages.favicon != null && { faviconPrefix: uploadedImages.favicon.url }),
       ...(input.logoPath != null && { logoPath: input.logoPath }),
-      ...(uploadedLogo != null && { logoPath: uploadedLogo.url }),
+      ...(uploadedImages.logo != null && { logoPath: uploadedImages.logo.url }),
       ...(input.squareLogoPath != null && { squareLogoPath: input.squareLogoPath }),
-      ...(uploadedSquareLogo != null && { squareLogoPath: uploadedSquareLogo.url }),
+      ...(uploadedImages.squareLogo != null && { squareLogoPath: uploadedImages.squareLogo.url }),
       ...(resolvedOgImagePath != null && { ogImagePath: resolvedOgImagePath }),
       ...(input.enableFeatures != null && { enableFeatures: input.enableFeatures }),
       ...(input.rootPath != null && { rootPath: input.rootPath }),
