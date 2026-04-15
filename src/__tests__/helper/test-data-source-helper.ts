@@ -55,6 +55,7 @@ export default class TestDataSourceHelper {
 
     await this.db.voteBallot.deleteMany();
     await this.db.voteTopic.deleteMany();
+    await this.db.nftToken.deleteMany();
 
     await this.db.community.deleteMany();
     await this.db.user.deleteMany();
