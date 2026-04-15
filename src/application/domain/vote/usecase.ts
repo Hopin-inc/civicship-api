@@ -134,6 +134,10 @@ export default class VoteUseCase {
 
       // 5. Power 計算（再投票時は最新保有数で再計算、tx で TOCTOU を防止）
       const power = await this.service.calculatePower(ctx, userId, topic, tx);
+      // NFT_COUNT ポリシー + MEMBERSHIP ゲートの組み合わせ等で power=0 になる場合を防ぐ
+      if (power <= 0) {
+        throw new ValidationError("Insufficient voting power", []);
+      }
 
       // 6. 既存投票を取得（再投票のデクリメント判定用）
       const existingBallot = await this.service.findBallot(ctx, userId, topic.id, tx);

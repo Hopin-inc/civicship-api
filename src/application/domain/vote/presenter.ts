@@ -26,7 +26,8 @@ export default class VotePresenter {
   static phase(topic: Pick<PrismaVoteTopicBase, "startsAt" | "endsAt">): GqlVoteTopicPhase {
     const now = new Date();
     if (now < topic.startsAt) return "UPCOMING";
-    if (now > topic.endsAt) return "CLOSED";
+    // >= で validateVotingPeriod / isResultVisible の境界と統一
+    if (now >= topic.endsAt) return "CLOSED";
     return "OPEN";
   }
 
