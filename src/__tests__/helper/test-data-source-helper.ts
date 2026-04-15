@@ -272,6 +272,14 @@ export default class TestDataSourceHelper {
     return tx?.parentTxId ?? null;
   }
 
+  static async getChainDepth(transactionId: string): Promise<number | null> {
+    const tx = await this.db.transaction.findUnique({
+      where: { id: transactionId },
+      select: { chainDepth: true },
+    });
+    return tx?.chainDepth ?? null;
+  }
+
   // ========== Participation関連 (不要になれば削除) =========
   static async createParticipation(data: Prisma.ParticipationCreateInput) {
     return this.db.participation.create({

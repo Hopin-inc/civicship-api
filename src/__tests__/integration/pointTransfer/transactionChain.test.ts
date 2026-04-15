@@ -162,6 +162,105 @@ describe("Transaction Chain (parentTxId)", () => {
     });
   });
 
+  describe("chainDepth の検証", () => {
+    it("GRANTのchainDepthは1", async () => {
+      const { community, communityWallet } = await setupBasic();
+      const { wallet: userWallet } = await createUser("User A", "user-a", community);
+
+      const grant = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: communityWallet.id } },
+        toWallet: { connect: { id: userWallet.id } },
+        fromPointChange: -100,
+        toPointChange: 100,
+        reason: TransactionReason.GRANT,
+        chainDepth: 1,
+      });
+
+      expect(await TestDataSourceHelper.getChainDepth(grant.id)).toBe(1);
+    });
+
+    it("GRANT → DONATION でdepthが2になる", async () => {
+      const { community, communityWallet } = await setupBasic();
+      const { wallet: walletA } = await createUser("User A", "user-a", community);
+      const { wallet: walletB } = await createUser("User B", "user-b", community);
+
+      const grant = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: communityWallet.id } },
+        toWallet: { connect: { id: walletA.id } },
+        fromPointChange: -100,
+        toPointChange: 100,
+        reason: TransactionReason.GRANT,
+        chainDepth: 1,
+      });
+
+      const donation = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: walletA.id } },
+        toWallet: { connect: { id: walletB.id } },
+        fromPointChange: -50,
+        toPointChange: 50,
+        reason: TransactionReason.DONATION,
+        parentTx: { connect: { id: grant.id } },
+        chainDepth: 2,
+      });
+
+      expect(await TestDataSourceHelper.getChainDepth(grant.id)).toBe(1);
+      expect(await TestDataSourceHelper.getChainDepth(donation.id)).toBe(2);
+    });
+
+    it("GRANT → DONATION → DONATION でdepthが3になる", async () => {
+      const { community, communityWallet } = await setupBasic();
+      const { wallet: walletA } = await createUser("User A", "user-a", community);
+      const { wallet: walletB } = await createUser("User B", "user-b", community);
+      const { wallet: walletC } = await createUser("User C", "user-c", community);
+
+      const grant = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: communityWallet.id } },
+        toWallet: { connect: { id: walletA.id } },
+        fromPointChange: -100,
+        toPointChange: 100,
+        reason: TransactionReason.GRANT,
+        chainDepth: 1,
+      });
+
+      const donation1 = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: walletA.id } },
+        toWallet: { connect: { id: walletB.id } },
+        fromPointChange: -50,
+        toPointChange: 50,
+        reason: TransactionReason.DONATION,
+        parentTx: { connect: { id: grant.id } },
+        chainDepth: 2,
+      });
+
+      const donation2 = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: walletB.id } },
+        toWallet: { connect: { id: walletC.id } },
+        fromPointChange: -25,
+        toPointChange: 25,
+        reason: TransactionReason.DONATION,
+        parentTx: { connect: { id: donation1.id } },
+        chainDepth: 3,
+      });
+
+      expect(await TestDataSourceHelper.getChainDepth(donation2.id)).toBe(3);
+    });
+
+    it("チェーン外のトランザクション（TICKET_PURCHASED等）はchainDepthがnull", async () => {
+      const { community, communityWallet } = await setupBasic();
+      const { wallet: userWallet } = await createUser("User A", "user-a", community);
+
+      const ticket = await TestDataSourceHelper.createTransaction({
+        fromWallet: { connect: { id: userWallet.id } },
+        toWallet: { connect: { id: communityWallet.id } },
+        fromPointChange: -50,
+        toPointChange: 50,
+        reason: TransactionReason.TICKET_PURCHASED,
+      });
+
+      expect(await TestDataSourceHelper.getChainDepth(ticket.id)).toBeNull();
+    });
+  });
+
   describe("チェーン深さの計算", () => {
     it("深さN のチェーンを正しく辿れる", async () => {
       const { community, communityWallet } = await setupBasic();
