@@ -107,7 +107,7 @@ export interface ITransactionRepository {
     ctx: IContext,
     walletId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<{ id: string } | null>;
+  ): Promise<{ id: string; chainDepth: number | null } | null>;
 
   findChain(ctx: IContext, txId: string): Promise<TransactionChainRow[]>;
 

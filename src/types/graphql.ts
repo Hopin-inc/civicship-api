@@ -2712,7 +2712,13 @@ export type GqlTicketsConnection = {
 
 export type GqlTransaction = {
   __typename?: 'Transaction';
+  /**
+   * ポイントの旅の全ステップを返します（GRANT起点まで遡るN+1クエリが発生します）。
+   * transactionsなどのリスト取得での使用は避け、transaction(id) での単体取得時のみ使用してください。
+   * 深さだけ必要な場合は chainDepth を使用してください。
+   */
   chain?: Maybe<GqlTransactionChain>;
+  chainDepth?: Maybe<Scalars['Int']['output']>;
   comment?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   createdByUser?: Maybe<GqlUser>;
@@ -5172,6 +5178,7 @@ export type GqlTicketsConnectionResolvers<ContextType = any, ParentType extends 
 
 export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Transaction'] = GqlResolversParentTypes['Transaction']> = ResolversObject<{
   chain?: Resolver<Maybe<GqlResolversTypes['TransactionChain']>, ParentType, ContextType>;
+  chainDepth?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   comment?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;

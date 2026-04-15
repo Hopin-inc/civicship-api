@@ -19,6 +19,9 @@ export const transactionSelectDetail = Prisma.validator<Prisma.TransactionSelect
   participationId: true,
   reservationId: true,
 
+  parentTxId: true,
+  chainDepth: true,
+
   createdBy: true,
 
   createdAt: true,

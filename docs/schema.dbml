@@ -563,6 +563,7 @@ Table t_transactions {
   parentTxId String
   parentTx t_transactions
   childTxs t_transactions [not null]
+  chainDepth Int
   participationId String
   participation t_participations
   reservationId String

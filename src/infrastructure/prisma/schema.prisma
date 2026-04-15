@@ -1148,6 +1148,7 @@ model Transaction {
   parentTxId String?       @map("parent_tx_id")
   parentTx   Transaction?  @relation("TransactionChain", fields: [parentTxId], references: [id], onDelete: SetNull)
   childTxs   Transaction[] @relation("TransactionChain")
+  chainDepth Int?          @map("chain_depth")
 
   participationId String?        @map("participation_id")
   participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)

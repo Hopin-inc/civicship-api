@@ -121,7 +121,7 @@ describe("Transaction Chain (parentTxId)", () => {
 
     it("複数受信がある場合、最も直近の受信txがparentになる", async () => {
       const { community, communityWallet } = await setupBasic();
-      const { wallet: walletA } = await createUser("User A", "user-a", community);
+      await createUser("User A", "user-a", community);
       const { wallet: walletB } = await createUser("User B", "user-b", community);
       const { wallet: walletC } = await createUser("User C", "user-c", community);
 

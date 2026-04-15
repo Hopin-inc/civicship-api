@@ -1875,7 +1875,13 @@ type TicketsConnection {
 }
 
 type Transaction {
+  """
+  ポイントの旅の全ステップを返します（GRANT起点まで遡るN+1クエリが発生します）。
+  transactionsなどのリスト取得での使用は避け、transaction(id) での単体取得時のみ使用してください。
+  深さだけ必要な場合は chainDepth を使用してください。
+  """
   chain: TransactionChain
+  chainDepth: Int
   comment: String
   createdAt: Datetime
   createdByUser: User

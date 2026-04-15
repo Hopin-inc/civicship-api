@@ -6672,6 +6672,7 @@ type TransactionFactoryDefineInput = {
     comment?: string | null;
     fromPointChange?: number;
     toPointChange?: number;
+    chainDepth?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     fromWallet?: TransactionfromWalletFactory | Prisma.WalletCreateNestedOneWithoutFromTransactionsInput;

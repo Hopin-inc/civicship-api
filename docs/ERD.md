@@ -708,6 +708,7 @@ RIGHT RIGHT
     String to "❓"
     Int to_point_change 
     String parent_tx_id "❓"
+    Int chain_depth "❓"
     String participation_id "❓"
     String reservation_id "❓"
     String created_by "❓"
