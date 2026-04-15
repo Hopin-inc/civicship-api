@@ -77,6 +77,37 @@ describe("Vote Integration: VoteTopicCreate", () => {
     expect(result.voteTopic.options).toHaveLength(2);
   });
 
+  it("should create a vote topic with NFT gate when a valid nftTokenId is provided", async () => {
+    // NFT gate の作成成功パス：nftTokenId が正しく DB に保存されることを確認する
+    const manager = await TestDataSourceHelper.createUser({
+      name: "Manager NFT",
+      slug: "manager-nft-slug",
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    await TestDataSourceHelper.createMembership({
+      user: { connect: { id: manager.id } },
+      community: { connect: { id: community.id } },
+      status: MembershipStatus.JOINED,
+      reason: MembershipStatusReason.INVITED,
+      role: Role.MANAGER,
+    });
+
+    const nftToken = await createNftToken();
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const result = await voteUseCase.managerCreateVoteTopic(ctx, {
+      input: makeValidInput(community.id, {
+        gate: { type: GqlVoteGateType.Nft, nftTokenId: nftToken.id },
+      }),
+      permission: { communityId: community.id },
+    });
+
+    expect(result.voteTopic.gate.type).toBe("NFT");
+    // gate の nftTokenId が DB に保存されていること（フィールドリゾルバー用メタデータ）
+    expect((result.voteTopic.gate as any).nftTokenId).toBe(nftToken.id);
+  });
+
   // ─── 異常系: communityId / 日付 ──────────────────────────────────────────────
 
   it("should throw ValidationError when communityId in input does not match permission", async () => {

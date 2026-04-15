@@ -240,6 +240,60 @@ describe("Vote Integration: VoteCast", () => {
       expect(after2nd.voteCount).toBe(1); // voteCount は変化しない
       expect(after2nd.totalPower).toBe(1); // 2 → 1 に減少
     });
+
+    it("should increase totalPower (delta>0) when re-voting same option after gaining an NFT", async () => {
+      // adjustOptionTotalPower の delta>0 パス（増加方向）を検証する
+      // 1回目: NFT 1枚保有 → power=1 で option A に投票 (voteCount=1, totalPower=1)
+      // NFT を 1 枚追加取得
+      // 2回目: 同じ option A に再投票 → power=2, delta=+1 (voteCount=1, totalPower=2)
+      const voter = await TestDataSourceHelper.createUser({
+        name: "NFT Gain Voter",
+        slug: "nft-gain-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+      const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+      await TestDataSourceHelper.createMembership({
+        user: { connect: { id: voter.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        reason: MembershipStatusReason.INVITED,
+        role: Role.MEMBER,
+      });
+
+      const { nftToken, nftWallet } = await createOwnedNft(voter.id); // instance #1（1枚）
+
+      const { topic, optionA } = await createVoteTopic({
+        communityId: community.id,
+        createdBy: voter.id,
+        ...activePeriod(),
+        gate: { type: "MEMBERSHIP" },
+        policy: { type: "NFT_COUNT", nftTokenId: nftToken.id },
+      });
+
+      const ctx = { currentUser: { id: voter.id }, issuer } as unknown as IContext;
+
+      // 1回目: power=1
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } });
+      const after1st = await prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } });
+      expect(after1st.voteCount).toBe(1);
+      expect(after1st.totalPower).toBe(1);
+
+      // NFT を 1 枚追加取得（同一ウォレットに instance を追加）
+      await prismaClient.nftInstance.create({
+        data: {
+          instanceId: `gain-instance-${Date.now()}`,
+          nftTokenId: nftToken.id,
+          nftWalletId: nftWallet.id,
+          status: NftInstanceStatus.OWNED,
+        },
+      });
+
+      // 2回目: 同じ optionA に再投票 → power=2, delta=+1
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } });
+      const after2nd = await prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } });
+      expect(after2nd.voteCount).toBe(1); // voteCount は変化しない
+      expect(after2nd.totalPower).toBe(2); // 1 → 2 に増加
+    });
   });
 
   // ─── 再投票 ───────────────────────────────────────────────────────────────

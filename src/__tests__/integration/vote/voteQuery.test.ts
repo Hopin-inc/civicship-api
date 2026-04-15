@@ -194,6 +194,10 @@ describe("Vote Integration: VoteQuery", () => {
       });
       expect(page2.nodes).toHaveLength(1);
       expect(page2.pageInfo.hasNextPage).toBe(false);
+      // cursor を指定してページ2を取得したので hasPreviousPage=true
+      expect(page2.pageInfo.hasPreviousPage).toBe(true);
+      // ページ1は cursor なしなので hasPreviousPage=false
+      expect(page1.pageInfo.hasPreviousPage).toBe(false);
     });
 
     it("should hide voteCount/totalPower for an active topic when user is not a manager", async () => {
@@ -437,6 +441,51 @@ describe("Vote Integration: VoteQuery", () => {
       expect(result.eligible).toBe(false);
       expect(result.reason).toBe("INSUFFICIENT_ROLE");
       expect(result.currentPower).toBeNull();
+    });
+
+    it("should return resultVisible=true and myBallot populated when topic has ended (CLOSED)", async () => {
+      // userGetMyVoteEligibility の resultVisible 計算は `now >= endsAt` のみで決まる
+      // checkEligibility は gate（MEMBERSHIP）を見るため、期間終了後も eligible=true になる
+      // → myBallot の resultVisible フラグが true になることで投票結果が開示される
+      const user = await TestDataSourceHelper.createUser({
+        name: "Closed Voter",
+        slug: "closed-voter-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+      const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+      await TestDataSourceHelper.createMembership({
+        user: { connect: { id: user.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        reason: MembershipStatusReason.INVITED,
+        role: Role.MEMBER,
+      });
+
+      const now = new Date();
+      const { topic, optionA } = await createVoteTopic({
+        communityId: community.id,
+        createdBy: user.id,
+        // 終了済みの topic（期間は過去）
+        startsAt: new Date(now.getTime() - 7_200_000),
+        endsAt: new Date(now.getTime() - 60_000),
+      });
+
+      // ballot を直接作成（期間外なので userCastVote は使えない）
+      const { prismaClient } = await import("@/infrastructure/prisma/client");
+      await prismaClient.voteBallot.create({
+        data: { userId: user.id, topicId: topic.id, optionId: optionA.id, power: 1 },
+      });
+
+      const ctx = { currentUser: { id: user.id }, issuer } as unknown as IContext;
+      const result = await voteUseCase.userGetMyVoteEligibility(ctx, { topicId: topic.id });
+
+      // 期間終了後も MEMBERSHIP gate が JOINED を確認するため eligible=true
+      expect(result.eligible).toBe(true);
+      // myBallot が返却される
+      expect(result.myBallot).not.toBeNull();
+      expect(result.myBallot?.power).toBe(1);
+      // resultVisible フラグが true（期間終了 → 結果開示モード）
+      expect((result.myBallot as any).resultVisible).toBe(true);
     });
   });
 });
