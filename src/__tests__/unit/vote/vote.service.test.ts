@@ -124,6 +124,73 @@ beforeEach(() => {
   service = container.resolve(VoteService);
 });
 
+// ---- validateTopicInput ----
+
+describe("VoteService.validateTopicInput", () => {
+  const baseInput = {
+    communityId,
+    title: "Test",
+    startsAt: new Date(Date.now() - 1000 * 60),
+    endsAt: new Date(Date.now() + 1000 * 60 * 60),
+    gate: { type: "MEMBERSHIP" as const },
+    powerPolicy: { type: "FLAT" as const },
+    options: [
+      { label: "A", orderIndex: 0 },
+      { label: "B", orderIndex: 1 },
+    ],
+  };
+
+  it("passes for valid input", () => {
+    expect(() => service.validateTopicInput(baseInput)).not.toThrow();
+  });
+
+  it("throws when startsAt >= endsAt", () => {
+    const input = { ...baseInput, startsAt: new Date(Date.now() + 1000), endsAt: new Date(Date.now()) };
+    expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
+  });
+
+  it("throws when fewer than 2 options", () => {
+    const input = { ...baseInput, options: [{ label: "A", orderIndex: 0 }] };
+    expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
+  });
+
+  it("throws when an orderIndex is negative", () => {
+    const input = {
+      ...baseInput,
+      options: [{ label: "A", orderIndex: -1 }, { label: "B", orderIndex: 1 }],
+    };
+    expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
+  });
+
+  it("throws when orderIndex values are duplicated", () => {
+    const input = {
+      ...baseInput,
+      options: [{ label: "A", orderIndex: 0 }, { label: "B", orderIndex: 0 }],
+    };
+    expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
+  });
+
+  it("throws when NFT gate has no nftTokenId", () => {
+    const input = { ...baseInput, gate: { type: "NFT" as const } };
+    expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
+  });
+
+  it("passes when NFT gate has nftTokenId", () => {
+    const input = { ...baseInput, gate: { type: "NFT" as const, nftTokenId } };
+    expect(() => service.validateTopicInput(input)).not.toThrow();
+  });
+
+  it("throws when NFT_COUNT policy has no nftTokenId", () => {
+    const input = { ...baseInput, powerPolicy: { type: "NFT_COUNT" as const } };
+    expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
+  });
+
+  it("passes when NFT_COUNT policy has nftTokenId", () => {
+    const input = { ...baseInput, powerPolicy: { type: "NFT_COUNT" as const, nftTokenId } };
+    expect(() => service.validateTopicInput(input)).not.toThrow();
+  });
+});
+
 // ---- validateVotingPeriod ----
 
 describe("VoteService.validateVotingPeriod", () => {
