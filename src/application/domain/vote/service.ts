@@ -1,0 +1,187 @@
+import { injectable, inject } from "tsyringe";
+import { Prisma, MembershipStatus, Role } from "@prisma/client";
+import { IContext } from "@/types/server";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { isRoleAtLeast } from "@/application/domain/utils";
+import { IVoteRepository } from "./data/interface";
+import VoteConverter from "./data/converter";
+import {
+  PrismaVoteTopic,
+  PrismaVoteBallot,
+} from "./data/type";
+import {
+  GqlVoteTopicCreateInput,
+  GqlVoteCastInput,
+} from "@/types/graphql";
+import MembershipService from "@/application/domain/account/membership/service";
+import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
+
+export interface EligibilityResult {
+  eligible: boolean;
+  reason?: string;
+}
+
+@injectable()
+export default class VoteService {
+  constructor(
+    @inject("VoteRepository") private readonly repo: IVoteRepository,
+    @inject("VoteConverter") private readonly converter: VoteConverter,
+    @inject("MembershipService") private readonly membershipService: MembershipService,
+    @inject("NftInstanceRepository") private readonly nftInstanceRepo: INftInstanceRepository,
+  ) {}
+
+  async getTopicWithRelations(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic> {
+    const topic = await this.repo.findTopicOrThrow(ctx, id);
+    return topic;
+  }
+
+  validateTopicInput(input: GqlVoteTopicCreateInput): void {
+    if (new Date(input.startsAt) >= new Date(input.endsAt)) {
+      throw new ValidationError("startsAt must be before endsAt", []);
+    }
+    if (!input.options || input.options.length < 2) {
+      throw new ValidationError("At least 2 options are required", []);
+    }
+    if (input.gate.type === "NFT" && !input.gate.nftTokenId) {
+      throw new ValidationError("nftTokenId is required for NFT gate", []);
+    }
+    if (input.powerPolicy.type === "NFT_COUNT" && !input.powerPolicy.nftTokenId) {
+      throw new ValidationError("nftTokenId is required for NFT_COUNT power policy", []);
+    }
+  }
+
+  validateVotingPeriod(topic: PrismaVoteTopic): void {
+    const now = new Date();
+    if (now < topic.startsAt) {
+      throw new ValidationError("Voting has not started yet", []);
+    }
+    if (now > topic.endsAt) {
+      throw new ValidationError("Voting period has ended", []);
+    }
+  }
+
+  validateOptionBelongsToTopic(optionId: string, topic: PrismaVoteTopic): void {
+    const option = topic.options.find((o) => o.id === optionId);
+    if (!option) {
+      throw new NotFoundError("VoteOption", { id: optionId, topicId: topic.id });
+    }
+  }
+
+  async checkEligibility(
+    ctx: IContext,
+    userId: string,
+    topic: PrismaVoteTopic,
+  ): Promise<EligibilityResult> {
+    const gate = topic.gate;
+    if (!gate) {
+      return { eligible: false, reason: "GATE_NOT_CONFIGURED" };
+    }
+
+    if (gate.type === "NFT") {
+      if (!gate.nftTokenId) {
+        return { eligible: false, reason: "GATE_NFT_TOKEN_NOT_CONFIGURED" };
+      }
+      // EXISTS クエリで判定（COUNT より効率的・意味が明確）
+      const exists = await this.nftInstanceRepo.existsByUserAndToken(ctx, userId, gate.nftTokenId);
+      return exists
+        ? { eligible: true }
+        : { eligible: false, reason: "REQUIRED_NFT_NOT_FOUND" };
+    }
+
+    if (gate.type === "MEMBERSHIP") {
+      const membership = await this.membershipService.findMembership(ctx, userId, topic.communityId);
+      if (!membership || membership.status !== MembershipStatus.JOINED) {
+        return { eligible: false, reason: "NOT_A_MEMBER" };
+      }
+      const minRole = (gate.requiredRole as Role | null) ?? Role.MEMBER;
+      return isRoleAtLeast(membership.role, minRole)
+        ? { eligible: true }
+        : { eligible: false, reason: "INSUFFICIENT_ROLE" };
+    }
+
+    return { eligible: false, reason: "UNKNOWN_GATE_TYPE" };
+  }
+
+  async calculatePower(
+    ctx: IContext,
+    userId: string,
+    topic: PrismaVoteTopic,
+  ): Promise<number> {
+    const policy = topic.powerPolicy;
+    if (!policy || policy.type === "FLAT") {
+      return 1;
+    }
+    // NFT_COUNT: 保有 NftInstance 数を票数とする
+    if (!policy.nftTokenId) {
+      return 1; // フォールバック: nftTokenId 未設定の場合は 1 票
+    }
+    const count = await this.nftInstanceRepo.countByUserAndToken(ctx, userId, policy.nftTokenId);
+    return count;
+  }
+
+  async findBallot(
+    ctx: IContext,
+    userId: string,
+    topicId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaVoteBallot | null> {
+    return this.repo.findBallot(ctx, userId, topicId, tx);
+  }
+
+  async upsertBallot(
+    ctx: IContext,
+    userId: string,
+    input: GqlVoteCastInput,
+    power: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaVoteBallot> {
+    return this.repo.upsertBallot(ctx, userId, input, power, tx);
+  }
+
+  async updateOptionCounts(
+    ctx: IContext,
+    existingBallot: PrismaVoteBallot | null,
+    newBallot: PrismaVoteBallot,
+    newPower: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (existingBallot) {
+      // 再投票: 旧選択肢のカウントをデクリメント
+      await this.repo.decrementOptionCount(ctx, existingBallot.optionId, existingBallot.power, tx);
+    }
+    // 新選択肢のカウントをインクリメント
+    await this.repo.incrementOptionCount(ctx, newBallot.optionId, newPower, tx);
+  }
+
+  async createTopicWithRelations(
+    ctx: IContext,
+    input: GqlVoteTopicCreateInput,
+    currentUserId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaVoteTopic> {
+    // 1. Topic を作成
+    const topicData = this.converter.createTopic(input, currentUserId);
+    const topic = await this.repo.createTopic(ctx, topicData, tx);
+
+    // 2. Gate を作成（VoteTopic の後に作成: FK は gate.topicId → topic.id）
+    await this.repo.createGate(ctx, topic.id, input.gate, tx);
+
+    // 3. PowerPolicy を作成
+    await this.repo.createPowerPolicy(ctx, topic.id, input.powerPolicy, tx);
+
+    // 4. Options を作成
+    await this.repo.createOptions(ctx, topic.id, input.options, tx);
+
+    // 5. リレーション付きで再取得
+    return this.repo.findTopicOrThrow(ctx, topic.id);
+  }
+
+  async deleteTopic(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await this.repo.findTopicOrThrow(ctx, id);
+    await this.repo.deleteTopic(ctx, id, tx);
+  }
+}

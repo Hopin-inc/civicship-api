@@ -277,6 +277,20 @@ FAILED FAILED
 RIGHT RIGHT
         }
     
+
+
+        vote_gate_type {
+            NFT NFT
+MEMBERSHIP MEMBERSHIP
+        }
+    
+
+
+        vote_power_policy_type {
+            FLAT FLAT
+NFT_COUNT NFT_COUNT
+        }
+    
   "t_images" {
     String id "🗝️"
     Boolean is_public 
@@ -814,6 +828,57 @@ RIGHT RIGHT
     }
   
 
+  "t_vote_gates" {
+    String id "🗝️"
+    VoteGateType type 
+    String nft_token_id "❓"
+    Role required_role "❓"
+    String topic_id 
+    }
+  
+
+  "t_vote_power_policies" {
+    String id "🗝️"
+    VotePowerPolicyType type 
+    String nft_token_id "❓"
+    String topic_id 
+    }
+  
+
+  "t_vote_topics" {
+    String id "🗝️"
+    String community_id 
+    String created_by 
+    String title 
+    String description "❓"
+    DateTime starts_at 
+    DateTime ends_at 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_vote_options" {
+    String id "🗝️"
+    String topic_id 
+    String label 
+    Int order_index 
+    Int vote_count 
+    Int total_power 
+    }
+  
+
+  "t_vote_ballots" {
+    String id "🗝️"
+    String user_id 
+    String topic_id 
+    String option_id 
+    Int power 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "v_place_public_opportunity_count" {
     String placeId "🗝️"
     Int currentPublicCount 
@@ -913,6 +978,7 @@ RIGHT RIGHT
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
     "t_communities" o{--}o "t_nft_instances" : "nftInstance"
+    "t_communities" o{--}o "t_vote_topics" : "voteTopics"
     "t_community_configs" o|--|| "t_communities" : "community"
     "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
     "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
@@ -949,6 +1015,8 @@ RIGHT RIGHT
     "t_users" o{--}o "t_transactions" : "transactionsCreatedByMe"
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
+    "t_users" o{--}o "t_vote_ballots" : "voteBallots"
+    "t_users" o{--}o "t_vote_topics" : "createdVoteTopics"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_identities" o|--|o "t_communities" : "community"
@@ -1080,6 +1148,8 @@ RIGHT RIGHT
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
+    "t_nft_tokens" o{--}o "t_vote_gates" : "voteGates"
+    "t_nft_tokens" o{--}o "t_vote_power_policies" : "votePowerPolicies"
     "t_nft_instances" o|--|| "NftInstanceStatus" : "enum:status"
     "t_nft_instances" o|--|| "t_nft_tokens" : "nftToken"
     "t_nft_instances" o|--|o "t_nft_wallets" : "nftWallet"
@@ -1091,6 +1161,24 @@ RIGHT RIGHT
     "t_merkle_proofs" o|--|| "t_transactions" : "tx"
     "t_merkle_proofs" o|--|| "t_merkle_commits" : "commit"
     "t_merkle_proofs" o|--|| "Position" : "enum:position"
+    "t_vote_gates" o|--|| "VoteGateType" : "enum:type"
+    "t_vote_gates" o|--|o "t_nft_tokens" : "nftToken"
+    "t_vote_gates" o|--|o "Role" : "enum:required_role"
+    "t_vote_gates" o|--|| "t_vote_topics" : "topic"
+    "t_vote_power_policies" o|--|| "VotePowerPolicyType" : "enum:type"
+    "t_vote_power_policies" o|--|o "t_nft_tokens" : "nftToken"
+    "t_vote_power_policies" o|--|| "t_vote_topics" : "topic"
+    "t_vote_topics" o|--|| "t_communities" : "community"
+    "t_vote_topics" o|--|| "t_users" : "createdByUser"
+    "t_vote_topics" o{--}o "t_vote_gates" : "gate"
+    "t_vote_topics" o{--}o "t_vote_power_policies" : "powerPolicy"
+    "t_vote_topics" o{--}o "t_vote_options" : "options"
+    "t_vote_topics" o{--}o "t_vote_ballots" : "ballots"
+    "t_vote_options" o|--|| "t_vote_topics" : "topic"
+    "t_vote_options" o{--}o "t_vote_ballots" : "ballots"
+    "t_vote_ballots" o|--|| "t_users" : "user"
+    "t_vote_ballots" o|--|| "t_vote_topics" : "topic"
+    "t_vote_ballots" o|--|| "t_vote_options" : "option"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

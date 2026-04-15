@@ -25,6 +25,7 @@ import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/contr
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
 import NftInstanceResolver from "@/application/domain/account/nft-instance/controller/resolver";
+import VoteResolver from "@/application/domain/vote/controller/resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
 
 const identity = container.resolve(IdentityResolver);
@@ -57,6 +58,7 @@ const utility = container.resolve(UtilityResolver);
 const transaction = container.resolve(TransactionResolver);
 const transactionVerification = container.resolve(TransactionVerificationResolver);
 const incentiveGrant = container.resolve(IncentiveGrantResolver);
+const vote = container.resolve(VoteResolver);
 
 const resolvers = {
   Query: {
@@ -84,6 +86,7 @@ const resolvers = {
     ...transaction.Query,
     ...transactionVerification.Query,
     ...incentiveGrant.Query,
+    ...vote.Query,
   },
   Mutation: {
     ...identity.Mutation,
@@ -101,6 +104,7 @@ const resolvers = {
     ...ticket.Mutation,
     ...transaction.Mutation,
     ...incentiveGrant.Mutation,
+    ...vote.Mutation,
   },
   Identity: identity.Identity,
   User: user.User,
@@ -129,6 +133,11 @@ const resolvers = {
 
   Transaction: transaction.Transaction,
   IncentiveGrant: incentiveGrant.IncentiveGrant,
+
+  VoteTopic: vote.VoteTopic,
+  VoteGate: vote.VoteGate,
+  VotePowerPolicy: vote.VotePowerPolicy,
+  VoteBallot: vote.VoteBallot,
 
   ...scalarResolvers,
 };

@@ -1,0 +1,155 @@
+import {
+  GqlVoteTopic,
+  GqlVoteOption,
+  GqlVoteBallot,
+  GqlVoteGate,
+  GqlVotePowerPolicy,
+  GqlVoteTopicPhase,
+  GqlMyVoteEligibility,
+  GqlVoteTopicsConnection,
+  GqlVoteTopicCreatePayload,
+  GqlVoteCastPayload,
+  GqlVoteTopicDeletePayload,
+} from "@/types/graphql";
+import {
+  PrismaVoteTopic,
+  PrismaVoteTopicBase,
+  PrismaVoteGate,
+  PrismaVotePowerPolicy,
+  PrismaVoteOption,
+  PrismaVoteBallot,
+} from "./data/type";
+import { EligibilityResult } from "./service";
+
+export default class VotePresenter {
+  static phase(topic: Pick<PrismaVoteTopicBase, "startsAt" | "endsAt">): GqlVoteTopicPhase {
+    const now = new Date();
+    if (now < topic.startsAt) return "UPCOMING";
+    if (now > topic.endsAt) return "CLOSED";
+    return "OPEN";
+  }
+
+  static isResultVisible(topic: Pick<PrismaVoteTopicBase, "endsAt">, isManager: boolean): boolean {
+    return isManager || new Date() >= topic.endsAt;
+  }
+
+  static gate(gate: PrismaVoteGate): GqlVoteGate {
+    return {
+      __typename: "VoteGate",
+      id: gate.id,
+      type: gate.type,
+      nftToken: null, // フィールドリゾルバーで解決
+      requiredRole: gate.requiredRole ?? null,
+    };
+  }
+
+  static powerPolicy(policy: PrismaVotePowerPolicy): GqlVotePowerPolicy {
+    return {
+      __typename: "VotePowerPolicy",
+      id: policy.id,
+      type: policy.type,
+      nftToken: null, // フィールドリゾルバーで解決
+    };
+  }
+
+  static option(option: PrismaVoteOption, resultVisible: boolean): GqlVoteOption {
+    return {
+      __typename: "VoteOption",
+      id: option.id,
+      label: option.label,
+      orderIndex: option.orderIndex,
+      voteCount: resultVisible ? option.voteCount : null,
+      totalPower: resultVisible ? option.totalPower : null,
+    };
+  }
+
+  static ballot(ballot: PrismaVoteBallot): GqlVoteBallot {
+    return {
+      __typename: "VoteBallot",
+      id: ballot.id,
+      option: null as unknown as GqlVoteOption, // フィールドリゾルバーで解決
+      power: ballot.power,
+      createdAt: ballot.createdAt,
+      updatedAt: ballot.updatedAt ?? null,
+    };
+  }
+
+  static topic(
+    topic: PrismaVoteTopic,
+    isManager: boolean,
+    myBallot: PrismaVoteBallot | null = null,
+  ): GqlVoteTopic {
+    const resultVisible = this.isResultVisible(topic, isManager);
+    return {
+      __typename: "VoteTopic",
+      id: topic.id,
+      community: null as unknown as GqlVoteTopic["community"], // フィールドリゾルバーで解決
+      title: topic.title,
+      description: topic.description ?? null,
+      startsAt: topic.startsAt,
+      endsAt: topic.endsAt,
+      phase: this.phase(topic),
+      gate: topic.gate ? this.gate(topic.gate) : null as unknown as GqlVoteGate,
+      powerPolicy: topic.powerPolicy ? this.powerPolicy(topic.powerPolicy) : null as unknown as GqlVotePowerPolicy,
+      options: topic.options.map((opt) => this.option(opt, resultVisible)),
+      myBallot: myBallot ? this.ballot(myBallot) : null,
+      myEligibility: null, // フィールドリゾルバーで解決
+      createdAt: topic.createdAt,
+      updatedAt: topic.updatedAt ?? null,
+    };
+  }
+
+  static eligibility(result: EligibilityResult, currentPower: number | null, myBallot: PrismaVoteBallot | null): GqlMyVoteEligibility {
+    return {
+      __typename: "MyVoteEligibility",
+      eligible: result.eligible,
+      reason: result.reason ?? null,
+      currentPower: result.eligible ? currentPower : null,
+      myBallot: myBallot ? this.ballot(myBallot) : null,
+    };
+  }
+
+  static query(
+    topics: GqlVoteTopic[],
+    totalCount: number,
+    hasNextPage: boolean,
+    cursor?: string,
+  ): GqlVoteTopicsConnection {
+    return {
+      __typename: "VoteTopicsConnection",
+      totalCount,
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage: !!cursor,
+        startCursor: topics[0]?.id,
+        endCursor: topics.length ? topics[topics.length - 1].id : undefined,
+      },
+      edges: topics.map((node) => ({
+        cursor: node.id,
+        node,
+      })),
+      nodes: topics,
+    };
+  }
+
+  static create(topic: GqlVoteTopic): GqlVoteTopicCreatePayload {
+    return {
+      __typename: "VoteTopicCreatePayload",
+      voteTopic: topic,
+    };
+  }
+
+  static castBallot(ballot: GqlVoteBallot): GqlVoteCastPayload {
+    return {
+      __typename: "VoteCastPayload",
+      ballot,
+    };
+  }
+
+  static deleteTopic(id: string): GqlVoteTopicDeletePayload {
+    return {
+      __typename: "VoteTopicDeletePayload",
+      id,
+    };
+  }
+}

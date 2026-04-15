@@ -64,6 +64,21 @@ function determineRoleForCommunity(
   };
 }
 
+// Role 階層: OWNER > MANAGER > MEMBER
+const ROLE_RANK: Record<Role, number> = {
+  [Role.OWNER]: 3,
+  [Role.MANAGER]: 2,
+  [Role.MEMBER]: 1,
+};
+
+/**
+ * Check if a user's role meets the minimum required role.
+ * Role hierarchy: OWNER > MANAGER > MEMBER
+ */
+export function isRoleAtLeast(userRole: Role, minRole: Role): boolean {
+  return ROLE_RANK[userRole] >= ROLE_RANK[minRole];
+}
+
 /**
  * Check if a user can view content based on publishStatus and their role.
  * - Admin: can view all

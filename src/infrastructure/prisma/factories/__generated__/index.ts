@@ -39,6 +39,11 @@ import type { NftInstance } from "@prisma/client";
 import type { NftMint } from "@prisma/client";
 import type { MerkleCommit } from "@prisma/client";
 import type { MerkleProof } from "@prisma/client";
+import type { VoteGate } from "@prisma/client";
+import type { VotePowerPolicy } from "@prisma/client";
+import type { VoteTopic } from "@prisma/client";
+import type { VoteOption } from "@prisma/client";
+import type { VoteBallot } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -80,6 +85,8 @@ import type { NftWalletType } from "@prisma/client";
 import type { NftInstanceStatus } from "@prisma/client";
 import type { NftMintStatus } from "@prisma/client";
 import type { Position } from "@prisma/client";
+import type { VoteGateType } from "@prisma/client";
+import type { VotePowerPolicyType } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
@@ -238,6 +245,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "nftInstance",
                 type: "NftInstance",
                 relationName: "CommunityToNftInstance"
+            }, {
+                name: "voteTopics",
+                type: "VoteTopic",
+                relationName: "CommunityToVoteTopic"
             }]
     }, {
         name: "CommunityConfig",
@@ -387,6 +398,14 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "articlesAboutMe",
                 type: "Article",
                 relationName: "t_related_users_on_articles"
+            }, {
+                name: "voteBallots",
+                type: "VoteBallot",
+                relationName: "UserToVoteBallot"
+            }, {
+                name: "createdVoteTopics",
+                type: "VoteTopic",
+                relationName: "VoteTopicCreatedBy"
             }]
     }, {
         name: "Identity",
@@ -846,6 +865,14 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "nftInstances",
                 type: "NftInstance",
                 relationName: "NftInstanceToNftToken"
+            }, {
+                name: "voteGates",
+                type: "VoteGate",
+                relationName: "NftTokenToVoteGate"
+            }, {
+                name: "votePowerPolicies",
+                type: "VotePowerPolicy",
+                relationName: "NftTokenToVotePowerPolicy"
             }]
     }, {
         name: "NftInstance",
@@ -890,6 +917,81 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "commit",
                 type: "MerkleCommit",
                 relationName: "MerkleCommitToMerkleProof"
+            }]
+    }, {
+        name: "VoteGate",
+        fields: [{
+                name: "nftToken",
+                type: "NftToken",
+                relationName: "NftTokenToVoteGate"
+            }, {
+                name: "topic",
+                type: "VoteTopic",
+                relationName: "VoteGateToVoteTopic"
+            }]
+    }, {
+        name: "VotePowerPolicy",
+        fields: [{
+                name: "nftToken",
+                type: "NftToken",
+                relationName: "NftTokenToVotePowerPolicy"
+            }, {
+                name: "topic",
+                type: "VoteTopic",
+                relationName: "VotePowerPolicyToVoteTopic"
+            }]
+    }, {
+        name: "VoteTopic",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToVoteTopic"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "VoteTopicCreatedBy"
+            }, {
+                name: "gate",
+                type: "VoteGate",
+                relationName: "VoteGateToVoteTopic"
+            }, {
+                name: "powerPolicy",
+                type: "VotePowerPolicy",
+                relationName: "VotePowerPolicyToVoteTopic"
+            }, {
+                name: "options",
+                type: "VoteOption",
+                relationName: "VoteOptionToVoteTopic"
+            }, {
+                name: "ballots",
+                type: "VoteBallot",
+                relationName: "VoteBallotToVoteTopic"
+            }]
+    }, {
+        name: "VoteOption",
+        fields: [{
+                name: "topic",
+                type: "VoteTopic",
+                relationName: "VoteOptionToVoteTopic"
+            }, {
+                name: "ballots",
+                type: "VoteBallot",
+                relationName: "VoteBallotToVoteOption"
+            }]
+    }, {
+        name: "VoteBallot",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "UserToVoteBallot"
+            }, {
+                name: "topic",
+                type: "VoteTopic",
+                relationName: "VoteBallotToVoteTopic"
+            }, {
+                name: "option",
+                type: "VoteOption",
+                relationName: "VoteBallotToVoteOption"
             }]
     }, {
         name: "PlacePublicOpportunityCountView",
@@ -1699,6 +1801,7 @@ type CommunityFactoryDefineInput = {
     participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutCommunityInput;
     nftInstance?: Prisma.NftInstanceCreateNestedManyWithoutCommunityInput;
+    voteTopics?: Prisma.VoteTopicCreateNestedManyWithoutCommunityInput;
 };
 
 type CommunityTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFactoryDefineInput, never>>;
@@ -2907,6 +3010,8 @@ type UserFactoryDefineInput = {
     transactionsCreatedByMe?: Prisma.TransactionCreateNestedManyWithoutCreatedByUserInput;
     articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
     articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
+    voteBallots?: Prisma.VoteBallotCreateNestedManyWithoutUserInput;
+    createdVoteTopics?: Prisma.VoteTopicCreateNestedManyWithoutCreatedByUserInput;
 };
 
 type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
@@ -7365,6 +7470,8 @@ type NftTokenFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     nftInstances?: Prisma.NftInstanceCreateNestedManyWithoutNftTokenInput;
+    voteGates?: Prisma.VoteGateCreateNestedManyWithoutNftTokenInput;
+    votePowerPolicies?: Prisma.VotePowerPolicyCreateNestedManyWithoutNftTokenInput;
 };
 
 type NftTokenTransientFields = Record<string, unknown> & Partial<Record<keyof NftTokenFactoryDefineInput, never>>;
@@ -8159,6 +8266,877 @@ export const defineMerkleProofFactory = (<TOptions extends MerkleProofFactoryDef
 }) as MerkleProofFactoryBuilder;
 
 defineMerkleProofFactory.withTransientFields = defaultTransientFieldValues => options => defineMerkleProofFactoryInternal(options, defaultTransientFieldValues);
+
+type VoteGateScalarOrEnumFields = {
+    type: VoteGateType;
+};
+
+type VoteGatenftTokenFactory = {
+    _factoryFor: "NftToken";
+    build: () => PromiseLike<Prisma.NftTokenCreateNestedOneWithoutVoteGatesInput["create"]>;
+};
+
+type VoteGatetopicFactory = {
+    _factoryFor: "VoteTopic";
+    build: () => PromiseLike<Prisma.VoteTopicCreateNestedOneWithoutGateInput["create"]>;
+};
+
+type VoteGateFactoryDefineInput = {
+    id?: string;
+    type?: VoteGateType;
+    requiredRole?: Role | null;
+    nftToken?: VoteGatenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutVoteGatesInput;
+    topic: VoteGatetopicFactory | Prisma.VoteTopicCreateNestedOneWithoutGateInput;
+};
+
+type VoteGateTransientFields = Record<string, unknown> & Partial<Record<keyof VoteGateFactoryDefineInput, never>>;
+
+type VoteGateFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<VoteGateFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<VoteGate, Prisma.VoteGateCreateInput, TTransients>;
+
+type VoteGateFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<VoteGateFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: VoteGateFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<VoteGate, Prisma.VoteGateCreateInput, TTransients>;
+
+function isVoteGatenftTokenFactory(x: VoteGatenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutVoteGatesInput | undefined): x is VoteGatenftTokenFactory {
+    return (x as any)?._factoryFor === "NftToken";
+}
+
+function isVoteGatetopicFactory(x: VoteGatetopicFactory | Prisma.VoteTopicCreateNestedOneWithoutGateInput | undefined): x is VoteGatetopicFactory {
+    return (x as any)?._factoryFor === "VoteTopic";
+}
+
+type VoteGateTraitKeys<TOptions extends VoteGateFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface VoteGateFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "VoteGate";
+    build(inputData?: Partial<Prisma.VoteGateCreateInput & TTransients>): PromiseLike<Prisma.VoteGateCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.VoteGateCreateInput & TTransients>): PromiseLike<Prisma.VoteGateCreateInput>;
+    buildList(list: readonly Partial<Prisma.VoteGateCreateInput & TTransients>[]): PromiseLike<Prisma.VoteGateCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.VoteGateCreateInput & TTransients>): PromiseLike<Prisma.VoteGateCreateInput[]>;
+    pickForConnect(inputData: VoteGate): Pick<VoteGate, "id">;
+    create(inputData?: Partial<Prisma.VoteGateCreateInput & TTransients>): PromiseLike<VoteGate>;
+    createList(list: readonly Partial<Prisma.VoteGateCreateInput & TTransients>[]): PromiseLike<VoteGate[]>;
+    createList(count: number, item?: Partial<Prisma.VoteGateCreateInput & TTransients>): PromiseLike<VoteGate[]>;
+    createForConnect(inputData?: Partial<Prisma.VoteGateCreateInput & TTransients>): PromiseLike<Pick<VoteGate, "id">>;
+}
+
+export interface VoteGateFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends VoteGateFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): VoteGateFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateVoteGateScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): VoteGateScalarOrEnumFields {
+    return {
+        type: "NFT"
+    };
+}
+
+function defineVoteGateFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends VoteGateFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): VoteGateFactoryInterface<TTransients, VoteGateTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly VoteGateTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("VoteGate", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.VoteGateCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateVoteGateScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<VoteGateFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<VoteGateFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                nftToken: isVoteGatenftTokenFactory(defaultData.nftToken) ? {
+                    create: await defaultData.nftToken.build()
+                } : defaultData.nftToken,
+                topic: isVoteGatetopicFactory(defaultData.topic) ? {
+                    create: await defaultData.topic.build()
+                } : defaultData.topic
+            } as Prisma.VoteGateCreateInput;
+            const data: Prisma.VoteGateCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VoteGateCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: VoteGate) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.VoteGateCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().voteGate.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VoteGateCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.VoteGateCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "VoteGate" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: VoteGateTraitKeys<TOptions>, ...names: readonly VoteGateTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface VoteGateFactoryBuilder {
+    <TOptions extends VoteGateFactoryDefineOptions>(options: TOptions): VoteGateFactoryInterface<{}, VoteGateTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends VoteGateTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends VoteGateFactoryDefineOptions<TTransients>>(options: TOptions) => VoteGateFactoryInterface<TTransients, VoteGateTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link VoteGate} model.
+ *
+ * @param options
+ * @returns factory {@link VoteGateFactoryInterface}
+ */
+export const defineVoteGateFactory = (<TOptions extends VoteGateFactoryDefineOptions>(options: TOptions): VoteGateFactoryInterface<TOptions> => {
+    return defineVoteGateFactoryInternal(options, {});
+}) as VoteGateFactoryBuilder;
+
+defineVoteGateFactory.withTransientFields = defaultTransientFieldValues => options => defineVoteGateFactoryInternal(options, defaultTransientFieldValues);
+
+type VotePowerPolicyScalarOrEnumFields = {
+    type: VotePowerPolicyType;
+};
+
+type VotePowerPolicynftTokenFactory = {
+    _factoryFor: "NftToken";
+    build: () => PromiseLike<Prisma.NftTokenCreateNestedOneWithoutVotePowerPoliciesInput["create"]>;
+};
+
+type VotePowerPolicytopicFactory = {
+    _factoryFor: "VoteTopic";
+    build: () => PromiseLike<Prisma.VoteTopicCreateNestedOneWithoutPowerPolicyInput["create"]>;
+};
+
+type VotePowerPolicyFactoryDefineInput = {
+    id?: string;
+    type?: VotePowerPolicyType;
+    nftToken?: VotePowerPolicynftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutVotePowerPoliciesInput;
+    topic: VotePowerPolicytopicFactory | Prisma.VoteTopicCreateNestedOneWithoutPowerPolicyInput;
+};
+
+type VotePowerPolicyTransientFields = Record<string, unknown> & Partial<Record<keyof VotePowerPolicyFactoryDefineInput, never>>;
+
+type VotePowerPolicyFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<VotePowerPolicyFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<VotePowerPolicy, Prisma.VotePowerPolicyCreateInput, TTransients>;
+
+type VotePowerPolicyFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<VotePowerPolicyFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: VotePowerPolicyFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<VotePowerPolicy, Prisma.VotePowerPolicyCreateInput, TTransients>;
+
+function isVotePowerPolicynftTokenFactory(x: VotePowerPolicynftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutVotePowerPoliciesInput | undefined): x is VotePowerPolicynftTokenFactory {
+    return (x as any)?._factoryFor === "NftToken";
+}
+
+function isVotePowerPolicytopicFactory(x: VotePowerPolicytopicFactory | Prisma.VoteTopicCreateNestedOneWithoutPowerPolicyInput | undefined): x is VotePowerPolicytopicFactory {
+    return (x as any)?._factoryFor === "VoteTopic";
+}
+
+type VotePowerPolicyTraitKeys<TOptions extends VotePowerPolicyFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface VotePowerPolicyFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "VotePowerPolicy";
+    build(inputData?: Partial<Prisma.VotePowerPolicyCreateInput & TTransients>): PromiseLike<Prisma.VotePowerPolicyCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.VotePowerPolicyCreateInput & TTransients>): PromiseLike<Prisma.VotePowerPolicyCreateInput>;
+    buildList(list: readonly Partial<Prisma.VotePowerPolicyCreateInput & TTransients>[]): PromiseLike<Prisma.VotePowerPolicyCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.VotePowerPolicyCreateInput & TTransients>): PromiseLike<Prisma.VotePowerPolicyCreateInput[]>;
+    pickForConnect(inputData: VotePowerPolicy): Pick<VotePowerPolicy, "id">;
+    create(inputData?: Partial<Prisma.VotePowerPolicyCreateInput & TTransients>): PromiseLike<VotePowerPolicy>;
+    createList(list: readonly Partial<Prisma.VotePowerPolicyCreateInput & TTransients>[]): PromiseLike<VotePowerPolicy[]>;
+    createList(count: number, item?: Partial<Prisma.VotePowerPolicyCreateInput & TTransients>): PromiseLike<VotePowerPolicy[]>;
+    createForConnect(inputData?: Partial<Prisma.VotePowerPolicyCreateInput & TTransients>): PromiseLike<Pick<VotePowerPolicy, "id">>;
+}
+
+export interface VotePowerPolicyFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends VotePowerPolicyFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): VotePowerPolicyFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateVotePowerPolicyScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): VotePowerPolicyScalarOrEnumFields {
+    return {
+        type: "FLAT"
+    };
+}
+
+function defineVotePowerPolicyFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends VotePowerPolicyFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): VotePowerPolicyFactoryInterface<TTransients, VotePowerPolicyTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly VotePowerPolicyTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("VotePowerPolicy", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.VotePowerPolicyCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateVotePowerPolicyScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<VotePowerPolicyFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<VotePowerPolicyFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                nftToken: isVotePowerPolicynftTokenFactory(defaultData.nftToken) ? {
+                    create: await defaultData.nftToken.build()
+                } : defaultData.nftToken,
+                topic: isVotePowerPolicytopicFactory(defaultData.topic) ? {
+                    create: await defaultData.topic.build()
+                } : defaultData.topic
+            } as Prisma.VotePowerPolicyCreateInput;
+            const data: Prisma.VotePowerPolicyCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VotePowerPolicyCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: VotePowerPolicy) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.VotePowerPolicyCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().votePowerPolicy.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VotePowerPolicyCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.VotePowerPolicyCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "VotePowerPolicy" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: VotePowerPolicyTraitKeys<TOptions>, ...names: readonly VotePowerPolicyTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface VotePowerPolicyFactoryBuilder {
+    <TOptions extends VotePowerPolicyFactoryDefineOptions>(options: TOptions): VotePowerPolicyFactoryInterface<{}, VotePowerPolicyTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends VotePowerPolicyTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends VotePowerPolicyFactoryDefineOptions<TTransients>>(options: TOptions) => VotePowerPolicyFactoryInterface<TTransients, VotePowerPolicyTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link VotePowerPolicy} model.
+ *
+ * @param options
+ * @returns factory {@link VotePowerPolicyFactoryInterface}
+ */
+export const defineVotePowerPolicyFactory = (<TOptions extends VotePowerPolicyFactoryDefineOptions>(options: TOptions): VotePowerPolicyFactoryInterface<TOptions> => {
+    return defineVotePowerPolicyFactoryInternal(options, {});
+}) as VotePowerPolicyFactoryBuilder;
+
+defineVotePowerPolicyFactory.withTransientFields = defaultTransientFieldValues => options => defineVotePowerPolicyFactoryInternal(options, defaultTransientFieldValues);
+
+type VoteTopicScalarOrEnumFields = {
+    title: string;
+    startsAt: Date;
+    endsAt: Date;
+};
+
+type VoteTopiccommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutVoteTopicsInput["create"]>;
+};
+
+type VoteTopiccreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutCreatedVoteTopicsInput["create"]>;
+};
+
+type VoteTopicgateFactory = {
+    _factoryFor: "VoteGate";
+    build: () => PromiseLike<Prisma.VoteGateCreateNestedOneWithoutTopicInput["create"]>;
+};
+
+type VoteTopicpowerPolicyFactory = {
+    _factoryFor: "VotePowerPolicy";
+    build: () => PromiseLike<Prisma.VotePowerPolicyCreateNestedOneWithoutTopicInput["create"]>;
+};
+
+type VoteTopicFactoryDefineInput = {
+    id?: string;
+    title?: string;
+    description?: string | null;
+    startsAt?: Date;
+    endsAt?: Date;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    community: VoteTopiccommunityFactory | Prisma.CommunityCreateNestedOneWithoutVoteTopicsInput;
+    createdByUser: VoteTopiccreatedByUserFactory | Prisma.UserCreateNestedOneWithoutCreatedVoteTopicsInput;
+    gate?: VoteTopicgateFactory | Prisma.VoteGateCreateNestedOneWithoutTopicInput;
+    powerPolicy?: VoteTopicpowerPolicyFactory | Prisma.VotePowerPolicyCreateNestedOneWithoutTopicInput;
+    options?: Prisma.VoteOptionCreateNestedManyWithoutTopicInput;
+    ballots?: Prisma.VoteBallotCreateNestedManyWithoutTopicInput;
+};
+
+type VoteTopicTransientFields = Record<string, unknown> & Partial<Record<keyof VoteTopicFactoryDefineInput, never>>;
+
+type VoteTopicFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<VoteTopicFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<VoteTopic, Prisma.VoteTopicCreateInput, TTransients>;
+
+type VoteTopicFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<VoteTopicFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: VoteTopicFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<VoteTopic, Prisma.VoteTopicCreateInput, TTransients>;
+
+function isVoteTopiccommunityFactory(x: VoteTopiccommunityFactory | Prisma.CommunityCreateNestedOneWithoutVoteTopicsInput | undefined): x is VoteTopiccommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
+
+function isVoteTopiccreatedByUserFactory(x: VoteTopiccreatedByUserFactory | Prisma.UserCreateNestedOneWithoutCreatedVoteTopicsInput | undefined): x is VoteTopiccreatedByUserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+function isVoteTopicgateFactory(x: VoteTopicgateFactory | Prisma.VoteGateCreateNestedOneWithoutTopicInput | undefined): x is VoteTopicgateFactory {
+    return (x as any)?._factoryFor === "VoteGate";
+}
+
+function isVoteTopicpowerPolicyFactory(x: VoteTopicpowerPolicyFactory | Prisma.VotePowerPolicyCreateNestedOneWithoutTopicInput | undefined): x is VoteTopicpowerPolicyFactory {
+    return (x as any)?._factoryFor === "VotePowerPolicy";
+}
+
+type VoteTopicTraitKeys<TOptions extends VoteTopicFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface VoteTopicFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "VoteTopic";
+    build(inputData?: Partial<Prisma.VoteTopicCreateInput & TTransients>): PromiseLike<Prisma.VoteTopicCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.VoteTopicCreateInput & TTransients>): PromiseLike<Prisma.VoteTopicCreateInput>;
+    buildList(list: readonly Partial<Prisma.VoteTopicCreateInput & TTransients>[]): PromiseLike<Prisma.VoteTopicCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.VoteTopicCreateInput & TTransients>): PromiseLike<Prisma.VoteTopicCreateInput[]>;
+    pickForConnect(inputData: VoteTopic): Pick<VoteTopic, "id">;
+    create(inputData?: Partial<Prisma.VoteTopicCreateInput & TTransients>): PromiseLike<VoteTopic>;
+    createList(list: readonly Partial<Prisma.VoteTopicCreateInput & TTransients>[]): PromiseLike<VoteTopic[]>;
+    createList(count: number, item?: Partial<Prisma.VoteTopicCreateInput & TTransients>): PromiseLike<VoteTopic[]>;
+    createForConnect(inputData?: Partial<Prisma.VoteTopicCreateInput & TTransients>): PromiseLike<Pick<VoteTopic, "id">>;
+}
+
+export interface VoteTopicFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends VoteTopicFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): VoteTopicFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateVoteTopicScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): VoteTopicScalarOrEnumFields {
+    return {
+        title: getScalarFieldValueGenerator().String({ modelName: "VoteTopic", fieldName: "title", isId: false, isUnique: false, seq }),
+        startsAt: getScalarFieldValueGenerator().DateTime({ modelName: "VoteTopic", fieldName: "startsAt", isId: false, isUnique: false, seq }),
+        endsAt: getScalarFieldValueGenerator().DateTime({ modelName: "VoteTopic", fieldName: "endsAt", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineVoteTopicFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends VoteTopicFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): VoteTopicFactoryInterface<TTransients, VoteTopicTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly VoteTopicTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("VoteTopic", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.VoteTopicCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateVoteTopicScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<VoteTopicFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<VoteTopicFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isVoteTopiccommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community,
+                createdByUser: isVoteTopiccreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser,
+                gate: isVoteTopicgateFactory(defaultData.gate) ? {
+                    create: await defaultData.gate.build()
+                } : defaultData.gate,
+                powerPolicy: isVoteTopicpowerPolicyFactory(defaultData.powerPolicy) ? {
+                    create: await defaultData.powerPolicy.build()
+                } : defaultData.powerPolicy
+            } as Prisma.VoteTopicCreateInput;
+            const data: Prisma.VoteTopicCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VoteTopicCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: VoteTopic) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.VoteTopicCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().voteTopic.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VoteTopicCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.VoteTopicCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "VoteTopic" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: VoteTopicTraitKeys<TOptions>, ...names: readonly VoteTopicTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface VoteTopicFactoryBuilder {
+    <TOptions extends VoteTopicFactoryDefineOptions>(options: TOptions): VoteTopicFactoryInterface<{}, VoteTopicTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends VoteTopicTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends VoteTopicFactoryDefineOptions<TTransients>>(options: TOptions) => VoteTopicFactoryInterface<TTransients, VoteTopicTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link VoteTopic} model.
+ *
+ * @param options
+ * @returns factory {@link VoteTopicFactoryInterface}
+ */
+export const defineVoteTopicFactory = (<TOptions extends VoteTopicFactoryDefineOptions>(options: TOptions): VoteTopicFactoryInterface<TOptions> => {
+    return defineVoteTopicFactoryInternal(options, {});
+}) as VoteTopicFactoryBuilder;
+
+defineVoteTopicFactory.withTransientFields = defaultTransientFieldValues => options => defineVoteTopicFactoryInternal(options, defaultTransientFieldValues);
+
+type VoteOptionScalarOrEnumFields = {
+    label: string;
+    orderIndex: number;
+};
+
+type VoteOptiontopicFactory = {
+    _factoryFor: "VoteTopic";
+    build: () => PromiseLike<Prisma.VoteTopicCreateNestedOneWithoutOptionsInput["create"]>;
+};
+
+type VoteOptionFactoryDefineInput = {
+    id?: string;
+    label?: string;
+    orderIndex?: number;
+    voteCount?: number;
+    totalPower?: number;
+    topic: VoteOptiontopicFactory | Prisma.VoteTopicCreateNestedOneWithoutOptionsInput;
+    ballots?: Prisma.VoteBallotCreateNestedManyWithoutOptionInput;
+};
+
+type VoteOptionTransientFields = Record<string, unknown> & Partial<Record<keyof VoteOptionFactoryDefineInput, never>>;
+
+type VoteOptionFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<VoteOptionFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<VoteOption, Prisma.VoteOptionCreateInput, TTransients>;
+
+type VoteOptionFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<VoteOptionFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: VoteOptionFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<VoteOption, Prisma.VoteOptionCreateInput, TTransients>;
+
+function isVoteOptiontopicFactory(x: VoteOptiontopicFactory | Prisma.VoteTopicCreateNestedOneWithoutOptionsInput | undefined): x is VoteOptiontopicFactory {
+    return (x as any)?._factoryFor === "VoteTopic";
+}
+
+type VoteOptionTraitKeys<TOptions extends VoteOptionFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface VoteOptionFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "VoteOption";
+    build(inputData?: Partial<Prisma.VoteOptionCreateInput & TTransients>): PromiseLike<Prisma.VoteOptionCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.VoteOptionCreateInput & TTransients>): PromiseLike<Prisma.VoteOptionCreateInput>;
+    buildList(list: readonly Partial<Prisma.VoteOptionCreateInput & TTransients>[]): PromiseLike<Prisma.VoteOptionCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.VoteOptionCreateInput & TTransients>): PromiseLike<Prisma.VoteOptionCreateInput[]>;
+    pickForConnect(inputData: VoteOption): Pick<VoteOption, "id">;
+    create(inputData?: Partial<Prisma.VoteOptionCreateInput & TTransients>): PromiseLike<VoteOption>;
+    createList(list: readonly Partial<Prisma.VoteOptionCreateInput & TTransients>[]): PromiseLike<VoteOption[]>;
+    createList(count: number, item?: Partial<Prisma.VoteOptionCreateInput & TTransients>): PromiseLike<VoteOption[]>;
+    createForConnect(inputData?: Partial<Prisma.VoteOptionCreateInput & TTransients>): PromiseLike<Pick<VoteOption, "id">>;
+}
+
+export interface VoteOptionFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends VoteOptionFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): VoteOptionFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateVoteOptionScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): VoteOptionScalarOrEnumFields {
+    return {
+        label: getScalarFieldValueGenerator().String({ modelName: "VoteOption", fieldName: "label", isId: false, isUnique: false, seq }),
+        orderIndex: getScalarFieldValueGenerator().Int({ modelName: "VoteOption", fieldName: "orderIndex", isId: false, isUnique: true, seq })
+    };
+}
+
+function defineVoteOptionFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends VoteOptionFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): VoteOptionFactoryInterface<TTransients, VoteOptionTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly VoteOptionTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("VoteOption", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.VoteOptionCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateVoteOptionScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<VoteOptionFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<VoteOptionFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                topic: isVoteOptiontopicFactory(defaultData.topic) ? {
+                    create: await defaultData.topic.build()
+                } : defaultData.topic
+            } as Prisma.VoteOptionCreateInput;
+            const data: Prisma.VoteOptionCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VoteOptionCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: VoteOption) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.VoteOptionCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().voteOption.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VoteOptionCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.VoteOptionCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "VoteOption" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: VoteOptionTraitKeys<TOptions>, ...names: readonly VoteOptionTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface VoteOptionFactoryBuilder {
+    <TOptions extends VoteOptionFactoryDefineOptions>(options: TOptions): VoteOptionFactoryInterface<{}, VoteOptionTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends VoteOptionTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends VoteOptionFactoryDefineOptions<TTransients>>(options: TOptions) => VoteOptionFactoryInterface<TTransients, VoteOptionTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link VoteOption} model.
+ *
+ * @param options
+ * @returns factory {@link VoteOptionFactoryInterface}
+ */
+export const defineVoteOptionFactory = (<TOptions extends VoteOptionFactoryDefineOptions>(options: TOptions): VoteOptionFactoryInterface<TOptions> => {
+    return defineVoteOptionFactoryInternal(options, {});
+}) as VoteOptionFactoryBuilder;
+
+defineVoteOptionFactory.withTransientFields = defaultTransientFieldValues => options => defineVoteOptionFactoryInternal(options, defaultTransientFieldValues);
+
+type VoteBallotScalarOrEnumFields = {
+    power: number;
+};
+
+type VoteBallotuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutVoteBallotsInput["create"]>;
+};
+
+type VoteBallottopicFactory = {
+    _factoryFor: "VoteTopic";
+    build: () => PromiseLike<Prisma.VoteTopicCreateNestedOneWithoutBallotsInput["create"]>;
+};
+
+type VoteBallotoptionFactory = {
+    _factoryFor: "VoteOption";
+    build: () => PromiseLike<Prisma.VoteOptionCreateNestedOneWithoutBallotsInput["create"]>;
+};
+
+type VoteBallotFactoryDefineInput = {
+    id?: string;
+    power?: number;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    user: VoteBallotuserFactory | Prisma.UserCreateNestedOneWithoutVoteBallotsInput;
+    topic: VoteBallottopicFactory | Prisma.VoteTopicCreateNestedOneWithoutBallotsInput;
+    option: VoteBallotoptionFactory | Prisma.VoteOptionCreateNestedOneWithoutBallotsInput;
+};
+
+type VoteBallotTransientFields = Record<string, unknown> & Partial<Record<keyof VoteBallotFactoryDefineInput, never>>;
+
+type VoteBallotFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<VoteBallotFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<VoteBallot, Prisma.VoteBallotCreateInput, TTransients>;
+
+type VoteBallotFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<VoteBallotFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: VoteBallotFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<VoteBallot, Prisma.VoteBallotCreateInput, TTransients>;
+
+function isVoteBallotuserFactory(x: VoteBallotuserFactory | Prisma.UserCreateNestedOneWithoutVoteBallotsInput | undefined): x is VoteBallotuserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+function isVoteBallottopicFactory(x: VoteBallottopicFactory | Prisma.VoteTopicCreateNestedOneWithoutBallotsInput | undefined): x is VoteBallottopicFactory {
+    return (x as any)?._factoryFor === "VoteTopic";
+}
+
+function isVoteBallotoptionFactory(x: VoteBallotoptionFactory | Prisma.VoteOptionCreateNestedOneWithoutBallotsInput | undefined): x is VoteBallotoptionFactory {
+    return (x as any)?._factoryFor === "VoteOption";
+}
+
+type VoteBallotTraitKeys<TOptions extends VoteBallotFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface VoteBallotFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "VoteBallot";
+    build(inputData?: Partial<Prisma.VoteBallotCreateInput & TTransients>): PromiseLike<Prisma.VoteBallotCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.VoteBallotCreateInput & TTransients>): PromiseLike<Prisma.VoteBallotCreateInput>;
+    buildList(list: readonly Partial<Prisma.VoteBallotCreateInput & TTransients>[]): PromiseLike<Prisma.VoteBallotCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.VoteBallotCreateInput & TTransients>): PromiseLike<Prisma.VoteBallotCreateInput[]>;
+    pickForConnect(inputData: VoteBallot): Pick<VoteBallot, "id">;
+    create(inputData?: Partial<Prisma.VoteBallotCreateInput & TTransients>): PromiseLike<VoteBallot>;
+    createList(list: readonly Partial<Prisma.VoteBallotCreateInput & TTransients>[]): PromiseLike<VoteBallot[]>;
+    createList(count: number, item?: Partial<Prisma.VoteBallotCreateInput & TTransients>): PromiseLike<VoteBallot[]>;
+    createForConnect(inputData?: Partial<Prisma.VoteBallotCreateInput & TTransients>): PromiseLike<Pick<VoteBallot, "id">>;
+}
+
+export interface VoteBallotFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends VoteBallotFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): VoteBallotFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateVoteBallotScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): VoteBallotScalarOrEnumFields {
+    return {
+        power: getScalarFieldValueGenerator().Int({ modelName: "VoteBallot", fieldName: "power", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineVoteBallotFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends VoteBallotFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): VoteBallotFactoryInterface<TTransients, VoteBallotTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly VoteBallotTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("VoteBallot", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.VoteBallotCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateVoteBallotScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<VoteBallotFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<VoteBallotFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isVoteBallotuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user,
+                topic: isVoteBallottopicFactory(defaultData.topic) ? {
+                    create: await defaultData.topic.build()
+                } : defaultData.topic,
+                option: isVoteBallotoptionFactory(defaultData.option) ? {
+                    create: await defaultData.option.build()
+                } : defaultData.option
+            } as Prisma.VoteBallotCreateInput;
+            const data: Prisma.VoteBallotCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VoteBallotCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: VoteBallot) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.VoteBallotCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().voteBallot.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VoteBallotCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.VoteBallotCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "VoteBallot" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: VoteBallotTraitKeys<TOptions>, ...names: readonly VoteBallotTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface VoteBallotFactoryBuilder {
+    <TOptions extends VoteBallotFactoryDefineOptions>(options: TOptions): VoteBallotFactoryInterface<{}, VoteBallotTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends VoteBallotTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends VoteBallotFactoryDefineOptions<TTransients>>(options: TOptions) => VoteBallotFactoryInterface<TTransients, VoteBallotTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link VoteBallot} model.
+ *
+ * @param options
+ * @returns factory {@link VoteBallotFactoryInterface}
+ */
+export const defineVoteBallotFactory = (<TOptions extends VoteBallotFactoryDefineOptions>(options: TOptions): VoteBallotFactoryInterface<TOptions> => {
+    return defineVoteBallotFactoryInternal(options, {});
+}) as VoteBallotFactoryBuilder;
+
+defineVoteBallotFactory.withTransientFields = defaultTransientFieldValues => options => defineVoteBallotFactoryInternal(options, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;
