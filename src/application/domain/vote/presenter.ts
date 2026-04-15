@@ -20,6 +20,7 @@ import {
   PrismaVoteBallot,
 } from "./data/type";
 import { EligibilityResult } from "./service";
+import { ValidationError } from "@/errors/graphql";
 
 export default class VotePresenter {
   static phase(topic: Pick<PrismaVoteTopicBase, "startsAt" | "endsAt">): GqlVoteTopicPhase {
@@ -85,6 +86,15 @@ export default class VotePresenter {
     isManager: boolean,
     myBallot: PrismaVoteBallot | null = null,
   ): GqlVoteTopic {
+    // gate と powerPolicy はスキーマ上 non-null (VoteGate! / VotePowerPolicy!) のため、
+    // 欠落は作成フローのバグを示す。GQL の non-null 違反を伝播させるより早期エラーにする。
+    if (!topic.gate) {
+      throw new ValidationError(`VoteTopic(${topic.id}) has no gate configured`, []);
+    }
+    if (!topic.powerPolicy) {
+      throw new ValidationError(`VoteTopic(${topic.id}) has no powerPolicy configured`, []);
+    }
+
     const resultVisible = this.isResultVisible(topic, isManager);
     return {
       __typename: "VoteTopic",
@@ -97,8 +107,8 @@ export default class VotePresenter {
       startsAt: topic.startsAt,
       endsAt: topic.endsAt,
       phase: this.phase(topic),
-      gate: topic.gate ? this.gate(topic.gate) : null as unknown as GqlVoteGate,
-      powerPolicy: topic.powerPolicy ? this.powerPolicy(topic.powerPolicy) : null as unknown as GqlVotePowerPolicy,
+      gate: this.gate(topic.gate),
+      powerPolicy: this.powerPolicy(topic.powerPolicy),
       options: topic.options.map((opt) => this.option(opt, resultVisible)),
       myBallot: myBallot ? this.ballot(myBallot) : null,
       myEligibility: null, // フィールドリゾルバーで解決
