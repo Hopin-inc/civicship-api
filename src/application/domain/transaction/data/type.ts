@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, TransactionReason } from "@prisma/client";
 
 export const transactionInclude = Prisma.validator<Prisma.TransactionInclude>()({
   fromWallet: true,
@@ -40,7 +40,7 @@ export type PrismaTransactionUnified = PrismaTransaction | PrismaTransactionDeta
 
 export type TransactionChainRow = {
   id: string;
-  reason: string;
+  reason: TransactionReason;
   points: number;
   created_at: Date;
   from_user_id: string | null;
