@@ -6,7 +6,7 @@ import VoteUseCase from "@/application/domain/vote/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
-import { AuthorizationError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import { createVoteTopic } from "./helpers";
 
 describe("Vote Integration: VoteTopicDelete", () => {
@@ -63,6 +63,32 @@ describe("Vote Integration: VoteTopicDelete", () => {
     // Verify it is no longer in the DB
     const deleted = await prismaClient.voteTopic.findUnique({ where: { id: topic.id } });
     expect(deleted).toBeNull();
+  });
+
+  // ─── 異常系: 存在しない topic ───────────────────────────────────────────────
+
+  it("should throw NotFoundError when the topic id does not exist", async () => {
+    const manager = await TestDataSourceHelper.createUser({
+      name: "Manager",
+      slug: "manager-slug-nf",
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    await TestDataSourceHelper.createMembership({
+      user: { connect: { id: manager.id } },
+      community: { connect: { id: community.id } },
+      status: MembershipStatus.JOINED,
+      reason: MembershipStatusReason.INVITED,
+      role: Role.MANAGER,
+    });
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    await expect(
+      voteUseCase.managerDeleteVoteTopic(ctx, {
+        id: "nonexistent-topic-id",
+        permission: { communityId: community.id },
+      }),
+    ).rejects.toThrow(NotFoundError);
   });
 
   // ─── 異常系: communityId ──────────────────────────────────────────────────

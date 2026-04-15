@@ -7,6 +7,7 @@ import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { AuthorizationError, NotFoundError, ValidationError } from "@/errors/graphql";
+import { NftInstanceStatus } from "@prisma/client";
 import { createVoteTopic, createOwnedNft, createNftToken } from "./helpers";
 
 // ─── 共通セットアップ ─────────────────────────────────────────────────────────
@@ -158,7 +159,7 @@ describe("Vote Integration: VoteCast", () => {
           instanceId: `instance-2nd-${Date.now()}`,
           nftTokenId: nftToken.id,
           nftWalletId: nftWallet.id,
-          status: "OWNED",
+          status: NftInstanceStatus.OWNED,
         },
       });
 
@@ -180,6 +181,64 @@ describe("Vote Integration: VoteCast", () => {
       const updated = await prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } });
       expect(updated.voteCount).toBe(1);
       expect(updated.totalPower).toBe(2);
+    });
+
+    it("should correctly adjust totalPower (delta≠0) when re-voting same option after NFT count changes", async () => {
+      // adjustOptionTotalPower の非ゼロ delta パスを検証する
+      // 1回目: NFT 2枚保有 → power=2 で option A に投票 (voteCount=1, totalPower=2)
+      // NFT を 1 枚売却（status=SOLD に変更）
+      // 2回目: NFT 1枚保有 → power=1 で同じ option A に再投票 (voteCount=1, totalPower=1, delta=-1)
+      const voter = await TestDataSourceHelper.createUser({
+        name: "NFT Delta Voter",
+        slug: "nft-delta-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+      const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+      await TestDataSourceHelper.createMembership({
+        user: { connect: { id: voter.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        reason: MembershipStatusReason.INVITED,
+        role: Role.MEMBER,
+      });
+
+      const { nftToken, nftWallet } = await createOwnedNft(voter.id); // instance #1
+      const instance2 = await prismaClient.nftInstance.create({
+        data: {
+          instanceId: `delta-instance-2nd-${Date.now()}`,
+          nftTokenId: nftToken.id,
+          nftWalletId: nftWallet.id,
+          status: NftInstanceStatus.OWNED,
+        },
+      });
+
+      const { topic, optionA } = await createVoteTopic({
+        communityId: community.id,
+        createdBy: voter.id,
+        ...activePeriod(),
+        gate: { type: "MEMBERSHIP" },
+        policy: { type: "NFT_COUNT", nftTokenId: nftToken.id },
+      });
+
+      const ctx = { currentUser: { id: voter.id }, issuer } as unknown as IContext;
+
+      // 1回目: power=2
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } });
+      const after1st = await prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } });
+      expect(after1st.voteCount).toBe(1);
+      expect(after1st.totalPower).toBe(2);
+
+      // NFT を 1 枚手放す（SOLD に変更）→ 保有枚数が 1 になる
+      await prismaClient.nftInstance.update({
+        where: { id: instance2.id },
+        data: { status: NftInstanceStatus.RETIRED }, // OWNED 以外にすることで保有枚数を 1 に減らす
+      });
+
+      // 2回目: 同じ optionA に再投票 → power=1, delta=-1, adjustOptionTotalPower が呼ばれる
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } });
+      const after2nd = await prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } });
+      expect(after2nd.voteCount).toBe(1); // voteCount は変化しない
+      expect(after2nd.totalPower).toBe(1); // 2 → 1 に減少
     });
   });
 
@@ -221,6 +280,47 @@ describe("Vote Integration: VoteCast", () => {
       expect(updatedA.totalPower).toBe(0);
       expect(updatedB.voteCount).toBe(1);
       expect(updatedB.totalPower).toBe(1);
+    });
+
+    it("should correctly update counts when switching back from optionB to optionA (oldId > newId deadlock prevention branch)", async () => {
+      // options は orderIndex 昇順で作成されるため optionA.id < optionB.id になる
+      // B→A の再投票は oldId(B) > newId(A) → else ブランチ（increment してから decrement）を実行する
+      const member = await TestDataSourceHelper.createUser({
+        name: "B to A Voter",
+        slug: "b-to-a-slug",
+        currentPrefecture: CurrentPrefecture.KAGAWA,
+      });
+      const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+      await TestDataSourceHelper.createMembership({
+        user: { connect: { id: member.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        reason: MembershipStatusReason.INVITED,
+        role: Role.MEMBER,
+      });
+
+      const { topic, optionA, optionB } = await createVoteTopic({
+        communityId: community.id,
+        createdBy: member.id,
+        ...activePeriod(),
+      });
+
+      const ctx = { currentUser: { id: member.id }, issuer } as unknown as IContext;
+
+      // 1回目: B に投票
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionB.id } });
+      // 2回目: A に戻す → oldId=B.id > newId=A.id → else ブランチ
+      await voteUseCase.userCastVote(ctx, { input: { topicId: topic.id, optionId: optionA.id } });
+
+      const [updatedA, updatedB] = await Promise.all([
+        prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionA.id } }),
+        prismaClient.voteOption.findUniqueOrThrow({ where: { id: optionB.id } }),
+      ]);
+
+      expect(updatedA.voteCount).toBe(1);
+      expect(updatedA.totalPower).toBe(1);
+      expect(updatedB.voteCount).toBe(0);
+      expect(updatedB.totalPower).toBe(0);
     });
 
     it("should NOT change voteCount when re-voting for the same option (adjustOptionTotalPower path)", async () => {

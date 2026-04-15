@@ -97,7 +97,7 @@ describe("Vote Integration: VoteTopicCreate", () => {
     ).rejects.toThrow(ValidationError);
   });
 
-  it("should throw ValidationError when startsAt >= endsAt", async () => {
+  it("should throw ValidationError when startsAt >= endsAt (startsAt > endsAt)", async () => {
     const manager = await TestDataSourceHelper.createUser({
       name: "Manager",
       slug: "manager-slug-3",
@@ -112,6 +112,28 @@ describe("Vote Integration: VoteTopicCreate", () => {
         input: makeValidInput(community.id, {
           startsAt: new Date(now.getTime() + 3_600_000),
           endsAt: new Date(now.getTime() + 60_000), // endsAt < startsAt
+        }),
+        permission: { communityId: community.id },
+      }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("should throw ValidationError when startsAt === endsAt (exact equality, boundary of >= check)", async () => {
+    // validateTopicInput の条件は `startsAt >= endsAt` なので等値も拒否される
+    const manager = await TestDataSourceHelper.createUser({
+      name: "Manager",
+      slug: "manager-slug-3b",
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+
+    const sameTime = new Date(Date.now() + 3_600_000);
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    await expect(
+      voteUseCase.managerCreateVoteTopic(ctx, {
+        input: makeValidInput(community.id, {
+          startsAt: sameTime,
+          endsAt: sameTime, // 完全等値
         }),
         permission: { communityId: community.id },
       }),
