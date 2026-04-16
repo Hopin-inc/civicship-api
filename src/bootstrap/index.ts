@@ -3,7 +3,9 @@ import { printEnvBanner } from "@/utils/envBanner";
 import { startProgress, step } from "@/utils/startupProgress";
 
 printEnvBanner();
-startProgress(7);
+// In batch mode, `main()` in `src/index.ts` short-circuits before the
+// server-startup steps fire, so the progress would otherwise stop at [2/7].
+startProgress(process.env.PROCESS_TYPE === "batch" ? 2 : 7);
 step("Environment loaded");
 
 const { tracingReady } = await import("@/infrastructure/logging/tracing");

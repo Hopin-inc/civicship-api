@@ -39,7 +39,7 @@ async function startServer() {
   } else {
     server = http.createServer(app);
   }
-  step("HTTPS certs loaded");
+  step(process.env.NODE_HTTPS === "true" ? "HTTPS certs loaded" : "HTTP server created");
 
   const apolloServer = await createApolloServer(server);
   step("Apollo Server created");
