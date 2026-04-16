@@ -6,19 +6,21 @@ import {
   GqlMutationVoteTopicCreateArgs,
   GqlMutationVoteCastArgs,
   GqlMutationVoteTopicDeleteArgs,
-  GqlVoteTopicsConnection,
-  GqlVoteTopic,
   GqlVoteOption,
-  GqlMyVoteEligibility,
-  GqlVoteTopicCreatePayload,
-  GqlVoteCastPayload,
   GqlVoteTopicDeletePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { AuthorizationError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
 import VoteService from "./service";
-import VotePresenter, { GqlVoteTopicWithMeta, GqlVoteBallotWithMeta } from "./presenter";
+import VotePresenter, {
+  GqlVoteTopicWithMeta,
+  GqlVoteBallotWithMeta,
+  GqlVoteTopicsConnectionWithMeta,
+  GqlMyVoteEligibilityWithMeta,
+  GqlVoteTopicCreatePayloadWithMeta,
+  GqlVoteCastPayloadWithMeta,
+} from "./presenter";
 import { PrismaVoteBallot, PrismaVoteOption } from "./data/type";
 
 @injectable()
@@ -30,7 +32,7 @@ export default class VoteUseCase {
   async anyoneBrowseVoteTopics(
     ctx: IContext,
     { communityId, first, cursor }: GqlQueryVoteTopicsArgs,
-  ): Promise<GqlVoteTopicsConnection> {
+  ): Promise<GqlVoteTopicsConnectionWithMeta> {
     const take = clampFirst(first);
     const currentUserId = ctx.currentUser?.id;
     const { isManager } = getMembershipRolesByCtx(ctx, [communityId], currentUserId);
@@ -59,7 +61,7 @@ export default class VoteUseCase {
   async anyoneViewVoteTopic(
     ctx: IContext,
     { id }: GqlQueryVoteTopicArgs,
-  ): Promise<GqlVoteTopic | null> {
+  ): Promise<GqlVoteTopicWithMeta | null> {
     const topic = await this.service.findTopic(ctx, id);
     if (!topic) return null;
 
@@ -73,14 +75,13 @@ export default class VoteUseCase {
     // ここで個別に findBallot を呼ばない（二重クエリを防ぐ）
     const resultVisible = this.service.calcResultVisible(topic.endsAt, isManagerOfCommunity);
     const phase = this.service.calcPhase(topic.startsAt, topic.endsAt);
-    // WithMeta → GqlVoteTopic 境界: field resolver で community が解決されることを前提とした型境界キャスト
-    return VotePresenter.topic(topic, resultVisible, phase) as unknown as GqlVoteTopic;
+    return VotePresenter.topic(topic, resultVisible, phase);
   }
 
   async userGetMyVoteEligibility(
     ctx: IContext,
     { topicId }: GqlQueryMyVoteEligibilityArgs,
-  ): Promise<GqlMyVoteEligibility> {
+  ): Promise<GqlMyVoteEligibilityWithMeta> {
     const userId = getCurrentUserId(ctx);
     const topic = await this.service.getTopicWithRelations(ctx, topicId);
     this.service.validateTopicRelations(topic);
@@ -102,7 +103,7 @@ export default class VoteUseCase {
   async managerCreateVoteTopic(
     ctx: IContext,
     { input, permission }: GqlMutationVoteTopicCreateArgs,
-  ): Promise<GqlVoteTopicCreatePayload> {
+  ): Promise<GqlVoteTopicCreatePayloadWithMeta> {
     const currentUserId = getCurrentUserId(ctx);
 
     // permission で指定されたコミュニティと input のコミュニティが一致することを確認
@@ -125,7 +126,7 @@ export default class VoteUseCase {
   async userCastVote(
     ctx: IContext,
     { input }: GqlMutationVoteCastArgs,
-  ): Promise<GqlVoteCastPayload> {
+  ): Promise<GqlVoteCastPayloadWithMeta> {
     const userId = getCurrentUserId(ctx);
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
@@ -178,7 +179,7 @@ export default class VoteUseCase {
   async resolveMyEligibilityForParent(
     ctx: IContext,
     parent: GqlVoteTopicWithMeta,
-  ): Promise<GqlMyVoteEligibility | null> {
+  ): Promise<GqlMyVoteEligibilityWithMeta | null> {
     if (!ctx.currentUser) return null;
     const userId = ctx.currentUser.id;
 

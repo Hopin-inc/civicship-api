@@ -4,7 +4,6 @@ import {
   GqlVoteBallot,
   GqlVoteGate,
   GqlVotePowerPolicy,
-  GqlVoteTopicPhase,
   GqlMyVoteEligibility,
   GqlVoteTopicsConnection,
   GqlVoteTopicCreatePayload,
@@ -18,7 +17,7 @@ import {
   PrismaVoteOption,
   PrismaVoteBallot,
 } from "./data/type";
-import { EligibilityResult } from "./service";
+import { EligibilityResult, VotePhase } from "./service";
 
 // ─── フィールドリゾルバー向けメタデータ付き GQL 型 ──────────────────────────
 // フィールドリゾルバーは parent オブジェクト経由でこれらを参照する
@@ -48,6 +47,29 @@ export type GqlVoteTopicWithMeta = Omit<GqlVoteTopic, "gate" | "powerPolicy" | "
   resultVisible: boolean;                // VoteTopic.myBallot リゾルバーが参照
   gate: GqlVoteGateWithMeta;
   powerPolicy: GqlVotePowerPolicyWithMeta;
+};
+
+// ─── WithMeta 版 Connection / Payload 型 ─────────────────────────────────────
+// Resolver 境界でキャストなしに GqlVoteTopicWithMeta / GqlVoteBallotWithMeta を
+// 保持できるよう、nodes/edges/voteTopic/ballot フィールドを上書きした型。
+// GraphQL ランタイム（Apollo）はフィールドリゾルバーで各フィールドを解決するため
+// TypeScript 型と完全一致しなくてもよい — 型安全を保ちながらキャストを排除する。
+
+export type GqlVoteTopicsConnectionWithMeta = Omit<GqlVoteTopicsConnection, "edges" | "nodes"> & {
+  edges: Array<{ cursor: string; node: GqlVoteTopicWithMeta }>;
+  nodes: GqlVoteTopicWithMeta[];
+};
+
+export type GqlMyVoteEligibilityWithMeta = Omit<GqlMyVoteEligibility, "myBallot"> & {
+  myBallot?: GqlVoteBallotWithMeta | null;
+};
+
+export type GqlVoteTopicCreatePayloadWithMeta = Omit<GqlVoteTopicCreatePayload, "voteTopic"> & {
+  voteTopic: GqlVoteTopicWithMeta;
+};
+
+export type GqlVoteCastPayloadWithMeta = Omit<GqlVoteCastPayload, "ballot"> & {
+  ballot: GqlVoteBallotWithMeta;
 };
 
 // ─── Presenter ────────────────────────────────────────────────────────────────
@@ -101,7 +123,7 @@ export default class VotePresenter {
   static topic(
     topic: PrismaVoteTopic,
     resultVisible: boolean,
-    phase: GqlVoteTopicPhase,
+    phase: VotePhase,
   ): GqlVoteTopicWithMeta {
     return {
       __typename: "VoteTopic",
@@ -130,14 +152,13 @@ export default class VotePresenter {
     currentPower: number | null,
     myBallot: PrismaVoteBallot | null,
     resultVisible: boolean = false,
-  ): GqlMyVoteEligibility {
+  ): GqlMyVoteEligibilityWithMeta {
     return {
       __typename: "MyVoteEligibility",
       eligible: result.eligible,
       reason: result.reason ?? null,
       currentPower: result.eligible ? currentPower : null,
-      // WithMeta → GQL 境界: field resolver で option が解決されることを前提とした型境界キャスト
-      myBallot: myBallot ? (this.ballot(myBallot, resultVisible) as unknown as GqlVoteBallot) : null,
+      myBallot: myBallot ? this.ballot(myBallot, resultVisible) : null,
     };
   }
 
@@ -146,9 +167,7 @@ export default class VotePresenter {
     totalCount: number,
     hasNextPage: boolean,
     cursor?: string,
-  ): GqlVoteTopicsConnection {
-    // WithMeta → GQL 境界: community/option は field resolver で解決されることを前提とした型境界キャスト
-    const gqlTopics = topics as unknown as GqlVoteTopic[];
+  ): GqlVoteTopicsConnectionWithMeta {
     return {
       __typename: "VoteTopicsConnection",
       totalCount,
@@ -158,27 +177,25 @@ export default class VotePresenter {
         startCursor: topics[0]?.id,
         endCursor: topics.length ? topics[topics.length - 1].id : undefined,
       },
-      edges: gqlTopics.map((node) => ({
+      edges: topics.map((node) => ({
         cursor: node.id,
         node,
       })),
-      nodes: gqlTopics,
+      nodes: topics,
     };
   }
 
-  static create(topic: GqlVoteTopicWithMeta): GqlVoteTopicCreatePayload {
+  static create(topic: GqlVoteTopicWithMeta): GqlVoteTopicCreatePayloadWithMeta {
     return {
       __typename: "VoteTopicCreatePayload",
-      // WithMeta → GQL 境界: field resolver で community が解決されることを前提とした型境界キャスト
-      voteTopic: topic as unknown as GqlVoteTopic,
+      voteTopic: topic,
     };
   }
 
-  static castBallot(ballot: GqlVoteBallotWithMeta): GqlVoteCastPayload {
+  static castBallot(ballot: GqlVoteBallotWithMeta): GqlVoteCastPayloadWithMeta {
     return {
       __typename: "VoteCastPayload",
-      // WithMeta → GQL 境界: field resolver で option が解決されることを前提とした型境界キャスト
-      ballot: ballot as unknown as GqlVoteBallot,
+      ballot,
     };
   }
 

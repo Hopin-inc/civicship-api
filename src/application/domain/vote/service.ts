@@ -12,8 +12,10 @@ import {
 import {
   GqlVoteTopicCreateInput,
   GqlVoteCastInput,
-  GqlVoteTopicPhase,
 } from "@/types/graphql";
+
+// Service 層はドメイン固有型のみ返す（GQL 型を漏出させない）
+export type VotePhase = "UPCOMING" | "OPEN" | "CLOSED";
 import MembershipService from "@/application/domain/account/membership/service";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 
@@ -251,7 +253,7 @@ export default class VoteService {
     return isManager || new Date() >= endsAt;
   }
 
-  calcPhase(startsAt: Date, endsAt: Date): GqlVoteTopicPhase {
+  calcPhase(startsAt: Date, endsAt: Date): VotePhase {
     const now = new Date();
     if (now < startsAt) return "UPCOMING";
     // >= で validateVotingPeriod の境界と統一（endsAt の瞬間に CLOSED 扱い）
