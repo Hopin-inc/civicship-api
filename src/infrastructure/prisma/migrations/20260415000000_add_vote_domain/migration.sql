@@ -72,7 +72,7 @@ CREATE UNIQUE INDEX "t_vote_gates_topic_id_key" ON "t_vote_gates"("topic_id");
 CREATE UNIQUE INDEX "t_vote_power_policies_topic_id_key" ON "t_vote_power_policies"("topic_id");
 
 -- CreateIndex
-CREATE INDEX "t_vote_topics_community_id_ends_at_idx" ON "t_vote_topics"("community_id", "ends_at");
+CREATE INDEX "t_vote_topics_community_id_created_at_id_idx" ON "t_vote_topics"("community_id", "created_at", "id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "t_vote_options_topic_id_order_index_key" ON "t_vote_options"("topic_id", "order_index");

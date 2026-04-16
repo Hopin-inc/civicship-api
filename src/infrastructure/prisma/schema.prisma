@@ -1467,7 +1467,7 @@ model VoteTopic {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([communityId, endsAt])
+  @@index([communityId, createdAt, id])
   @@map("t_vote_topics")
 }
 

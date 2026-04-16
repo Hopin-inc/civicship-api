@@ -92,8 +92,9 @@ export default class VoteUseCase {
 
     const myBallot = await this.service.findBallot(ctx, userId, topicId);
 
-    // endsAt を超えていれば結果を公開（myEligibility context では manager 判定は行わない）
-    const resultVisible = this.service.calcResultVisible(topic.endsAt, false);
+    // 管理者は投票期間中も集計値を参照できる（PR設計方針と一致）
+    const { isManager } = getMembershipRolesByCtx(ctx, [topic.communityId], userId);
+    const resultVisible = this.service.calcResultVisible(topic.endsAt, !!isManager[topic.communityId]);
     return VotePresenter.eligibility(eligibility, currentPower, myBallot, resultVisible);
   }
 
@@ -164,8 +165,9 @@ export default class VoteUseCase {
       // 8. VoteOption 非正規化カラム更新（同トランザクション内）
       await this.service.updateOptionCounts(ctx, existingBallot, ballot, power, tx);
 
-      // 投票期間中のため resultVisible=false（集計値は秘匿）
-      const ballotGql = VotePresenter.ballot(ballot, this.service.calcResultVisible(topic.endsAt, false));
+      // 管理者は投票期間中も集計値を参照できる（PR設計方針と一致）
+      const { isManager } = getMembershipRolesByCtx(ctx, [topic.communityId], userId);
+      const ballotGql = VotePresenter.ballot(ballot, this.service.calcResultVisible(topic.endsAt, !!isManager[topic.communityId]));
       return VotePresenter.castBallot(ballotGql);
     });
   }
@@ -190,9 +192,9 @@ export default class VoteUseCase {
 
     const myBallot = await this.service.findBallot(ctx, userId, parent.id);
 
-    // myEligibility コンテキストでは manager 判定は行わず、時刻のみで結果公開を判定
-    const resultVisible = this.service.calcResultVisible(parent.endsAt, false);
-    return VotePresenter.eligibility(eligibility, currentPower, myBallot, resultVisible);
+    // parent.resultVisible は VotePresenter.topic() が isManager を考慮して算出済みの値
+    // ここで再計算せずそのまま使うことで、管理者判定も正しく引き継がれる
+    return VotePresenter.eligibility(eligibility, currentPower, myBallot, parent.resultVisible);
   }
 
   // ─── フィールドリゾルバー向けフォーマットデリゲート ──────────────────────────
