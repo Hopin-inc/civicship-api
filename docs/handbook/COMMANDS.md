@@ -48,6 +48,31 @@ pnpm db:seed-master # Populate master data (city and state data)
 pnpm db:seed-domain # Populate domain data (user and community data)
 ```
 
+Target a non-default environment by appending `:local` / `:dev` / `:prd`:
+
+```bash
+pnpm db:generate:local  # Reads .env.local
+pnpm db:generate:dev    # Reads .env.dev (typically via SSH tunnel)
+pnpm db:generate:prd    # Reads .env.prd, asks for interactive confirmation first
+
+pnpm db:deploy:local
+pnpm db:deploy:dev
+pnpm db:deploy:prd      # confirmPrd guard
+
+pnpm db:studio:local
+pnpm db:studio:dev
+pnpm db:studio:prd      # confirmPrd guard
+
+pnpm db:pull:local
+pnpm db:pull:dev
+pnpm db:pull:prd        # confirmPrd guard
+
+pnpm db:migrate:local   # db:migrate (= prisma migrate dev --create-only) is
+                        # local-only; shadow-DB privileges make :dev / :prd unsafe.
+```
+
+The bare `pnpm db:generate` / `pnpm db:deploy` / `pnpm db:studio` / `pnpm db:pull` / `pnpm db:migrate` forms remain as-is and are used by CI (which injects `DATABASE_URL` directly).
+
 ### GraphQL Operations
 
 ```bash
