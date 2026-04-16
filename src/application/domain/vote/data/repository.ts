@@ -22,7 +22,11 @@ import {
 
 @injectable()
 export default class VoteRepository implements IVoteRepository {
-  async findTopic(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic | null> {
+  async findTopic(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaVoteTopic | null> {
     const query = (t: Prisma.TransactionClient) =>
       t.voteTopic.findUnique({
         where: { id },
@@ -31,7 +35,11 @@ export default class VoteRepository implements IVoteRepository {
     return tx ? query(tx) : ctx.issuer.public(ctx, query);
   }
 
-  async findTopicOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic> {
+  async findTopicOrThrow(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaVoteTopic> {
     const topic = await this.findTopic(ctx, id, tx);
     if (!topic) throw new NotFoundError("VoteTopic", { id });
     return topic;
@@ -58,9 +66,7 @@ export default class VoteRepository implements IVoteRepository {
   }
 
   async countTopics(ctx: IContext, communityId: string): Promise<number> {
-    return ctx.issuer.public(ctx, (tx) =>
-      tx.voteTopic.count({ where: { communityId } }),
-    );
+    return ctx.issuer.public(ctx, (tx) => tx.voteTopic.count({ where: { communityId } }));
   }
 
   async createGate(
@@ -107,6 +113,19 @@ export default class VoteRepository implements IVoteRepository {
     });
   }
 
+  async updateTopic(
+    ctx: IContext,
+    id: string,
+    data: Prisma.VoteTopicUpdateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ id: string }> {
+    return tx.voteTopic.update({
+      where: { id },
+      data,
+      select: { id: true },
+    });
+  }
+
   async createOptions(
     ctx: IContext,
     topicId: string,
@@ -120,6 +139,22 @@ export default class VoteRepository implements IVoteRepository {
         orderIndex: opt.orderIndex,
       })),
     });
+  }
+
+  async deleteGate(ctx: IContext, topicId: string, tx: Prisma.TransactionClient): Promise<void> {
+    await tx.voteGate.deleteMany({ where: { topicId } });
+  }
+
+  async deletePowerPolicy(
+    ctx: IContext,
+    topicId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await tx.votePowerPolicy.deleteMany({ where: { topicId } });
+  }
+
+  async deleteOptions(ctx: IContext, topicId: string, tx: Prisma.TransactionClient): Promise<void> {
+    await tx.voteOption.deleteMany({ where: { topicId } });
   }
 
   async deleteTopic(

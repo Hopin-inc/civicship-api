@@ -1,16 +1,14 @@
 import { injectable, inject } from "tsyringe";
 import { Prisma, MembershipStatus, Role } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { NotFoundError, ValidationError, VoteTopicNotEditableError } from "@/errors/graphql";
 import { isRoleAtLeast } from "@/application/domain/utils";
 import { IVoteRepository } from "./data/interface";
 import VoteConverter from "./data/converter";
-import {
-  PrismaVoteTopic,
-  PrismaVoteBallot,
-} from "./data/type";
+import { PrismaVoteTopic, PrismaVoteBallot } from "./data/type";
 import {
   GqlVoteTopicCreateInput,
+  GqlVoteTopicUpdateInput,
   GqlVoteCastInput,
 } from "@/types/graphql";
 
@@ -44,7 +42,11 @@ export default class VoteService {
     @inject("NftInstanceRepository") private readonly nftInstanceRepo: INftInstanceRepository,
   ) {}
 
-  async getTopicWithRelations(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic> {
+  async getTopicWithRelations(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaVoteTopic> {
     return this.repo.findTopicOrThrow(ctx, id, tx);
   }
 
@@ -65,7 +67,8 @@ export default class VoteService {
     return this.repo.countTopics(ctx, communityId);
   }
 
-  validateTopicInput(input: GqlVoteTopicCreateInput): void {
+  // Create / Update 双方で使う共通バリデーション。input 型は共通サブセットのみ参照する。
+  validateTopicInput(input: GqlVoteTopicCreateInput | GqlVoteTopicUpdateInput): void {
     if (new Date(input.startsAt) >= new Date(input.endsAt)) {
       throw new ValidationError("startsAt must be before endsAt", []);
     }
@@ -84,6 +87,15 @@ export default class VoteService {
     }
     if (input.powerPolicy.type === "NFT_COUNT" && !input.powerPolicy.nftTokenId) {
       throw new ValidationError("nftTokenId is required for NFT_COUNT power policy", []);
+    }
+  }
+
+  // Update / Delete 操作は UPCOMING フェーズ限定。
+  // OPEN 中・CLOSED 後は「イミュータブル」扱いで、誤操作による投票結果の破壊を防ぐ。
+  validateTopicIsUpcoming(topic: PrismaVoteTopic): void {
+    const phase = this.calcPhase(topic.startsAt, topic.endsAt);
+    if (phase !== "UPCOMING") {
+      throw new VoteTopicNotEditableError(phase);
     }
   }
 
@@ -133,14 +145,22 @@ export default class VoteService {
       }
       // EXISTS クエリで判定（COUNT より効率的・意味が明確）
       // tx を渡すことで投票トランザクション内での読み取りを保証（TOCTOU 防止）
-      const exists = await this.nftInstanceRepo.existsByUserAndToken(ctx, userId, gate.nftTokenId, tx);
-      return exists
-        ? { eligible: true }
-        : { eligible: false, reason: "REQUIRED_NFT_NOT_FOUND" };
+      const exists = await this.nftInstanceRepo.existsByUserAndToken(
+        ctx,
+        userId,
+        gate.nftTokenId,
+        tx,
+      );
+      return exists ? { eligible: true } : { eligible: false, reason: "REQUIRED_NFT_NOT_FOUND" };
     }
 
     if (gate.type === "MEMBERSHIP") {
-      const membership = await this.membershipService.findMembership(ctx, userId, topic.communityId, tx);
+      const membership = await this.membershipService.findMembership(
+        ctx,
+        userId,
+        topic.communityId,
+        tx,
+      );
       if (!membership || membership.status !== MembershipStatus.JOINED) {
         return { eligible: false, reason: "NOT_A_MEMBER" };
       }
@@ -169,7 +189,12 @@ export default class VoteService {
       throw new ValidationError("nftTokenId is required for NFT_COUNT power policy", []);
     }
     // tx を渡すことで投票トランザクション内での読み取りを保証（TOCTOU 防止）
-    const count = await this.nftInstanceRepo.countByUserAndToken(ctx, userId, policy.nftTokenId, tx);
+    const count = await this.nftInstanceRepo.countByUserAndToken(
+      ctx,
+      userId,
+      policy.nftTokenId,
+      tx,
+    );
     return count;
   }
 
@@ -247,6 +272,35 @@ export default class VoteService {
     return this.repo.findTopicOrThrow(ctx, topic.id, tx);
   }
 
+  async updateTopicWithRelations(
+    ctx: IContext,
+    id: string,
+    input: GqlVoteTopicUpdateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaVoteTopic> {
+    // UPCOMING 限定なので ballot が存在しない前提。options 全量置換が安全に行える。
+    // Gate / PowerPolicy は 1 topic に 1 つなので、delete → create で置換する。
+
+    // 1. Topic 本体を更新
+    const topicData = this.converter.updateTopic(input);
+    await this.repo.updateTopic(ctx, id, topicData, tx);
+
+    // 2. Gate を置換
+    await this.repo.deleteGate(ctx, id, tx);
+    await this.repo.createGate(ctx, id, input.gate, tx);
+
+    // 3. PowerPolicy を置換
+    await this.repo.deletePowerPolicy(ctx, id, tx);
+    await this.repo.createPowerPolicy(ctx, id, input.powerPolicy, tx);
+
+    // 4. Options を置換
+    await this.repo.deleteOptions(ctx, id, tx);
+    await this.repo.createOptions(ctx, id, input.options, tx);
+
+    // 5. リレーション付きで再取得
+    return this.repo.findTopicOrThrow(ctx, id, tx);
+  }
+
   // ─── 表示ロジック計算（Presenter に渡す前にサービスで算出）───────────────────
 
   calcResultVisible(endsAt: Date, isManager: boolean): boolean {
@@ -261,15 +315,15 @@ export default class VoteService {
     return "OPEN";
   }
 
-  async acquireVoteLock(userId: string, topicId: string, tx: Prisma.TransactionClient): Promise<void> {
+  async acquireVoteLock(
+    userId: string,
+    topicId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
     await this.repo.acquireVoteLock(userId, topicId, tx);
   }
 
-  async deleteTopic(
-    ctx: IContext,
-    id: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  async deleteTopic(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<void> {
     await this.repo.deleteTopic(ctx, id, tx);
   }
 }

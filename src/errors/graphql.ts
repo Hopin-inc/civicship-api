@@ -324,3 +324,16 @@ export class ConcurrentRetryError extends ApolloError {
   }
 }
 
+// Vote
+export class VoteTopicNotEditableError extends ApolloError {
+  public currentPhase: string;
+
+  constructor(currentPhase: string) {
+    super(
+      `Vote topic can only be updated or deleted in UPCOMING phase (current: ${currentPhase})`,
+      "VOTE_TOPIC_NOT_EDITABLE",
+    );
+    this.currentPhase = currentPhase;
+    Object.defineProperty(this, "name", { value: "VoteTopicNotEditableError" });
+  }
+}

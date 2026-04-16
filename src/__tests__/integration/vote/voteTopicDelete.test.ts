@@ -6,7 +6,7 @@ import VoteUseCase from "@/application/domain/vote/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
-import { AuthorizationError, NotFoundError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError, VoteTopicNotEditableError } from "@/errors/graphql";
 import { createVoteTopic } from "./helpers";
 
 describe("Vote Integration: VoteTopicDelete", () => {
@@ -29,7 +29,7 @@ describe("Vote Integration: VoteTopicDelete", () => {
 
   // ─── 正常系 ──────────────────────────────────────────────────────────────────
 
-  it("should delete a vote topic and return the deleted id", async () => {
+  it("should delete a vote topic in UPCOMING phase and return the deleted id", async () => {
     const manager = await TestDataSourceHelper.createUser({
       name: "Manager",
       slug: "manager-slug",
@@ -48,10 +48,11 @@ describe("Vote Integration: VoteTopicDelete", () => {
     });
 
     const now = new Date();
+    // UPCOMING: startsAt が未来
     const { topic } = await createVoteTopic({
       communityId: community.id,
       createdBy: manager.id,
-      startsAt: new Date(now.getTime() - 60_000),
+      startsAt: new Date(now.getTime() + 60_000),
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
@@ -125,7 +126,7 @@ describe("Vote Integration: VoteTopicDelete", () => {
     const { topic } = await createVoteTopic({
       communityId: communityA.id, // topic belongs to communityA
       createdBy: manager.id,
-      startsAt: new Date(now.getTime() - 60_000),
+      startsAt: new Date(now.getTime() + 60_000),
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
@@ -138,9 +139,93 @@ describe("Vote Integration: VoteTopicDelete", () => {
     ).rejects.toThrow(AuthorizationError);
   });
 
-  // ─── カスケード削除の確認 ─────────────────────────────────────────────────
+  // ─── 異常系: フェーズ制約 ─────────────────────────────────────────────────
 
-  it("should cascade-delete gate, powerPolicy, options and ballots when a topic is deleted", async () => {
+  it("should throw VoteTopicNotEditableError when deleting a topic in OPEN phase", async () => {
+    const manager = await TestDataSourceHelper.createUser({
+      name: "Manager",
+      slug: "manager-slug-open",
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
+    await TestDataSourceHelper.createMembership({
+      user: { connect: { id: manager.id } },
+      community: { connect: { id: community.id } },
+      status: MembershipStatus.JOINED,
+      reason: MembershipStatusReason.INVITED,
+      role: Role.MANAGER,
+    });
+
+    const now = new Date();
+    // OPEN: 過去に開始 / 未来に終了
+    const { topic } = await createVoteTopic({
+      communityId: community.id,
+      createdBy: manager.id,
+      startsAt: new Date(now.getTime() - 60_000),
+      endsAt: new Date(now.getTime() + 3_600_000),
+    });
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    await expect(
+      voteUseCase.managerDeleteVoteTopic(ctx, {
+        id: topic.id,
+        permission: { communityId: community.id },
+      }),
+    ).rejects.toThrow(VoteTopicNotEditableError);
+
+    // DB 上の topic は残っているはず
+    const stillExists = await prismaClient.voteTopic.findUnique({ where: { id: topic.id } });
+    expect(stillExists).not.toBeNull();
+  });
+
+  it("should throw VoteTopicNotEditableError when deleting a topic in CLOSED phase", async () => {
+    const manager = await TestDataSourceHelper.createUser({
+      name: "Manager",
+      slug: "manager-slug-closed",
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
+    await TestDataSourceHelper.createMembership({
+      user: { connect: { id: manager.id } },
+      community: { connect: { id: community.id } },
+      status: MembershipStatus.JOINED,
+      reason: MembershipStatusReason.INVITED,
+      role: Role.MANAGER,
+    });
+
+    const now = new Date();
+    // CLOSED: 両方過去
+    const { topic } = await createVoteTopic({
+      communityId: community.id,
+      createdBy: manager.id,
+      startsAt: new Date(now.getTime() - 3_600_000),
+      endsAt: new Date(now.getTime() - 60_000),
+    });
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    await expect(
+      voteUseCase.managerDeleteVoteTopic(ctx, {
+        id: topic.id,
+        permission: { communityId: community.id },
+      }),
+    ).rejects.toThrow(VoteTopicNotEditableError);
+
+    const stillExists = await prismaClient.voteTopic.findUnique({ where: { id: topic.id } });
+    expect(stillExists).not.toBeNull();
+  });
+
+  // ─── カスケード削除の確認（DB-level、usecase バリデーションをバイパス）──────────
+
+  // usecase 経由での削除は UPCOMING 限定なので ballot は存在し得ないが、
+  // Prisma schema の onDelete: Cascade 自体はセーフティネットとして検証しておく。
+  // そのため prismaClient.voteTopic.delete() を直接呼び出して純粋に DB-level cascade を確認する。
+  it("should cascade-delete gate, powerPolicy, options and ballots when voteTopic is removed at DB level", async () => {
     const manager = await TestDataSourceHelper.createUser({
       name: "Manager",
       slug: "manager-slug-3",
@@ -201,12 +286,8 @@ describe("Vote Integration: VoteTopicDelete", () => {
     expect(optionsBefore).toHaveLength(2);
     expect(ballotBefore).not.toBeNull();
 
-    // Delete the topic
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
-    await voteUseCase.managerDeleteVoteTopic(ctx, {
-      id: topic.id,
-      permission: { communityId: community.id },
-    });
+    // Delete the topic directly at DB level (bypassing usecase validation) to verify schema-level cascade
+    await prismaClient.voteTopic.delete({ where: { id: topic.id } });
 
     // All related records should be cascade-deleted
     const gateAfter = await prismaClient.voteGate.findFirst({ where: { topicId: topic.id } });

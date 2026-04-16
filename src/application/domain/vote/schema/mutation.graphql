@@ -13,6 +13,18 @@ extend type Mutation {
   ): VoteTopicCreatePayload! @authz(rules: [IsCommunityManager])
 
   """
+  管理者: 投票テーマを更新する。UPCOMING フェーズ（投票開始前）のみ許可。
+  OPEN / CLOSED フェーズでは `VOTE_TOPIC_NOT_EDITABLE` エラーが返る。
+  options は全量置換される（UPCOMING なので投票0件が保証されており安全）。
+  gate / powerPolicy も同時に再設定可能。
+  """
+  voteTopicUpdate(
+    id: ID!
+    input: VoteTopicUpdateInput!
+    permission: CheckCommunityPermissionInput!
+  ): VoteTopicUpdatePayload! @authz(rules: [IsCommunityManager])
+
+  """
   ユーザー: 投票実行。
   同一 topicId への再投票は **upsert で上書き** される（投票履歴は残らない）。
   投票の取消（withdraw）は現時点で未サポート。
@@ -21,8 +33,9 @@ extend type Mutation {
   voteCast(input: VoteCastInput!): VoteCastPayload! @authz(rules: [IsUser])
 
   """
-  管理者: 投票テーマ削除。
-  gate / powerPolicy / options / ballots は onDelete: Cascade で自動削除される。
+  管理者: 投票テーマ削除。UPCOMING フェーズ（投票開始前）のみ許可。
+  OPEN / CLOSED フェーズでは `VOTE_TOPIC_NOT_EDITABLE` エラーが返る。
+  gate / powerPolicy / options は onDelete: Cascade で自動削除される（UPCOMING 限定なので ballots は存在しない）。
   """
   voteTopicDelete(id: ID!, permission: CheckCommunityPermissionInput!): VoteTopicDeletePayload!
     @authz(rules: [IsCommunityManager])
@@ -30,6 +43,16 @@ extend type Mutation {
 
 input VoteTopicCreateInput {
   communityId: ID!
+  title: String!
+  description: String
+  startsAt: Datetime!
+  endsAt: Datetime!
+  gate: VoteGateInput!
+  powerPolicy: VotePowerPolicyInput!
+  options: [VoteOptionInput!]!
+}
+
+input VoteTopicUpdateInput {
   title: String!
   description: String
   startsAt: Datetime!
@@ -71,6 +94,10 @@ type VoteTopicCreateSuccess {
   voteTopic: VoteTopic!
 }
 
+type VoteTopicUpdateSuccess {
+  voteTopic: VoteTopic!
+}
+
 type VoteCastSuccess {
   ballot: VoteBallot!
 }
@@ -83,6 +110,8 @@ type VoteTopicDeleteSuccess {
 # Vote Mutation Union (Payload) Definitions
 # ------------------------------
 union VoteTopicCreatePayload = VoteTopicCreateSuccess
+
+union VoteTopicUpdatePayload = VoteTopicUpdateSuccess
 
 union VoteCastPayload = VoteCastSuccess
 

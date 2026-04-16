@@ -7,6 +7,7 @@ import {
   GqlMyVoteEligibility,
   GqlVoteTopicsConnection,
   GqlVoteTopicCreateSuccess,
+  GqlVoteTopicUpdateSuccess,
   GqlVoteCastSuccess,
   GqlVoteTopicDeleteSuccess,
 } from "@/types/graphql";
@@ -65,6 +66,10 @@ export type GqlMyVoteEligibilityWithMeta = Omit<GqlMyVoteEligibility, "myBallot"
 };
 
 export type GqlVoteTopicCreatePayloadWithMeta = Omit<GqlVoteTopicCreateSuccess, "voteTopic"> & {
+  voteTopic: GqlVoteTopicWithMeta;
+};
+
+export type GqlVoteTopicUpdatePayloadWithMeta = Omit<GqlVoteTopicUpdateSuccess, "voteTopic"> & {
   voteTopic: GqlVoteTopicWithMeta;
 };
 
@@ -188,6 +193,13 @@ export default class VotePresenter {
   static create(topic: GqlVoteTopicWithMeta): GqlVoteTopicCreatePayloadWithMeta {
     return {
       __typename: "VoteTopicCreateSuccess",
+      voteTopic: topic,
+    };
+  }
+
+  static update(topic: GqlVoteTopicWithMeta): GqlVoteTopicUpdatePayloadWithMeta {
+    return {
+      __typename: "VoteTopicUpdateSuccess",
       voteTopic: topic,
     };
   }

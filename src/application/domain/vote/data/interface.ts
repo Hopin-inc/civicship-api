@@ -1,11 +1,6 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import {
-  PrismaVoteTopic,
-  PrismaVoteGate,
-  PrismaVotePowerPolicy,
-  PrismaVoteBallot,
-} from "./type";
+import { PrismaVoteTopic, PrismaVoteGate, PrismaVotePowerPolicy, PrismaVoteBallot } from "./type";
 import {
   GqlVoteCastInput,
   GqlVoteGateInput,
@@ -14,9 +9,17 @@ import {
 } from "@/types/graphql";
 
 export interface IVoteRepository {
-  findTopic(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic | null>;
+  findTopic(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaVoteTopic | null>;
 
-  findTopicOrThrow(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaVoteTopic>;
+  findTopicOrThrow(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaVoteTopic>;
 
   queryTopics(
     ctx: IContext,
@@ -47,6 +50,13 @@ export interface IVoteRepository {
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string }>;
 
+  updateTopic(
+    ctx: IContext,
+    id: string,
+    data: Prisma.VoteTopicUpdateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ id: string }>;
+
   createOptions(
     ctx: IContext,
     topicId: string,
@@ -54,11 +64,13 @@ export interface IVoteRepository {
     tx: Prisma.TransactionClient,
   ): Promise<void>;
 
-  deleteTopic(
-    ctx: IContext,
-    id: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<{ id: string }>;
+  deleteGate(ctx: IContext, topicId: string, tx: Prisma.TransactionClient): Promise<void>;
+
+  deletePowerPolicy(ctx: IContext, topicId: string, tx: Prisma.TransactionClient): Promise<void>;
+
+  deleteOptions(ctx: IContext, topicId: string, tx: Prisma.TransactionClient): Promise<void>;
+
+  deleteTopic(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<{ id: string }>;
 
   findBallot(
     ctx: IContext,
@@ -96,9 +108,5 @@ export interface IVoteRepository {
     tx: Prisma.TransactionClient,
   ): Promise<void>;
 
-  acquireVoteLock(
-    userId: string,
-    topicId: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<void>;
+  acquireVoteLock(userId: string, topicId: string, tx: Prisma.TransactionClient): Promise<void>;
 }
