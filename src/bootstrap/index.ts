@@ -1,9 +1,9 @@
 import "reflect-metadata";
-import { tracingReady } from "@/infrastructure/logging/tracing";
 import { printEnvBanner } from "./envBanner";
 
 printEnvBanner();
 
+const { tracingReady } = await import("@/infrastructure/logging/tracing");
 await tracingReady;
 
 await import("../index");
