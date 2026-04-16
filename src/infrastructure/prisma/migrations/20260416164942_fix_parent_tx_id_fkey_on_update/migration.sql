@@ -21,5 +21,23 @@
 -- DropForeignKey
 ALTER TABLE "t_transactions" DROP CONSTRAINT "t_transactions_parent_tx_id_fkey";
 
--- AddForeignKey
-ALTER TABLE "t_transactions" ADD CONSTRAINT "t_transactions_parent_tx_id_fkey" FOREIGN KEY ("parent_tx_id") REFERENCES "t_transactions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey (NOT VALID + VALIDATE to lower lock level on the scan)
+--
+-- Plain `ADD CONSTRAINT ... FOREIGN KEY` takes ACCESS EXCLUSIVE on
+-- `t_transactions` while it scans the table to verify existing rows.
+-- `NOT VALID` skips the scan (metadata-only; brief SHARE ROW EXCLUSIVE)
+-- and `VALIDATE CONSTRAINT` performs the scan under SHARE UPDATE
+-- EXCLUSIVE, which does not block concurrent reads — and would not
+-- block writes outside a wrapping transaction. `prisma migrate deploy`
+-- runs the whole migration in one transaction, so the full benefit is
+-- only realised when the file is applied standalone (e.g. manual psql
+-- run on production), but the PG-recommended pattern costs nothing
+-- here and future-proofs the migration for a larger `t_transactions`.
+ALTER TABLE "t_transactions"
+    ADD CONSTRAINT "t_transactions_parent_tx_id_fkey"
+    FOREIGN KEY ("parent_tx_id") REFERENCES "t_transactions"("id")
+    ON DELETE SET NULL ON UPDATE CASCADE
+    NOT VALID;
+
+ALTER TABLE "t_transactions"
+    VALIDATE CONSTRAINT "t_transactions_parent_tx_id_fkey";
