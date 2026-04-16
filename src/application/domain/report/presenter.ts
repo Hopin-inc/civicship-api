@@ -1,15 +1,13 @@
 import {
+  CommunityContextRow,
+  DeepestChainRow,
   TransactionActiveUsersDailyRow,
   TransactionCommentRow,
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
   UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
-import {
-  bigintToSafeNumber,
-  daysBetweenJst,
-  toJstIsoDate,
-} from "@/application/domain/report/util";
+import { bigintToSafeNumber, daysBetweenJst, toJstIsoDate } from "@/application/domain/report/util";
 
 // ---------------------------------------------------------------------------
 // AI-facing report payload types
@@ -23,10 +21,45 @@ import {
 export interface WeeklyReportPayload {
   period: { from: string; to: string };
   community_id: string;
+  community_context: CommunityContext | null;
+  deepest_chain: DeepestChainItem | null;
   daily_summaries: DailySummaryItem[];
   daily_active_users: DailyActiveUsersItem[];
   top_users: TopUserItem[];
   highlight_comments: CommentItem[];
+}
+
+/**
+ * AI-facing community snapshot. `active_rate` is `active_users_in_window /
+ * total_members` (null when the community has no JOINED members yet, so the
+ * LLM does not emit a divide-by-zero ratio). `custom_context` is a free-text
+ * markdown field sourced from `ReportTemplate.communityContext`, piped
+ * through untouched so editors can steer tone / vision / references without
+ * a schema change.
+ */
+export interface CommunityContext {
+  community_id: string;
+  name: string;
+  point_name: string;
+  bio: string | null;
+  established_at: string | null;
+  website: string | null;
+  total_members: number;
+  active_users_in_window: number;
+  active_rate: number | null;
+  custom_context: string | null;
+}
+
+export interface DeepestChainItem {
+  transaction_id: string;
+  chain_depth: number;
+  reason: string;
+  comment: string | null;
+  date: string;
+  from_user_id: string | null;
+  to_user_id: string | null;
+  created_by_user_id: string | null;
+  parent_tx_id: string | null;
 }
 
 export interface DailySummaryItem {
@@ -102,8 +135,51 @@ export default class ReportPresenter {
     topUserAggregates: UserTransactionAggregateRow[];
     profiles: UserProfileForReportRow[];
     comments: TransactionCommentRow[];
+    communityContext: CommunityContextRow | null;
+    deepestChain: DeepestChainRow | null;
+    /**
+     * Optional markdown blob sourced from `ReportTemplate.communityContext`.
+     * Populated by the AI-generation usecase (PR-D) when rendering under a
+     * community-scoped template; left unset for raw payload dumps and the
+     * single-variant Phase 1 flow.
+     */
+    customContext?: string | null;
   }): WeeklyReportPayload {
     const profileByUserId = new Map(input.profiles.map((p) => [p.userId, p]));
+
+    const communityContext: CommunityContext | null = input.communityContext
+      ? {
+          community_id: input.communityContext.communityId,
+          name: input.communityContext.name,
+          point_name: input.communityContext.pointName,
+          bio: input.communityContext.bio,
+          established_at: input.communityContext.establishedAt
+            ? toJstIsoDate(input.communityContext.establishedAt)
+            : null,
+          website: input.communityContext.website,
+          total_members: input.communityContext.totalMembers,
+          active_users_in_window: input.communityContext.activeUsersInWindow,
+          active_rate:
+            input.communityContext.totalMembers > 0
+              ? input.communityContext.activeUsersInWindow / input.communityContext.totalMembers
+              : null,
+          custom_context: input.customContext ?? null,
+        }
+      : null;
+
+    const deepestChain: DeepestChainItem | null = input.deepestChain
+      ? {
+          transaction_id: input.deepestChain.transactionId,
+          chain_depth: input.deepestChain.chainDepth,
+          reason: input.deepestChain.reason,
+          comment: input.deepestChain.comment,
+          date: toJstIsoDate(input.deepestChain.date),
+          from_user_id: input.deepestChain.fromUserId,
+          to_user_id: input.deepestChain.toUserId,
+          created_by_user_id: input.deepestChain.createdByUserId,
+          parent_tx_id: input.deepestChain.parentTxId,
+        }
+      : null;
 
     const topUsers: TopUserItem[] = input.topUserAggregates.map((u) => {
       const p = profileByUserId.get(u.userId);
@@ -136,6 +212,8 @@ export default class ReportPresenter {
         to: toJstIsoDate(input.range.to),
       },
       community_id: input.communityId,
+      community_context: communityContext,
+      deepest_chain: deepestChain,
       daily_summaries: input.summaries.map((s) => ({
         date: toJstIsoDate(s.date),
         reason: s.reason,

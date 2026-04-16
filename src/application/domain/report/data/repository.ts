@@ -1,8 +1,10 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, TransactionReason } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
+  CommunityContextRow,
   DateRange,
+  DeepestChainRow,
   IReportRepository,
   TransactionActiveUsersDailyRow,
   TransactionCommentRow,
@@ -178,17 +180,151 @@ export default class ReportRepository implements IReportRepository {
     );
   }
 
-  async refreshTransactionSummaryDaily(
+  /**
+   * Pull community identity + reporting-window activity stats in a single
+   * round trip. Member count lives in `t_memberships` (RLS-protected but
+   * read-safe for community members and admins via `issuer.public`), and
+   * the distinct active-user count is scanned directly off
+   * `mv_user_transaction_daily` for the same JST window used by the report
+   * helpers elsewhere in this file.
+   *
+   * Returns null when the community is not found; the presenter treats this
+   * as an optional block so the payload still serialises for a soft-deleted
+   * or mis-passed community id.
+   */
+  async findCommunityContext(
     ctx: IContext,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
+    communityId: string,
+    range: DateRange,
+  ): Promise<CommunityContextRow | null> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          id: string;
+          name: string;
+          point_name: string;
+          bio: string | null;
+          established_at: Date | null;
+          website: string | null;
+          total_members: number;
+          active_users_in_window: number;
+        }[]
+      >`
+        WITH member_count AS (
+          SELECT COUNT(*)::int AS n
+          FROM "t_memberships"
+          WHERE "community_id" = ${communityId}
+            AND "status" = 'JOINED'
+        ),
+        active_in_window AS (
+          SELECT COUNT(DISTINCT "user_id")::int AS n
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ${communityId}
+            AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
+        )
+        SELECT
+          c."id",
+          c."name",
+          c."point_name",
+          c."bio",
+          c."established_at",
+          c."website",
+          (SELECT n FROM member_count) AS "total_members",
+          (SELECT n FROM active_in_window) AS "active_users_in_window"
+        FROM "t_communities" c
+        WHERE c."id" = ${communityId}
+        LIMIT 1
+      `;
+      if (rows.length === 0) return null;
+      const r = rows[0];
+      return {
+        communityId: r.id,
+        name: r.name,
+        pointName: r.point_name,
+        bio: r.bio,
+        establishedAt: r.established_at,
+        website: r.website,
+        totalMembers: r.total_members,
+        activeUsersInWindow: r.active_users_in_window,
+      };
+    });
+  }
+
+  /**
+   * The single transaction with the largest `chain_depth` within the JST
+   * reporting window. Mirrors the community-scoping predicate used by
+   * `mv_transaction_summary_daily` / `v_transaction_comments`:
+   * `COALESCE(fw.community_id, tw.community_id) = $1` plus the
+   * defensive-consistency check that rejects cross-community pairs.
+   *
+   * ORDER BY depth DESC, created_at ASC so that ties resolve to the
+   * *earliest* deep chain in the window — intuitively "the one that started
+   * the cascade" rather than whichever the planner picked first. Returns
+   * null when no chained transaction exists for the window.
+   */
+  async findDeepestChain(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+  ): Promise<DeepestChainRow | null> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          id: string;
+          chain_depth: number;
+          reason: TransactionReason;
+          comment: string | null;
+          date: Date;
+          from_user_id: string | null;
+          to_user_id: string | null;
+          created_by_user_id: string | null;
+          parent_tx_id: string | null;
+        }[]
+      >`
+        SELECT
+          t."id",
+          t."chain_depth"::int AS "chain_depth",
+          t."reason",
+          t."comment",
+          ((t."created_at" AT TIME ZONE 'Asia/Tokyo')::date) AS "date",
+          fw."user_id" AS "from_user_id",
+          tw."user_id" AS "to_user_id",
+          t."created_by" AS "created_by_user_id",
+          t."parent_tx_id"
+        FROM "t_transactions" t
+        LEFT JOIN "t_wallets" fw ON fw."id" = t."from"
+        LEFT JOIN "t_wallets" tw ON tw."id" = t."to"
+        WHERE COALESCE(fw."community_id", tw."community_id") = ${communityId}
+          AND (fw."community_id" IS NULL
+               OR tw."community_id" IS NULL
+               OR fw."community_id" = tw."community_id")
+          AND t."chain_depth" IS NOT NULL
+          AND ((t."created_at" AT TIME ZONE 'Asia/Tokyo')::date)
+              BETWEEN ${range.from}::date AND ${range.to}::date
+        ORDER BY t."chain_depth" DESC, t."created_at" ASC
+        LIMIT 1
+      `;
+      if (rows.length === 0) return null;
+      const r = rows[0];
+      return {
+        transactionId: r.id,
+        chainDepth: r.chain_depth,
+        reason: r.reason,
+        comment: r.comment,
+        date: r.date,
+        fromUserId: r.from_user_id,
+        toUserId: r.to_user_id,
+        createdByUserId: r.created_by_user_id,
+        parentTxId: r.parent_tx_id,
+      };
+    });
+  }
+
+  async refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
     await tx.$queryRawTyped(refreshMaterializedViewTransactionSummaryDaily());
   }
 
-  async refreshUserTransactionDaily(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  async refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
     await tx.$queryRawTyped(refreshMaterializedViewUserTransactionDaily());
   }
 }
