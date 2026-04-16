@@ -62,8 +62,21 @@ export default class ReportUseCase {
 
   /**
    * Refresh all three materialized views. Called from the daily batch.
+   *
+   * Each refresh runs in its own bypass-RLS transaction (per CLAUDE.md:
+   * transactions are managed at the UseCase layer, not the Service layer).
+   * They are sequential rather than parallel to keep DB load predictable
+   * during the nightly window.
    */
   async refreshAllReportViews(ctx: IContext): Promise<void> {
-    await this.service.refreshAllReportViews(ctx);
+    await ctx.issuer.internal((tx) =>
+      this.service.refreshTransactionSummaryDaily(ctx, tx),
+    );
+    await ctx.issuer.internal((tx) =>
+      this.service.refreshTransactionActiveUsersDaily(ctx, tx),
+    );
+    await ctx.issuer.internal((tx) =>
+      this.service.refreshUserTransactionDaily(ctx, tx),
+    );
   }
 }

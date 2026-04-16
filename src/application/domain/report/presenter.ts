@@ -168,10 +168,14 @@ export default class ReportPresenter {
         chain_descendant_count: s.chainDescendantCount,
         max_chain_depth: s.maxChainDepth,
         // chain_depth is NULL for non-chain reasons (POINT_ISSUED / TICKET_* /
-        // OPPORTUNITY_*). maxChainDepth === null signals "no chain activity",
-        // in which case avg is undefined for this row.
+        // OPPORTUNITY_*) and can also be NULL on chain-eligible reasons when
+        // no parent tx was found upstream. Divide by the count of rows that
+        // actually carry a chain_depth (root + descendant), not by the full
+        // tx_count, since SUM(chain_depth) in SQL skips NULL rows.
         avg_chain_depth:
-          s.maxChainDepth !== null && s.txCount > 0 ? s.sumChainDepth / s.txCount : null,
+          s.maxChainDepth !== null && s.chainRootCount + s.chainDescendantCount > 0
+            ? s.sumChainDepth / (s.chainRootCount + s.chainDescendantCount)
+            : null,
         issuance_count: s.issuanceCount,
         burn_count: s.burnCount,
       })),

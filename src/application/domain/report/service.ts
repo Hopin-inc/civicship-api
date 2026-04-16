@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
@@ -57,19 +58,24 @@ export default class ReportService {
     return this.repository.findUserProfiles(ctx, communityId, userIds);
   }
 
-  async refreshAllReportViews(ctx: IContext): Promise<void> {
-    // Refresh is not transactional (CONCURRENTLY cannot run inside a tx block
-    // in some Postgres configurations; typedSQL runs each statement
-    // individually via $queryRawTyped). We wrap each call in its own
-    // internal issuer block so bypassRls is applied per-statement.
-    await ctx.issuer.internal((tx) =>
-      this.repository.refreshTransactionSummaryDaily(ctx, tx),
-    );
-    await ctx.issuer.internal((tx) =>
-      this.repository.refreshTransactionActiveUsersDaily(ctx, tx),
-    );
-    await ctx.issuer.internal((tx) =>
-      this.repository.refreshUserTransactionDaily(ctx, tx),
-    );
+  async refreshTransactionSummaryDaily(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    return this.repository.refreshTransactionSummaryDaily(ctx, tx);
+  }
+
+  async refreshTransactionActiveUsersDaily(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    return this.repository.refreshTransactionActiveUsersDaily(ctx, tx);
+  }
+
+  async refreshUserTransactionDaily(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    return this.repository.refreshUserTransactionDaily(ctx, tx);
   }
 }
