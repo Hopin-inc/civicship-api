@@ -2947,23 +2947,71 @@ export type GqlTransaction = {
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
+/**
+ * ポイントの旅（chain）の全体像。
+ * depth はチェーンの長さ（ステップ数）、steps は古い順（起点→現在）に並ぶ。
+ */
 export type GqlTransactionChain = {
   __typename?: 'TransactionChain';
   depth: Scalars['Int']['output'];
   steps: Array<GqlTransactionChainStep>;
 };
 
+/**
+ * 参加者がコミュニティ（COMMUNITY wallet の所有者）である場合の表現。
+ * id は Community.id。GRANT / ONBOARDING のような、community wallet から
+ * 発行される transaction の起点ステップで登場する。
+ */
+export type GqlTransactionChainCommunity = GqlTransactionChainParticipant & {
+  __typename?: 'TransactionChainCommunity';
+  bio?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+};
+
+/**
+ * chain の 1 ステップに登場する参加者（User または Community）。
+ * 共通フィールドを束ねた interface。実体の判別は __typename で行う。
+ */
+export type GqlTransactionChainParticipant = {
+  bio?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+};
+
+/**
+ * chain の1ステップ。ある transaction（ポイントの移動 1回分）に対応する。
+ * from が送信元、to が送信先。どちらも User または Community を表す
+ * TransactionChainParticipant interface で、__typename で判別できる。
+ */
 export type GqlTransactionChainStep = {
   __typename?: 'TransactionChainStep';
   createdAt: Scalars['Datetime']['output'];
-  fromUser?: Maybe<GqlTransactionChainUser>;
+  /**
+   * 送信元の参加者。
+   * - GRANT / ONBOARDING の起点ステップでは TransactionChainCommunity（community wallet 発）
+   * - それ以外のステップは TransactionChainUser
+   * - ウォレットが削除済み（退会済みユーザー等）の場合は null
+   */
+  from?: Maybe<GqlTransactionChainParticipant>;
   id: Scalars['ID']['output'];
   points: Scalars['Int']['output'];
   reason: GqlTransactionReason;
-  toUser?: Maybe<GqlTransactionChainUser>;
+  /**
+   * 送信先の参加者。
+   * 現状の業務ロジックでは常に TransactionChainUser（MEMBER wallet 宛）。
+   * ウォレットが削除済みの場合は null。
+   */
+  to?: Maybe<GqlTransactionChainParticipant>;
 };
 
-export type GqlTransactionChainUser = {
+/**
+ * 参加者がユーザー（MEMBER wallet の所有者）である場合の表現。
+ * id は User.id。
+ */
+export type GqlTransactionChainUser = GqlTransactionChainParticipant & {
   __typename?: 'TransactionChainUser';
   bio?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -3756,6 +3804,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCityEdge, 'node'> & { node?: Maybe<_RefType['City']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<_RefType['IncentiveGrant']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlNftInstanceEdge, 'node'> & { node: _RefType['NftInstance'] } ) | ( Omit<GqlNftTokenEdge, 'node'> & { node: _RefType['NftToken'] } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlPortfolioEdge, 'node'> & { node?: Maybe<_RefType['Portfolio']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlStateEdge, 'node'> & { node?: Maybe<_RefType['State']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<_RefType['VcIssuanceRequest']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
+  TransactionChainParticipant: ( GqlTransactionChainCommunity ) | ( GqlTransactionChainUser );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -4053,8 +4102,10 @@ export type GqlResolversTypes = ResolversObject<{
   TicketUseSuccess: ResolverTypeWrapper<Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversTypes['Ticket'] }>;
   TicketsConnection: ResolverTypeWrapper<Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TicketEdge']>>> }>;
   Transaction: ResolverTypeWrapper<Transaction>;
-  TransactionChain: ResolverTypeWrapper<GqlTransactionChain>;
-  TransactionChainStep: ResolverTypeWrapper<GqlTransactionChainStep>;
+  TransactionChain: ResolverTypeWrapper<Omit<GqlTransactionChain, 'steps'> & { steps: Array<GqlResolversTypes['TransactionChainStep']> }>;
+  TransactionChainCommunity: ResolverTypeWrapper<GqlTransactionChainCommunity>;
+  TransactionChainParticipant: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['TransactionChainParticipant']>;
+  TransactionChainStep: ResolverTypeWrapper<Omit<GqlTransactionChainStep, 'from' | 'to'> & { from?: Maybe<GqlResolversTypes['TransactionChainParticipant']>, to?: Maybe<GqlResolversTypes['TransactionChainParticipant']> }>;
   TransactionChainUser: ResolverTypeWrapper<GqlTransactionChainUser>;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionDonateSelfPointPayload']>;
@@ -4405,8 +4456,10 @@ export type GqlResolversParentTypes = ResolversObject<{
   TicketUseSuccess: Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversParentTypes['Ticket'] };
   TicketsConnection: Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TicketEdge']>>> };
   Transaction: Transaction;
-  TransactionChain: GqlTransactionChain;
-  TransactionChainStep: GqlTransactionChainStep;
+  TransactionChain: Omit<GqlTransactionChain, 'steps'> & { steps: Array<GqlResolversParentTypes['TransactionChainStep']> };
+  TransactionChainCommunity: GqlTransactionChainCommunity;
+  TransactionChainParticipant: GqlResolversInterfaceTypes<GqlResolversParentTypes>['TransactionChainParticipant'];
+  TransactionChainStep: Omit<GqlTransactionChainStep, 'from' | 'to'> & { from?: Maybe<GqlResolversParentTypes['TransactionChainParticipant']>, to?: Maybe<GqlResolversParentTypes['TransactionChainParticipant']> };
   TransactionChainUser: GqlTransactionChainUser;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionDonateSelfPointPayload'];
@@ -5758,13 +5811,29 @@ export type GqlTransactionChainResolvers<ContextType = any, ParentType extends G
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlTransactionChainCommunityResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionChainCommunity'] = GqlResolversParentTypes['TransactionChainCommunity']> = ResolversObject<{
+  bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlTransactionChainParticipantResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionChainParticipant'] = GqlResolversParentTypes['TransactionChainParticipant']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'TransactionChainCommunity' | 'TransactionChainUser', ParentType, ContextType>;
+  bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+}>;
+
 export type GqlTransactionChainStepResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionChainStep'] = GqlResolversParentTypes['TransactionChainStep']> = ResolversObject<{
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  fromUser?: Resolver<Maybe<GqlResolversTypes['TransactionChainUser']>, ParentType, ContextType>;
+  from?: Resolver<Maybe<GqlResolversTypes['TransactionChainParticipant']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   points?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['TransactionReason'], ParentType, ContextType>;
-  toUser?: Resolver<Maybe<GqlResolversTypes['TransactionChainUser']>, ParentType, ContextType>;
+  to?: Resolver<Maybe<GqlResolversTypes['TransactionChainParticipant']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -6289,6 +6358,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   TicketsConnection?: GqlTicketsConnectionResolvers<ContextType>;
   Transaction?: GqlTransactionResolvers<ContextType>;
   TransactionChain?: GqlTransactionChainResolvers<ContextType>;
+  TransactionChainCommunity?: GqlTransactionChainCommunityResolvers<ContextType>;
+  TransactionChainParticipant?: GqlTransactionChainParticipantResolvers<ContextType>;
   TransactionChainStep?: GqlTransactionChainStepResolvers<ContextType>;
   TransactionChainUser?: GqlTransactionChainUserResolvers<ContextType>;
   TransactionDonateSelfPointPayload?: GqlTransactionDonateSelfPointPayloadResolvers<ContextType>;
