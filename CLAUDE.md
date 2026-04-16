@@ -402,7 +402,14 @@ const items = await prisma.model.findMany({
 
 ## Environment Setup
 
-Required environment variables in `.env`:
+Environment files are split per environment:
+
+- `.env.local` - Local development (loaded by `pnpm dev*` scripts)
+- `.env.dev` - dev environment values (Cloud Run dev), used locally when needed
+- `.env.prd` - Production values, used locally when needed
+- `.env.sample` - Template (committed)
+
+Required environment variables in `.env.local`:
 
 ```env
 DATABASE_URL=postgresql://user:password@host:15432/civicship_dev
@@ -460,7 +467,7 @@ GCP_PROJECT_ID=
 → Run `pnpm gql:generate` to regenerate types
 
 **Issue: Database connection errors**
-→ Check `DATABASE_URL` in `.env` and ensure PostgreSQL is running (`pnpm container:up`)
+→ Check `DATABASE_URL` in `.env.local` and ensure PostgreSQL is running (`pnpm container:up`)
 
 **Issue: Transaction deadlocks in tests**
 → Use `--runInBand` flag: `pnpm test --runInBand`

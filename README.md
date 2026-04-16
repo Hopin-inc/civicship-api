@@ -41,7 +41,12 @@ pnpm dev:https
 
 ### Environment Setup
 
-Create a `.env` file with required environment variables:
+Create a `.env.local` file (copy from `.env.sample`) with required environment variables. Environment-specific files are split as follows:
+
+- `.env.local` - Local development (used by `pnpm dev*` scripts)
+- `.env.dev` - dev environment (Cloud Run dev) values, if needed locally
+- `.env.prd` - Production values, if needed locally
+- `.env.sample` - Template (committed)
 
 ```env
 # Core Configuration
