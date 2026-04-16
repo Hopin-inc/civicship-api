@@ -272,7 +272,7 @@ export default class TransactionUseCase {
         toWalletId,
         transferPoints,
         tx,
-        comment,
+        comment ?? undefined,
       );
     });
 
@@ -283,7 +283,7 @@ export default class TransactionUseCase {
     const ownerUserIds = (await this.membershipService.findOwnerUserIdsByCommunity(ctx, communityId))
       .filter((id) => id !== currentUserId);
 
-    const fromUserName = ctx.currentUser?.name ?? "ユーザー";
+    const fromUserName = ctx.currentUser?.name;
     this.notificationService
       .pushPointDonationToCommunityReceivedMessage(
         ctx,

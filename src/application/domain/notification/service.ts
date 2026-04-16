@@ -409,7 +409,7 @@ export default class NotificationService {
     transactionId: string,
     toPointChange: number,
     comment: string | null,
-    fromUserName: string,
+    fromUserName: string | undefined,
     ownerUserIds: string[],
   ) {
     if (ownerUserIds.length === 0) return;

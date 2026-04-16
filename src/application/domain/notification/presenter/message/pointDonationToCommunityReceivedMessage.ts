@@ -3,7 +3,7 @@ import { Language } from "@prisma/client";
 import { formatNumber } from "../../utils/language";
 
 export interface PointDonationToCommunityReceivedParams {
-  fromUserName: string;
+  fromUserName: string | undefined;
   transferPoints: number;
   comment?: string;
   redirectUrl: string;
@@ -15,10 +15,11 @@ export function buildPointDonationToCommunityReceivedMessage(
 ): messagingApi.FlexMessage {
   const isJapanese = params.language === Language.JA;
   const formattedPoints = formatNumber(params.transferPoints, params.language);
+  const displayName = params.fromUserName ?? (isJapanese ? "ユーザー" : "User");
 
   const altText = isJapanese
-    ? `${params.fromUserName}さんからコミュニティに${formattedPoints}ポイントが寄付されました🎁`
-    : `${params.fromUserName} donated ${formattedPoints} points to the community 🎁`;
+    ? `${displayName}さんからコミュニティに${formattedPoints}ポイントが寄付されました🎁`
+    : `${displayName} donated ${formattedPoints} points to the community 🎁`;
 
   const bubble: messagingApi.FlexBubble = {
     type: "bubble",
@@ -62,9 +63,10 @@ function buildTitle(language: Language): messagingApi.FlexText {
 function buildPointInfo(params: PointDonationToCommunityReceivedParams): messagingApi.FlexBox {
   const isJapanese = params.language === Language.JA;
   const formattedPoints = formatNumber(params.transferPoints, params.language);
+  const displayName = params.fromUserName ?? (isJapanese ? "ユーザー" : "User");
   const senderLabel = isJapanese
-    ? `寄付者: ${params.fromUserName}さん`
-    : `From: ${params.fromUserName}`;
+    ? `寄付者: ${displayName}さん`
+    : `From: ${displayName}`;
 
   return {
     type: "box",
