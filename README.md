@@ -45,9 +45,14 @@ Create env files (copy from `.env.sample`) with required environment variables:
 
 - `.env` - Default local environment (used by `pnpm dev`, `pnpm dev:external`, `pnpm richmenu:deploy`)
 - `.env.local` - Local HTTPS development (used by `pnpm dev:https`)
-- `.env.dev` - dev environment values (used by `pnpm dev:https:dev`)
-- `.env.prd` - Production values (used by `pnpm dev:https:prd`)
-- `.env.sample` - Template (committed)
+- `.env.dev` - dev environment values (used by `pnpm dev:https:dev` / `pnpm richmenu:deploy:dev`)
+- `.env.prd` - Production values (used by `pnpm dev:https:prd` / `pnpm richmenu:deploy:prd`)
+- `.env.sample` - Template (committed; copy into whichever env file you need above)
+
+> [!NOTE]
+> This section is the source of truth for env file naming. If other documents or older
+> instructions refer only to `.env`, read them against this table — for HTTPS dev use
+> `.env.local`, and for dev/prd targets use `.env.dev` / `.env.prd`.
 
 ```env
 # Core Configuration

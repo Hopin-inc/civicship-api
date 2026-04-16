@@ -406,11 +406,15 @@ Environment files:
 
 - `.env` - Default local environment (loaded by `pnpm dev`, `pnpm dev:external`, `pnpm richmenu:deploy`)
 - `.env.local` - Local HTTPS development (loaded by `pnpm dev:https`)
-- `.env.dev` - dev environment values, loaded by `pnpm dev:https:dev`
-- `.env.prd` - Production values, loaded by `pnpm dev:https:prd`
-- `.env.sample` - Template (committed)
+- `.env.dev` - dev environment values (loaded by `pnpm dev:https:dev` / `pnpm richmenu:deploy:dev`)
+- `.env.prd` - Production values (loaded by `pnpm dev:https:prd` / `pnpm richmenu:deploy:prd`)
+- `.env.sample` - Template (committed; copy into whichever env file above you need)
 
-Required environment variables in `.env` / `.env.local`:
+Use `.env.sample` as the base template and copy the required variables into the
+environment file you will use. If other documents still refer only to `.env`,
+treat this list as the source of truth for naming.
+
+Required environment variables (defined in `.env.sample`, used by every env file above):
 
 ```env
 DATABASE_URL=postgresql://user:password@host:15432/civicship_dev
