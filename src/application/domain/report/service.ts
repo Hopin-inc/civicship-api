@@ -2,7 +2,9 @@ import { Prisma } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
+  CommunityContextRow,
   DateRange,
+  DeepestChainRow,
   IReportRepository,
   TransactionActiveUsersDailyRow,
   TransactionCommentRow,
@@ -13,9 +15,7 @@ import {
 
 @injectable()
 export default class ReportService {
-  constructor(
-    @inject("ReportRepository") private readonly repository: IReportRepository,
-  ) {}
+  constructor(@inject("ReportRepository") private readonly repository: IReportRepository) {}
 
   async getDailySummaries(
     ctx: IContext,
@@ -59,17 +59,27 @@ export default class ReportService {
     return this.repository.findUserProfiles(ctx, communityId, userIds);
   }
 
-  async refreshTransactionSummaryDaily(
+  async getCommunityContext(
     ctx: IContext,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
+    communityId: string,
+    range: DateRange,
+  ): Promise<CommunityContextRow | null> {
+    return this.repository.findCommunityContext(ctx, communityId, range);
+  }
+
+  async getDeepestChain(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+  ): Promise<DeepestChainRow | null> {
+    return this.repository.findDeepestChain(ctx, communityId, range);
+  }
+
+  async refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
     return this.repository.refreshTransactionSummaryDaily(ctx, tx);
   }
 
-  async refreshUserTransactionDaily(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  async refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
     return this.repository.refreshUserTransactionDaily(ctx, tx);
   }
 }
