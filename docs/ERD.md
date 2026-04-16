@@ -868,6 +868,76 @@ RIGHT RIGHT
     }
   
 
+  "mv_transaction_summary_daily" {
+    DateTime date "🗝️"
+    String communityId "🗝️"
+    TransactionReason reason "🗝️"
+    Int txCount 
+    BigInt pointsSum 
+    Int chainRootCount 
+    Int chainDescendantCount 
+    Int maxChainDepth "❓"
+    Int sumChainDepth 
+    Int issuanceCount 
+    Int burnCount 
+    }
+  
+
+  "mv_transaction_active_users_daily" {
+    DateTime date "🗝️"
+    String communityId "🗝️"
+    Int activeUsers 
+    Int senders 
+    Int receivers 
+    }
+  
+
+  "mv_user_transaction_daily" {
+    DateTime date "🗝️"
+    String communityId "🗝️"
+    String userId "🗝️"
+    String walletId "🗝️"
+    Int txCountIn 
+    Int txCountOut 
+    BigInt pointsIn 
+    BigInt pointsOut 
+    Int donationOutCount 
+    BigInt donationOutPoints 
+    Int receivedDonationCount 
+    Int chainRootCount 
+    Int maxChainDepthStarted "❓"
+    Int chainDepthReachedMax "❓"
+    Int uniqueCounterparties 
+    }
+  
+
+  "v_transaction_comments" {
+    String transactionId "🗝️"
+    DateTime date 
+    DateTime createdAt 
+    String communityId 
+    String fromUserId "❓"
+    String toUserId "❓"
+    String createdByUserId "❓"
+    TransactionReason reason 
+    Int points 
+    String comment 
+    Int chainDepth "❓"
+    }
+  
+
+  "v_user_profile_for_report" {
+    String userId "🗝️"
+    String communityId "🗝️"
+    String name 
+    String userBio "❓"
+    String membershipBio "❓"
+    String headline "❓"
+    Role role 
+    DateTime joinedAt 
+    }
+  
+
   "v_earliest_reservable_slot" {
     String opportunityId "🗝️"
     DateTime earliestReservableAt "❓"
@@ -1104,6 +1174,9 @@ RIGHT RIGHT
     "v_membership_hosted_opportunity_count" o|--|| "t_memberships" : "membership"
     "mv_current_points" o|--|| "t_wallets" : "wallet"
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
+    "mv_transaction_summary_daily" o|--|| "TransactionReason" : "enum:reason"
+    "v_transaction_comments" o|--|| "TransactionReason" : "enum:reason"
+    "v_user_profile_for_report" o|--|| "Role" : "enum:role"
     "v_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
     "v_opportunity_accumulated_participants" o|--|| "t_opportunities" : "opportunity"
     "v_slot_remaining_capacity" o|--|| "t_opportunity_slots" : "slot"

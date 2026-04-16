@@ -3,6 +3,9 @@ import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
+import ReportRepository from "@/application/domain/report/data/repository";
+import ReportService from "@/application/domain/report/service";
+import ReportUseCase from "@/application/domain/report/usecase";
 import ICommunityRepository from "@/application/domain/account/community/data/repository";
 import TransactionService from "@/application/domain/transaction/service";
 import MembershipService from "@/application/domain/account/membership/service";
@@ -329,6 +332,13 @@ export function registerProductionDependencies() {
   container.register("TransactionVerificationUseCase", {
     useClass: TransactionVerificationUseCase,
   });
+
+  // ------------------------------
+  // 📊 Report
+  // ------------------------------
+  container.register("ReportRepository", { useClass: ReportRepository });
+  container.register("ReportService", { useClass: ReportService });
+  container.register("ReportUseCase", { useClass: ReportUseCase });
 
   // ------------------------------
   // 👓 View

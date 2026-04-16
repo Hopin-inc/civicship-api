@@ -46,6 +46,11 @@ import type { MembershipParticipationCountView } from "@prisma/client";
 import type { MembershipHostedOpportunityCountView } from "@prisma/client";
 import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
+import type { TransactionSummaryDailyView } from "@prisma/client";
+import type { TransactionActiveUsersDailyView } from "@prisma/client";
+import type { UserTransactionDailyView } from "@prisma/client";
+import type { TransactionCommentView } from "@prisma/client";
+import type { UserProfileForReportView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { OpportunityAccumulatedParticipantsView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
@@ -948,6 +953,21 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Wallet",
                 relationName: "AccumulatedPointViewToWallet"
             }]
+    }, {
+        name: "TransactionSummaryDailyView",
+        fields: []
+    }, {
+        name: "TransactionActiveUsersDailyView",
+        fields: []
+    }, {
+        name: "UserTransactionDailyView",
+        fields: []
+    }, {
+        name: "TransactionCommentView",
+        fields: []
+    }, {
+        name: "UserProfileForReportView",
+        fields: []
     }, {
         name: "EarliestReservableSlotView",
         fields: [{
@@ -9261,6 +9281,813 @@ export const defineAccumulatedPointViewFactory = (<TOptions extends AccumulatedP
 }) as AccumulatedPointViewFactoryBuilder;
 
 defineAccumulatedPointViewFactory.withTransientFields = defaultTransientFieldValues => options => defineAccumulatedPointViewFactoryInternal(options, defaultTransientFieldValues);
+
+type TransactionSummaryDailyViewScalarOrEnumFields = {
+    date: Date;
+    communityId: string;
+    reason: TransactionReason;
+    txCount: number;
+    pointsSum: (bigint | number);
+    chainRootCount: number;
+    chainDescendantCount: number;
+    sumChainDepth: number;
+    issuanceCount: number;
+    burnCount: number;
+};
+
+type TransactionSummaryDailyViewFactoryDefineInput = {
+    date?: Date;
+    communityId?: string;
+    reason?: TransactionReason;
+    txCount?: number;
+    pointsSum?: (bigint | number);
+    chainRootCount?: number;
+    chainDescendantCount?: number;
+    maxChainDepth?: number | null;
+    sumChainDepth?: number;
+    issuanceCount?: number;
+    burnCount?: number;
+};
+
+type TransactionSummaryDailyViewTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionSummaryDailyViewFactoryDefineInput, never>>;
+
+type TransactionSummaryDailyViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<TransactionSummaryDailyViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TransactionSummaryDailyView, Prisma.TransactionSummaryDailyViewCreateInput, TTransients>;
+
+type TransactionSummaryDailyViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<TransactionSummaryDailyViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: TransactionSummaryDailyViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<TransactionSummaryDailyView, Prisma.TransactionSummaryDailyViewCreateInput, TTransients>;
+
+type TransactionSummaryDailyViewTraitKeys<TOptions extends TransactionSummaryDailyViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TransactionSummaryDailyViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "TransactionSummaryDailyView";
+    build(inputData?: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionSummaryDailyViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionSummaryDailyViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>[]): PromiseLike<Prisma.TransactionSummaryDailyViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionSummaryDailyViewCreateInput[]>;
+    pickForConnect(inputData: TransactionSummaryDailyView): Pick<TransactionSummaryDailyView, "date" | "communityId" | "reason">;
+    create(inputData?: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>): PromiseLike<TransactionSummaryDailyView>;
+    createList(list: readonly Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>[]): PromiseLike<TransactionSummaryDailyView[]>;
+    createList(count: number, item?: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>): PromiseLike<TransactionSummaryDailyView[]>;
+    createForConnect(inputData?: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>): PromiseLike<Pick<TransactionSummaryDailyView, "date" | "communityId" | "reason">>;
+}
+
+export interface TransactionSummaryDailyViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TransactionSummaryDailyViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): TransactionSummaryDailyViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTransactionSummaryDailyViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): TransactionSummaryDailyViewScalarOrEnumFields {
+    return {
+        date: getScalarFieldValueGenerator().DateTime({ modelName: "TransactionSummaryDailyView", fieldName: "date", isId: true, isUnique: false, seq }),
+        communityId: getScalarFieldValueGenerator().String({ modelName: "TransactionSummaryDailyView", fieldName: "communityId", isId: true, isUnique: false, seq }),
+        reason: "POINT_ISSUED",
+        txCount: getScalarFieldValueGenerator().Int({ modelName: "TransactionSummaryDailyView", fieldName: "txCount", isId: false, isUnique: false, seq }),
+        pointsSum: getScalarFieldValueGenerator().BigInt({ modelName: "TransactionSummaryDailyView", fieldName: "pointsSum", isId: false, isUnique: false, seq }),
+        chainRootCount: getScalarFieldValueGenerator().Int({ modelName: "TransactionSummaryDailyView", fieldName: "chainRootCount", isId: false, isUnique: false, seq }),
+        chainDescendantCount: getScalarFieldValueGenerator().Int({ modelName: "TransactionSummaryDailyView", fieldName: "chainDescendantCount", isId: false, isUnique: false, seq }),
+        sumChainDepth: getScalarFieldValueGenerator().Int({ modelName: "TransactionSummaryDailyView", fieldName: "sumChainDepth", isId: false, isUnique: false, seq }),
+        issuanceCount: getScalarFieldValueGenerator().Int({ modelName: "TransactionSummaryDailyView", fieldName: "issuanceCount", isId: false, isUnique: false, seq }),
+        burnCount: getScalarFieldValueGenerator().Int({ modelName: "TransactionSummaryDailyView", fieldName: "burnCount", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineTransactionSummaryDailyViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TransactionSummaryDailyViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): TransactionSummaryDailyViewFactoryInterface<TTransients, TransactionSummaryDailyViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly TransactionSummaryDailyViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("TransactionSummaryDailyView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateTransactionSummaryDailyViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<TransactionSummaryDailyViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<TransactionSummaryDailyViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.TransactionSummaryDailyViewCreateInput;
+            const data: Prisma.TransactionSummaryDailyViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: TransactionSummaryDailyView) => ({
+            date: inputData.date,
+            communityId: inputData.communityId,
+            reason: inputData.reason
+        });
+        const create = async (inputData: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().transactionSummaryDailyView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.TransactionSummaryDailyViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "TransactionSummaryDailyView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: TransactionSummaryDailyViewTraitKeys<TOptions>, ...names: readonly TransactionSummaryDailyViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface TransactionSummaryDailyViewFactoryBuilder {
+    <TOptions extends TransactionSummaryDailyViewFactoryDefineOptions>(options?: TOptions): TransactionSummaryDailyViewFactoryInterface<{}, TransactionSummaryDailyViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends TransactionSummaryDailyViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TransactionSummaryDailyViewFactoryDefineOptions<TTransients>>(options?: TOptions) => TransactionSummaryDailyViewFactoryInterface<TTransients, TransactionSummaryDailyViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TransactionSummaryDailyView} model.
+ *
+ * @param options
+ * @returns factory {@link TransactionSummaryDailyViewFactoryInterface}
+ */
+export const defineTransactionSummaryDailyViewFactory = (<TOptions extends TransactionSummaryDailyViewFactoryDefineOptions>(options?: TOptions): TransactionSummaryDailyViewFactoryInterface<TOptions> => {
+    return defineTransactionSummaryDailyViewFactoryInternal(options ?? {}, {});
+}) as TransactionSummaryDailyViewFactoryBuilder;
+
+defineTransactionSummaryDailyViewFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionSummaryDailyViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type TransactionActiveUsersDailyViewScalarOrEnumFields = {
+    date: Date;
+    communityId: string;
+    activeUsers: number;
+    senders: number;
+    receivers: number;
+};
+
+type TransactionActiveUsersDailyViewFactoryDefineInput = {
+    date?: Date;
+    communityId?: string;
+    activeUsers?: number;
+    senders?: number;
+    receivers?: number;
+};
+
+type TransactionActiveUsersDailyViewTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionActiveUsersDailyViewFactoryDefineInput, never>>;
+
+type TransactionActiveUsersDailyViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<TransactionActiveUsersDailyViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TransactionActiveUsersDailyView, Prisma.TransactionActiveUsersDailyViewCreateInput, TTransients>;
+
+type TransactionActiveUsersDailyViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<TransactionActiveUsersDailyViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: TransactionActiveUsersDailyViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<TransactionActiveUsersDailyView, Prisma.TransactionActiveUsersDailyViewCreateInput, TTransients>;
+
+type TransactionActiveUsersDailyViewTraitKeys<TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TransactionActiveUsersDailyViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "TransactionActiveUsersDailyView";
+    build(inputData?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionActiveUsersDailyViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionActiveUsersDailyViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>[]): PromiseLike<Prisma.TransactionActiveUsersDailyViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionActiveUsersDailyViewCreateInput[]>;
+    pickForConnect(inputData: TransactionActiveUsersDailyView): Pick<TransactionActiveUsersDailyView, "date" | "communityId">;
+    create(inputData?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<TransactionActiveUsersDailyView>;
+    createList(list: readonly Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>[]): PromiseLike<TransactionActiveUsersDailyView[]>;
+    createList(count: number, item?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<TransactionActiveUsersDailyView[]>;
+    createForConnect(inputData?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<Pick<TransactionActiveUsersDailyView, "date" | "communityId">>;
+}
+
+export interface TransactionActiveUsersDailyViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TransactionActiveUsersDailyViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): TransactionActiveUsersDailyViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTransactionActiveUsersDailyViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): TransactionActiveUsersDailyViewScalarOrEnumFields {
+    return {
+        date: getScalarFieldValueGenerator().DateTime({ modelName: "TransactionActiveUsersDailyView", fieldName: "date", isId: true, isUnique: false, seq }),
+        communityId: getScalarFieldValueGenerator().String({ modelName: "TransactionActiveUsersDailyView", fieldName: "communityId", isId: true, isUnique: false, seq }),
+        activeUsers: getScalarFieldValueGenerator().Int({ modelName: "TransactionActiveUsersDailyView", fieldName: "activeUsers", isId: false, isUnique: false, seq }),
+        senders: getScalarFieldValueGenerator().Int({ modelName: "TransactionActiveUsersDailyView", fieldName: "senders", isId: false, isUnique: false, seq }),
+        receivers: getScalarFieldValueGenerator().Int({ modelName: "TransactionActiveUsersDailyView", fieldName: "receivers", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineTransactionActiveUsersDailyViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): TransactionActiveUsersDailyViewFactoryInterface<TTransients, TransactionActiveUsersDailyViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly TransactionActiveUsersDailyViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("TransactionActiveUsersDailyView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateTransactionActiveUsersDailyViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<TransactionActiveUsersDailyViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<TransactionActiveUsersDailyViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.TransactionActiveUsersDailyViewCreateInput;
+            const data: Prisma.TransactionActiveUsersDailyViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: TransactionActiveUsersDailyView) => ({
+            date: inputData.date,
+            communityId: inputData.communityId
+        });
+        const create = async (inputData: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().transactionActiveUsersDailyView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "TransactionActiveUsersDailyView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: TransactionActiveUsersDailyViewTraitKeys<TOptions>, ...names: readonly TransactionActiveUsersDailyViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface TransactionActiveUsersDailyViewFactoryBuilder {
+    <TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions>(options?: TOptions): TransactionActiveUsersDailyViewFactoryInterface<{}, TransactionActiveUsersDailyViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends TransactionActiveUsersDailyViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions<TTransients>>(options?: TOptions) => TransactionActiveUsersDailyViewFactoryInterface<TTransients, TransactionActiveUsersDailyViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TransactionActiveUsersDailyView} model.
+ *
+ * @param options
+ * @returns factory {@link TransactionActiveUsersDailyViewFactoryInterface}
+ */
+export const defineTransactionActiveUsersDailyViewFactory = (<TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions>(options?: TOptions): TransactionActiveUsersDailyViewFactoryInterface<TOptions> => {
+    return defineTransactionActiveUsersDailyViewFactoryInternal(options ?? {}, {});
+}) as TransactionActiveUsersDailyViewFactoryBuilder;
+
+defineTransactionActiveUsersDailyViewFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionActiveUsersDailyViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type UserTransactionDailyViewScalarOrEnumFields = {
+    date: Date;
+    communityId: string;
+    userId: string;
+    walletId: string;
+    txCountIn: number;
+    txCountOut: number;
+    pointsIn: (bigint | number);
+    pointsOut: (bigint | number);
+    donationOutCount: number;
+    donationOutPoints: (bigint | number);
+    receivedDonationCount: number;
+    chainRootCount: number;
+    uniqueCounterparties: number;
+};
+
+type UserTransactionDailyViewFactoryDefineInput = {
+    date?: Date;
+    communityId?: string;
+    userId?: string;
+    walletId?: string;
+    txCountIn?: number;
+    txCountOut?: number;
+    pointsIn?: (bigint | number);
+    pointsOut?: (bigint | number);
+    donationOutCount?: number;
+    donationOutPoints?: (bigint | number);
+    receivedDonationCount?: number;
+    chainRootCount?: number;
+    maxChainDepthStarted?: number | null;
+    chainDepthReachedMax?: number | null;
+    uniqueCounterparties?: number;
+};
+
+type UserTransactionDailyViewTransientFields = Record<string, unknown> & Partial<Record<keyof UserTransactionDailyViewFactoryDefineInput, never>>;
+
+type UserTransactionDailyViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<UserTransactionDailyViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<UserTransactionDailyView, Prisma.UserTransactionDailyViewCreateInput, TTransients>;
+
+type UserTransactionDailyViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<UserTransactionDailyViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: UserTransactionDailyViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<UserTransactionDailyView, Prisma.UserTransactionDailyViewCreateInput, TTransients>;
+
+type UserTransactionDailyViewTraitKeys<TOptions extends UserTransactionDailyViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface UserTransactionDailyViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "UserTransactionDailyView";
+    build(inputData?: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>): PromiseLike<Prisma.UserTransactionDailyViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>): PromiseLike<Prisma.UserTransactionDailyViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>[]): PromiseLike<Prisma.UserTransactionDailyViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>): PromiseLike<Prisma.UserTransactionDailyViewCreateInput[]>;
+    pickForConnect(inputData: UserTransactionDailyView): Pick<UserTransactionDailyView, "date" | "communityId" | "userId" | "walletId">;
+    create(inputData?: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>): PromiseLike<UserTransactionDailyView>;
+    createList(list: readonly Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>[]): PromiseLike<UserTransactionDailyView[]>;
+    createList(count: number, item?: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>): PromiseLike<UserTransactionDailyView[]>;
+    createForConnect(inputData?: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>): PromiseLike<Pick<UserTransactionDailyView, "date" | "communityId" | "userId" | "walletId">>;
+}
+
+export interface UserTransactionDailyViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UserTransactionDailyViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): UserTransactionDailyViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateUserTransactionDailyViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): UserTransactionDailyViewScalarOrEnumFields {
+    return {
+        date: getScalarFieldValueGenerator().DateTime({ modelName: "UserTransactionDailyView", fieldName: "date", isId: true, isUnique: false, seq }),
+        communityId: getScalarFieldValueGenerator().String({ modelName: "UserTransactionDailyView", fieldName: "communityId", isId: true, isUnique: false, seq }),
+        userId: getScalarFieldValueGenerator().String({ modelName: "UserTransactionDailyView", fieldName: "userId", isId: true, isUnique: false, seq }),
+        walletId: getScalarFieldValueGenerator().String({ modelName: "UserTransactionDailyView", fieldName: "walletId", isId: true, isUnique: false, seq }),
+        txCountIn: getScalarFieldValueGenerator().Int({ modelName: "UserTransactionDailyView", fieldName: "txCountIn", isId: false, isUnique: false, seq }),
+        txCountOut: getScalarFieldValueGenerator().Int({ modelName: "UserTransactionDailyView", fieldName: "txCountOut", isId: false, isUnique: false, seq }),
+        pointsIn: getScalarFieldValueGenerator().BigInt({ modelName: "UserTransactionDailyView", fieldName: "pointsIn", isId: false, isUnique: false, seq }),
+        pointsOut: getScalarFieldValueGenerator().BigInt({ modelName: "UserTransactionDailyView", fieldName: "pointsOut", isId: false, isUnique: false, seq }),
+        donationOutCount: getScalarFieldValueGenerator().Int({ modelName: "UserTransactionDailyView", fieldName: "donationOutCount", isId: false, isUnique: false, seq }),
+        donationOutPoints: getScalarFieldValueGenerator().BigInt({ modelName: "UserTransactionDailyView", fieldName: "donationOutPoints", isId: false, isUnique: false, seq }),
+        receivedDonationCount: getScalarFieldValueGenerator().Int({ modelName: "UserTransactionDailyView", fieldName: "receivedDonationCount", isId: false, isUnique: false, seq }),
+        chainRootCount: getScalarFieldValueGenerator().Int({ modelName: "UserTransactionDailyView", fieldName: "chainRootCount", isId: false, isUnique: false, seq }),
+        uniqueCounterparties: getScalarFieldValueGenerator().Int({ modelName: "UserTransactionDailyView", fieldName: "uniqueCounterparties", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineUserTransactionDailyViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UserTransactionDailyViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UserTransactionDailyViewFactoryInterface<TTransients, UserTransactionDailyViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly UserTransactionDailyViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("UserTransactionDailyView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateUserTransactionDailyViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<UserTransactionDailyViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<UserTransactionDailyViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.UserTransactionDailyViewCreateInput;
+            const data: Prisma.UserTransactionDailyViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: UserTransactionDailyView) => ({
+            date: inputData.date,
+            communityId: inputData.communityId,
+            userId: inputData.userId,
+            walletId: inputData.walletId
+        });
+        const create = async (inputData: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().userTransactionDailyView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.UserTransactionDailyViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "UserTransactionDailyView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: UserTransactionDailyViewTraitKeys<TOptions>, ...names: readonly UserTransactionDailyViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface UserTransactionDailyViewFactoryBuilder {
+    <TOptions extends UserTransactionDailyViewFactoryDefineOptions>(options?: TOptions): UserTransactionDailyViewFactoryInterface<{}, UserTransactionDailyViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends UserTransactionDailyViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UserTransactionDailyViewFactoryDefineOptions<TTransients>>(options?: TOptions) => UserTransactionDailyViewFactoryInterface<TTransients, UserTransactionDailyViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link UserTransactionDailyView} model.
+ *
+ * @param options
+ * @returns factory {@link UserTransactionDailyViewFactoryInterface}
+ */
+export const defineUserTransactionDailyViewFactory = (<TOptions extends UserTransactionDailyViewFactoryDefineOptions>(options?: TOptions): UserTransactionDailyViewFactoryInterface<TOptions> => {
+    return defineUserTransactionDailyViewFactoryInternal(options ?? {}, {});
+}) as UserTransactionDailyViewFactoryBuilder;
+
+defineUserTransactionDailyViewFactory.withTransientFields = defaultTransientFieldValues => options => defineUserTransactionDailyViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type TransactionCommentViewScalarOrEnumFields = {
+    transactionId: string;
+    date: Date;
+    createdAt: Date;
+    communityId: string;
+    reason: TransactionReason;
+    points: number;
+    comment: string;
+};
+
+type TransactionCommentViewFactoryDefineInput = {
+    transactionId?: string;
+    date?: Date;
+    createdAt?: Date;
+    communityId?: string;
+    fromUserId?: string | null;
+    toUserId?: string | null;
+    createdByUserId?: string | null;
+    reason?: TransactionReason;
+    points?: number;
+    comment?: string;
+    chainDepth?: number | null;
+};
+
+type TransactionCommentViewTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionCommentViewFactoryDefineInput, never>>;
+
+type TransactionCommentViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<TransactionCommentViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TransactionCommentView, Prisma.TransactionCommentViewCreateInput, TTransients>;
+
+type TransactionCommentViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<TransactionCommentViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: TransactionCommentViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<TransactionCommentView, Prisma.TransactionCommentViewCreateInput, TTransients>;
+
+type TransactionCommentViewTraitKeys<TOptions extends TransactionCommentViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TransactionCommentViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "TransactionCommentView";
+    build(inputData?: Partial<Prisma.TransactionCommentViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionCommentViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.TransactionCommentViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionCommentViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.TransactionCommentViewCreateInput & TTransients>[]): PromiseLike<Prisma.TransactionCommentViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.TransactionCommentViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionCommentViewCreateInput[]>;
+    pickForConnect(inputData: TransactionCommentView): Pick<TransactionCommentView, "transactionId">;
+    create(inputData?: Partial<Prisma.TransactionCommentViewCreateInput & TTransients>): PromiseLike<TransactionCommentView>;
+    createList(list: readonly Partial<Prisma.TransactionCommentViewCreateInput & TTransients>[]): PromiseLike<TransactionCommentView[]>;
+    createList(count: number, item?: Partial<Prisma.TransactionCommentViewCreateInput & TTransients>): PromiseLike<TransactionCommentView[]>;
+    createForConnect(inputData?: Partial<Prisma.TransactionCommentViewCreateInput & TTransients>): PromiseLike<Pick<TransactionCommentView, "transactionId">>;
+}
+
+export interface TransactionCommentViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TransactionCommentViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): TransactionCommentViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTransactionCommentViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): TransactionCommentViewScalarOrEnumFields {
+    return {
+        transactionId: getScalarFieldValueGenerator().String({ modelName: "TransactionCommentView", fieldName: "transactionId", isId: true, isUnique: false, seq }),
+        date: getScalarFieldValueGenerator().DateTime({ modelName: "TransactionCommentView", fieldName: "date", isId: false, isUnique: false, seq }),
+        createdAt: getScalarFieldValueGenerator().DateTime({ modelName: "TransactionCommentView", fieldName: "createdAt", isId: false, isUnique: false, seq }),
+        communityId: getScalarFieldValueGenerator().String({ modelName: "TransactionCommentView", fieldName: "communityId", isId: false, isUnique: false, seq }),
+        reason: "POINT_ISSUED",
+        points: getScalarFieldValueGenerator().Int({ modelName: "TransactionCommentView", fieldName: "points", isId: false, isUnique: false, seq }),
+        comment: getScalarFieldValueGenerator().String({ modelName: "TransactionCommentView", fieldName: "comment", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineTransactionCommentViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TransactionCommentViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): TransactionCommentViewFactoryInterface<TTransients, TransactionCommentViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly TransactionCommentViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("TransactionCommentView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.TransactionCommentViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateTransactionCommentViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<TransactionCommentViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<TransactionCommentViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.TransactionCommentViewCreateInput;
+            const data: Prisma.TransactionCommentViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionCommentViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: TransactionCommentView) => ({
+            transactionId: inputData.transactionId
+        });
+        const create = async (inputData: Partial<Prisma.TransactionCommentViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().transactionCommentView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionCommentViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.TransactionCommentViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "TransactionCommentView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: TransactionCommentViewTraitKeys<TOptions>, ...names: readonly TransactionCommentViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface TransactionCommentViewFactoryBuilder {
+    <TOptions extends TransactionCommentViewFactoryDefineOptions>(options?: TOptions): TransactionCommentViewFactoryInterface<{}, TransactionCommentViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends TransactionCommentViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TransactionCommentViewFactoryDefineOptions<TTransients>>(options?: TOptions) => TransactionCommentViewFactoryInterface<TTransients, TransactionCommentViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TransactionCommentView} model.
+ *
+ * @param options
+ * @returns factory {@link TransactionCommentViewFactoryInterface}
+ */
+export const defineTransactionCommentViewFactory = (<TOptions extends TransactionCommentViewFactoryDefineOptions>(options?: TOptions): TransactionCommentViewFactoryInterface<TOptions> => {
+    return defineTransactionCommentViewFactoryInternal(options ?? {}, {});
+}) as TransactionCommentViewFactoryBuilder;
+
+defineTransactionCommentViewFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionCommentViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type UserProfileForReportViewScalarOrEnumFields = {
+    userId: string;
+    communityId: string;
+    name: string;
+    role: Role;
+    joinedAt: Date;
+};
+
+type UserProfileForReportViewFactoryDefineInput = {
+    userId?: string;
+    communityId?: string;
+    name?: string;
+    userBio?: string | null;
+    membershipBio?: string | null;
+    headline?: string | null;
+    role?: Role;
+    joinedAt?: Date;
+};
+
+type UserProfileForReportViewTransientFields = Record<string, unknown> & Partial<Record<keyof UserProfileForReportViewFactoryDefineInput, never>>;
+
+type UserProfileForReportViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<UserProfileForReportViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<UserProfileForReportView, Prisma.UserProfileForReportViewCreateInput, TTransients>;
+
+type UserProfileForReportViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<UserProfileForReportViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: UserProfileForReportViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<UserProfileForReportView, Prisma.UserProfileForReportViewCreateInput, TTransients>;
+
+type UserProfileForReportViewTraitKeys<TOptions extends UserProfileForReportViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface UserProfileForReportViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "UserProfileForReportView";
+    build(inputData?: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>): PromiseLike<Prisma.UserProfileForReportViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>): PromiseLike<Prisma.UserProfileForReportViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>[]): PromiseLike<Prisma.UserProfileForReportViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>): PromiseLike<Prisma.UserProfileForReportViewCreateInput[]>;
+    pickForConnect(inputData: UserProfileForReportView): Pick<UserProfileForReportView, "userId" | "communityId">;
+    create(inputData?: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>): PromiseLike<UserProfileForReportView>;
+    createList(list: readonly Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>[]): PromiseLike<UserProfileForReportView[]>;
+    createList(count: number, item?: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>): PromiseLike<UserProfileForReportView[]>;
+    createForConnect(inputData?: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>): PromiseLike<Pick<UserProfileForReportView, "userId" | "communityId">>;
+}
+
+export interface UserProfileForReportViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UserProfileForReportViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): UserProfileForReportViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateUserProfileForReportViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): UserProfileForReportViewScalarOrEnumFields {
+    return {
+        userId: getScalarFieldValueGenerator().String({ modelName: "UserProfileForReportView", fieldName: "userId", isId: true, isUnique: false, seq }),
+        communityId: getScalarFieldValueGenerator().String({ modelName: "UserProfileForReportView", fieldName: "communityId", isId: true, isUnique: false, seq }),
+        name: getScalarFieldValueGenerator().String({ modelName: "UserProfileForReportView", fieldName: "name", isId: false, isUnique: false, seq }),
+        role: "OWNER",
+        joinedAt: getScalarFieldValueGenerator().DateTime({ modelName: "UserProfileForReportView", fieldName: "joinedAt", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineUserProfileForReportViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UserProfileForReportViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UserProfileForReportViewFactoryInterface<TTransients, UserProfileForReportViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly UserProfileForReportViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("UserProfileForReportView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateUserProfileForReportViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<UserProfileForReportViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<UserProfileForReportViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.UserProfileForReportViewCreateInput;
+            const data: Prisma.UserProfileForReportViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: UserProfileForReportView) => ({
+            userId: inputData.userId,
+            communityId: inputData.communityId
+        });
+        const create = async (inputData: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().userProfileForReportView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserProfileForReportViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.UserProfileForReportViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "UserProfileForReportView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: UserProfileForReportViewTraitKeys<TOptions>, ...names: readonly UserProfileForReportViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface UserProfileForReportViewFactoryBuilder {
+    <TOptions extends UserProfileForReportViewFactoryDefineOptions>(options?: TOptions): UserProfileForReportViewFactoryInterface<{}, UserProfileForReportViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends UserProfileForReportViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UserProfileForReportViewFactoryDefineOptions<TTransients>>(options?: TOptions) => UserProfileForReportViewFactoryInterface<TTransients, UserProfileForReportViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link UserProfileForReportView} model.
+ *
+ * @param options
+ * @returns factory {@link UserProfileForReportViewFactoryInterface}
+ */
+export const defineUserProfileForReportViewFactory = (<TOptions extends UserProfileForReportViewFactoryDefineOptions>(options?: TOptions): UserProfileForReportViewFactoryInterface<TOptions> => {
+    return defineUserProfileForReportViewFactoryInternal(options ?? {}, {});
+}) as UserProfileForReportViewFactoryBuilder;
+
+defineUserProfileForReportViewFactory.withTransientFields = defaultTransientFieldValues => options => defineUserProfileForReportViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type EarliestReservableSlotViewScalarOrEnumFields = {};
 

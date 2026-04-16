@@ -666,6 +666,91 @@ view AccumulatedPointView {
   @@map("mv_accumulated_points")
 }
 
+// ---- Transaction Report Views ----
+// Dataset for AI-generated reports. See migration
+// 20260416000000_add_transaction_report_views for the underlying SQL.
+// NOTE: Materialized views bypass RLS. Always filter by communityId at the
+// application layer when querying these views.
+
+view TransactionSummaryDailyView {
+  date                 DateTime          @db.Date
+  communityId          String            @map("community_id")
+  reason               TransactionReason
+  txCount              Int               @map("tx_count")
+  pointsSum            BigInt            @map("points_sum") @db.BigInt
+  chainRootCount       Int               @map("chain_root_count")
+  chainDescendantCount Int               @map("chain_descendant_count")
+  maxChainDepth        Int?              @map("max_chain_depth")
+  sumChainDepth        Int               @map("sum_chain_depth")
+  issuanceCount        Int               @map("issuance_count")
+  burnCount            Int               @map("burn_count")
+
+  @@id([date, communityId, reason])
+  @@map("mv_transaction_summary_daily")
+}
+
+view TransactionActiveUsersDailyView {
+  date        DateTime @db.Date
+  communityId String   @map("community_id")
+  activeUsers Int      @map("active_users")
+  senders     Int
+  receivers   Int
+
+  @@id([date, communityId])
+  @@map("mv_transaction_active_users_daily")
+}
+
+view UserTransactionDailyView {
+  date                  DateTime @db.Date
+  communityId           String   @map("community_id")
+  userId                String   @map("user_id")
+  walletId              String   @map("wallet_id")
+  txCountIn             Int      @map("tx_count_in")
+  txCountOut            Int      @map("tx_count_out")
+  pointsIn              BigInt   @map("points_in") @db.BigInt
+  pointsOut             BigInt   @map("points_out") @db.BigInt
+  donationOutCount      Int      @map("donation_out_count")
+  donationOutPoints     BigInt   @map("donation_out_points") @db.BigInt
+  receivedDonationCount Int      @map("received_donation_count")
+  chainRootCount        Int      @map("chain_root_count")
+  maxChainDepthStarted  Int?     @map("max_chain_depth_started")
+  chainDepthReachedMax  Int?     @map("chain_depth_reached_max")
+  uniqueCounterparties  Int      @map("unique_counterparties")
+
+  @@id([date, communityId, userId, walletId])
+  @@map("mv_user_transaction_daily")
+}
+
+view TransactionCommentView {
+  transactionId   String            @id @map("transaction_id")
+  date            DateTime          @db.Date
+  createdAt       DateTime          @map("created_at")
+  communityId     String            @map("community_id")
+  fromUserId      String?           @map("from_user_id")
+  toUserId        String?           @map("to_user_id")
+  createdByUserId String?           @map("created_by_user_id")
+  reason          TransactionReason
+  points          Int
+  comment         String
+  chainDepth      Int?              @map("chain_depth")
+
+  @@map("v_transaction_comments")
+}
+
+view UserProfileForReportView {
+  userId        String   @map("user_id")
+  communityId   String   @map("community_id")
+  name          String
+  userBio       String?  @map("user_bio")
+  membershipBio String?  @map("membership_bio")
+  headline      String?
+  role          Role
+  joinedAt      DateTime @map("joined_at")
+
+  @@id([userId, communityId])
+  @@map("v_user_profile_for_report")
+}
+
 enum WalletType {
   COMMUNITY
   MEMBER
