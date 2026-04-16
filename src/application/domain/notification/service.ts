@@ -43,7 +43,7 @@ export default class NotificationService {
     private readonly communityConfigService: CommunityConfigService,
     @inject("UserService")
     private readonly userService: UserService,
-  ) { }
+  ) {}
 
   async pushCancelOpportunitySlotMessage(
     ctx: IContext,
@@ -56,12 +56,12 @@ export default class NotificationService {
           id: p.id,
           user: p.user
             ? {
-              identities: p.user.identities.map((identity) => ({
-                platform: identity.platform,
-                uid: identity.uid,
-                communityId: identity.communityId ?? undefined,
-              })),
-            }
+                identities: p.user.identities.map((identity) => ({
+                  platform: identity.platform,
+                  uid: identity.uid,
+                  communityId: identity.communityId ?? undefined,
+                })),
+              }
             : null,
         })),
       ),
@@ -107,14 +107,14 @@ export default class NotificationService {
     const lineUid = this.extractLineUidFromCreator(
       reservation.opportunitySlot.opportunity.createdByUser
         ? {
-          identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
-            (identity) => ({
-              platform: identity.platform,
-              uid: identity.uid,
-              communityId: identity.communityId ?? undefined,
-            }),
-          ),
-        }
+            identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
+              (identity) => ({
+                platform: identity.platform,
+                uid: identity.uid,
+                communityId: identity.communityId ?? undefined,
+              }),
+            ),
+          }
         : null,
       ctx.communityId,
     );
@@ -124,11 +124,12 @@ export default class NotificationService {
         reservationId: reservation.id,
         communityId: ctx.communityId,
         createdByUserId: reservation.opportunitySlot.opportunity.createdByUser?.id,
-        createdByUserIdentities: reservation.opportunitySlot.opportunity.createdByUser?.identities?.map(i => ({
-          platform: i.platform,
-          communityId: i.communityId,
-          hasUid: !!i.uid,
-        })),
+        createdByUserIdentities:
+          reservation.opportunitySlot.opportunity.createdByUser?.identities?.map((i) => ({
+            platform: i.platform,
+            communityId: i.communityId,
+            hasUid: !!i.uid,
+          })),
       });
       return;
     }
@@ -184,14 +185,14 @@ export default class NotificationService {
     const lineUid = this.extractLineUidFromCreator(
       reservation.opportunitySlot.opportunity.createdByUser
         ? {
-          identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
-            (identity) => ({
-              platform: identity.platform,
-              uid: identity.uid,
-              communityId: identity.communityId ?? undefined,
-            }),
-          ),
-        }
+            identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
+              (identity) => ({
+                platform: identity.platform,
+                uid: identity.uid,
+                communityId: identity.communityId ?? undefined,
+              }),
+            ),
+          }
         : null,
       ctx.communityId,
     );
@@ -236,12 +237,12 @@ export default class NotificationService {
         id: p.id,
         user: p.user
           ? {
-            identities: p.user.identities.map((i) => ({
-              platform: i.platform,
-              uid: i.uid,
-              communityId: i.communityId ?? undefined,
-            })),
-          }
+              identities: p.user.identities.map((i) => ({
+                platform: i.platform,
+                uid: i.uid,
+                communityId: i.communityId ?? undefined,
+              })),
+            }
           : null,
       })),
       ctx.communityId,
@@ -285,12 +286,12 @@ export default class NotificationService {
         id: p.id,
         user: p.user
           ? {
-            identities: p.user.identities.map((i) => ({
-              platform: i.platform,
-              uid: i.uid,
-              communityId: i.communityId ?? undefined,
-            })),
-          }
+              identities: p.user.identities.map((i) => ({
+                platform: i.platform,
+                uid: i.uid,
+                communityId: i.communityId ?? undefined,
+              })),
+            }
           : null,
       })),
       ctx.communityId,
@@ -368,14 +369,7 @@ export default class NotificationService {
     await safePushMessage(client, { to: uid, messages: [message] });
   }
 
-  async pushPointDonationReceivedMessage(
-    ctx: IContext,
-    transactionId: string,
-    toPointChange: number,
-    comment: string | null,
-    fromUserName: string,
-    toUserId: string,
-  ) {
+  async pushPointDonationReceivedMessage(ctx: IContext, transactionId: string, toUserId: string) {
     const preparedData = await this.prepareLinePush(
       ctx,
       toUserId,
@@ -388,13 +382,38 @@ export default class NotificationService {
       return;
     }
 
+    const transferDetail = await this.fetchPointTransferDetail(
+      ctx,
+      transactionId,
+      "pushPointDonationReceivedMessage",
+    );
+    if (!transferDetail) {
+      return;
+    }
+
     const { uid, liffBaseUrl, client, language } = preparedData;
     const redirectUrl = `${liffBaseUrl}/wallets`;
 
+    const fromUserName = transferDetail.fromWallet?.user?.name ?? "ユーザー";
+    const fromUserImageUrl = this.safeImageUrl(
+      transferDetail.fromWallet?.user?.image?.url,
+      DEFAULT_HOST_IMAGE_URL,
+    );
+    const toUserName = transferDetail.toWallet?.user?.name ?? "ユーザー";
+    const toUserImageUrl = this.safeImageUrl(
+      transferDetail.toWallet?.user?.image?.url,
+      DEFAULT_HOST_IMAGE_URL,
+    );
+
     const message = buildPointDonationReceivedMessage({
       fromUserName,
-      transferPoints: toPointChange,
-      comment: comment ?? undefined,
+      fromUserImageUrl,
+      toUserName,
+      toUserImageUrl,
+      transferPoints: transferDetail.toPointChange,
+      comment: transferDetail.comment ?? undefined,
+      attachedImageUrl: this.optionalImageUrl(transferDetail.images[0]?.url),
+      createdAt: transferDetail.createdAt,
       redirectUrl,
       language,
     });
@@ -402,14 +421,7 @@ export default class NotificationService {
     await safePushMessage(client, { to: uid, messages: [message] });
   }
 
-  async pushPointGrantReceivedMessage(
-    ctx: IContext,
-    transactionId: string,
-    toPointChange: number,
-    comment: string | null,
-    communityName: string,
-    toUserId: string,
-  ) {
+  async pushPointGrantReceivedMessage(ctx: IContext, transactionId: string, toUserId: string) {
     const preparedData = await this.prepareLinePush(
       ctx,
       toUserId,
@@ -422,13 +434,38 @@ export default class NotificationService {
       return;
     }
 
+    const transferDetail = await this.fetchPointTransferDetail(
+      ctx,
+      transactionId,
+      "pushPointGrantReceivedMessage",
+    );
+    if (!transferDetail) {
+      return;
+    }
+
     const { uid, liffBaseUrl, client, language } = preparedData;
     const redirectUrl = `${liffBaseUrl}/wallets`;
 
+    const communityName = transferDetail.fromWallet?.community?.name ?? "コミュニティ";
+    const communityImageUrl = this.safeImageUrl(
+      transferDetail.fromWallet?.community?.image?.url,
+      DEFAULT_HOST_IMAGE_URL,
+    );
+    const toUserName = transferDetail.toWallet?.user?.name ?? "ユーザー";
+    const toUserImageUrl = this.safeImageUrl(
+      transferDetail.toWallet?.user?.image?.url,
+      DEFAULT_HOST_IMAGE_URL,
+    );
+
     const message = buildPointGrantReceivedMessage({
       communityName,
-      transferPoints: toPointChange,
-      comment: comment ?? undefined,
+      communityImageUrl,
+      toUserName,
+      toUserImageUrl,
+      transferPoints: transferDetail.toPointChange,
+      comment: transferDetail.comment ?? undefined,
+      attachedImageUrl: this.optionalImageUrl(transferDetail.images[0]?.url),
+      createdAt: transferDetail.createdAt,
       redirectUrl,
       language,
     });
@@ -548,14 +585,24 @@ export default class NotificationService {
     transactionId: string,
     logContext: string,
     options: { includeLanguage: true },
-  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language: Language } | null>;
+  ): Promise<{
+    uid: string;
+    liffBaseUrl: string;
+    client: MessagingApiClient;
+    language: Language;
+  } | null>;
   private async prepareLinePush(
     ctx: IContext,
     userId: string,
     transactionId: string,
     logContext: string,
     options?: { includeLanguage?: boolean },
-  ): Promise<{ uid: string; liffBaseUrl: string; client: MessagingApiClient; language?: Language } | null> {
+  ): Promise<{
+    uid: string;
+    liffBaseUrl: string;
+    client: MessagingApiClient;
+    language?: Language;
+  } | null> {
     let uid: string;
     let language: Language | undefined;
 
@@ -635,12 +682,12 @@ export default class NotificationService {
   private extractLineUidFromCreator(
     user:
       | {
-        identities?: {
-          platform: IdentityPlatform;
-          uid: string;
-          communityId?: string;
-        }[];
-      }
+          identities?: {
+            platform: IdentityPlatform;
+            uid: string;
+            communityId?: string;
+          }[];
+        }
       | null
       | undefined,
     communityId: string,
@@ -659,6 +706,73 @@ export default class NotificationService {
     const date = startJST.format("M月D日");
     const time = `${startJST.format("HH:mm")}~${endJST.format("HH:mm")}`;
     return { year, date, time };
+  }
+
+  private async fetchPointTransferDetail(ctx: IContext, transactionId: string, logContext: string) {
+    try {
+      const transaction = await ctx.issuer.internal(async (tx) => {
+        return tx.transaction.findUnique({
+          where: { id: transactionId },
+          select: {
+            toPointChange: true,
+            comment: true,
+            createdAt: true,
+            images: {
+              select: { url: true },
+              take: 1,
+            },
+            fromWallet: {
+              select: {
+                user: {
+                  select: {
+                    name: true,
+                    image: { select: { url: true } },
+                  },
+                },
+                community: {
+                  select: {
+                    name: true,
+                    image: { select: { url: true } },
+                  },
+                },
+              },
+            },
+            toWallet: {
+              select: {
+                user: {
+                  select: {
+                    name: true,
+                    image: { select: { url: true } },
+                  },
+                },
+              },
+            },
+          },
+        });
+      });
+
+      if (!transaction) {
+        logger.warn(`${logContext}: transaction not found`, {
+          transactionId,
+          communityId: ctx.communityId,
+        });
+        return null;
+      }
+      return transaction;
+    } catch (error) {
+      logger.error(`${logContext}: failed to fetch transaction detail`, {
+        transactionId,
+        communityId: ctx.communityId,
+        err: error,
+      });
+      return null;
+    }
+  }
+
+  private optionalImageUrl(url: string | null | undefined): string | undefined {
+    if (!url) return undefined;
+    const safe = this.safeImageUrl(url, "");
+    return safe || undefined;
   }
 
   private safeImageUrl(url: string | null | undefined, fallback: string): string {

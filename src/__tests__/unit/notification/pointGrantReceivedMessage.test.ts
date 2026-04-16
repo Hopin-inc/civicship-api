@@ -6,16 +6,20 @@ import { Language } from "@prisma/client";
 describe("buildPointGrantReceivedMessage", () => {
   const baseParams = {
     communityName: "テストコミュニティ",
+    communityImageUrl: "https://example.com/community.jpg",
+    toUserName: "佐藤花子",
+    toUserImageUrl: "https://example.com/to.jpg",
     transferPoints: 100,
     redirectUrl: "https://example.com/wallets",
     language: Language.JA,
+    createdAt: new Date("2026-04-15T12:30:00Z"),
   };
 
   it("should build a valid LINE Flex Message", () => {
     const message = buildPointGrantReceivedMessage(baseParams);
 
     expect(message.type).toBe("flex");
-    expect(message.altText).toBe("テストコミュニティから100ポイントが付与されました🎁");
+    expect(message.altText).toBe("テストコミュニティから100ポイントが届きました🎁");
     expect(message.contents).toHaveProperty("type", "bubble");
   });
 
@@ -26,26 +30,54 @@ describe("buildPointGrantReceivedMessage", () => {
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const pointInfo = body.contents[1] as messagingApi.FlexBox;
-    const pointText = pointInfo.contents[0] as messagingApi.FlexText;
+    const pointSection = body.contents[1] as messagingApi.FlexBox;
+    const pointText = pointSection.contents[0] as messagingApi.FlexText;
 
-    expect(pointText.text).toBe("10,000pt");
+    expect(pointText.text).toBe("10,000");
   });
 
-  it("should display correct community name with 支給元 prefix", () => {
+  it("should include both community and receiver avatar/name", () => {
+    const message = buildPointGrantReceivedMessage(baseParams);
+    const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
+    const userRow = body.contents[0] as messagingApi.FlexBox;
+
+    const fromColumn = userRow.contents[0] as messagingApi.FlexBox;
+    const arrow = userRow.contents[1] as messagingApi.FlexText;
+    const toColumn = userRow.contents[2] as messagingApi.FlexBox;
+
+    expect(arrow.text).toBe("→");
+    expect((fromColumn.contents[1] as messagingApi.FlexText).text).toBe("テストコミュニティ");
+    expect((toColumn.contents[1] as messagingApi.FlexText).text).toBe("佐藤花子");
+  });
+
+  it("should include header image when attachedImageUrl is provided", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
-      communityName: "大阪市",
+      attachedImageUrl: "https://example.com/photo.jpg",
     });
+    const bubble = message.contents as messagingApi.FlexBubble;
 
-    const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const pointInfo = body.contents[1] as messagingApi.FlexBox;
-    const sourceText = pointInfo.contents[1] as messagingApi.FlexText;
-
-    expect(sourceText.text).toBe("支給元: 大阪市");
+    expect(bubble.header).toBeDefined();
+    const headerImage = (bubble.header as messagingApi.FlexBox)
+      .contents[0] as messagingApi.FlexImage;
+    expect(headerImage.type).toBe("image");
+    expect(headerImage.url).toBe("https://example.com/photo.jpg");
   });
 
-  it("should include comment section when comment is provided", () => {
+  it("should omit header when attachedImageUrl is undefined", () => {
+    const message = buildPointGrantReceivedMessage(baseParams);
+    const bubble = message.contents as messagingApi.FlexBubble;
+
+    expect(bubble.header).toBeUndefined();
+  });
+
+  it("should not include a title text in the body", () => {
+    const message = buildPointGrantReceivedMessage(baseParams);
+    const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
+    expect((body.contents[0] as { type: string }).type).toBe("box");
+  });
+
+  it("should include comment as plain quoted text without label or background", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
       comment: "ボランティア参加ありがとうございます",
@@ -53,60 +85,55 @@ describe("buildPointGrantReceivedMessage", () => {
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
 
-    // Should have 3 components: title, pointInfo, commentSection
-    expect(body.contents).toHaveLength(3);
+    // userRow, points, comment, dateTime = 4 elements
+    expect(body.contents).toHaveLength(4);
 
-    const commentSection = body.contents[2] as messagingApi.FlexBox;
-    expect(commentSection.backgroundColor).toBe("#F7F7F7");
-
-    const commentText = commentSection.contents[0] as messagingApi.FlexText;
-    expect(commentText.text).toBe("ボランティア参加ありがとうございます");
+    const commentText = body.contents[2] as messagingApi.FlexText;
+    expect(commentText.type).toBe("text");
+    expect(commentText.text).toBe("「ボランティア参加ありがとうございます」");
+    expect(
+      (commentText as unknown as { backgroundColor?: string }).backgroundColor,
+    ).toBeUndefined();
   });
 
-  it("should exclude comment section when comment is undefined", () => {
+  it("should exclude comment when comment is undefined", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
       comment: undefined,
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-
-    // Should have only 2 components: title, pointInfo (no comment)
-    expect(body.contents).toHaveLength(2);
+    expect(body.contents).toHaveLength(3);
   });
 
-  it("should exclude comment section when comment is empty string", () => {
+  it("should exclude comment when comment is empty string", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
       comment: "",
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-
-    // Should have only 2 components: title, pointInfo (no comment)
-    expect(body.contents).toHaveLength(2);
+    expect(body.contents).toHaveLength(3);
   });
 
-  it("should exclude comment section when comment is whitespace only", () => {
+  it("should exclude comment when comment is whitespace only", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
       comment: "   ",
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-
-    // Should have only 2 components: title, pointInfo (no comment)
-    expect(body.contents).toHaveLength(2);
+    expect(body.contents).toHaveLength(3);
   });
 
-  it("should have correct title text", () => {
+  it("should include date and reason label", () => {
     const message = buildPointGrantReceivedMessage(baseParams);
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const titleText = body.contents[0] as messagingApi.FlexText;
+    const dateText = body.contents[2] as messagingApi.FlexText;
 
-    expect(titleText.text).toBe("ポイントの付与");
-    expect(titleText.color).toBe("#1DB446");
+    expect(dateText.text).toContain("·");
+    expect(dateText.text).toContain("支給");
   });
 
   it("should include wallet button with correct URL", () => {
@@ -130,10 +157,10 @@ describe("buildPointGrantReceivedMessage", () => {
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const pointInfo = body.contents[1] as messagingApi.FlexBox;
-    const pointText = pointInfo.contents[0] as messagingApi.FlexText;
+    const pointSection = body.contents[1] as messagingApi.FlexBox;
+    const pointText = pointSection.contents[0] as messagingApi.FlexText;
 
-    expect(pointText.text).toBe("1,000,000pt");
+    expect(pointText.text).toBe("1,000,000");
   });
 
   it("should handle single digit point values", () => {
@@ -143,9 +170,9 @@ describe("buildPointGrantReceivedMessage", () => {
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const pointInfo = body.contents[1] as messagingApi.FlexBox;
-    const pointText = pointInfo.contents[0] as messagingApi.FlexText;
+    const pointSection = body.contents[1] as messagingApi.FlexBox;
+    const pointText = pointSection.contents[0] as messagingApi.FlexText;
 
-    expect(pointText.text).toBe("5pt");
+    expect(pointText.text).toBe("5");
   });
 });
