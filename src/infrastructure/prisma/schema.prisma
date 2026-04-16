@@ -1669,6 +1669,21 @@ model ReportTemplate {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  // NOTE on uniqueness/consistency invariants enforced at the DB layer:
+  //   1. @@unique([variant, communityId]) covers the COMMUNITY scope
+  //      (variant + non-NULL community_id pair). PostgreSQL treats NULL
+  //      as distinct in regular unique indexes, so this attribute alone
+  //      does NOT prevent duplicate SYSTEM-scope templates.
+  //   2. The partial unique index `t_report_templates_variant_system_key`
+  //      (defined in the migration as a raw SQL `CREATE UNIQUE INDEX ...
+  //      WHERE community_id IS NULL`) limits SYSTEM scope to one template
+  //      per variant. Prisma's @@unique cannot express partial indexes,
+  //      so it lives only in the migration.
+  //   3. The CHECK constraint
+  //      `t_report_templates_scope_community_id_check` enforces
+  //      scope='SYSTEM' ⇔ community_id IS NULL and
+  //      scope='COMMUNITY' ⇔ community_id IS NOT NULL, so the two
+  //      indexes above can rely on the scope/community_id pairing.
   @@unique([variant, communityId])
   @@map("t_report_templates")
 }

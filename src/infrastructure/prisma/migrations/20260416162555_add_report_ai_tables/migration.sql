@@ -178,6 +178,23 @@ ALTER TABLE "t_report_feedbacks"
     ADD CONSTRAINT "t_report_feedbacks_rating_check"
     CHECK ("rating" BETWEEN 1 AND 5);
 
+-- CheckConstraint: scope ⇔ community_id consistency.
+-- SYSTEM templates must have community_id IS NULL; COMMUNITY templates
+-- must have community_id IS NOT NULL. Without this invariant the
+-- community-scoped write RLS policy could be subverted by mis-shaped
+-- rows (e.g. a SYSTEM-scope row carrying a community_id that matches
+-- some user's membership would pass the `community_id IN (memberships)`
+-- check and be editable by a non-admin), and the partial unique index
+-- on `WHERE community_id IS NULL` could be bypassed by storing the
+-- "SYSTEM" template under COMMUNITY scope with a real community_id.
+ALTER TABLE "t_report_templates"
+    ADD CONSTRAINT "t_report_templates_scope_community_id_check"
+    CHECK (
+      (scope = 'SYSTEM'    AND community_id IS NULL)
+      OR
+      (scope = 'COMMUNITY' AND community_id IS NOT NULL)
+    );
+
 -- ============================================================================
 -- Row Level Security
 -- ============================================================================
