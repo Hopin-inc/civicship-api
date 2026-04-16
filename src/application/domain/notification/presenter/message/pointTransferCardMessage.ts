@@ -198,7 +198,7 @@ function buildDateTimeLabel(
 
   let reasonLabel: string;
   if (kind === "grant") {
-    reasonLabel = isJapanese ? "付与" : "Granted";
+    reasonLabel = isJapanese ? "支給" : "Granted";
   } else {
     reasonLabel = isJapanese ? "譲渡" : "Transferred";
   }

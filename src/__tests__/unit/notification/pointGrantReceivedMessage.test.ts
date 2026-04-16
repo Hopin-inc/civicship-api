@@ -133,7 +133,7 @@ describe("buildPointGrantReceivedMessage", () => {
     const dateText = body.contents[2] as messagingApi.FlexText;
 
     expect(dateText.text).toContain("·");
-    expect(dateText.text).toContain("付与");
+    expect(dateText.text).toContain("支給");
   });
 
   it("should include wallet button with correct URL", () => {
