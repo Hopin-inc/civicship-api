@@ -19,7 +19,7 @@ describe("buildPointGrantReceivedMessage", () => {
     const message = buildPointGrantReceivedMessage(baseParams);
 
     expect(message.type).toBe("flex");
-    expect(message.altText).toBe("テストコミュニティから100ポイントが付与されました🎁");
+    expect(message.altText).toBe("テストコミュニティから100ポイントが届きました🎁");
     expect(message.contents).toHaveProperty("type", "bubble");
   });
 

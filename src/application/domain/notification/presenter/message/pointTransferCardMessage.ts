@@ -53,11 +53,11 @@ function buildAltText(
 ): string {
   if (params.kind === "grant") {
     return isJapanese
-      ? `${params.fromName}から${formattedPoints}ポイントが付与されました🎁`
+      ? `${params.fromName}から${formattedPoints}ポイントが届きました🎁`
       : `You received ${formattedPoints} points from ${params.fromName} 🎁`;
   }
   return isJapanese
-    ? `${params.fromName}さんから${formattedPoints}ポイントが送られました🎁`
+    ? `${params.fromName}さんから${formattedPoints}ポイントが届きました🎁`
     : `You received ${formattedPoints} points from ${params.fromName} 🎁`;
 }
 

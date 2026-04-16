@@ -19,7 +19,7 @@ describe("buildPointDonationReceivedMessage", () => {
     const message = buildPointDonationReceivedMessage(baseParams);
 
     expect(message.type).toBe("flex");
-    expect(message.altText).toBe("田中太郎さんから100ポイントが送られました🎁");
+    expect(message.altText).toBe("田中太郎さんから100ポイントが届きました🎁");
     expect(message.contents).toHaveProperty("type", "bubble");
   });
 
