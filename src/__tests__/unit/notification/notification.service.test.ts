@@ -56,7 +56,11 @@ describe("NotificationService - Point Transfer Notifications", () => {
       user: null,
       community: {
         name: "テストコミュニティ",
-        image: { url: "https://example.com/community.jpg" },
+        config: {
+          portalConfig: {
+            squareLogoPath: "https://example.com/community.jpg",
+          },
+        },
       },
     },
     toWallet: {
