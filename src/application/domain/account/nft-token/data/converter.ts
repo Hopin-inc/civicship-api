@@ -17,6 +17,16 @@ export default class NftTokenConverter {
       conditions.push({ type: { in: input.type } });
     }
 
+    // 「このコミュニティに NftInstance が1件以上存在する」トークンに絞る。
+    // NftToken 自体は community に紐付かないため、nftInstances.some を経由する。
+    if (input.communityId !== undefined && input.communityId !== null) {
+      conditions.push({
+        nftInstances: {
+          some: { communityId: input.communityId },
+        },
+      });
+    }
+
     const allAndConditions: Prisma.NftTokenWhereInput[] = [...conditions];
 
     if (input.and?.length) {

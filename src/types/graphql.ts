@@ -1465,6 +1465,12 @@ export type GqlNftTokenEdge = GqlEdge & {
 export type GqlNftTokenFilterInput = {
   address?: InputMaybe<Array<Scalars['String']['input']>>;
   and?: InputMaybe<Array<GqlNftTokenFilterInput>>;
+  /**
+   * 指定したコミュニティ内に NftInstance が1件以上存在するトークンに絞る。
+   * NftToken 自体は community に直接紐付かないため、NftInstance 経由での絞り込みになる。
+   * portal 側のトークン選択 UI で「このコミュニティに紐付くトークンだけ」を表示するために使用。
+   */
+  communityId?: InputMaybe<Scalars['ID']['input']>;
   not?: InputMaybe<GqlNftTokenFilterInput>;
   or?: InputMaybe<Array<GqlNftTokenFilterInput>>;
   type?: InputMaybe<Array<Scalars['String']['input']>>;
