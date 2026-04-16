@@ -6,19 +6,16 @@
  * an empty line) aborts with a non-zero exit code.
  */
 import readline from "readline";
-
-const reset = "\x1b[0m";
-const bold = "\x1b[1m";
-const bgRed = "\x1b[41m";
-const fgWhite = "\x1b[37m";
-const line = "=".repeat(60);
+import { ANSI, BANNER_LINE } from "../src/utils/ansi";
 
 const target = process.argv[2] ?? "production";
 
 console.log("");
-console.log(`${bgRed}${fgWhite}${bold}${line}${reset}`);
-console.log(`${bgRed}${fgWhite}${bold}  ⚠️  PRODUCTION ENVIRONMENT  ⚠️${reset}`);
-console.log(`${bgRed}${fgWhite}${bold}${line}${reset}`);
+console.log(`${ANSI.bgRed}${ANSI.fgWhite}${ANSI.bold}${BANNER_LINE}${ANSI.reset}`);
+console.log(
+  `${ANSI.bgRed}${ANSI.fgWhite}${ANSI.bold}  ⚠️  PRODUCTION ENVIRONMENT  ⚠️${ANSI.reset}`,
+);
+console.log(`${ANSI.bgRed}${ANSI.fgWhite}${ANSI.bold}${BANNER_LINE}${ANSI.reset}`);
 console.log("");
 console.log(`You are about to run "${target}" against PRODUCTION.`);
 console.log("This may affect real users and/or production data.");

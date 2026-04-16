@@ -1,3 +1,5 @@
+import { ANSI, BANNER_LINE } from "@/utils/ansi";
+
 /**
  * Prints a startup banner indicating which environment the current local run is using.
  *
@@ -21,37 +23,27 @@ export function printEnvBanner(): void {
     env === "PRD" || env === "PROD" || env === "PRODUCTION" || nodeEnv === "production";
   const isDev = env === "DEV" || env === "DEVELOPMENT";
 
-  // ANSI color codes
-  const reset = "\x1b[0m";
-  const bold = "\x1b[1m";
-  const bgRed = "\x1b[41m";
-  const bgYellow = "\x1b[43m";
-  const bgGreen = "\x1b[42m";
-  const fgWhite = "\x1b[37m";
-  const fgBlack = "\x1b[30m";
-
   const displayEnv = env || "UNSET";
   const displayNodeEnv = nodeEnv || "UNSET";
-  const line = "=".repeat(60);
 
   if (isProd) {
     console.log("");
-    console.log(`${bgRed}${fgWhite}${bold}${line}${reset}`);
+    console.log(`${ANSI.bgRed}${ANSI.fgWhite}${ANSI.bold}${BANNER_LINE}${ANSI.reset}`);
     console.log(
-      `${bgRed}${fgWhite}${bold}  ⚠️  WARNING: PRODUCTION ENVIRONMENT (ENV=${displayEnv}, NODE_ENV=${displayNodeEnv})  ⚠️${reset}`,
+      `${ANSI.bgRed}${ANSI.fgWhite}${ANSI.bold}  ⚠️  WARNING: PRODUCTION ENVIRONMENT (ENV=${displayEnv}, NODE_ENV=${displayNodeEnv})  ⚠️${ANSI.reset}`,
     );
-    console.log(`${bgRed}${fgWhite}${bold}${line}${reset}`);
+    console.log(`${ANSI.bgRed}${ANSI.fgWhite}${ANSI.bold}${BANNER_LINE}${ANSI.reset}`);
     console.log("");
   } else if (isDev) {
     console.log("");
     console.log(
-      `${bgYellow}${fgBlack}${bold}  🔧 DEV environment (ENV=${displayEnv}, NODE_ENV=${displayNodeEnv})  ${reset}`,
+      `${ANSI.bgYellow}${ANSI.fgBlack}${ANSI.bold}  🔧 DEV environment (ENV=${displayEnv}, NODE_ENV=${displayNodeEnv})  ${ANSI.reset}`,
     );
     console.log("");
   } else {
     console.log("");
     console.log(
-      `${bgGreen}${fgBlack}${bold}  💻 LOCAL environment (ENV=${displayEnv}, NODE_ENV=${displayNodeEnv})  ${reset}`,
+      `${ANSI.bgGreen}${ANSI.fgBlack}${ANSI.bold}  💻 LOCAL environment (ENV=${displayEnv}, NODE_ENV=${displayNodeEnv})  ${ANSI.reset}`,
     );
     console.log("");
   }
