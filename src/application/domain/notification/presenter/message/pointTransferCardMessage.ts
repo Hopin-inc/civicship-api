@@ -124,30 +124,11 @@ function buildBody(params: PointTransferCardParams): messagingApi.FlexBox {
     paddingBottom: "lg",
     spacing: "sm",
     contents: [
-      buildTitle(params.kind, params.language),
       buildUserTransferRow(params),
       buildPointsSection(params),
+      ...(params.comment?.trim() ? [buildCommentSection(params.comment)] : []),
       buildDateTimeLabel(params.createdAt, params.kind, params.language),
-      ...(params.comment?.trim() ? [buildCommentSection(params.comment, params.language)] : []),
     ],
-  };
-}
-
-function buildTitle(kind: PointTransferKind, language: Language): messagingApi.FlexText {
-  const isJapanese = language === Language.JA;
-  let text: string;
-  if (kind === "grant") {
-    text = isJapanese ? "ポイントの付与" : "Points Granted";
-  } else {
-    text = isJapanese ? "ポイントの受け取り" : "Points Received";
-  }
-  return {
-    type: "text",
-    text,
-    size: "xs",
-    color: "#1DB446",
-    weight: "bold",
-    align: "center",
   };
 }
 
@@ -267,35 +248,15 @@ function buildDateTimeLabel(
   };
 }
 
-function buildCommentSection(comment: string, language: Language): messagingApi.FlexBox {
-  const isJapanese = language === Language.JA;
-  const commentLabel = isJapanese ? "メッセージ" : "Message";
-
+function buildCommentSection(comment: string): messagingApi.FlexText {
   return {
-    type: "box",
-    layout: "vertical",
+    type: "text",
+    text: `「${comment}」`,
+    wrap: true,
+    color: "#555555",
+    size: "sm",
+    align: "center",
     margin: "lg",
-    spacing: "sm",
-    backgroundColor: "#F7F7F7",
-    cornerRadius: "md",
-    paddingAll: "md",
-    contents: [
-      {
-        type: "text",
-        text: commentLabel,
-        color: "#555555",
-        size: "xs",
-        weight: "bold",
-      },
-      {
-        type: "text",
-        text: comment,
-        wrap: true,
-        color: "#111111",
-        size: "sm",
-        margin: "xs",
-      },
-    ],
   };
 }
 
@@ -328,7 +289,6 @@ function buildMiniTransactionBubble(
 ): messagingApi.FlexBubble {
   return {
     type: "bubble",
-    size: "micro",
     body: buildMiniBody(tx, language),
   };
 }
@@ -347,7 +307,10 @@ function buildMiniBody(tx: RecentTransactionEntry, language: Language): messagin
   return {
     type: "box",
     layout: "vertical",
-    paddingAll: "lg",
+    paddingStart: "xl",
+    paddingEnd: "xl",
+    paddingTop: "lg",
+    paddingBottom: "lg",
     spacing: "sm",
     alignItems: "center",
     justifyContent: "center",
@@ -358,7 +321,7 @@ function buildMiniBody(tx: RecentTransactionEntry, language: Language): messagin
         type: "box",
         layout: "baseline",
         justifyContent: "center",
-        margin: "md",
+        margin: "lg",
         contents: [
           {
             type: "text",
@@ -381,10 +344,10 @@ function buildMiniBody(tx: RecentTransactionEntry, language: Language): messagin
       {
         type: "text",
         text: `${dateStr} · ${reasonLabel}`,
-        size: "xxs",
+        size: "xs",
         color: "#999999",
         align: "center",
-        margin: "sm",
+        margin: "md",
       },
     ],
   };
@@ -415,8 +378,8 @@ function buildMiniAvatar(imageUrl: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
-    width: "40px",
-    height: "40px",
+    width: "52px",
+    height: "52px",
     cornerRadius: "100px",
     borderColor: "#EEEEEE",
     borderWidth: "1px",
@@ -438,12 +401,12 @@ function buildMiniNamesRow(fromName: string, toName: string): messagingApi.FlexB
     layout: "horizontal",
     justifyContent: "center",
     spacing: "md",
-    margin: "xs",
+    margin: "sm",
     contents: [
       {
         type: "text",
         text: fromName,
-        size: "xxs",
+        size: "xs",
         color: "#555555",
         align: "center",
         flex: 1,
@@ -452,7 +415,7 @@ function buildMiniNamesRow(fromName: string, toName: string): messagingApi.FlexB
       {
         type: "text",
         text: toName,
-        size: "xxs",
+        size: "xs",
         color: "#555555",
         align: "center",
         flex: 1,
@@ -469,18 +432,17 @@ function buildViewMoreBubble(redirectUrl: string, language: Language): messaging
 
   return {
     type: "bubble",
-    size: "micro",
     body: {
       type: "box",
       layout: "vertical",
-      paddingAll: "lg",
+      paddingAll: "xl",
       justifyContent: "center",
       alignItems: "center",
       contents: [
         {
           type: "text",
           text: isJapanese ? "最近の活動" : "Recent Activity",
-          size: "sm",
+          size: "md",
           color: "#555555",
           weight: "bold",
           align: "center",
@@ -488,7 +450,7 @@ function buildViewMoreBubble(redirectUrl: string, language: Language): messaging
         {
           type: "button",
           style: "link",
-          margin: "md",
+          margin: "lg",
           action: {
             type: "uri",
             label: isJapanese ? "もっと見る →" : "View More →",

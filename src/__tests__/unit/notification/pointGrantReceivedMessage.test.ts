@@ -31,7 +31,7 @@ describe("buildPointGrantReceivedMessage", () => {
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const pointSection = body.contents[2] as messagingApi.FlexBox;
+    const pointSection = body.contents[1] as messagingApi.FlexBox;
     const pointText = pointSection.contents[0] as messagingApi.FlexText;
 
     expect(pointText.text).toBe("10,000");
@@ -40,7 +40,7 @@ describe("buildPointGrantReceivedMessage", () => {
   it("should include both community and receiver avatar/name", () => {
     const message = buildPointGrantReceivedMessage(baseParams);
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const userRow = body.contents[1] as messagingApi.FlexBox;
+    const userRow = body.contents[0] as messagingApi.FlexBox;
 
     const fromColumn = userRow.contents[0] as messagingApi.FlexBox;
     const arrow = userRow.contents[1] as messagingApi.FlexText;
@@ -72,7 +72,13 @@ describe("buildPointGrantReceivedMessage", () => {
     expect(bubble.header).toBeUndefined();
   });
 
-  it("should include comment section when comment is provided", () => {
+  it("should not include a title text in the body", () => {
+    const message = buildPointGrantReceivedMessage(baseParams);
+    const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
+    expect((body.contents[0] as { type: string }).type).toBe("box");
+  });
+
+  it("should include comment as plain quoted text without label or background", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
       comment: "ボランティア参加ありがとうございます",
@@ -80,61 +86,52 @@ describe("buildPointGrantReceivedMessage", () => {
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
 
-    // title, userRow, points, dateTime, comment = 5 elements
-    expect(body.contents).toHaveLength(5);
+    // userRow, points, comment, dateTime = 4 elements
+    expect(body.contents).toHaveLength(4);
 
-    const commentSection = body.contents[4] as messagingApi.FlexBox;
-    expect(commentSection.backgroundColor).toBe("#F7F7F7");
-
-    const commentText = commentSection.contents[1] as messagingApi.FlexText;
-    expect(commentText.text).toBe("ボランティア参加ありがとうございます");
+    const commentText = body.contents[2] as messagingApi.FlexText;
+    expect(commentText.type).toBe("text");
+    expect(commentText.text).toBe("「ボランティア参加ありがとうございます」");
+    expect(
+      (commentText as unknown as { backgroundColor?: string }).backgroundColor,
+    ).toBeUndefined();
   });
 
-  it("should exclude comment section when comment is undefined", () => {
+  it("should exclude comment when comment is undefined", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
       comment: undefined,
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    expect(body.contents).toHaveLength(4);
+    expect(body.contents).toHaveLength(3);
   });
 
-  it("should exclude comment section when comment is empty string", () => {
+  it("should exclude comment when comment is empty string", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
       comment: "",
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    expect(body.contents).toHaveLength(4);
+    expect(body.contents).toHaveLength(3);
   });
 
-  it("should exclude comment section when comment is whitespace only", () => {
+  it("should exclude comment when comment is whitespace only", () => {
     const message = buildPointGrantReceivedMessage({
       ...baseParams,
       comment: "   ",
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    expect(body.contents).toHaveLength(4);
-  });
-
-  it("should have correct title text", () => {
-    const message = buildPointGrantReceivedMessage(baseParams);
-
-    const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const titleText = body.contents[0] as messagingApi.FlexText;
-
-    expect(titleText.text).toBe("ポイントの付与");
-    expect(titleText.color).toBe("#1DB446");
+    expect(body.contents).toHaveLength(3);
   });
 
   it("should include date and reason label", () => {
     const message = buildPointGrantReceivedMessage(baseParams);
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const dateText = body.contents[3] as messagingApi.FlexText;
+    const dateText = body.contents[2] as messagingApi.FlexText;
 
     expect(dateText.text).toContain("·");
     expect(dateText.text).toContain("付与");
@@ -161,7 +158,7 @@ describe("buildPointGrantReceivedMessage", () => {
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const pointSection = body.contents[2] as messagingApi.FlexBox;
+    const pointSection = body.contents[1] as messagingApi.FlexBox;
     const pointText = pointSection.contents[0] as messagingApi.FlexText;
 
     expect(pointText.text).toBe("1,000,000");
@@ -174,7 +171,7 @@ describe("buildPointGrantReceivedMessage", () => {
     });
 
     const body = (message.contents as messagingApi.FlexBubble).body as messagingApi.FlexBox;
-    const pointSection = body.contents[2] as messagingApi.FlexBox;
+    const pointSection = body.contents[1] as messagingApi.FlexBox;
     const pointText = pointSection.contents[0] as messagingApi.FlexText;
 
     expect(pointText.text).toBe("5");
@@ -206,7 +203,7 @@ describe("buildPointGrantReceivedMessage", () => {
       expect(message.contents).toHaveProperty("type", "carousel");
     });
 
-    it("should have main bubble + mini bubbles + view-more bubble", () => {
+    it("should have all bubbles with the same size", () => {
       const message = buildPointGrantReceivedMessage({
         ...baseParams,
         recentTransactions,
@@ -215,9 +212,10 @@ describe("buildPointGrantReceivedMessage", () => {
 
       // main(1) + recent(1) + viewMore(1) = 3
       expect(carousel.contents).toHaveLength(3);
-      expect(carousel.contents[0].type).toBe("bubble");
-      expect(carousel.contents[1].size).toBe("micro");
-      expect(carousel.contents[2].size).toBe("micro");
+      for (const bubble of carousel.contents) {
+        expect(bubble.type).toBe("bubble");
+        expect((bubble as messagingApi.FlexBubble).size).toBeUndefined();
+      }
     });
 
     it("should return empty recent transactions as single bubble", () => {
