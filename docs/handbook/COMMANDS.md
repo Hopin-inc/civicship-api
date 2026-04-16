@@ -61,10 +61,17 @@ pnpm db:deploy:prd      # confirmPrd guard
 
 pnpm db:studio:local
 pnpm db:studio:dev
-pnpm db:studio:prd
+pnpm db:studio:prd      # confirmPrd guard
+
+pnpm db:pull:local
+pnpm db:pull:dev
+pnpm db:pull:prd        # confirmPrd guard
+
+pnpm db:migrate:local   # db:migrate (= prisma migrate dev --create-only) is
+                        # local-only; shadow-DB privileges make :dev / :prd unsafe.
 ```
 
-The bare `pnpm db:generate` / `pnpm db:deploy` / `pnpm db:studio` forms remain as-is and are used by CI (which injects `DATABASE_URL` directly).
+The bare `pnpm db:generate` / `pnpm db:deploy` / `pnpm db:studio` / `pnpm db:pull` / `pnpm db:migrate` forms remain as-is and are used by CI (which injects `DATABASE_URL` directly).
 
 ### GraphQL Operations
 
