@@ -4,6 +4,7 @@ import {
   GqlQueryVoteTopicArgs,
   GqlQueryMyVoteEligibilityArgs,
   GqlMutationVoteTopicCreateArgs,
+  GqlMutationVoteTopicUpdateArgs,
   GqlMutationVoteCastArgs,
   GqlMutationVoteTopicDeleteArgs,
   GqlVoteOption,
@@ -19,6 +20,7 @@ import VotePresenter, {
   GqlVoteTopicsConnectionWithMeta,
   GqlMyVoteEligibilityWithMeta,
   GqlVoteTopicCreatePayloadWithMeta,
+  GqlVoteTopicUpdatePayloadWithMeta,
   GqlVoteCastPayloadWithMeta,
 } from "./presenter";
 import { PrismaVoteBallot, PrismaVoteOption } from "./data/type";
@@ -124,6 +126,29 @@ export default class VoteUseCase {
     });
   }
 
+  async managerUpdateVoteTopic(
+    ctx: IContext,
+    { id, input, permission }: GqlMutationVoteTopicUpdateArgs,
+  ): Promise<GqlVoteTopicUpdatePayloadWithMeta> {
+    this.service.validateTopicInput(input);
+
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      // 既存 topic を取得し、コミュニティ所属・UPCOMING フェーズを検証
+      const existing = await this.service.getTopicWithRelations(ctx, id, tx);
+      if (existing.communityId !== permission.communityId) {
+        throw new AuthorizationError("TOPIC_NOT_IN_COMMUNITY");
+      }
+      this.service.validateTopicIsUpcoming(existing);
+
+      const topic = await this.service.updateTopicWithRelations(ctx, id, input, tx);
+      this.service.validateTopicRelations(topic);
+      const resultVisible = this.service.calcResultVisible(topic.endsAt, true);
+      const phase = this.service.calcPhase(topic.startsAt, topic.endsAt);
+      const topicGql = VotePresenter.topic(topic, resultVisible, phase);
+      return VotePresenter.update(topicGql);
+    });
+  }
+
   async userCastVote(
     ctx: IContext,
     { input }: GqlMutationVoteCastArgs,
@@ -225,6 +250,8 @@ export default class VoteUseCase {
       if (topic.communityId !== permission.communityId) {
         throw new AuthorizationError("TOPIC_NOT_IN_COMMUNITY");
       }
+      // UPCOMING フェーズのみ削除を許可（OPEN / CLOSED は投票結果保護のためイミュータブル）
+      this.service.validateTopicIsUpcoming(topic);
       await this.service.deleteTopic(ctx, id, tx);
       return VotePresenter.deleteTopic(id);
     });

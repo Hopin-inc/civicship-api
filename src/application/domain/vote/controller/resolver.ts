@@ -6,6 +6,7 @@ import {
   GqlQueryVoteTopicArgs,
   GqlQueryMyVoteEligibilityArgs,
   GqlMutationVoteTopicCreateArgs,
+  GqlMutationVoteTopicUpdateArgs,
   GqlMutationVoteCastArgs,
   GqlMutationVoteTopicDeleteArgs,
 } from "@/types/graphql";
@@ -35,6 +36,9 @@ export default class VoteResolver {
   Mutation = {
     voteTopicCreate: (_: unknown, args: GqlMutationVoteTopicCreateArgs, ctx: IContext) =>
       this.voteUseCase.managerCreateVoteTopic(ctx, args),
+
+    voteTopicUpdate: (_: unknown, args: GqlMutationVoteTopicUpdateArgs, ctx: IContext) =>
+      this.voteUseCase.managerUpdateVoteTopic(ctx, args),
 
     voteCast: (_: unknown, args: GqlMutationVoteCastArgs, ctx: IContext) =>
       this.voteUseCase.userCastVote(ctx, args),

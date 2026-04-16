@@ -18,7 +18,11 @@ class MockVoteRepository implements IVoteRepository {
   createGate = jest.fn();
   createPowerPolicy = jest.fn();
   createTopic = jest.fn();
+  updateTopic = jest.fn();
   createOptions = jest.fn();
+  deleteGate = jest.fn();
+  deletePowerPolicy = jest.fn();
+  deleteOptions = jest.fn();
   deleteTopic = jest.fn();
   findBallot = jest.fn();
   upsertBallot = jest.fn();
@@ -65,7 +69,7 @@ function makeTopic(overrides: Partial<PrismaVoteTopic> = {}): PrismaVoteTopic {
     createdBy: "creator",
     title: "Test Vote",
     description: null,
-    startsAt: new Date(Date.now() - 1000 * 60),  // 1 minute ago
+    startsAt: new Date(Date.now() - 1000 * 60), // 1 minute ago
     endsAt: new Date(Date.now() + 1000 * 60 * 60), // 1 hour from now
     createdAt: new Date(),
     updatedAt: null,
@@ -146,7 +150,11 @@ describe("VoteService.validateTopicInput", () => {
   });
 
   it("throws when startsAt >= endsAt", () => {
-    const input = { ...baseInput, startsAt: new Date(Date.now() + 1000), endsAt: new Date(Date.now()) };
+    const input = {
+      ...baseInput,
+      startsAt: new Date(Date.now() + 1000),
+      endsAt: new Date(Date.now()),
+    };
     expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
   });
 
@@ -158,7 +166,10 @@ describe("VoteService.validateTopicInput", () => {
   it("throws when an orderIndex is negative", () => {
     const input = {
       ...baseInput,
-      options: [{ label: "A", orderIndex: -1 }, { label: "B", orderIndex: 1 }],
+      options: [
+        { label: "A", orderIndex: -1 },
+        { label: "B", orderIndex: 1 },
+      ],
     };
     expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
   });
@@ -166,7 +177,10 @@ describe("VoteService.validateTopicInput", () => {
   it("throws when orderIndex values are duplicated", () => {
     const input = {
       ...baseInput,
-      options: [{ label: "A", orderIndex: 0 }, { label: "B", orderIndex: 0 }],
+      options: [
+        { label: "A", orderIndex: 0 },
+        { label: "B", orderIndex: 0 },
+      ],
     };
     expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
   });
@@ -253,7 +267,13 @@ describe("VoteService.checkEligibility", () => {
 
     it("returns ineligible when user role is below requiredRole", async () => {
       const topicWithRoleReq = makeTopic({
-        gate: { id: "gate-1", type: "MEMBERSHIP", nftTokenId: null, requiredRole: Role.MANAGER, topicId },
+        gate: {
+          id: "gate-1",
+          type: "MEMBERSHIP",
+          nftTokenId: null,
+          requiredRole: Role.MANAGER,
+          topicId,
+        },
       } as Partial<PrismaVoteTopic>);
       mockMembershipService.findMembership.mockResolvedValue({
         status: MembershipStatus.JOINED,
@@ -266,7 +286,13 @@ describe("VoteService.checkEligibility", () => {
 
     it("returns eligible when user is MANAGER and requiredRole is MANAGER", async () => {
       const topicWithRoleReq = makeTopic({
-        gate: { id: "gate-1", type: "MEMBERSHIP", nftTokenId: null, requiredRole: Role.MANAGER, topicId },
+        gate: {
+          id: "gate-1",
+          type: "MEMBERSHIP",
+          nftTokenId: null,
+          requiredRole: Role.MANAGER,
+          topicId,
+        },
       } as Partial<PrismaVoteTopic>);
       mockMembershipService.findMembership.mockResolvedValue({
         status: MembershipStatus.JOINED,
@@ -278,7 +304,13 @@ describe("VoteService.checkEligibility", () => {
 
     it("returns eligible when user is OWNER and requiredRole is MANAGER (higher role satisfies)", async () => {
       const topicWithRoleReq = makeTopic({
-        gate: { id: "gate-1", type: "MEMBERSHIP", nftTokenId: null, requiredRole: Role.MANAGER, topicId },
+        gate: {
+          id: "gate-1",
+          type: "MEMBERSHIP",
+          nftTokenId: null,
+          requiredRole: Role.MANAGER,
+          topicId,
+        },
       } as Partial<PrismaVoteTopic>);
       mockMembershipService.findMembership.mockResolvedValue({
         status: MembershipStatus.JOINED,
@@ -298,7 +330,12 @@ describe("VoteService.checkEligibility", () => {
       mockNftInstanceRepo.existsByUserAndToken.mockResolvedValue(true);
       const result = await service.checkEligibility(mockCtx, userId, topicNft);
       expect(result.eligible).toBe(true);
-      expect(mockNftInstanceRepo.existsByUserAndToken).toHaveBeenCalledWith(mockCtx, userId, nftTokenId, undefined);
+      expect(mockNftInstanceRepo.existsByUserAndToken).toHaveBeenCalledWith(
+        mockCtx,
+        userId,
+        nftTokenId,
+        undefined,
+      );
     });
 
     it("returns ineligible when user does not own the required NFT", async () => {
@@ -342,7 +379,12 @@ describe("VoteService.calculatePower", () => {
     mockNftInstanceRepo.countByUserAndToken.mockResolvedValue(3);
     const power = await service.calculatePower(mockCtx, userId, topic);
     expect(power).toBe(3);
-    expect(mockNftInstanceRepo.countByUserAndToken).toHaveBeenCalledWith(mockCtx, userId, nftTokenId, undefined);
+    expect(mockNftInstanceRepo.countByUserAndToken).toHaveBeenCalledWith(
+      mockCtx,
+      userId,
+      nftTokenId,
+      undefined,
+    );
   });
 
   it("throws ValidationError when NFT_COUNT policy has no nftTokenId", async () => {
