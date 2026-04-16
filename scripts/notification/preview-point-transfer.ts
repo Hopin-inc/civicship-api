@@ -1,7 +1,7 @@
 /**
  * Preview script for LINE point transfer notification messages.
  *
- * Prints the resulting Flex Message JSON for several scenarios to stdout so
+ * Prints the resulting Flex Message `contents` JSON for several scenarios so
  * you can paste any one of them into the LINE Flex Message Simulator
  * (https://developers.line.biz/flex-simulator/) to see the rendered output.
  *
@@ -9,8 +9,9 @@
  *   pnpm tsx scripts/notification/preview-point-transfer.ts
  *
  * Then copy a single JSON block (between the BEGIN/END markers) and paste
- * into the simulator's JSON tab. The simulator accepts a `FlexMessage`
- * (`type: "flex"`) or just the `contents` (bubble/carousel) — both work.
+ * into the simulator. IMPORTANT: the simulator expects ONLY the bubble/carousel
+ * object (i.e. `FlexMessage.contents`), NOT the full FlexMessage wrapper —
+ * this script already strips the wrapper for you.
  */
 
 import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
@@ -57,10 +58,11 @@ const recentTransactions: RecentTransactionEntry[] = [
   },
 ];
 
-function printScenario(label: string, value: unknown) {
+function printScenario(label: string, message: { contents: unknown; altText: string }) {
   console.log("");
   console.log(`========== BEGIN: ${label} ==========`);
-  console.log(JSON.stringify(value, null, 2));
+  console.log(`// altText: ${message.altText}`);
+  console.log(JSON.stringify(message.contents, null, 2));
   console.log(`========== END: ${label} ==========`);
   console.log("");
 }
