@@ -197,6 +197,9 @@ model Community {
   nftTokens   NftToken[]
   voteTopics  VoteTopic[]
 
+  reportTemplates ReportTemplate[]
+  reports         Report[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -386,6 +389,11 @@ model User {
 
   voteBallots       VoteBallot[]
   createdVoteTopics VoteTopic[]  @relation("VoteTopicCreatedBy")
+
+  reportsTargeted  Report[]         @relation("ReportTarget")
+  reportsGenerated Report[]         @relation("ReportGenerator")
+  reportsPublished Report[]         @relation("ReportPublisher")
+  reportFeedbacks  ReportFeedback[] @relation("ReportFeedbackAuthor")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1600,4 +1608,139 @@ model VoteBallot {
 
   @@unique([userId, topicId])
   @@map("t_vote_ballots")
+}
+
+// ============================================================================
+// Report AI Generation (Phase 1 MVP)
+//
+// `ReportTemplate` stores the prompt blueprint (per variant, optionally
+// per community). `Report` is the immutable record of a single generation
+// run, including snapshots of the prompt at the time of generation so
+// regeneration/audit is not affected by later template edits.
+// `ReportFeedback` captures platform-admin-only QA signal on each run.
+// ============================================================================
+
+enum ReportTemplateScope {
+  SYSTEM
+  COMMUNITY
+}
+
+enum ReportStatus {
+  DRAFT
+  APPROVED
+  PUBLISHED
+  REJECTED
+  SUPERSEDED
+}
+
+enum FeedbackType {
+  QUALITY
+  ACCURACY
+  TONE
+  STRUCTURE
+  OTHER
+}
+
+model ReportTemplate {
+  id String @id @default(cuid())
+
+  variant String
+  scope   ReportTemplateScope
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  systemPrompt       String  @map("system_prompt") @db.Text
+  userPromptTemplate String  @map("user_prompt_template") @db.Text
+  communityContext   String? @map("community_context") @db.Text
+
+  model         String
+  temperature   Float    @default(1.0)
+  maxTokens     Int      @map("max_tokens")
+  stopSequences String[] @map("stop_sequences")
+  isEnabled     Boolean  @default(true) @map("is_enabled")
+
+  updatedBy String? @map("updated_by")
+
+  reports Report[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([variant, communityId])
+  @@map("t_report_templates")
+}
+
+model Report {
+  id String @id @default(cuid())
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  variant    String
+  periodFrom DateTime @map("period_from") @db.Date
+  periodTo   DateTime @map("period_to") @db.Date
+
+  templateId String?         @map("template_id")
+  template   ReportTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  inputPayload   Json   @map("input_payload")
+  outputMarkdown String @map("output_markdown") @db.Text
+
+  model                    String
+  systemPromptSnapshot     String  @map("system_prompt_snapshot") @db.Text
+  userPromptSnapshot       String  @map("user_prompt_snapshot") @db.Text
+  communityContextSnapshot String? @map("community_context_snapshot") @db.Text
+
+  inputTokens     Int @map("input_tokens")
+  outputTokens    Int @map("output_tokens")
+  cacheReadTokens Int @default(0) @map("cache_read_tokens")
+
+  targetUserId String? @map("target_user_id")
+  targetUser   User?   @relation("ReportTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  generatedBy     String? @map("generated_by")
+  generatedByUser User?   @relation("ReportGenerator", fields: [generatedBy], references: [id], onDelete: SetNull)
+
+  status          ReportStatus @default(DRAFT)
+  publishedAt     DateTime?    @map("published_at")
+  publishedBy     String?      @map("published_by")
+  publishedByUser User?        @relation("ReportPublisher", fields: [publishedBy], references: [id], onDelete: SetNull)
+  finalContent    String?      @map("final_content") @db.Text
+
+  regenerateCount Int      @default(0) @map("regenerate_count")
+  parentRunId     String?  @map("parent_run_id")
+  parentRun       Report?  @relation("ReportRegeneration", fields: [parentRunId], references: [id], onDelete: SetNull)
+  regenerations   Report[] @relation("ReportRegeneration")
+
+  feedbacks ReportFeedback[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@index([communityId, variant, periodFrom(sort: Desc)])
+  @@index([communityId, status])
+  @@index([parentRunId])
+  @@map("t_reports")
+}
+
+model ReportFeedback {
+  id String @id @default(cuid())
+
+  reportId String @map("report_id")
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation("ReportFeedbackAuthor", fields: [userId], references: [id], onDelete: Restrict)
+
+  rating       Int
+  feedbackType FeedbackType? @map("feedback_type")
+  sectionKey   String?       @map("section_key")
+  comment      String?       @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([reportId])
+  @@index([userId])
+  @@map("t_report_feedbacks")
 }
