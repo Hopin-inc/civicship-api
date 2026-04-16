@@ -1658,7 +1658,7 @@ model ReportTemplate {
   model         String
   temperature   Float    @default(1.0)
   maxTokens     Int      @map("max_tokens")
-  stopSequences String[] @map("stop_sequences")
+  stopSequences String[] @default([]) @map("stop_sequences")
   isEnabled     Boolean  @default(true) @map("is_enabled")
 
   updatedBy     String? @map("updated_by")
