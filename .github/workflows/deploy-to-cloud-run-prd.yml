@@ -132,6 +132,15 @@ jobs:
       run: |
         docker push ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
 
+    - name: Update Cloud Run Job (batch) to new image
+      # docker push :latest alone does not roll the Cloud Run Job to the new
+      # image — Cloud Run Jobs pin the image digest at deploy time, so we
+      # need an explicit `run jobs update` to create a new revision.
+      run: |
+        gcloud run jobs update ${{ env.BATCH_NAME }} \
+          --region=${{ env.GCP_REGION }} \
+          --image=${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
+
     - name: Create Git tag
       run: |
         # Install tzdata to use Japan timezone
