@@ -7,7 +7,7 @@ import {
   GqlMutationVoteCastArgs,
   GqlMutationVoteTopicDeleteArgs,
   GqlVoteOption,
-  GqlVoteTopicDeletePayload,
+  GqlVoteTopicDeleteSuccess,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { AuthorizationError, ValidationError } from "@/errors/graphql";
@@ -25,9 +25,7 @@ import { PrismaVoteBallot, PrismaVoteOption } from "./data/type";
 
 @injectable()
 export default class VoteUseCase {
-  constructor(
-    @inject("VoteService") private readonly service: VoteService,
-  ) {}
+  constructor(@inject("VoteService") private readonly service: VoteService) {}
 
   async anyoneBrowseVoteTopics(
     ctx: IContext,
@@ -96,7 +94,10 @@ export default class VoteUseCase {
 
     // 管理者は投票期間中も集計値を参照できる（PR設計方針と一致）
     const { isManager } = getMembershipRolesByCtx(ctx, [topic.communityId], userId);
-    const resultVisible = this.service.calcResultVisible(topic.endsAt, !!isManager[topic.communityId]);
+    const resultVisible = this.service.calcResultVisible(
+      topic.endsAt,
+      !!isManager[topic.communityId],
+    );
     return VotePresenter.eligibility(eligibility, currentPower, myBallot, resultVisible);
   }
 
@@ -169,7 +170,10 @@ export default class VoteUseCase {
 
       // 管理者は投票期間中も集計値を参照できる（PR設計方針と一致）
       const { isManager } = getMembershipRolesByCtx(ctx, [topic.communityId], userId);
-      const ballotGql = VotePresenter.ballot(ballot, this.service.calcResultVisible(topic.endsAt, !!isManager[topic.communityId]));
+      const ballotGql = VotePresenter.ballot(
+        ballot,
+        this.service.calcResultVisible(topic.endsAt, !!isManager[topic.communityId]),
+      );
       return VotePresenter.castBallot(ballotGql);
     });
   }
@@ -214,7 +218,7 @@ export default class VoteUseCase {
   async managerDeleteVoteTopic(
     ctx: IContext,
     { id, permission }: GqlMutationVoteTopicDeleteArgs,
-  ): Promise<GqlVoteTopicDeletePayload> {
+  ): Promise<GqlVoteTopicDeleteSuccess> {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       // 削除前にコミュニティ所有チェック
       const topic = await this.service.getTopicWithRelations(ctx, id, tx);

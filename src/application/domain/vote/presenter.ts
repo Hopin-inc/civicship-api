@@ -6,9 +6,9 @@ import {
   GqlVotePowerPolicy,
   GqlMyVoteEligibility,
   GqlVoteTopicsConnection,
-  GqlVoteTopicCreatePayload,
-  GqlVoteCastPayload,
-  GqlVoteTopicDeletePayload,
+  GqlVoteTopicCreateSuccess,
+  GqlVoteCastSuccess,
+  GqlVoteTopicDeleteSuccess,
 } from "@/types/graphql";
 import {
   PrismaVoteTopic,
@@ -35,16 +35,16 @@ export type GqlVotePowerPolicyWithMeta = GqlVotePowerPolicy & {
 // Omit して optional に変更することで `null as unknown as ...` キャストを排除する
 
 export type GqlVoteBallotWithMeta = Omit<GqlVoteBallot, "option"> & {
-  option?: GqlVoteOption;  // VoteBallot.option フィールドリゾルバーで解決
-  optionId: string;        // VoteBallot.option リゾルバーが参照
-  resultVisible: boolean;  // VoteOption の集計マスキングに使用
+  option?: GqlVoteOption; // VoteBallot.option フィールドリゾルバーで解決
+  optionId: string; // VoteBallot.option リゾルバーが参照
+  resultVisible: boolean; // VoteOption の集計マスキングに使用
 };
 
 // gate/powerPolicy/community は Omit して WithMeta 版で上書き
 export type GqlVoteTopicWithMeta = Omit<GqlVoteTopic, "gate" | "powerPolicy" | "community"> & {
   community?: GqlVoteTopic["community"]; // VoteTopic.community フィールドリゾルバーで解決
-  communityId: string;                   // VoteTopic.community リゾルバーが参照
-  resultVisible: boolean;                // VoteTopic.myBallot リゾルバーが参照
+  communityId: string; // VoteTopic.community リゾルバーが参照
+  resultVisible: boolean; // VoteTopic.myBallot リゾルバーが参照
   gate: GqlVoteGateWithMeta;
   powerPolicy: GqlVotePowerPolicyWithMeta;
 };
@@ -64,11 +64,11 @@ export type GqlMyVoteEligibilityWithMeta = Omit<GqlMyVoteEligibility, "myBallot"
   myBallot?: GqlVoteBallotWithMeta | null;
 };
 
-export type GqlVoteTopicCreatePayloadWithMeta = Omit<GqlVoteTopicCreatePayload, "voteTopic"> & {
+export type GqlVoteTopicCreatePayloadWithMeta = Omit<GqlVoteTopicCreateSuccess, "voteTopic"> & {
   voteTopic: GqlVoteTopicWithMeta;
 };
 
-export type GqlVoteCastPayloadWithMeta = Omit<GqlVoteCastPayload, "ballot"> & {
+export type GqlVoteCastPayloadWithMeta = Omit<GqlVoteCastSuccess, "ballot"> & {
   ballot: GqlVoteBallotWithMeta;
 };
 
@@ -187,22 +187,22 @@ export default class VotePresenter {
 
   static create(topic: GqlVoteTopicWithMeta): GqlVoteTopicCreatePayloadWithMeta {
     return {
-      __typename: "VoteTopicCreatePayload",
+      __typename: "VoteTopicCreateSuccess",
       voteTopic: topic,
     };
   }
 
   static castBallot(ballot: GqlVoteBallotWithMeta): GqlVoteCastPayloadWithMeta {
     return {
-      __typename: "VoteCastPayload",
+      __typename: "VoteCastSuccess",
       ballot,
     };
   }
 
-  static deleteTopic(id: string): GqlVoteTopicDeletePayload {
+  static deleteTopic(id: string): GqlVoteTopicDeleteSuccess {
     return {
-      __typename: "VoteTopicDeletePayload",
-      id,
+      __typename: "VoteTopicDeleteSuccess",
+      voteTopicId: id,
     };
   }
 }
