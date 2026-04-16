@@ -1,11 +1,17 @@
 /**
  * Prints a startup banner indicating which environment the server is running against.
  *
+ * Only prints when running via the local `pnpm dev*` scripts, which inject
+ * `LOCAL_DEV=true`. In Cloud Run / GCP the banner is suppressed because that
+ * flag is never set there.
+ *
  * Environment is determined by `process.env.ENV` (set via `.env.local` / `.env.dev` / `.env.prd`).
  * Production-like environments are emphasized with ⚠️ and color to reduce the risk of
- * accidentally operating against prd.
+ * accidentally operating against prd from a local machine.
  */
 export function printEnvBanner(): void {
+  if (process.env.LOCAL_DEV !== "true") return;
+
   const env = (process.env.ENV ?? "").toUpperCase();
   const nodeEnv = process.env.NODE_ENV ?? "";
   const isProd = env === "PRD" || env === "PROD" || env === "PRODUCTION" || nodeEnv === "production";
