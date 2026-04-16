@@ -14,7 +14,12 @@ import { performance } from "node:perf_hooks";
  *   ...
  *   done(`Server ready at ${url}`);
  */
-const enabled = process.env.LOCAL_DEV === "true";
+// Read `LOCAL_DEV` at call time (matching the pattern used by
+// `src/utils/envBanner.ts`) so test setups or programmatic entrypoints that
+// toggle the env var after module import still get the correct behavior.
+function isEnabled(): boolean {
+  return process.env.LOCAL_DEV === "true";
+}
 
 let totalSteps = 0;
 let currentStep = 0;
@@ -22,7 +27,7 @@ let startMark = 0;
 let lastMark = 0;
 
 export function startProgress(total: number): void {
-  if (!enabled) return;
+  if (!isEnabled()) return;
   totalSteps = total;
   currentStep = 0;
   startMark = performance.now();
@@ -30,7 +35,7 @@ export function startProgress(total: number): void {
 }
 
 export function step(label: string): void {
-  if (!enabled) return;
+  if (!isEnabled()) return;
   currentStep += 1;
   const now = performance.now();
   const ms = Math.round(now - lastMark);
@@ -39,7 +44,7 @@ export function step(label: string): void {
 }
 
 export function done(label: string): void {
-  if (!enabled) return;
+  if (!isEnabled()) return;
   currentStep += 1;
   const now = performance.now();
   const ms = Math.round(now - lastMark);
@@ -49,5 +54,5 @@ export function done(label: string): void {
 }
 
 export function isProgressEnabled(): boolean {
-  return enabled;
+  return isEnabled();
 }
