@@ -5,7 +5,10 @@ import { axiosNormalizer } from "./formats/axios";
 import { sizeGuard } from "./formats/sizeGuard";
 import { traceContext } from "./formats/traceContext";
 
-const isLocal = process.env.ENV === "LOCAL";
+// LOCAL_DEV is injected by `pnpm dev*` scripts so that running locally against
+// a remote env (`dev:https:dev` / `dev:https:prd`) still uses console logging
+// instead of shipping logs to Cloud Logging.
+const isLocal = process.env.ENV === "LOCAL" || process.env.LOCAL_DEV === "true";
 const isProduction = process.env.NODE_ENV === "production";
 
 const baseFormats: winston.Logform.Format[] = [

@@ -6,6 +6,9 @@ import { getCommunityConfig, getAllCommunityIds } from "./index";
 import { deployRichMenus } from "./deployer";
 import { DeployRichMenuContext } from "./types";
 import logger from "@/infrastructure/logging";
+import { printEnvBanner } from "@/bootstrap/envBanner";
+
+printEnvBanner();
 
 interface CliOptions {
   community?: string;

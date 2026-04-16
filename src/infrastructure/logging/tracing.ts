@@ -22,7 +22,10 @@ const NODE_ENV = process.env.NODE_ENV;
 
 const isProduction = NODE_ENV === "production";
 const isTest = NODE_ENV === "test";
-const isLocal = ENV === "LOCAL";
+// LOCAL_DEV is injected by `pnpm dev*` scripts so that running locally against
+// a remote env (`dev:https:dev` / `dev:https:prd`) still skips OpenTelemetry
+// initialization and does not ship traces to Cloud Trace.
+const isLocal = ENV === "LOCAL" || process.env.LOCAL_DEV === "true";
 
 const TRACE_SAMPLE_RATE = isProduction ? 0.01 : 1.0;
 const SERVICE_VERSION = "1.0.0";
