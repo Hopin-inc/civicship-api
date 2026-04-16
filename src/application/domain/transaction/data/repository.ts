@@ -1,7 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ITransactionRepository } from "@/application/domain/transaction/data/interface";
-import { transactionSelectDetail, PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
+import {
+  transactionSelectDetail,
+  PrismaTransactionDetail,
+  TransactionChainRow,
+} from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { injectable } from "tsyringe";
 
@@ -72,19 +76,33 @@ export default class TransactionRepository implements ITransactionRepository {
           c.created_at,
           fu.id   AS from_user_id,
           fu.name AS from_user_name,
-          fi.url  AS from_user_image,
+          fui.url AS from_user_image,
           fu.bio  AS from_user_bio,
+          fc.id   AS from_community_id,
+          fc.name AS from_community_name,
+          fpc.square_logo_path AS from_community_image,
+          fc.bio  AS from_community_bio,
           tu.id   AS to_user_id,
           tu.name AS to_user_name,
-          ti.url  AS to_user_image,
-          tu.bio  AS to_user_bio
+          tui.url AS to_user_image,
+          tu.bio  AS to_user_bio,
+          tc.id   AS to_community_id,
+          tc.name AS to_community_name,
+          tpc.square_logo_path AS to_community_image,
+          tc.bio  AS to_community_bio
         FROM chain c
-        LEFT JOIN t_wallets fw ON fw.id = c."from"
-        LEFT JOIN t_users   fu ON fu.id = fw.user_id
-        LEFT JOIN t_images  fi ON fi.id = fu.image_id
-        LEFT JOIN t_wallets tw ON tw.id = c."to"
-        LEFT JOIN t_users   tu ON tu.id = tw.user_id
-        LEFT JOIN t_images  ti ON ti.id = tu.image_id
+        LEFT JOIN t_wallets                fw  ON fw.id = c."from"
+        LEFT JOIN t_users                  fu  ON fu.id = fw.user_id
+        LEFT JOIN t_images                 fui ON fui.id = fu.image_id
+        LEFT JOIN t_communities            fc  ON fc.id = fw.community_id AND fw.type = 'COMMUNITY'
+        LEFT JOIN t_community_configs      fcc ON fcc.community_id = fc.id
+        LEFT JOIN t_community_portal_configs fpc ON fpc.config_id = fcc.id
+        LEFT JOIN t_wallets                tw  ON tw.id = c."to"
+        LEFT JOIN t_users                  tu  ON tu.id = tw.user_id
+        LEFT JOIN t_images                 tui ON tui.id = tu.image_id
+        LEFT JOIN t_communities            tc  ON tc.id = tw.community_id AND tw.type = 'COMMUNITY'
+        LEFT JOIN t_community_configs      tcc ON tcc.community_id = tc.id
+        LEFT JOIN t_community_portal_configs tpc ON tpc.config_id = tcc.id
         ORDER BY c.seq DESC
       `;
     });

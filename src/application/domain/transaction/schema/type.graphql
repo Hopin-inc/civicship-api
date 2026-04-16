@@ -34,21 +34,68 @@ type Transaction {
   updatedAt: Datetime
 }
 
+"""
+ポイントの旅（chain）の全体像。
+depth はチェーンの長さ（ステップ数）、steps は古い順（起点→現在）に並ぶ。
+"""
 type TransactionChain {
   depth: Int!
   steps: [TransactionChainStep!]!
 }
 
+"""
+chain の1ステップ。ある transaction（ポイントの移動 1回分）に対応する。
+from が送信元、to が送信先。どちらも User または Community を表す
+TransactionChainParticipant interface で、__typename で判別できる。
+"""
 type TransactionChainStep {
   id: ID!
   reason: TransactionReason!
   points: Int!
-  fromUser: TransactionChainUser
-  toUser: TransactionChainUser
+  """
+  送信元の参加者。
+  - GRANT / ONBOARDING の起点ステップでは TransactionChainCommunity（community wallet 発）
+  - それ以外のステップは TransactionChainUser
+  - ウォレットが削除済み（退会済みユーザー等）の場合は null
+  """
+  from: TransactionChainParticipant
+  """
+  送信先の参加者。
+  現状の業務ロジックでは常に TransactionChainUser（MEMBER wallet 宛）。
+  ウォレットが削除済みの場合は null。
+  """
+  to: TransactionChainParticipant
   createdAt: Datetime!
 }
 
-type TransactionChainUser {
+"""
+chain の 1 ステップに登場する参加者（User または Community）。
+共通フィールドを束ねた interface。実体の判別は __typename で行う。
+"""
+interface TransactionChainParticipant {
+  id: ID!
+  name: String!
+  image: String
+  bio: String
+}
+
+"""
+参加者がユーザー（MEMBER wallet の所有者）である場合の表現。
+id は User.id。
+"""
+type TransactionChainUser implements TransactionChainParticipant {
+  id: ID!
+  name: String!
+  image: String
+  bio: String
+}
+
+"""
+参加者がコミュニティ（COMMUNITY wallet の所有者）である場合の表現。
+id は Community.id。GRANT / ONBOARDING のような、community wallet から
+発行される transaction の起点ステップで登場する。
+"""
+type TransactionChainCommunity implements TransactionChainParticipant {
   id: ID!
   name: String!
   image: String
