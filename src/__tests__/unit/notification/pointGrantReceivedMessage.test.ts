@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
+import { RecentTransactionEntry } from "@/application/domain/notification/presenter/message/pointTransferCardMessage";
 import { messagingApi } from "@line/bot-sdk";
 import { Language } from "@prisma/client";
 
@@ -177,5 +178,54 @@ describe("buildPointGrantReceivedMessage", () => {
     const pointText = pointSection.contents[0] as messagingApi.FlexText;
 
     expect(pointText.text).toBe("5");
+  });
+
+  describe("carousel with recent transactions", () => {
+    const recentTransactions: RecentTransactionEntry[] = [
+      {
+        fromName: "山田太郎",
+        fromImageUrl: "https://example.com/yamada.jpg",
+        toName: "鈴木次郎",
+        toImageUrl: "https://example.com/suzuki.jpg",
+        transferPoints: 300,
+        createdAt: new Date("2026-04-14T10:00:00Z"),
+        kind: "donation",
+      },
+    ];
+
+    it("should return single bubble when no recent transactions", () => {
+      const message = buildPointGrantReceivedMessage(baseParams);
+      expect(message.contents).toHaveProperty("type", "bubble");
+    });
+
+    it("should return carousel when recent transactions are provided", () => {
+      const message = buildPointGrantReceivedMessage({
+        ...baseParams,
+        recentTransactions,
+      });
+      expect(message.contents).toHaveProperty("type", "carousel");
+    });
+
+    it("should have main bubble + mini bubbles + view-more bubble", () => {
+      const message = buildPointGrantReceivedMessage({
+        ...baseParams,
+        recentTransactions,
+      });
+      const carousel = message.contents as messagingApi.FlexCarousel;
+
+      // main(1) + recent(1) + viewMore(1) = 3
+      expect(carousel.contents).toHaveLength(3);
+      expect(carousel.contents[0].type).toBe("bubble");
+      expect(carousel.contents[1].size).toBe("micro");
+      expect(carousel.contents[2].size).toBe("micro");
+    });
+
+    it("should return empty recent transactions as single bubble", () => {
+      const message = buildPointGrantReceivedMessage({
+        ...baseParams,
+        recentTransactions: [],
+      });
+      expect(message.contents).toHaveProperty("type", "bubble");
+    });
   });
 });
