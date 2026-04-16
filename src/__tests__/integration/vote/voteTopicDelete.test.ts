@@ -35,7 +35,10 @@ describe("Vote Integration: VoteTopicDelete", () => {
       slug: "manager-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: manager.id } },
       community: { connect: { id: community.id } },
@@ -58,7 +61,7 @@ describe("Vote Integration: VoteTopicDelete", () => {
       permission: { communityId: community.id },
     });
 
-    expect(result.id).toBe(topic.id);
+    expect(result.voteTopicId).toBe(topic.id);
 
     // Verify it is no longer in the DB
     const deleted = await prismaClient.voteTopic.findUnique({ where: { id: topic.id } });
@@ -73,7 +76,10 @@ describe("Vote Integration: VoteTopicDelete", () => {
       slug: "manager-slug-nf",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: manager.id } },
       community: { connect: { id: community.id } },
@@ -99,8 +105,14 @@ describe("Vote Integration: VoteTopicDelete", () => {
       slug: "manager-slug-2",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const communityA = await TestDataSourceHelper.createCommunity({ name: "community-a", pointName: "pt" });
-    const communityB = await TestDataSourceHelper.createCommunity({ name: "community-b", pointName: "pt" });
+    const communityA = await TestDataSourceHelper.createCommunity({
+      name: "community-a",
+      pointName: "pt",
+    });
+    const communityB = await TestDataSourceHelper.createCommunity({
+      name: "community-b",
+      pointName: "pt",
+    });
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: manager.id } },
       community: { connect: { id: communityA.id } },
@@ -139,7 +151,10 @@ describe("Vote Integration: VoteTopicDelete", () => {
       slug: "voter-slug-3",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: manager.id } },
       community: { connect: { id: community.id } },
@@ -175,7 +190,9 @@ describe("Vote Integration: VoteTopicDelete", () => {
 
     // Confirm all records exist before deletion
     const gateBefore = await prismaClient.voteGate.findFirst({ where: { topicId: topic.id } });
-    const policyBefore = await prismaClient.votePowerPolicy.findFirst({ where: { topicId: topic.id } });
+    const policyBefore = await prismaClient.votePowerPolicy.findFirst({
+      where: { topicId: topic.id },
+    });
     const optionsBefore = await prismaClient.voteOption.findMany({ where: { topicId: topic.id } });
     const ballotBefore = await prismaClient.voteBallot.findFirst({ where: { topicId: topic.id } });
 
@@ -193,7 +210,9 @@ describe("Vote Integration: VoteTopicDelete", () => {
 
     // All related records should be cascade-deleted
     const gateAfter = await prismaClient.voteGate.findFirst({ where: { topicId: topic.id } });
-    const policyAfter = await prismaClient.votePowerPolicy.findFirst({ where: { topicId: topic.id } });
+    const policyAfter = await prismaClient.votePowerPolicy.findFirst({
+      where: { topicId: topic.id },
+    });
     const optionsAfter = await prismaClient.voteOption.findMany({ where: { topicId: topic.id } });
     const ballotAfter = await prismaClient.voteBallot.findFirst({ where: { topicId: topic.id } });
 

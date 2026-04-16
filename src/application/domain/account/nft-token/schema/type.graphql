@@ -1,0 +1,21 @@
+type NftToken {
+  id: ID!
+  address: String!
+  name: String
+  symbol: String
+  type: String!
+  json: JSON
+  createdAt: Datetime!
+  updatedAt: Datetime
+}
+
+type NftTokensConnection {
+  edges: [NftTokenEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type NftTokenEdge implements Edge {
+  cursor: String!
+  node: NftToken!
+}

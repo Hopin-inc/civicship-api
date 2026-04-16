@@ -23,6 +23,9 @@ import NftInstanceConverter from "@/application/domain/account/nft-instance/data
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
+import NftTokenConverter from "@/application/domain/account/nft-token/data/converter";
+import NftTokenService from "@/application/domain/account/nft-token/service";
+import NftTokenUseCase from "@/application/domain/account/nft-token/usecase";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
@@ -161,6 +164,10 @@ export function registerProductionDependencies() {
   container.register("NftInstanceConverter", { useClass: NftInstanceConverter });
   container.register("NftInstanceService", { useClass: NftInstanceService });
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
+
+  container.register("NftTokenConverter", { useClass: NftTokenConverter });
+  container.register("NftTokenService", { useClass: NftTokenService });
+  container.register("NftTokenUseCase", { useClass: NftTokenUseCase });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });

@@ -998,6 +998,31 @@ type NftToken {
   updatedAt: Datetime
 }
 
+type NftTokenEdge implements Edge {
+  cursor: String!
+  node: NftToken!
+}
+
+input NftTokenFilterInput {
+  address: [String!]
+  and: [NftTokenFilterInput!]
+  not: NftTokenFilterInput
+  or: [NftTokenFilterInput!]
+  type: [String!]
+}
+
+input NftTokenSortInput {
+  address: SortDirection
+  createdAt: SortDirection
+  name: SortDirection
+}
+
+type NftTokensConnection {
+  edges: [NftTokenEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
 type NftWallet {
   createdAt: Datetime
   id: ID!
@@ -1545,6 +1570,8 @@ type Query {
   myWallet: Wallet
   nftInstance(id: ID!): NftInstance
   nftInstances(cursor: String, filter: NftInstanceFilterInput, first: Int, sort: NftInstanceSortInput): NftInstancesConnection!
+  nftToken(id: ID!): NftToken
+  nftTokens(cursor: String, filter: NftTokenFilterInput, first: Int, sort: NftTokenSortInput): NftTokensConnection!
   opportunities(cursor: String, filter: OpportunityFilterInput, first: Int, sort: OpportunitySortInput): OpportunitiesConnection!
   opportunity(id: ID!, permission: CheckCommunityPermissionInput!): Opportunity
   opportunitySlot(id: ID!): OpportunitySlot
@@ -2389,7 +2416,9 @@ input VoteCastInput {
   topicId: ID!
 }
 
-type VoteCastPayload {
+union VoteCastPayload = VoteCastSuccess
+
+type VoteCastSuccess {
   ballot: VoteBallot!
 }
 
@@ -2509,12 +2538,16 @@ input VoteTopicCreateInput {
   title: String!
 }
 
-type VoteTopicCreatePayload {
+union VoteTopicCreatePayload = VoteTopicCreateSuccess
+
+type VoteTopicCreateSuccess {
   voteTopic: VoteTopic!
 }
 
-type VoteTopicDeletePayload {
-  id: ID!
+union VoteTopicDeletePayload = VoteTopicDeleteSuccess
+
+type VoteTopicDeleteSuccess {
+  voteTopicId: ID!
 }
 
 type VoteTopicEdge {

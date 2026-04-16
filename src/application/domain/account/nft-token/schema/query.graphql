@@ -1,0 +1,25 @@
+extend type Query {
+  nftTokens(
+    filter: NftTokenFilterInput
+    sort: NftTokenSortInput
+    cursor: String
+    first: Int
+  ): NftTokensConnection!
+
+  nftToken(id: ID!): NftToken
+}
+
+input NftTokenFilterInput {
+  address: [String!]
+  type: [String!]
+
+  and: [NftTokenFilterInput!]
+  or: [NftTokenFilterInput!]
+  not: NftTokenFilterInput
+}
+
+input NftTokenSortInput {
+  createdAt: SortDirection
+  name: SortDirection
+  address: SortDirection
+}

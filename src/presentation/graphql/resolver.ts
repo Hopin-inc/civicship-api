@@ -25,6 +25,7 @@ import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/contr
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
 import NftInstanceResolver from "@/application/domain/account/nft-instance/controller/resolver";
+import NftTokenResolver from "@/application/domain/account/nft-token/controller/resolver";
 import VoteResolver from "@/application/domain/vote/controller/resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
 
@@ -49,6 +50,7 @@ const vcIssuanceRequest = container.resolve(VCIssuanceRequestResolver);
 const place = container.resolve(PlaceResolver);
 const master = container.resolve(MasterResolver);
 const nftInstance = container.resolve(NftInstanceResolver);
+const nftToken = container.resolve(NftTokenResolver);
 
 const ticket = container.resolve(TicketResolver);
 const ticketIssuer = container.resolve(TicketIssuerResolver);
@@ -79,6 +81,7 @@ const resolvers = {
     ...place.Query,
     ...master.Query,
     ...nftInstance.Query,
+    ...nftToken.Query,
     ...utility.Query,
     ...ticket.Query,
     ...ticketIssuer.Query,
