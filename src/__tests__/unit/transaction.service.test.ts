@@ -11,6 +11,10 @@ jest.mock("@/application/domain/utils", () => ({
 
 class MockTransactionRepository {
   create = jest.fn();
+  find = jest.fn();
+  query = jest.fn();
+  findLatestReceivedTx = jest.fn().mockResolvedValue(null);
+  findChain = jest.fn();
   refreshCurrentPoints = jest.fn();
 }
 
@@ -78,7 +82,7 @@ describe("TransactionService", () => {
         comment,
       );
 
-      expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(walletId, transferPoints, "test-user-id", comment);
+      expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(walletId, transferPoints, "test-user-id", comment, undefined);
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
@@ -121,6 +125,7 @@ describe("TransactionService", () => {
         walletId,
         "test-user-id",
         comment,
+        undefined,
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
@@ -158,15 +163,61 @@ describe("TransactionService", () => {
         comment,
       );
 
+      expect(mockRepository.findLatestReceivedTx).toHaveBeenCalledWith(mockCtx, walletId, mockTx);
       expect(mockConverter.donateSelfPoint).toHaveBeenCalledWith(
         walletId,
         walletId,
         transferPoints,
         "test-user-id",
         comment,
+        undefined, // parentTxId (null → undefined)
+        1,         // chainDepth (no parent → 1)
+        undefined, // uploadedImages
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
-      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
+      expect(result).toBe(mockTransaction);
+    });
+
+    it("should inherit chainDepth from parent tx when findLatestReceivedTx returns a result", async () => {
+      const parentTx = { id: "parent-tx-1", chainDepth: 2 };
+      const mockTransaction = {
+        id: "tx-3b",
+        reason: "DONATION",
+        fromPointChange: transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
+      };
+
+      const convertedData = {
+        reason: "DONATION",
+        fromPointChange: transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
+      };
+
+      mockRepository.findLatestReceivedTx.mockResolvedValue(parentTx);
+      mockConverter.donateSelfPoint.mockReturnValue(convertedData);
+      mockRepository.create.mockResolvedValue(mockTransaction);
+
+      const result = await mockService.donateSelfPoint(
+        mockCtx,
+        walletId,
+        walletId,
+        transferPoints,
+        mockTx,
+        comment,
+      );
+
+      expect(mockConverter.donateSelfPoint).toHaveBeenCalledWith(
+        walletId,
+        walletId,
+        transferPoints,
+        "test-user-id",
+        comment,
+        "parent-tx-1", // parentTxId from found tx
+        3,             // chainDepth = parentTx.chainDepth(2) + 1
+        undefined,     // uploadedImages
+      );
       expect(result).toBe(mockTransaction);
     });
   });
@@ -203,15 +254,61 @@ describe("TransactionService", () => {
         walletId,
       );
 
+      expect(mockRepository.findLatestReceivedTx).toHaveBeenCalledWith(mockCtx, walletId, mockTx);
       expect(mockConverter.giveRewardPoint).toHaveBeenCalledWith(
         walletId,
         walletId,
         participationId,
         transferPoints,
         "test-user-id",
+        undefined, // parentTxId (null → undefined)
+        1,         // chainDepth (no parent → 1)
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
-      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
+      expect(result).toBe(mockTransaction);
+    });
+
+    it("should inherit chainDepth from parent tx when findLatestReceivedTx returns a result", async () => {
+      const parentTx = { id: "parent-tx-2", chainDepth: 3 };
+      const mockTransaction = {
+        id: "tx-4b",
+        reason: "POINT_REWARD",
+        participationId,
+        fromPointChange: -transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
+      };
+
+      const convertedData = {
+        reason: "POINT_REWARD",
+        participationId,
+        fromPointChange: -transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
+      };
+
+      mockRepository.findLatestReceivedTx.mockResolvedValue(parentTx);
+      mockConverter.giveRewardPoint.mockReturnValue(convertedData);
+      mockRepository.create.mockResolvedValue(mockTransaction);
+
+      const result = await mockService.giveRewardPoint(
+        mockCtx,
+        mockTx,
+        participationId,
+        transferPoints,
+        walletId,
+        walletId,
+      );
+
+      expect(mockConverter.giveRewardPoint).toHaveBeenCalledWith(
+        walletId,
+        walletId,
+        participationId,
+        transferPoints,
+        "test-user-id",
+        "parent-tx-2", // parentTxId from found tx
+        4,             // chainDepth = parentTx.chainDepth(3) + 1
+      );
       expect(result).toBe(mockTransaction);
     });
   });

@@ -337,14 +337,18 @@ input CommunityPortalConfigInput {
   documents: [CommunityDocumentInput!]
   domain: String
   enableFeatures: [String!]
-  faviconPrefix: String
-  logoPath: String
-  ogImagePath: String
+  favicon: ImageInput
+  faviconPrefix: String @deprecated(reason: "Use favicon instead")
+  logo: ImageInput
+  logoPath: String @deprecated(reason: "Use logo instead")
+  ogImage: ImageInput
+  ogImagePath: String @deprecated(reason: "Use ogImage instead")
   regionKey: String
   regionName: String
   rootPath: String
   shortDescription: String
-  squareLogoPath: String
+  squareLogo: ImageInput
+  squareLogoPath: String @deprecated(reason: "Use squareLogo instead")
   title: String
   tokenName: String
 }
@@ -856,6 +860,7 @@ type Mutation {
   transactionDonateSelfPointToCommunity(input: TransactionDonateSelfPointToCommunityInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointToCommunityPayload
   transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
+  transactionUpdateMetadata(communityPermission: CheckCommunityPermissionInput, id: ID!, input: TransactionUpdateMetadataInput!, permission: CheckIsSelfPermissionInput): TransactionUpdateMetadataPayload
   updatePortalConfig(input: CommunityPortalConfigInput!, permission: CheckCommunityPermissionInput!): CommunityPortalConfig!
   updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
@@ -1907,12 +1912,21 @@ type TicketsConnection {
 }
 
 type Transaction {
+  """
+  ポイントの旅のステップを返します（最大10段階）。
+  再帰CTEによる単一クエリで取得しますが、循環・異常データ対策のため深さ上限を10としています。
+  transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこのクエリが実行されるため高コストになりえます。
+  transaction(id) での単体取得時のみ使用し、深さだけ必要な場合は chainDepth を使用してください。
+  """
+  chain: TransactionChain
+  chainDepth: Int
   comment: String
   createdAt: Datetime
   createdByUser: User
   fromPointChange: Int
   fromWallet: Wallet
   id: ID!
+  images: [String!]
   participation: Participation
   reason: TransactionReason!
   reservation: Reservation
@@ -1922,9 +1936,30 @@ type Transaction {
   updatedAt: Datetime
 }
 
+type TransactionChain {
+  depth: Int!
+  steps: [TransactionChainStep!]!
+}
+
+type TransactionChainStep {
+  createdAt: Datetime!
+  fromUser: TransactionChainUser
+  id: ID!
+  points: Int!
+  reason: TransactionReason!
+  toUser: TransactionChainUser
+}
+
+type TransactionChainUser {
+  id: ID!
+  image: String
+  name: String!
+}
+
 input TransactionDonateSelfPointInput {
   comment: String
   communityId: ID!
+  images: [ImageInput!]
   toUserId: ID!
   transferPoints: Int!
 }
@@ -1972,6 +2007,7 @@ input TransactionFilterInput {
 
 input TransactionGrantCommunityPointInput {
   comment: String
+  images: [ImageInput!]
   toUserId: ID!
   transferPoints: Int!
 }
@@ -1984,6 +2020,7 @@ type TransactionGrantCommunityPointSuccess {
 
 input TransactionIssueCommunityPointInput {
   comment: String
+  images: [ImageInput!]
   transferPoints: Int!
 }
 
@@ -2008,6 +2045,17 @@ enum TransactionReason {
 
 input TransactionSortInput {
   createdAt: SortDirection
+}
+
+input TransactionUpdateMetadataInput {
+  comment: String
+  images: [ImageInput!]
+}
+
+union TransactionUpdateMetadataPayload = TransactionUpdateMetadataSuccess
+
+type TransactionUpdateMetadataSuccess {
+  transaction: Transaction!
 }
 
 type TransactionVerificationResult {

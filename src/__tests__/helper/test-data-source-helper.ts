@@ -36,6 +36,7 @@ export default class TestDataSourceHelper {
     await this.db.ticketIssuer.deleteMany();
 
     await this.db.ticket.deleteMany();
+    await this.db.incentiveGrant.deleteMany();
     await this.db.transaction.deleteMany();
 
     await this.db.nftMint.deleteMany();
@@ -51,6 +52,8 @@ export default class TestDataSourceHelper {
 
     await this.db.communityFirebaseConfig.deleteMany();
     await this.db.communityLineConfig.deleteMany();
+    await this.db.communityPortalConfig.deleteMany();
+    await this.db.communitySignupBonusConfig.deleteMany();
     await this.db.communityConfig.deleteMany();
 
     await this.db.community.deleteMany();
@@ -259,6 +262,22 @@ export default class TestDataSourceHelper {
       where: { walletId },
     });
     return result?.currentPoint ? Number(result.currentPoint) : null;
+  }
+
+  static async getParentTxId(transactionId: string): Promise<string | null> {
+    const tx = await this.db.transaction.findUnique({
+      where: { id: transactionId },
+      select: { parentTxId: true },
+    });
+    return tx?.parentTxId ?? null;
+  }
+
+  static async getChainDepth(transactionId: string): Promise<number | null> {
+    const tx = await this.db.transaction.findUnique({
+      where: { id: transactionId },
+      select: { chainDepth: true },
+    });
+    return tx?.chainDepth ?? null;
   }
 
   // ========== Participation関連 (不要になれば削除) =========

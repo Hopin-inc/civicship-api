@@ -16,10 +16,42 @@ type Transaction {
 
   ticketStatusHistories: [TicketStatusHistory!]
 
+  images: [String!]
+
   createdByUser: User
+
+  """
+  ポイントの旅のステップを返します（最大10段階）。
+  再帰CTEによる単一クエリで取得しますが、循環・異常データ対策のため深さ上限を10としています。
+  transactions などのリスト取得で chain を要求すると、各 Transaction ごとにこのクエリが実行されるため高コストになりえます。
+  transaction(id) での単体取得時のみ使用し、深さだけ必要な場合は chainDepth を使用してください。
+  """
+  chain: TransactionChain
+
+  chainDepth: Int
 
   createdAt: Datetime
   updatedAt: Datetime
+}
+
+type TransactionChain {
+  depth: Int!
+  steps: [TransactionChainStep!]!
+}
+
+type TransactionChainStep {
+  id: ID!
+  reason: TransactionReason!
+  points: Int!
+  fromUser: TransactionChainUser
+  toUser: TransactionChainUser
+  createdAt: Datetime!
+}
+
+type TransactionChainUser {
+  id: ID!
+  name: String!
+  image: String
 }
 
 # ------------------------------

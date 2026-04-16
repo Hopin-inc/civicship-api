@@ -77,6 +77,7 @@ model Image {
   opportunities  Opportunity[]   @relation("t_images_on_opportunities")
   participations Participation[] @relation("t_images_on_participations")
   utilities      Utility[]       @relation("t_images_on_utilities")
+  transactions   Transaction[]   @relation("t_images_on_transactions")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1145,6 +1146,11 @@ model Transaction {
   toWallet      Wallet? @relation("to_wallet", fields: [to], references: [id], onDelete: SetNull)
   toPointChange Int     @map("to_point_change")
 
+  parentTxId String?       @map("parent_tx_id")
+  parentTx   Transaction?  @relation("TransactionChain", fields: [parentTxId], references: [id], onDelete: SetNull)
+  childTxs   Transaction[] @relation("TransactionChain")
+  chainDepth Int?          @map("chain_depth")
+
   participationId String?        @map("participation_id")
   participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
 
@@ -1161,7 +1167,10 @@ model Transaction {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   merkleProofs MerkleProof[]
+  images       Image[]       @relation("t_images_on_transactions")
 
+  @@index([to, createdAt(sort: Desc)], map: "idx_t_transactions_to_created_at")
+  @@index([parentTxId], map: "idx_t_transactions_parent_tx_id")
   @@map("t_transactions")
 }
 

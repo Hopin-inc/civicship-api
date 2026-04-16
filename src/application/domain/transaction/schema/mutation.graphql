@@ -25,6 +25,14 @@ extend type Mutation {
         permission:CheckIsSelfPermissionInput!
     ): TransactionDonateSelfPointToCommunityPayload
     @authz(rules: [IsSelf])
+
+    transactionUpdateMetadata(
+        id: ID!
+        input: TransactionUpdateMetadataInput!
+        permission: CheckIsSelfPermissionInput
+        communityPermission: CheckCommunityPermissionInput
+    ): TransactionUpdateMetadataPayload
+    @authz(compositeRules: [{ or: [IsSelf, IsCommunityOwner] }])
 }
 
 # ------------------------------
@@ -33,12 +41,14 @@ extend type Mutation {
 input TransactionIssueCommunityPointInput {
   transferPoints: Int!
   comment: String
+  images: [ImageInput!]
 }
 
 input TransactionGrantCommunityPointInput {
   toUserId: ID!
   transferPoints: Int!
   comment: String
+  images: [ImageInput!]
 }
 
 input TransactionDonateSelfPointInput {
@@ -46,12 +56,18 @@ input TransactionDonateSelfPointInput {
   toUserId: ID!
   transferPoints: Int!
   comment: String
+  images: [ImageInput!]
 }
 
 input TransactionDonateSelfPointToCommunityInput {
   communityId: ID!
   transferPoints: Int!
   comment: String
+}
+
+input TransactionUpdateMetadataInput {
+  comment: String
+  images: [ImageInput!]
 }
 
 # ------------------------------
@@ -74,6 +90,13 @@ type TransactionDonateSelfPointToCommunitySuccess {
 }
 
 # ------------------------------
+# TransactionUpdateMetadata Success / Payload
+# ------------------------------
+type TransactionUpdateMetadataSuccess {
+    transaction: Transaction!
+}
+
+# ------------------------------
 # Transaction Mutation Union (Payload) Definitions
 # ------------------------------
 union TransactionIssueCommunityPointPayload =
@@ -87,3 +110,6 @@ union TransactionDonateSelfPointPayload =
 
 union TransactionDonateSelfPointToCommunityPayload =
     TransactionDonateSelfPointToCommunitySuccess
+
+union TransactionUpdateMetadataPayload =
+    TransactionUpdateMetadataSuccess

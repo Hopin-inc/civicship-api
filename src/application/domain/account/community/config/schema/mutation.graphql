@@ -24,10 +24,14 @@ input CommunityPortalConfigInput {
     description: String
     shortDescription: String
     domain: String
-    faviconPrefix: String
-    logoPath: String
-    squareLogoPath: String
-    ogImagePath: String
+    faviconPrefix: String @deprecated(reason: "Use favicon instead")
+    favicon: ImageInput
+    logoPath: String @deprecated(reason: "Use logo instead")
+    logo: ImageInput
+    squareLogoPath: String @deprecated(reason: "Use squareLogo instead")
+    squareLogo: ImageInput
+    ogImagePath: String @deprecated(reason: "Use ogImage instead")
+    ogImage: ImageInput
     enableFeatures: [String!]
     rootPath: String
     adminRootPath: String

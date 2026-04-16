@@ -34,7 +34,7 @@ router.post("/callback", async (req, res) => {
   }
 });
 
-router.post("/liff-login", async (req, res) => {
+router.post("/liff-login", express.json(), async (req, res) => {
   try {
     const { accessToken } = req.body;
     const communityId = req.headers["x-community-id"] as string;

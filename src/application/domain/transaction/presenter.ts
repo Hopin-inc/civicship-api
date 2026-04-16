@@ -5,8 +5,11 @@ import {
   GqlTransactionGrantCommunityPointSuccess,
   GqlTransactionDonateSelfPointSuccess,
   GqlTransactionDonateSelfPointToCommunitySuccess,
+  GqlTransactionChain,
+  GqlTransactionReason,
+  GqlTransactionUpdateMetadataSuccess,
 } from "@/types/graphql";
-import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
+import { PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
 
 export default class TransactionPresenter {
   static query(r: GqlTransaction[], hasNextPage: boolean, cursor?: string): GqlTransactionsConnection {
@@ -58,6 +61,43 @@ export default class TransactionPresenter {
     return {
       __typename: "TransactionDonateSelfPointToCommunitySuccess",
       transaction: this.get(r),
+    };
+  }
+
+  static updateMetadata(r: PrismaTransactionDetail): GqlTransactionUpdateMetadataSuccess {
+    return {
+      __typename: "TransactionUpdateMetadataSuccess",
+      transaction: this.get(r),
+    };
+  }
+
+  static chain(rows: TransactionChainRow[]): GqlTransactionChain {
+    return {
+      __typename: "TransactionChain",
+      depth: rows.length,
+      steps: rows.map((row) => ({
+        __typename: "TransactionChainStep",
+        id: row.id,
+        reason: row.reason as GqlTransactionReason,
+        points: row.points,
+        createdAt: row.created_at,
+        fromUser: row.from_user_id
+          ? {
+              __typename: "TransactionChainUser",
+              id: row.from_user_id,
+              name: row.from_user_name ?? "",
+              image: row.from_user_image ?? null,
+            }
+          : null,
+        toUser: row.to_user_id
+          ? {
+              __typename: "TransactionChainUser",
+              id: row.to_user_id,
+              name: row.to_user_name ?? "",
+              image: row.to_user_image ?? null,
+            }
+          : null,
+      })),
     };
   }
 }
