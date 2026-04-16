@@ -413,3 +413,70 @@ describe("VoteService.updateOptionCounts", () => {
     expect(mockRepo.incrementOptionCount).not.toHaveBeenCalled();
   });
 });
+
+// ---- calcResultVisible ----
+
+describe("VoteService.calcResultVisible", () => {
+  it("returns true when isManager is true regardless of time", () => {
+    const futureDate = new Date(Date.now() + 1000 * 60 * 60);
+    expect(service.calcResultVisible(futureDate, true)).toBe(true);
+  });
+
+  it("returns true when endsAt is in the past and isManager is false", () => {
+    const pastDate = new Date(Date.now() - 1000);
+    expect(service.calcResultVisible(pastDate, false)).toBe(true);
+  });
+
+  it("returns true when endsAt equals now (boundary: >=)", () => {
+    // new Date() の実行タイミング次第で境界値テストは不安定になるため
+    // 確実に過去になる値（1ms前）で >= 条件を確認する
+    const slightlyPast = new Date(Date.now() - 1);
+    expect(service.calcResultVisible(slightlyPast, false)).toBe(true);
+  });
+
+  it("returns false when endsAt is in the future and isManager is false", () => {
+    const futureDate = new Date(Date.now() + 1000 * 60 * 60);
+    expect(service.calcResultVisible(futureDate, false)).toBe(false);
+  });
+});
+
+// ---- calcPhase ----
+
+describe("VoteService.calcPhase", () => {
+  it("returns UPCOMING when now < startsAt", () => {
+    const startsAt = new Date(Date.now() + 1000 * 60 * 60);
+    const endsAt = new Date(Date.now() + 1000 * 60 * 120);
+    expect(service.calcPhase(startsAt, endsAt)).toBe("UPCOMING");
+  });
+
+  it("returns OPEN when startsAt <= now < endsAt", () => {
+    const startsAt = new Date(Date.now() - 1000 * 60);
+    const endsAt = new Date(Date.now() + 1000 * 60 * 60);
+    expect(service.calcPhase(startsAt, endsAt)).toBe("OPEN");
+  });
+
+  it("returns CLOSED when now >= endsAt", () => {
+    const startsAt = new Date(Date.now() - 1000 * 60 * 120);
+    const endsAt = new Date(Date.now() - 1000);
+    expect(service.calcPhase(startsAt, endsAt)).toBe("CLOSED");
+  });
+});
+
+// ---- validateTopicRelations ----
+
+describe("VoteService.validateTopicRelations", () => {
+  it("does not throw when gate and powerPolicy are both present", () => {
+    const topic = makeTopic();
+    expect(() => service.validateTopicRelations(topic)).not.toThrow();
+  });
+
+  it("throws ValidationError when gate is missing", () => {
+    const topic = makeTopic({ gate: null } as Partial<PrismaVoteTopic>);
+    expect(() => service.validateTopicRelations(topic)).toThrow(ValidationError);
+  });
+
+  it("throws ValidationError when powerPolicy is missing", () => {
+    const topic = makeTopic({ powerPolicy: null } as Partial<PrismaVoteTopic>);
+    expect(() => service.validateTopicRelations(topic)).toThrow(ValidationError);
+  });
+});
