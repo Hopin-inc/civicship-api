@@ -33,6 +33,11 @@ export default class MembershipService {
     return this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
+  async findOwnerUserIdsByCommunity(ctx: IContext, communityId: string): Promise<string[]> {
+    const memberships = await this.repository.findOwnersByCommunity(ctx, communityId);
+    return memberships.map((m) => m.userId);
+  }
+
   async findMembershipDetail(ctx: IContext, userId: string, communityId: string): Promise<PrismaMembershipDetail | null> {
     return this.repository.findDetail(ctx, { userId_communityId: { userId, communityId } });
   }

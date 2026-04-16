@@ -22,6 +22,7 @@ import "dayjs/locale/ja.js";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
 import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
+import { buildPointDonationToCommunityReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationToCommunityReceivedMessage";
 import { buildPointGrantReceivedMessage } from "@/application/domain/notification/presenter/message/pointGrantReceivedMessage";
 import { buildSignupBonusGrantedMessage } from "@/application/domain/notification/presenter/message/signupBonusGrantedMessage";
 import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
@@ -400,6 +401,75 @@ export default class NotificationService {
     });
 
     await safePushMessage(client, { to: uid, messages: [message] });
+  }
+
+  async pushPointDonationToCommunityReceivedMessage(
+    ctx: IContext,
+    communityId: string,
+    transactionId: string,
+    toPointChange: number,
+    comment: string | null,
+    fromUserName: string | undefined,
+    ownerUserIds: string[],
+  ) {
+    if (ownerUserIds.length === 0) return;
+
+    let liffBaseUrl: string;
+    let client: MessagingApiClient;
+
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+      client = await createLineClient(communityId);
+    } catch (error) {
+      logger.error("pushPointDonationToCommunityReceivedMessage: failed to get LIFF config or LINE client", {
+        transactionId,
+        communityId,
+        err: error,
+      });
+      return;
+    }
+
+    const redirectUrl = `${liffBaseUrl}/admin/wallet`;
+
+    const results = await Promise.allSettled(
+      ownerUserIds.map(async (ownerId) => {
+        const result = await this.userService.findLineUidAndLanguageForCommunity(
+          ctx,
+          ownerId,
+          communityId,
+        );
+
+        if (!result) {
+          logger.warn("pushPointDonationToCommunityReceivedMessage: lineUid is missing", {
+            transactionId,
+            ownerId,
+            communityId,
+          });
+          return;
+        }
+
+        const { uid, language } = result;
+        const message = buildPointDonationToCommunityReceivedMessage({
+          fromUserName,
+          transferPoints: toPointChange,
+          comment: comment ?? undefined,
+          redirectUrl,
+          language,
+        });
+
+        await safePushMessage(client, { to: uid, messages: [message] });
+      }),
+    );
+
+    results.forEach((result) => {
+      if (result.status === "rejected") {
+        logger.error("pushPointDonationToCommunityReceivedMessage: failed to push notification", {
+          transactionId,
+          err: result.reason,
+        });
+      }
+    });
   }
 
   async pushPointGrantReceivedMessage(

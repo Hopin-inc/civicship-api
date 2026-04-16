@@ -110,6 +110,16 @@ export default class TransactionConverter {
     };
   }
 
+  donateSelfPointToCommunity(
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    createdBy: string,
+    comment?: string,
+  ): Prisma.TransactionCreateInput {
+    return this.donateSelfPoint(fromWalletId, toWalletId, transferPoints, createdBy, comment);
+  }
+
   reservationCreated(
     fromWalletId: string,
     toWalletId: string,

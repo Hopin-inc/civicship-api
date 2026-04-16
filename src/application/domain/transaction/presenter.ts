@@ -4,6 +4,7 @@ import {
   GqlTransactionIssueCommunityPointSuccess,
   GqlTransactionGrantCommunityPointSuccess,
   GqlTransactionDonateSelfPointSuccess,
+  GqlTransactionDonateSelfPointToCommunitySuccess,
   GqlTransactionChain,
   GqlTransactionReason,
   GqlTransactionUpdateMetadataSuccess,
@@ -52,6 +53,13 @@ export default class TransactionPresenter {
   static giveUserPoint(r: PrismaTransactionDetail): GqlTransactionDonateSelfPointSuccess {
     return {
       __typename: "TransactionDonateSelfPointSuccess",
+      transaction: this.get(r),
+    };
+  }
+
+  static donateToCommunity(r: PrismaTransactionDetail): GqlTransactionDonateSelfPointToCommunitySuccess {
+    return {
+      __typename: "TransactionDonateSelfPointToCommunitySuccess",
       transaction: this.get(r),
     };
   }

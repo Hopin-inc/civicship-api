@@ -1,0 +1,180 @@
+import { messagingApi } from "@line/bot-sdk";
+import { Language } from "@prisma/client";
+import { formatNumber } from "../../utils/language";
+
+export interface PointDonationToCommunityReceivedParams {
+  fromUserName: string | undefined;
+  transferPoints: number;
+  comment?: string;
+  redirectUrl: string;
+  language: Language;
+}
+
+export function buildPointDonationToCommunityReceivedMessage(
+  params: PointDonationToCommunityReceivedParams,
+): messagingApi.FlexMessage {
+  const isJapanese = params.language === Language.JA;
+  const formattedPoints = formatNumber(params.transferPoints, params.language);
+  const displayName = params.fromUserName ?? (isJapanese ? "ユーザー" : "User");
+
+  const altText = isJapanese
+    ? `${displayName}さんからコミュニティに${formattedPoints}ポイントが寄付されました🎁`
+    : `${displayName} donated ${formattedPoints} points to the community 🎁`;
+
+  const bubble: messagingApi.FlexBubble = {
+    type: "bubble",
+    body: buildBody(params),
+    footer: buildFooter(params.redirectUrl, params.language),
+  };
+
+  return {
+    type: "flex",
+    altText,
+    contents: bubble,
+  };
+}
+
+function buildBody(params: PointDonationToCommunityReceivedParams): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "vertical",
+    paddingStart: "xl",
+    paddingEnd: "xl",
+    spacing: "sm",
+    contents: [
+      buildTitle(params.language),
+      buildPointInfo(params),
+      ...(params.comment?.trim() ? [buildCommentSection(params)] : []),
+      buildExplainMessage(params.language),
+    ],
+  };
+}
+
+function buildTitle(language: Language): messagingApi.FlexText {
+  return {
+    type: "text",
+    text: language === Language.JA ? "コミュニティへのポイント寄付" : "Community Point Donation",
+    size: "xs",
+    color: "#1DB446",
+    weight: "bold",
+  };
+}
+
+function buildPointInfo(params: PointDonationToCommunityReceivedParams): messagingApi.FlexBox {
+  const isJapanese = params.language === Language.JA;
+  const formattedPoints = formatNumber(params.transferPoints, params.language);
+  const displayName = params.fromUserName ?? (isJapanese ? "ユーザー" : "User");
+  const senderLabel = isJapanese
+    ? `寄付者: ${displayName}さん`
+    : `From: ${displayName}`;
+
+  return {
+    type: "box",
+    layout: "vertical",
+    margin: "md",
+    contents: [
+      {
+        type: "text",
+        text: `${formattedPoints}pt`,
+        size: "xxl",
+        weight: "bold",
+        wrap: true,
+        color: "#333333",
+      },
+      {
+        type: "text",
+        text: senderLabel,
+        size: "sm",
+        color: "#555555",
+        margin: "sm",
+      },
+    ],
+  };
+}
+
+function buildCommentSection(params: PointDonationToCommunityReceivedParams): messagingApi.FlexBox {
+  const isJapanese = params.language === Language.JA;
+  const commentLabel = isJapanese ? "メッセージ" : "Message";
+
+  return {
+    type: "box",
+    layout: "vertical",
+    margin: "lg",
+    spacing: "sm",
+    backgroundColor: "#F7F7F7",
+    cornerRadius: "md",
+    paddingAll: "md",
+    contents: [
+      {
+        type: "text",
+        text: commentLabel,
+        color: "#555555",
+        size: "xs",
+        weight: "bold",
+      },
+      {
+        type: "text",
+        text: params.comment!,
+        wrap: true,
+        color: "#111111",
+        size: "sm",
+        margin: "xs",
+      },
+    ],
+  };
+}
+
+function buildExplainMessage(language: Language): messagingApi.FlexBox {
+  const isJapanese = language === Language.JA;
+  const mainText = isJapanese
+    ? "コミュニティにポイントが寄付されました"
+    : "Points have been donated to the community";
+  const subText = isJapanese
+    ? "※「ウォレットを見る」ボタンからコミュニティの残高を確認できます。"
+    : "※You can check the community balance using the \"View Wallet\" button.";
+
+  return {
+    type: "box",
+    layout: "vertical",
+    spacing: "sm",
+    paddingTop: "xl",
+    paddingBottom: "xl",
+    contents: [
+      {
+        type: "text",
+        text: mainText,
+        color: "#111111",
+        size: "sm",
+        wrap: true,
+      },
+      {
+        type: "text",
+        text: subText,
+        size: "xs",
+        color: "#999999",
+        wrap: true,
+      },
+    ],
+  };
+}
+
+function buildFooter(redirectUrl: string, language: Language): messagingApi.FlexBox {
+  const buttonLabel = language === Language.JA ? "ウォレットを見る" : "View Wallet";
+
+  return {
+    type: "box",
+    layout: "vertical",
+    margin: "xxl",
+    contents: [
+      {
+        type: "button",
+        style: "link",
+        action: {
+          type: "uri",
+          label: buttonLabel,
+          uri: redirectUrl,
+        },
+      },
+    ],
+  };
+}

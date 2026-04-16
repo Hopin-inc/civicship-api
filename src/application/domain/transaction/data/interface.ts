@@ -54,6 +54,15 @@ export interface ITransactionService {
     uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
   ): Promise<PrismaTransactionDetail>;
 
+  donateSelfPointToCommunity(
+    ctx: IContext,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    tx: Prisma.TransactionClient,
+    comment?: string,
+  ): Promise<PrismaTransactionDetail>;
+
   reservationCreated(
     ctx: IContext,
     tx: Prisma.TransactionClient,
