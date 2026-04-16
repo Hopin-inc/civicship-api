@@ -6,6 +6,13 @@ import ReportPresenter, {
 } from "@/application/domain/report/presenter";
 import { addDays, truncateToJstDate } from "@/application/domain/report/util";
 
+const DEFAULT_WINDOW_DAYS = 7;
+const DEFAULT_TOP_N = 10;
+const DEFAULT_COMMENT_LIMIT = 200;
+const MAX_WINDOW_DAYS = 90;
+const MAX_TOP_N = 100;
+const MAX_COMMENT_LIMIT = 1000;
+
 @injectable()
 export default class ReportUseCase {
   constructor(@inject("ReportService") private readonly service: ReportService) {}
@@ -28,19 +35,32 @@ export default class ReportUseCase {
       commentLimit?: number;
     },
   ): Promise<WeeklyReportPayload> {
-    const windowDays = params.windowDays ?? 7;
+    const windowDays = clampInt(
+      params.windowDays ?? DEFAULT_WINDOW_DAYS,
+      1,
+      MAX_WINDOW_DAYS,
+      "windowDays",
+    );
+    const topN = clampInt(params.topN ?? DEFAULT_TOP_N, 1, MAX_TOP_N, "topN");
+    const commentLimit = clampInt(
+      params.commentLimit ?? DEFAULT_COMMENT_LIMIT,
+      0,
+      MAX_COMMENT_LIMIT,
+      "commentLimit",
+    );
+
     const to = truncateToJstDate(params.referenceDate);
     const from = addDays(to, -(windowDays - 1));
     const range = { from, to };
 
-    const [summaries, activeUsers, userAggregates, comments] = await Promise.all([
+    const [summaries, activeUsers, topUserAggregates, comments] = await Promise.all([
       this.service.getDailySummaries(ctx, params.communityId, range),
       this.service.getDailyActiveUsers(ctx, params.communityId, range),
-      this.service.getUserAggregated(ctx, params.communityId, range),
-      this.service.getComments(ctx, params.communityId, range, params.commentLimit),
+      this.service.getTopUsersByTotalPoints(ctx, params.communityId, range, topN),
+      this.service.getComments(ctx, params.communityId, range, commentLimit),
     ]);
 
-    const userIds = userAggregates.map((u) => u.userId);
+    const userIds = topUserAggregates.map((u) => u.userId);
     const profiles = await this.service.getUserProfiles(
       ctx,
       params.communityId,
@@ -53,10 +73,9 @@ export default class ReportUseCase {
       referenceDate: to,
       summaries,
       activeUsers,
-      userAggregates,
+      topUserAggregates,
       profiles,
       comments,
-      topN: params.topN,
     });
   }
 
@@ -80,4 +99,14 @@ export default class ReportUseCase {
       this.service.refreshUserTransactionDaily(ctx, tx),
     );
   }
+}
+
+function clampInt(value: number, min: number, max: number, name: string): number {
+  if (!Number.isInteger(value)) {
+    throw new RangeError(`${name} must be an integer, got ${value}`);
+  }
+  if (value < min || value > max) {
+    throw new RangeError(`${name} must be between ${min} and ${max}, got ${value}`);
+  }
+  return value;
 }

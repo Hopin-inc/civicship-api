@@ -33,12 +33,13 @@ export default class ReportService {
     return this.repository.findDailyActiveUsers(ctx, communityId, range);
   }
 
-  async getUserAggregated(
+  async getTopUsersByTotalPoints(
     ctx: IContext,
     communityId: string,
     range: DateRange,
+    topN: number,
   ): Promise<UserTransactionAggregateRow[]> {
-    return this.repository.findUserAggregatedInRange(ctx, communityId, range);
+    return this.repository.findTopUsersByTotalPoints(ctx, communityId, range, topN);
   }
 
   async getComments(

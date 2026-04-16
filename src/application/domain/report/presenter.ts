@@ -95,47 +95,40 @@ export default class ReportPresenter {
     referenceDate: Date;
     summaries: TransactionSummaryDailyRow[];
     activeUsers: TransactionActiveUsersDailyRow[];
-    userAggregates: UserTransactionAggregateRow[];
+    /**
+     * Already ordered by DB (SUM(points_in) + SUM(points_out)) DESC and
+     * limited to top N in the repository, so the presenter does no sort/slice.
+     */
+    topUserAggregates: UserTransactionAggregateRow[];
     profiles: UserProfileForReportRow[];
     comments: TransactionCommentRow[];
-    topN?: number;
   }): WeeklyReportPayload {
-    const topN = input.topN ?? 10;
     const profileByUserId = new Map(input.profiles.map((p) => [p.userId, p]));
 
-    // Period-level aggregation is done in SQL via groupBy; sort+slice the
-    // result here to pick the top N users by total activity.
-    const topUsers: TopUserItem[] = [...input.userAggregates]
-      .sort((a, b) => {
-        const totalB = bigintToSafeNumber(b.pointsIn) + bigintToSafeNumber(b.pointsOut);
-        const totalA = bigintToSafeNumber(a.pointsIn) + bigintToSafeNumber(a.pointsOut);
-        return totalB - totalA;
-      })
-      .slice(0, topN)
-      .map((u) => {
-        const p = profileByUserId.get(u.userId);
-        return {
-          user_id: u.userId,
-          name: p?.name ?? "",
-          user_bio: p?.userBio ?? null,
-          membership_bio: p?.membershipBio ?? null,
-          headline: p?.headline ?? null,
-          role: p?.role ?? "MEMBER",
-          joined_at: p ? toJstIsoDate(p.joinedAt) : "",
-          days_since_joined: p ? daysBetweenJst(p.joinedAt, input.referenceDate) : 0,
-          tx_count_in: u.txCountIn,
-          tx_count_out: u.txCountOut,
-          points_in: bigintToSafeNumber(u.pointsIn),
-          points_out: bigintToSafeNumber(u.pointsOut),
-          donation_out_count: u.donationOutCount,
-          donation_out_points: bigintToSafeNumber(u.donationOutPoints),
-          received_donation_count: u.receivedDonationCount,
-          chain_root_count: u.chainRootCount,
-          max_chain_depth_started: u.maxChainDepthStarted,
-          chain_depth_reached_max: u.chainDepthReachedMax,
-          unique_counterparties_sum: u.uniqueCounterpartiesSum,
-        };
-      });
+    const topUsers: TopUserItem[] = input.topUserAggregates.map((u) => {
+      const p = profileByUserId.get(u.userId);
+      return {
+        user_id: u.userId,
+        name: p?.name ?? "",
+        user_bio: p?.userBio ?? null,
+        membership_bio: p?.membershipBio ?? null,
+        headline: p?.headline ?? null,
+        role: p?.role ?? "MEMBER",
+        joined_at: p ? toJstIsoDate(p.joinedAt) : "",
+        days_since_joined: p ? daysBetweenJst(p.joinedAt, input.referenceDate) : 0,
+        tx_count_in: u.txCountIn,
+        tx_count_out: u.txCountOut,
+        points_in: bigintToSafeNumber(u.pointsIn),
+        points_out: bigintToSafeNumber(u.pointsOut),
+        donation_out_count: u.donationOutCount,
+        donation_out_points: bigintToSafeNumber(u.donationOutPoints),
+        received_donation_count: u.receivedDonationCount,
+        chain_root_count: u.chainRootCount,
+        max_chain_depth_started: u.maxChainDepthStarted,
+        chain_depth_reached_max: u.chainDepthReachedMax,
+        unique_counterparties_sum: u.uniqueCounterpartiesSum,
+      };
+    });
 
     return {
       period: {

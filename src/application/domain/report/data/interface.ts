@@ -105,10 +105,11 @@ export interface IReportRepository {
     range: DateRange,
   ): Promise<TransactionActiveUsersDailyRow[]>;
 
-  findUserAggregatedInRange(
+  findTopUsersByTotalPoints(
     ctx: IContext,
     communityId: string,
     range: DateRange,
+    topN: number,
   ): Promise<UserTransactionAggregateRow[]>;
 
   findCommentsByDateRange(
