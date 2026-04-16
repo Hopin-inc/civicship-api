@@ -3,17 +3,24 @@
 # ------------------------------
 
 extend type Query {
-    # コミュニティの投票テーマ一覧（カーソルページネーション付き）
+    """
+    コミュニティの投票テーマ一覧（カーソルページネーション）。
+    各ノードの myBallot / myEligibility は DataLoader 経由で解決され、N+1 は発生しない。
+    """
     voteTopics(
         communityId: ID!
         first: Int
         cursor: String
     ): VoteTopicsConnection!
 
-    # 投票テーマ詳細（myBallot / myEligibility はフィールドリゾルバー経由）
+    """投票テーマ詳細（myBallot / myEligibility はフィールドリゾルバー経由で解決）。"""
     voteTopic(id: ID!): VoteTopic
 
-    # ログインユーザーの投票資格確認
+    """
+    ログインユーザーの投票資格確認。
+    投票画面（単一トピックにフォーカス）で利用する想定。
+    一覧画面では各ノードの VoteTopic.myEligibility を使う方が効率的。
+    """
     myVoteEligibility(topicId: ID!): MyVoteEligibility!
         @authz(rules: [IsUser])
 }

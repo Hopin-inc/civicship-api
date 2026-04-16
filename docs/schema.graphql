@@ -869,15 +869,50 @@ type Mutation {
   utilityDelete(id: ID!, permission: CheckCommunityPermissionInput!): UtilityDeletePayload
   utilitySetPublishStatus(id: ID!, input: UtilitySetPublishStatusInput!, permission: CheckCommunityPermissionInput!): UtilitySetPublishStatusPayload
   utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!, permission: CheckCommunityPermissionInput!): UtilityUpdateInfoPayload
+
+  """
+  ユーザー: 投票実行。
+  同一 topicId への再投票は **upsert で上書き** される（投票履歴は残らない）。
+  投票の取消（withdraw）は現時点で未サポート。
+  eligibility と power は呼び出しごとに再チェックされ、NFT_COUNT の場合は呼び出し時点の保有数が新しい power として記録される。
+  """
   voteCast(input: VoteCastInput!): VoteCastPayload!
+
+  """
+  管理者: 投票テーマ・ゲート・ポリシー・選択肢を 1 トランザクションで一括作成。
+  Gate と PowerPolicy のクロス検証（NFT トークンの一致等）は行わない。
+  """
   voteTopicCreate(input: VoteTopicCreateInput!, permission: CheckCommunityPermissionInput!): VoteTopicCreatePayload!
+
+  """
+  管理者: 投票テーマ削除。
+  gate / powerPolicy / options / ballots は onDelete: Cascade で自動削除される。
+  """
   voteTopicDelete(id: ID!, permission: CheckCommunityPermissionInput!): VoteTopicDeletePayload!
 }
 
+"""ログインユーザーの投票資格と現状。再投票可能性の判定にも利用する。"""
 type MyVoteEligibility {
+  """
+  **リクエスト時点**で計算される power。
+  VoteBallot.power（投票時スナップショット）とは別物で、NFT_COUNT ポリシー下では乖離しうる。
+  """
   currentPower: Int
+
+  """
+  投票可能か。**投票済みでも再投票可能なら true** を返す
+  （期間内 & ゲート通過なら常に true。投票済みフラグは myBallot の有無で判定）。
+  """
   eligible: Boolean!
+
+  """ログインユーザーの投票（VoteTopic.myBallot と同じ値）。"""
   myBallot: VoteBallot
+
+  """
+  eligible=false 時の理由コード。次のいずれか:
+  GATE_NOT_CONFIGURED / GATE_NFT_TOKEN_NOT_CONFIGURED / REQUIRED_NFT_NOT_FOUND /
+  NOT_A_MEMBER / INSUFFICIENT_ROLE / UNKNOWN_GATE_TYPE
+  """
   reason: String
 }
 
@@ -1500,6 +1535,12 @@ type Query {
   incentiveGrants(cursor: String, filter: IncentiveGrantFilterInput, first: Int, sort: IncentiveGrantSortInput): IncentiveGrantsConnection!
   membership(communityId: ID!, userId: ID!): Membership
   memberships(cursor: MembershipCursorInput, filter: MembershipFilterInput, first: Int, sort: MembershipSortInput): MembershipsConnection!
+
+  """
+  ログインユーザーの投票資格確認。
+  投票画面（単一トピックにフォーカス）で利用する想定。
+  一覧画面では各ノードの VoteTopic.myEligibility を使う方が効率的。
+  """
   myVoteEligibility(topicId: ID!): MyVoteEligibility!
   myWallet: Wallet
   nftInstance(id: ID!): NftInstance
@@ -1546,7 +1587,14 @@ type Query {
   - Returns data integrity verification results
   """
   verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]
+
+  """投票テーマ詳細（myBallot / myEligibility はフィールドリゾルバー経由で解決）。"""
   voteTopic(id: ID!): VoteTopic
+
+  """
+  コミュニティの投票テーマ一覧（カーソルページネーション）。
+  各ノードの myBallot / myEligibility は DataLoader 経由で解決され、N+1 は発生しない。
+  """
   voteTopics(communityId: ID!, cursor: String, first: Int): VoteTopicsConnection!
   wallet(id: ID!): Wallet
   wallets(cursor: String, filter: WalletFilterInput, first: Int, sort: WalletSortInput): WalletsConnection!
@@ -2317,10 +2365,21 @@ enum VerificationStatus {
   VERIFIED
 }
 
+"""
+個々の投票レコード。同一 (userId, topicId) に対し常に 1 レコード。
+再投票は upsert で上書きされるため**投票履歴は保持されない**。
+投票の取消（withdraw）は現時点で未サポート。
+"""
 type VoteBallot {
   createdAt: Datetime!
   id: ID!
   option: VoteOption!
+
+  """
+  投票時点の power **スナップショット**。
+  NFT_COUNT ポリシーの場合、投票後に NFT 保有数が変化しても本フィールドは変わらない
+  （現時点の power は MyVoteEligibility.currentPower を参照）。
+  """
   power: Int!
   updatedAt: Datetime
 }
@@ -2334,15 +2393,29 @@ type VoteCastPayload {
   ballot: VoteBallot!
 }
 
+"""
+誰が投票できるか（資格ゲート）。
+VotePowerPolicy（何票持つか）とは**独立に設定される**。
+スキーマレベルでのクロス検証は行わないため、Gate=NFT(tokenA) + PowerPolicy=NFT_COUNT(tokenB)
+のような食い違いも作成可能。この場合 A のみ保有するユーザーは eligible=true / currentPower=0 になる。
+組み合わせの妥当性は呼び出し側（管理 UI 等）で担保すること。
+"""
 type VoteGate {
   id: ID!
+
+  """type=NFT のときの参照 NftToken"""
   nftToken: NftToken
+
+  """type=MEMBERSHIP のときに要求する最低ロール（未指定時は MEMBER 以上）"""
   requiredRole: Role
   type: VoteGateType!
 }
 
 input VoteGateInput {
+  """type=NFT のとき必須。MEMBERSHIP のときは無視される。"""
   nftTokenId: ID
+
+  """type=MEMBERSHIP のときに任意指定（未指定時は MEMBER 以上で可）。NFT のときは無視される。"""
   requiredRole: Role
   type: VoteGateType!
 }
@@ -2352,26 +2425,45 @@ enum VoteGateType {
   NFT
 }
 
+"""
+投票選択肢。
+voteCount / totalPower は投票・再投票時にトランザクション内で直接更新される**非正規化カラム**で、
+集計コストを O(1) に抑える。PowerPolicy=FLAT のとき voteCount == totalPower、
+NFT_COUNT では乖離する。一般的には勝敗判定に totalPower、参加者数表示に voteCount を使う。
+"""
 type VoteOption {
   id: ID!
   label: String!
   orderIndex: Int!
+
+  """票の重み合計（= Σ power）。endsAt 到達前は一般ユーザーに null（管理者は常に実値を参照可）。"""
   totalPower: Int
+
+  """投票した**人数**。endsAt 到達前は一般ユーザーに null（管理者は常に実値を参照可）。"""
   voteCount: Int
 }
 
 input VoteOptionInput {
   label: String!
+
+  """0 以上の整数。オプション間で重複不可。"""
   orderIndex: Int!
 }
 
+"""
+投票の重み（1 人が何票持つか）を決めるポリシー。
+VoteGate（投票可能か）とは独立に設定される。
+"""
 type VotePowerPolicy {
   id: ID!
+
+  """type=NFT_COUNT のときに参照する NftToken（保有数を power とする）"""
   nftToken: NftToken
   type: VotePowerPolicyType!
 }
 
 input VotePowerPolicyInput {
+  """type=NFT_COUNT のとき必須。FLAT のときは無視される。"""
   nftTokenId: ID
   type: VotePowerPolicyType!
 }
@@ -2388,7 +2480,15 @@ type VoteTopic {
   endsAt: Datetime!
   gate: VoteGate!
   id: ID!
+
+  """
+  ログインユーザーの投票（未ログイン・未投票は null）。
+  MyVoteEligibility.myBallot と同じ値を返すため、一覧画面ではこちらを利用することを推奨
+  （投票画面のように資格情報も必要な場合は myEligibility.myBallot を使う）。
+  """
   myBallot: VoteBallot
+
+  """ログインユーザーの投票資格情報（未ログインは null）。"""
   myEligibility: MyVoteEligibility
   options: [VoteOption!]!
   phase: VoteTopicPhase!
@@ -2422,6 +2522,12 @@ type VoteTopicEdge {
   node: VoteTopic!
 }
 
+"""
+投票テーマの現在フェーズ。
+startsAt / endsAt と現在時刻から**レスポンス時点で**計算される値で、DB カラムではない。
+長時間開いたままの画面（カウントダウン等）ではクライアント側で古くなるため、
+精密な期間判定には startsAt / endsAt を直接比較すること。一覧表示などでは phase を利用して構わない。
+"""
 enum VoteTopicPhase {
   CLOSED
   OPEN
