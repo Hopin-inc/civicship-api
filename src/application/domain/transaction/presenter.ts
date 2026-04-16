@@ -82,60 +82,64 @@ export default class TransactionPresenter {
         reason: row.reason as GqlTransactionReason,
         points: row.points,
         createdAt: row.created_at,
-        from: buildParticipant(
-          row.from_user_id,
-          row.from_user_name,
-          row.from_user_image,
-          row.from_user_bio,
-          row.from_community_id,
-          row.from_community_name,
-          row.from_community_image,
-          row.from_community_bio,
-        ),
-        to: buildParticipant(
-          row.to_user_id,
-          row.to_user_name,
-          row.to_user_image,
-          row.to_user_bio,
-          row.to_community_id,
-          row.to_community_name,
-          row.to_community_image,
-          row.to_community_bio,
-        ),
+        from: buildParticipant({
+          userId: row.from_user_id,
+          userName: row.from_user_name,
+          userImage: row.from_user_image,
+          userBio: row.from_user_bio,
+          communityId: row.from_community_id,
+          communityName: row.from_community_name,
+          communityImage: row.from_community_image,
+          communityBio: row.from_community_bio,
+        }),
+        to: buildParticipant({
+          userId: row.to_user_id,
+          userName: row.to_user_name,
+          userImage: row.to_user_image,
+          userBio: row.to_user_bio,
+          communityId: row.to_community_id,
+          communityName: row.to_community_name,
+          communityImage: row.to_community_image,
+          communityBio: row.to_community_bio,
+        }),
       })),
     };
   }
 }
 
+type ParticipantCandidate = {
+  userId: string | null;
+  userName: string | null;
+  userImage: string | null;
+  userBio: string | null;
+  communityId: string | null;
+  communityName: string | null;
+  communityImage: string | null;
+  communityBio: string | null;
+};
+
 // wallet の user_id / community_id の非nullをもとに、どちらの参加者かを決定する。
 // COMMUNITY wallet の場合 community_id のみ非null、MEMBER wallet の場合 user_id のみ非null になる。
 // ウォレットが削除済み等でどちらも null の場合は null を返す。
 function buildParticipant(
-  userId: string | null,
-  userName: string | null,
-  userImage: string | null,
-  userBio: string | null,
-  communityId: string | null,
-  communityName: string | null,
-  communityImage: string | null,
-  communityBio: string | null,
+  data: ParticipantCandidate,
 ): GqlTransactionChainUser | GqlTransactionChainCommunity | null {
-  if (userId) {
+  if (data.userId) {
     return {
       __typename: "TransactionChainUser",
-      id: userId,
-      name: userName ?? "",
-      image: userImage ?? null,
-      bio: userBio ?? null,
+      id: data.userId,
+      name: data.userName ?? "",
+      image: data.userImage ?? null,
+      bio: data.userBio ?? null,
     };
   }
-  if (communityId) {
+  if (data.communityId) {
     return {
       __typename: "TransactionChainCommunity",
-      id: communityId,
-      name: communityName ?? "",
-      image: communityImage ?? null,
-      bio: communityBio ?? null,
+      id: data.communityId,
+      name: data.communityName ?? "",
+      image: data.communityImage ?? null,
+      bio: data.communityBio ?? null,
     };
   }
   return null;
