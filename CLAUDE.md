@@ -468,7 +468,7 @@ GCP_PROJECT_ID=
 → Run `pnpm gql:generate` to regenerate types
 
 **Issue: Database connection errors**
-→ Check `DATABASE_URL` in `.env.local` and ensure PostgreSQL is running (`pnpm container:up`)
+→ Check `DATABASE_URL` in `.env` or `.env.local` (whichever the running script reads) and ensure PostgreSQL is running (`pnpm container:up`)
 
 **Issue: Transaction deadlocks in tests**
 → Use `--runInBand` flag: `pnpm test --runInBand`

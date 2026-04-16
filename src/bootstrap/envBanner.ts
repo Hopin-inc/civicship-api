@@ -5,7 +5,9 @@
  * `LOCAL_DEV=true`. In Cloud Run / GCP the banner is suppressed because that
  * flag is never set there.
  *
- * Environment is determined by `process.env.ENV` (set via `.env.local` / `.env.dev` / `.env.prd`).
+ * Environment is determined by `process.env.ENV`, which is populated from the
+ * env file loaded by the local startup script (`.env` for `pnpm dev` / `pnpm dev:external`,
+ * `.env.local` / `.env.dev` / `.env.prd` for `pnpm dev:https[:dev|:prd]`).
  * Production-like environments are emphasized with ⚠️ and color to reduce the risk of
  * accidentally operating against prd from a local machine.
  */
