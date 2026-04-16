@@ -299,8 +299,14 @@ export default class ReportRepository implements IReportRepository {
                OR tw."community_id" IS NULL
                OR fw."community_id" = tw."community_id")
           AND t."chain_depth" IS NOT NULL
-          AND ((t."created_at" AT TIME ZONE 'Asia/Tokyo')::date)
-              BETWEEN ${range.from}::date AND ${range.to}::date
+          -- SARGable timestamptz comparison so the planner can use the
+          -- B-tree index on "created_at" (wrapping it in
+          -- (... AT TIME ZONE ...)::date would suppress the index).
+          -- Half-open window [from JST 00:00, (to + 1 day) JST 00:00)
+          -- covers exactly the JST calendar days from..to inclusive,
+          -- matching the bucketing used by the report MVs.
+          AND t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
+          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
         ORDER BY t."chain_depth" DESC, t."created_at" ASC
         LIMIT 1
       `;
