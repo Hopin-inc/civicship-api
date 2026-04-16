@@ -89,15 +89,7 @@ export default class TransactionConverter {
     createdBy: string,
     comment?: string,
   ): Prisma.TransactionCreateInput {
-    return {
-      reason: TransactionReason.DONATION,
-      fromWallet: { connect: { id: fromWalletId } },
-      fromPointChange: transferPoints,
-      toWallet: { connect: { id: toWalletId } },
-      toPointChange: transferPoints,
-      createdByUser: { connect: { id: createdBy } },
-      comment,
-    };
+    return this.donateSelfPoint(fromWalletId, toWalletId, transferPoints, createdBy, comment);
   }
 
   reservationCreated(
