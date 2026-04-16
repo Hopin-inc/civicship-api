@@ -43,14 +43,20 @@ export function daysBetweenJst(a: Date, b: Date): number {
 }
 
 /**
- * Convert a Date originating from a JST-bucketed `@db.Date` column (or one
- * produced by `truncateToJstDate`) into an ISO `YYYY-MM-DD` string.
+ * Convert any Date into the ISO `YYYY-MM-DD` string of its Asia/Tokyo
+ * calendar day. Safe to call on either:
+ *   - a Date sourced from a JST-bucketed `@db.Date` column (already at UTC
+ *     00:00 with the JST year/month/day), or
+ *   - a Date holding a full TIMESTAMPTZ value (e.g. `joinedAt` from
+ *     `m.created_at`).
  *
- * Such Dates are stored as UTC 00:00 with the JST calendar year/month/day, so
- * `toISOString().slice(0,10)` directly yields the intended JST date string.
+ * Internally truncates to the JST day before formatting, so the previous
+ * `d.toISOString().slice(0,10)` shortcut — which silently emitted the UTC
+ * calendar date for full timestamps falling in the 15:00–23:59 UTC window —
+ * is no longer a footgun.
  */
 export function toJstIsoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return truncateToJstDate(d).toISOString().slice(0, 10);
 }
 
 /**
