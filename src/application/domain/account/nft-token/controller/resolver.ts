@@ -2,6 +2,7 @@ import { GqlQueryNftTokensArgs, GqlQueryNftTokenArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import NftTokenUseCase from "@/application/domain/account/nft-token/usecase";
+import { PrismaNftToken } from "@/application/domain/account/nft-token/data/type";
 
 @injectable()
 export default class NftTokenResolver {
@@ -13,6 +14,12 @@ export default class NftTokenResolver {
     },
     nftToken: async (_: unknown, args: GqlQueryNftTokenArgs, ctx: IContext) => {
       return this.useCase.getNftToken(args.id, ctx);
+    },
+  };
+
+  NftToken = {
+    community: (parent: PrismaNftToken, _: unknown, ctx: IContext) => {
+      return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
     },
   };
 }

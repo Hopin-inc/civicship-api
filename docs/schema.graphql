@@ -1001,6 +1001,12 @@ type NftInstancesConnection {
 
 type NftToken {
   address: String!
+
+  """
+  トークンを所有するコミュニティ。複数コミュニティで共用する場合や運用都合で未設定の場合は null。
+  portal 側の「このコミュニティに属する NftToken」一覧取得で参照される。
+  """
+  community: Community
   createdAt: Datetime!
   id: ID!
   json: JSON
@@ -1018,6 +1024,12 @@ type NftTokenEdge implements Edge {
 input NftTokenFilterInput {
   address: [String!]
   and: [NftTokenFilterInput!]
+
+  """
+  指定したコミュニティに直接紐付く NftToken に絞る（NftToken.community_id を直接参照）。
+  NftToken.communityId が NULL のトークンは除外される。
+  """
+  communityId: ID
   not: NftTokenFilterInput
   or: [NftTokenFilterInput!]
   type: [String!]

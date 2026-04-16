@@ -7,6 +7,7 @@ export const nftTokenSelect = Prisma.validator<Prisma.NftTokenSelect>()({
   symbol: true,
   type: true,
   json: true,
+  communityId: true,
   createdAt: true,
   updatedAt: true,
 });

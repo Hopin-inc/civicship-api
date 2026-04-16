@@ -1449,6 +1449,11 @@ export type GqlNftInstancesConnection = {
 export type GqlNftToken = {
   __typename?: 'NftToken';
   address: Scalars['String']['output'];
+  /**
+   * トークンを所有するコミュニティ。複数コミュニティで共用する場合や運用都合で未設定の場合は null。
+   * portal 側の「このコミュニティに属する NftToken」一覧取得で参照される。
+   */
+  community?: Maybe<GqlCommunity>;
   createdAt: Scalars['Datetime']['output'];
   id: Scalars['ID']['output'];
   json?: Maybe<Scalars['JSON']['output']>;
@@ -1467,6 +1472,11 @@ export type GqlNftTokenEdge = GqlEdge & {
 export type GqlNftTokenFilterInput = {
   address?: InputMaybe<Array<Scalars['String']['input']>>;
   and?: InputMaybe<Array<GqlNftTokenFilterInput>>;
+  /**
+   * 指定したコミュニティに直接紐付く NftToken に絞る（NftToken.community_id を直接参照）。
+   * NftToken.communityId が NULL のトークンは除外される。
+   */
+  communityId?: InputMaybe<Scalars['ID']['input']>;
   not?: InputMaybe<GqlNftTokenFilterInput>;
   or?: InputMaybe<Array<GqlNftTokenFilterInput>>;
   type?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -3745,7 +3755,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCityEdge, 'node'> & { node?: Maybe<_RefType['City']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<_RefType['IncentiveGrant']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlNftInstanceEdge, 'node'> & { node: _RefType['NftInstance'] } ) | ( GqlNftTokenEdge ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlPortfolioEdge, 'node'> & { node?: Maybe<_RefType['Portfolio']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlStateEdge, 'node'> & { node?: Maybe<_RefType['State']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<_RefType['VcIssuanceRequest']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
+  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCityEdge, 'node'> & { node?: Maybe<_RefType['City']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<_RefType['IncentiveGrant']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlNftInstanceEdge, 'node'> & { node: _RefType['NftInstance'] } ) | ( Omit<GqlNftTokenEdge, 'node'> & { node: _RefType['NftToken'] } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlPortfolioEdge, 'node'> & { node?: Maybe<_RefType['Portfolio']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlStateEdge, 'node'> & { node?: Maybe<_RefType['State']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<_RefType['VcIssuanceRequest']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -3886,16 +3896,16 @@ export type GqlResolversTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  NftInstance: ResolverTypeWrapper<Omit<GqlNftInstance, 'community' | 'nftWallet'> & { community?: Maybe<GqlResolversTypes['Community']>, nftWallet?: Maybe<GqlResolversTypes['NftWallet']> }>;
+  NftInstance: ResolverTypeWrapper<Omit<GqlNftInstance, 'community' | 'nftToken' | 'nftWallet'> & { community?: Maybe<GqlResolversTypes['Community']>, nftToken?: Maybe<GqlResolversTypes['NftToken']>, nftWallet?: Maybe<GqlResolversTypes['NftWallet']> }>;
   NftInstanceEdge: ResolverTypeWrapper<Omit<GqlNftInstanceEdge, 'node'> & { node: GqlResolversTypes['NftInstance'] }>;
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
   NftInstancesConnection: ResolverTypeWrapper<Omit<GqlNftInstancesConnection, 'edges'> & { edges: Array<GqlResolversTypes['NftInstanceEdge']> }>;
-  NftToken: ResolverTypeWrapper<GqlNftToken>;
-  NftTokenEdge: ResolverTypeWrapper<GqlNftTokenEdge>;
+  NftToken: ResolverTypeWrapper<Omit<GqlNftToken, 'community'> & { community?: Maybe<GqlResolversTypes['Community']> }>;
+  NftTokenEdge: ResolverTypeWrapper<Omit<GqlNftTokenEdge, 'node'> & { node: GqlResolversTypes['NftToken'] }>;
   NftTokenFilterInput: GqlNftTokenFilterInput;
   NftTokenSortInput: GqlNftTokenSortInput;
-  NftTokensConnection: ResolverTypeWrapper<GqlNftTokensConnection>;
+  NftTokensConnection: ResolverTypeWrapper<Omit<GqlNftTokensConnection, 'edges'> & { edges: Array<GqlResolversTypes['NftTokenEdge']> }>;
   NftWallet: ResolverTypeWrapper<Omit<GqlNftWallet, 'user'> & { user: GqlResolversTypes['User'] }>;
   OpportunitiesConnection: ResolverTypeWrapper<Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['OpportunityEdge']> }>;
   Opportunity: ResolverTypeWrapper<Opportunity>;
@@ -4104,15 +4114,15 @@ export type GqlResolversTypes = ResolversObject<{
   VoteCastInput: GqlVoteCastInput;
   VoteCastPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['VoteCastPayload']>;
   VoteCastSuccess: ResolverTypeWrapper<GqlVoteCastSuccess>;
-  VoteGate: ResolverTypeWrapper<GqlVoteGate>;
+  VoteGate: ResolverTypeWrapper<Omit<GqlVoteGate, 'nftToken'> & { nftToken?: Maybe<GqlResolversTypes['NftToken']> }>;
   VoteGateInput: GqlVoteGateInput;
   VoteGateType: GqlVoteGateType;
   VoteOption: ResolverTypeWrapper<GqlVoteOption>;
   VoteOptionInput: GqlVoteOptionInput;
-  VotePowerPolicy: ResolverTypeWrapper<GqlVotePowerPolicy>;
+  VotePowerPolicy: ResolverTypeWrapper<Omit<GqlVotePowerPolicy, 'nftToken'> & { nftToken?: Maybe<GqlResolversTypes['NftToken']> }>;
   VotePowerPolicyInput: GqlVotePowerPolicyInput;
   VotePowerPolicyType: GqlVotePowerPolicyType;
-  VoteTopic: ResolverTypeWrapper<Omit<GqlVoteTopic, 'community'> & { community: GqlResolversTypes['Community'] }>;
+  VoteTopic: ResolverTypeWrapper<Omit<GqlVoteTopic, 'community' | 'gate' | 'powerPolicy'> & { community: GqlResolversTypes['Community'], gate: GqlResolversTypes['VoteGate'], powerPolicy: GqlResolversTypes['VotePowerPolicy'] }>;
   VoteTopicCreateInput: GqlVoteTopicCreateInput;
   VoteTopicCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['VoteTopicCreatePayload']>;
   VoteTopicCreateSuccess: ResolverTypeWrapper<Omit<GqlVoteTopicCreateSuccess, 'voteTopic'> & { voteTopic: GqlResolversTypes['VoteTopic'] }>;
@@ -4255,16 +4265,16 @@ export type GqlResolversParentTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  NftInstance: Omit<GqlNftInstance, 'community' | 'nftWallet'> & { community?: Maybe<GqlResolversParentTypes['Community']>, nftWallet?: Maybe<GqlResolversParentTypes['NftWallet']> };
+  NftInstance: Omit<GqlNftInstance, 'community' | 'nftToken' | 'nftWallet'> & { community?: Maybe<GqlResolversParentTypes['Community']>, nftToken?: Maybe<GqlResolversParentTypes['NftToken']>, nftWallet?: Maybe<GqlResolversParentTypes['NftWallet']> };
   NftInstanceEdge: Omit<GqlNftInstanceEdge, 'node'> & { node: GqlResolversParentTypes['NftInstance'] };
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
   NftInstancesConnection: Omit<GqlNftInstancesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['NftInstanceEdge']> };
-  NftToken: GqlNftToken;
-  NftTokenEdge: GqlNftTokenEdge;
+  NftToken: Omit<GqlNftToken, 'community'> & { community?: Maybe<GqlResolversParentTypes['Community']> };
+  NftTokenEdge: Omit<GqlNftTokenEdge, 'node'> & { node: GqlResolversParentTypes['NftToken'] };
   NftTokenFilterInput: GqlNftTokenFilterInput;
   NftTokenSortInput: GqlNftTokenSortInput;
-  NftTokensConnection: GqlNftTokensConnection;
+  NftTokensConnection: Omit<GqlNftTokensConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['NftTokenEdge']> };
   NftWallet: Omit<GqlNftWallet, 'user'> & { user: GqlResolversParentTypes['User'] };
   OpportunitiesConnection: Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['OpportunityEdge']> };
   Opportunity: Opportunity;
@@ -4452,13 +4462,13 @@ export type GqlResolversParentTypes = ResolversObject<{
   VoteCastInput: GqlVoteCastInput;
   VoteCastPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['VoteCastPayload'];
   VoteCastSuccess: GqlVoteCastSuccess;
-  VoteGate: GqlVoteGate;
+  VoteGate: Omit<GqlVoteGate, 'nftToken'> & { nftToken?: Maybe<GqlResolversParentTypes['NftToken']> };
   VoteGateInput: GqlVoteGateInput;
   VoteOption: GqlVoteOption;
   VoteOptionInput: GqlVoteOptionInput;
-  VotePowerPolicy: GqlVotePowerPolicy;
+  VotePowerPolicy: Omit<GqlVotePowerPolicy, 'nftToken'> & { nftToken?: Maybe<GqlResolversParentTypes['NftToken']> };
   VotePowerPolicyInput: GqlVotePowerPolicyInput;
-  VoteTopic: Omit<GqlVoteTopic, 'community'> & { community: GqlResolversParentTypes['Community'] };
+  VoteTopic: Omit<GqlVoteTopic, 'community' | 'gate' | 'powerPolicy'> & { community: GqlResolversParentTypes['Community'], gate: GqlResolversParentTypes['VoteGate'], powerPolicy: GqlResolversParentTypes['VotePowerPolicy'] };
   VoteTopicCreateInput: GqlVoteTopicCreateInput;
   VoteTopicCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['VoteTopicCreatePayload'];
   VoteTopicCreateSuccess: Omit<GqlVoteTopicCreateSuccess, 'voteTopic'> & { voteTopic: GqlResolversParentTypes['VoteTopic'] };
@@ -5071,6 +5081,7 @@ export type GqlNftInstancesConnectionResolvers<ContextType = any, ParentType ext
 
 export type GqlNftTokenResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['NftToken'] = GqlResolversParentTypes['NftToken']> = ResolversObject<{
   address?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   json?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;

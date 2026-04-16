@@ -194,6 +194,7 @@ model Community {
   articles       Article[]
 
   nftInstance NftInstance[]
+  nftTokens   NftToken[]
   voteTopics  VoteTopic[]
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -1361,6 +1362,12 @@ model NftToken {
   symbol String?
   json   Json?
 
+  // トークンを所有するコミュニティ。portal 側の「このコミュニティに属する NFT Token」
+  // 一覧取得で使用する。複数コミュニティで共用するケースや運用都合で未設定のケースも
+  // ありえるため nullable にしている。
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+
   nftInstances      NftInstance[]
   voteGates         VoteGate[]
   votePowerPolicies VotePowerPolicy[]
@@ -1368,6 +1375,7 @@ model NftToken {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([communityId])
   @@map("t_nft_tokens")
 }
 

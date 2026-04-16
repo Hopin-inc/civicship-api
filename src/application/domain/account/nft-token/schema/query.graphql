@@ -12,6 +12,11 @@ extend type Query {
 input NftTokenFilterInput {
   address: [String!]
   type: [String!]
+  """
+  指定したコミュニティに直接紐付く NftToken に絞る（NftToken.community_id を直接参照）。
+  NftToken.communityId が NULL のトークンは除外される。
+  """
+  communityId: ID
 
   and: [NftTokenFilterInput!]
   or: [NftTokenFilterInput!]
