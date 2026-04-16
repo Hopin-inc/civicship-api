@@ -33,7 +33,6 @@ let sdk: NodeSDK | undefined;
 export const tracingReady = (async () => {
   // ✅ 1. ローカルなら完全スキップ
   if (isLocal || isTest) {
-    logger.debug("🟡 OpenTelemetry disabled in local/test environment");
     return;
   }
 
