@@ -164,7 +164,9 @@ SELECT
 FROM "t_transactions" t
 LEFT JOIN "t_wallets" fw ON fw."id" = t."from"
 LEFT JOIN "t_wallets" tw ON tw."id" = t."to"
-WHERE t."comment" IS NOT NULL AND t."comment" <> '';
+WHERE t."comment" IS NOT NULL
+  AND t."comment" <> ''
+  AND COALESCE(fw."community_id", tw."community_id") IS NOT NULL;
 
 
 -- ----------------------------------------------------------------------------

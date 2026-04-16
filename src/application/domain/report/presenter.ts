@@ -63,7 +63,12 @@ export interface TopUserItem {
   chain_root_count: number;
   max_chain_depth_started: number | null;
   chain_depth_reached_max: number | null;
-  unique_counterparties: number;
+  /**
+   * Sum of per-day distinct counterparty counts across the reporting window.
+   * NOT a deduplicated count of distinct counterparties for the period — the
+   * same counterparty appearing on multiple days is counted once per day.
+   */
+  unique_counterparties_sum: number;
 }
 
 export interface CommentItem {
@@ -139,7 +144,7 @@ export default class ReportPresenter {
           chain_root_count: u.chainRootCount,
           max_chain_depth_started: u.maxChainDepthStarted,
           chain_depth_reached_max: u.chainDepthReachedMax,
-          unique_counterparties: u.uniqueCounterpartiesSum,
+          unique_counterparties_sum: u.uniqueCounterpartiesSum,
         };
       });
 
@@ -157,8 +162,11 @@ export default class ReportPresenter {
         chain_root_count: s.chainRootCount,
         chain_descendant_count: s.chainDescendantCount,
         max_chain_depth: s.maxChainDepth,
+        // chain_depth is NULL for non-chain reasons (POINT_ISSUED / TICKET_* /
+        // OPPORTUNITY_*). maxChainDepth === null signals "no chain activity",
+        // in which case avg is undefined for this row.
         avg_chain_depth:
-          s.txCount > 0 && s.sumChainDepth > 0 ? s.sumChainDepth / s.txCount : null,
+          s.maxChainDepth !== null && s.txCount > 0 ? s.sumChainDepth / s.txCount : null,
         issuance_count: s.issuanceCount,
         burn_count: s.burnCount,
       })),
