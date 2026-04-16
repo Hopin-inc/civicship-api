@@ -7,6 +7,12 @@
 -- All day bucketing is done in Asia/Tokyo.
 -- RLS does not apply to materialized views; application layer MUST filter by
 -- community_id for every access.
+--
+-- Cross-community transfers are not a supported business operation: every
+-- transaction usecase constructs its from/to wallet pair within a single
+-- community. The views still defensively reject any (from, to) pair where
+-- both wallets exist but disagree on community_id, so a data anomaly cannot
+-- silently leak activity across communities at the view layer.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -31,6 +37,9 @@ FROM "t_transactions" t
 LEFT JOIN "t_wallets" fw ON fw."id" = t."from"
 LEFT JOIN "t_wallets" tw ON tw."id" = t."to"
 WHERE COALESCE(fw."community_id", tw."community_id") IS NOT NULL
+  AND (fw."community_id" IS NULL
+       OR tw."community_id" IS NULL
+       OR fw."community_id" = tw."community_id")
 GROUP BY
     ((t."created_at" AT TIME ZONE 'Asia/Tokyo')::date),
     COALESCE(fw."community_id", tw."community_id"),
@@ -59,6 +68,9 @@ WITH events AS (
     LEFT JOIN "t_wallets" fw ON fw."id" = t."from"
     LEFT JOIN "t_wallets" tw ON tw."id" = t."to"
     WHERE COALESCE(fw."community_id", tw."community_id") IS NOT NULL
+      AND (fw."community_id" IS NULL
+           OR tw."community_id" IS NULL
+           OR fw."community_id" = tw."community_id")
 ),
 user_activity AS (
     SELECT "date", "community_id", "from_user_id" AS "user_id", 'sender' AS "role"
@@ -166,7 +178,10 @@ LEFT JOIN "t_wallets" fw ON fw."id" = t."from"
 LEFT JOIN "t_wallets" tw ON tw."id" = t."to"
 WHERE t."comment" IS NOT NULL
   AND t."comment" <> ''
-  AND COALESCE(fw."community_id", tw."community_id") IS NOT NULL;
+  AND COALESCE(fw."community_id", tw."community_id") IS NOT NULL
+  AND (fw."community_id" IS NULL
+       OR tw."community_id" IS NULL
+       OR fw."community_id" = tw."community_id");
 
 
 -- ----------------------------------------------------------------------------
