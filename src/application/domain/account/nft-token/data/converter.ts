@@ -18,7 +18,8 @@ export default class NftTokenConverter {
     }
 
     // NftToken.community_id を直接参照（FK）。nullable のため NULL は自然に除外される。
-    if (input.communityId !== undefined && input.communityId !== null) {
+    // 空文字列も弾くために他フィルタと同様の truthy チェック。
+    if (input.communityId) {
       conditions.push({ communityId: input.communityId });
     }
 

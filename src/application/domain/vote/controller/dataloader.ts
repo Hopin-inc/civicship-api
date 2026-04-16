@@ -5,6 +5,7 @@ import {
   PrismaVoteOption,
   PrismaVoteBallot,
 } from "@/application/domain/vote/data/type";
+import { nftTokenSelect } from "@/application/domain/account/nft-token/data/type";
 import {
   createLoaderById,
   createLoaderByCompositeKey,
@@ -41,22 +42,15 @@ export function createMyVoteBallotLoader(prisma: PrismaClient) {
 }
 
 // NftToken を id でバッチロード（VoteGate / VotePowerPolicy の nftToken フィールドリゾルバー用）
-// GQL NftToken 型の必須フィールド（createdAt: Datetime!）を含む完全な select を使用
+// NftToken ドメインの nftTokenSelect を共有することで、GQL NftToken 型の全フィールド
+// （`community` 解決に必要な `communityId` を含む）を漏れなく取得する。
+// select を独自定義すると NftToken ドメインのフィールド追加に追従漏れが発生するリスクがある。
 export function createNftTokenLoader(prisma: PrismaClient) {
   return createLoaderById(
     async (ids) =>
       prisma.nftToken.findMany({
         where: { id: { in: [...ids] } },
-        select: {
-          id: true,
-          address: true,
-          name: true,
-          symbol: true,
-          type: true,
-          json: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: nftTokenSelect,
       }),
     (record) => record,
   );
