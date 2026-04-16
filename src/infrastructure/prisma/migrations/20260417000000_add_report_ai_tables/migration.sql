@@ -47,7 +47,7 @@ CREATE TABLE "t_report_templates" (
     "model" TEXT NOT NULL,
     "temperature" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
     "max_tokens" INTEGER NOT NULL,
-    "stop_sequences" TEXT[],
+    "stop_sequences" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
     "is_enabled" BOOLEAN NOT NULL DEFAULT true,
     "updated_by" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -104,6 +104,19 @@ CREATE TABLE "t_report_feedbacks" (
 -- CreateIndex
 CREATE UNIQUE INDEX "t_report_templates_variant_community_id_key"
     ON "t_report_templates"("variant", "community_id");
+
+-- Partial unique index covering SYSTEM-scope templates (community_id IS
+-- NULL). PostgreSQL treats NULL as distinct in regular unique indexes,
+-- so the composite key above would allow multiple SYSTEM templates per
+-- variant. The template-resolution query picks the community override
+-- first then falls back to SYSTEM via `ORDER BY community_id NULLS
+-- LAST LIMIT 1`, which assumes exactly one SYSTEM template per variant
+-- — this partial index enforces that invariant.
+-- Prisma's @@unique attribute cannot express partial indexes, so this
+-- lives as raw SQL alongside the schema-level @@unique.
+CREATE UNIQUE INDEX "t_report_templates_variant_system_key"
+    ON "t_report_templates"("variant")
+    WHERE "community_id" IS NULL;
 
 CREATE INDEX "t_reports_community_id_variant_period_from_idx"
     ON "t_reports"("community_id", "variant", "period_from" DESC);
