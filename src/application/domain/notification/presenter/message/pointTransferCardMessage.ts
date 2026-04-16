@@ -24,60 +24,25 @@ export interface PointTransferCardParams {
   language: Language;
 }
 
-export interface RecentTransactionEntry {
-  fromName: string;
-  fromImageUrl: string;
-  toName: string;
-  toImageUrl: string;
-  transferPoints: number;
-  createdAt: Date;
-  kind: PointTransferKind;
-}
-
 export function buildPointTransferCardMessage(
   params: PointTransferCardParams,
-  recentTransactions?: RecentTransactionEntry[],
 ): messagingApi.FlexMessage {
   const isJapanese = params.language === Language.JA;
   const formattedPoints = formatNumber(params.transferPoints, params.language);
 
   const altText = buildAltText(params, formattedPoints, isJapanese);
 
-  const mainBubble = buildMainBubble(params);
-
-  const hasRecent = recentTransactions && recentTransactions.length > 0;
-
-  if (!hasRecent) {
-    return {
-      type: "flex",
-      altText,
-      contents: mainBubble,
-    };
-  }
-
-  const miniBubbles = recentTransactions.map((tx) =>
-    buildMiniTransactionBubble(tx, params.language),
-  );
-  const viewMoreBubble = buildViewMoreBubble(params.redirectUrl, params.language);
-
-  const carousel: messagingApi.FlexCarousel = {
-    type: "carousel",
-    contents: [mainBubble, ...miniBubbles, viewMoreBubble],
+  const bubble: messagingApi.FlexBubble = {
+    type: "bubble",
+    ...(params.attachedImageUrl ? { header: buildHeader(params.attachedImageUrl) } : {}),
+    body: buildBody(params),
+    footer: buildFooter(params.redirectUrl, params.language),
   };
 
   return {
     type: "flex",
     altText,
-    contents: carousel,
-  };
-}
-
-function buildMainBubble(params: PointTransferCardParams): messagingApi.FlexBubble {
-  return {
-    type: "bubble",
-    ...(params.attachedImageUrl ? { header: buildHeader(params.attachedImageUrl) } : {}),
-    body: buildBody(params),
-    footer: buildFooter(params.redirectUrl, params.language),
+    contents: bubble,
   };
 }
 
@@ -278,186 +243,5 @@ function buildFooter(redirectUrl: string, language: Language): messagingApi.Flex
         },
       },
     ],
-  };
-}
-
-// --- Mini transaction bubble (for carousel) ---
-
-function buildMiniTransactionBubble(
-  tx: RecentTransactionEntry,
-  language: Language,
-): messagingApi.FlexBubble {
-  return {
-    type: "bubble",
-    body: buildMiniBody(tx, language),
-  };
-}
-
-function buildMiniBody(tx: RecentTransactionEntry, language: Language): messagingApi.FlexBox {
-  const formattedPoints = formatNumber(tx.transferPoints, language);
-  const isJapanese = language === Language.JA;
-  const locale = getDayjsLocale(language);
-  const dateStr = dayjs(tx.createdAt)
-    .tz("Asia/Tokyo")
-    .locale(locale)
-    .format(isJapanese ? "M月D日" : "MMM D");
-  const reasonLabel =
-    tx.kind === "grant" ? (isJapanese ? "付与" : "Granted") : isJapanese ? "譲渡" : "Transfer";
-
-  return {
-    type: "box",
-    layout: "vertical",
-    paddingStart: "xl",
-    paddingEnd: "xl",
-    paddingTop: "lg",
-    paddingBottom: "lg",
-    spacing: "sm",
-    alignItems: "center",
-    justifyContent: "center",
-    contents: [
-      buildMiniAvatarRow(tx.fromImageUrl, tx.toImageUrl),
-      buildMiniNamesRow(tx.fromName, tx.toName),
-      {
-        type: "box",
-        layout: "baseline",
-        justifyContent: "center",
-        margin: "lg",
-        contents: [
-          {
-            type: "text",
-            text: formattedPoints,
-            size: "xl",
-            weight: "bold",
-            color: "#111111",
-            flex: 0,
-          },
-          {
-            type: "text",
-            text: "pt",
-            size: "sm",
-            color: "#555555",
-            margin: "xs",
-            flex: 0,
-          },
-        ],
-      },
-      {
-        type: "text",
-        text: `${dateStr} · ${reasonLabel}`,
-        size: "xs",
-        color: "#999999",
-        align: "center",
-        margin: "md",
-      },
-    ],
-  };
-}
-
-function buildMiniAvatarRow(fromImageUrl: string, toImageUrl: string): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "horizontal",
-    alignItems: "center",
-    justifyContent: "center",
-    spacing: "sm",
-    contents: [
-      buildMiniAvatar(fromImageUrl),
-      {
-        type: "text",
-        text: "→",
-        size: "sm",
-        color: "#999999",
-        flex: 0,
-      },
-      buildMiniAvatar(toImageUrl),
-    ],
-  };
-}
-
-function buildMiniAvatar(imageUrl: string): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "vertical",
-    width: "52px",
-    height: "52px",
-    cornerRadius: "100px",
-    borderColor: "#EEEEEE",
-    borderWidth: "1px",
-    flex: 0,
-    contents: [
-      {
-        type: "image",
-        url: imageUrl,
-        size: "full",
-        aspectMode: "cover",
-      },
-    ],
-  };
-}
-
-function buildMiniNamesRow(fromName: string, toName: string): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "horizontal",
-    justifyContent: "center",
-    spacing: "md",
-    margin: "sm",
-    contents: [
-      {
-        type: "text",
-        text: fromName,
-        size: "xs",
-        color: "#555555",
-        align: "center",
-        flex: 1,
-        wrap: false,
-      },
-      {
-        type: "text",
-        text: toName,
-        size: "xs",
-        color: "#555555",
-        align: "center",
-        flex: 1,
-        wrap: false,
-      },
-    ],
-  };
-}
-
-// --- "View more" bubble (last in carousel) ---
-
-function buildViewMoreBubble(redirectUrl: string, language: Language): messagingApi.FlexBubble {
-  const isJapanese = language === Language.JA;
-
-  return {
-    type: "bubble",
-    body: {
-      type: "box",
-      layout: "vertical",
-      paddingAll: "xl",
-      justifyContent: "center",
-      alignItems: "center",
-      contents: [
-        {
-          type: "text",
-          text: isJapanese ? "最近の活動" : "Recent Activity",
-          size: "md",
-          color: "#555555",
-          weight: "bold",
-          align: "center",
-        },
-        {
-          type: "button",
-          style: "link",
-          margin: "lg",
-          action: {
-            type: "uri",
-            label: isJapanese ? "もっと見る →" : "View More →",
-            uri: redirectUrl,
-          },
-        },
-      ],
-    },
   };
 }

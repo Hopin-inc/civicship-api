@@ -19,7 +19,6 @@ describe("NotificationService - Point Transfer Notifications", () => {
   let mockUserService: jest.Mocked<UserService>;
   let mockLineClient: any;
   let mockTransactionFindUnique: jest.Mock;
-  let mockTransactionFindMany: jest.Mock;
 
   const TEST_TRANSACTION_ID = "test-transaction-id";
   const TEST_USER_ID = "test-user-id";
@@ -86,13 +85,9 @@ describe("NotificationService - Point Transfer Notifications", () => {
     container.reset();
 
     mockTransactionFindUnique = jest.fn();
-    mockTransactionFindMany = jest.fn().mockResolvedValue([]);
     (mockCtx.issuer.internal as jest.Mock).mockImplementation(async (cb: any) => {
       return cb({
-        transaction: {
-          findUnique: mockTransactionFindUnique,
-          findMany: mockTransactionFindMany,
-        },
+        transaction: { findUnique: mockTransactionFindUnique },
       });
     });
 
@@ -261,51 +256,6 @@ describe("NotificationService - Point Transfer Notifications", () => {
       const button = footer.contents[0];
 
       expect(button.action.uri).toBe(`${TEST_LIFF_URL}/wallets`);
-    });
-
-    it("should send carousel when recent transactions exist", async () => {
-      mockTransactionFindUnique.mockResolvedValue(buildDonationTransaction());
-      mockTransactionFindMany.mockResolvedValue([
-        {
-          reason: "DONATION",
-          toPointChange: 300,
-          createdAt: new Date("2026-04-14T10:00:00Z"),
-          fromWallet: {
-            user: { name: "山田太郎", image: { url: "https://example.com/yamada.jpg" } },
-            community: null,
-          },
-          toWallet: {
-            user: { name: "鈴木次郎", image: { url: "https://example.com/suzuki.jpg" } },
-          },
-        },
-      ]);
-
-      await notificationService.pushPointDonationReceivedMessage(
-        mockCtx,
-        TEST_TRANSACTION_ID,
-        TEST_USER_ID,
-      );
-
-      const pushMessageCall = (notificationLine.safePushMessage as jest.Mock).mock.calls[0];
-      const message = pushMessageCall[1].messages[0];
-      expect(message.contents.type).toBe("carousel");
-      // main(1) + recent(1) + viewMore(1) = 3
-      expect(message.contents.contents).toHaveLength(3);
-    });
-
-    it("should send single bubble when no recent transactions", async () => {
-      mockTransactionFindUnique.mockResolvedValue(buildDonationTransaction());
-      mockTransactionFindMany.mockResolvedValue([]);
-
-      await notificationService.pushPointDonationReceivedMessage(
-        mockCtx,
-        TEST_TRANSACTION_ID,
-        TEST_USER_ID,
-      );
-
-      const pushMessageCall = (notificationLine.safePushMessage as jest.Mock).mock.calls[0];
-      const message = pushMessageCall[1].messages[0];
-      expect(message.contents.type).toBe("bubble");
     });
   });
 

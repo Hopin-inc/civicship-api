@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import { buildPointDonationReceivedMessage } from "@/application/domain/notification/presenter/message/pointDonationReceivedMessage";
-import { RecentTransactionEntry } from "@/application/domain/notification/presenter/message/pointTransferCardMessage";
 import { messagingApi } from "@line/bot-sdk";
 import { Language } from "@prisma/client";
 
@@ -179,80 +178,5 @@ describe("buildPointDonationReceivedMessage", () => {
     const pointText = pointSection.contents[0] as messagingApi.FlexText;
 
     expect(pointText.text).toBe("5");
-  });
-
-  describe("carousel with recent transactions", () => {
-    const recentTransactions: RecentTransactionEntry[] = [
-      {
-        fromName: "山田太郎",
-        fromImageUrl: "https://example.com/yamada.jpg",
-        toName: "鈴木次郎",
-        toImageUrl: "https://example.com/suzuki.jpg",
-        transferPoints: 300,
-        createdAt: new Date("2026-04-14T10:00:00Z"),
-        kind: "donation",
-      },
-      {
-        fromName: "テストコミュニティ",
-        fromImageUrl: "https://example.com/community.jpg",
-        toName: "高橋三郎",
-        toImageUrl: "https://example.com/takahashi.jpg",
-        transferPoints: 500,
-        createdAt: new Date("2026-04-13T09:00:00Z"),
-        kind: "grant",
-      },
-    ];
-
-    it("should return single bubble when no recent transactions", () => {
-      const message = buildPointDonationReceivedMessage(baseParams);
-      expect(message.contents).toHaveProperty("type", "bubble");
-    });
-
-    it("should return carousel when recent transactions are provided", () => {
-      const message = buildPointDonationReceivedMessage({
-        ...baseParams,
-        recentTransactions,
-      });
-      expect(message.contents).toHaveProperty("type", "carousel");
-    });
-
-    it("should have main bubble + mini bubbles + view-more bubble all the same size", () => {
-      const message = buildPointDonationReceivedMessage({
-        ...baseParams,
-        recentTransactions,
-      });
-      const carousel = message.contents as messagingApi.FlexCarousel;
-
-      // main(1) + recent(2) + viewMore(1) = 4
-      expect(carousel.contents).toHaveLength(4);
-      // All bubbles must have the same size (LINE constraint).
-      // We omit `size` so all default to "mega".
-      for (const bubble of carousel.contents) {
-        expect(bubble.type).toBe("bubble");
-        expect((bubble as messagingApi.FlexBubble).size).toBeUndefined();
-      }
-    });
-
-    it("should show recent transaction points in mini bubbles", () => {
-      const message = buildPointDonationReceivedMessage({
-        ...baseParams,
-        recentTransactions,
-      });
-      const carousel = message.contents as messagingApi.FlexCarousel;
-      const miniBubble = carousel.contents[1] as messagingApi.FlexBubble;
-      const body = miniBubble.body as messagingApi.FlexBox;
-
-      const pointBox = body.contents[2] as messagingApi.FlexBox;
-      const pointText = pointBox.contents[0] as messagingApi.FlexText;
-      expect(pointText.text).toBe("300");
-    });
-
-    it("should return empty recent transactions as single bubble", () => {
-      const message = buildPointDonationReceivedMessage({
-        ...baseParams,
-        recentTransactions: [],
-      });
-      expect(message.contents).toHaveProperty("type", "bubble");
-    });
   });
 });

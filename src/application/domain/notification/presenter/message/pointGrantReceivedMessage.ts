@@ -1,6 +1,6 @@
 import { messagingApi } from "@line/bot-sdk";
 import { Language } from "@prisma/client";
-import { buildPointTransferCardMessage, RecentTransactionEntry } from "./pointTransferCardMessage";
+import { buildPointTransferCardMessage } from "./pointTransferCardMessage";
 
 export interface PointGrantReceivedParams {
   communityName: string;
@@ -13,26 +13,22 @@ export interface PointGrantReceivedParams {
   createdAt: Date;
   redirectUrl: string;
   language: Language;
-  recentTransactions?: RecentTransactionEntry[];
 }
 
 export function buildPointGrantReceivedMessage(
   params: PointGrantReceivedParams,
 ): messagingApi.FlexMessage {
-  return buildPointTransferCardMessage(
-    {
-      kind: "grant",
-      fromName: params.communityName,
-      fromImageUrl: params.communityImageUrl,
-      toName: params.toUserName,
-      toImageUrl: params.toUserImageUrl,
-      transferPoints: params.transferPoints,
-      comment: params.comment,
-      attachedImageUrl: params.attachedImageUrl,
-      createdAt: params.createdAt,
-      redirectUrl: params.redirectUrl,
-      language: params.language,
-    },
-    params.recentTransactions,
-  );
+  return buildPointTransferCardMessage({
+    kind: "grant",
+    fromName: params.communityName,
+    fromImageUrl: params.communityImageUrl,
+    toName: params.toUserName,
+    toImageUrl: params.toUserImageUrl,
+    transferPoints: params.transferPoints,
+    comment: params.comment,
+    attachedImageUrl: params.attachedImageUrl,
+    createdAt: params.createdAt,
+    redirectUrl: params.redirectUrl,
+    language: params.language,
+  });
 }

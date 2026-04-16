@@ -4,8 +4,7 @@ import { PrismaReservation } from "@/application/domain/experience/reservation/d
 import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/message/acceptReservationMessage";
 import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/message/applyReservationMessage";
 import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/message/cancelReservationMessage";
-import { IdentityPlatform, LineRichMenuType, Role, TransactionReason } from "@prisma/client";
-import { RecentTransactionEntry } from "@/application/domain/notification/presenter/message/pointTransferCardMessage";
+import { IdentityPlatform, LineRichMenuType, Role } from "@prisma/client";
 import { PrismaMembership } from "@/application/domain/account/membership/data/type";
 import { inject, injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
@@ -406,12 +405,6 @@ export default class NotificationService {
       DEFAULT_HOST_IMAGE_URL,
     );
 
-    const recentTransactions = await this.fetchRecentCommunityTransactions(
-      ctx,
-      transactionId,
-      language,
-    );
-
     const message = buildPointDonationReceivedMessage({
       fromUserName,
       fromUserImageUrl,
@@ -423,7 +416,6 @@ export default class NotificationService {
       createdAt: transferDetail.createdAt,
       redirectUrl,
       language,
-      recentTransactions,
     });
 
     await safePushMessage(client, { to: uid, messages: [message] });
@@ -465,12 +457,6 @@ export default class NotificationService {
       DEFAULT_HOST_IMAGE_URL,
     );
 
-    const recentTransactions = await this.fetchRecentCommunityTransactions(
-      ctx,
-      transactionId,
-      language,
-    );
-
     const message = buildPointGrantReceivedMessage({
       communityName,
       communityImageUrl,
@@ -482,7 +468,6 @@ export default class NotificationService {
       createdAt: transferDetail.createdAt,
       redirectUrl,
       language,
-      recentTransactions,
     });
 
     await safePushMessage(client, { to: uid, messages: [message] });
@@ -781,84 +766,6 @@ export default class NotificationService {
         err: error,
       });
       return null;
-    }
-  }
-
-  private async fetchRecentCommunityTransactions(
-    ctx: IContext,
-    excludeTransactionId: string,
-    language: Language,
-  ): Promise<RecentTransactionEntry[]> {
-    try {
-      const recentTxs = await ctx.issuer.internal(async (tx) => {
-        return tx.transaction.findMany({
-          where: {
-            id: { not: excludeTransactionId },
-            reason: { in: [TransactionReason.DONATION, TransactionReason.GRANT] },
-            toWallet: { communityId: ctx.communityId },
-          },
-          take: 3,
-          orderBy: { createdAt: "desc" },
-          select: {
-            reason: true,
-            toPointChange: true,
-            createdAt: true,
-            fromWallet: {
-              select: {
-                user: {
-                  select: {
-                    name: true,
-                    image: { select: { url: true } },
-                  },
-                },
-                community: {
-                  select: {
-                    name: true,
-                    image: { select: { url: true } },
-                  },
-                },
-              },
-            },
-            toWallet: {
-              select: {
-                user: {
-                  select: {
-                    name: true,
-                    image: { select: { url: true } },
-                  },
-                },
-              },
-            },
-          },
-        });
-      });
-
-      return recentTxs.map((rtx) => {
-        const isGrant = rtx.reason === TransactionReason.GRANT;
-        const fromName = isGrant
-          ? (rtx.fromWallet?.community?.name ?? "コミュニティ")
-          : (rtx.fromWallet?.user?.name ?? "ユーザー");
-        const fromImageUrl = isGrant
-          ? this.safeImageUrl(rtx.fromWallet?.community?.image?.url, DEFAULT_HOST_IMAGE_URL)
-          : this.safeImageUrl(rtx.fromWallet?.user?.image?.url, DEFAULT_HOST_IMAGE_URL);
-
-        return {
-          fromName,
-          fromImageUrl,
-          toName: rtx.toWallet?.user?.name ?? "ユーザー",
-          toImageUrl: this.safeImageUrl(rtx.toWallet?.user?.image?.url, DEFAULT_HOST_IMAGE_URL),
-          transferPoints: rtx.toPointChange,
-          createdAt: rtx.createdAt,
-          kind: isGrant ? ("grant" as const) : ("donation" as const),
-        };
-      });
-    } catch (error) {
-      logger.warn("fetchRecentCommunityTransactions: failed, skipping carousel", {
-        excludeTransactionId,
-        communityId: ctx.communityId,
-        err: error,
-      });
-      return [];
     }
   }
 
