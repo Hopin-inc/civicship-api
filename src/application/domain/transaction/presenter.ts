@@ -5,13 +5,22 @@ import {
   GqlTransactionGrantCommunityPointSuccess,
   GqlTransactionDonateSelfPointSuccess,
   GqlTransactionChain,
+  GqlTransactionChainCommunity,
+  GqlTransactionChainUser,
   GqlTransactionReason,
   GqlTransactionUpdateMetadataSuccess,
 } from "@/types/graphql";
-import { PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
+import {
+  PrismaTransactionDetail,
+  TransactionChainRow,
+} from "@/application/domain/transaction/data/type";
 
 export default class TransactionPresenter {
-  static query(r: GqlTransaction[], hasNextPage: boolean, cursor?: string): GqlTransactionsConnection {
+  static query(
+    r: GqlTransaction[],
+    hasNextPage: boolean,
+    cursor?: string,
+  ): GqlTransactionsConnection {
     return {
       __typename: "TransactionsConnection",
       totalCount: r.length,
@@ -73,25 +82,61 @@ export default class TransactionPresenter {
         reason: row.reason as GqlTransactionReason,
         points: row.points,
         createdAt: row.created_at,
-        fromUser: row.from_user_id
-          ? {
-              __typename: "TransactionChainUser",
-              id: row.from_user_id,
-              name: row.from_user_name ?? "",
-              image: row.from_user_image ?? null,
-              bio: row.from_user_bio ?? null,
-            }
-          : null,
-        toUser: row.to_user_id
-          ? {
-              __typename: "TransactionChainUser",
-              id: row.to_user_id,
-              name: row.to_user_name ?? "",
-              image: row.to_user_image ?? null,
-              bio: row.to_user_bio ?? null,
-            }
-          : null,
+        from: buildParticipant(
+          row.from_user_id,
+          row.from_user_name,
+          row.from_user_image,
+          row.from_user_bio,
+          row.from_community_id,
+          row.from_community_name,
+          row.from_community_image,
+          row.from_community_bio,
+        ),
+        to: buildParticipant(
+          row.to_user_id,
+          row.to_user_name,
+          row.to_user_image,
+          row.to_user_bio,
+          row.to_community_id,
+          row.to_community_name,
+          row.to_community_image,
+          row.to_community_bio,
+        ),
       })),
     };
   }
+}
+
+// wallet の user_id / community_id の非nullをもとに、どちらの参加者かを決定する。
+// COMMUNITY wallet の場合 community_id のみ非null、MEMBER wallet の場合 user_id のみ非null になる。
+// ウォレットが削除済み等でどちらも null の場合は null を返す。
+function buildParticipant(
+  userId: string | null,
+  userName: string | null,
+  userImage: string | null,
+  userBio: string | null,
+  communityId: string | null,
+  communityName: string | null,
+  communityImage: string | null,
+  communityBio: string | null,
+): GqlTransactionChainUser | GqlTransactionChainCommunity | null {
+  if (userId) {
+    return {
+      __typename: "TransactionChainUser",
+      id: userId,
+      name: userName ?? "",
+      image: userImage ?? null,
+      bio: userBio ?? null,
+    };
+  }
+  if (communityId) {
+    return {
+      __typename: "TransactionChainCommunity",
+      id: communityId,
+      name: communityName ?? "",
+      image: communityImage ?? null,
+      bio: communityBio ?? null,
+    };
+  }
+  return null;
 }
