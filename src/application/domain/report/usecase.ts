@@ -4,6 +4,7 @@ import ReportService from "@/application/domain/report/service";
 import ReportPresenter, {
   WeeklyReportPayload,
 } from "@/application/domain/report/presenter";
+import { addDays, truncateToJstDate } from "@/application/domain/report/util";
 
 @injectable()
 export default class ReportUseCase {
@@ -65,31 +66,4 @@ export default class ReportUseCase {
   async refreshAllReportViews(ctx: IContext): Promise<void> {
     await this.service.refreshAllReportViews(ctx);
   }
-}
-
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
-
-/**
- * Truncate a Date to the start of its Asia/Tokyo calendar day, returning a
- * Date whose UTC components encode that JST date at UTC 00:00.
- *
- * The materialized views bucket dates with `AT TIME ZONE 'Asia/Tokyo'` into
- * `@db.Date` columns. Prisma serializes Date values without timezone info for
- * `@db.Date`, so passing a UTC-midnight Date whose year/month/day match the
- * intended JST calendar date is what lines up the filter with the MV.
- *
- * Using naive `setUTCHours(0,0,0,0)` would cause an off-by-one during
- * 00:00–08:59 JST (= 15:00–23:59 UTC previous day).
- */
-function truncateToJstDate(d: Date): Date {
-  const jst = new Date(d.getTime() + JST_OFFSET_MS);
-  return new Date(
-    Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate()),
-  );
-}
-
-function addDays(d: Date, days: number): Date {
-  const t = new Date(d);
-  t.setUTCDate(t.getUTCDate() + days);
-  return t;
 }

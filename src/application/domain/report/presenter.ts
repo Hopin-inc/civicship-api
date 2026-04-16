@@ -5,6 +5,11 @@ import {
   UserProfileForReportRow,
   UserTransactionDailyRow,
 } from "@/application/domain/report/data/interface";
+import {
+  bigintToSafeNumber,
+  daysBetweenJst,
+  toJstIsoDate,
+} from "@/application/domain/report/util";
 
 // ---------------------------------------------------------------------------
 // AI-facing report payload types
@@ -104,10 +109,10 @@ export default class ReportPresenter {
       const cur = userAgg.get(r.userId) ?? emptyAggregate(r.userId);
       cur.txCountIn += r.txCountIn;
       cur.txCountOut += r.txCountOut;
-      cur.pointsIn += Number(r.pointsIn);
-      cur.pointsOut += Number(r.pointsOut);
+      cur.pointsIn += bigintToSafeNumber(r.pointsIn);
+      cur.pointsOut += bigintToSafeNumber(r.pointsOut);
       cur.donationOutCount += r.donationOutCount;
-      cur.donationOutPoints += Number(r.donationOutPoints);
+      cur.donationOutPoints += bigintToSafeNumber(r.donationOutPoints);
       cur.receivedDonationCount += r.receivedDonationCount;
       cur.chainRootCount += r.chainRootCount;
       cur.maxChainDepthStarted = maxNullable(cur.maxChainDepthStarted, r.maxChainDepthStarted);
@@ -132,8 +137,8 @@ export default class ReportPresenter {
           membership_bio: p?.membershipBio ?? null,
           headline: p?.headline ?? null,
           role: p?.role ?? "MEMBER",
-          joined_at: p ? toIsoDate(p.joinedAt) : "",
-          days_since_joined: p ? daysBetween(p.joinedAt, input.referenceDate) : 0,
+          joined_at: p ? toJstIsoDate(p.joinedAt) : "",
+          days_since_joined: p ? daysBetweenJst(p.joinedAt, input.referenceDate) : 0,
           tx_count_in: u.txCountIn,
           tx_count_out: u.txCountOut,
           points_in: u.pointsIn,
@@ -150,15 +155,15 @@ export default class ReportPresenter {
 
     return {
       period: {
-        from: toIsoDate(input.range.from),
-        to: toIsoDate(input.range.to),
+        from: toJstIsoDate(input.range.from),
+        to: toJstIsoDate(input.range.to),
       },
       community_id: input.communityId,
       daily_summaries: input.summaries.map((s) => ({
-        date: toIsoDate(s.date),
+        date: toJstIsoDate(s.date),
         reason: s.reason,
         tx_count: s.txCount,
-        points_sum: Number(s.pointsSum),
+        points_sum: bigintToSafeNumber(s.pointsSum),
         chain_root_count: s.chainRootCount,
         chain_descendant_count: s.chainDescendantCount,
         max_chain_depth: s.maxChainDepth,
@@ -171,7 +176,7 @@ export default class ReportPresenter {
         burn_count: s.burnCount,
       })),
       daily_active_users: input.activeUsers.map((u) => ({
-        date: toIsoDate(u.date),
+        date: toJstIsoDate(u.date),
         active_users: u.activeUsers,
         senders: u.senders,
         receivers: u.receivers,
@@ -179,7 +184,7 @@ export default class ReportPresenter {
       top_users: topUsers,
       highlight_comments: input.comments.map((c) => ({
         transaction_id: c.transactionId,
-        date: toIsoDate(c.date),
+        date: toJstIsoDate(c.date),
         reason: c.reason,
         points: c.points,
         comment: c.comment,
@@ -230,11 +235,3 @@ function maxNullable(a: number | null, b: number | null): number | null {
   return Math.max(a, b);
 }
 
-function toIsoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function daysBetween(from: Date, to: Date): number {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.floor((to.getTime() - from.getTime()) / msPerDay);
-}
