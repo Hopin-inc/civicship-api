@@ -448,7 +448,7 @@ export default class NotificationService {
 
     const communityName = transferDetail.fromWallet?.community?.name ?? "コミュニティ";
     const communityImageUrl = this.safeImageUrl(
-      transferDetail.fromWallet?.community?.image?.url,
+      transferDetail.fromWallet?.community?.config?.portalConfig?.squareLogoPath,
       DEFAULT_HOST_IMAGE_URL,
     );
     const toUserName = transferDetail.toWallet?.user?.name ?? "ユーザー";
@@ -732,7 +732,13 @@ export default class NotificationService {
                 community: {
                   select: {
                     name: true,
-                    image: { select: { url: true } },
+                    config: {
+                      select: {
+                        portalConfig: {
+                          select: { squareLogoPath: true },
+                        },
+                      },
+                    },
                   },
                 },
               },
