@@ -32,9 +32,7 @@ dayjs.locale("ja");
 dayjs.tz.setDefault("Asia/Tokyo");
 
 export const DEFAULT_HOST_IMAGE_URL =
-  "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/placeholder.jpg";
-export const DEFAULT_THUMBNAIL =
-  "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/ogp.jpg";
+  "https://storage.googleapis.com/prod-civicship-storage-public/communities/default/placeholder.jpg";
 
 @injectable()
 export default class NotificationService {
@@ -322,7 +320,7 @@ export default class NotificationService {
       const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
       const message = buildReservationAcceptedMessage({
         title,
-        thumbnail: this.safeImageUrl(images[0]?.url, DEFAULT_THUMBNAIL),
+        thumbnail: this.optionalImageUrl(images[0]?.url),
         year,
         date,
         time,
