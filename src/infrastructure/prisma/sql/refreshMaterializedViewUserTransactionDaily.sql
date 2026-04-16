@@ -1,0 +1,1 @@
+REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_user_transaction_daily";

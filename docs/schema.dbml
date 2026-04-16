@@ -830,6 +830,75 @@ Table mv_accumulated_points {
   accumulatedPoint BigInt [not null]
 }
 
+Table mv_transaction_summary_daily {
+  date DateTime [not null]
+  communityId String [not null]
+  reason TransactionReason [not null]
+  txCount Int [not null]
+  pointsSum BigInt [not null]
+  chainRootCount Int [not null]
+  chainDescendantCount Int [not null]
+  maxChainDepth Int
+  sumChainDepth Int [not null]
+  issuanceCount Int [not null]
+  burnCount Int [not null]
+
+  indexes {
+    (date, communityId, reason) [pk]
+  }
+}
+
+Table mv_user_transaction_daily {
+  date DateTime [not null]
+  communityId String [not null]
+  userId String [not null]
+  walletId String [not null]
+  txCountIn Int [not null]
+  txCountOut Int [not null]
+  pointsIn BigInt [not null]
+  pointsOut BigInt [not null]
+  donationOutCount Int [not null]
+  donationOutPoints BigInt [not null]
+  receivedDonationCount Int [not null]
+  chainRootCount Int [not null]
+  maxChainDepthStarted Int
+  chainDepthReachedMax Int
+  uniqueCounterparties Int [not null]
+
+  indexes {
+    (date, communityId, userId, walletId) [pk]
+  }
+}
+
+Table v_transaction_comments {
+  transactionId String [pk]
+  date DateTime [not null]
+  createdAt DateTime [not null]
+  communityId String [not null]
+  fromUserId String
+  toUserId String
+  createdByUserId String
+  reason TransactionReason [not null]
+  points Int [not null]
+  comment String [not null]
+  chainDepth Int
+}
+
+Table v_user_profile_for_report {
+  userId String [not null]
+  communityId String [not null]
+  name String [not null]
+  userBio String
+  membershipBio String
+  headline String
+  role Role [not null]
+  joinedAt DateTime [not null]
+
+  indexes {
+    (userId, communityId) [pk]
+  }
+}
+
 Table v_earliest_reservable_slot {
   opportunityId String [pk]
   opportunity t_opportunities [not null]
