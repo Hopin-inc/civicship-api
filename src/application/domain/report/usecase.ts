@@ -1,9 +1,7 @@
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import ReportService from "@/application/domain/report/service";
-import ReportPresenter, {
-  WeeklyReportPayload,
-} from "@/application/domain/report/presenter";
+import ReportPresenter, { WeeklyReportPayload } from "@/application/domain/report/presenter";
 import { addDays, truncateToJstDate } from "@/application/domain/report/util";
 
 const DEFAULT_WINDOW_DAYS = 7;
@@ -53,19 +51,18 @@ export default class ReportUseCase {
     const from = addDays(to, -(windowDays - 1));
     const range = { from, to };
 
-    const [summaries, activeUsers, topUserAggregates, comments] = await Promise.all([
-      this.service.getDailySummaries(ctx, params.communityId, range),
-      this.service.getDailyActiveUsers(ctx, params.communityId, range),
-      this.service.getTopUsersByTotalPoints(ctx, params.communityId, range, topN),
-      this.service.getComments(ctx, params.communityId, range, commentLimit),
-    ]);
+    const [summaries, activeUsers, topUserAggregates, comments, communityContext, deepestChain] =
+      await Promise.all([
+        this.service.getDailySummaries(ctx, params.communityId, range),
+        this.service.getDailyActiveUsers(ctx, params.communityId, range),
+        this.service.getTopUsersByTotalPoints(ctx, params.communityId, range, topN),
+        this.service.getComments(ctx, params.communityId, range, commentLimit),
+        this.service.getCommunityContext(ctx, params.communityId, range),
+        this.service.getDeepestChain(ctx, params.communityId, range),
+      ]);
 
     const userIds = topUserAggregates.map((u) => u.userId);
-    const profiles = await this.service.getUserProfiles(
-      ctx,
-      params.communityId,
-      userIds,
-    );
+    const profiles = await this.service.getUserProfiles(ctx, params.communityId, userIds);
 
     return ReportPresenter.weeklyPayload({
       communityId: params.communityId,
@@ -76,6 +73,8 @@ export default class ReportUseCase {
       topUserAggregates,
       profiles,
       comments,
+      communityContext,
+      deepestChain,
     });
   }
 
@@ -92,12 +91,8 @@ export default class ReportUseCase {
    * derived at query time from mv_user_transaction_daily.
    */
   async refreshAllReportViews(ctx: IContext): Promise<void> {
-    await ctx.issuer.internal((tx) =>
-      this.service.refreshTransactionSummaryDaily(ctx, tx),
-    );
-    await ctx.issuer.internal((tx) =>
-      this.service.refreshUserTransactionDaily(ctx, tx),
-    );
+    await ctx.issuer.internal((tx) => this.service.refreshTransactionSummaryDaily(ctx, tx));
+    await ctx.issuer.internal((tx) => this.service.refreshUserTransactionDaily(ctx, tx));
   }
 }
 

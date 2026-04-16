@@ -87,6 +87,46 @@ export interface UserProfileForReportRow {
   joinedAt: Date;
 }
 
+/**
+ * Per-community metadata needed to contextualise the AI report: identity /
+ * naming, headline bio + website + established date, total member count, and
+ * the distinct active-user count within the reporting window. Shaped for a
+ * single LLM payload block, not a generic community read model.
+ *
+ * `activeUsersInWindow` is a *distinct* count across the range (not the
+ * sum of per-day active-user counts, which over-counts users active on
+ * multiple days). Paired with `totalMembers` it lets the presenter emit an
+ * `active_rate` without a second round trip.
+ */
+export interface CommunityContextRow {
+  communityId: string;
+  name: string;
+  pointName: string;
+  bio: string | null;
+  establishedAt: Date | null;
+  website: string | null;
+  totalMembers: number;
+  activeUsersInWindow: number;
+}
+
+/**
+ * Single deepest transaction-chain reached within the reporting window, used
+ * by the report as a qualitative highlight ("how far did a single point
+ * travel?"). `chainDepth` is guaranteed non-null by the filter. `date` is
+ * the JST calendar day bucket matching the report window boundaries.
+ */
+export interface DeepestChainRow {
+  transactionId: string;
+  chainDepth: number;
+  reason: TransactionReason;
+  comment: string | null;
+  date: Date;
+  fromUserId: string | null;
+  toUserId: string | null;
+  createdByUserId: string | null;
+  parentTxId: string | null;
+}
+
 export interface DateRange {
   from: Date;
   to: Date;
@@ -124,6 +164,18 @@ export interface IReportRepository {
     communityId: string,
     userIds: string[],
   ): Promise<UserProfileForReportRow[]>;
+
+  findCommunityContext(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+  ): Promise<CommunityContextRow | null>;
+
+  findDeepestChain(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+  ): Promise<DeepestChainRow | null>;
 
   refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
   refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
