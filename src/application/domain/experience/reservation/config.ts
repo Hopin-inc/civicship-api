@@ -3,9 +3,8 @@
  * Maps activity IDs to the number of days required for advance booking
  */
 export interface ActivityBookingConfig {
-    [activityId: string]: number;
+  [activityId: string]: number;
 }
-
 
 /**
  * Default advance booking days for activities without specific configuration
@@ -29,9 +28,9 @@ export const ACTIVITY_BOOKING_CONFIG: ActivityBookingConfig = {};
  * @returns Number of days in advance booking is required
  */
 export const getAdvanceBookingDays = (activityId?: string): number => {
-    if (!activityId) {
-        return DEFAULT_ADVANCE_BOOKING_DAYS;
-    }
+  if (!activityId) {
+    return DEFAULT_ADVANCE_BOOKING_DAYS;
+  }
 
-    return ACTIVITY_BOOKING_CONFIG[activityId] ?? DEFAULT_ADVANCE_BOOKING_DAYS;
+  return ACTIVITY_BOOKING_CONFIG[activityId] ?? DEFAULT_ADVANCE_BOOKING_DAYS;
 };

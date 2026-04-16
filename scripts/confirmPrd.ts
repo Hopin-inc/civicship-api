@@ -24,6 +24,14 @@ console.log(`You are about to run "${target}" against PRODUCTION.`);
 console.log("This may affect real users and/or production data.");
 console.log("");
 
+// Refuse to run in a non-interactive context (CI, piped shell, etc.) where
+// we cannot obtain explicit confirmation. Aborting is always safer than
+// accidentally proceeding against production.
+if (!process.stdin.isTTY || !process.stdout.isTTY) {
+  console.error("Non-interactive terminal detected. Refusing to proceed without confirmation.");
+  process.exit(1);
+}
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,

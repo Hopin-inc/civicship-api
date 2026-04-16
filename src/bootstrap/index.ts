@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { printEnvBanner } from "./envBanner";
+import { printEnvBanner } from "@/utils/envBanner";
 
 printEnvBanner();
 
