@@ -79,6 +79,7 @@ export default class TransactionPresenter {
               id: row.from_user_id,
               name: row.from_user_name ?? "",
               image: row.from_user_image ?? null,
+              bio: row.from_user_bio ?? null,
             }
           : null,
         toUser: row.to_user_id
@@ -87,6 +88,7 @@ export default class TransactionPresenter {
               id: row.to_user_id,
               name: row.to_user_name ?? "",
               image: row.to_user_image ?? null,
+              bio: row.to_user_bio ?? null,
             }
           : null,
       })),

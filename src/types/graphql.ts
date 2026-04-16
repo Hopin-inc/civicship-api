@@ -2808,6 +2808,7 @@ export type GqlTransactionChainStep = {
 
 export type GqlTransactionChainUser = {
   __typename?: 'TransactionChainUser';
+  bio?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
@@ -5297,6 +5298,7 @@ export type GqlTransactionChainStepResolvers<ContextType = any, ParentType exten
 }>;
 
 export type GqlTransactionChainUserResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionChainUser'] = GqlResolversParentTypes['TransactionChainUser']> = ResolversObject<{
+  bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
