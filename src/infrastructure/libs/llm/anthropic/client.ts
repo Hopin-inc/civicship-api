@@ -50,10 +50,18 @@ export class AnthropicLlmClient implements LlmClient {
     );
 
     // `response.content` is a discriminated union; narrow to text blocks
-    // before reading `.text`. Non-text blocks (thinking, tool_use) do not
-    // exist in Phase 1 requests but would be silently dropped here if
-    // a caller ever enabled them — acceptable because the caller would
-    // then want to read them directly from a richer interface.
+    // before reading `.text`. Phase 1 never requests thinking or tools,
+    // so these blocks cannot appear in the response under the current
+    // call shape — any that do slip in are dropped silently from the
+    // returned `text`.
+    //
+    // `usage.outputTokens` still counts every generated block (thinking
+    // included), so a future caller that turns on thinking or tool use
+    // without first extending `LlmCompleteResult` will see a confusing
+    // short `text` paired with a large `outputTokens`. When that day
+    // comes, add `thinking?: string` / `toolUse?: ...` fields to
+    // `LlmCompleteResult` and collect them here rather than trying to
+    // reuse the `text` field.
     const text = response.content
       .filter((block): block is Anthropic.TextBlock => block.type === "text")
       .map((block) => block.text)

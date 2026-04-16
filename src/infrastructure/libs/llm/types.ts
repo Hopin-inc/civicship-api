@@ -48,10 +48,18 @@ export interface LlmCompleteParams {
 
   /**
    * Hard ceiling on the number of tokens the model may generate.
-   * Non-streaming requests should stay well under the model's maximum
-   * output (128K on Opus 4.6/4.7) — the Anthropic SDK enforces
-   * streaming for very large outputs to avoid HTTP timeouts. ~16000 is
-   * a safe non-streaming default for report generation.
+   *
+   * Model maximums at time of writing (used as a hard cap by the API):
+   *   - Opus 4.6 / Opus 4.7: 128K
+   *   - Sonnet 4.6 / Haiku 4.5: 64K
+   *
+   * The wrapper is non-streaming (`complete()` only in Phase 1) and the
+   * Anthropic SDK requires streaming for "very large" values to avoid
+   * HTTP timeouts — in practice, anything beyond ~16K starts hitting
+   * the default SDK timeout. Keep `maxTokens` well under the model
+   * ceiling unless the caller also switches to a streaming entry
+   * point. ~16000 is a safe non-streaming default for report
+   * generation, well inside both model caps and SDK timeouts.
    */
   maxTokens: number;
 
