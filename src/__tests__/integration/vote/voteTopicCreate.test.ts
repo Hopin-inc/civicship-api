@@ -8,7 +8,7 @@ import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { ValidationError } from "@/errors/graphql";
 import { GqlVoteGateType, GqlVotePowerPolicyType } from "@/types/graphql";
-import { createNftToken } from "./helpers";
+import { createNftToken, setupManagerAndCommunity } from "./helpers";
 
 // ─── 共通セットアップ ─────────────────────────────────────────────────────────
 
@@ -56,7 +56,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: manager.id } },
       community: { connect: { id: community.id } },
@@ -84,7 +87,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-nft-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: manager.id } },
       community: { connect: { id: community.id } },
@@ -116,8 +122,14 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug-2",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const communityA = await TestDataSourceHelper.createCommunity({ name: "community-a", pointName: "pt" });
-    const communityB = await TestDataSourceHelper.createCommunity({ name: "community-b", pointName: "pt" });
+    const communityA = await TestDataSourceHelper.createCommunity({
+      name: "community-a",
+      pointName: "pt",
+    });
+    const communityB = await TestDataSourceHelper.createCommunity({
+      name: "community-b",
+      pointName: "pt",
+    });
 
     const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
     await expect(
@@ -134,7 +146,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug-3",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
 
     const now = new Date();
     const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
@@ -156,7 +171,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug-3b",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
 
     const sameTime = new Date(Date.now() + 3_600_000);
     const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
@@ -179,7 +197,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug-4",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
 
     const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
     await expect(
@@ -198,7 +219,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug-5",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
 
     const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
     await expect(
@@ -220,7 +244,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug-6",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
 
     const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
     await expect(
@@ -244,7 +271,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug-7",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
 
     const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
     await expect(
@@ -263,7 +293,10 @@ describe("Vote Integration: VoteTopicCreate", () => {
       slug: "manager-slug-8",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const community = await TestDataSourceHelper.createCommunity({ name: "community", pointName: "pt" });
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "community",
+      pointName: "pt",
+    });
 
     // NFT_COUNT policy には nftTokenId が必須だが、
     // NFT gate ではなく MEMBERSHIP gate の場合でも policy 側は独立して検証される
@@ -284,5 +317,64 @@ describe("Vote Integration: VoteTopicCreate", () => {
     ).rejects.toThrow(ValidationError);
 
     void nftToken; // 未使用変数の警告を抑制
+  });
+
+  it("should throw ValidationError when NFT gate and NFT_COUNT policy reference different nftTokenIds", async () => {
+    // Gate=NFT(A) + Policy=NFT_COUNT(B) where A !== B は論理的に整合しないため弾く。
+    // Gate で A 保有を要求しつつ Policy は B 保有数を power とするため、A のみ保有する
+    // ユーザーが eligible=true / power=0 という「投票しても効かない」状態になる。
+    const { manager, community } = await setupManagerAndCommunity("manager-slug-9");
+
+    const tokenA = await createNftToken();
+    const tokenB = await createNftToken();
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    await expect(
+      voteUseCase.managerCreateVoteTopic(ctx, {
+        input: makeValidInput(community.id, {
+          gate: { type: GqlVoteGateType.Nft, nftTokenId: tokenA.id },
+          powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: tokenB.id },
+        }),
+        permission: { communityId: community.id },
+      }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("should accept NFT gate and NFT_COUNT policy when they reference the same nftTokenId", async () => {
+    // 同一 token なら許容される（典型的な「token 保有者が保有数ぶん投票できる」設計）
+    const { manager, community } = await setupManagerAndCommunity("manager-slug-10");
+
+    const nftToken = await createNftToken();
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const result = await voteUseCase.managerCreateVoteTopic(ctx, {
+      input: makeValidInput(community.id, {
+        gate: { type: GqlVoteGateType.Nft, nftTokenId: nftToken.id },
+        powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: nftToken.id },
+      }),
+      permission: { communityId: community.id },
+    });
+
+    expect(result.voteTopic.gate.type).toBe("NFT");
+    expect(result.voteTopic.powerPolicy.type).toBe("NFT_COUNT");
+  });
+
+  it("should accept MEMBERSHIP gate and NFT_COUNT policy (intentional member-only weighting)", async () => {
+    // #5 相当: メンバー全員が投票可で、NFT ホルダーだけが重み付けされる設計は許容する。
+    const { manager, community } = await setupManagerAndCommunity("manager-slug-11");
+
+    const nftToken = await createNftToken();
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const result = await voteUseCase.managerCreateVoteTopic(ctx, {
+      input: makeValidInput(community.id, {
+        gate: { type: GqlVoteGateType.Membership },
+        powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: nftToken.id },
+      }),
+      permission: { communityId: community.id },
+    });
+
+    expect(result.voteTopic.gate.type).toBe("MEMBERSHIP");
+    expect(result.voteTopic.powerPolicy.type).toBe("NFT_COUNT");
   });
 });

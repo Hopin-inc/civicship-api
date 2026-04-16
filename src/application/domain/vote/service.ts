@@ -88,6 +88,26 @@ export default class VoteService {
     if (input.powerPolicy.type === "NFT_COUNT" && !input.powerPolicy.nftTokenId) {
       throw new ValidationError("nftTokenId is required for NFT_COUNT power policy", []);
     }
+    // Gate と PowerPolicy が両方 NFT 系のとき、参照する nftTokenId は一致していなければならない。
+    // 不一致だと「Gate で token A を要求しつつ、Policy は token B の保有数で重み付け」という
+    // 論理的に整合しない組み合わせになり、A 保有者のうち B 非保有者は eligible=true / power=0 という
+    // 投票しても効かない状態になる。設定ミスの典型なのでここで弾く。
+    //
+    // 許容される組み合わせ:
+    //   - Gate=NFT(A) + Policy=NFT_COUNT(A)  同一 token で典型的
+    //   - Gate=MEMBERSHIP + Policy=NFT_COUNT(A)  メンバー内で NFT ホルダーのみ重み付け（意図的）
+    //   - Gate=NFT(A) + Policy=FLAT  A 保有者は一律 1 票
+    //   - Gate=MEMBERSHIP + Policy=FLAT  全員 1 票
+    if (
+      input.gate.type === "NFT" &&
+      input.powerPolicy.type === "NFT_COUNT" &&
+      input.gate.nftTokenId !== input.powerPolicy.nftTokenId
+    ) {
+      throw new ValidationError(
+        "When both gate and powerPolicy are NFT-based, they must reference the same nftTokenId",
+        [],
+      );
+    }
   }
 
   // Update / Delete 操作は UPCOMING フェーズ限定。

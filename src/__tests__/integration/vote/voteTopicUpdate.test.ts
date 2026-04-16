@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
-import { CurrentPrefecture, MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
 import { IContext } from "@/types/server";
 import VoteUseCase from "@/application/domain/vote/usecase";
 import { container } from "tsyringe";
@@ -13,7 +12,7 @@ import {
   VoteTopicNotEditableError,
 } from "@/errors/graphql";
 import { GqlVoteGateType, GqlVotePowerPolicyType } from "@/types/graphql";
-import { createNftToken, createVoteTopic } from "./helpers";
+import { createNftToken, createVoteTopic, setupManagerAndCommunity } from "./helpers";
 
 // ─── 共通セットアップ ─────────────────────────────────────────────────────────
 
@@ -33,26 +32,6 @@ function makeValidUpdateInput(overrides: Record<string, unknown> = {}) {
     ],
     ...overrides,
   };
-}
-
-async function setupManagerAndCommunity(slug: string) {
-  const manager = await TestDataSourceHelper.createUser({
-    name: "Manager",
-    slug,
-    currentPrefecture: CurrentPrefecture.KAGAWA,
-  });
-  const community = await TestDataSourceHelper.createCommunity({
-    name: "community",
-    pointName: "pt",
-  });
-  await TestDataSourceHelper.createMembership({
-    user: { connect: { id: manager.id } },
-    community: { connect: { id: community.id } },
-    status: MembershipStatus.JOINED,
-    reason: MembershipStatusReason.INVITED,
-    role: Role.MANAGER,
-  });
-  return { manager, community };
 }
 
 describe("Vote Integration: VoteTopicUpdate", () => {
@@ -254,25 +233,12 @@ describe("Vote Integration: VoteTopicUpdate", () => {
   });
 
   it("should throw AuthorizationError when topic does not belong to the specified community", async () => {
-    const manager = await TestDataSourceHelper.createUser({
-      name: "Manager",
-      slug: "manager-upd-auth",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    const communityA = await TestDataSourceHelper.createCommunity({
-      name: "community-a",
-      pointName: "pt",
-    });
+    // setup で manager + communityA + MANAGER membership が作られる。
+    // communityB は authorization テストのため、manager の所属しない別 community として追加。
+    const { manager, community: communityA } = await setupManagerAndCommunity("manager-upd-auth");
     const communityB = await TestDataSourceHelper.createCommunity({
       name: "community-b",
       pointName: "pt",
-    });
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: manager.id } },
-      community: { connect: { id: communityA.id } },
-      status: MembershipStatus.JOINED,
-      reason: MembershipStatusReason.INVITED,
-      role: Role.MANAGER,
     });
 
     const now = new Date();
@@ -362,6 +328,34 @@ describe("Vote Integration: VoteTopicUpdate", () => {
             { label: "A", orderIndex: 0 },
             { label: "B", orderIndex: 0 },
           ],
+        }),
+        permission: { communityId: community.id },
+      }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("should throw ValidationError when NFT gate and NFT_COUNT policy reference different nftTokenIds", async () => {
+    // Update でも Create と同じクロス検証が効くこと
+    const { manager, community } = await setupManagerAndCommunity("manager-upd-cross");
+
+    const now = new Date();
+    const { topic } = await createVoteTopic({
+      communityId: community.id,
+      createdBy: manager.id,
+      startsAt: new Date(now.getTime() + 60_000),
+      endsAt: new Date(now.getTime() + 3_600_000),
+    });
+
+    const tokenA = await createNftToken();
+    const tokenB = await createNftToken();
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    await expect(
+      voteUseCase.managerUpdateVoteTopic(ctx, {
+        id: topic.id,
+        input: makeValidUpdateInput({
+          gate: { type: GqlVoteGateType.Nft, nftTokenId: tokenA.id },
+          powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: tokenB.id },
         }),
         permission: { communityId: community.id },
       }),

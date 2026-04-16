@@ -5,7 +5,9 @@
 extend type Mutation {
   """
   管理者: 投票テーマ・ゲート・ポリシー・選択肢を 1 トランザクションで一括作成。
-  Gate と PowerPolicy のクロス検証（NFT トークンの一致等）は行わない。
+  Gate.type=NFT かつ PowerPolicy.type=NFT_COUNT の場合、両者の nftTokenId は
+  一致していなければならない（バックエンドで検証、違反時は `VALIDATION_ERROR`）。
+  詳細は VoteGate 型の説明を参照。
   """
   voteTopicCreate(
     input: VoteTopicCreateInput!
@@ -52,6 +54,11 @@ input VoteTopicCreateInput {
   options: [VoteOptionInput!]!
 }
 
+"""
+voteTopicUpdate 用の入力。**既存の全フィールドを置き換える**（部分更新は未サポート）。
+options は delete → create で全量置換される。gate / powerPolicy も同様に再生成されるため、
+既存の id 値は保持されない点に注意。UPCOMING フェーズ限定で呼ばれるため、投票は存在しない前提。
+"""
 input VoteTopicUpdateInput {
   title: String!
   description: String
