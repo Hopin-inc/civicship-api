@@ -3,18 +3,29 @@
 # ------------------------------
 
 extend type Mutation {
-    # 管理者: 投票テーマ・ゲート・ポリシー・選択肢を一括作成
+    """
+    管理者: 投票テーマ・ゲート・ポリシー・選択肢を 1 トランザクションで一括作成。
+    Gate と PowerPolicy のクロス検証（NFT トークンの一致等）は行わない。
+    """
     voteTopicCreate(
         input: VoteTopicCreateInput!
         permission: CheckCommunityPermissionInput!
     ): VoteTopicCreatePayload!
         @authz(rules: [IsCommunityManager])
 
-    # ユーザー: 投票実行（既存投票は upsert で上書き）
+    """
+    ユーザー: 投票実行。
+    同一 topicId への再投票は **upsert で上書き** される（投票履歴は残らない）。
+    投票の取消（withdraw）は現時点で未サポート。
+    eligibility と power は呼び出しごとに再チェックされ、NFT_COUNT の場合は呼び出し時点の保有数が新しい power として記録される。
+    """
     voteCast(input: VoteCastInput!): VoteCastPayload!
         @authz(rules: [IsUser])
 
-    # 管理者: 投票テーマ削除
+    """
+    管理者: 投票テーマ削除。
+    gate / powerPolicy / options / ballots は onDelete: Cascade で自動削除される。
+    """
     voteTopicDelete(
         id: ID!
         permission: CheckCommunityPermissionInput!
@@ -35,17 +46,21 @@ input VoteTopicCreateInput {
 
 input VoteGateInput {
     type: VoteGateType!
+    "type=NFT のとき必須。MEMBERSHIP のときは無視される。"
     nftTokenId: ID
+    "type=MEMBERSHIP のときに任意指定（未指定時は MEMBER 以上で可）。NFT のときは無視される。"
     requiredRole: Role
 }
 
 input VotePowerPolicyInput {
     type: VotePowerPolicyType!
+    "type=NFT_COUNT のとき必須。FLAT のときは無視される。"
     nftTokenId: ID
 }
 
 input VoteOptionInput {
     label: String!
+    "0 以上の整数。オプション間で重複不可。"
     orderIndex: Int!
 }
 

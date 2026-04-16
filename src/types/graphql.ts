@@ -953,8 +953,22 @@ export type GqlMutation = {
   utilityDelete?: Maybe<GqlUtilityDeletePayload>;
   utilitySetPublishStatus?: Maybe<GqlUtilitySetPublishStatusPayload>;
   utilityUpdateInfo?: Maybe<GqlUtilityUpdateInfoPayload>;
+  /**
+   * ユーザー: 投票実行。
+   * 同一 topicId への再投票は **upsert で上書き** される（投票履歴は残らない）。
+   * 投票の取消（withdraw）は現時点で未サポート。
+   * eligibility と power は呼び出しごとに再チェックされ、NFT_COUNT の場合は呼び出し時点の保有数が新しい power として記録される。
+   */
   voteCast: GqlVoteCastPayload;
+  /**
+   * 管理者: 投票テーマ・ゲート・ポリシー・選択肢を 1 トランザクションで一括作成。
+   * Gate と PowerPolicy のクロス検証（NFT トークンの一致等）は行わない。
+   */
   voteTopicCreate: GqlVoteTopicCreatePayload;
+  /**
+   * 管理者: 投票テーマ削除。
+   * gate / powerPolicy / options / ballots は onDelete: Cascade で自動削除される。
+   */
   voteTopicDelete: GqlVoteTopicDeletePayload;
 };
 
@@ -1317,11 +1331,26 @@ export type GqlMutationVoteTopicDeleteArgs = {
   permission: GqlCheckCommunityPermissionInput;
 };
 
+/** ログインユーザーの投票資格と現状。再投票可能性の判定にも利用する。 */
 export type GqlMyVoteEligibility = {
   __typename?: 'MyVoteEligibility';
+  /**
+   * **リクエスト時点**で計算される power。
+   * VoteBallot.power（投票時スナップショット）とは別物で、NFT_COUNT ポリシー下では乖離しうる。
+   */
   currentPower?: Maybe<Scalars['Int']['output']>;
+  /**
+   * 投票可能か。**投票済みでも再投票可能なら true** を返す
+   * （期間内 & ゲート通過なら常に true。投票済みフラグは myBallot の有無で判定）。
+   */
   eligible: Scalars['Boolean']['output'];
+  /** ログインユーザーの投票（VoteTopic.myBallot と同じ値）。 */
   myBallot?: Maybe<GqlVoteBallot>;
+  /**
+   * eligible=false 時の理由コード。次のいずれか:
+   * GATE_NOT_CONFIGURED / GATE_NFT_TOKEN_NOT_CONFIGURED / REQUIRED_NFT_NOT_FOUND /
+   * NOT_A_MEMBER / INSUFFICIENT_ROLE / UNKNOWN_GATE_TYPE
+   */
   reason?: Maybe<Scalars['String']['output']>;
 };
 
@@ -1998,6 +2027,11 @@ export type GqlQuery = {
   incentiveGrants: GqlIncentiveGrantsConnection;
   membership?: Maybe<GqlMembership>;
   memberships: GqlMembershipsConnection;
+  /**
+   * ログインユーザーの投票資格確認。
+   * 投票画面（単一トピックにフォーカス）で利用する想定。
+   * 一覧画面では各ノードの VoteTopic.myEligibility を使う方が効率的。
+   */
   myVoteEligibility: GqlMyVoteEligibility;
   myWallet?: Maybe<GqlWallet>;
   nftInstance?: Maybe<GqlNftInstance>;
@@ -2043,7 +2077,12 @@ export type GqlQuery = {
    * - Returns data integrity verification results
    */
   verifyTransactions?: Maybe<Array<GqlTransactionVerificationResult>>;
+  /** 投票テーマ詳細（myBallot / myEligibility はフィールドリゾルバー経由で解決）。 */
   voteTopic?: Maybe<GqlVoteTopic>;
+  /**
+   * コミュニティの投票テーマ一覧（カーソルページネーション）。
+   * 各ノードの myBallot / myEligibility は DataLoader 経由で解決され、N+1 は発生しない。
+   */
   voteTopics: GqlVoteTopicsConnection;
   wallet?: Maybe<GqlWallet>;
   wallets: GqlWalletsConnection;
@@ -3250,11 +3289,21 @@ export const GqlVerificationStatus = {
 } as const;
 
 export type GqlVerificationStatus = typeof GqlVerificationStatus[keyof typeof GqlVerificationStatus];
+/**
+ * 個々の投票レコード。同一 (userId, topicId) に対し常に 1 レコード。
+ * 再投票は upsert で上書きされるため**投票履歴は保持されない**。
+ * 投票の取消（withdraw）は現時点で未サポート。
+ */
 export type GqlVoteBallot = {
   __typename?: 'VoteBallot';
   createdAt: Scalars['Datetime']['output'];
   id: Scalars['ID']['output'];
   option: GqlVoteOption;
+  /**
+   * 投票時点の power **スナップショット**。
+   * NFT_COUNT ポリシーの場合、投票後に NFT 保有数が変化しても本フィールドは変わらない
+   * （現時点の power は MyVoteEligibility.currentPower を参照）。
+   */
   power: Scalars['Int']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
@@ -3269,16 +3318,27 @@ export type GqlVoteCastPayload = {
   ballot: GqlVoteBallot;
 };
 
+/**
+ * 誰が投票できるか（資格ゲート）。
+ * VotePowerPolicy（何票持つか）とは**独立に設定される**。
+ * スキーマレベルでのクロス検証は行わないため、Gate=NFT(tokenA) + PowerPolicy=NFT_COUNT(tokenB)
+ * のような食い違いも作成可能。この場合 A のみ保有するユーザーは eligible=true / currentPower=0 になる。
+ * 組み合わせの妥当性は呼び出し側（管理 UI 等）で担保すること。
+ */
 export type GqlVoteGate = {
   __typename?: 'VoteGate';
   id: Scalars['ID']['output'];
+  /** type=NFT のときの参照 NftToken */
   nftToken?: Maybe<GqlNftToken>;
+  /** type=MEMBERSHIP のときに要求する最低ロール（未指定時は MEMBER 以上） */
   requiredRole?: Maybe<GqlRole>;
   type: GqlVoteGateType;
 };
 
 export type GqlVoteGateInput = {
+  /** type=NFT のとき必須。MEMBERSHIP のときは無視される。 */
   nftTokenId?: InputMaybe<Scalars['ID']['input']>;
+  /** type=MEMBERSHIP のときに任意指定（未指定時は MEMBER 以上で可）。NFT のときは無視される。 */
   requiredRole?: InputMaybe<GqlRole>;
   type: GqlVoteGateType;
 };
@@ -3289,28 +3349,43 @@ export const GqlVoteGateType = {
 } as const;
 
 export type GqlVoteGateType = typeof GqlVoteGateType[keyof typeof GqlVoteGateType];
+/**
+ * 投票選択肢。
+ * voteCount / totalPower は投票・再投票時にトランザクション内で直接更新される**非正規化カラム**で、
+ * 集計コストを O(1) に抑える。PowerPolicy=FLAT のとき voteCount == totalPower、
+ * NFT_COUNT では乖離する。一般的には勝敗判定に totalPower、参加者数表示に voteCount を使う。
+ */
 export type GqlVoteOption = {
   __typename?: 'VoteOption';
   id: Scalars['ID']['output'];
   label: Scalars['String']['output'];
   orderIndex: Scalars['Int']['output'];
+  /** 票の重み合計（= Σ power）。endsAt 到達前は一般ユーザーに null（管理者は常に実値を参照可）。 */
   totalPower?: Maybe<Scalars['Int']['output']>;
+  /** 投票した**人数**。endsAt 到達前は一般ユーザーに null（管理者は常に実値を参照可）。 */
   voteCount?: Maybe<Scalars['Int']['output']>;
 };
 
 export type GqlVoteOptionInput = {
   label: Scalars['String']['input'];
+  /** 0 以上の整数。オプション間で重複不可。 */
   orderIndex: Scalars['Int']['input'];
 };
 
+/**
+ * 投票の重み（1 人が何票持つか）を決めるポリシー。
+ * VoteGate（投票可能か）とは独立に設定される。
+ */
 export type GqlVotePowerPolicy = {
   __typename?: 'VotePowerPolicy';
   id: Scalars['ID']['output'];
+  /** type=NFT_COUNT のときに参照する NftToken（保有数を power とする） */
   nftToken?: Maybe<GqlNftToken>;
   type: GqlVotePowerPolicyType;
 };
 
 export type GqlVotePowerPolicyInput = {
+  /** type=NFT_COUNT のとき必須。FLAT のときは無視される。 */
   nftTokenId?: InputMaybe<Scalars['ID']['input']>;
   type: GqlVotePowerPolicyType;
 };
@@ -3329,7 +3404,13 @@ export type GqlVoteTopic = {
   endsAt: Scalars['Datetime']['output'];
   gate: GqlVoteGate;
   id: Scalars['ID']['output'];
+  /**
+   * ログインユーザーの投票（未ログイン・未投票は null）。
+   * MyVoteEligibility.myBallot と同じ値を返すため、一覧画面ではこちらを利用することを推奨
+   * （投票画面のように資格情報も必要な場合は myEligibility.myBallot を使う）。
+   */
   myBallot?: Maybe<GqlVoteBallot>;
+  /** ログインユーザーの投票資格情報（未ログインは null）。 */
   myEligibility?: Maybe<GqlMyVoteEligibility>;
   options: Array<GqlVoteOption>;
   phase: GqlVoteTopicPhase;
@@ -3366,6 +3447,12 @@ export type GqlVoteTopicEdge = {
   node: GqlVoteTopic;
 };
 
+/**
+ * 投票テーマの現在フェーズ。
+ * startsAt / endsAt と現在時刻から**レスポンス時点で**計算される値で、DB カラムではない。
+ * 長時間開いたままの画面（カウントダウン等）ではクライアント側で古くなるため、
+ * 精密な期間判定には startsAt / endsAt を直接比較すること。一覧表示などでは phase を利用して構わない。
+ */
 export const GqlVoteTopicPhase = {
   Closed: 'CLOSED',
   Open: 'OPEN',
