@@ -291,6 +291,33 @@ MEMBERSHIP MEMBERSHIP
 NFT_COUNT NFT_COUNT
         }
     
+
+
+        ReportTemplateScope {
+            SYSTEM SYSTEM
+COMMUNITY COMMUNITY
+        }
+    
+
+
+        ReportStatus {
+            DRAFT DRAFT
+APPROVED APPROVED
+PUBLISHED PUBLISHED
+REJECTED REJECTED
+SUPERSEDED SUPERSEDED
+        }
+    
+
+
+        FeedbackType {
+            QUALITY QUALITY
+ACCURACY ACCURACY
+TONE TONE
+STRUCTURE STRUCTURE
+OTHER OTHER
+        }
+    
   "t_images" {
     String id "🗝️"
     Boolean is_public 
@@ -775,6 +802,7 @@ NFT_COUNT NFT_COUNT
     String name "❓"
     String symbol "❓"
     Json json "❓"
+    String community_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -878,6 +906,66 @@ NFT_COUNT NFT_COUNT
     Int power 
     DateTime created_at 
     DateTime updated_at "❓"
+    }
+  
+
+  "t_report_templates" {
+    String id "🗝️"
+    String variant 
+    ReportTemplateScope scope 
+    String community_id "❓"
+    String system_prompt 
+    String user_prompt_template 
+    String community_context "❓"
+    String model 
+    Float temperature 
+    Int maxTokens 
+    String stopSequences 
+    Boolean isEnabled 
+    String updatedBy "❓"
+    DateTime createdAt 
+    DateTime updatedAt "❓"
+    }
+  
+
+  "t_reports" {
+    String id "🗝️"
+    String community_id 
+    String variant 
+    DateTime period_from 
+    DateTime period_to 
+    String template_id "❓"
+    Json input_payload 
+    String output_markdown 
+    String model 
+    String systemPromptSnapshot 
+    String userPromptSnapshot 
+    String communityContextSnapshot "❓"
+    Int inputTokens 
+    Int outputTokens 
+    Int cacheReadTokens 
+    String targetUserId "❓"
+    String generatedBy "❓"
+    ReportStatus status 
+    DateTime publishedAt "❓"
+    String publishedBy "❓"
+    String finalContent "❓"
+    Int regenerateCount 
+    String parentRunId "❓"
+    DateTime createdAt 
+    DateTime updatedAt "❓"
+    }
+  
+
+  "t_report_feedbacks" {
+    String id "🗝️"
+    String report_id 
+    String user_id 
+    Int rating 
+    FeedbackType feedback_type "❓"
+    String section_key "❓"
+    String comment "❓"
+    DateTime created_at 
     }
   
 
@@ -1041,7 +1129,10 @@ NFT_COUNT NFT_COUNT
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
     "t_communities" o{--}o "t_nft_instances" : "nftInstance"
+    "t_communities" o{--}o "t_nft_tokens" : "nftTokens"
     "t_communities" o{--}o "t_vote_topics" : "voteTopics"
+    "t_communities" o{--}o "t_report_templates" : "reportTemplates"
+    "t_communities" o{--}o "t_reports" : "reports"
     "t_community_configs" o|--|| "t_communities" : "community"
     "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
     "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
@@ -1080,6 +1171,11 @@ NFT_COUNT NFT_COUNT
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
     "t_users" o{--}o "t_vote_ballots" : "voteBallots"
     "t_users" o{--}o "t_vote_topics" : "createdVoteTopics"
+    "t_users" o{--}o "t_reports" : "reportsTargeted"
+    "t_users" o{--}o "t_reports" : "reportsGenerated"
+    "t_users" o{--}o "t_reports" : "reportsPublished"
+    "t_users" o{--}o "t_report_templates" : "reportTemplatesUpdated"
+    "t_users" o{--}o "t_report_feedbacks" : "reportFeedbacks"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_identities" o|--|o "t_communities" : "community"
@@ -1212,6 +1308,7 @@ NFT_COUNT NFT_COUNT
     "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
+    "t_nft_tokens" o|--|o "t_communities" : "community"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_tokens" o{--}o "t_vote_gates" : "voteGates"
     "t_nft_tokens" o{--}o "t_vote_power_policies" : "votePowerPolicies"
@@ -1244,6 +1341,22 @@ NFT_COUNT NFT_COUNT
     "t_vote_ballots" o|--|| "t_users" : "user"
     "t_vote_ballots" o|--|| "t_vote_topics" : "topic"
     "t_vote_ballots" o|--|| "t_vote_options" : "option"
+    "t_report_templates" o|--|| "ReportTemplateScope" : "enum:scope"
+    "t_report_templates" o|--|o "t_communities" : "community"
+    "t_report_templates" o|--|o "t_users" : "updatedByUser"
+    "t_report_templates" o{--}o "t_reports" : "reports"
+    "t_reports" o|--|| "t_communities" : "community"
+    "t_reports" o|--|o "t_report_templates" : "template"
+    "t_reports" o|--|o "t_users" : "targetUser"
+    "t_reports" o|--|o "t_users" : "generatedByUser"
+    "t_reports" o|--|| "ReportStatus" : "enum:status"
+    "t_reports" o|--|o "t_users" : "publishedByUser"
+    "t_reports" o|--|o "t_reports" : "parentRun"
+    "t_reports" o{--}o "t_reports" : "regenerations"
+    "t_reports" o{--}o "t_report_feedbacks" : "feedbacks"
+    "t_report_feedbacks" o|--|| "t_reports" : "report"
+    "t_report_feedbacks" o|--|| "t_users" : "user"
+    "t_report_feedbacks" o|--|o "FeedbackType" : "enum:feedback_type"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"
