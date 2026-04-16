@@ -5,6 +5,11 @@ type NftToken {
   symbol: String
   type: String!
   json: JSON
+  """
+  トークンを所有するコミュニティ。複数コミュニティで共用する場合や運用都合で未設定の場合は null。
+  portal 側の「このコミュニティに属する NftToken」一覧取得で参照される。
+  """
+  community: Community
   createdAt: Datetime!
   updatedAt: Datetime
 }

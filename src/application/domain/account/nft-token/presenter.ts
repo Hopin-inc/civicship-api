@@ -9,6 +9,8 @@ export default class NftTokenPresenter {
     return {
       __typename: "NftToken",
       ...nftToken,
+      // community は field resolver で解決される。communityId はスプレッドに含まれる。
+      community: null,
     };
   }
 

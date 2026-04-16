@@ -114,6 +114,7 @@ const resolvers = {
   Wallet: wallet.Wallet,
   NftWallet: nftWallet.NftWallet,
   NftInstance: nftInstance.NftInstance,
+  NftToken: nftToken.NftToken,
   Membership: membership.Membership,
   Community: community.Community,
   CommunityConfig: community.CommunityConfig,

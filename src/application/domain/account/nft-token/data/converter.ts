@@ -17,6 +17,11 @@ export default class NftTokenConverter {
       conditions.push({ type: { in: input.type } });
     }
 
+    // NftToken.community_id を直接参照（FK）。nullable のため NULL は自然に除外される。
+    if (input.communityId !== undefined && input.communityId !== null) {
+      conditions.push({ communityId: input.communityId });
+    }
+
     const allAndConditions: Prisma.NftTokenWhereInput[] = [...conditions];
 
     if (input.and?.length) {
