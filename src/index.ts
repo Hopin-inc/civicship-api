@@ -17,10 +17,13 @@ import cookieParser from "cookie-parser";
 import { handleSessionLogin } from "@/presentation/middleware/session";
 import { sessionLoginRateLimit } from "@/presentation/middleware/rate-limit";
 import { botBlocker } from "@/presentation/middleware/bot-blocker";
+import { step, done, isProgressEnabled } from "@/utils/startupProgress";
 
 const port = Number(process.env.PORT ?? 3000);
 
 async function startServer() {
+  step("DI container registered");
+
   const app = express();
   app.set("trust proxy", 1);
 
@@ -36,8 +39,10 @@ async function startServer() {
   } else {
     server = http.createServer(app);
   }
+  step("HTTPS certs loaded");
 
   const apolloServer = await createApolloServer(server);
+  step("Apollo Server created");
 
   app.use((req, res, next): void => {
     if (req.method === "TRACE") {
@@ -95,12 +100,18 @@ async function startServer() {
     res.status(status).json({ error: err.expose ? err.message : "Internal Server Error" });
   });
 
+  step("Middleware registered");
+
   server.listen(port, () => {
     const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
     const host = "localhost";
     const url = `${protocol}://${host}:${port}/graphql`;
 
-    logger.info(`🚀 Server ready at ${url}`);
+    if (isProgressEnabled()) {
+      done(`Server ready at ${url}`);
+    } else {
+      logger.info(`🚀 Server ready at ${url}`);
+    }
   });
 }
 
