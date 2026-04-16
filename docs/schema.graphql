@@ -869,6 +869,16 @@ type Mutation {
   utilityDelete(id: ID!, permission: CheckCommunityPermissionInput!): UtilityDeletePayload
   utilitySetPublishStatus(id: ID!, input: UtilitySetPublishStatusInput!, permission: CheckCommunityPermissionInput!): UtilitySetPublishStatusPayload
   utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!, permission: CheckCommunityPermissionInput!): UtilityUpdateInfoPayload
+  voteCast(input: VoteCastInput!): VoteCastPayload!
+  voteTopicCreate(input: VoteTopicCreateInput!, permission: CheckCommunityPermissionInput!): VoteTopicCreatePayload!
+  voteTopicDelete(id: ID!, permission: CheckCommunityPermissionInput!): VoteTopicDeletePayload!
+}
+
+type MyVoteEligibility {
+  currentPower: Int
+  eligible: Boolean!
+  myBallot: VoteBallot
+  reason: String
 }
 
 input NestedPlaceConnectOrCreateInput {
@@ -1490,6 +1500,7 @@ type Query {
   incentiveGrants(cursor: String, filter: IncentiveGrantFilterInput, first: Int, sort: IncentiveGrantSortInput): IncentiveGrantsConnection!
   membership(communityId: ID!, userId: ID!): Membership
   memberships(cursor: MembershipCursorInput, filter: MembershipFilterInput, first: Int, sort: MembershipSortInput): MembershipsConnection!
+  myVoteEligibility(topicId: ID!): MyVoteEligibility!
   myWallet: Wallet
   nftInstance(id: ID!): NftInstance
   nftInstances(cursor: String, filter: NftInstanceFilterInput, first: Int, sort: NftInstanceSortInput): NftInstancesConnection!
@@ -1535,6 +1546,8 @@ type Query {
   - Returns data integrity verification results
   """
   verifyTransactions(txIds: [ID!]!): [TransactionVerificationResult!]
+  voteTopic(id: ID!): VoteTopic
+  voteTopics(communityId: ID!, cursor: String, first: Int): VoteTopicsConnection!
   wallet(id: ID!): Wallet
   wallets(cursor: String, filter: WalletFilterInput, first: Int, sort: WalletSortInput): WalletsConnection!
 }
@@ -2302,6 +2315,124 @@ enum VerificationStatus {
   NOT_VERIFIED
   PENDING
   VERIFIED
+}
+
+type VoteBallot {
+  createdAt: Datetime!
+  id: ID!
+  option: VoteOption!
+  power: Int!
+  updatedAt: Datetime
+}
+
+input VoteCastInput {
+  optionId: ID!
+  topicId: ID!
+}
+
+type VoteCastPayload {
+  ballot: VoteBallot!
+}
+
+type VoteGate {
+  id: ID!
+  nftToken: NftToken
+  requiredRole: Role
+  type: VoteGateType!
+}
+
+input VoteGateInput {
+  nftTokenId: ID
+  requiredRole: Role
+  type: VoteGateType!
+}
+
+enum VoteGateType {
+  MEMBERSHIP
+  NFT
+}
+
+type VoteOption {
+  id: ID!
+  label: String!
+  orderIndex: Int!
+  totalPower: Int
+  voteCount: Int
+}
+
+input VoteOptionInput {
+  label: String!
+  orderIndex: Int!
+}
+
+type VotePowerPolicy {
+  id: ID!
+  nftToken: NftToken
+  type: VotePowerPolicyType!
+}
+
+input VotePowerPolicyInput {
+  nftTokenId: ID
+  type: VotePowerPolicyType!
+}
+
+enum VotePowerPolicyType {
+  FLAT
+  NFT_COUNT
+}
+
+type VoteTopic {
+  community: Community!
+  createdAt: Datetime!
+  description: String
+  endsAt: Datetime!
+  gate: VoteGate!
+  id: ID!
+  myBallot: VoteBallot
+  myEligibility: MyVoteEligibility
+  options: [VoteOption!]!
+  phase: VoteTopicPhase!
+  powerPolicy: VotePowerPolicy!
+  startsAt: Datetime!
+  title: String!
+  updatedAt: Datetime
+}
+
+input VoteTopicCreateInput {
+  communityId: ID!
+  description: String
+  endsAt: Datetime!
+  gate: VoteGateInput!
+  options: [VoteOptionInput!]!
+  powerPolicy: VotePowerPolicyInput!
+  startsAt: Datetime!
+  title: String!
+}
+
+type VoteTopicCreatePayload {
+  voteTopic: VoteTopic!
+}
+
+type VoteTopicDeletePayload {
+  id: ID!
+}
+
+type VoteTopicEdge {
+  cursor: String!
+  node: VoteTopic!
+}
+
+enum VoteTopicPhase {
+  CLOSED
+  OPEN
+  UPCOMING
+}
+
+type VoteTopicsConnection {
+  edges: [VoteTopicEdge!]!
+  nodes: [VoteTopic!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type Wallet {
