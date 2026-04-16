@@ -73,7 +73,8 @@ export default class VoteUseCase {
     // ここで個別に findBallot を呼ばない（二重クエリを防ぐ）
     const resultVisible = this.service.calcResultVisible(topic.endsAt, isManagerOfCommunity);
     const phase = this.service.calcPhase(topic.startsAt, topic.endsAt);
-    return VotePresenter.topic(topic, resultVisible, phase);
+    // WithMeta → GqlVoteTopic 境界: field resolver で community が解決されることを前提とした型境界キャスト
+    return VotePresenter.topic(topic, resultVisible, phase) as unknown as GqlVoteTopic;
   }
 
   async userGetMyVoteEligibility(

@@ -32,15 +32,20 @@ export type GqlVotePowerPolicyWithMeta = GqlVotePowerPolicy & {
   nftTokenId: string | null; // VotePowerPolicy.nftToken リゾルバーが参照
 };
 
-export type GqlVoteBallotWithMeta = GqlVoteBallot & {
-  optionId: string;      // VoteBallot.option リゾルバーが参照
-  resultVisible: boolean; // VoteOption の集計マスキングに使用
+// フィールドリゾルバーで解決するフィールド（GQL 上 non-null だが Presenter では持たない）を
+// Omit して optional に変更することで `null as unknown as ...` キャストを排除する
+
+export type GqlVoteBallotWithMeta = Omit<GqlVoteBallot, "option"> & {
+  option?: GqlVoteOption;  // VoteBallot.option フィールドリゾルバーで解決
+  optionId: string;        // VoteBallot.option リゾルバーが参照
+  resultVisible: boolean;  // VoteOption の集計マスキングに使用
 };
 
-// gate/powerPolicy は実態として常に WithMeta 版が入るため Omit して上書き
-export type GqlVoteTopicWithMeta = Omit<GqlVoteTopic, "gate" | "powerPolicy"> & {
-  communityId: string;            // VoteTopic.community リゾルバーが参照
-  resultVisible: boolean;         // VoteTopic.myBallot リゾルバーが参照
+// gate/powerPolicy/community は Omit して WithMeta 版で上書き
+export type GqlVoteTopicWithMeta = Omit<GqlVoteTopic, "gate" | "powerPolicy" | "community"> & {
+  community?: GqlVoteTopic["community"]; // VoteTopic.community フィールドリゾルバーで解決
+  communityId: string;                   // VoteTopic.community リゾルバーが参照
+  resultVisible: boolean;                // VoteTopic.myBallot リゾルバーが参照
   gate: GqlVoteGateWithMeta;
   powerPolicy: GqlVotePowerPolicyWithMeta;
 };
@@ -84,7 +89,7 @@ export default class VotePresenter {
     return {
       __typename: "VoteBallot",
       id: ballot.id,
-      option: null as unknown as GqlVoteOption, // フィールドリゾルバーで解決
+      // option はフィールドリゾルバーで解決するため省略（Omit 済み）
       power: ballot.power,
       createdAt: ballot.createdAt,
       updatedAt: ballot.updatedAt ?? null,
@@ -101,7 +106,7 @@ export default class VotePresenter {
     return {
       __typename: "VoteTopic",
       id: topic.id,
-      community: null as unknown as GqlVoteTopic["community"], // フィールドリゾルバーで解決
+      // community はフィールドリゾルバーで解決するため省略（Omit 済み）
       communityId: topic.communityId,
       resultVisible,
       title: topic.title,
@@ -131,7 +136,8 @@ export default class VotePresenter {
       eligible: result.eligible,
       reason: result.reason ?? null,
       currentPower: result.eligible ? currentPower : null,
-      myBallot: myBallot ? this.ballot(myBallot, resultVisible) : null,
+      // WithMeta → GQL 境界: field resolver で option が解決されることを前提とした型境界キャスト
+      myBallot: myBallot ? (this.ballot(myBallot, resultVisible) as unknown as GqlVoteBallot) : null,
     };
   }
 
@@ -141,6 +147,8 @@ export default class VotePresenter {
     hasNextPage: boolean,
     cursor?: string,
   ): GqlVoteTopicsConnection {
+    // WithMeta → GQL 境界: community/option は field resolver で解決されることを前提とした型境界キャスト
+    const gqlTopics = topics as unknown as GqlVoteTopic[];
     return {
       __typename: "VoteTopicsConnection",
       totalCount,
@@ -150,25 +158,27 @@ export default class VotePresenter {
         startCursor: topics[0]?.id,
         endCursor: topics.length ? topics[topics.length - 1].id : undefined,
       },
-      edges: topics.map((node) => ({
+      edges: gqlTopics.map((node) => ({
         cursor: node.id,
         node,
       })),
-      nodes: topics,
+      nodes: gqlTopics,
     };
   }
 
   static create(topic: GqlVoteTopicWithMeta): GqlVoteTopicCreatePayload {
     return {
       __typename: "VoteTopicCreatePayload",
-      voteTopic: topic,
+      // WithMeta → GQL 境界: field resolver で community が解決されることを前提とした型境界キャスト
+      voteTopic: topic as unknown as GqlVoteTopic,
     };
   }
 
   static castBallot(ballot: GqlVoteBallotWithMeta): GqlVoteCastPayload {
     return {
       __typename: "VoteCastPayload",
-      ballot,
+      // WithMeta → GQL 境界: field resolver で option が解決されることを前提とした型境界キャスト
+      ballot: ballot as unknown as GqlVoteBallot,
     };
   }
 
