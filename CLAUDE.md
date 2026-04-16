@@ -402,14 +402,13 @@ const items = await prisma.model.findMany({
 
 ## Environment Setup
 
-Environment files are split per environment:
+Environment files:
 
-- `.env.local` - Local development (loaded by `pnpm dev*` scripts)
-- `.env.dev` - dev environment values (Cloud Run dev), used locally when needed
-- `.env.prd` - Production values, used locally when needed
+- `.env` - Default local environment (loaded by `pnpm dev`, `pnpm dev:external`, `pnpm richmenu:deploy`)
+- `.env.local` - Local HTTPS development (loaded by `pnpm dev:https`)
 - `.env.sample` - Template (committed)
 
-Required environment variables in `.env.local`:
+Required environment variables in `.env` / `.env.local`:
 
 ```env
 DATABASE_URL=postgresql://user:password@host:15432/civicship_dev
