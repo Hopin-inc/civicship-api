@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
-import { CurrentPrefecture, MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
 import { IContext } from "@/types/server";
 import VoteUseCase from "@/application/domain/vote/usecase";
 import { container } from "tsyringe";
@@ -13,7 +12,7 @@ import {
   VoteTopicNotEditableError,
 } from "@/errors/graphql";
 import { GqlVoteGateType, GqlVotePowerPolicyType } from "@/types/graphql";
-import { createNftToken, createVoteTopic } from "./helpers";
+import { createNftToken, createVoteTopic, setupManagerAndCommunity } from "./helpers";
 
 // ─── 共通セットアップ ─────────────────────────────────────────────────────────
 
@@ -33,26 +32,6 @@ function makeValidUpdateInput(overrides: Record<string, unknown> = {}) {
     ],
     ...overrides,
   };
-}
-
-async function setupManagerAndCommunity(slug: string) {
-  const manager = await TestDataSourceHelper.createUser({
-    name: "Manager",
-    slug,
-    currentPrefecture: CurrentPrefecture.KAGAWA,
-  });
-  const community = await TestDataSourceHelper.createCommunity({
-    name: "community",
-    pointName: "pt",
-  });
-  await TestDataSourceHelper.createMembership({
-    user: { connect: { id: manager.id } },
-    community: { connect: { id: community.id } },
-    status: MembershipStatus.JOINED,
-    reason: MembershipStatusReason.INVITED,
-    role: Role.MANAGER,
-  });
-  return { manager, community };
 }
 
 describe("Vote Integration: VoteTopicUpdate", () => {
@@ -254,25 +233,12 @@ describe("Vote Integration: VoteTopicUpdate", () => {
   });
 
   it("should throw AuthorizationError when topic does not belong to the specified community", async () => {
-    const manager = await TestDataSourceHelper.createUser({
-      name: "Manager",
-      slug: "manager-upd-auth",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    const communityA = await TestDataSourceHelper.createCommunity({
-      name: "community-a",
-      pointName: "pt",
-    });
+    // setup で manager + communityA + MANAGER membership が作られる。
+    // communityB は authorization テストのため、manager の所属しない別 community として追加。
+    const { manager, community: communityA } = await setupManagerAndCommunity("manager-upd-auth");
     const communityB = await TestDataSourceHelper.createCommunity({
       name: "community-b",
       pointName: "pt",
-    });
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: manager.id } },
-      community: { connect: { id: communityA.id } },
-      status: MembershipStatus.JOINED,
-      reason: MembershipStatusReason.INVITED,
-      role: Role.MANAGER,
     });
 
     const now = new Date();

@@ -881,7 +881,9 @@ type Mutation {
 
   """
   管理者: 投票テーマ・ゲート・ポリシー・選択肢を 1 トランザクションで一括作成。
-  Gate と PowerPolicy のクロス検証（NFT トークンの一致等）は行わない。
+  Gate.type=NFT かつ PowerPolicy.type=NFT_COUNT の場合、両者の nftTokenId は
+  一致していなければならない（バックエンドで検証、違反時は `VALIDATION_ERROR`）。
+  詳細は VoteGate 型の説明を参照。
   """
   voteTopicCreate(input: VoteTopicCreateInput!, permission: CheckCommunityPermissionInput!): VoteTopicCreatePayload!
 

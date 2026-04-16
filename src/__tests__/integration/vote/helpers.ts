@@ -1,7 +1,40 @@
-import { NftInstanceStatus, NftWalletType } from "@prisma/client";
+import {
+  CurrentPrefecture,
+  MembershipStatus,
+  MembershipStatusReason,
+  NftInstanceStatus,
+  NftWalletType,
+  Role,
+} from "@prisma/client";
 import { prismaClient } from "@/infrastructure/prisma/client";
+import TestDataSourceHelper from "../../helper/test-data-source-helper";
 
 let nftAddressCounter = 0;
+
+/**
+ * Vote 系 integration テストの共通セットアップ。
+ * manager ユーザー + community + MANAGER 権限の membership を作成する。
+ * slug はテストごとにユニークにすること（並行テストでの衝突回避のため）。
+ */
+export async function setupManagerAndCommunity(slug: string) {
+  const manager = await TestDataSourceHelper.createUser({
+    name: "Manager",
+    slug,
+    currentPrefecture: CurrentPrefecture.KAGAWA,
+  });
+  const community = await TestDataSourceHelper.createCommunity({
+    name: "community",
+    pointName: "pt",
+  });
+  await TestDataSourceHelper.createMembership({
+    user: { connect: { id: manager.id } },
+    community: { connect: { id: community.id } },
+    status: MembershipStatus.JOINED,
+    reason: MembershipStatusReason.INVITED,
+    role: Role.MANAGER,
+  });
+  return { manager, community };
+}
 
 /**
  * VoteTopic を gate/policy/options ごと DB に直接作成する。

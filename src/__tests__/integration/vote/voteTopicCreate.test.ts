@@ -8,7 +8,7 @@ import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { ValidationError } from "@/errors/graphql";
 import { GqlVoteGateType, GqlVotePowerPolicyType } from "@/types/graphql";
-import { createNftToken } from "./helpers";
+import { createNftToken, setupManagerAndCommunity } from "./helpers";
 
 // ─── 共通セットアップ ─────────────────────────────────────────────────────────
 
@@ -323,22 +323,7 @@ describe("Vote Integration: VoteTopicCreate", () => {
     // Gate=NFT(A) + Policy=NFT_COUNT(B) where A !== B は論理的に整合しないため弾く。
     // Gate で A 保有を要求しつつ Policy は B 保有数を power とするため、A のみ保有する
     // ユーザーが eligible=true / power=0 という「投票しても効かない」状態になる。
-    const manager = await TestDataSourceHelper.createUser({
-      name: "Manager",
-      slug: "manager-slug-9",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    const community = await TestDataSourceHelper.createCommunity({
-      name: "community",
-      pointName: "pt",
-    });
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: manager.id } },
-      community: { connect: { id: community.id } },
-      status: MembershipStatus.JOINED,
-      reason: MembershipStatusReason.INVITED,
-      role: Role.MANAGER,
-    });
+    const { manager, community } = await setupManagerAndCommunity("manager-slug-9");
 
     const tokenA = await createNftToken();
     const tokenB = await createNftToken();
@@ -357,22 +342,7 @@ describe("Vote Integration: VoteTopicCreate", () => {
 
   it("should accept NFT gate and NFT_COUNT policy when they reference the same nftTokenId", async () => {
     // 同一 token なら許容される（典型的な「token 保有者が保有数ぶん投票できる」設計）
-    const manager = await TestDataSourceHelper.createUser({
-      name: "Manager",
-      slug: "manager-slug-10",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    const community = await TestDataSourceHelper.createCommunity({
-      name: "community",
-      pointName: "pt",
-    });
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: manager.id } },
-      community: { connect: { id: community.id } },
-      status: MembershipStatus.JOINED,
-      reason: MembershipStatusReason.INVITED,
-      role: Role.MANAGER,
-    });
+    const { manager, community } = await setupManagerAndCommunity("manager-slug-10");
 
     const nftToken = await createNftToken();
 
@@ -391,22 +361,7 @@ describe("Vote Integration: VoteTopicCreate", () => {
 
   it("should accept MEMBERSHIP gate and NFT_COUNT policy (intentional member-only weighting)", async () => {
     // #5 相当: メンバー全員が投票可で、NFT ホルダーだけが重み付けされる設計は許容する。
-    const manager = await TestDataSourceHelper.createUser({
-      name: "Manager",
-      slug: "manager-slug-11",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    const community = await TestDataSourceHelper.createCommunity({
-      name: "community",
-      pointName: "pt",
-    });
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: manager.id } },
-      community: { connect: { id: community.id } },
-      status: MembershipStatus.JOINED,
-      reason: MembershipStatusReason.INVITED,
-      role: Role.MANAGER,
-    });
+    const { manager, community } = await setupManagerAndCommunity("manager-slug-11");
 
     const nftToken = await createNftToken();
 
