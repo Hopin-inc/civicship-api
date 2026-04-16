@@ -3363,6 +3363,7 @@ export type GqlVoteBallot = {
    * （現時点の power は MyVoteEligibility.currentPower を参照）。
    */
   power: Scalars['Int']['output'];
+  /** 再投票（upsert）時に現在時刻で更新される。初回投票時は null。 */
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -3380,10 +3381,17 @@ export type GqlVoteCastSuccess = {
 
 /**
  * 誰が投票できるか（資格ゲート）。
- * VotePowerPolicy（何票持つか）とは**独立に設定される**。
- * スキーマレベルでのクロス検証は行わないため、Gate=NFT(tokenA) + PowerPolicy=NFT_COUNT(tokenB)
- * のような食い違いも作成可能。この場合 A のみ保有するユーザーは eligible=true / currentPower=0 になる。
- * 組み合わせの妥当性は呼び出し側（管理 UI 等）で担保すること。
+ * VotePowerPolicy（何票持つか）とは**独立に設定される**が、両方が NFT 系
+ * （Gate.type=NFT かつ PowerPolicy.type=NFT_COUNT）の場合に限り、参照する
+ * **nftTokenId は一致していなければならない**（バックエンドで検証、違反時は
+ * `VALIDATION_ERROR`）。異なる token を指定した場合、A 保有者のうち B 非保有者が
+ * eligible=true / currentPower=0 になる「投票しても効かない」状態が生じる設定ミスを防ぐため。
+ *
+ * 許容される組み合わせ:
+ * - Gate=NFT(A) + Policy=NFT_COUNT(A)  典型的
+ * - Gate=MEMBERSHIP + Policy=NFT_COUNT(A)  メンバー内で NFT ホルダーのみ重み付け（非ホルダーは power=0）
+ * - Gate=NFT(A) + Policy=FLAT  A 保有者は一律 1 票
+ * - Gate=MEMBERSHIP + Policy=FLAT  全員 1 票
  */
 export type GqlVoteGate = {
   __typename?: 'VoteGate';
@@ -3419,6 +3427,10 @@ export type GqlVoteOption = {
   __typename?: 'VoteOption';
   id: Scalars['ID']['output'];
   label: Scalars['String']['output'];
+  /**
+   * 作成時（VoteOptionInput）に指定した値がそのまま保持される。
+   * VoteTopic.options は本フィールドの昇順で返るため、UI 側で追加のソートは不要。
+   */
   orderIndex: Scalars['Int']['output'];
   /** 票の重み合計（= Σ power）。endsAt 到達前は一般ユーザーに null（管理者は常に実値を参照可）。 */
   totalPower?: Maybe<Scalars['Int']['output']>;
@@ -3472,7 +3484,12 @@ export type GqlVoteTopic = {
   myBallot?: Maybe<GqlVoteBallot>;
   /** ログインユーザーの投票資格情報（未ログインは null）。 */
   myEligibility?: Maybe<GqlMyVoteEligibility>;
+  /** 投票選択肢。orderIndex 昇順で返る（UI 側でのソートは不要）。 */
   options: Array<GqlVoteOption>;
+  /**
+   * 現在フェーズ。**レスポンス時点でサーバ時刻から計算される値**であり DB カラムではない。
+   * 詳細は VoteTopicPhase の説明を参照。
+   */
   phase: GqlVoteTopicPhase;
   powerPolicy: GqlVotePowerPolicy;
   startsAt: Scalars['Datetime']['output'];
@@ -3524,6 +3541,11 @@ export const GqlVoteTopicPhase = {
 } as const;
 
 export type GqlVoteTopicPhase = typeof GqlVoteTopicPhase[keyof typeof GqlVoteTopicPhase];
+/**
+ * voteTopicUpdate 用の入力。**既存の全フィールドを置き換える**（部分更新は未サポート）。
+ * options は delete → create で全量置換される。gate / powerPolicy も同様に再生成されるため、
+ * 既存の id 値は保持されない点に注意。UPCOMING フェーズ限定で呼ばれるため、投票は存在しない前提。
+ */
 export type GqlVoteTopicUpdateInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   endsAt: Scalars['Datetime']['input'];

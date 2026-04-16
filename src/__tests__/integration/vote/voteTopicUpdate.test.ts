@@ -367,4 +367,32 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       }),
     ).rejects.toThrow(ValidationError);
   });
+
+  it("should throw ValidationError when NFT gate and NFT_COUNT policy reference different nftTokenIds", async () => {
+    // Update でも Create と同じクロス検証が効くこと
+    const { manager, community } = await setupManagerAndCommunity("manager-upd-cross");
+
+    const now = new Date();
+    const { topic } = await createVoteTopic({
+      communityId: community.id,
+      createdBy: manager.id,
+      startsAt: new Date(now.getTime() + 60_000),
+      endsAt: new Date(now.getTime() + 3_600_000),
+    });
+
+    const tokenA = await createNftToken();
+    const tokenB = await createNftToken();
+
+    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    await expect(
+      voteUseCase.managerUpdateVoteTopic(ctx, {
+        id: topic.id,
+        input: makeValidUpdateInput({
+          gate: { type: GqlVoteGateType.Nft, nftTokenId: tokenA.id },
+          powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: tokenB.id },
+        }),
+        permission: { communityId: community.id },
+      }),
+    ).rejects.toThrow(ValidationError);
+  });
 });

@@ -52,6 +52,11 @@ input VoteTopicCreateInput {
   options: [VoteOptionInput!]!
 }
 
+"""
+voteTopicUpdate 用の入力。**既存の全フィールドを置き換える**（部分更新は未サポート）。
+options は delete → create で全量置換される。gate / powerPolicy も同様に再生成されるため、
+既存の id 値は保持されない点に注意。UPCOMING フェーズ限定で呼ばれるため、投票は存在しない前提。
+"""
 input VoteTopicUpdateInput {
   title: String!
   description: String

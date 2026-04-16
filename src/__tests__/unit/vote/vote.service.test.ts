@@ -204,6 +204,34 @@ describe("VoteService.validateTopicInput", () => {
     const input = { ...baseInput, powerPolicy: { type: "NFT_COUNT" as const, nftTokenId } };
     expect(() => service.validateTopicInput(input)).not.toThrow();
   });
+
+  it("throws when NFT gate and NFT_COUNT policy reference different nftTokenIds", () => {
+    const input = {
+      ...baseInput,
+      gate: { type: "NFT" as const, nftTokenId: "token-A" },
+      powerPolicy: { type: "NFT_COUNT" as const, nftTokenId: "token-B" },
+    };
+    expect(() => service.validateTopicInput(input)).toThrow(ValidationError);
+  });
+
+  it("passes when NFT gate and NFT_COUNT policy reference the same nftTokenId", () => {
+    const input = {
+      ...baseInput,
+      gate: { type: "NFT" as const, nftTokenId },
+      powerPolicy: { type: "NFT_COUNT" as const, nftTokenId },
+    };
+    expect(() => service.validateTopicInput(input)).not.toThrow();
+  });
+
+  it("passes when MEMBERSHIP gate is combined with NFT_COUNT policy (intentional weighting)", () => {
+    // Gate=MEMBERSHIP + Policy=NFT_COUNT は許容される組み合わせ（非 NFT ホルダーは power=0 だが意図的）
+    const input = {
+      ...baseInput,
+      gate: { type: "MEMBERSHIP" as const },
+      powerPolicy: { type: "NFT_COUNT" as const, nftTokenId },
+    };
+    expect(() => service.validateTopicInput(input)).not.toThrow();
+  });
 });
 
 // ---- validateVotingPeriod ----
