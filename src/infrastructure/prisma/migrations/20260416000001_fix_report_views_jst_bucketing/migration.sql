@@ -69,7 +69,12 @@ WITH user_events AS (
         fw."id" AS "wallet_id",
         'out'::text AS "direction",
         t."reason" AS "reason",
-        t."to_point_change" AS "points",
+        -- Source-side uses ABS(from_point_change) so that once fees are
+        -- ever applied (from_point_change > to_point_change), the "points
+        -- sent" aggregate reflects what actually left the sender's wallet.
+        -- ABS is defensive: if the schema ever stores deductions as
+        -- negative values, the magnitude is still what we want to sum.
+        ABS(t."from_point_change") AS "points",
         t."chain_depth" AS "chain_depth",
         tw."user_id" AS "counterparty_user_id"
     FROM "t_transactions" t
@@ -86,6 +91,9 @@ WITH user_events AS (
         tw."id" AS "wallet_id",
         'in'::text AS "direction",
         t."reason" AS "reason",
+        -- Destination-side keeps to_point_change so the "points received"
+        -- aggregate reflects what actually arrived at the receiver's wallet
+        -- (net of any future fee).
         t."to_point_change" AS "points",
         t."chain_depth" AS "chain_depth",
         fw."user_id" AS "counterparty_user_id"
