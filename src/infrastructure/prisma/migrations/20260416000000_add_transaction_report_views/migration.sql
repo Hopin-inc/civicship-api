@@ -113,6 +113,8 @@ WITH user_events AS (
     FROM "t_transactions" t
     INNER JOIN "t_wallets" fw ON fw."id" = t."from" AND fw."user_id" IS NOT NULL
     LEFT JOIN "t_wallets" tw ON tw."id" = t."to"
+    WHERE tw."community_id" IS NULL
+       OR tw."community_id" = fw."community_id"
     UNION ALL
     -- Incoming (user is the `to` side)
     SELECT
@@ -128,6 +130,8 @@ WITH user_events AS (
     FROM "t_transactions" t
     INNER JOIN "t_wallets" tw ON tw."id" = t."to" AND tw."user_id" IS NOT NULL
     LEFT JOIN "t_wallets" fw ON fw."id" = t."from"
+    WHERE fw."community_id" IS NULL
+       OR fw."community_id" = tw."community_id"
 )
 SELECT
     "date",
