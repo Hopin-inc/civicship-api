@@ -228,6 +228,7 @@ Table t_users {
   reportsTargeted t_reports [not null]
   reportsGenerated t_reports [not null]
   reportsPublished t_reports [not null]
+  reportTemplatesUpdated t_report_templates [not null]
   reportFeedbacks t_report_feedbacks [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -790,6 +791,7 @@ Table t_report_templates {
   stopSequences String[] [not null]
   isEnabled Boolean [not null, default: true]
   updatedBy String
+  updatedByUser t_users
   reports t_reports [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -1449,6 +1451,8 @@ Ref: t_vote_ballots.topicId > t_vote_topics.id [delete: Cascade]
 Ref: t_vote_ballots.optionId > t_vote_options.id [delete: Cascade]
 
 Ref: t_report_templates.communityId > t_communities.id [delete: Cascade]
+
+Ref: t_report_templates.updatedBy > t_users.id [delete: Set Null]
 
 Ref: t_reports.communityId > t_communities.id [delete: Cascade]
 

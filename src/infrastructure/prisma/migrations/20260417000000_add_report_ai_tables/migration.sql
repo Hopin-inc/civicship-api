@@ -145,6 +145,11 @@ ALTER TABLE "t_report_templates"
     FOREIGN KEY ("community_id") REFERENCES "t_communities"("id")
     ON DELETE CASCADE ON UPDATE CASCADE;
 
+ALTER TABLE "t_report_templates"
+    ADD CONSTRAINT "t_report_templates_updated_by_fkey"
+    FOREIGN KEY ("updated_by") REFERENCES "t_users"("id")
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
 ALTER TABLE "t_reports"
     ADD CONSTRAINT "t_reports_community_id_fkey"
     FOREIGN KEY ("community_id") REFERENCES "t_communities"("id")

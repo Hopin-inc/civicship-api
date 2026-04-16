@@ -390,10 +390,11 @@ model User {
   voteBallots       VoteBallot[]
   createdVoteTopics VoteTopic[]  @relation("VoteTopicCreatedBy")
 
-  reportsTargeted  Report[]         @relation("ReportTarget")
-  reportsGenerated Report[]         @relation("ReportGenerator")
-  reportsPublished Report[]         @relation("ReportPublisher")
-  reportFeedbacks  ReportFeedback[] @relation("ReportFeedbackAuthor")
+  reportsTargeted        Report[]         @relation("ReportTarget")
+  reportsGenerated       Report[]         @relation("ReportGenerator")
+  reportsPublished       Report[]         @relation("ReportPublisher")
+  reportTemplatesUpdated ReportTemplate[] @relation("ReportTemplateUpdatedBy")
+  reportFeedbacks        ReportFeedback[] @relation("ReportFeedbackAuthor")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1660,7 +1661,8 @@ model ReportTemplate {
   stopSequences String[] @map("stop_sequences")
   isEnabled     Boolean  @default(true) @map("is_enabled")
 
-  updatedBy String? @map("updated_by")
+  updatedBy     String? @map("updated_by")
+  updatedByUser User?   @relation("ReportTemplateUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
   reports Report[]
 

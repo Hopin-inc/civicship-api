@@ -441,6 +441,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Report",
                 relationName: "ReportPublisher"
             }, {
+                name: "reportTemplatesUpdated",
+                type: "ReportTemplate",
+                relationName: "ReportTemplateUpdatedBy"
+            }, {
                 name: "reportFeedbacks",
                 type: "ReportFeedback",
                 relationName: "ReportFeedbackAuthor"
@@ -1049,6 +1053,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToReportTemplate"
+            }, {
+                name: "updatedByUser",
+                type: "User",
+                relationName: "ReportTemplateUpdatedBy"
             }, {
                 name: "reports",
                 type: "Report",
@@ -3137,6 +3145,7 @@ type UserFactoryDefineInput = {
     reportsTargeted?: Prisma.ReportCreateNestedManyWithoutTargetUserInput;
     reportsGenerated?: Prisma.ReportCreateNestedManyWithoutGeneratedByUserInput;
     reportsPublished?: Prisma.ReportCreateNestedManyWithoutPublishedByUserInput;
+    reportTemplatesUpdated?: Prisma.ReportTemplateCreateNestedManyWithoutUpdatedByUserInput;
     reportFeedbacks?: Prisma.ReportFeedbackCreateNestedManyWithoutUserInput;
 };
 
@@ -9307,6 +9316,11 @@ type ReportTemplatecommunityFactory = {
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput["create"]>;
 };
 
+type ReportTemplateupdatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReportTemplatesUpdatedInput["create"]>;
+};
+
 type ReportTemplateFactoryDefineInput = {
     id?: string;
     variant?: string;
@@ -9319,10 +9333,10 @@ type ReportTemplateFactoryDefineInput = {
     maxTokens?: number;
     stopSequences?: Prisma.ReportTemplateCreatestopSequencesInput | Array<string>;
     isEnabled?: boolean;
-    updatedBy?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     community?: ReportTemplatecommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput;
+    updatedByUser?: ReportTemplateupdatedByUserFactory | Prisma.UserCreateNestedOneWithoutReportTemplatesUpdatedInput;
     reports?: Prisma.ReportCreateNestedManyWithoutTemplateInput;
 };
 
@@ -9341,6 +9355,10 @@ type ReportTemplateFactoryDefineOptions<TTransients extends Record<string, unkno
 
 function isReportTemplatecommunityFactory(x: ReportTemplatecommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput | undefined): x is ReportTemplatecommunityFactory {
     return (x as any)?._factoryFor === "Community";
+}
+
+function isReportTemplateupdatedByUserFactory(x: ReportTemplateupdatedByUserFactory | Prisma.UserCreateNestedOneWithoutReportTemplatesUpdatedInput | undefined): x is ReportTemplateupdatedByUserFactory {
+    return (x as any)?._factoryFor === "User";
 }
 
 type ReportTemplateTraitKeys<TOptions extends ReportTemplateFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -9410,7 +9428,10 @@ function defineReportTemplateFactoryInternal<TTransients extends Record<string, 
             const defaultAssociations = {
                 community: isReportTemplatecommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
-                } : defaultData.community
+                } : defaultData.community,
+                updatedByUser: isReportTemplateupdatedByUserFactory(defaultData.updatedByUser) ? {
+                    create: await defaultData.updatedByUser.build()
+                } : defaultData.updatedByUser
             } as Prisma.ReportTemplateCreateInput;
             const data: Prisma.ReportTemplateCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
