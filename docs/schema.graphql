@@ -1950,6 +1950,7 @@ type TransactionChainStep {
 }
 
 type TransactionChainUser {
+  bio: String
   id: ID!
   image: String
   name: String!
