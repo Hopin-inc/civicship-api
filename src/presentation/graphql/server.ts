@@ -9,7 +9,11 @@ import { rules } from "@/presentation/graphql/rules";
 import { armorProtection } from "@/presentation/graphql/plugins/armor";
 
 const isProduction = process.env.NODE_ENV === "production";
-const isLocal = process.env.ENV === "LOCAL";
+// LOCAL_DEV is injected by `pnpm dev*` scripts so that running locally against
+// a remote env (`dev:https:dev` / `dev:https:prd`) does not activate Apollo
+// usage reporting, which would otherwise leak local traffic or fail at startup
+// when APOLLO_KEY is unset.
+const isLocal = process.env.ENV === "LOCAL" || process.env.LOCAL_DEV === "true";
 
 export async function createApolloServer(httpServer: http.Server) {
   const plugins = [

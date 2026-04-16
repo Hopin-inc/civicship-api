@@ -49,15 +49,6 @@ ALLOWED_ORIGINS="http://localhost:8000 https://localhost:8000"
 EXPRESS_SESSION_SECRET=your_session_secret_key
 ```
 
-### Activity Booking Settings
-
-```env
-# Setting the number of booking days per activity (JSON format)
-# Currently, all activities are set to accept bookings up to one day in advance, so the environment variable is not required (deleted).
-# If individual settings are required, set the following format:
-# ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG={"activity-id-1":0,"activity-id-2":1,"activity-id-3":7}
-```
-
 ## Environment File Setup
 
 ### Development Environment
