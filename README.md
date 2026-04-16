@@ -45,6 +45,8 @@ Create env files (copy from `.env.sample`) with required environment variables:
 
 - `.env` - Default local environment (used by `pnpm dev`, `pnpm dev:external`, `pnpm richmenu:deploy`)
 - `.env.local` - Local HTTPS development (used by `pnpm dev:https`)
+- `.env.dev` - dev environment values (used by `pnpm dev:https:dev`)
+- `.env.prd` - Production values (used by `pnpm dev:https:prd`)
 - `.env.sample` - Template (committed)
 
 ```env

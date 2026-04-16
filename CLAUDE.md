@@ -406,6 +406,8 @@ Environment files:
 
 - `.env` - Default local environment (loaded by `pnpm dev`, `pnpm dev:external`, `pnpm richmenu:deploy`)
 - `.env.local` - Local HTTPS development (loaded by `pnpm dev:https`)
+- `.env.dev` - dev environment values, loaded by `pnpm dev:https:dev`
+- `.env.prd` - Production values, loaded by `pnpm dev:https:prd`
 - `.env.sample` - Template (committed)
 
 Required environment variables in `.env` / `.env.local`:
