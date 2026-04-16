@@ -13,7 +13,6 @@ import {
 } from "@/types/graphql";
 import {
   PrismaVoteTopic,
-  PrismaVoteTopicBase,
   PrismaVoteGate,
   PrismaVotePowerPolicy,
   PrismaVoteOption,
@@ -49,18 +48,6 @@ export type GqlVoteTopicWithMeta = Omit<GqlVoteTopic, "gate" | "powerPolicy"> & 
 // ─── Presenter ────────────────────────────────────────────────────────────────
 
 export default class VotePresenter {
-  static phase(topic: Pick<PrismaVoteTopicBase, "startsAt" | "endsAt">): GqlVoteTopicPhase {
-    const now = new Date();
-    if (now < topic.startsAt) return "UPCOMING";
-    // >= で validateVotingPeriod / isResultVisible の境界と統一
-    if (now >= topic.endsAt) return "CLOSED";
-    return "OPEN";
-  }
-
-  static isResultVisible(topic: Pick<PrismaVoteTopicBase, "endsAt">, isManager: boolean): boolean {
-    return isManager || new Date() >= topic.endsAt;
-  }
-
   static gate(gate: PrismaVoteGate): GqlVoteGateWithMeta {
     return {
       __typename: "VoteGate",
@@ -108,9 +95,9 @@ export default class VotePresenter {
 
   static topic(
     topic: PrismaVoteTopic,
-    isManager: boolean,
+    resultVisible: boolean,
+    phase: GqlVoteTopicPhase,
   ): GqlVoteTopicWithMeta {
-    const resultVisible = this.isResultVisible(topic, isManager);
     return {
       __typename: "VoteTopic",
       id: topic.id,
@@ -121,7 +108,7 @@ export default class VotePresenter {
       description: topic.description ?? null,
       startsAt: topic.startsAt,
       endsAt: topic.endsAt,
-      phase: this.phase(topic),
+      phase,
       // validateTopicRelations() がサービス層で事前に呼ばれるため null は来ない
       gate: this.gate(topic.gate!),
       powerPolicy: this.powerPolicy(topic.powerPolicy!),

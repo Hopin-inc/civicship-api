@@ -10,7 +10,7 @@ import {
   GqlMutationVoteTopicDeleteArgs,
 } from "@/types/graphql";
 import VoteUseCase from "@/application/domain/vote/usecase";
-import VotePresenter, {
+import type {
   GqlVoteTopicWithMeta,
   GqlVoteGateWithMeta,
   GqlVotePowerPolicyWithMeta,
@@ -55,7 +55,7 @@ export default class VoteResolver {
       });
       if (!ballot) return null;
       // resultVisible は VotePresenter.topic() が親オブジェクトに付加したメタデータ
-      return VotePresenter.ballot(ballot, parent.resultVisible);
+      return this.voteUseCase.resolveMyBallotField(ballot, parent.resultVisible);
     },
 
     myEligibility: (parent: GqlVoteTopicWithMeta, _: unknown, ctx: IContext) =>
@@ -81,8 +81,7 @@ export default class VoteResolver {
     option: async (parent: GqlVoteBallotWithMeta, _: unknown, ctx: IContext) => {
       const option = await ctx.loaders.voteOption.load(parent.optionId);
       if (!option) throw new NotFoundError("VoteOption", { id: parent.optionId });
-      // 結果秘匿の適用は Presenter に委譲（resolver にマスクロジックを持たない）
-      return VotePresenter.option(option, parent.resultVisible);
+      return this.voteUseCase.resolveOptionField(option, parent.resultVisible);
     },
   };
 }

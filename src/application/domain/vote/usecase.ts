@@ -8,6 +8,7 @@ import {
   GqlMutationVoteTopicDeleteArgs,
   GqlVoteTopicsConnection,
   GqlVoteTopic,
+  GqlVoteOption,
   GqlMyVoteEligibility,
   GqlVoteTopicCreatePayload,
   GqlVoteCastPayload,
@@ -17,7 +18,8 @@ import { IContext } from "@/types/server";
 import { AuthorizationError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
 import VoteService from "./service";
-import VotePresenter, { GqlVoteTopicWithMeta } from "./presenter";
+import VotePresenter, { GqlVoteTopicWithMeta, GqlVoteBallotWithMeta } from "./presenter";
+import { PrismaVoteBallot, PrismaVoteOption } from "./data/type";
 
 @injectable()
 export default class VoteUseCase {
@@ -45,7 +47,11 @@ export default class VoteUseCase {
     // browseTopics はリレーション付きで返すので N+1 なし
     // gate/powerPolicy が欠落しているトピックはデータ不整合 → 早期エラーで一覧全体を守る
     data.forEach((topic) => this.service.validateTopicRelations(topic));
-    const topicGqls = data.map((topic) => VotePresenter.topic(topic, isManagerOfCommunity));
+    const topicGqls = data.map((topic) => {
+      const resultVisible = this.service.calcResultVisible(topic.endsAt, isManagerOfCommunity);
+      const phase = this.service.calcPhase(topic.startsAt, topic.endsAt);
+      return VotePresenter.topic(topic, resultVisible, phase);
+    });
 
     return VotePresenter.query(topicGqls, totalCount, hasNextPage, cursor ?? undefined);
   }
@@ -65,7 +71,9 @@ export default class VoteUseCase {
 
     // myBallot は VoteTopic.myBallot フィールドリゾルバー（DataLoader）が取得するため
     // ここで個別に findBallot を呼ばない（二重クエリを防ぐ）
-    return VotePresenter.topic(topic, isManagerOfCommunity);
+    const resultVisible = this.service.calcResultVisible(topic.endsAt, isManagerOfCommunity);
+    const phase = this.service.calcPhase(topic.startsAt, topic.endsAt);
+    return VotePresenter.topic(topic, resultVisible, phase);
   }
 
   async userGetMyVoteEligibility(
@@ -85,7 +93,7 @@ export default class VoteUseCase {
     const myBallot = await this.service.findBallot(ctx, userId, topicId);
 
     // endsAt を超えていれば結果を公開（myEligibility context では manager 判定は行わない）
-    const resultVisible = new Date() >= topic.endsAt;
+    const resultVisible = this.service.calcResultVisible(topic.endsAt, false);
     return VotePresenter.eligibility(eligibility, currentPower, myBallot, resultVisible);
   }
 
@@ -105,7 +113,9 @@ export default class VoteUseCase {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const topic = await this.service.createTopicWithRelations(ctx, input, currentUserId, tx);
       this.service.validateTopicRelations(topic);
-      const topicGql = VotePresenter.topic(topic, true);
+      const resultVisible = this.service.calcResultVisible(topic.endsAt, true);
+      const phase = this.service.calcPhase(topic.startsAt, topic.endsAt);
+      const topicGql = VotePresenter.topic(topic, resultVisible, phase);
       return VotePresenter.create(topicGql);
     });
   }
@@ -155,7 +165,7 @@ export default class VoteUseCase {
       await this.service.updateOptionCounts(ctx, existingBallot, ballot, power, tx);
 
       // 投票期間中のため resultVisible=false（集計値は秘匿）
-      const ballotGql = VotePresenter.ballot(ballot, VotePresenter.isResultVisible(topic, false));
+      const ballotGql = VotePresenter.ballot(ballot, this.service.calcResultVisible(topic.endsAt, false));
       return VotePresenter.castBallot(ballotGql);
     });
   }
@@ -181,8 +191,20 @@ export default class VoteUseCase {
     const myBallot = await this.service.findBallot(ctx, userId, parent.id);
 
     // myEligibility コンテキストでは manager 判定は行わず、時刻のみで結果公開を判定
-    const resultVisible = new Date() >= parent.endsAt;
+    const resultVisible = this.service.calcResultVisible(parent.endsAt, false);
     return VotePresenter.eligibility(eligibility, currentPower, myBallot, resultVisible);
+  }
+
+  // ─── フィールドリゾルバー向けフォーマットデリゲート ──────────────────────────
+  // Resolver から Presenter を直接呼ばず UseCase を介することで
+  // 「Resolver は UseCase メソッドのみ呼ぶ」原則を維持する
+
+  resolveMyBallotField(ballot: PrismaVoteBallot, resultVisible: boolean): GqlVoteBallotWithMeta {
+    return VotePresenter.ballot(ballot, resultVisible);
+  }
+
+  resolveOptionField(option: PrismaVoteOption, resultVisible: boolean): GqlVoteOption {
+    return VotePresenter.option(option, resultVisible);
   }
 
   async managerDeleteVoteTopic(

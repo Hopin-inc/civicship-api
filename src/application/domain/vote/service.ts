@@ -12,6 +12,7 @@ import {
 import {
   GqlVoteTopicCreateInput,
   GqlVoteCastInput,
+  GqlVoteTopicPhase,
 } from "@/types/graphql";
 import MembershipService from "@/application/domain/account/membership/service";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
@@ -242,6 +243,20 @@ export default class VoteService {
 
     // 5. リレーション付きで再取得（同じトランザクション内で取得）
     return this.repo.findTopicOrThrow(ctx, topic.id, tx);
+  }
+
+  // ─── 表示ロジック計算（Presenter に渡す前にサービスで算出）───────────────────
+
+  calcResultVisible(endsAt: Date, isManager: boolean): boolean {
+    return isManager || new Date() >= endsAt;
+  }
+
+  calcPhase(startsAt: Date, endsAt: Date): GqlVoteTopicPhase {
+    const now = new Date();
+    if (now < startsAt) return "UPCOMING";
+    // >= で validateVotingPeriod の境界と統一（endsAt の瞬間に CLOSED 扱い）
+    if (now >= endsAt) return "CLOSED";
+    return "OPEN";
   }
 
   async acquireVoteLock(userId: string, topicId: string, tx: Prisma.TransactionClient): Promise<void> {
