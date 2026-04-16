@@ -73,9 +73,11 @@ export default class TransactionRepository implements ITransactionRepository {
           fu.id   AS from_user_id,
           fu.name AS from_user_name,
           fi.url  AS from_user_image,
+          fu.bio  AS from_user_bio,
           tu.id   AS to_user_id,
           tu.name AS to_user_name,
-          ti.url  AS to_user_image
+          ti.url  AS to_user_image,
+          tu.bio  AS to_user_bio
         FROM chain c
         LEFT JOIN t_wallets fw ON fw.id = c."from"
         LEFT JOIN t_users   fu ON fu.id = fw.user_id

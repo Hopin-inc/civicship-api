@@ -62,4 +62,18 @@ export default interface INftInstanceRepository {
     instanceId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<{ id: string } | null>;
+
+  existsByUserAndToken(
+    ctx: IContext,
+    userId: string,
+    nftTokenId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<boolean>;
+
+  countByUserAndToken(
+    ctx: IContext,
+    userId: string,
+    nftTokenId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number>;
 }

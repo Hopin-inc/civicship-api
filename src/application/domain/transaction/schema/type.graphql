@@ -52,6 +52,7 @@ type TransactionChainUser {
   id: ID!
   name: String!
   image: String
+  bio: String
 }
 
 # ------------------------------

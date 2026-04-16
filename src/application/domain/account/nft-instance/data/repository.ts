@@ -179,4 +179,43 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       }),
     );
   }
+
+  // 投票資格ゲート用: 「保有しているか」のみ判定（EXISTS 相当、COUNT より意味が明確）
+  async existsByUserAndToken(
+    ctx: IContext,
+    userId: string,
+    nftTokenId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<boolean> {
+    const query = (t: Prisma.TransactionClient) =>
+      t.nftInstance
+        .findFirst({
+          where: {
+            nftTokenId,
+            status: NftInstanceStatus.OWNED,
+            nftWallet: { userId },
+          },
+          select: { id: true },
+        })
+        .then((r) => r !== null);
+    return tx ? query(tx) : ctx.issuer.public(ctx, query);
+  }
+
+  // 票数計算ポリシー用: 「何個保有しているか」をカウント
+  async countByUserAndToken(
+    ctx: IContext,
+    userId: string,
+    nftTokenId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    const query = (t: Prisma.TransactionClient) =>
+      t.nftInstance.count({
+        where: {
+          nftTokenId,
+          status: NftInstanceStatus.OWNED,
+          nftWallet: { userId },
+        },
+      });
+    return tx ? query(tx) : ctx.issuer.public(ctx, query);
+  }
 }

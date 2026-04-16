@@ -46,7 +46,9 @@ export type TransactionChainRow = {
   from_user_id: string | null;
   from_user_name: string | null;
   from_user_image: string | null;
+  from_user_bio: string | null;
   to_user_id: string | null;
   to_user_name: string | null;
   to_user_image: string | null;
+  to_user_bio: string | null;
 };

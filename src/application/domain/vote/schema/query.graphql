@@ -1,0 +1,19 @@
+# ------------------------------
+# Vote Domain Query Definitions
+# ------------------------------
+
+extend type Query {
+    # コミュニティの投票テーマ一覧（カーソルページネーション付き）
+    voteTopics(
+        communityId: ID!
+        first: Int
+        cursor: String
+    ): VoteTopicsConnection!
+
+    # 投票テーマ詳細（myBallot / myEligibility はフィールドリゾルバー経由）
+    voteTopic(id: ID!): VoteTopic
+
+    # ログインユーザーの投票資格確認
+    myVoteEligibility(topicId: ID!): MyVoteEligibility!
+        @authz(rules: [IsUser])
+}

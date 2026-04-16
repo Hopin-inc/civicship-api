@@ -112,6 +112,10 @@ import IncentiveGrantService from "@/application/domain/transaction/incentiveGra
 import IncentiveGrantUseCase from "@/application/domain/transaction/incentiveGrant/usecase";
 import IncentiveGrantRepository from "@/application/domain/transaction/incentiveGrant/data/repository";
 import IncentiveGrantConverter from "@/application/domain/transaction/incentiveGrant/data/converter";
+import VoteUseCase from "@/application/domain/vote/usecase";
+import VoteService from "@/application/domain/vote/service";
+import VoteConverter from "@/application/domain/vote/data/converter";
+import VoteRepository from "@/application/domain/vote/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -329,6 +333,15 @@ export function registerProductionDependencies() {
   container.register("TransactionVerificationUseCase", {
     useClass: TransactionVerificationUseCase,
   });
+
+  // ------------------------------
+  // 🗳️ Vote
+  // ------------------------------
+
+  container.register("VoteUseCase", { useClass: VoteUseCase });
+  container.register("VoteService", { useClass: VoteService });
+  container.register("VoteConverter", { useClass: VoteConverter });
+  container.register("VoteRepository", { useClass: VoteRepository });
 
   // ------------------------------
   // 👓 View
