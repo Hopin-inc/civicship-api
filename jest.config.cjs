@@ -32,6 +32,10 @@ module.exports = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
-  testPathIgnorePatterns: ["<rootDir>/src/__tests__/helper/*.*", "<rootDir>/dist/"],
+  testPathIgnorePatterns: [
+    "<rootDir>/src/__tests__/helper/*.*",
+    "<rootDir>/src/__tests__/.*/helpers\\.ts",
+    "<rootDir>/dist/",
+  ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 };

@@ -1,0 +1,55 @@
+# ------------------------------
+# Vote Domain Mutation Definitions
+# ------------------------------
+
+extend type Mutation {
+    # 管理者: 投票テーマ・ゲート・ポリシー・選択肢を一括作成
+    voteTopicCreate(
+        input: VoteTopicCreateInput!
+        permission: CheckCommunityPermissionInput!
+    ): VoteTopicCreatePayload!
+        @authz(rules: [IsCommunityManager])
+
+    # ユーザー: 投票実行（既存投票は upsert で上書き）
+    voteCast(input: VoteCastInput!): VoteCastPayload!
+        @authz(rules: [IsUser])
+
+    # 管理者: 投票テーマ削除
+    voteTopicDelete(
+        id: ID!
+        permission: CheckCommunityPermissionInput!
+    ): VoteTopicDeletePayload!
+        @authz(rules: [IsCommunityManager])
+}
+
+input VoteTopicCreateInput {
+    communityId: ID!
+    title: String!
+    description: String
+    startsAt: Datetime!
+    endsAt: Datetime!
+    gate: VoteGateInput!
+    powerPolicy: VotePowerPolicyInput!
+    options: [VoteOptionInput!]!
+}
+
+input VoteGateInput {
+    type: VoteGateType!
+    nftTokenId: ID
+    requiredRole: Role
+}
+
+input VotePowerPolicyInput {
+    type: VotePowerPolicyType!
+    nftTokenId: ID
+}
+
+input VoteOptionInput {
+    label: String!
+    orderIndex: Int!
+}
+
+input VoteCastInput {
+    topicId: ID!
+    optionId: ID!
+}

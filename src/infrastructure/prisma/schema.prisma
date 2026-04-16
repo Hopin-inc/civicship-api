@@ -194,6 +194,7 @@ model Community {
   articles       Article[]
 
   nftInstance NftInstance[]
+  voteTopics  VoteTopic[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -381,6 +382,9 @@ model User {
 
   articlesWrittenByMe Article[] @relation("t_author_users_on_articles")
   articlesAboutMe     Article[] @relation("t_related_users_on_articles")
+
+  voteBallots       VoteBallot[]
+  createdVoteTopics VoteTopic[]  @relation("VoteTopicCreatedBy")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1368,7 +1372,9 @@ model NftToken {
   symbol String?
   json   Json?
 
-  nftInstances NftInstance[]
+  nftInstances      NftInstance[]
+  voteGates         VoteGate[]
+  votePowerPolicies VotePowerPolicy[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1475,4 +1481,126 @@ model MerkleProof {
   position Position
 
   @@map("t_merkle_proofs")
+}
+
+// ------------------------------ Vote Domain ------------------------------
+
+enum VoteGateType {
+  NFT // 指定NFTを1つ以上保有するユーザーのみ投票可
+  MEMBERSHIP // コミュニティメンバー（指定ロール以上）のみ投票可
+
+  @@map("vote_gate_type")
+}
+
+enum VotePowerPolicyType {
+  FLAT // 1人1票
+  NFT_COUNT // 保有 NftInstance 数 = 票数
+
+  @@map("vote_power_policy_type")
+}
+
+// 投票資格ルール: VoteTopic に従属（topicId FK を持ち Cascade）
+model VoteGate {
+  id   String       @id @default(cuid())
+  type VoteGateType
+
+  // NFT ゲート用: 対象 NftToken.id（type = NFT の場合に必須）
+  nftTokenId String?   @map("nft_token_id")
+  nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: Restrict)
+
+  // MEMBERSHIP ゲート用: このロール以上が投票可能（null = MEMBER 以上）
+  requiredRole Role? @map("required_role")
+
+  topicId String    @unique @map("topic_id")
+  topic   VoteTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@map("t_vote_gates")
+}
+
+// 票数計算ルール: VoteTopic に従属（topicId FK を持ち Cascade）
+model VotePowerPolicy {
+  id   String              @id @default(cuid())
+  type VotePowerPolicyType
+
+  // NFT_COUNT 用: 対象 NftToken.id（type = NFT_COUNT の場合に必須）
+  // MEMBERSHIP gate + NFT_COUNT policy の組み合わせ時も明示が必要
+  nftTokenId String?   @map("nft_token_id")
+  nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: Restrict)
+
+  topicId String    @unique @map("topic_id")
+  topic   VoteTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@map("t_vote_power_policies")
+}
+
+// 投票テーマ
+model VoteTopic {
+  id String @id @default(cuid())
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  createdBy     String @map("created_by")
+  createdByUser User   @relation("VoteTopicCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict)
+
+  title       String
+  description String? // Markdown 形式を想定
+
+  startsAt DateTime @map("starts_at")
+  endsAt   DateTime @map("ends_at")
+
+  // VoteGate と VotePowerPolicy は FK 逆転で従属（back-reference）
+  gate        VoteGate?
+  powerPolicy VotePowerPolicy?
+
+  options VoteOption[]
+  ballots VoteBallot[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@index([communityId, createdAt, id])
+  @@map("t_vote_topics")
+}
+
+// 投票選択肢（集計カラムを非正規化してパフォーマンスを確保）
+model VoteOption {
+  id      String    @id @default(cuid())
+  topicId String    @map("topic_id")
+  topic   VoteTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  label      String
+  orderIndex Int    @map("order_index")
+
+  // 非正規化: voteCast のトランザクション内でインクリメント/デクリメント
+  voteCount  Int @default(0) @map("vote_count") // 投票者数
+  totalPower Int @default(0) @map("total_power") // 票数合計
+
+  ballots VoteBallot[]
+
+  @@unique([topicId, orderIndex])
+  @@map("t_vote_options")
+}
+
+// 投票記録（1ユーザー・1テーマに1レコード、再投票は upsert で上書き）
+model VoteBallot {
+  id String @id @default(cuid())
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  topicId String    @map("topic_id")
+  topic   VoteTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  optionId String     @map("option_id")
+  option   VoteOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  // 投票実行時点での計算済み票数（スナップショット）
+  power Int
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([userId, topicId])
+  @@map("t_vote_ballots")
 }

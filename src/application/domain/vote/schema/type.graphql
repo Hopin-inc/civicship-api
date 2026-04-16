@@ -1,0 +1,101 @@
+# ------------------------------
+# Vote Domain Type Definitions
+# ------------------------------
+
+enum VoteGateType {
+    NFT
+    MEMBERSHIP
+}
+
+enum VotePowerPolicyType {
+    FLAT
+    NFT_COUNT
+}
+
+# 投票テーマの現在フェーズ（startsAt / endsAt から計算、DB には持たない）
+enum VoteTopicPhase {
+    UPCOMING
+    OPEN
+    CLOSED
+}
+
+type VoteGate {
+    id: ID!
+    type: VoteGateType!
+    nftToken: NftToken
+    requiredRole: Role
+}
+
+type VotePowerPolicy {
+    id: ID!
+    type: VotePowerPolicyType!
+    nftToken: NftToken
+}
+
+type VoteOption {
+    id: ID!
+    label: String!
+    orderIndex: Int!
+    # 投票期間終了後のみ値を返す（期間中は null）
+    voteCount: Int
+    totalPower: Int
+}
+
+type VoteTopic {
+    id: ID!
+    community: Community!
+    title: String!
+    description: String
+    startsAt: Datetime!
+    endsAt: Datetime!
+    phase: VoteTopicPhase!
+    gate: VoteGate!
+    powerPolicy: VotePowerPolicy!
+    options: [VoteOption!]!
+    # ログインユーザーの投票（未ログイン・未投票は null）
+    myBallot: VoteBallot
+    # ログインユーザーの資格情報（未ログインは null）
+    myEligibility: MyVoteEligibility
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type VoteBallot {
+    id: ID!
+    option: VoteOption!
+    power: Int!
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type MyVoteEligibility {
+    eligible: Boolean!
+    reason: String
+    currentPower: Int
+    myBallot: VoteBallot
+}
+
+type VoteTopicsConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [VoteTopicEdge!]!
+    nodes: [VoteTopic!]!
+}
+
+type VoteTopicEdge {
+    cursor: String!
+    node: VoteTopic!
+}
+
+# Payloads
+type VoteTopicCreatePayload {
+    voteTopic: VoteTopic!
+}
+
+type VoteCastPayload {
+    ballot: VoteBallot!
+}
+
+type VoteTopicDeletePayload {
+    id: ID!
+}
