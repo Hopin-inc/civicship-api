@@ -693,17 +693,6 @@ view TransactionSummaryDailyView {
   @@map("mv_transaction_summary_daily")
 }
 
-view TransactionActiveUsersDailyView {
-  date        DateTime @db.Date
-  communityId String   @map("community_id")
-  activeUsers Int      @map("active_users")
-  senders     Int
-  receivers   Int
-
-  @@id([date, communityId])
-  @@map("mv_transaction_active_users_daily")
-}
-
 view UserTransactionDailyView {
   date                  DateTime @db.Date
   communityId           String   @map("community_id")

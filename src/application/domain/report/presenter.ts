@@ -3,7 +3,7 @@ import {
   TransactionCommentRow,
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
-  UserTransactionDailyRow,
+  UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
 import {
   bigintToSafeNumber,
@@ -95,7 +95,7 @@ export default class ReportPresenter {
     referenceDate: Date;
     summaries: TransactionSummaryDailyRow[];
     activeUsers: TransactionActiveUsersDailyRow[];
-    userTransactions: UserTransactionDailyRow[];
+    userAggregates: UserTransactionAggregateRow[];
     profiles: UserProfileForReportRow[];
     comments: TransactionCommentRow[];
     topN?: number;
@@ -103,28 +103,12 @@ export default class ReportPresenter {
     const topN = input.topN ?? 10;
     const profileByUserId = new Map(input.profiles.map((p) => [p.userId, p]));
 
-    // Aggregate per user across the period for ranking / AI context.
-    const userAgg = new Map<string, UserAggregate>();
-    for (const r of input.userTransactions) {
-      const cur = userAgg.get(r.userId) ?? emptyAggregate(r.userId);
-      cur.txCountIn += r.txCountIn;
-      cur.txCountOut += r.txCountOut;
-      cur.pointsIn += bigintToSafeNumber(r.pointsIn);
-      cur.pointsOut += bigintToSafeNumber(r.pointsOut);
-      cur.donationOutCount += r.donationOutCount;
-      cur.donationOutPoints += bigintToSafeNumber(r.donationOutPoints);
-      cur.receivedDonationCount += r.receivedDonationCount;
-      cur.chainRootCount += r.chainRootCount;
-      cur.maxChainDepthStarted = maxNullable(cur.maxChainDepthStarted, r.maxChainDepthStarted);
-      cur.chainDepthReachedMax = maxNullable(cur.chainDepthReachedMax, r.chainDepthReachedMax);
-      cur.uniqueCounterpartiesSum += r.uniqueCounterparties;
-      userAgg.set(r.userId, cur);
-    }
-
-    const topUsers: TopUserItem[] = [...userAgg.values()]
+    // Period-level aggregation is done in SQL via groupBy; sort+slice the
+    // result here to pick the top N users by total activity.
+    const topUsers: TopUserItem[] = [...input.userAggregates]
       .sort((a, b) => {
-        const totalB = b.pointsIn + b.pointsOut;
-        const totalA = a.pointsIn + a.pointsOut;
+        const totalB = bigintToSafeNumber(b.pointsIn) + bigintToSafeNumber(b.pointsOut);
+        const totalA = bigintToSafeNumber(a.pointsIn) + bigintToSafeNumber(a.pointsOut);
         return totalB - totalA;
       })
       .slice(0, topN)
@@ -141,10 +125,10 @@ export default class ReportPresenter {
           days_since_joined: p ? daysBetweenJst(p.joinedAt, input.referenceDate) : 0,
           tx_count_in: u.txCountIn,
           tx_count_out: u.txCountOut,
-          points_in: u.pointsIn,
-          points_out: u.pointsOut,
+          points_in: bigintToSafeNumber(u.pointsIn),
+          points_out: bigintToSafeNumber(u.pointsOut),
           donation_out_count: u.donationOutCount,
-          donation_out_points: u.donationOutPoints,
+          donation_out_points: bigintToSafeNumber(u.donationOutPoints),
           received_donation_count: u.receivedDonationCount,
           chain_root_count: u.chainRootCount,
           max_chain_depth_started: u.maxChainDepthStarted,
@@ -200,42 +184,3 @@ export default class ReportPresenter {
     };
   }
 }
-
-interface UserAggregate {
-  userId: string;
-  txCountIn: number;
-  txCountOut: number;
-  pointsIn: number;
-  pointsOut: number;
-  donationOutCount: number;
-  donationOutPoints: number;
-  receivedDonationCount: number;
-  chainRootCount: number;
-  maxChainDepthStarted: number | null;
-  chainDepthReachedMax: number | null;
-  uniqueCounterpartiesSum: number;
-}
-
-function emptyAggregate(userId: string): UserAggregate {
-  return {
-    userId,
-    txCountIn: 0,
-    txCountOut: 0,
-    pointsIn: 0,
-    pointsOut: 0,
-    donationOutCount: 0,
-    donationOutPoints: 0,
-    receivedDonationCount: 0,
-    chainRootCount: 0,
-    maxChainDepthStarted: null,
-    chainDepthReachedMax: null,
-    uniqueCounterpartiesSum: 0,
-  };
-}
-
-function maxNullable(a: number | null, b: number | null): number | null {
-  if (a === null) return b;
-  if (b === null) return a;
-  return Math.max(a, b);
-}
-

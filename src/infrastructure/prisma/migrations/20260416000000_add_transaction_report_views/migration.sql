@@ -53,43 +53,11 @@ CREATE INDEX "mv_transaction_summary_daily_community_date_idx"
 
 
 -- ----------------------------------------------------------------------------
--- MV-2: mv_transaction_active_users_daily
---   Granularity: (date, community_id)
---   Purpose: DISTINCT active/sender/receiver user counts (not GROUP BY-able)
+-- (MV-2 removed): DISTINCT active/sender/receiver user counts are derived
+-- directly from mv_user_transaction_daily via a GROUP BY in the repository.
+-- Skipping a dedicated MV avoids an extra refresh job without materially
+-- impacting query cost.
 -- ----------------------------------------------------------------------------
-CREATE MATERIALIZED VIEW "mv_transaction_active_users_daily" AS
-WITH events AS (
-    SELECT
-        ((t."created_at" AT TIME ZONE 'Asia/Tokyo')::date) AS "date",
-        COALESCE(fw."community_id", tw."community_id") AS "community_id",
-        fw."user_id" AS "from_user_id",
-        tw."user_id" AS "to_user_id"
-    FROM "t_transactions" t
-    LEFT JOIN "t_wallets" fw ON fw."id" = t."from"
-    LEFT JOIN "t_wallets" tw ON tw."id" = t."to"
-    WHERE COALESCE(fw."community_id", tw."community_id") IS NOT NULL
-      AND (fw."community_id" IS NULL
-           OR tw."community_id" IS NULL
-           OR fw."community_id" = tw."community_id")
-),
-user_activity AS (
-    SELECT "date", "community_id", "from_user_id" AS "user_id", 'sender' AS "role"
-        FROM events WHERE "from_user_id" IS NOT NULL
-    UNION ALL
-    SELECT "date", "community_id", "to_user_id" AS "user_id", 'receiver' AS "role"
-        FROM events WHERE "to_user_id" IS NOT NULL
-)
-SELECT
-    "date",
-    "community_id",
-    COUNT(DISTINCT "user_id")::int AS "active_users",
-    COUNT(DISTINCT "user_id") FILTER (WHERE "role" = 'sender')::int AS "senders",
-    COUNT(DISTINCT "user_id") FILTER (WHERE "role" = 'receiver')::int AS "receivers"
-FROM user_activity
-GROUP BY "date", "community_id";
-
-CREATE UNIQUE INDEX "mv_transaction_active_users_daily_unique_id"
-    ON "mv_transaction_active_users_daily" ("date", "community_id");
 
 
 -- ----------------------------------------------------------------------------

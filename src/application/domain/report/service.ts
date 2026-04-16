@@ -8,7 +8,7 @@ import {
   TransactionCommentRow,
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
-  UserTransactionDailyRow,
+  UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
 
 @injectable()
@@ -33,12 +33,12 @@ export default class ReportService {
     return this.repository.findDailyActiveUsers(ctx, communityId, range);
   }
 
-  async getDailyUserTransactions(
+  async getUserAggregated(
     ctx: IContext,
     communityId: string,
     range: DateRange,
-  ): Promise<UserTransactionDailyRow[]> {
-    return this.repository.findDailyUserTransactions(ctx, communityId, range);
+  ): Promise<UserTransactionAggregateRow[]> {
+    return this.repository.findUserAggregatedInRange(ctx, communityId, range);
   }
 
   async getComments(
@@ -63,13 +63,6 @@ export default class ReportService {
     tx: Prisma.TransactionClient,
   ): Promise<void> {
     return this.repository.refreshTransactionSummaryDaily(ctx, tx);
-  }
-
-  async refreshTransactionActiveUsersDaily(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
-    return this.repository.refreshTransactionActiveUsersDaily(ctx, tx);
   }
 
   async refreshUserTransactionDaily(

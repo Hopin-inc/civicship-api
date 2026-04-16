@@ -41,6 +41,27 @@ export interface UserTransactionDailyRow {
   uniqueCounterparties: number;
 }
 
+/**
+ * Per-user aggregate across the reporting window, produced via Prisma
+ * `groupBy` on UserTransactionDailyView in the repository. BigInt sums come
+ * through unchanged from the aggregate; the presenter converts them via the
+ * safe-integer guard at the payload boundary.
+ */
+export interface UserTransactionAggregateRow {
+  userId: string;
+  txCountIn: number;
+  txCountOut: number;
+  pointsIn: bigint;
+  pointsOut: bigint;
+  donationOutCount: number;
+  donationOutPoints: bigint;
+  receivedDonationCount: number;
+  chainRootCount: number;
+  maxChainDepthStarted: number | null;
+  chainDepthReachedMax: number | null;
+  uniqueCounterpartiesSum: number;
+}
+
 export interface TransactionCommentRow {
   transactionId: string;
   date: Date;
@@ -84,11 +105,11 @@ export interface IReportRepository {
     range: DateRange,
   ): Promise<TransactionActiveUsersDailyRow[]>;
 
-  findDailyUserTransactions(
+  findUserAggregatedInRange(
     ctx: IContext,
     communityId: string,
     range: DateRange,
-  ): Promise<UserTransactionDailyRow[]>;
+  ): Promise<UserTransactionAggregateRow[]>;
 
   findCommentsByDateRange(
     ctx: IContext,
@@ -104,6 +125,5 @@ export interface IReportRepository {
   ): Promise<UserProfileForReportRow[]>;
 
   refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
-  refreshTransactionActiveUsersDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
   refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
 }

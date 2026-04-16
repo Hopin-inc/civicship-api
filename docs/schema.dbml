@@ -848,18 +848,6 @@ Table mv_transaction_summary_daily {
   }
 }
 
-Table mv_transaction_active_users_daily {
-  date DateTime [not null]
-  communityId String [not null]
-  activeUsers Int [not null]
-  senders Int [not null]
-  receivers Int [not null]
-
-  indexes {
-    (date, communityId) [pk]
-  }
-}
-
 Table mv_user_transaction_daily {
   date DateTime [not null]
   communityId String [not null]

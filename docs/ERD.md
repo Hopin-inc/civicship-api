@@ -948,15 +948,6 @@ NFT_COUNT NFT_COUNT
     }
   
 
-  "mv_transaction_active_users_daily" {
-    DateTime date "🗝️"
-    String communityId "🗝️"
-    Int activeUsers 
-    Int senders 
-    Int receivers 
-    }
-  
-
   "mv_user_transaction_daily" {
     DateTime date "🗝️"
     String communityId "🗝️"

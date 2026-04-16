@@ -52,7 +52,6 @@ import type { MembershipHostedOpportunityCountView } from "@prisma/client";
 import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
 import type { TransactionSummaryDailyView } from "@prisma/client";
-import type { TransactionActiveUsersDailyView } from "@prisma/client";
 import type { UserTransactionDailyView } from "@prisma/client";
 import type { TransactionCommentView } from "@prisma/client";
 import type { UserProfileForReportView } from "@prisma/client";
@@ -1057,9 +1056,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
             }]
     }, {
         name: "TransactionSummaryDailyView",
-        fields: []
-    }, {
-        name: "TransactionActiveUsersDailyView",
         fields: []
     }, {
         name: "UserTransactionDailyView",
@@ -10426,156 +10422,6 @@ export const defineTransactionSummaryDailyViewFactory = (<TOptions extends Trans
 }) as TransactionSummaryDailyViewFactoryBuilder;
 
 defineTransactionSummaryDailyViewFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionSummaryDailyViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
-
-type TransactionActiveUsersDailyViewScalarOrEnumFields = {
-    date: Date;
-    communityId: string;
-    activeUsers: number;
-    senders: number;
-    receivers: number;
-};
-
-type TransactionActiveUsersDailyViewFactoryDefineInput = {
-    date?: Date;
-    communityId?: string;
-    activeUsers?: number;
-    senders?: number;
-    receivers?: number;
-};
-
-type TransactionActiveUsersDailyViewTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionActiveUsersDailyViewFactoryDefineInput, never>>;
-
-type TransactionActiveUsersDailyViewFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<TransactionActiveUsersDailyViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<TransactionActiveUsersDailyView, Prisma.TransactionActiveUsersDailyViewCreateInput, TTransients>;
-
-type TransactionActiveUsersDailyViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<TransactionActiveUsersDailyViewFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: TraitName]: TransactionActiveUsersDailyViewFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<TransactionActiveUsersDailyView, Prisma.TransactionActiveUsersDailyViewCreateInput, TTransients>;
-
-type TransactionActiveUsersDailyViewTraitKeys<TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface TransactionActiveUsersDailyViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "TransactionActiveUsersDailyView";
-    build(inputData?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionActiveUsersDailyViewCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionActiveUsersDailyViewCreateInput>;
-    buildList(list: readonly Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>[]): PromiseLike<Prisma.TransactionActiveUsersDailyViewCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<Prisma.TransactionActiveUsersDailyViewCreateInput[]>;
-    pickForConnect(inputData: TransactionActiveUsersDailyView): Pick<TransactionActiveUsersDailyView, "date" | "communityId">;
-    create(inputData?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<TransactionActiveUsersDailyView>;
-    createList(list: readonly Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>[]): PromiseLike<TransactionActiveUsersDailyView[]>;
-    createList(count: number, item?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<TransactionActiveUsersDailyView[]>;
-    createForConnect(inputData?: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>): PromiseLike<Pick<TransactionActiveUsersDailyView, "date" | "communityId">>;
-}
-
-export interface TransactionActiveUsersDailyViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TransactionActiveUsersDailyViewFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): TransactionActiveUsersDailyViewFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateTransactionActiveUsersDailyViewScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): TransactionActiveUsersDailyViewScalarOrEnumFields {
-    return {
-        date: getScalarFieldValueGenerator().DateTime({ modelName: "TransactionActiveUsersDailyView", fieldName: "date", isId: true, isUnique: false, seq }),
-        communityId: getScalarFieldValueGenerator().String({ modelName: "TransactionActiveUsersDailyView", fieldName: "communityId", isId: true, isUnique: false, seq }),
-        activeUsers: getScalarFieldValueGenerator().Int({ modelName: "TransactionActiveUsersDailyView", fieldName: "activeUsers", isId: false, isUnique: false, seq }),
-        senders: getScalarFieldValueGenerator().Int({ modelName: "TransactionActiveUsersDailyView", fieldName: "senders", isId: false, isUnique: false, seq }),
-        receivers: getScalarFieldValueGenerator().Int({ modelName: "TransactionActiveUsersDailyView", fieldName: "receivers", isId: false, isUnique: false, seq })
-    };
-}
-
-function defineTransactionActiveUsersDailyViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): TransactionActiveUsersDailyViewFactoryInterface<TTransients, TransactionActiveUsersDailyViewTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly TransactionActiveUsersDailyViewTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("TransactionActiveUsersDailyView", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateTransactionActiveUsersDailyViewScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<TransactionActiveUsersDailyViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<TransactionActiveUsersDailyViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.TransactionActiveUsersDailyViewCreateInput;
-            const data: Prisma.TransactionActiveUsersDailyViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: TransactionActiveUsersDailyView) => ({
-            date: inputData.date,
-            communityId: inputData.communityId
-        });
-        const create = async (inputData: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().transactionActiveUsersDailyView.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.TransactionActiveUsersDailyViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "TransactionActiveUsersDailyView" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: TransactionActiveUsersDailyViewTraitKeys<TOptions>, ...names: readonly TransactionActiveUsersDailyViewTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface TransactionActiveUsersDailyViewFactoryBuilder {
-    <TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions>(options?: TOptions): TransactionActiveUsersDailyViewFactoryInterface<{}, TransactionActiveUsersDailyViewTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends TransactionActiveUsersDailyViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions<TTransients>>(options?: TOptions) => TransactionActiveUsersDailyViewFactoryInterface<TTransients, TransactionActiveUsersDailyViewTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link TransactionActiveUsersDailyView} model.
- *
- * @param options
- * @returns factory {@link TransactionActiveUsersDailyViewFactoryInterface}
- */
-export const defineTransactionActiveUsersDailyViewFactory = (<TOptions extends TransactionActiveUsersDailyViewFactoryDefineOptions>(options?: TOptions): TransactionActiveUsersDailyViewFactoryInterface<TOptions> => {
-    return defineTransactionActiveUsersDailyViewFactoryInternal(options ?? {}, {});
-}) as TransactionActiveUsersDailyViewFactoryBuilder;
-
-defineTransactionActiveUsersDailyViewFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionActiveUsersDailyViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type UserTransactionDailyViewScalarOrEnumFields = {
     date: Date;

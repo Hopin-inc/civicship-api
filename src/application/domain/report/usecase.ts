@@ -33,14 +33,14 @@ export default class ReportUseCase {
     const from = addDays(to, -(windowDays - 1));
     const range = { from, to };
 
-    const [summaries, activeUsers, userTransactions, comments] = await Promise.all([
+    const [summaries, activeUsers, userAggregates, comments] = await Promise.all([
       this.service.getDailySummaries(ctx, params.communityId, range),
       this.service.getDailyActiveUsers(ctx, params.communityId, range),
-      this.service.getDailyUserTransactions(ctx, params.communityId, range),
+      this.service.getUserAggregated(ctx, params.communityId, range),
       this.service.getComments(ctx, params.communityId, range, params.commentLimit),
     ]);
 
-    const userIds = Array.from(new Set(userTransactions.map((u) => u.userId)));
+    const userIds = userAggregates.map((u) => u.userId);
     const profiles = await this.service.getUserProfiles(
       ctx,
       params.communityId,
@@ -53,7 +53,7 @@ export default class ReportUseCase {
       referenceDate: to,
       summaries,
       activeUsers,
-      userTransactions,
+      userAggregates,
       profiles,
       comments,
       topN: params.topN,
@@ -61,19 +61,20 @@ export default class ReportUseCase {
   }
 
   /**
-   * Refresh all three materialized views. Called from the daily batch.
+   * Refresh the two materialized views backing the report dataset. Called
+   * from the daily batch.
    *
    * Each refresh runs in its own bypass-RLS transaction (per CLAUDE.md:
    * transactions are managed at the UseCase layer, not the Service layer).
    * They are sequential rather than parallel to keep DB load predictable
    * during the nightly window.
+   *
+   * Note: active-user counts no longer have a dedicated MV — they are
+   * derived at query time from mv_user_transaction_daily.
    */
   async refreshAllReportViews(ctx: IContext): Promise<void> {
     await ctx.issuer.internal((tx) =>
       this.service.refreshTransactionSummaryDaily(ctx, tx),
-    );
-    await ctx.issuer.internal((tx) =>
-      this.service.refreshTransactionActiveUsersDaily(ctx, tx),
     );
     await ctx.issuer.internal((tx) =>
       this.service.refreshUserTransactionDaily(ctx, tx),
