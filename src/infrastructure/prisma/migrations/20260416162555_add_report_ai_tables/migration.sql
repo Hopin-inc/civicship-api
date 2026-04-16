@@ -10,6 +10,12 @@
 --   - t_report_feedbacks: platform-admin-only QA signal on each run (Phase 2
 --     prompt-tuning / eval dataset seed)
 --
+-- Tables / columns / indexes / FKs are generated via `pnpm db:migrate`
+-- (`prisma migrate dev --create-only`). Additional items that Prisma does
+-- not emit — partial unique index for the SYSTEM-scope NULL case, the
+-- rating CHECK constraint, and Row-Level Security policies — are appended
+-- at the bottom of this file.
+--
 -- RLS aligns with the existing project pattern (see migration
 -- 20251106082237_complete_rls_write_only_all_tables):
 --   - SELECT unrestricted at DB (USING true); app layer filters by
@@ -47,7 +53,7 @@ CREATE TABLE "t_report_templates" (
     "model" TEXT NOT NULL,
     "temperature" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
     "max_tokens" INTEGER NOT NULL,
-    "stop_sequences" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+    "stop_sequences" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "is_enabled" BOOLEAN NOT NULL DEFAULT true,
     "updated_by" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -102,8 +108,56 @@ CREATE TABLE "t_report_feedbacks" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "t_report_templates_variant_community_id_key"
-    ON "t_report_templates"("variant", "community_id");
+CREATE UNIQUE INDEX "t_report_templates_variant_community_id_key" ON "t_report_templates"("variant", "community_id");
+
+-- CreateIndex
+CREATE INDEX "t_reports_community_id_variant_period_from_idx" ON "t_reports"("community_id", "variant", "period_from" DESC);
+
+-- CreateIndex
+CREATE INDEX "t_reports_community_id_status_idx" ON "t_reports"("community_id", "status");
+
+-- CreateIndex
+CREATE INDEX "t_reports_parent_run_id_idx" ON "t_reports"("parent_run_id");
+
+-- CreateIndex
+CREATE INDEX "t_report_feedbacks_report_id_idx" ON "t_report_feedbacks"("report_id");
+
+-- CreateIndex
+CREATE INDEX "t_report_feedbacks_user_id_idx" ON "t_report_feedbacks"("user_id");
+
+-- AddForeignKey
+ALTER TABLE "t_report_templates" ADD CONSTRAINT "t_report_templates_community_id_fkey" FOREIGN KEY ("community_id") REFERENCES "t_communities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_report_templates" ADD CONSTRAINT "t_report_templates_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "t_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_reports" ADD CONSTRAINT "t_reports_community_id_fkey" FOREIGN KEY ("community_id") REFERENCES "t_communities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_reports" ADD CONSTRAINT "t_reports_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "t_report_templates"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_reports" ADD CONSTRAINT "t_reports_target_user_id_fkey" FOREIGN KEY ("target_user_id") REFERENCES "t_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_reports" ADD CONSTRAINT "t_reports_generated_by_fkey" FOREIGN KEY ("generated_by") REFERENCES "t_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_reports" ADD CONSTRAINT "t_reports_published_by_fkey" FOREIGN KEY ("published_by") REFERENCES "t_users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_reports" ADD CONSTRAINT "t_reports_parent_run_id_fkey" FOREIGN KEY ("parent_run_id") REFERENCES "t_reports"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_report_feedbacks" ADD CONSTRAINT "t_report_feedbacks_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "t_reports"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "t_report_feedbacks" ADD CONSTRAINT "t_report_feedbacks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "t_users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- ============================================================================
+-- Custom additions beyond Prisma's canonical output
+-- ============================================================================
 
 -- Partial unique index covering SYSTEM-scope templates (community_id IS
 -- NULL). PostgreSQL treats NULL as distinct in regular unique indexes,
@@ -118,77 +172,11 @@ CREATE UNIQUE INDEX "t_report_templates_variant_system_key"
     ON "t_report_templates"("variant")
     WHERE "community_id" IS NULL;
 
-CREATE INDEX "t_reports_community_id_variant_period_from_idx"
-    ON "t_reports"("community_id", "variant", "period_from" DESC);
-
-CREATE INDEX "t_reports_community_id_status_idx"
-    ON "t_reports"("community_id", "status");
-
-CREATE INDEX "t_reports_parent_run_id_idx"
-    ON "t_reports"("parent_run_id");
-
-CREATE INDEX "t_report_feedbacks_report_id_idx"
-    ON "t_report_feedbacks"("report_id");
-
-CREATE INDEX "t_report_feedbacks_user_id_idx"
-    ON "t_report_feedbacks"("user_id");
-
 -- CheckConstraint: rating in 1..5 (defense-in-depth alongside the
 -- GraphQL input validation that will be added in PR-D).
 ALTER TABLE "t_report_feedbacks"
     ADD CONSTRAINT "t_report_feedbacks_rating_check"
     CHECK ("rating" BETWEEN 1 AND 5);
-
--- AddForeignKey
-ALTER TABLE "t_report_templates"
-    ADD CONSTRAINT "t_report_templates_community_id_fkey"
-    FOREIGN KEY ("community_id") REFERENCES "t_communities"("id")
-    ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "t_report_templates"
-    ADD CONSTRAINT "t_report_templates_updated_by_fkey"
-    FOREIGN KEY ("updated_by") REFERENCES "t_users"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "t_reports"
-    ADD CONSTRAINT "t_reports_community_id_fkey"
-    FOREIGN KEY ("community_id") REFERENCES "t_communities"("id")
-    ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "t_reports"
-    ADD CONSTRAINT "t_reports_template_id_fkey"
-    FOREIGN KEY ("template_id") REFERENCES "t_report_templates"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "t_reports"
-    ADD CONSTRAINT "t_reports_target_user_id_fkey"
-    FOREIGN KEY ("target_user_id") REFERENCES "t_users"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "t_reports"
-    ADD CONSTRAINT "t_reports_generated_by_fkey"
-    FOREIGN KEY ("generated_by") REFERENCES "t_users"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "t_reports"
-    ADD CONSTRAINT "t_reports_published_by_fkey"
-    FOREIGN KEY ("published_by") REFERENCES "t_users"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "t_reports"
-    ADD CONSTRAINT "t_reports_parent_run_id_fkey"
-    FOREIGN KEY ("parent_run_id") REFERENCES "t_reports"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE "t_report_feedbacks"
-    ADD CONSTRAINT "t_report_feedbacks_report_id_fkey"
-    FOREIGN KEY ("report_id") REFERENCES "t_reports"("id")
-    ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "t_report_feedbacks"
-    ADD CONSTRAINT "t_report_feedbacks_user_id_fkey"
-    FOREIGN KEY ("user_id") REFERENCES "t_users"("id")
-    ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- ============================================================================
 -- Row Level Security
