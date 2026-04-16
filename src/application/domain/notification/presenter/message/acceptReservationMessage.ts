@@ -2,7 +2,7 @@ import { messagingApi } from "@line/bot-sdk";
 
 export interface ReservationAcceptedParams {
   title: string;
-  thumbnail: string;
+  thumbnail?: string;
   year: string;
   date: string;
   time: string;
@@ -30,7 +30,7 @@ export function buildReservationAcceptedMessage(
 function buildBubble(params: ReservationAcceptedParams): messagingApi.FlexBubble {
   return {
     type: "bubble",
-    header: buildHeader(params.thumbnail),
+    ...(params.thumbnail ? { header: buildHeader(params.thumbnail) } : {}),
     body: buildBody(params),
     footer: buildFooter(params.redirectUrl),
   };

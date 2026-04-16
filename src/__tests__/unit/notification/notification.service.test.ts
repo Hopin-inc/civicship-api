@@ -18,6 +18,7 @@ describe("NotificationService - Point Transfer Notifications", () => {
   let mockCommunityConfigService: jest.Mocked<CommunityConfigService>;
   let mockUserService: jest.Mocked<UserService>;
   let mockLineClient: any;
+  let mockTransactionFindUnique: jest.Mock;
 
   const TEST_TRANSACTION_ID = "test-transaction-id";
   const TEST_USER_ID = "test-user-id";
@@ -25,14 +26,74 @@ describe("NotificationService - Point Transfer Notifications", () => {
   const TEST_LINE_UID = "test-line-uid";
   const TEST_LIFF_URL = "https://liff.example.com";
 
+  const buildDonationTransaction = (overrides: any = {}) => ({
+    toPointChange: 100,
+    comment: null,
+    createdAt: new Date("2026-04-15T12:30:00Z"),
+    images: [],
+    fromWallet: {
+      user: {
+        name: "田中太郎",
+        image: { url: "https://example.com/from.jpg" },
+      },
+      community: null,
+    },
+    toWallet: {
+      user: {
+        name: "佐藤花子",
+        image: { url: "https://example.com/to.jpg" },
+      },
+    },
+    ...overrides,
+  });
+
+  const buildGrantTransaction = (overrides: any = {}) => ({
+    toPointChange: 200,
+    comment: null,
+    createdAt: new Date("2026-04-15T12:30:00Z"),
+    images: [],
+    fromWallet: {
+      user: null,
+      community: {
+        name: "テストコミュニティ",
+        config: {
+          portalConfig: {
+            squareLogoPath: "https://example.com/community.jpg",
+          },
+        },
+      },
+    },
+    toWallet: {
+      user: {
+        name: "佐藤花子",
+        image: { url: "https://example.com/to.jpg" },
+      },
+    },
+    ...overrides,
+  });
+
   const mockCtx = {
     currentUser: { id: "current-user-id", name: "Current User" },
     communityId: TEST_COMMUNITY_ID,
-  } as IContext;
+    issuer: {
+      internal: jest.fn(async (cb: any) => {
+        return cb({
+          transaction: { findUnique: mockTransactionFindUnique },
+        });
+      }),
+    },
+  } as unknown as IContext;
 
   beforeEach(() => {
     jest.clearAllMocks();
     container.reset();
+
+    mockTransactionFindUnique = jest.fn();
+    (mockCtx.issuer.internal as jest.Mock).mockImplementation(async (cb: any) => {
+      return cb({
+        transaction: { findUnique: mockTransactionFindUnique },
+      });
+    });
 
     // Mock CommunityConfigService
     mockCommunityConfigService = {
@@ -44,6 +105,9 @@ describe("NotificationService - Point Transfer Notifications", () => {
     // Mock UserService
     mockUserService = {
       findLineUidForCommunity: jest.fn().mockResolvedValue(TEST_LINE_UID),
+      findLineUidAndLanguageForCommunity: jest
+        .fn()
+        .mockResolvedValue({ uid: TEST_LINE_UID, language: "JA" }),
     } as any;
 
     // Mock LINE client
@@ -64,16 +128,15 @@ describe("NotificationService - Point Transfer Notifications", () => {
 
   describe("pushPointDonationReceivedMessage", () => {
     it("should send notification successfully when LINE UID exists", async () => {
+      mockTransactionFindUnique.mockResolvedValue(buildDonationTransaction());
+
       await notificationService.pushPointDonationReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        100,
-        "ありがとうございます！",
-        "田中太郎",
         TEST_USER_ID,
       );
 
-      expect(mockUserService.findLineUidForCommunity).toHaveBeenCalledWith(
+      expect(mockUserService.findLineUidAndLanguageForCommunity).toHaveBeenCalledWith(
         mockCtx,
         TEST_USER_ID,
         TEST_COMMUNITY_ID,
@@ -101,23 +164,20 @@ describe("NotificationService - Point Transfer Notifications", () => {
     });
 
     it("should not send notification when LINE UID is not found", async () => {
-      mockUserService.findLineUidForCommunity.mockResolvedValue(undefined);
+      mockUserService.findLineUidAndLanguageForCommunity.mockResolvedValue(undefined);
 
       await notificationService.pushPointDonationReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        100,
-        null,
-        "田中太郎",
         TEST_USER_ID,
       );
 
-      expect(mockUserService.findLineUidForCommunity).toHaveBeenCalled();
+      expect(mockUserService.findLineUidAndLanguageForCommunity).toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
         "pushPointDonationReceivedMessage: lineUid is missing",
         expect.objectContaining({
           transactionId: TEST_TRANSACTION_ID,
-          toUserId: TEST_USER_ID,
+          userId: TEST_USER_ID,
           communityId: TEST_COMMUNITY_ID,
         }),
       );
@@ -131,9 +191,6 @@ describe("NotificationService - Point Transfer Notifications", () => {
       await notificationService.pushPointDonationReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        100,
-        null,
-        "田中太郎",
         TEST_USER_ID,
       );
 
@@ -148,36 +205,51 @@ describe("NotificationService - Point Transfer Notifications", () => {
       expect(notificationLine.safePushMessage).not.toHaveBeenCalled();
     });
 
-    it("should send notification with null comment", async () => {
+    it("should not send notification when transaction is missing", async () => {
+      mockTransactionFindUnique.mockResolvedValue(null);
+
       await notificationService.pushPointDonationReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        100,
-        null,
-        "田中太郎",
         TEST_USER_ID,
       );
 
-      expect(notificationLine.safePushMessage).toHaveBeenCalledWith(
-        mockLineClient,
+      expect(logger.warn).toHaveBeenCalledWith(
+        "pushPointDonationReceivedMessage: transaction not found",
         expect.objectContaining({
-          to: TEST_LINE_UID,
-          messages: expect.arrayContaining([
-            expect.objectContaining({
-              type: "flex",
-            }),
-          ]),
+          transactionId: TEST_TRANSACTION_ID,
+          communityId: TEST_COMMUNITY_ID,
         }),
       );
+      expect(notificationLine.safePushMessage).not.toHaveBeenCalled();
     });
 
-    it("should format redirect URL correctly", async () => {
+    it("should include attached image in header when transaction has images", async () => {
+      mockTransactionFindUnique.mockResolvedValue(
+        buildDonationTransaction({
+          images: [{ url: "https://example.com/photo.jpg" }],
+        }),
+      );
+
       await notificationService.pushPointDonationReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        100,
-        null,
-        "田中太郎",
+        TEST_USER_ID,
+      );
+
+      const pushMessageCall = (notificationLine.safePushMessage as jest.Mock).mock.calls[0];
+      const message = pushMessageCall[1].messages[0];
+      expect(message.contents.header).toBeDefined();
+      const headerImage = message.contents.header.contents[0];
+      expect(headerImage.url).toBe("https://example.com/photo.jpg");
+    });
+
+    it("should format redirect URL correctly", async () => {
+      mockTransactionFindUnique.mockResolvedValue(buildDonationTransaction());
+
+      await notificationService.pushPointDonationReceivedMessage(
+        mockCtx,
+        TEST_TRANSACTION_ID,
         TEST_USER_ID,
       );
 
@@ -193,16 +265,15 @@ describe("NotificationService - Point Transfer Notifications", () => {
 
   describe("pushPointGrantReceivedMessage", () => {
     it("should send notification successfully when LINE UID exists", async () => {
+      mockTransactionFindUnique.mockResolvedValue(buildGrantTransaction());
+
       await notificationService.pushPointGrantReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        200,
-        "イベント参加ありがとうございます",
-        "テストコミュニティ",
         TEST_USER_ID,
       );
 
-      expect(mockUserService.findLineUidForCommunity).toHaveBeenCalledWith(
+      expect(mockUserService.findLineUidAndLanguageForCommunity).toHaveBeenCalledWith(
         mockCtx,
         TEST_USER_ID,
         TEST_COMMUNITY_ID,
@@ -230,23 +301,20 @@ describe("NotificationService - Point Transfer Notifications", () => {
     });
 
     it("should not send notification when LINE UID is not found", async () => {
-      mockUserService.findLineUidForCommunity.mockResolvedValue(undefined);
+      mockUserService.findLineUidAndLanguageForCommunity.mockResolvedValue(undefined);
 
       await notificationService.pushPointGrantReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        200,
-        null,
-        "テストコミュニティ",
         TEST_USER_ID,
       );
 
-      expect(mockUserService.findLineUidForCommunity).toHaveBeenCalled();
+      expect(mockUserService.findLineUidAndLanguageForCommunity).toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
         "pushPointGrantReceivedMessage: lineUid is missing",
         expect.objectContaining({
           transactionId: TEST_TRANSACTION_ID,
-          toUserId: TEST_USER_ID,
+          userId: TEST_USER_ID,
           communityId: TEST_COMMUNITY_ID,
         }),
       );
@@ -260,9 +328,6 @@ describe("NotificationService - Point Transfer Notifications", () => {
       await notificationService.pushPointGrantReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        200,
-        null,
-        "テストコミュニティ",
         TEST_USER_ID,
       );
 
@@ -277,36 +342,32 @@ describe("NotificationService - Point Transfer Notifications", () => {
       expect(notificationLine.safePushMessage).not.toHaveBeenCalled();
     });
 
-    it("should send notification with null comment", async () => {
+    it("should include attached image in header when transaction has images", async () => {
+      mockTransactionFindUnique.mockResolvedValue(
+        buildGrantTransaction({
+          images: [{ url: "https://example.com/photo.jpg" }],
+        }),
+      );
+
       await notificationService.pushPointGrantReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        200,
-        null,
-        "テストコミュニティ",
         TEST_USER_ID,
       );
 
-      expect(notificationLine.safePushMessage).toHaveBeenCalledWith(
-        mockLineClient,
-        expect.objectContaining({
-          to: TEST_LINE_UID,
-          messages: expect.arrayContaining([
-            expect.objectContaining({
-              type: "flex",
-            }),
-          ]),
-        }),
-      );
+      const pushMessageCall = (notificationLine.safePushMessage as jest.Mock).mock.calls[0];
+      const message = pushMessageCall[1].messages[0];
+      expect(message.contents.header).toBeDefined();
+      const headerImage = message.contents.header.contents[0];
+      expect(headerImage.url).toBe("https://example.com/photo.jpg");
     });
 
     it("should format redirect URL correctly", async () => {
+      mockTransactionFindUnique.mockResolvedValue(buildGrantTransaction());
+
       await notificationService.pushPointGrantReceivedMessage(
         mockCtx,
         TEST_TRANSACTION_ID,
-        200,
-        null,
-        "テストコミュニティ",
         TEST_USER_ID,
       );
 
