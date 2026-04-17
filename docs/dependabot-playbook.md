@@ -160,6 +160,9 @@ PR-α では CI の lint step を一時 disable。PR-ε で以下を対応:
 2. 残 188 errors の分類と対応方針決定
    - テスト側の `no-explicit-any` ルール relax の是非
    - source 側 errors の個別 fix
-3. CI の lint step 再有効化
+3. `package.json` に `lint:check` スクリプト追加
+   - 現状の `lint` は `eslint --fix && prettier --write`、silent に auto-correct するため CI で違反検出できない
+   - CI 用途では `eslint src/` + `prettier --check src/` の check-only 版が必要
+4. CI の lint step 再有効化 (`pnpm lint:check` を使用)
 
 PR-ε は PR-α merge 後、独立 PR として着手する。
