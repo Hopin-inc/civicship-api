@@ -30,6 +30,10 @@ export async function generateWeeklyReports() {
 
   for (const community of communities) {
     try {
+      // Intentionally skip only DRAFT/APPROVED/PUBLISHED reports.
+      // REJECTED reports are treated as "not existing" so the batch
+      // retries generation after an admin rejection. SUPERSEDED
+      // reports are also excluded since they've been replaced.
       const existing = await issuer.internal((tx) =>
         tx.report.findFirst({
           where: {

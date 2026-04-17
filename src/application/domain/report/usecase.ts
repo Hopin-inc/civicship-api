@@ -140,13 +140,16 @@ export default class ReportUseCase {
       );
     }
 
-    if (daysBetweenJst(input.periodFrom, input.periodTo) < 0) {
+    const periodFrom = truncateToJstDate(input.periodFrom);
+    const periodTo = truncateToJstDate(input.periodTo);
+
+    if (daysBetweenJst(periodFrom, periodTo) < 0) {
       throw new ValidationError("periodFrom must be on or before periodTo", [
         "periodFrom",
         "periodTo",
       ]);
     }
-    const windowDays = daysBetweenJst(input.periodFrom, input.periodTo) + 1;
+    const windowDays = daysBetweenJst(periodFrom, periodTo) + 1;
     if (windowDays > MAX_WINDOW_DAYS) {
       throw new ValidationError(
         `Report window cannot exceed ${MAX_WINDOW_DAYS} days (requested ${windowDays})`,
@@ -155,7 +158,7 @@ export default class ReportUseCase {
     }
     const payload = await this.buildReportPayload(ctx, {
       communityId,
-      referenceDate: input.periodTo,
+      referenceDate: periodTo,
       windowDays,
       customContext: template.communityContext ?? undefined,
     });
@@ -207,8 +210,8 @@ export default class ReportUseCase {
         {
           communityId,
           variant: input.variant,
-          periodFrom: input.periodFrom,
-          periodTo: input.periodTo,
+          periodFrom,
+          periodTo,
           templateId: template.id,
           inputPayload: payload as object,
           outputMarkdown: llmResult.text,
