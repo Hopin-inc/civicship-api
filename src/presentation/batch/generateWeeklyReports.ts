@@ -35,7 +35,7 @@ export async function generateWeeklyReports() {
           variant: "WEEKLY_SUMMARY",
           periodFrom: weekAgo,
           periodTo: yesterday,
-          status: { not: ReportStatus.REJECTED },
+          status: { notIn: [ReportStatus.REJECTED, ReportStatus.SUPERSEDED] },
         },
         select: { id: true },
       });
