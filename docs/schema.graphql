@@ -1740,7 +1740,7 @@ type ReportTemplate {
   scope: ReportTemplateScope!
   stopSequences: [String!]!
   systemPrompt: String!
-  temperature: Float!
+  temperature: Float
   updatedAt: Datetime
   updatedByUser: User
   userPromptTemplate: String!
