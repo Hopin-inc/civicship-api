@@ -62,7 +62,7 @@ type ReportTemplate {
   userPromptTemplate: String!
   communityContext: String
   model: String!
-  temperature: Float!
+  temperature: Float
   maxTokens: Int!
   stopSequences: [String!]!
   isEnabled: Boolean!

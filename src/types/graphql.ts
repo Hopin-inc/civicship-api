@@ -2662,7 +2662,7 @@ export type GqlReportTemplate = {
   scope: GqlReportTemplateScope;
   stopSequences: Array<Scalars['String']['output']>;
   systemPrompt: Scalars['String']['output'];
-  temperature: Scalars['Float']['output'];
+  temperature?: Maybe<Scalars['Float']['output']>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   updatedByUser?: Maybe<GqlUser>;
   userPromptTemplate: Scalars['String']['output'];
@@ -5871,7 +5871,7 @@ export type GqlReportTemplateResolvers<ContextType = any, ParentType extends Gql
   scope?: Resolver<GqlResolversTypes['ReportTemplateScope'], ParentType, ContextType>;
   stopSequences?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
   systemPrompt?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  temperature?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  temperature?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   updatedByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   userPromptTemplate?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
