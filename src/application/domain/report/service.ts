@@ -103,9 +103,10 @@ export default class ReportService {
     variant: string,
     communityId: string | null,
     input: GqlUpdateReportTemplateInput,
+    updatedBy: string,
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportTemplate> {
-    const data = ReportConverter.toReportTemplateUpsertData(input);
+    const data = { ...ReportConverter.toReportTemplateUpsertData(input), updatedBy };
     return this.repository.upsertTemplate(ctx, variant, communityId, data, tx);
   }
 

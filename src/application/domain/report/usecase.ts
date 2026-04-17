@@ -258,7 +258,7 @@ export default class ReportUseCase {
     ctx: IContext,
   ): Promise<GqlUpdateReportTemplatePayload> {
     const template = await ctx.issuer.admin(ctx, (tx) =>
-      this.service.upsertTemplate(ctx, variant, communityId ?? null, input, tx),
+      this.service.upsertTemplate(ctx, variant, communityId ?? null, input, ctx.currentUser!.id, tx),
     );
     return {
       __typename: "UpdateReportTemplateSuccess",
