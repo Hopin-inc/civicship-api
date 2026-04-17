@@ -117,8 +117,12 @@ export default class ReportService {
     return this.repository.createReport(ctx, data, tx);
   }
 
-  async getReportById(ctx: IContext, id: string): Promise<PrismaReport | null> {
-    return this.repository.findReportById(ctx, id);
+  async getReportById(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport | null> {
+    return this.repository.findReportById(ctx, id, tx);
   }
 
   async getReports(

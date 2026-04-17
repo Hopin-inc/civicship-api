@@ -201,7 +201,7 @@ export interface IReportRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReport>;
 
-  findReportById(ctx: IContext, id: string): Promise<PrismaReport | null>;
+  findReportById(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaReport | null>;
 
   findReports(
     ctx: IContext,

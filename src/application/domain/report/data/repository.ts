@@ -426,10 +426,16 @@ export default class ReportRepository implements IReportRepository {
     return ctx.issuer.internal(doCreate);
   }
 
-  async findReportById(ctx: IContext, id: string): Promise<PrismaReport | null> {
-    return ctx.issuer.public(ctx, (tx) =>
-      tx.report.findUnique({ where: { id }, select: reportSelect }),
-    );
+  async findReportById(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport | null> {
+    const doFind = (client: Prisma.TransactionClient) =>
+      client.report.findUnique({ where: { id }, select: reportSelect });
+
+    if (tx) return doFind(tx);
+    return ctx.issuer.public(ctx, doFind);
   }
 
   async findReports(

@@ -1,6 +1,7 @@
 import { ReportStatus } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
+import { ValidationError } from "@/errors/graphql";
 import ReportService from "@/application/domain/report/service";
 import ReportPresenter, { WeeklyReportPayload } from "@/application/domain/report/presenter";
 import { addDays, daysBetweenJst, truncateToJstDate } from "@/application/domain/report/util";
@@ -128,6 +129,12 @@ export default class ReportUseCase {
     { input, permission }: GqlMutationGenerateReportArgs,
     ctx: IContext,
   ): Promise<GqlGenerateReportPayload> {
+    if (permission.communityId !== input.communityId) {
+      throw new ValidationError(
+        "communityId in input does not match permission.communityId",
+        [],
+      );
+    }
     const communityId = permission.communityId;
     const template = await this.service.getTemplate(ctx, input.variant, communityId);
     if (!template) {
@@ -165,28 +172,25 @@ export default class ReportUseCase {
       clearTimeout(timeout);
     }
 
-    let parentRegenerateCount = 0;
-    let parentStatus: ReportStatus | null = null;
-    if (input.parentRunId) {
-      const parent = await this.service.getReportById(ctx, input.parentRunId);
-      if (!parent) throw new Error(`Parent report ${input.parentRunId} not found`);
-      if (parent.communityId !== communityId || parent.variant !== input.variant) {
-        throw new Error("Parent report must belong to the same community and variant");
-      }
-      parentRegenerateCount = parent.regenerateCount;
-      parentStatus = parent.status;
-    }
-
     const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      if (input.parentRunId && parentStatus && parentStatus !== ReportStatus.SUPERSEDED) {
-        this.service.assertStatusTransition(parentStatus, ReportStatus.SUPERSEDED);
-        await this.service.updateReportStatus(
-          ctx,
-          input.parentRunId,
-          ReportStatus.SUPERSEDED,
-          undefined,
-          tx,
-        );
+      let parentRegenerateCount = 0;
+      if (input.parentRunId) {
+        const parent = await this.service.getReportById(ctx, input.parentRunId, tx);
+        if (!parent) throw new Error(`Parent report ${input.parentRunId} not found`);
+        if (parent.communityId !== communityId || parent.variant !== input.variant) {
+          throw new Error("Parent report must belong to the same community and variant");
+        }
+        parentRegenerateCount = parent.regenerateCount;
+        if (parent.status !== ReportStatus.SUPERSEDED) {
+          this.service.assertStatusTransition(parent.status, ReportStatus.SUPERSEDED);
+          await this.service.updateReportStatus(
+            ctx,
+            input.parentRunId,
+            ReportStatus.SUPERSEDED,
+            undefined,
+            tx,
+          );
+        }
       }
 
       return this.service.createReport(
