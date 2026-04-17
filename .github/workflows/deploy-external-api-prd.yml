@@ -68,7 +68,7 @@ jobs:
           --quiet -- -N -L 5432:localhost:5432 &
         SSH_PID=$!
         sleep 60
-        for i in {1..5}; do
+        for _ in {1..5}; do
           pg_isready -h localhost -p 5432 -d ${{ env.DB_NAME }} && break
           sleep 60
         done
@@ -117,8 +117,8 @@ jobs:
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
         
-        git tag $TAG_NAME
-        git push origin $TAG_NAME
+        git tag "$TAG_NAME"
+        git push origin "$TAG_NAME"
 
     - name: Cleanup SSH Key
       if: always()
