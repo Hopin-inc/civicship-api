@@ -1,11 +1,16 @@
 # Dependabot configuration for civicship-api.
-# Strategy: cooldown + grouping (方針B). Rationale captured in
-# docs/dependabot-playbook.md section 1.
+# Strategy: cooldown + grouping + intentional pinning (方針B).
+# Applied uniformly to both `npm` and `github-actions` ecosystems.
+# Rationale captured in docs/dependabot-playbook.md section 1.
 # - Weekly Monday 06:00 JST aligns with the dependency review routine.
 # - Cooldown windows (patch 5d / minor 10d / major 14d) are api-conservative;
 #   security updates bypass cooldown and are opened immediately by Dependabot.
-# - Grouping: production patch + all dev deps (minor/patch) are grouped;
-#   majors (dev and prod) open as individual PRs for breaking-change review.
+# - Grouping: minor+patch updates are grouped to reduce PR noise, while
+#   majors open as individual PRs for breaking-change review.
+#   - npm: production-patch and dev (minor+patch) grouped; majors individual.
+#   - github-actions: all actions (minor+patch) grouped; majors individual.
+# - Pinning: workflows reference actions by 40-char commit SHA with a
+#   `# vX.Y.Z` comment. Dependabot preserves this style across bumps.
 version: 2
 updates:
   - package-ecosystem: "npm"
@@ -49,10 +54,15 @@ updates:
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
     cooldown:
-      default-days: 7
+      semver-major-days: 14
+      semver-minor-days: 10
+      semver-patch-days: 5
     groups:
-      actions:
+      actions-minor-patch:
         patterns: ["*"]
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "github-actions"
