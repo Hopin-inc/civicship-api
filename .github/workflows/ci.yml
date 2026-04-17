@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master, develop]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: civicship
+          POSTGRES_PASSWORD: civicship
+          POSTGRES_DB: civicship_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://civicship:civicship@localhost:5432/civicship_ci
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+          # TODO (Phase 2): move to block mode and populate allowed-endpoints
+          # based on audit baseline observed in StepSecurity dashboard.
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies (lockfile integrity check)
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit (non-blocking)
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
+
+      # TODO (PR-ε): Re-enable after ESLint lint-debt cleanup.
+      # Disabled in PR-α because the ajv override fix (commit d9dab51) unblocked
+      # `pnpm lint`, which then revealed 763 pre-existing errors:
+      # - 575 in generated files (src/types/graphql.ts, factories/__generated__/)
+      #   — root cause: flat config (ESLint 9) ignores .eslintignore; eslint.config.mjs
+      #     needs an `ignores` array.
+      # - 188 in source/test code — real debt requiring rule review.
+      # Additionally, the `pnpm lint` npm script uses `eslint --fix && prettier --write`,
+      # which silently auto-corrects. PR-ε should introduce a `lint:check` variant
+      # (`eslint src/` + `prettier --check src/`) for CI to actually fail on violations.
+      # See docs/dependabot-playbook.md Case 5 and Section 10.
+      # - name: Lint
+      #   run: pnpm lint
+
+      - name: Apply Prisma schema to CI database
+        run: pnpm prisma db push --skip-generate --schema src/infrastructure/prisma/schema.prisma
+
+      - name: Generate Prisma client (with TypedSQL)
+        run: pnpm db:generate
+
+      - name: Generate GraphQL types
+        run: pnpm gql:generate
+
+      # Detect uncommitted regenerations of tracked generated files.
+      # Note: this workflow's name ("CI") will be referenced by downstream
+      # deploy workflows via `workflow_run` triggers in PR-β (not yet
+      # implemented). Renaming after PR-β lands will require updating those.
+      - name: Check generated files are up to date
+        run: |
+          git diff --exit-code \
+            src/types/graphql.ts \
+            docs/schema.graphql \
+            src/infrastructure/prisma/schema.prisma
+
+      - name: Build (typecheck + emit)
+        run: pnpm build
