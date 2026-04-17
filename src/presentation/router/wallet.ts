@@ -8,6 +8,7 @@ import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
 import { PrismaAuthUser } from '@/application/domain/account/user/data/type';
+import { validateNftPayload } from '@/application/domain/account/nft-wallet/data/validator';
 
 const router = express();
 
@@ -17,9 +18,9 @@ router.post('/nft-wallets',
   validateFirebasePhoneAuth,
   async (req, res) => {
     try {
-      const { walletAddress, name } = req.body;
+      const { walletAddress, name, nfts } = req.body;
       const user = (req as any).user as PrismaAuthUser;
-      
+
       if (!walletAddress || typeof walletAddress !== 'string') {
         return res.status(400).json({ error: 'walletAddress must be a string' });
       }
@@ -27,7 +28,25 @@ router.post('/nft-wallets',
       if (name !== undefined && typeof name !== 'string') {
         return res.status(400).json({ error: 'name must be a string' });
       }
-      
+
+      if (nfts !== undefined) {
+        const result = validateNftPayload(nfts);
+        if (result.valid) {
+          logger.info("📨 [dry-run] NFT payload valid", {
+            walletAddress,
+            userId: user.id,
+            nftCount: result.count,
+            sampleItem: result.items[0],
+          });
+        } else {
+          logger.warn("⚠️ [dry-run] NFT payload invalid", {
+            walletAddress,
+            userId: user.id,
+            errors: result.errors,
+          });
+        }
+      }
+
       const issuer = new PrismaClientIssuer();
       const nftWalletUsecase = container.resolve(NFTWalletUsecase);
       const ctx = { issuer } as IContext;
