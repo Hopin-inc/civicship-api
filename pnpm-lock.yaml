@@ -116,8 +116,8 @@ importers:
         specifier: ^17.0.0
         version: 17.0.0
       axios:
-        specifier: 1.14.0
-        version: 1.14.0
+        specifier: 1.15.0
+        version: 1.15.0
       busboy:
         specifier: ^1.6.0
         version: 1.6.0
@@ -3824,8 +3824,8 @@ packages:
     resolution: {integrity: sha512-NZKeq9AfyQvEeNlN0zSYAaWrmBffJh3IELMZfRpJVWgrpEbtEpnjvzqBPf+mxoI287JohRDoa+/nsfqqiZmF6g==}
     engines: {node: '>= 6.0.0'}
 
-  axios@1.14.0:
-    resolution: {integrity: sha512-3Y8yrqLSwjuzpXuZ0oIYZ/XGgLwUIBU3uLvbcpb0pidD9ctpShJd43KSlEEkVQg6DS0G9NKyzOvBfUtDKEyHvQ==}
+  axios@1.15.0:
+    resolution: {integrity: sha512-wWyJDlAatxk30ZJer+GeCWS209sA42X+N5jU2jy6oHTp7ufw8uzUTVFBX9+wTfAlhiJXGS0Bq7X6efruWjuK9Q==}
 
   babel-jest@29.7.0:
     resolution: {integrity: sha512-BrvGY3xZSwEcCzKvKsCi2GgHqDqsYkOP4/by5xCgIwGXQxIEh+8ew3gmrE1y7XRR6LHZIj6yLYnUi/mm2KXKBg==}
@@ -7135,6 +7135,7 @@ packages:
 
   prisma-case-format@2.2.1:
     resolution: {integrity: sha512-AMUtHbvlZkw49q4doBgr5+vV2AY/QW0remSfIBvC4uaneFDcAay4/ct2OBIUUw8PWwLBqppOt0Ka6BmmJb30JQ==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     hasBin: true
 
   prisma-dbml-generator@0.12.0:
@@ -11665,7 +11666,7 @@ snapshots:
     dependencies:
       '@types/node': 22.16.3
     optionalDependencies:
-      axios: 1.14.0
+      axios: 1.15.0
     transitivePeerDependencies:
       - debug
 
@@ -13671,7 +13672,7 @@ snapshots:
 
   aws-ssl-profiles@1.1.2: {}
 
-  axios@1.14.0:
+  axios@1.15.0:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
@@ -14606,7 +14607,7 @@ snapshots:
       '@dbml/core': 3.9.0
       '@oclif/core': 1.12.1
       '@oclif/plugin-help': 5.1.12
-      axios: 1.14.0
+      axios: 1.15.0
       chalk: 3.0.0
       dotenv: 8.6.0
       inquirer: 7.3.3
@@ -18139,7 +18140,7 @@ snapshots:
       asn1.js: 5.4.1
       asn1.js-rfc2560: 5.0.1(asn1.js@5.4.1)
       asn1.js-rfc5280: 3.0.0
-      axios: 1.14.0
+      axios: 1.15.0
       big-integer: 1.6.52
       bignumber.js: 9.3.0
       binascii: 0.0.2
