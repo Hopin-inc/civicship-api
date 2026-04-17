@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  '@escape.tech/graphql-armor-max-depth': ^2.4.2
   ajv: ^6.12.6
   bn.js: '>=4.12.3'
   diff: '>=4.0.4'
@@ -1576,8 +1577,8 @@ packages:
     resolution: {integrity: sha512-SDk7pAzY6gutsdZ3NlyY55RrytrCPxJJxSN/DBfIGKphTrfBvKQWTnioQ9OlLP9kPjCE6XM5UWwGt7uqbpKSYA==}
     engines: {node: '>=18.0.0'}
 
-  '@escape.tech/graphql-armor-max-depth@2.4.1':
-    resolution: {integrity: sha512-LTwNMSGEmRvpBxt25MmDpb9N/jyR66jEIDLaVJ3qDG2juyrdexhqxr98fLy4P26H7RKll9kyQ3AlhYaOjfy8cA==}
+  '@escape.tech/graphql-armor-max-depth@2.4.2':
+    resolution: {integrity: sha512-J9fbW1+W4u3GAcf19wwS0zrNGICCbWn/glvopCoC11Ga0reXvGwgr8EcyuHjTFLL7+pPvWAeVhP4qo6hybcB9w==}
     engines: {node: '>=18.0.0'}
 
   '@escape.tech/graphql-armor-max-directives@2.3.1':
@@ -10393,7 +10394,7 @@ snapshots:
       '@envelop/core': 5.3.0
       '@escape.tech/graphql-armor-types': 0.7.0
 
-  '@escape.tech/graphql-armor-max-depth@2.4.1':
+  '@escape.tech/graphql-armor-max-depth@2.4.2':
     dependencies:
       graphql: 16.10.0
     optionalDependencies:
@@ -10423,7 +10424,7 @@ snapshots:
       '@escape.tech/graphql-armor-block-field-suggestions': 3.0.1
       '@escape.tech/graphql-armor-cost-limit': 2.4.3
       '@escape.tech/graphql-armor-max-aliases': 2.6.2
-      '@escape.tech/graphql-armor-max-depth': 2.4.1
+      '@escape.tech/graphql-armor-max-depth': 2.4.2
       '@escape.tech/graphql-armor-max-directives': 2.3.1
       '@escape.tech/graphql-armor-max-tokens': 2.5.1
       graphql: 16.10.0
