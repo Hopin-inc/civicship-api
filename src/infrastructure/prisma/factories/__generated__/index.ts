@@ -44,6 +44,9 @@ import type { VotePowerPolicy } from "@prisma/client";
 import type { VoteTopic } from "@prisma/client";
 import type { VoteOption } from "@prisma/client";
 import type { VoteBallot } from "@prisma/client";
+import type { ReportTemplate } from "@prisma/client";
+import type { Report } from "@prisma/client";
+import type { ReportFeedback } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -91,6 +94,9 @@ import type { NftMintStatus } from "@prisma/client";
 import type { Position } from "@prisma/client";
 import type { VoteGateType } from "@prisma/client";
 import type { VotePowerPolicyType } from "@prisma/client";
+import type { ReportTemplateScope } from "@prisma/client";
+import type { ReportStatus } from "@prisma/client";
+import type { FeedbackType } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
@@ -250,9 +256,21 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "NftInstance",
                 relationName: "CommunityToNftInstance"
             }, {
+                name: "nftTokens",
+                type: "NftToken",
+                relationName: "CommunityToNftToken"
+            }, {
                 name: "voteTopics",
                 type: "VoteTopic",
                 relationName: "CommunityToVoteTopic"
+            }, {
+                name: "reportTemplates",
+                type: "ReportTemplate",
+                relationName: "CommunityToReportTemplate"
+            }, {
+                name: "reports",
+                type: "Report",
+                relationName: "CommunityToReport"
             }]
     }, {
         name: "CommunityConfig",
@@ -410,6 +428,26 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "createdVoteTopics",
                 type: "VoteTopic",
                 relationName: "VoteTopicCreatedBy"
+            }, {
+                name: "reportsTargeted",
+                type: "Report",
+                relationName: "ReportTarget"
+            }, {
+                name: "reportsGenerated",
+                type: "Report",
+                relationName: "ReportGenerator"
+            }, {
+                name: "reportsPublished",
+                type: "Report",
+                relationName: "ReportPublisher"
+            }, {
+                name: "reportTemplatesUpdated",
+                type: "ReportTemplate",
+                relationName: "ReportTemplateUpdatedBy"
+            }, {
+                name: "reportFeedbacks",
+                type: "ReportFeedback",
+                relationName: "ReportFeedbackAuthor"
             }]
     }, {
         name: "Identity",
@@ -874,6 +912,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "NftToken",
         fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToNftToken"
+            }, {
                 name: "nftInstances",
                 type: "NftInstance",
                 relationName: "NftInstanceToNftToken"
@@ -1004,6 +1046,67 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "option",
                 type: "VoteOption",
                 relationName: "VoteBallotToVoteOption"
+            }]
+    }, {
+        name: "ReportTemplate",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToReportTemplate"
+            }, {
+                name: "updatedByUser",
+                type: "User",
+                relationName: "ReportTemplateUpdatedBy"
+            }, {
+                name: "reports",
+                type: "Report",
+                relationName: "ReportToReportTemplate"
+            }]
+    }, {
+        name: "Report",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToReport"
+            }, {
+                name: "template",
+                type: "ReportTemplate",
+                relationName: "ReportToReportTemplate"
+            }, {
+                name: "targetUser",
+                type: "User",
+                relationName: "ReportTarget"
+            }, {
+                name: "generatedByUser",
+                type: "User",
+                relationName: "ReportGenerator"
+            }, {
+                name: "publishedByUser",
+                type: "User",
+                relationName: "ReportPublisher"
+            }, {
+                name: "parentRun",
+                type: "Report",
+                relationName: "ReportRegeneration"
+            }, {
+                name: "regenerations",
+                type: "Report",
+                relationName: "ReportRegeneration"
+            }, {
+                name: "feedbacks",
+                type: "ReportFeedback",
+                relationName: "ReportToReportFeedback"
+            }]
+    }, {
+        name: "ReportFeedback",
+        fields: [{
+                name: "report",
+                type: "Report",
+                relationName: "ReportToReportFeedback"
+            }, {
+                name: "user",
+                type: "User",
+                relationName: "ReportFeedbackAuthor"
             }]
     }, {
         name: "PlacePublicOpportunityCountView",
@@ -1825,7 +1928,10 @@ type CommunityFactoryDefineInput = {
     participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutCommunityInput;
     nftInstance?: Prisma.NftInstanceCreateNestedManyWithoutCommunityInput;
+    nftTokens?: Prisma.NftTokenCreateNestedManyWithoutCommunityInput;
     voteTopics?: Prisma.VoteTopicCreateNestedManyWithoutCommunityInput;
+    reportTemplates?: Prisma.ReportTemplateCreateNestedManyWithoutCommunityInput;
+    reports?: Prisma.ReportCreateNestedManyWithoutCommunityInput;
 };
 
 type CommunityTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFactoryDefineInput, never>>;
@@ -3036,6 +3142,11 @@ type UserFactoryDefineInput = {
     articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
     voteBallots?: Prisma.VoteBallotCreateNestedManyWithoutUserInput;
     createdVoteTopics?: Prisma.VoteTopicCreateNestedManyWithoutCreatedByUserInput;
+    reportsTargeted?: Prisma.ReportCreateNestedManyWithoutTargetUserInput;
+    reportsGenerated?: Prisma.ReportCreateNestedManyWithoutGeneratedByUserInput;
+    reportsPublished?: Prisma.ReportCreateNestedManyWithoutPublishedByUserInput;
+    reportTemplatesUpdated?: Prisma.ReportTemplateCreateNestedManyWithoutUpdatedByUserInput;
+    reportFeedbacks?: Prisma.ReportFeedbackCreateNestedManyWithoutUserInput;
 };
 
 type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
@@ -7499,6 +7610,11 @@ type NftTokenScalarOrEnumFields = {
     type: string;
 };
 
+type NftTokencommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutNftTokensInput["create"]>;
+};
+
 type NftTokenFactoryDefineInput = {
     id?: string;
     address?: string;
@@ -7508,6 +7624,7 @@ type NftTokenFactoryDefineInput = {
     json?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date | null;
+    community?: NftTokencommunityFactory | Prisma.CommunityCreateNestedOneWithoutNftTokensInput;
     nftInstances?: Prisma.NftInstanceCreateNestedManyWithoutNftTokenInput;
     voteGates?: Prisma.VoteGateCreateNestedManyWithoutNftTokenInput;
     votePowerPolicies?: Prisma.VotePowerPolicyCreateNestedManyWithoutNftTokenInput;
@@ -7525,6 +7642,10 @@ type NftTokenFactoryDefineOptions<TTransients extends Record<string, unknown> = 
         [traitName: TraitName]: NftTokenFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<NftToken, Prisma.NftTokenCreateInput, TTransients>;
+
+function isNftTokencommunityFactory(x: NftTokencommunityFactory | Prisma.CommunityCreateNestedOneWithoutNftTokensInput | undefined): x is NftTokencommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
 
 type NftTokenTraitKeys<TOptions extends NftTokenFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
@@ -7586,7 +7707,11 @@ function defineNftTokenFactoryInternal<TTransients extends Record<string, unknow
                     ...traitData,
                 };
             }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.NftTokenCreateInput;
+            const defaultAssociations = {
+                community: isNftTokencommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
+            } as Prisma.NftTokenCreateInput;
             const data: Prisma.NftTokenCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
@@ -9176,6 +9301,616 @@ export const defineVoteBallotFactory = (<TOptions extends VoteBallotFactoryDefin
 }) as VoteBallotFactoryBuilder;
 
 defineVoteBallotFactory.withTransientFields = defaultTransientFieldValues => options => defineVoteBallotFactoryInternal(options, defaultTransientFieldValues);
+
+type ReportTemplateScalarOrEnumFields = {
+    variant: string;
+    scope: ReportTemplateScope;
+    systemPrompt: string;
+    userPromptTemplate: string;
+    model: string;
+    maxTokens: number;
+};
+
+type ReportTemplatecommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput["create"]>;
+};
+
+type ReportTemplateupdatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReportTemplatesUpdatedInput["create"]>;
+};
+
+type ReportTemplateFactoryDefineInput = {
+    id?: string;
+    variant?: string;
+    scope?: ReportTemplateScope;
+    systemPrompt?: string;
+    userPromptTemplate?: string;
+    communityContext?: string | null;
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+    stopSequences?: Prisma.ReportTemplateCreatestopSequencesInput | Array<string>;
+    isEnabled?: boolean;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    community?: ReportTemplatecommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput;
+    updatedByUser?: ReportTemplateupdatedByUserFactory | Prisma.UserCreateNestedOneWithoutReportTemplatesUpdatedInput;
+    reports?: Prisma.ReportCreateNestedManyWithoutTemplateInput;
+};
+
+type ReportTemplateTransientFields = Record<string, unknown> & Partial<Record<keyof ReportTemplateFactoryDefineInput, never>>;
+
+type ReportTemplateFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ReportTemplateFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ReportTemplate, Prisma.ReportTemplateCreateInput, TTransients>;
+
+type ReportTemplateFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<ReportTemplateFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: ReportTemplateFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ReportTemplate, Prisma.ReportTemplateCreateInput, TTransients>;
+
+function isReportTemplatecommunityFactory(x: ReportTemplatecommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput | undefined): x is ReportTemplatecommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
+
+function isReportTemplateupdatedByUserFactory(x: ReportTemplateupdatedByUserFactory | Prisma.UserCreateNestedOneWithoutReportTemplatesUpdatedInput | undefined): x is ReportTemplateupdatedByUserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type ReportTemplateTraitKeys<TOptions extends ReportTemplateFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ReportTemplateFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ReportTemplate";
+    build(inputData?: Partial<Prisma.ReportTemplateCreateInput & TTransients>): PromiseLike<Prisma.ReportTemplateCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ReportTemplateCreateInput & TTransients>): PromiseLike<Prisma.ReportTemplateCreateInput>;
+    buildList(list: readonly Partial<Prisma.ReportTemplateCreateInput & TTransients>[]): PromiseLike<Prisma.ReportTemplateCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ReportTemplateCreateInput & TTransients>): PromiseLike<Prisma.ReportTemplateCreateInput[]>;
+    pickForConnect(inputData: ReportTemplate): Pick<ReportTemplate, "id">;
+    create(inputData?: Partial<Prisma.ReportTemplateCreateInput & TTransients>): PromiseLike<ReportTemplate>;
+    createList(list: readonly Partial<Prisma.ReportTemplateCreateInput & TTransients>[]): PromiseLike<ReportTemplate[]>;
+    createList(count: number, item?: Partial<Prisma.ReportTemplateCreateInput & TTransients>): PromiseLike<ReportTemplate[]>;
+    createForConnect(inputData?: Partial<Prisma.ReportTemplateCreateInput & TTransients>): PromiseLike<Pick<ReportTemplate, "id">>;
+}
+
+export interface ReportTemplateFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReportTemplateFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ReportTemplateFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateReportTemplateScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ReportTemplateScalarOrEnumFields {
+    return {
+        variant: getScalarFieldValueGenerator().String({ modelName: "ReportTemplate", fieldName: "variant", isId: false, isUnique: true, seq }),
+        scope: "SYSTEM",
+        systemPrompt: getScalarFieldValueGenerator().String({ modelName: "ReportTemplate", fieldName: "systemPrompt", isId: false, isUnique: false, seq }),
+        userPromptTemplate: getScalarFieldValueGenerator().String({ modelName: "ReportTemplate", fieldName: "userPromptTemplate", isId: false, isUnique: false, seq }),
+        model: getScalarFieldValueGenerator().String({ modelName: "ReportTemplate", fieldName: "model", isId: false, isUnique: false, seq }),
+        maxTokens: getScalarFieldValueGenerator().Int({ modelName: "ReportTemplate", fieldName: "maxTokens", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineReportTemplateFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReportTemplateFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReportTemplateFactoryInterface<TTransients, ReportTemplateTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ReportTemplateTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("ReportTemplate", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ReportTemplateCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateReportTemplateScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ReportTemplateFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ReportTemplateFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isReportTemplatecommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community,
+                updatedByUser: isReportTemplateupdatedByUserFactory(defaultData.updatedByUser) ? {
+                    create: await defaultData.updatedByUser.build()
+                } : defaultData.updatedByUser
+            } as Prisma.ReportTemplateCreateInput;
+            const data: Prisma.ReportTemplateCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportTemplateCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: ReportTemplate) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ReportTemplateCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().reportTemplate.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportTemplateCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ReportTemplateCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ReportTemplate" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ReportTemplateTraitKeys<TOptions>, ...names: readonly ReportTemplateTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ReportTemplateFactoryBuilder {
+    <TOptions extends ReportTemplateFactoryDefineOptions>(options?: TOptions): ReportTemplateFactoryInterface<{}, ReportTemplateTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ReportTemplateTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReportTemplateFactoryDefineOptions<TTransients>>(options?: TOptions) => ReportTemplateFactoryInterface<TTransients, ReportTemplateTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link ReportTemplate} model.
+ *
+ * @param options
+ * @returns factory {@link ReportTemplateFactoryInterface}
+ */
+export const defineReportTemplateFactory = (<TOptions extends ReportTemplateFactoryDefineOptions>(options?: TOptions): ReportTemplateFactoryInterface<TOptions> => {
+    return defineReportTemplateFactoryInternal(options ?? {}, {});
+}) as ReportTemplateFactoryBuilder;
+
+defineReportTemplateFactory.withTransientFields = defaultTransientFieldValues => options => defineReportTemplateFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type ReportScalarOrEnumFields = {
+    variant: string;
+    periodFrom: Date;
+    periodTo: Date;
+    inputPayload: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    outputMarkdown: string;
+    model: string;
+    systemPromptSnapshot: string;
+    userPromptSnapshot: string;
+    inputTokens: number;
+    outputTokens: number;
+};
+
+type ReportcommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutReportsInput["create"]>;
+};
+
+type ReporttemplateFactory = {
+    _factoryFor: "ReportTemplate";
+    build: () => PromiseLike<Prisma.ReportTemplateCreateNestedOneWithoutReportsInput["create"]>;
+};
+
+type ReporttargetUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReportsTargetedInput["create"]>;
+};
+
+type ReportgeneratedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReportsGeneratedInput["create"]>;
+};
+
+type ReportpublishedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReportsPublishedInput["create"]>;
+};
+
+type ReportparentRunFactory = {
+    _factoryFor: "Report";
+    build: () => PromiseLike<Prisma.ReportCreateNestedOneWithoutRegenerationsInput["create"]>;
+};
+
+type ReportFactoryDefineInput = {
+    id?: string;
+    variant?: string;
+    periodFrom?: Date;
+    periodTo?: Date;
+    inputPayload?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    outputMarkdown?: string;
+    model?: string;
+    systemPromptSnapshot?: string;
+    userPromptSnapshot?: string;
+    communityContextSnapshot?: string | null;
+    inputTokens?: number;
+    outputTokens?: number;
+    cacheReadTokens?: number;
+    status?: ReportStatus;
+    publishedAt?: Date | null;
+    finalContent?: string | null;
+    regenerateCount?: number;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    community: ReportcommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportsInput;
+    template?: ReporttemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutReportsInput;
+    targetUser?: ReporttargetUserFactory | Prisma.UserCreateNestedOneWithoutReportsTargetedInput;
+    generatedByUser?: ReportgeneratedByUserFactory | Prisma.UserCreateNestedOneWithoutReportsGeneratedInput;
+    publishedByUser?: ReportpublishedByUserFactory | Prisma.UserCreateNestedOneWithoutReportsPublishedInput;
+    parentRun?: ReportparentRunFactory | Prisma.ReportCreateNestedOneWithoutRegenerationsInput;
+    regenerations?: Prisma.ReportCreateNestedManyWithoutParentRunInput;
+    feedbacks?: Prisma.ReportFeedbackCreateNestedManyWithoutReportInput;
+};
+
+type ReportTransientFields = Record<string, unknown> & Partial<Record<keyof ReportFactoryDefineInput, never>>;
+
+type ReportFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ReportFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Report, Prisma.ReportCreateInput, TTransients>;
+
+type ReportFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<ReportFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: ReportFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Report, Prisma.ReportCreateInput, TTransients>;
+
+function isReportcommunityFactory(x: ReportcommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportsInput | undefined): x is ReportcommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
+
+function isReporttemplateFactory(x: ReporttemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutReportsInput | undefined): x is ReporttemplateFactory {
+    return (x as any)?._factoryFor === "ReportTemplate";
+}
+
+function isReporttargetUserFactory(x: ReporttargetUserFactory | Prisma.UserCreateNestedOneWithoutReportsTargetedInput | undefined): x is ReporttargetUserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+function isReportgeneratedByUserFactory(x: ReportgeneratedByUserFactory | Prisma.UserCreateNestedOneWithoutReportsGeneratedInput | undefined): x is ReportgeneratedByUserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+function isReportpublishedByUserFactory(x: ReportpublishedByUserFactory | Prisma.UserCreateNestedOneWithoutReportsPublishedInput | undefined): x is ReportpublishedByUserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+function isReportparentRunFactory(x: ReportparentRunFactory | Prisma.ReportCreateNestedOneWithoutRegenerationsInput | undefined): x is ReportparentRunFactory {
+    return (x as any)?._factoryFor === "Report";
+}
+
+type ReportTraitKeys<TOptions extends ReportFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ReportFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Report";
+    build(inputData?: Partial<Prisma.ReportCreateInput & TTransients>): PromiseLike<Prisma.ReportCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ReportCreateInput & TTransients>): PromiseLike<Prisma.ReportCreateInput>;
+    buildList(list: readonly Partial<Prisma.ReportCreateInput & TTransients>[]): PromiseLike<Prisma.ReportCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ReportCreateInput & TTransients>): PromiseLike<Prisma.ReportCreateInput[]>;
+    pickForConnect(inputData: Report): Pick<Report, "id">;
+    create(inputData?: Partial<Prisma.ReportCreateInput & TTransients>): PromiseLike<Report>;
+    createList(list: readonly Partial<Prisma.ReportCreateInput & TTransients>[]): PromiseLike<Report[]>;
+    createList(count: number, item?: Partial<Prisma.ReportCreateInput & TTransients>): PromiseLike<Report[]>;
+    createForConnect(inputData?: Partial<Prisma.ReportCreateInput & TTransients>): PromiseLike<Pick<Report, "id">>;
+}
+
+export interface ReportFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReportFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ReportFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateReportScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ReportScalarOrEnumFields {
+    return {
+        variant: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "variant", isId: false, isUnique: false, seq }),
+        periodFrom: getScalarFieldValueGenerator().DateTime({ modelName: "Report", fieldName: "periodFrom", isId: false, isUnique: false, seq }),
+        periodTo: getScalarFieldValueGenerator().DateTime({ modelName: "Report", fieldName: "periodTo", isId: false, isUnique: false, seq }),
+        inputPayload: getScalarFieldValueGenerator().Json({ modelName: "Report", fieldName: "inputPayload", isId: false, isUnique: false, seq }),
+        outputMarkdown: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "outputMarkdown", isId: false, isUnique: false, seq }),
+        model: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "model", isId: false, isUnique: false, seq }),
+        systemPromptSnapshot: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "systemPromptSnapshot", isId: false, isUnique: false, seq }),
+        userPromptSnapshot: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "userPromptSnapshot", isId: false, isUnique: false, seq }),
+        inputTokens: getScalarFieldValueGenerator().Int({ modelName: "Report", fieldName: "inputTokens", isId: false, isUnique: false, seq }),
+        outputTokens: getScalarFieldValueGenerator().Int({ modelName: "Report", fieldName: "outputTokens", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineReportFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReportFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReportFactoryInterface<TTransients, ReportTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ReportTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("Report", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ReportCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateReportScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ReportFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ReportFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isReportcommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community,
+                template: isReporttemplateFactory(defaultData.template) ? {
+                    create: await defaultData.template.build()
+                } : defaultData.template,
+                targetUser: isReporttargetUserFactory(defaultData.targetUser) ? {
+                    create: await defaultData.targetUser.build()
+                } : defaultData.targetUser,
+                generatedByUser: isReportgeneratedByUserFactory(defaultData.generatedByUser) ? {
+                    create: await defaultData.generatedByUser.build()
+                } : defaultData.generatedByUser,
+                publishedByUser: isReportpublishedByUserFactory(defaultData.publishedByUser) ? {
+                    create: await defaultData.publishedByUser.build()
+                } : defaultData.publishedByUser,
+                parentRun: isReportparentRunFactory(defaultData.parentRun) ? {
+                    create: await defaultData.parentRun.build()
+                } : defaultData.parentRun
+            } as Prisma.ReportCreateInput;
+            const data: Prisma.ReportCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Report) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ReportCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().report.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ReportCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Report" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ReportTraitKeys<TOptions>, ...names: readonly ReportTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ReportFactoryBuilder {
+    <TOptions extends ReportFactoryDefineOptions>(options: TOptions): ReportFactoryInterface<{}, ReportTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ReportTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReportFactoryDefineOptions<TTransients>>(options: TOptions) => ReportFactoryInterface<TTransients, ReportTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link Report} model.
+ *
+ * @param options
+ * @returns factory {@link ReportFactoryInterface}
+ */
+export const defineReportFactory = (<TOptions extends ReportFactoryDefineOptions>(options: TOptions): ReportFactoryInterface<TOptions> => {
+    return defineReportFactoryInternal(options, {});
+}) as ReportFactoryBuilder;
+
+defineReportFactory.withTransientFields = defaultTransientFieldValues => options => defineReportFactoryInternal(options, defaultTransientFieldValues);
+
+type ReportFeedbackScalarOrEnumFields = {
+    rating: number;
+};
+
+type ReportFeedbackreportFactory = {
+    _factoryFor: "Report";
+    build: () => PromiseLike<Prisma.ReportCreateNestedOneWithoutFeedbacksInput["create"]>;
+};
+
+type ReportFeedbackuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReportFeedbacksInput["create"]>;
+};
+
+type ReportFeedbackFactoryDefineInput = {
+    id?: string;
+    rating?: number;
+    feedbackType?: FeedbackType | null;
+    sectionKey?: string | null;
+    comment?: string | null;
+    createdAt?: Date;
+    report: ReportFeedbackreportFactory | Prisma.ReportCreateNestedOneWithoutFeedbacksInput;
+    user: ReportFeedbackuserFactory | Prisma.UserCreateNestedOneWithoutReportFeedbacksInput;
+};
+
+type ReportFeedbackTransientFields = Record<string, unknown> & Partial<Record<keyof ReportFeedbackFactoryDefineInput, never>>;
+
+type ReportFeedbackFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ReportFeedbackFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ReportFeedback, Prisma.ReportFeedbackCreateInput, TTransients>;
+
+type ReportFeedbackFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<ReportFeedbackFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: ReportFeedbackFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ReportFeedback, Prisma.ReportFeedbackCreateInput, TTransients>;
+
+function isReportFeedbackreportFactory(x: ReportFeedbackreportFactory | Prisma.ReportCreateNestedOneWithoutFeedbacksInput | undefined): x is ReportFeedbackreportFactory {
+    return (x as any)?._factoryFor === "Report";
+}
+
+function isReportFeedbackuserFactory(x: ReportFeedbackuserFactory | Prisma.UserCreateNestedOneWithoutReportFeedbacksInput | undefined): x is ReportFeedbackuserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type ReportFeedbackTraitKeys<TOptions extends ReportFeedbackFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ReportFeedbackFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ReportFeedback";
+    build(inputData?: Partial<Prisma.ReportFeedbackCreateInput & TTransients>): PromiseLike<Prisma.ReportFeedbackCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ReportFeedbackCreateInput & TTransients>): PromiseLike<Prisma.ReportFeedbackCreateInput>;
+    buildList(list: readonly Partial<Prisma.ReportFeedbackCreateInput & TTransients>[]): PromiseLike<Prisma.ReportFeedbackCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ReportFeedbackCreateInput & TTransients>): PromiseLike<Prisma.ReportFeedbackCreateInput[]>;
+    pickForConnect(inputData: ReportFeedback): Pick<ReportFeedback, "id">;
+    create(inputData?: Partial<Prisma.ReportFeedbackCreateInput & TTransients>): PromiseLike<ReportFeedback>;
+    createList(list: readonly Partial<Prisma.ReportFeedbackCreateInput & TTransients>[]): PromiseLike<ReportFeedback[]>;
+    createList(count: number, item?: Partial<Prisma.ReportFeedbackCreateInput & TTransients>): PromiseLike<ReportFeedback[]>;
+    createForConnect(inputData?: Partial<Prisma.ReportFeedbackCreateInput & TTransients>): PromiseLike<Pick<ReportFeedback, "id">>;
+}
+
+export interface ReportFeedbackFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReportFeedbackFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ReportFeedbackFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateReportFeedbackScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ReportFeedbackScalarOrEnumFields {
+    return {
+        rating: getScalarFieldValueGenerator().Int({ modelName: "ReportFeedback", fieldName: "rating", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineReportFeedbackFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReportFeedbackFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReportFeedbackFactoryInterface<TTransients, ReportFeedbackTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ReportFeedbackTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("ReportFeedback", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ReportFeedbackCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateReportFeedbackScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ReportFeedbackFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ReportFeedbackFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                report: isReportFeedbackreportFactory(defaultData.report) ? {
+                    create: await defaultData.report.build()
+                } : defaultData.report,
+                user: isReportFeedbackuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            } as Prisma.ReportFeedbackCreateInput;
+            const data: Prisma.ReportFeedbackCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportFeedbackCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: ReportFeedback) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ReportFeedbackCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().reportFeedback.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportFeedbackCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ReportFeedbackCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ReportFeedback" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ReportFeedbackTraitKeys<TOptions>, ...names: readonly ReportFeedbackTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ReportFeedbackFactoryBuilder {
+    <TOptions extends ReportFeedbackFactoryDefineOptions>(options: TOptions): ReportFeedbackFactoryInterface<{}, ReportFeedbackTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ReportFeedbackTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReportFeedbackFactoryDefineOptions<TTransients>>(options: TOptions) => ReportFeedbackFactoryInterface<TTransients, ReportFeedbackTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link ReportFeedback} model.
+ *
+ * @param options
+ * @returns factory {@link ReportFeedbackFactoryInterface}
+ */
+export const defineReportFeedbackFactory = (<TOptions extends ReportFeedbackFactoryDefineOptions>(options: TOptions): ReportFeedbackFactoryInterface<TOptions> => {
+    return defineReportFeedbackFactoryInternal(options, {});
+}) as ReportFeedbackFactoryBuilder;
+
+defineReportFeedbackFactory.withTransientFields = defaultTransientFieldValues => options => defineReportFeedbackFactoryInternal(options, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;
