@@ -31,6 +31,7 @@ import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { CardanoShopifyAppClient } from "@/infrastructure/libs/cardanoShopifyApp/api/client";
 import { AnthropicLlmClient } from "@/infrastructure/libs/llm";
+import ReportResolver from "@/application/domain/report/controller/resolver";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
@@ -351,6 +352,7 @@ export function registerProductionDependencies() {
   container.register("ReportRepository", { useClass: ReportRepository });
   container.register("ReportService", { useClass: ReportService });
   container.register("ReportUseCase", { useClass: ReportUseCase });
+  container.register("ReportResolver", { useClass: ReportResolver });
   container.register("LlmClient", { useClass: AnthropicLlmClient });
 
   // ------------------------------

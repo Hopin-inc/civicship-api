@@ -1,5 +1,6 @@
-import { Prisma, TransactionReason, Role } from "@prisma/client";
+import { Prisma, TransactionReason, Role, ReportStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 
 export interface TransactionSummaryDailyRow {
   date: Date;
@@ -179,4 +180,51 @@ export interface IReportRepository {
 
   refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
   refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
+
+  findTemplate(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate | null>;
+
+  upsertTemplate(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+    data: Omit<Prisma.ReportTemplateCreateInput, "variant" | "scope" | "community">,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReportTemplate>;
+
+  createReport(
+    ctx: IContext,
+    data: Prisma.ReportUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport>;
+
+  findReportById(ctx: IContext, id: string): Promise<PrismaReport | null>;
+
+  findReports(
+    ctx: IContext,
+    params: {
+      communityId: string;
+      variant?: string;
+      status?: ReportStatus;
+      cursor?: string;
+      first?: number;
+    },
+  ): Promise<{ items: PrismaReport[]; totalCount: number }>;
+
+  updateReportStatus(
+    ctx: IContext,
+    id: string,
+    status: ReportStatus,
+    extra?: {
+      publishedAt?: Date;
+      publishedBy?: string;
+      finalContent?: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport>;
+
+  findReportsByParentRunId(ctx: IContext, parentRunIds: string[]): Promise<PrismaReport[]>;
 }

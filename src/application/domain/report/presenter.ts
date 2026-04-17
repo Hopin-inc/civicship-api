@@ -1,3 +1,5 @@
+import { GqlReport, GqlReportTemplate, GqlReportsConnection } from "@/types/graphql";
+import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 import {
   CommunityContextRow,
   DeepestChainRow,
@@ -252,6 +254,30 @@ export default class ReportPresenter {
         created_by_user_id: c.createdByUserId,
         chain_depth: c.chainDepth,
       })),
+    };
+  }
+
+  static report(r: PrismaReport): GqlReport {
+    return r as unknown as GqlReport;
+  }
+
+  static reportTemplate(t: PrismaReportTemplate): GqlReportTemplate {
+    return t as unknown as GqlReportTemplate;
+  }
+
+  static reportsConnection(items: PrismaReport[], totalCount: number): GqlReportsConnection {
+    return {
+      edges: items.map((r) => ({
+        cursor: r.id,
+        node: ReportPresenter.report(r),
+      })),
+      pageInfo: {
+        hasNextPage: items.length > 0 && totalCount > items.length,
+        hasPreviousPage: false,
+        startCursor: items[0]?.id ?? null,
+        endCursor: items[items.length - 1]?.id ?? null,
+      },
+      totalCount,
     };
   }
 }

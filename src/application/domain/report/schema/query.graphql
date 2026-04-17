@@ -1,0 +1,17 @@
+# ------------------------------
+# Report Query Definitions
+# ------------------------------
+extend type Query {
+  reports(
+    communityId: ID!
+    variant: ReportVariant
+    status: ReportStatus
+    cursor: String
+    first: Int
+    permission: CheckCommunityPermissionInput!
+  ): ReportsConnection! @authz(compositeRules: [{ or: [IsCommunityManager, IsAdmin] }])
+
+  report(id: ID!): Report @authz(rules: [IsAdmin])
+
+  reportTemplate(communityId: ID, variant: ReportVariant!): ReportTemplate @authz(rules: [IsAdmin])
+}

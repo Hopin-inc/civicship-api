@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, ReportStatus } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
@@ -12,6 +12,9 @@ import {
   UserProfileForReportRow,
   UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
+import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
+import { GqlUpdateReportTemplateInput } from "@/types/graphql";
+import ReportConverter from "@/application/domain/report/data/converter";
 
 @injectable()
 export default class ReportService {
@@ -81,5 +84,80 @@ export default class ReportService {
 
   async refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
     return this.repository.refreshUserTransactionDaily(ctx, tx);
+  }
+
+  // =========================================================================
+  // Report AI entities
+  // =========================================================================
+
+  async getTemplate(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate | null> {
+    return this.repository.findTemplate(ctx, variant, communityId);
+  }
+
+  async upsertTemplate(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+    input: GqlUpdateReportTemplateInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReportTemplate> {
+    const data = ReportConverter.toReportTemplateUpsertData(input);
+    return this.repository.upsertTemplate(ctx, variant, communityId, data, tx);
+  }
+
+  async createReport(
+    ctx: IContext,
+    data: Prisma.ReportUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport> {
+    return this.repository.createReport(ctx, data, tx);
+  }
+
+  async getReportById(ctx: IContext, id: string): Promise<PrismaReport | null> {
+    return this.repository.findReportById(ctx, id);
+  }
+
+  async getReports(
+    ctx: IContext,
+    params: {
+      communityId: string;
+      variant?: string;
+      status?: ReportStatus;
+      cursor?: string;
+      first?: number;
+    },
+  ): Promise<{ items: PrismaReport[]; totalCount: number }> {
+    return this.repository.findReports(ctx, params);
+  }
+
+  async updateReportStatus(
+    ctx: IContext,
+    id: string,
+    status: ReportStatus,
+    extra?: { publishedAt?: Date; publishedBy?: string; finalContent?: string },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport> {
+    return this.repository.updateReportStatus(ctx, id, status, extra, tx);
+  }
+
+  assertStatusTransition(from: ReportStatus, to: ReportStatus): void {
+    const allowed: Record<ReportStatus, ReportStatus[]> = {
+      [ReportStatus.DRAFT]: [ReportStatus.APPROVED, ReportStatus.REJECTED, ReportStatus.SUPERSEDED],
+      [ReportStatus.APPROVED]: [
+        ReportStatus.PUBLISHED,
+        ReportStatus.REJECTED,
+        ReportStatus.SUPERSEDED,
+      ],
+      [ReportStatus.PUBLISHED]: [ReportStatus.SUPERSEDED],
+      [ReportStatus.REJECTED]: [],
+      [ReportStatus.SUPERSEDED]: [],
+    };
+    if (!allowed[from]?.includes(to)) {
+      throw new Error(`Invalid status transition from ${from} to ${to}`);
+    }
   }
 }

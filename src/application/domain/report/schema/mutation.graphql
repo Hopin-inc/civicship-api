@@ -1,0 +1,40 @@
+# ------------------------------
+# Report Mutation Definitions
+# ------------------------------
+input GenerateReportInput {
+  communityId: ID!
+  variant: ReportVariant!
+  periodFrom: Datetime!
+  periodTo: Datetime!
+  parentRunId: ID
+}
+
+input UpdateReportTemplateInput {
+  systemPrompt: String!
+  userPromptTemplate: String!
+  communityContext: String
+  model: String!
+  temperature: Float
+  maxTokens: Int!
+  stopSequences: [String!]
+  isEnabled: Boolean
+}
+
+extend type Mutation {
+  generateReport(
+    input: GenerateReportInput!
+    permission: CheckCommunityPermissionInput!
+  ): GenerateReportPayload @authz(compositeRules: [{ or: [IsCommunityManager, IsAdmin] }])
+
+  updateReportTemplate(
+    communityId: ID
+    variant: ReportVariant!
+    input: UpdateReportTemplateInput!
+  ): UpdateReportTemplatePayload @authz(rules: [IsAdmin])
+
+  approveReport(id: ID!): ApproveReportPayload @authz(rules: [IsAdmin])
+
+  publishReport(id: ID!, finalContent: String!): PublishReportPayload @authz(rules: [IsAdmin])
+
+  rejectReport(id: ID!, reason: String): RejectReportPayload @authz(rules: [IsAdmin])
+}

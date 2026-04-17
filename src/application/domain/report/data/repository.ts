@@ -1,4 +1,4 @@
-import { Prisma, TransactionReason } from "@prisma/client";
+import { Prisma, ReportStatus, ReportTemplateScope, TransactionReason } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
@@ -12,6 +12,12 @@ import {
   UserProfileForReportRow,
   UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
+import {
+  PrismaReport,
+  PrismaReportTemplate,
+  reportSelect,
+  reportTemplateSelect,
+} from "@/application/domain/report/data/type";
 import {
   refreshMaterializedViewTransactionSummaryDaily,
   refreshMaterializedViewUserTransactionDaily,
@@ -332,5 +338,144 @@ export default class ReportRepository implements IReportRepository {
 
   async refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
     await tx.$queryRawTyped(refreshMaterializedViewUserTransactionDaily());
+  }
+
+  // =========================================================================
+  // Report AI entities (ReportTemplate / Report)
+  // =========================================================================
+
+  async findTemplate(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate | null> {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.reportTemplate.findFirst({
+        where: {
+          variant,
+          isEnabled: true,
+          OR: [...(communityId ? [{ communityId }] : []), { communityId: null }],
+        },
+        orderBy: { communityId: "asc" },
+        select: reportTemplateSelect,
+      }),
+    );
+  }
+
+  async upsertTemplate(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+    data: Omit<Prisma.ReportTemplateCreateInput, "variant" | "scope" | "community">,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReportTemplate> {
+    const scope = communityId ? ReportTemplateScope.COMMUNITY : ReportTemplateScope.SYSTEM;
+    const doUpsert = async (client: Prisma.TransactionClient) => {
+      const existing = await client.reportTemplate.findFirst({
+        where: { variant, communityId },
+        select: { id: true },
+      });
+      if (existing) {
+        return client.reportTemplate.update({
+          where: { id: existing.id },
+          data,
+          select: reportTemplateSelect,
+        });
+      }
+      return client.reportTemplate.create({
+        data: {
+          ...data,
+          variant,
+          scope,
+          ...(communityId ? { community: { connect: { id: communityId } } } : {}),
+        },
+        select: reportTemplateSelect,
+      });
+    };
+
+    if (tx) return doUpsert(tx);
+    return ctx.issuer.internal(doUpsert);
+  }
+
+  async createReport(
+    ctx: IContext,
+    data: Prisma.ReportUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport> {
+    const doCreate = (client: Prisma.TransactionClient) =>
+      client.report.create({ data, select: reportSelect });
+
+    if (tx) return doCreate(tx);
+    return ctx.issuer.internal(doCreate);
+  }
+
+  async findReportById(ctx: IContext, id: string): Promise<PrismaReport | null> {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.report.findUnique({ where: { id }, select: reportSelect }),
+    );
+  }
+
+  async findReports(
+    ctx: IContext,
+    params: {
+      communityId: string;
+      variant?: string;
+      status?: ReportStatus;
+      cursor?: string;
+      first?: number;
+    },
+  ): Promise<{ items: PrismaReport[]; totalCount: number }> {
+    const take = params.first ?? 20;
+    const where: Prisma.ReportWhereInput = {
+      communityId: params.communityId,
+      ...(params.variant && { variant: params.variant }),
+      status: params.status ?? { not: ReportStatus.SUPERSEDED },
+    };
+    return ctx.issuer.public(ctx, async (tx) => {
+      const [items, totalCount] = await Promise.all([
+        tx.report.findMany({
+          where,
+          select: reportSelect,
+          take,
+          ...(params.cursor && { skip: 1, cursor: { id: params.cursor } }),
+          orderBy: { createdAt: "desc" },
+        }),
+        tx.report.count({ where }),
+      ]);
+      return { items, totalCount };
+    });
+  }
+
+  async updateReportStatus(
+    ctx: IContext,
+    id: string,
+    status: ReportStatus,
+    extra?: {
+      publishedAt?: Date;
+      publishedBy?: string;
+      finalContent?: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport> {
+    const doUpdate = (client: Prisma.TransactionClient) =>
+      client.report.update({
+        where: { id },
+        data: { status, ...extra },
+        select: reportSelect,
+      });
+
+    if (tx) return doUpdate(tx);
+    return ctx.issuer.internal(doUpdate);
+  }
+
+  async findReportsByParentRunId(ctx: IContext, parentRunIds: string[]): Promise<PrismaReport[]> {
+    if (parentRunIds.length === 0) return [];
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.report.findMany({
+        where: { parentRunId: { in: parentRunIds } },
+        select: reportSelect,
+        orderBy: { createdAt: "desc" },
+      }),
+    );
   }
 }
