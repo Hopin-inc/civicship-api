@@ -6,7 +6,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import ReportUseCase from "@/application/domain/report/usecase";
 import { IContext } from "@/types/server";
-import { GqlReportVariant } from "@/types/graphql";
+import { GqlReportStatus, GqlReportVariant } from "@/types/graphql";
 import { addDays, truncateToJstDate } from "@/application/domain/report/util";
 
 export async function generateWeeklyReports() {
@@ -25,15 +25,19 @@ export async function generateWeeklyReports() {
   const weekAgo = addDays(yesterday, -6);
 
   let successCount = 0;
-  let skipCount = 0;
+  let alreadyExistsCount = 0;
+  let zeroActivitySkipCount = 0;
   let errorCount = 0;
 
   for (const community of communities) {
     try {
-      // Intentionally skip only DRAFT/APPROVED/PUBLISHED reports.
+      // Intentionally skip only DRAFT/APPROVED/PUBLISHED/SKIPPED reports.
       // REJECTED reports are treated as "not existing" so the batch
       // retries generation after an admin rejection. SUPERSEDED
       // reports are also excluded since they've been replaced.
+      // SKIPPED is included here so we don't re-run generateReport on
+      // a community whose week was already recorded as zero-activity —
+      // the SKIPPED row is the final artefact for that period.
       const existing = await issuer.internal((tx) =>
         tx.report.findFirst({
           where: {
@@ -48,11 +52,11 @@ export async function generateWeeklyReports() {
       );
       if (existing) {
         logger.debug(`Skipping community ${community.id} — report already exists`);
-        skipCount++;
+        alreadyExistsCount++;
         continue;
       }
 
-      await reportUseCase.generateReport(
+      const result = await reportUseCase.generateReport(
         {
           input: {
             communityId: community.id,
@@ -64,8 +68,20 @@ export async function generateWeeklyReports() {
         },
         ctx,
       );
-      successCount++;
-      logger.debug(`Generated weekly report for community ${community.id}`);
+      // GenerateReportSuccess is the only non-error return; a SKIPPED row
+      // comes back here the same way — distinguished by `status`.
+      if (
+        result.__typename === "GenerateReportSuccess" &&
+        result.report.status === GqlReportStatus.Skipped
+      ) {
+        zeroActivitySkipCount++;
+        logger.debug(
+          `Skipped weekly report for community ${community.id} — ${result.report.skipReason ?? "no reason recorded"}`,
+        );
+      } else {
+        successCount++;
+        logger.debug(`Generated weekly report for community ${community.id}`);
+      }
     } catch (error) {
       errorCount++;
       logger.error(`Failed to generate weekly report for community ${community.id}:`, error);
@@ -73,6 +89,9 @@ export async function generateWeeklyReports() {
   }
 
   logger.debug(
-    `Weekly report batch completed: ${successCount} generated, ${skipCount} skipped, ${errorCount} errors`,
+    `Weekly report batch completed: ${successCount} generated, ` +
+      `${zeroActivitySkipCount} skipped (no activity), ` +
+      `${alreadyExistsCount} skipped (already exists), ` +
+      `${errorCount} errors`,
   );
 }

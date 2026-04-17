@@ -1,4 +1,4 @@
-import { ReportStatus } from "@prisma/client";
+import { Prisma, ReportStatus } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
@@ -163,6 +163,47 @@ export default class ReportUseCase {
       customContext: template.communityContext ?? undefined,
     });
 
+    // Short-circuit on zero activity: no LLM call, no prompt snapshot, no
+    // token usage. The row is still created (same regenerate / supersede
+    // semantics) so the weekly report timeline has an explicit "nothing
+    // happened" entry instead of a gap — `status = SKIPPED` and
+    // `skipReason` carry the rationale.
+    const skipReason = this.service.evaluateSkipReason(payload);
+    if (skipReason) {
+      const skippedReport = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+        const parentRegenerateCount = await this.supersedeParentIfRegenerating(
+          ctx,
+          input.parentRunId ?? null,
+          communityId,
+          input.variant,
+          tx,
+        );
+        return this.service.createReport(
+          ctx,
+          {
+            communityId,
+            variant: input.variant,
+            periodFrom,
+            periodTo,
+            templateId: template.id,
+            inputPayload: payload as object,
+            status: ReportStatus.SKIPPED,
+            skipReason,
+            ...(input.parentRunId && {
+              parentRunId: input.parentRunId,
+              regenerateCount: parentRegenerateCount + 1,
+            }),
+            ...(ctx.currentUser && { generatedBy: ctx.currentUser.id }),
+          },
+          tx,
+        );
+      });
+      return {
+        __typename: "GenerateReportSuccess",
+        report: ReportPresenter.report(skippedReport),
+      };
+    }
+
     const userPrompt = renderPromptTemplate(template.userPromptTemplate, {
       payload_json: JSON.stringify(payload),
     });
@@ -185,26 +226,13 @@ export default class ReportUseCase {
     }
 
     const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      let parentRegenerateCount = 0;
-      if (input.parentRunId) {
-        const parent = await this.service.getReportById(ctx, input.parentRunId, tx);
-        if (!parent) throw new Error(`Parent report ${input.parentRunId} not found`);
-        if (parent.communityId !== communityId || parent.variant !== input.variant) {
-          throw new Error("Parent report must belong to the same community and variant");
-        }
-        parentRegenerateCount = parent.regenerateCount;
-        if (parent.status !== ReportStatus.SUPERSEDED) {
-          this.service.assertStatusTransition(parent.status, ReportStatus.SUPERSEDED);
-          await this.service.updateReportStatus(
-            ctx,
-            input.parentRunId,
-            ReportStatus.SUPERSEDED,
-            undefined,
-            tx,
-          );
-        }
-      }
-
+      const parentRegenerateCount = await this.supersedeParentIfRegenerating(
+        ctx,
+        input.parentRunId ?? null,
+        communityId,
+        input.variant,
+        tx,
+      );
       return this.service.createReport(
         ctx,
         {
@@ -233,6 +261,39 @@ export default class ReportUseCase {
     });
 
     return { __typename: "GenerateReportSuccess", report: ReportPresenter.report(report) };
+  }
+
+  /**
+   * Shared parent-run lookup / supersede for both the skip and LLM paths.
+   * Validates the parent belongs to the same community + variant and moves
+   * it to SUPERSEDED (unless already there). Returns the parent's existing
+   * `regenerateCount` so the caller can set `parentRegenerateCount + 1` on
+   * the new row.
+   */
+  private async supersedeParentIfRegenerating(
+    ctx: IContext,
+    parentRunId: string | null,
+    communityId: string,
+    variant: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<number> {
+    if (!parentRunId) return 0;
+    const parent = await this.service.getReportById(ctx, parentRunId, tx);
+    if (!parent) throw new Error(`Parent report ${parentRunId} not found`);
+    if (parent.communityId !== communityId || parent.variant !== variant) {
+      throw new Error("Parent report must belong to the same community and variant");
+    }
+    if (parent.status !== ReportStatus.SUPERSEDED) {
+      this.service.assertStatusTransition(parent.status, ReportStatus.SUPERSEDED);
+      await this.service.updateReportStatus(
+        ctx,
+        parentRunId,
+        ReportStatus.SUPERSEDED,
+        undefined,
+        tx,
+      );
+    }
+    return parent.regenerateCount;
   }
 
   async browseReports(

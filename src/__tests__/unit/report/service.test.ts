@@ -1,7 +1,10 @@
 import "reflect-metadata";
 import { ReportStatus } from "@prisma/client";
 import { container } from "tsyringe";
-import ReportService from "@/application/domain/report/service";
+import ReportService, {
+  SKIP_REASON_NO_ACTIVITY_PREFIX,
+} from "@/application/domain/report/service";
+import type { WeeklyReportPayload } from "@/application/domain/report/presenter";
 
 class MockReportRepository {
   findDailySummaries = jest.fn();
@@ -54,10 +57,120 @@ describe("ReportService", () => {
       [ReportStatus.PUBLISHED, ReportStatus.APPROVED],
       [ReportStatus.PUBLISHED, ReportStatus.DRAFT],
       [ReportStatus.DRAFT, ReportStatus.PUBLISHED],
+      // SKIPPED is a terminal creation-time state (PR-F2); no transitions
+      // out of it are permitted.
+      [ReportStatus.SKIPPED, ReportStatus.DRAFT],
+      [ReportStatus.SKIPPED, ReportStatus.APPROVED],
+      [ReportStatus.SKIPPED, ReportStatus.PUBLISHED],
+      [ReportStatus.SKIPPED, ReportStatus.SUPERSEDED],
     ];
 
     it.each(invalidTransitions)("rejects %s → %s", (from, to) => {
       expect(() => service.assertStatusTransition(from, to)).toThrow(/Invalid status transition/);
+    });
+  });
+
+  describe("evaluateSkipReason", () => {
+    const basePayload: WeeklyReportPayload = {
+      period: { from: "2026-04-11", to: "2026-04-17" },
+      community_id: "kibotcha",
+      community_context: {
+        community_id: "kibotcha",
+        name: "KIBOTCHA",
+        point_name: "pt",
+        bio: null,
+        established_at: null,
+        website: null,
+        total_members: 566,
+        active_users_in_window: 0,
+        active_rate: 0,
+        custom_context: null,
+      },
+      deepest_chain: null,
+      daily_summaries: [],
+      daily_active_users: [],
+      top_users: [],
+      highlight_comments: [],
+    };
+
+    it("returns a prefixed skip reason when active_users=0 AND daily_summaries is empty", () => {
+      const reason = service.evaluateSkipReason(basePayload);
+      expect(reason).not.toBeNull();
+      expect(reason).toContain(SKIP_REASON_NO_ACTIVITY_PREFIX);
+      expect(reason).toMatch(/active_users=0/);
+      expect(reason).toMatch(/daily_summaries=\[\]/);
+    });
+
+    it("treats null community_context the same as active_users=0", () => {
+      const reason = service.evaluateSkipReason({
+        ...basePayload,
+        community_context: null,
+      });
+      expect(reason).not.toBeNull();
+      expect(reason).toContain(SKIP_REASON_NO_ACTIVITY_PREFIX);
+    });
+
+    it("does NOT skip when daily_summaries has rows even if active_users=0", () => {
+      // Defence against drift between the two signals: if daily_summaries
+      // somehow records activity but active_users_in_window reads 0 (e.g.
+      // MV lag), we still want to generate a report rather than silently
+      // skipping a non-empty week.
+      const reason = service.evaluateSkipReason({
+        ...basePayload,
+        daily_summaries: [
+          {
+            date: "2026-04-15",
+            reason: "DONATION",
+            tx_count: 1,
+            points_sum: 1000,
+            chain_root_count: 0,
+            chain_descendant_count: 1,
+            max_chain_depth: 5,
+            avg_chain_depth: 5,
+            issuance_count: 0,
+            burn_count: 0,
+          },
+        ],
+      });
+      expect(reason).toBeNull();
+    });
+
+    it("does NOT skip when active_users>0 even if daily_summaries is empty", () => {
+      // Symmetric defence: the inverse drift case.
+      const reason = service.evaluateSkipReason({
+        ...basePayload,
+        community_context: {
+          ...basePayload.community_context!,
+          active_users_in_window: 3,
+        },
+      });
+      expect(reason).toBeNull();
+    });
+
+    it("does NOT skip a fully populated weekly payload", () => {
+      const reason = service.evaluateSkipReason({
+        ...basePayload,
+        community_context: {
+          ...basePayload.community_context!,
+          active_users_in_window: 26,
+          active_rate: 0.04,
+        },
+        daily_summaries: [
+          {
+            date: "2026-04-14",
+            reason: "DONATION",
+            tx_count: 8,
+            points_sum: 125830,
+            chain_root_count: 0,
+            chain_descendant_count: 8,
+            max_chain_depth: 19,
+            avg_chain_depth: 5,
+            issuance_count: 0,
+            burn_count: 0,
+          },
+        ],
+      });
+      expect(reason).toBeNull();
     });
   });
 });

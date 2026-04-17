@@ -15,6 +15,15 @@ import {
 import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 import { GqlUpdateReportTemplateInput } from "@/types/graphql";
 import ReportConverter from "@/application/domain/report/data/converter";
+import { WeeklyReportPayload } from "@/application/domain/report/presenter";
+
+/**
+ * Prefix convention for `Report.skipReason`. New skip categories (e.g. API
+ * outages, payload-builder data inconsistencies) should follow the same
+ * `"<Category>:"` shape so log analysis can bucket them with
+ * `WHERE skip_reason LIKE 'No activity%'`.
+ */
+export const SKIP_REASON_NO_ACTIVITY_PREFIX = "No activity in period";
 
 @injectable()
 export default class ReportService {
@@ -147,6 +156,31 @@ export default class ReportService {
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReport> {
     return this.repository.updateReportStatus(ctx, id, status, extra, tx);
+  }
+
+  /**
+   * Decide whether a freshly-built payload is too empty to be worth sending
+   * to the LLM. Returns a human-readable `skipReason` string (prefixed so
+   * ops can bucket reasons with `LIKE 'No activity%'`) when the run should
+   * short-circuit to `ReportStatus.SKIPPED`; returns `null` when the LLM
+   * should be invoked as usual.
+   *
+   * Zero-activity is defined as BOTH `active_users_in_window === 0` AND
+   * `daily_summaries.length === 0`. Using AND (rather than OR on either
+   * signal) avoids false-positive skips on weeks that contain only
+   * GRANT or ONBOARDING transactions — those would push up one counter
+   * without the other in edge cases, and their existence is itself
+   * report-worthy.
+   *
+   * A null `community_context` (no JOINED members yet) is also treated as
+   * zero activity by defaulting `active_users_in_window` to 0.
+   */
+  evaluateSkipReason(payload: WeeklyReportPayload): string | null {
+    const activeUsers = payload.community_context?.active_users_in_window ?? 0;
+    if (activeUsers === 0 && payload.daily_summaries.length === 0) {
+      return `${SKIP_REASON_NO_ACTIVITY_PREFIX}: active_users=0, daily_summaries=[]`;
+    }
+    return null;
   }
 
   assertStatusTransition(from: ReportStatus, to: ReportStatus): void {
