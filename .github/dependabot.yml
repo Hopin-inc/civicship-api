@@ -1,0 +1,61 @@
+# Dependabot configuration for civicship-api.
+# Strategy: cooldown + grouping (方針B). Rationale captured in
+# docs/dependabot-playbook.md section 1.
+# - Weekly Monday 06:00 JST aligns with the dependency review routine.
+# - Cooldown windows (patch 5d / minor 10d / major 14d) are api-conservative;
+#   security updates bypass cooldown and are opened immediately by Dependabot.
+# - Grouping: production minor/major open as individual PRs for careful review;
+#   production patch + all dev deps are grouped to reduce review volume.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 10
+      semver-patch-days: 5
+
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      production-patch:
+        dependency-type: "production"
+        update-types:
+          - "patch"
+
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
