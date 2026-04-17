@@ -1692,16 +1692,16 @@ type RejectReportSuccess {
 }
 
 type Report {
-  cacheReadTokens: Int!
+  cacheReadTokens: Int
   community: Community!
   createdAt: Datetime!
   finalContent: String
   generatedByUser: User
   id: ID!
-  inputTokens: Int!
-  model: String!
-  outputMarkdown: String!
-  outputTokens: Int!
+  inputTokens: Int
+  model: String
+  outputMarkdown: String
+  outputTokens: Int
   parentRun: Report
   periodFrom: Datetime!
   periodTo: Datetime!
@@ -1709,6 +1709,7 @@ type Report {
   publishedByUser: User
   regenerateCount: Int!
   regenerations: [Report!]!
+  skipReason: String
   status: ReportStatus!
   targetUser: User
   template: ReportTemplate
@@ -1726,6 +1727,7 @@ enum ReportStatus {
   DRAFT
   PUBLISHED
   REJECTED
+  SKIPPED
   SUPERSEDED
 }
 

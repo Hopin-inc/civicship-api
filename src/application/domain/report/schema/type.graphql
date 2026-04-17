@@ -16,6 +16,7 @@ enum ReportStatus {
   PUBLISHED
   REJECTED
   SUPERSEDED
+  SKIPPED
 }
 
 enum ReportTemplateScope {
@@ -31,13 +32,16 @@ type Report {
   periodTo: Datetime!
   template: ReportTemplate
 
-  outputMarkdown: String!
-  model: String!
-  inputTokens: Int!
-  outputTokens: Int!
-  cacheReadTokens: Int!
+  # LLM-generation artefacts. All nullable because SKIPPED reports never
+  # invoked the model — see `skipReason` for why the run was elided.
+  outputMarkdown: String
+  model: String
+  inputTokens: Int
+  outputTokens: Int
+  cacheReadTokens: Int
 
   status: ReportStatus!
+  skipReason: String
   publishedAt: Datetime
   publishedByUser: User
   finalContent: String

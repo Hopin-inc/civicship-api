@@ -160,6 +160,12 @@ export default class ReportService {
       [ReportStatus.PUBLISHED]: [ReportStatus.SUPERSEDED],
       [ReportStatus.REJECTED]: [],
       [ReportStatus.SUPERSEDED]: [],
+      // SKIPPED is a terminal creation-time state: rows are born SKIPPED when
+      // the payload builder detects zero activity and the pipeline elides the
+      // LLM call. Forcing a report despite zero activity is expressed by
+      // inserting a NEW Report row (with regenerate chain), not by mutating
+      // an existing SKIPPED row.
+      [ReportStatus.SKIPPED]: [],
     };
     if (!allowed[from]?.includes(to)) {
       throw new Error(`Invalid status transition from ${from} to ${to}`);

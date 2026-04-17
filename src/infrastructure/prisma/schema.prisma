@@ -1626,12 +1626,18 @@ enum ReportTemplateScope {
   COMMUNITY
 }
 
+enum ReportTemplateKind {
+  GENERATION
+  JUDGE
+}
+
 enum ReportStatus {
   DRAFT
   APPROVED
   PUBLISHED
   REJECTED
   SUPERSEDED
+  SKIPPED
 }
 
 enum FeedbackType {
@@ -1647,6 +1653,7 @@ model ReportTemplate {
 
   variant String
   scope   ReportTemplateScope
+  kind    ReportTemplateKind  @default(GENERATION)
 
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -1661,6 +1668,21 @@ model ReportTemplate {
   stopSequences String[] @default([]) @map("stop_sequences")
   isEnabled     Boolean  @default(true) @map("is_enabled")
 
+  // Versioning + A/B test support (see also PR-F3).
+  // - `version` + `isActive` track the history of prompt iterations so a
+  //   generation run pins to a specific (variant, scope, communityId, version)
+  //   via Report.templateId.
+  // - `experimentKey` groups concurrent candidates so the selection logic
+  //   in PR-F3 can sample by `trafficWeight` across rows sharing the key.
+  // - `trafficWeight` is a percentage in 0..100; when multiple rows with the
+  //   same (variant, scope, communityId) are active the weights within an
+  //   experimentKey must sum to 100 (enforced at the application layer).
+  version       Int     @default(1)
+  isActive      Boolean @default(true) @map("is_active")
+  experimentKey String? @map("experiment_key")
+  trafficWeight Int     @default(100) @map("traffic_weight")
+  notes         String? @db.Text
+
   updatedBy     String? @map("updated_by")
   updatedByUser User?   @relation("ReportTemplateUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
@@ -1669,22 +1691,28 @@ model ReportTemplate {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  // NOTE on uniqueness/consistency invariants enforced at the DB layer:
-  //   1. @@unique([variant, communityId]) covers the COMMUNITY scope
-  //      (variant + non-NULL community_id pair). PostgreSQL treats NULL
-  //      as distinct in regular unique indexes, so this attribute alone
-  //      does NOT prevent duplicate SYSTEM-scope templates.
+  // Uniqueness / consistency invariants enforced at the DB layer:
+  //   1. @@unique([variant, communityId, version]) covers COMMUNITY-scope
+  //      rows (variant + non-NULL community_id + version triple). PostgreSQL
+  //      treats NULL as distinct in regular unique indexes, so this
+  //      attribute alone does NOT prevent duplicate SYSTEM-scope templates
+  //      on the same (variant, version).
+  //      (Ideally this would be `nullsNotDistinct: true` and absorb both
+  //      scopes in a single constraint, but Prisma 6.11 only supports that
+  //      argument on field-level `@unique`, not `@@unique`. The partial
+  //      index below is the documented workaround until Prisma lands it.)
   //   2. The partial unique index `t_report_templates_variant_system_key`
-  //      (defined in the migration as a raw SQL `CREATE UNIQUE INDEX ...
-  //      WHERE community_id IS NULL`) limits SYSTEM scope to one template
-  //      per variant. Prisma's @@unique cannot express partial indexes,
-  //      so it lives only in the migration.
-  //   3. The CHECK constraint
-  //      `t_report_templates_scope_community_id_check` enforces
-  //      scope='SYSTEM' ⇔ community_id IS NULL and
-  //      scope='COMMUNITY' ⇔ community_id IS NOT NULL, so the two
-  //      indexes above can rely on the scope/community_id pairing.
-  @@unique([variant, communityId])
+  //      (defined in the corresponding migration as raw SQL
+  //      `CREATE UNIQUE INDEX ... ON (variant, version) WHERE community_id
+  //      IS NULL`) limits SYSTEM scope to one template per (variant, version)
+  //      pair.
+  //   3. The CHECK constraint `t_report_templates_scope_community_id_check`
+  //      continues to enforce scope='SYSTEM' ⇔ community_id IS NULL and
+  //      scope='COMMUNITY' ⇔ community_id IS NOT NULL, so (1) and (2) can
+  //      rely on the scope/community_id pairing.
+  //   4. `trafficWeight` is bounded 0..100 via
+  //      `t_report_templates_traffic_weight_check` (see migration).
+  @@unique([variant, communityId, version])
   @@map("t_report_templates")
 }
 
@@ -1701,17 +1729,27 @@ model Report {
   templateId String?         @map("template_id")
   template   ReportTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
-  inputPayload   Json   @map("input_payload")
-  outputMarkdown String @map("output_markdown") @db.Text
+  // Payload is built prior to the skip decision, so it is always present
+  // (SKIPPED rows still have an inputPayload recording what was evaluated).
+  inputPayload Json @map("input_payload")
 
-  model                    String
-  systemPromptSnapshot     String  @map("system_prompt_snapshot") @db.Text
-  userPromptSnapshot       String  @map("user_prompt_snapshot") @db.Text
+  // LLM-generation artefacts. All nullable because SKIPPED runs never call
+  // the model — no output, no snapshots, no tokens. Non-SKIPPED rows must
+  // populate these at the application layer.
+  outputMarkdown           String? @map("output_markdown") @db.Text
+  model                    String?
+  systemPromptSnapshot     String? @map("system_prompt_snapshot") @db.Text
+  userPromptSnapshot       String? @map("user_prompt_snapshot") @db.Text
   communityContextSnapshot String? @map("community_context_snapshot") @db.Text
 
-  inputTokens     Int @map("input_tokens")
-  outputTokens    Int @map("output_tokens")
-  cacheReadTokens Int @default(0) @map("cache_read_tokens")
+  inputTokens     Int? @map("input_tokens")
+  outputTokens    Int? @map("output_tokens")
+  cacheReadTokens Int? @map("cache_read_tokens")
+
+  // Populated when `status = SKIPPED`. Human-readable reason (e.g.
+  // "zero activity in window") so operators can audit skip decisions
+  // without re-running the payload builder.
+  skipReason String? @map("skip_reason") @db.Text
 
   targetUserId String? @map("target_user_id")
   targetUser   User?   @relation("ReportTarget", fields: [targetUserId], references: [id], onDelete: SetNull)

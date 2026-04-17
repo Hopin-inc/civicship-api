@@ -780,6 +780,7 @@ Table t_report_templates {
   id String [pk]
   variant String [not null]
   scope ReportTemplateScope [not null]
+  kind ReportTemplateKind [not null, default: 'GENERATION']
   communityId String
   community t_communities
   systemPrompt String [not null]
@@ -790,6 +791,11 @@ Table t_report_templates {
   maxTokens Int [not null]
   stopSequences String[] [not null]
   isEnabled Boolean [not null, default: true]
+  version Int [not null, default: 1]
+  isActive Boolean [not null, default: true]
+  experimentKey String
+  trafficWeight Int [not null, default: 100]
+  notes String
   updatedBy String
   updatedByUser t_users
   reports t_reports [not null]
@@ -797,7 +803,7 @@ Table t_report_templates {
   updatedAt DateTime
 
   indexes {
-    (variant, communityId) [unique]
+    (variant, communityId, version) [unique]
   }
 }
 
@@ -811,14 +817,15 @@ Table t_reports {
   templateId String
   template t_report_templates
   inputPayload Json [not null]
-  outputMarkdown String [not null]
-  model String [not null]
-  systemPromptSnapshot String [not null]
-  userPromptSnapshot String [not null]
+  outputMarkdown String
+  model String
+  systemPromptSnapshot String
+  userPromptSnapshot String
   communityContextSnapshot String
-  inputTokens Int [not null]
-  outputTokens Int [not null]
-  cacheReadTokens Int [not null, default: 0]
+  inputTokens Int
+  outputTokens Int
+  cacheReadTokens Int
+  skipReason String
   targetUserId String
   targetUser t_users
   generatedBy String
@@ -1270,12 +1277,18 @@ Enum ReportTemplateScope {
   COMMUNITY
 }
 
+Enum ReportTemplateKind {
+  GENERATION
+  JUDGE
+}
+
 Enum ReportStatus {
   DRAFT
   APPROVED
   PUBLISHED
   REJECTED
   SUPERSEDED
+  SKIPPED
 }
 
 Enum FeedbackType {
