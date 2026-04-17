@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 
 const RATE_LIMIT_CONFIG = {
@@ -16,15 +17,34 @@ const RATE_LIMIT_CONFIG = {
   },
 } as const;
 
+export const skipRateLimitForAdminApiKey = (req: Request): boolean => {
+  const apiKeyHeader = req.headers['x-api-key'];
+  const adminApiKey = process.env.CIVICSHIP_ADMIN_API_KEY;
+
+  if (Array.isArray(apiKeyHeader) || !apiKeyHeader || !adminApiKey) {
+    return false;
+  }
+
+  const apiKeyBuffer = Buffer.from(apiKeyHeader);
+  const adminApiKeyBuffer = Buffer.from(adminApiKey);
+
+  if (apiKeyBuffer.length !== adminApiKeyBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(apiKeyBuffer, adminApiKeyBuffer);
+};
+
 export const walletRateLimit = rateLimit({
   windowMs: RATE_LIMIT_CONFIG.WALLET_OPERATIONS.windowMs,
   max: RATE_LIMIT_CONFIG.WALLET_OPERATIONS.max,
   message: {
     error: 'Too many wallet address update requests from this IP, please try again later.',
   },
-  standardHeaders: true,
-  legacyHeaders: false,
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skipSuccessfulRequests: false,
+  skip: skipRateLimitForAdminApiKey,
 });
 
 export function extractUidFromIdToken(idToken: string): string | null {

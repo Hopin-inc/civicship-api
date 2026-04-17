@@ -10,6 +10,7 @@ import { AuthMeta } from "@/types/server";
 export interface AuthHeaders {
   authMode: "id_token" | "session";
   idToken?: string;
+  adminApiKey?: string;
   communityId?: string;
   refreshToken?: string;
   tokenExpiresAt?: string;
@@ -45,6 +46,13 @@ export interface AuthResultBase {
 }
 
 /**
+ * 管理者認証成功時
+ */
+export interface AdminAuthResult extends AuthResultBase {
+  isAdmin: true;
+}
+
+/**
  * Firebase認証成功時
  */
 export interface FirebaseAuthResult extends AuthResultBase {
@@ -61,4 +69,4 @@ export interface AnonymousAuthResult extends AuthResultBase {
 /**
  * 統一戻り型
  */
-export type AuthResult = FirebaseAuthResult | AnonymousAuthResult;
+export type AuthResult = AdminAuthResult | FirebaseAuthResult | AnonymousAuthResult;
