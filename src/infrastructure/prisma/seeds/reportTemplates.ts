@@ -1,8 +1,9 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { ReportTemplateScope } from "@prisma/client";
+import { GqlReportVariant } from "@/types/graphql";
 
 interface TemplateDefinition {
-  variant: string;
+  variant: GqlReportVariant;
   systemPrompt: string;
   userPromptTemplate: string;
   model: string;
@@ -12,7 +13,7 @@ interface TemplateDefinition {
 
 const TEMPLATES: TemplateDefinition[] = [
   {
-    variant: "WEEKLY_SUMMARY",
+    variant: GqlReportVariant.WeeklySummary,
     model: "claude-sonnet-4-6",
     maxTokens: 8192,
     temperature: 0.5,
@@ -47,7 +48,7 @@ const TEMPLATES: TemplateDefinition[] = [
 \${payload_json}`,
   },
   {
-    variant: "GRANT_APPLICATION",
+    variant: GqlReportVariant.GrantApplication,
     model: "claude-sonnet-4-6",
     maxTokens: 8192,
     temperature: 0.5,
@@ -81,7 +82,7 @@ const TEMPLATES: TemplateDefinition[] = [
 \${payload_json}`,
   },
   {
-    variant: "MEDIA_PR",
+    variant: GqlReportVariant.MediaPr,
     model: "claude-sonnet-4-6",
     maxTokens: 8192,
     temperature: 0.7,
@@ -115,7 +116,7 @@ note記事やプレスリリースとして公開できるレベルの読み物�
 \${payload_json}`,
   },
   {
-    variant: "MEMBER_NEWSLETTER",
+    variant: GqlReportVariant.MemberNewsletter,
     model: "claude-sonnet-4-6",
     maxTokens: 4096,
     temperature: 0.7,
@@ -152,41 +153,43 @@ LINE配信やコミュニティ掲示板への投稿を想定しています。�
 ];
 
 export async function seedReportTemplates() {
-  for (const tmpl of TEMPLATES) {
-    const existing = await prismaClient.reportTemplate.findFirst({
-      where: { variant: tmpl.variant, communityId: null },
-      select: { id: true },
-    });
+  await prismaClient.$transaction(async (tx) => {
+    for (const tmpl of TEMPLATES) {
+      const existing = await tx.reportTemplate.findFirst({
+        where: { variant: tmpl.variant, communityId: null },
+        select: { id: true },
+      });
 
-    if (existing) {
-      await prismaClient.reportTemplate.update({
-        where: { id: existing.id },
-        data: {
-          systemPrompt: tmpl.systemPrompt,
-          userPromptTemplate: tmpl.userPromptTemplate,
-          model: tmpl.model,
-          maxTokens: tmpl.maxTokens,
-          temperature: tmpl.temperature,
-          stopSequences: [],
-          isEnabled: true,
-        },
-      });
-      console.info(`  Updated SYSTEM template: ${tmpl.variant}`);
-    } else {
-      await prismaClient.reportTemplate.create({
-        data: {
-          variant: tmpl.variant,
-          scope: ReportTemplateScope.SYSTEM,
-          systemPrompt: tmpl.systemPrompt,
-          userPromptTemplate: tmpl.userPromptTemplate,
-          model: tmpl.model,
-          maxTokens: tmpl.maxTokens,
-          temperature: tmpl.temperature,
-          stopSequences: [],
-          isEnabled: true,
-        },
-      });
-      console.info(`  Created SYSTEM template: ${tmpl.variant}`);
+      if (existing) {
+        await tx.reportTemplate.update({
+          where: { id: existing.id },
+          data: {
+            systemPrompt: tmpl.systemPrompt,
+            userPromptTemplate: tmpl.userPromptTemplate,
+            model: tmpl.model,
+            maxTokens: tmpl.maxTokens,
+            temperature: tmpl.temperature,
+            stopSequences: [],
+            isEnabled: true,
+          },
+        });
+        console.info(`  Updated SYSTEM template: ${tmpl.variant}`);
+      } else {
+        await tx.reportTemplate.create({
+          data: {
+            variant: tmpl.variant,
+            scope: ReportTemplateScope.SYSTEM,
+            systemPrompt: tmpl.systemPrompt,
+            userPromptTemplate: tmpl.userPromptTemplate,
+            model: tmpl.model,
+            maxTokens: tmpl.maxTokens,
+            temperature: tmpl.temperature,
+            stopSequences: [],
+            isEnabled: true,
+          },
+        });
+        console.info(`  Created SYSTEM template: ${tmpl.variant}`);
+      }
     }
-  }
+  });
 }
