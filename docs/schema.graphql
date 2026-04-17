@@ -1713,7 +1713,7 @@ type Report {
   targetUser: User
   template: ReportTemplate
   updatedAt: Datetime
-  variant: String!
+  variant: ReportVariant!
 }
 
 type ReportEdge implements Edge {
@@ -1744,7 +1744,7 @@ type ReportTemplate {
   updatedAt: Datetime
   updatedByUser: User
   userPromptTemplate: String!
-  variant: String!
+  variant: ReportVariant!
 }
 
 enum ReportTemplateScope {
@@ -1753,6 +1753,10 @@ enum ReportTemplateScope {
 }
 
 enum ReportVariant {
+  GRANT_APPLICATION
+  MEDIA_PR
+  MEMBER_NEWSLETTER
+  PERSONAL_RECAP
   WEEKLY_SUMMARY
 }
 

@@ -54,8 +54,10 @@ export default class ReportResolver {
   Report = {
     community: (parent: PrismaReport, _: unknown, ctx: IContext) =>
       ctx.loaders.community.load(parent.communityId),
-    template: (parent: PrismaReport, _: unknown, ctx: IContext) =>
-      parent.templateId ? ctx.loaders.reportTemplate.load(parent.templateId) : null,
+    template: (parent: PrismaReport, _: unknown, ctx: IContext) => {
+      if (!(ctx.isAdmin || ctx.currentUser?.sysRole === "SYS_ADMIN")) return null;
+      return parent.templateId ? ctx.loaders.reportTemplate.load(parent.templateId) : null;
+    },
     generatedByUser: (parent: PrismaReport, _: unknown, ctx: IContext) =>
       parent.generatedBy ? ctx.loaders.user.load(parent.generatedBy) : null,
     publishedByUser: (parent: PrismaReport, _: unknown, ctx: IContext) =>
