@@ -270,12 +270,12 @@ export default class ReportUseCase {
     { id }: GqlMutationApproveReportArgs,
     ctx: IContext,
   ): Promise<GqlApproveReportPayload> {
-    const existing = await this.service.getReportById(ctx, id);
-    if (!existing) throw new Error(`Report ${id} not found`);
-    this.service.assertStatusTransition(existing.status, ReportStatus.APPROVED);
-    const report = await ctx.issuer.admin(ctx, (tx) =>
-      this.service.updateReportStatus(ctx, id, ReportStatus.APPROVED, undefined, tx),
-    );
+    const report = await ctx.issuer.admin(ctx, async (tx) => {
+      const existing = await this.service.getReportById(ctx, id, tx);
+      if (!existing) throw new Error(`Report ${id} not found`);
+      this.service.assertStatusTransition(existing.status, ReportStatus.APPROVED);
+      return this.service.updateReportStatus(ctx, id, ReportStatus.APPROVED, undefined, tx);
+    });
     return { __typename: "ApproveReportSuccess", report: ReportPresenter.report(report) };
   }
 
@@ -283,11 +283,11 @@ export default class ReportUseCase {
     { id, finalContent }: GqlMutationPublishReportArgs,
     ctx: IContext,
   ): Promise<GqlPublishReportPayload> {
-    const existing = await this.service.getReportById(ctx, id);
-    if (!existing) throw new Error(`Report ${id} not found`);
-    this.service.assertStatusTransition(existing.status, ReportStatus.PUBLISHED);
-    const report = await ctx.issuer.admin(ctx, (tx) =>
-      this.service.updateReportStatus(
+    const report = await ctx.issuer.admin(ctx, async (tx) => {
+      const existing = await this.service.getReportById(ctx, id, tx);
+      if (!existing) throw new Error(`Report ${id} not found`);
+      this.service.assertStatusTransition(existing.status, ReportStatus.PUBLISHED);
+      return this.service.updateReportStatus(
         ctx,
         id,
         ReportStatus.PUBLISHED,
@@ -297,8 +297,8 @@ export default class ReportUseCase {
           finalContent,
         },
         tx,
-      ),
-    );
+      );
+    });
     return { __typename: "PublishReportSuccess", report: ReportPresenter.report(report) };
   }
 
@@ -306,12 +306,12 @@ export default class ReportUseCase {
     { id }: GqlMutationRejectReportArgs,
     ctx: IContext,
   ): Promise<GqlRejectReportPayload> {
-    const existing = await this.service.getReportById(ctx, id);
-    if (!existing) throw new Error(`Report ${id} not found`);
-    this.service.assertStatusTransition(existing.status, ReportStatus.REJECTED);
-    const report = await ctx.issuer.admin(ctx, (tx) =>
-      this.service.updateReportStatus(ctx, id, ReportStatus.REJECTED, undefined, tx),
-    );
+    const report = await ctx.issuer.admin(ctx, async (tx) => {
+      const existing = await this.service.getReportById(ctx, id, tx);
+      if (!existing) throw new Error(`Report ${id} not found`);
+      this.service.assertStatusTransition(existing.status, ReportStatus.REJECTED);
+      return this.service.updateReportStatus(ctx, id, ReportStatus.REJECTED, undefined, tx);
+    });
     return { __typename: "RejectReportSuccess", report: ReportPresenter.report(report) };
   }
 
