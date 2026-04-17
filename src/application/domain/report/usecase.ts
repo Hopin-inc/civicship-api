@@ -26,7 +26,7 @@ import {
   GqlQueryReportTemplateArgs,
 } from "@/types/graphql";
 
-const LLM_TIMEOUT_MS = 60_000;
+const LLM_TIMEOUT_MS = 120_000;
 const DEFAULT_REPORTS_PER_PAGE = 20;
 const MAX_REPORTS_PER_PAGE = 100;
 
