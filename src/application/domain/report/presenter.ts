@@ -257,12 +257,17 @@ export default class ReportPresenter {
     };
   }
 
+  // Relationship fields (community, template, parentRun, regenerations,
+  // generatedByUser, publishedByUser, targetUser, updatedByUser) are
+  // resolved by field resolvers via DataLoaders — the Prisma select shape
+  // intentionally omits them.  The cast bridges the type gap until
+  // Report/ReportTemplate are added to codegen.yaml mappers.
   static report(r: PrismaReport): GqlReport {
-    return { __typename: "Report", ...r } as GqlReport;
+    return r as unknown as GqlReport;
   }
 
   static reportTemplate(t: PrismaReportTemplate): GqlReportTemplate {
-    return { __typename: "ReportTemplate", ...t } as GqlReportTemplate;
+    return t as unknown as GqlReportTemplate;
   }
 
   static reportsConnection(
