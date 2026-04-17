@@ -47,9 +47,7 @@ export interface AuthResultBase {
 /**
  * Firebase認証成功時
  */
-export interface FirebaseAuthResult extends AuthResultBase {
-  isAdmin?: false;
-}
+export interface FirebaseAuthResult extends AuthResultBase {}
 
 /**
  * 未認証リクエスト
