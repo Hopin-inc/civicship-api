@@ -166,3 +166,20 @@ PR-α では CI の lint step を一時 disable。PR-ε で以下を対応:
 4. CI の lint step 再有効化 (`pnpm lint:check` を使用)
 
 PR-ε は PR-α merge 後、独立 PR として着手する。
+
+### Related observation: automated review tooling reliability (from PR #842)
+
+PR-α のレビュープロセスで、`gemini-code-assist` から 3 件の factually
+incorrect な指摘があった (cooldown 非サポート主張 x2、`minimumReleaseAge`
+location 誤指摘)。いずれも公式 docs 引用で rebuttal 済み。
+`devin-ai-integration` と `copilot-pull-request-reviewer` は正確で有用な
+指摘を提供した。
+
+将来の observation:
+- gemini の誤り傾向が他 PR でも継続するなら、設定見直し (scope 限定
+  or 無効化) を検討する
+- 自動レビュー導入時は「複数ツール併用」の価値がある (今回 Devin/Copilot
+  が gemini の穴を補完しなかったら、誤指摘に押し切られる可能性があった)
+
+Phase 2 以降の運用改善テーマとして記録のみ。PR-ε 本体の scope には
+含めない。

@@ -90,8 +90,9 @@ jobs:
         run: pnpm gql:generate
 
       # Detect uncommitted regenerations of tracked generated files.
-      # Note: this workflow name ("CI") is referenced by PR-β via workflow_run
-      # triggers on deploy workflows; renaming requires updating those.
+      # Note: this workflow's name ("CI") will be referenced by downstream
+      # deploy workflows via `workflow_run` triggers in PR-β (not yet
+      # implemented). Renaming after PR-β lands will require updating those.
       - name: Check generated files are up to date
         run: |
           git diff --exit-code \
