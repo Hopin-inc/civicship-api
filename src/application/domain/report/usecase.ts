@@ -140,7 +140,7 @@ export default class ReportUseCase {
       );
     }
 
-    if (input.periodFrom > input.periodTo) {
+    if (daysBetweenJst(input.periodFrom, input.periodTo) < 0) {
       throw new ValidationError("periodFrom must be on or before periodTo", [
         "periodFrom",
         "periodTo",
