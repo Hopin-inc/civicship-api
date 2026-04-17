@@ -167,6 +167,8 @@ export async function seedReportTemplates() {
           model: tmpl.model,
           maxTokens: tmpl.maxTokens,
           temperature: tmpl.temperature,
+          stopSequences: [],
+          isEnabled: true,
         },
       });
       console.info(`  Updated SYSTEM template: ${tmpl.variant}`);
