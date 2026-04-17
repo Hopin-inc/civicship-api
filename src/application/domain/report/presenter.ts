@@ -258,11 +258,11 @@ export default class ReportPresenter {
   }
 
   static report(r: PrismaReport): GqlReport {
-    return r as unknown as GqlReport;
+    return { __typename: "Report", ...r } as GqlReport;
   }
 
   static reportTemplate(t: PrismaReportTemplate): GqlReportTemplate {
-    return t as unknown as GqlReportTemplate;
+    return { __typename: "ReportTemplate", ...t } as GqlReportTemplate;
   }
 
   static reportsConnection(
