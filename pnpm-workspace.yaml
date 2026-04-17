@@ -1,6 +1,12 @@
 packages:
   - '.'
 
+# Supply chain defense: reject packages published within the last 3 days.
+# Complements Dependabot cooldown (which applies only to Dependabot PRs);
+# this applies to any `pnpm install` / `pnpm add` at install time.
+# Unit: minutes. 4320 = 3 days. Increase to 10080 (7 days) for more conservative posture.
+minimumReleaseAge: 4320
+
 onlyBuiltDependencies:
   - '@apollo/protobufjs'
   - '@prisma/client'
