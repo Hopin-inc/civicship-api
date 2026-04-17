@@ -25,7 +25,7 @@ export function extractRequestInfo(req: http.IncomingMessage) {
   const referer = normalize(getHeader("referer")) || normalize(getHeader("referrer")) || "none";
   const origin = normalize(getHeader("origin")) || "none";
 
-  const excluded = new Set(["authorization", "cookie", "x-civicship-admin-api-key"]);
+  const excluded = new Set(["authorization", "cookie"]);
   const safeHeaders = Object.fromEntries(
     Object.entries(req.headers).filter(([key]) => !excluded.has(key.toLowerCase())),
   );

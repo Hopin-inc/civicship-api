@@ -46,7 +46,6 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
   const headers: AuthHeaders = {
     authMode,
     idToken,
-    adminApiKey: getHeader("x-civicship-admin-api-key"),
     communityId: getHeader("x-community-id"),
     hasCookie: !!req.headers.cookie,
   };
@@ -55,7 +54,6 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
     authMode,
     hasIdToken: !!headers.idToken,
     hasCookie: !!req.headers.cookie,
-    hasAdminKey: !!headers.adminApiKey,
     communityId: headers.communityId,
   });
 
