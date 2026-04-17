@@ -786,7 +786,7 @@ Table t_report_templates {
   userPromptTemplate String [not null]
   communityContext String
   model String [not null]
-  temperature Float [not null, default: 1]
+  temperature Float [default: 1]
   maxTokens Int [not null]
   stopSequences String[] [not null]
   isEnabled Boolean [not null, default: true]
