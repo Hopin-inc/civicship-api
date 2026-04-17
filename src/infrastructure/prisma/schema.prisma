@@ -1656,7 +1656,7 @@ model ReportTemplate {
   communityContext   String? @map("community_context") @db.Text
 
   model         String
-  temperature   Float    @default(1.0)
+  temperature   Float?   @default(1.0)
   maxTokens     Int      @map("max_tokens")
   stopSequences String[] @default([]) @map("stop_sequences")
   isEnabled     Boolean  @default(true) @map("is_enabled")
