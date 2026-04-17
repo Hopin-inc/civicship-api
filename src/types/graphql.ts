@@ -1226,7 +1226,6 @@ export type GqlMutationPublishReportArgs = {
 
 export type GqlMutationRejectReportArgs = {
   id: Scalars['ID']['input'];
-  reason?: InputMaybe<Scalars['String']['input']>;
 };
 
 

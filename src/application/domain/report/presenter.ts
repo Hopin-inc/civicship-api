@@ -265,17 +265,23 @@ export default class ReportPresenter {
     return t as unknown as GqlReportTemplate;
   }
 
-  static reportsConnection(items: PrismaReport[], totalCount: number): GqlReportsConnection {
+  static reportsConnection(
+    items: PrismaReport[],
+    totalCount: number,
+    requestedFirst: number,
+  ): GqlReportsConnection {
+    const hasNextPage = items.length > requestedFirst;
+    const page = hasNextPage ? items.slice(0, requestedFirst) : items;
     return {
-      edges: items.map((r) => ({
+      edges: page.map((r) => ({
         cursor: r.id,
         node: ReportPresenter.report(r),
       })),
       pageInfo: {
-        hasNextPage: items.length > 0 && totalCount > items.length,
+        hasNextPage,
         hasPreviousPage: false,
-        startCursor: items[0]?.id ?? null,
-        endCursor: items[items.length - 1]?.id ?? null,
+        startCursor: page[0]?.id ?? null,
+        endCursor: page[page.length - 1]?.id ?? null,
       },
       totalCount,
     };

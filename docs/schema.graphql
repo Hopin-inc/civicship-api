@@ -869,7 +869,7 @@ type Mutation {
   placeDelete(id: ID!, permission: CheckCommunityPermissionInput!): PlaceDeletePayload
   placeUpdate(id: ID!, input: PlaceUpdateInput!, permission: CheckCommunityPermissionInput!): PlaceUpdatePayload
   publishReport(finalContent: String!, id: ID!): PublishReportPayload
-  rejectReport(id: ID!, reason: String): RejectReportPayload
+  rejectReport(id: ID!): RejectReportPayload
   reservationAccept(id: ID!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
   reservationCancel(id: ID!, input: ReservationCancelInput!, permission: CheckIsSelfPermissionInput!): ReservationSetStatusPayload
   reservationCreate(input: ReservationCreateInput!): ReservationCreatePayload

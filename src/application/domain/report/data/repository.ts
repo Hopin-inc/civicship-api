@@ -382,15 +382,32 @@ export default class ReportRepository implements IReportRepository {
           select: reportTemplateSelect,
         });
       }
-      return client.reportTemplate.create({
-        data: {
-          ...data,
-          variant,
-          scope,
-          ...(communityId ? { community: { connect: { id: communityId } } } : {}),
-        },
-        select: reportTemplateSelect,
-      });
+      try {
+        return await client.reportTemplate.create({
+          data: {
+            ...data,
+            variant,
+            scope,
+            ...(communityId ? { community: { connect: { id: communityId } } } : {}),
+          },
+          select: reportTemplateSelect,
+        });
+      } catch (e: unknown) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+          const raced = await client.reportTemplate.findFirst({
+            where: { variant, communityId },
+            select: { id: true },
+          });
+          if (raced) {
+            return client.reportTemplate.update({
+              where: { id: raced.id },
+              data,
+              select: reportTemplateSelect,
+            });
+          }
+        }
+        throw e;
+      }
     };
 
     if (tx) return doUpsert(tx);
@@ -436,7 +453,7 @@ export default class ReportRepository implements IReportRepository {
         tx.report.findMany({
           where,
           select: reportSelect,
-          take,
+          take: take + 1,
           ...(params.cursor && { skip: 1, cursor: { id: params.cursor } }),
           orderBy: { createdAt: "desc" },
         }),

@@ -3,7 +3,7 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import ReportService from "@/application/domain/report/service";
 import ReportPresenter, { WeeklyReportPayload } from "@/application/domain/report/presenter";
-import { addDays, truncateToJstDate } from "@/application/domain/report/util";
+import { addDays, daysBetweenJst, truncateToJstDate } from "@/application/domain/report/util";
 import { renderPromptTemplate } from "@/application/domain/report/util/promptRenderer";
 import { LlmClient } from "@/infrastructure/libs/llm";
 import {
@@ -26,6 +26,8 @@ import {
 } from "@/types/graphql";
 
 const LLM_TIMEOUT_MS = 60_000;
+const DEFAULT_REPORTS_PER_PAGE = 20;
+const MAX_REPORTS_PER_PAGE = 100;
 
 const DEFAULT_WINDOW_DAYS = 7;
 const DEFAULT_TOP_N = 10;
@@ -134,9 +136,11 @@ export default class ReportUseCase {
       );
     }
 
+    const windowDays = daysBetweenJst(input.periodFrom, input.periodTo) + 1;
     const payload = await this.buildReportPayload(ctx, {
       communityId,
       referenceDate: input.periodTo,
+      windowDays,
       customContext: template.communityContext ?? undefined,
     });
 
@@ -162,6 +166,7 @@ export default class ReportUseCase {
     }
 
     let parentRegenerateCount = 0;
+    let parentStatus: ReportStatus | null = null;
     if (input.parentRunId) {
       const parent = await this.service.getReportById(ctx, input.parentRunId);
       if (!parent) throw new Error(`Parent report ${input.parentRunId} not found`);
@@ -169,21 +174,19 @@ export default class ReportUseCase {
         throw new Error("Parent report must belong to the same community and variant");
       }
       parentRegenerateCount = parent.regenerateCount;
+      parentStatus = parent.status;
     }
 
     const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      if (input.parentRunId) {
-        const parent = await this.service.getReportById(ctx, input.parentRunId);
-        if (parent && parent.status !== ReportStatus.SUPERSEDED) {
-          this.service.assertStatusTransition(parent.status, ReportStatus.SUPERSEDED);
-          await this.service.updateReportStatus(
-            ctx,
-            input.parentRunId,
-            ReportStatus.SUPERSEDED,
-            undefined,
-            tx,
-          );
-        }
+      if (input.parentRunId && parentStatus && parentStatus !== ReportStatus.SUPERSEDED) {
+        this.service.assertStatusTransition(parentStatus, ReportStatus.SUPERSEDED);
+        await this.service.updateReportStatus(
+          ctx,
+          input.parentRunId,
+          ReportStatus.SUPERSEDED,
+          undefined,
+          tx,
+        );
       }
 
       return this.service.createReport(
@@ -220,14 +223,17 @@ export default class ReportUseCase {
     { communityId, variant, status, cursor, first }: GqlQueryReportsArgs,
     ctx: IContext,
   ): Promise<GqlReportsConnection> {
+    const clampedFirst = first
+      ? clampInt(first, 1, MAX_REPORTS_PER_PAGE, "first")
+      : DEFAULT_REPORTS_PER_PAGE;
     const result = await this.service.getReports(ctx, {
       communityId,
       variant: variant ?? undefined,
       status: status ?? undefined,
       cursor: cursor ?? undefined,
-      first: first ?? undefined,
+      first: clampedFirst,
     });
-    return ReportPresenter.reportsConnection(result.items, result.totalCount);
+    return ReportPresenter.reportsConnection(result.items, result.totalCount, clampedFirst);
   }
 
   async viewReport({ id }: GqlQueryReportArgs, ctx: IContext): Promise<GqlReport | null> {
