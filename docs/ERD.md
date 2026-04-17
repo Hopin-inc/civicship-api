@@ -918,7 +918,7 @@ OTHER OTHER
     String user_prompt_template 
     String community_context "❓"
     String model 
-    Float temperature 
+    Float temperature "❓"
     Int maxTokens 
     String stopSequences 
     Boolean isEnabled 
