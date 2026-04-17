@@ -224,9 +224,12 @@ export default class ReportUseCase {
   }
 
   async browseReports(
-    { communityId, variant, status, cursor, first }: GqlQueryReportsArgs,
+    { communityId, variant, status, cursor, first, permission }: GqlQueryReportsArgs,
     ctx: IContext,
   ): Promise<GqlReportsConnection> {
+    if (permission.communityId !== communityId) {
+      throw new ValidationError("communityId does not match permission.communityId", []);
+    }
     const clampedFirst = first
       ? clampInt(first, 1, MAX_REPORTS_PER_PAGE, "first")
       : DEFAULT_REPORTS_PER_PAGE;
