@@ -19,9 +19,7 @@ const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
  */
 export function truncateToJstDate(d: Date): Date {
   const jst = new Date(d.getTime() + JST_OFFSET_MS);
-  return new Date(
-    Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate()),
-  );
+  return new Date(Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate()));
 }
 
 export function addDays(d: Date, days: number): Date {
@@ -69,9 +67,7 @@ export function bigintToSafeNumber(value: bigint): number {
   const MAX = BigInt(Number.MAX_SAFE_INTEGER);
   const MIN = BigInt(Number.MIN_SAFE_INTEGER);
   if (value > MAX || value < MIN) {
-    throw new RangeError(
-      `Report value ${value.toString()} exceeds JavaScript safe integer range`,
-    );
+    throw new RangeError(`Report value ${value.toString()} exceeds JavaScript safe integer range`);
   }
   return Number(value);
 }
