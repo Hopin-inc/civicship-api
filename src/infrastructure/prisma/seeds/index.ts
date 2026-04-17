@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { seedMaster } from "@/infrastructure/prisma/seeds/master";
 import { seedUsecase } from "@/infrastructure/prisma/seeds/domains";
+import { seedReportTemplates } from "@/infrastructure/prisma/seeds/reportTemplates";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -19,6 +20,12 @@ async function main() {
     console.info("Starting to seed users and communities...");
     await seedUsecase();
     console.info("Users and communities have been seeded!");
+  }
+
+  if (args.includes("--report-templates")) {
+    console.info("Starting to seed report templates...");
+    await seedReportTemplates();
+    console.info("Report templates have been seeded!");
   }
 }
 
