@@ -10,7 +10,7 @@ export default class ReportConverter {
       userPromptTemplate: input.userPromptTemplate,
       communityContext: input.communityContext ?? null,
       model: input.model,
-      temperature: input.temperature ?? 1.0,
+      temperature: input.temperature ?? null,
       maxTokens: input.maxTokens,
       stopSequences: input.stopSequences ?? [],
       isEnabled: input.isEnabled ?? true,
