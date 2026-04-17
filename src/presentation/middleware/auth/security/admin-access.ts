@@ -1,10 +1,8 @@
 import crypto from "crypto";
-import { SysRole } from "@prisma/client";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { createLoaders } from "@/presentation/graphql/dataloader";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "../types";
-import { PrismaAuthUser } from "@/application/domain/account/user/data/type";
 
 export async function handleAdminAccess(
   headers: AuthHeaders,
@@ -26,16 +24,8 @@ export async function handleAdminAccess(
 
   if (!communityId) throw new Error("Missing x-community-id header");
 
+  // Use the provided issuer
   const loaders = createLoaders(prismaClient);
 
-  return {
-    issuer,
-    loaders,
-    communityId,
-    isAdmin: true,
-    currentUser: {
-      id: "admin-api-key",
-      sysRole: SysRole.SYS_ADMIN,
-    } as PrismaAuthUser,
-  };
+  return { issuer, loaders, communityId, isAdmin: true };
 }
