@@ -4,8 +4,8 @@
 # - Weekly Monday 06:00 JST aligns with the dependency review routine.
 # - Cooldown windows (patch 5d / minor 10d / major 14d) are api-conservative;
 #   security updates bypass cooldown and are opened immediately by Dependabot.
-# - Grouping: production minor/major open as individual PRs for careful review;
-#   production patch + all dev deps are grouped to reduce review volume.
+# - Grouping: production patch + all dev deps (minor/patch) are grouped;
+#   majors (dev and prod) open as individual PRs for breaking-change review.
 version: 2
 updates:
   - package-ecosystem: "npm"
