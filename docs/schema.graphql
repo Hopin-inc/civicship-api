@@ -7,6 +7,12 @@ type AccumulatedPointView {
   walletId: String
 }
 
+union ApproveReportPayload = ApproveReportSuccess
+
+type ApproveReportSuccess {
+  report: Report!
+}
+
 type Article {
   authors: [User!]
   body: String
@@ -561,6 +567,20 @@ type EvaluationsConnection {
   totalCount: Int!
 }
 
+input GenerateReportInput {
+  communityId: ID!
+  parentRunId: ID
+  periodFrom: Datetime!
+  periodTo: Datetime!
+  variant: ReportVariant!
+}
+
+union GenerateReportPayload = GenerateReportSuccess
+
+type GenerateReportSuccess {
+  report: Report!
+}
+
 type Identity {
   createdAt: Datetime
   platform: IdentityPlatform
@@ -813,6 +833,7 @@ type MembershipsConnection {
 }
 
 type Mutation {
+  approveReport(id: ID!): ApproveReportPayload
   articleCreate(input: ArticleCreateInput!, permission: CheckCommunityPermissionInput!): ArticleCreatePayload
   articleDelete(id: ID!, permission: CheckCommunityPermissionInput!): ArticleDeletePayload
   articleUpdateContent(id: ID!, input: ArticleUpdateContentInput!, permission: CheckCommunityPermissionInput!): ArticleUpdateContentPayload
@@ -820,6 +841,7 @@ type Mutation {
   communityDelete(id: ID!, permission: CheckCommunityPermissionInput!): CommunityDeletePayload
   communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!, permission: CheckCommunityPermissionInput!): CommunityUpdateProfilePayload
   evaluationBulkCreate(input: EvaluationBulkCreateInput!, permission: CheckCommunityPermissionInput!): EvaluationBulkCreatePayload
+  generateReport(input: GenerateReportInput!, permission: CheckCommunityPermissionInput!): GenerateReportPayload
   identityCheckPhoneUser(input: IdentityCheckPhoneUserInput!): IdentityCheckPhoneUserPayload!
   incentiveGrantRetry(input: IncentiveGrantRetryInput!, permission: CheckCommunityPermissionInput!): IncentiveGrantRetryPayload
   linkPhoneAuth(input: LinkPhoneAuthInput!, permission: CheckIsSelfPermissionInput!): LinkPhoneAuthPayload
@@ -846,6 +868,8 @@ type Mutation {
   placeCreate(input: PlaceCreateInput!, permission: CheckCommunityPermissionInput!): PlaceCreatePayload
   placeDelete(id: ID!, permission: CheckCommunityPermissionInput!): PlaceDeletePayload
   placeUpdate(id: ID!, input: PlaceUpdateInput!, permission: CheckCommunityPermissionInput!): PlaceUpdatePayload
+  publishReport(finalContent: String!, id: ID!): PublishReportPayload
+  rejectReport(id: ID!): RejectReportPayload
   reservationAccept(id: ID!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
   reservationCancel(id: ID!, input: ReservationCancelInput!, permission: CheckIsSelfPermissionInput!): ReservationSetStatusPayload
   reservationCreate(input: ReservationCreateInput!): ReservationCreatePayload
@@ -862,6 +886,7 @@ type Mutation {
   transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
   transactionUpdateMetadata(communityPermission: CheckCommunityPermissionInput, id: ID!, input: TransactionUpdateMetadataInput!, permission: CheckIsSelfPermissionInput): TransactionUpdateMetadataPayload
   updatePortalConfig(input: CommunityPortalConfigInput!, permission: CheckCommunityPermissionInput!): CommunityPortalConfig!
+  updateReportTemplate(communityId: ID, input: UpdateReportTemplateInput!, variant: ReportVariant!): UpdateReportTemplatePayload
   updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
   userSignUp(input: UserSignUpInput!): CurrentUserPayload
@@ -1561,6 +1586,12 @@ type PortfoliosConnection {
   totalCount: Int!
 }
 
+union PublishReportPayload = PublishReportSuccess
+
+type PublishReportSuccess {
+  report: Report!
+}
+
 enum PublishStatus {
   COMMUNITY_INTERNAL
   PRIVATE
@@ -1607,6 +1638,9 @@ type Query {
   place(id: ID!): Place
   places(cursor: String, filter: PlaceFilterInput, first: Int, sort: PlaceSortInput): PlacesConnection!
   portfolios(filter: PortfolioFilterInput, first: Int, sort: PortfolioSortInput): [Portfolio!]
+  report(id: ID!): Report
+  reportTemplate(communityId: ID, variant: ReportVariant!): ReportTemplate
+  reports(communityId: ID!, cursor: String, first: Int, permission: CheckCommunityPermissionInput!, status: ReportStatus, variant: ReportVariant): ReportsConnection!
   reservation(id: ID!): Reservation
   reservationHistories(cursor: String, filter: ReservationHistoryFilterInput, first: Int, sort: ReservationHistorySortInput): ReservationHistoriesConnection!
   reservationHistory(id: ID!): ReservationHistory
@@ -1649,6 +1683,87 @@ type Query {
   voteTopics(communityId: ID!, cursor: String, first: Int): VoteTopicsConnection!
   wallet(id: ID!): Wallet
   wallets(cursor: String, filter: WalletFilterInput, first: Int, sort: WalletSortInput): WalletsConnection!
+}
+
+union RejectReportPayload = RejectReportSuccess
+
+type RejectReportSuccess {
+  report: Report!
+}
+
+type Report {
+  cacheReadTokens: Int!
+  community: Community!
+  createdAt: Datetime!
+  finalContent: String
+  generatedByUser: User
+  id: ID!
+  inputTokens: Int!
+  model: String!
+  outputMarkdown: String!
+  outputTokens: Int!
+  parentRun: Report
+  periodFrom: Datetime!
+  periodTo: Datetime!
+  publishedAt: Datetime
+  publishedByUser: User
+  regenerateCount: Int!
+  regenerations: [Report!]!
+  status: ReportStatus!
+  targetUser: User
+  template: ReportTemplate
+  updatedAt: Datetime
+  variant: ReportVariant!
+}
+
+type ReportEdge implements Edge {
+  cursor: String!
+  node: Report
+}
+
+enum ReportStatus {
+  APPROVED
+  DRAFT
+  PUBLISHED
+  REJECTED
+  SUPERSEDED
+}
+
+type ReportTemplate {
+  community: Community
+  communityContext: String
+  createdAt: Datetime!
+  id: ID!
+  isEnabled: Boolean!
+  maxTokens: Int!
+  model: String!
+  scope: ReportTemplateScope!
+  stopSequences: [String!]!
+  systemPrompt: String!
+  temperature: Float
+  updatedAt: Datetime
+  updatedByUser: User
+  userPromptTemplate: String!
+  variant: ReportVariant!
+}
+
+enum ReportTemplateScope {
+  COMMUNITY
+  SYSTEM
+}
+
+enum ReportVariant {
+  GRANT_APPLICATION
+  MEDIA_PR
+  MEMBER_NEWSLETTER
+  PERSONAL_RECAP
+  WEEKLY_SUMMARY
+}
+
+type ReportsConnection {
+  edges: [ReportEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type Reservation {
@@ -2219,6 +2334,23 @@ type TransactionsConnection {
   edges: [TransactionEdge]
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+input UpdateReportTemplateInput {
+  communityContext: String
+  isEnabled: Boolean
+  maxTokens: Int!
+  model: String!
+  stopSequences: [String!]
+  systemPrompt: String!
+  temperature: Float
+  userPromptTemplate: String!
+}
+
+union UpdateReportTemplatePayload = UpdateReportTemplateSuccess
+
+type UpdateReportTemplateSuccess {
+  reportTemplate: ReportTemplate!
 }
 
 input UpdateSignupBonusConfigInput {

@@ -1,3 +1,5 @@
+import { GqlReport, GqlReportTemplate, GqlReportsConnection } from "@/types/graphql";
+import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 import {
   CommunityContextRow,
   DeepestChainRow,
@@ -252,6 +254,41 @@ export default class ReportPresenter {
         created_by_user_id: c.createdByUserId,
         chain_depth: c.chainDepth,
       })),
+    };
+  }
+
+  // Relationship fields (community, template, parentRun, regenerations,
+  // generatedByUser, publishedByUser, targetUser, updatedByUser) are
+  // resolved by field resolvers via DataLoaders — the Prisma select shape
+  // intentionally omits them.  The cast bridges the type gap until
+  // Report/ReportTemplate are added to codegen.yaml mappers.
+  static report(r: PrismaReport): GqlReport {
+    return r as unknown as GqlReport;
+  }
+
+  static reportTemplate(t: PrismaReportTemplate): GqlReportTemplate {
+    return t as unknown as GqlReportTemplate;
+  }
+
+  static reportsConnection(
+    items: PrismaReport[],
+    totalCount: number,
+    requestedFirst: number,
+  ): GqlReportsConnection {
+    const hasNextPage = items.length > requestedFirst;
+    const page = hasNextPage ? items.slice(0, requestedFirst) : items;
+    return {
+      edges: page.map((r) => ({
+        cursor: r.id,
+        node: ReportPresenter.report(r),
+      })),
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage: false,
+        startCursor: page[0]?.id ?? null,
+        endCursor: page[page.length - 1]?.id ?? null,
+      },
+      totalCount,
     };
   }
 }

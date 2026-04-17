@@ -9329,7 +9329,7 @@ type ReportTemplateFactoryDefineInput = {
     userPromptTemplate?: string;
     communityContext?: string | null;
     model?: string;
-    temperature?: number;
+    temperature?: number | null;
     maxTokens?: number;
     stopSequences?: Prisma.ReportTemplateCreatestopSequencesInput | Array<string>;
     isEnabled?: boolean;

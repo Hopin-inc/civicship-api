@@ -1,0 +1,117 @@
+# ------------------------------
+# Report AI Generation Types
+# ------------------------------
+
+enum ReportVariant {
+  WEEKLY_SUMMARY
+  GRANT_APPLICATION
+  MEDIA_PR
+  PERSONAL_RECAP
+  MEMBER_NEWSLETTER
+}
+
+enum ReportStatus {
+  DRAFT
+  APPROVED
+  PUBLISHED
+  REJECTED
+  SUPERSEDED
+}
+
+enum ReportTemplateScope {
+  SYSTEM
+  COMMUNITY
+}
+
+type Report {
+  id: ID!
+  community: Community!
+  variant: ReportVariant!
+  periodFrom: Datetime!
+  periodTo: Datetime!
+  template: ReportTemplate
+
+  outputMarkdown: String!
+  model: String!
+  inputTokens: Int!
+  outputTokens: Int!
+  cacheReadTokens: Int!
+
+  status: ReportStatus!
+  publishedAt: Datetime
+  publishedByUser: User
+  finalContent: String
+
+  regenerateCount: Int!
+  parentRun: Report
+  regenerations: [Report!]!
+
+  targetUser: User
+  generatedByUser: User
+
+  createdAt: Datetime!
+  updatedAt: Datetime
+}
+
+type ReportTemplate {
+  id: ID!
+  variant: ReportVariant!
+  scope: ReportTemplateScope!
+  community: Community
+  systemPrompt: String!
+  userPromptTemplate: String!
+  communityContext: String
+  model: String!
+  temperature: Float
+  maxTokens: Int!
+  stopSequences: [String!]!
+  isEnabled: Boolean!
+  updatedByUser: User
+  createdAt: Datetime!
+  updatedAt: Datetime
+}
+
+type ReportEdge implements Edge {
+  cursor: String!
+  node: Report
+}
+
+type ReportsConnection {
+  edges: [ReportEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+# ------------------------------
+# Mutation Payloads
+# ------------------------------
+
+type GenerateReportSuccess {
+  report: Report!
+}
+
+union GenerateReportPayload = GenerateReportSuccess
+
+type UpdateReportTemplateSuccess {
+  reportTemplate: ReportTemplate!
+}
+
+union UpdateReportTemplatePayload = UpdateReportTemplateSuccess
+
+type ApproveReportSuccess {
+  report: Report!
+}
+
+union ApproveReportPayload = ApproveReportSuccess
+
+type PublishReportSuccess {
+  report: Report!
+}
+
+union PublishReportPayload = PublishReportSuccess
+
+type RejectReportSuccess {
+  report: Report!
+}
+
+union RejectReportPayload = RejectReportSuccess
