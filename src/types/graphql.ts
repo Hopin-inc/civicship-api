@@ -2632,7 +2632,7 @@ export type GqlReport = {
   targetUser?: Maybe<GqlUser>;
   template?: Maybe<GqlReportTemplate>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-  variant: Scalars['String']['output'];
+  variant: GqlReportVariant;
 };
 
 export type GqlReportEdge = GqlEdge & {
@@ -2666,7 +2666,7 @@ export type GqlReportTemplate = {
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   updatedByUser?: Maybe<GqlUser>;
   userPromptTemplate: Scalars['String']['output'];
-  variant: Scalars['String']['output'];
+  variant: GqlReportVariant;
 };
 
 export const GqlReportTemplateScope = {
@@ -2676,6 +2676,10 @@ export const GqlReportTemplateScope = {
 
 export type GqlReportTemplateScope = typeof GqlReportTemplateScope[keyof typeof GqlReportTemplateScope];
 export const GqlReportVariant = {
+  GrantApplication: 'GRANT_APPLICATION',
+  MediaPr: 'MEDIA_PR',
+  MemberNewsletter: 'MEMBER_NEWSLETTER',
+  PersonalRecap: 'PERSONAL_RECAP',
   WeeklySummary: 'WEEKLY_SUMMARY'
 } as const;
 
@@ -5846,7 +5850,7 @@ export type GqlReportResolvers<ContextType = any, ParentType extends GqlResolver
   targetUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   template?: Resolver<Maybe<GqlResolversTypes['ReportTemplate']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  variant?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  variant?: Resolver<GqlResolversTypes['ReportVariant'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5871,7 +5875,7 @@ export type GqlReportTemplateResolvers<ContextType = any, ParentType extends Gql
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   updatedByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   userPromptTemplate?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  variant?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  variant?: Resolver<GqlResolversTypes['ReportVariant'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

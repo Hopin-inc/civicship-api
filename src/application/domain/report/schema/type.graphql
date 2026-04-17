@@ -4,6 +4,10 @@
 
 enum ReportVariant {
   WEEKLY_SUMMARY
+  GRANT_APPLICATION
+  MEDIA_PR
+  PERSONAL_RECAP
+  MEMBER_NEWSLETTER
 }
 
 enum ReportStatus {
@@ -22,7 +26,7 @@ enum ReportTemplateScope {
 type Report {
   id: ID!
   community: Community!
-  variant: String!
+  variant: ReportVariant!
   periodFrom: Datetime!
   periodTo: Datetime!
   template: ReportTemplate
@@ -51,7 +55,7 @@ type Report {
 
 type ReportTemplate {
   id: ID!
-  variant: String!
+  variant: ReportVariant!
   scope: ReportTemplateScope!
   community: Community
   systemPrompt: String!

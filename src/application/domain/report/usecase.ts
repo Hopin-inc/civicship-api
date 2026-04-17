@@ -130,10 +130,7 @@ export default class ReportUseCase {
     ctx: IContext,
   ): Promise<GqlGenerateReportPayload> {
     if (permission.communityId !== input.communityId) {
-      throw new ValidationError(
-        "communityId in input does not match permission.communityId",
-        [],
-      );
+      throw new ValidationError("communityId in input does not match permission.communityId", []);
     }
     const communityId = permission.communityId;
     const template = await this.service.getTemplate(ctx, input.variant, communityId);
@@ -143,7 +140,19 @@ export default class ReportUseCase {
       );
     }
 
+    if (input.periodFrom > input.periodTo) {
+      throw new ValidationError("periodFrom must be on or before periodTo", [
+        "periodFrom",
+        "periodTo",
+      ]);
+    }
     const windowDays = daysBetweenJst(input.periodFrom, input.periodTo) + 1;
+    if (windowDays > MAX_WINDOW_DAYS) {
+      throw new ValidationError(
+        `Report window cannot exceed ${MAX_WINDOW_DAYS} days (requested ${windowDays})`,
+        ["periodFrom", "periodTo"],
+      );
+    }
     const payload = await this.buildReportPayload(ctx, {
       communityId,
       referenceDate: input.periodTo,
@@ -261,7 +270,14 @@ export default class ReportUseCase {
     ctx: IContext,
   ): Promise<GqlUpdateReportTemplatePayload> {
     const template = await ctx.issuer.admin(ctx, (tx) =>
-      this.service.upsertTemplate(ctx, variant, communityId ?? null, input, ctx.currentUser!.id, tx),
+      this.service.upsertTemplate(
+        ctx,
+        variant,
+        communityId ?? null,
+        input,
+        ctx.currentUser!.id,
+        tx,
+      ),
     );
     return {
       __typename: "UpdateReportTemplateSuccess",

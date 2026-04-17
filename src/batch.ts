@@ -7,6 +7,7 @@ import { requestDIDVC } from "@/presentation/batch/requestDIDVC";
 import { syncNftMetadata } from "@/presentation/batch/syncNftMetadata";
 import { refreshPointViews } from "@/presentation/batch/refreshPointViews";
 import { refreshReportViews } from "@/presentation/batch/refreshReportViews";
+import { generateWeeklyReports } from "@/presentation/batch/generateWeeklyReports";
 
 export async function batchProcess() {
   switch (process.env.BATCH_PROCESS_NAME) {
@@ -33,6 +34,9 @@ export async function batchProcess() {
       return;
     case "refresh-report-views":
       await refreshReportViews();
+      return;
+    case "generate-weekly-reports":
+      await generateWeeklyReports();
       return;
     default:
       logger.error("Invalid batch process called.");
