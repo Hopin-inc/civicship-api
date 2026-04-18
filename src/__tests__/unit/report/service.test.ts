@@ -4,7 +4,7 @@ import { container } from "tsyringe";
 import ReportService, {
   SKIP_REASON_NO_ACTIVITY_PREFIX,
 } from "@/application/domain/report/service";
-import type { WeeklyReportPayload } from "@/application/domain/report/presenter";
+import type { WeeklyReportPayload } from "@/application/domain/report/types";
 
 class MockReportRepository {
   findDailySummaries = jest.fn();

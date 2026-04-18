@@ -803,7 +803,7 @@ Table t_report_templates {
   updatedAt DateTime
 
   indexes {
-    (variant, communityId, version) [unique]
+    (variant, communityId, kind, version) [unique]
   }
 }
 

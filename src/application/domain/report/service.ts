@@ -15,12 +15,15 @@ import {
 import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 import { GqlUpdateReportTemplateInput } from "@/types/graphql";
 import ReportConverter from "@/application/domain/report/data/converter";
-import { WeeklyReportPayload } from "@/application/domain/report/presenter";
+import { WeeklyReportPayload } from "@/application/domain/report/types";
 
 /**
- * Prefix convention for `Report.skipReason`. New skip categories (e.g. API
- * outages, payload-builder data inconsistencies) should follow the same
- * `"<Category>:"` shape so log analysis can bucket them with
+ * Prefix convention for `Report.skipReason`. The constant itself stores only
+ * the category text WITHOUT a trailing colon — callers append `":"` when
+ * building the persisted reason string (see `evaluateSkipReason` below).
+ * New skip categories (e.g. API outages, payload-builder data
+ * inconsistencies) should follow the same `"<Category>:<detail>"` shape on
+ * disk so log analysis can bucket them with
  * `WHERE skip_reason LIKE 'No activity%'`.
  */
 export const SKIP_REASON_NO_ACTIVITY_PREFIX = "No activity in period";

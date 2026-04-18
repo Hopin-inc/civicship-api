@@ -3,7 +3,7 @@ import { ReportStatus } from "@prisma/client";
 import { container } from "tsyringe";
 import ReportUseCase from "@/application/domain/report/usecase";
 import ReportService from "@/application/domain/report/service";
-import type { WeeklyReportPayload } from "@/application/domain/report/presenter";
+import type { WeeklyReportPayload } from "@/application/domain/report/types";
 import type { IContext } from "@/types/server";
 import type { LlmCompleteResult } from "@/infrastructure/libs/llm/types";
 import { GqlReportVariant } from "@/types/graphql";
