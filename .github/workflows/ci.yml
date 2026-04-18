@@ -221,7 +221,13 @@ jobs:
           rm /tmp/test-firebase-key.pem
 
       - name: Run tests (${{ matrix.name }})
-        run: pnpm test -- --testPathPattern="${{ matrix.path }}"
+        # pnpm test (= jest --runInBand) に `--` 越しで `--testPathPattern=...`
+        # を渡すと、pnpm が `--` を保持したまま jest に forward し、jest 側では
+        # `--` 以降が全て positional 扱いとなるため `--testPathPattern=...`
+        # 文字列そのものが pattern として解釈され 0 match になる。
+        # jest の最初の positional 引数が testPathPattern として扱われる仕様を
+        # 利用し、path を positional で渡す。
+        run: pnpm test -- "${{ matrix.path }}"
 
   # Aggregator job: branch protection の required status check として
   # `ci` を維持したまま、実体は lint / build / test の複合結果を集約する。
