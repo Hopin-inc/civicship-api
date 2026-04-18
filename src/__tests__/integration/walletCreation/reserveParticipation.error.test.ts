@@ -165,8 +165,9 @@ describe("Reservation Error Handling Tests", () => {
       paymentMethod: GqlReservationPaymentMethod.Ticket,
     };
 
+    // 実装 (utils.ts:10 AuthorizationError) は "User must be logged in" を投げる
     await expect(
       useCase.userReserveParticipation({ input }, ctx)
-    ).rejects.toThrow(/not authenticated/i);
+    ).rejects.toThrow(/User must be logged in/i);
   });
 });

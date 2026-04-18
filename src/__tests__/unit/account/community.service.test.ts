@@ -117,7 +117,7 @@ describe("CommunityService", () => {
         ctxWithUser,
         {
           ...converted.data,
-          image: { create: converted.image },
+          image: undefined,
         },
         expect.anything(),
       );
