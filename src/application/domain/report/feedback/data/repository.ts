@@ -139,6 +139,14 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
         }),
       ]);
 
+      // INNER JOIN on `t_report_feedbacks` is deliberate: Pearson's r
+      // requires *paired* observations, so a report with a `judgeScore`
+      // but no human feedback contributes no signal and must be
+      // dropped. Using LEFT JOIN and coercing missing ratings to 0 or
+      // NULL would either bias the correlation (0 is a real rating
+      // value) or blow up the coefficient (NULL averages propagate).
+      // See `JudgeFeedbackPairRow` in ./interface.ts for the same
+      // invariant expressed at the type layer.
       const pairRows = await tx.$queryRaw<
         { report_id: string; judge_score: number; avg_rating: number }[]
       >`

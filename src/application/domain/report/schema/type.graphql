@@ -55,7 +55,12 @@ type Report {
 
   # Feedback (PR-F4). `feedbacks` is paginated for OWNER/MANAGER review;
   # `myFeedback` returns the caller's own submission (if any) so the UI
-  # can hide the rating button once submitted.
+  # can hide the rating button once submitted. Reachable today through
+  # the `reports` / `report` queries (MANAGER+/ADMIN) — MEMBER-level
+  # read access to `Report` is not yet exposed, so MEMBER clients rely
+  # on the `submitReportFeedback` mutation's response to learn their
+  # own submission state. Follow-up to open a MEMBER-accessible read
+  # path is tracked in PR-F5.
   feedbacks(first: Int, after: String): ReportFeedbacksConnection!
   myFeedback: ReportFeedback
 
