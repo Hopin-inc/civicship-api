@@ -19,6 +19,7 @@ export const reportSelect = Prisma.validator<Prisma.ReportSelect>()({
   targetUserId: true,
   generatedBy: true,
   status: true,
+  skipReason: true,
   publishedAt: true,
   publishedBy: true,
   finalContent: true,

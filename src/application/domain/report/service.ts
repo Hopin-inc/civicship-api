@@ -15,6 +15,18 @@ import {
 import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 import { GqlUpdateReportTemplateInput } from "@/types/graphql";
 import ReportConverter from "@/application/domain/report/data/converter";
+import { WeeklyReportPayload } from "@/application/domain/report/types";
+
+/**
+ * Prefix convention for `Report.skipReason`. The constant itself stores only
+ * the category text WITHOUT a trailing colon — callers append `":"` when
+ * building the persisted reason string (see `evaluateSkipReason` below).
+ * New skip categories (e.g. API outages, payload-builder data
+ * inconsistencies) should follow the same `"<Category>:<detail>"` shape on
+ * disk so log analysis can bucket them with
+ * `WHERE skip_reason LIKE 'No activity%'`.
+ */
+export const SKIP_REASON_NO_ACTIVITY_PREFIX = "No activity in period";
 
 @injectable()
 export default class ReportService {
@@ -149,6 +161,39 @@ export default class ReportService {
     return this.repository.updateReportStatus(ctx, id, status, extra, tx);
   }
 
+  /**
+   * Decide whether a freshly-built payload is too empty to be worth sending
+   * to the LLM. Returns a human-readable `skipReason` string (prefixed so
+   * ops can bucket reasons with `LIKE 'No activity%'`) when the run should
+   * short-circuit to `ReportStatus.SKIPPED`; returns `null` when the LLM
+   * should be invoked as usual.
+   *
+   * Zero-activity is defined as BOTH `active_users_in_window === 0` AND
+   * `daily_summaries.length === 0`. Using AND (rather than OR on either
+   * signal) avoids false-positive skips on weeks that contain only
+   * GRANT or ONBOARDING transactions — those would push up one counter
+   * without the other in edge cases, and their existence is itself
+   * report-worthy.
+   *
+   * A null `community_context` is still treated as zero activity (the
+   * community context view returns null only when there are no JOINED
+   * members yet), but the skipReason records `community_context=null`
+   * explicitly so ops can tell a legitimately-empty community apart from
+   * a normal zero-activity week. Both variants share the same
+   * `SKIP_REASON_NO_ACTIVITY_PREFIX`, so `skip_reason LIKE 'No activity%'`
+   * continues to bucket them together.
+   */
+  evaluateSkipReason(payload: WeeklyReportPayload): string | null {
+    if (payload.daily_summaries.length > 0) return null;
+    if (payload.community_context === null) {
+      return `${SKIP_REASON_NO_ACTIVITY_PREFIX}: community_context=null, daily_summaries=[]`;
+    }
+    if (payload.community_context.active_users_in_window === 0) {
+      return `${SKIP_REASON_NO_ACTIVITY_PREFIX}: active_users=0, daily_summaries=[]`;
+    }
+    return null;
+  }
+
   assertStatusTransition(from: ReportStatus, to: ReportStatus): void {
     const allowed: Record<ReportStatus, ReportStatus[]> = {
       [ReportStatus.DRAFT]: [ReportStatus.APPROVED, ReportStatus.REJECTED, ReportStatus.SUPERSEDED],
@@ -160,6 +205,15 @@ export default class ReportService {
       [ReportStatus.PUBLISHED]: [ReportStatus.SUPERSEDED],
       [ReportStatus.REJECTED]: [],
       [ReportStatus.SUPERSEDED]: [],
+      // SKIPPED is a creation-time state: rows are born SKIPPED when the
+      // zero-activity guard elides the LLM call. They do NOT progress into
+      // DRAFT / APPROVED / PUBLISHED (there is no generated content to
+      // review or publish), but SUPERSEDED is permitted so a subsequent
+      // force-regenerate — e.g. an operator overriding the skip decision
+      // by calling generateReport with parentRunId set to the SKIPPED row
+      // — can mark the prior row obsolete via the shared
+      // supersedeParentIfRegenerating path.
+      [ReportStatus.SKIPPED]: [ReportStatus.SUPERSEDED],
     };
     if (!allowed[from]?.includes(to)) {
       throw new Error(`Invalid status transition from ${from} to ${to}`);

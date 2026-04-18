@@ -300,12 +300,20 @@ COMMUNITY COMMUNITY
     
 
 
+        ReportTemplateKind {
+            GENERATION GENERATION
+JUDGE JUDGE
+        }
+    
+
+
         ReportStatus {
             DRAFT DRAFT
 APPROVED APPROVED
 PUBLISHED PUBLISHED
 REJECTED REJECTED
 SUPERSEDED SUPERSEDED
+SKIPPED SKIPPED
         }
     
 
@@ -913,6 +921,7 @@ OTHER OTHER
     String id "🗝️"
     String variant 
     ReportTemplateScope scope 
+    ReportTemplateKind kind 
     String community_id "❓"
     String system_prompt 
     String user_prompt_template 
@@ -922,6 +931,11 @@ OTHER OTHER
     Int maxTokens 
     String stopSequences 
     Boolean isEnabled 
+    Int version 
+    Boolean isActive 
+    String experimentKey "❓"
+    Int trafficWeight 
+    String notes "❓"
     String updatedBy "❓"
     DateTime createdAt 
     DateTime updatedAt "❓"
@@ -936,14 +950,15 @@ OTHER OTHER
     DateTime period_to 
     String template_id "❓"
     Json input_payload 
-    String output_markdown 
-    String model 
-    String systemPromptSnapshot 
-    String userPromptSnapshot 
+    String outputMarkdown "❓"
+    String model "❓"
+    String systemPromptSnapshot "❓"
+    String userPromptSnapshot "❓"
     String communityContextSnapshot "❓"
-    Int inputTokens 
-    Int outputTokens 
-    Int cacheReadTokens 
+    Int inputTokens "❓"
+    Int outputTokens "❓"
+    Int cacheReadTokens "❓"
+    String skipReason "❓"
     String targetUserId "❓"
     String generatedBy "❓"
     ReportStatus status 
@@ -1342,6 +1357,7 @@ OTHER OTHER
     "t_vote_ballots" o|--|| "t_vote_topics" : "topic"
     "t_vote_ballots" o|--|| "t_vote_options" : "option"
     "t_report_templates" o|--|| "ReportTemplateScope" : "enum:scope"
+    "t_report_templates" o|--|| "ReportTemplateKind" : "enum:kind"
     "t_report_templates" o|--|o "t_communities" : "community"
     "t_report_templates" o|--|o "t_users" : "updatedByUser"
     "t_report_templates" o{--}o "t_reports" : "reports"
