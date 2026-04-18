@@ -174,9 +174,18 @@ describe("ReportUseCase.generateReport", () => {
       executeJudge: jest.fn(),
     };
 
+    // Minimal ReportTemplateSelector mock: returns the canonical
+    // stubTemplate regardless of inputs. Selector logic (A/B weighting,
+    // community hash) lives in templateSelector.test.ts so the usecase
+    // suite can stay focused on orchestration.
+    const templateSelector = {
+      selectTemplate: jest.fn().mockResolvedValue(stubTemplate),
+    };
+
     container.register("ReportService", { useValue: service });
     container.register("LlmClient", { useValue: llmClient });
     container.register("ReportJudgeService", { useValue: judgeService });
+    container.register("ReportTemplateSelector", { useValue: templateSelector });
 
     usecase = container.resolve(ReportUseCase);
 
@@ -353,5 +362,86 @@ describe("ReportUseCase.generateReport", () => {
       expect(result.report.status).toBe(ReportStatus.DRAFT);
       expect(result.report.outputMarkdown).toBe(llmResult.text);
     }
+  });
+});
+
+describe("ReportUseCase.updateReportTemplate trafficWeight validation (PR-F3)", () => {
+  // The DB has a CHECK constraint on trafficWeight BETWEEN 0 AND 100, but
+  // a constraint violation surfaces as an opaque PrismaClientKnownRequestError
+  // at the admin UI. These tests pin down the app-layer guard that turns
+  // a bad value into a structured ValidationError *before* the Prisma call.
+  const fakeCtx = {
+    currentUser: { id: "admin-1", sysRole: "SYS_ADMIN" },
+    issuer: {
+      admin: (_ctx: IContext, fn: (tx: unknown) => Promise<unknown>) => fn({} as never),
+    },
+  } as unknown as IContext;
+
+  function makeUseCase() {
+    container.reset();
+    const service = {
+      upsertTemplate: jest.fn().mockResolvedValue({ id: "tpl-1" }),
+    };
+    container.register("ReportService", { useValue: service });
+    container.register("LlmClient", { useValue: { complete: jest.fn() } });
+    container.register("ReportJudgeService", {
+      useValue: { selectJudgeTemplate: jest.fn(), executeJudge: jest.fn() },
+    });
+    container.register("ReportTemplateSelector", {
+      useValue: { selectTemplate: jest.fn() },
+    });
+    return { service, usecase: container.resolve(ReportUseCase) };
+  }
+
+  const baseInput = {
+    systemPrompt: "sys",
+    userPromptTemplate: "user ${payload_json}",
+    communityContext: null,
+    model: "claude-sonnet-4-6",
+    temperature: 0.5,
+    maxTokens: 8192,
+    stopSequences: [],
+    isEnabled: true,
+  };
+
+  it.each([-1, 101, 3.5])(
+    "rejects trafficWeight=%s with ValidationError",
+    async (trafficWeight) => {
+      const { usecase, service } = makeUseCase();
+      await expect(
+        usecase.updateReportTemplate(
+          {
+            variant: GqlReportVariant.WeeklySummary,
+            input: { ...baseInput, trafficWeight } as never,
+          },
+          fakeCtx,
+        ),
+      ).rejects.toThrow(/trafficWeight/);
+      expect(service.upsertTemplate).not.toHaveBeenCalled();
+    },
+  );
+
+  it("accepts trafficWeight in 0..100", async () => {
+    const { usecase, service } = makeUseCase();
+    await usecase.updateReportTemplate(
+      {
+        variant: GqlReportVariant.WeeklySummary,
+        input: { ...baseInput, trafficWeight: 50 } as never,
+      },
+      fakeCtx,
+    );
+    expect(service.upsertTemplate).toHaveBeenCalled();
+  });
+
+  it("accepts an omitted trafficWeight (leaves server default)", async () => {
+    const { usecase, service } = makeUseCase();
+    await usecase.updateReportTemplate(
+      {
+        variant: GqlReportVariant.WeeklySummary,
+        input: baseInput as never,
+      },
+      fakeCtx,
+    );
+    expect(service.upsertTemplate).toHaveBeenCalled();
   });
 });
