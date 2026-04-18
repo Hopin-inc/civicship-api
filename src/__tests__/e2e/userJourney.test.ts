@@ -84,6 +84,15 @@ describe("End-to-End User Journey Integration Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
+    // donation (member-to-member) は receiver wallet の auto-create をしないため
+    // (usecase.ts:192 findMemberWalletOrThrow)、事前に明示 seed する
+    // (sakata-san 判断 7.4)。
+    await TestDataSourceHelper.createWallet({
+      type: WalletType.MEMBER,
+      community: { connect: { id: community.id } },
+      user: { connect: { id: secondUser.id } },
+    });
+
     await transactionUseCase.userDonateSelfPointToAnother(grantCtx, {
       input: {
         communityId: community.id,
