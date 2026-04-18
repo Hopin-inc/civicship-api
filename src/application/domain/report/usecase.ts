@@ -171,30 +171,18 @@ export default class ReportUseCase {
     const skipReason = this.service.evaluateSkipReason(payload);
     if (skipReason) {
       const skippedReport = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-        const parentRegenerateCount = await this.supersedeParentIfRegenerating(
+        const base = await this.buildReportCreateBase(
           ctx,
-          input.parentRunId ?? null,
-          communityId,
-          input.variant,
           tx,
+          input,
+          template.id,
+          payload,
+          periodFrom,
+          periodTo,
         );
         return this.service.createReport(
           ctx,
-          {
-            communityId,
-            variant: input.variant,
-            periodFrom,
-            periodTo,
-            templateId: template.id,
-            inputPayload: payload as object,
-            status: ReportStatus.SKIPPED,
-            skipReason,
-            ...(input.parentRunId && {
-              parentRunId: input.parentRunId,
-              regenerateCount: parentRegenerateCount + 1,
-            }),
-            ...(ctx.currentUser && { generatedBy: ctx.currentUser.id }),
-          },
+          { ...base, status: ReportStatus.SKIPPED, skipReason },
           tx,
         );
       });
@@ -226,22 +214,19 @@ export default class ReportUseCase {
     }
 
     const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const parentRegenerateCount = await this.supersedeParentIfRegenerating(
+      const base = await this.buildReportCreateBase(
         ctx,
-        input.parentRunId ?? null,
-        communityId,
-        input.variant,
         tx,
+        input,
+        template.id,
+        payload,
+        periodFrom,
+        periodTo,
       );
       return this.service.createReport(
         ctx,
         {
-          communityId,
-          variant: input.variant,
-          periodFrom,
-          periodTo,
-          templateId: template.id,
-          inputPayload: payload as object,
+          ...base,
           outputMarkdown: llmResult.text,
           model: llmResult.model,
           systemPromptSnapshot: template.systemPrompt,
@@ -250,17 +235,54 @@ export default class ReportUseCase {
           inputTokens: llmResult.usage.inputTokens,
           outputTokens: llmResult.usage.outputTokens,
           cacheReadTokens: llmResult.usage.cacheReadTokens,
-          ...(input.parentRunId && {
-            parentRunId: input.parentRunId,
-            regenerateCount: parentRegenerateCount + 1,
-          }),
-          ...(ctx.currentUser && { generatedBy: ctx.currentUser.id }),
         },
         tx,
       );
     });
 
     return { __typename: "GenerateReportSuccess", report: ReportPresenter.report(report) };
+  }
+
+  /**
+   * Build the fields shared by skip-path and LLM-path Report inserts:
+   * identifying columns, the immutable payload snapshot, the regenerate
+   * chain trailer (when the run supersedes a parent), and the `generatedBy`
+   * audit trailer. Also runs the parent SUPERSEDED transition so the chain
+   * is in a consistent state before the new row is persisted.
+   *
+   * Keeping this shared prevents the two code paths from drifting — e.g. a
+   * future change to `generatedBy` or regenerate bookkeeping lands in one
+   * place rather than needing mirror edits in both.
+   */
+  private async buildReportCreateBase(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    input: { variant: string; parentRunId?: string | null },
+    templateId: string,
+    payload: WeeklyReportPayload,
+    periodFrom: Date,
+    periodTo: Date,
+  ): Promise<Prisma.ReportUncheckedCreateInput> {
+    const parentRegenerateCount = await this.supersedeParentIfRegenerating(
+      ctx,
+      input.parentRunId ?? null,
+      payload.community_id,
+      input.variant,
+      tx,
+    );
+    return {
+      communityId: payload.community_id,
+      variant: input.variant,
+      periodFrom,
+      periodTo,
+      templateId,
+      inputPayload: payload,
+      ...(input.parentRunId && {
+        parentRunId: input.parentRunId,
+        regenerateCount: parentRegenerateCount + 1,
+      }),
+      ...(ctx.currentUser && { generatedBy: ctx.currentUser.id }),
+    };
   }
 
   /**
