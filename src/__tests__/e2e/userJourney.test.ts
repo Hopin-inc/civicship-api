@@ -10,6 +10,25 @@ import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlCurrentPrefecture, GqlIdentityPlatform } from "@/types/graphql";
 
+// firebase-admin の `auth.tenantManager().createTenant()` 等は実 Google OAuth2
+// API への token exchange を行う。有効な RSA key を与えても存在しない service
+// account のため `invalid_grant: account not found` で失敗する。本リポの運用方針
+// として「e2e の境界は DB + usecase chain、Google API は production のみ」と
+// 定めており、test レイヤーでは community.service.test.ts の unit と同様に
+// targeted mock する (sakata-san 判断 7.2 撤回後の改訂方針)。
+jest.mock("@/infrastructure/libs/firebase", () => ({
+  __esModule: true,
+  auth: {
+    tenantManager: jest.fn(() => ({
+      createTenant: jest.fn().mockResolvedValue({ tenantId: "mock-tenant-id" }),
+      deleteTenant: jest.fn().mockResolvedValue(undefined),
+      authForTenant: jest.fn(() => ({
+        deleteUser: jest.fn().mockResolvedValue(undefined),
+      })),
+    })),
+  },
+}));
+
 describe("End-to-End User Journey Integration Tests", () => {
   let identityUseCase: IdentityUseCase;
   let transactionUseCase: TransactionUseCase;
@@ -82,6 +101,15 @@ describe("End-to-End User Journey Integration Tests", () => {
       name: "Second User",
       slug: `second-user-${uniqueId}`,
       currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+
+    // donation (member-to-member) は receiver wallet の auto-create をしないため
+    // (usecase.ts:192 findMemberWalletOrThrow)、事前に明示 seed する
+    // (sakata-san 判断 7.4)。
+    await TestDataSourceHelper.createWallet({
+      type: WalletType.MEMBER,
+      community: { connect: { id: community.id } },
+      user: { connect: { id: secondUser.id } },
     });
 
     await transactionUseCase.userDonateSelfPointToAnother(grantCtx, {

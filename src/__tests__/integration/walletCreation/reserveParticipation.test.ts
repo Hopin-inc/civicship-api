@@ -11,6 +11,31 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 describe("Reservation Integration Tests", () => {
   jest.setTimeout(30_000);
 
+  // reservation/validator.ts の validateSlotAdvanceBookingThreshold は
+  // now と endOfDay(subDays(startsAt, DEFAULT_ADVANCE_BOOKING_DAYS=2)) を比較する。
+  // 実時刻では test 実行の微細なずれで境界越えが発生しうるため、Date のみ固定する
+  // fake timers で安定化する (sakata-san 判断 7.3)。nextTick/setImmediate/setTimeout
+  // 等は Prisma/async 処理が依存するので fake 対象から除外。
+  const FIXED_NOW = new Date("2026-06-01T00:00:00.000Z");
+
+  beforeAll(() => {
+    jest.useFakeTimers({
+      doNotFake: [
+        "nextTick",
+        "setImmediate",
+        "setTimeout",
+        "setInterval",
+        "clearTimeout",
+        "clearInterval",
+      ],
+      now: FIXED_NOW,
+    });
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
   let useCase: ReservationUseCase;
   let issuer: PrismaClientIssuer;
   let startsAt: Date;
@@ -18,9 +43,10 @@ describe("Reservation Integration Tests", () => {
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
-    const now = new Date();
-    startsAt = new Date(now.getTime() + 25 * 60 * 60 * 1000); // 25 hours in the future
-    endsAt = new Date(now.getTime() + 26 * 60 * 60 * 1000); // 26 hours in the future
+    // FIXED_NOW から 4 日後を slot の startsAt に設定。
+    // DEFAULT_ADVANCE_BOOKING_DAYS=2 の threshold に対して余裕を持たせる。
+    startsAt = new Date(FIXED_NOW.getTime() + 4 * 24 * 60 * 60 * 1000);
+    endsAt = new Date(FIXED_NOW.getTime() + 4 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000);
 
     container.reset();
     registerProductionDependencies();

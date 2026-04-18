@@ -86,7 +86,8 @@ describe("ParticipationService", () => {
 
       const result = await service.deleteParticipation(mockCtx, "p1", mockTx);
 
-      expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, "p1");
+      // findParticipationOrThrow は tx を渡さずに repository.find(ctx, id, undefined) を呼ぶ
+      expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, "p1", undefined);
       expect(mockRepository.delete).toHaveBeenCalledWith(mockCtx, "p1", mockTx);
       expect(result).toEqual({ id: "p1" });
     });
