@@ -37,6 +37,13 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://civicship:civicship@localhost:5432/civicship_ci
+      # Test dummy values (production secret は注入しない、test は DI 通過が目的).
+      # ローカル CI 相当環境での実測で、dummy 値でも DI container 登録・初期化が
+      # pass することを確認済み。実 API call を行う test はステップ 3 で mock 化する。
+      ANTHROPIC_API_KEY: dummy-for-testing
+      FIREBASE_PROJECT_ID: test-project-id
+      FIREBASE_CLIENT_EMAIL: test@test-project.iam.gserviceaccount.com
+      FIREBASE_TOKEN_API_KEY: dummy-for-testing
 
     steps:
       - name: Harden runner
@@ -91,8 +98,13 @@ jobs:
       # - name: Lint
       #   run: pnpm lint
 
-      - name: Apply Prisma schema to CI database
-        run: pnpm prisma db push --skip-generate --schema src/infrastructure/prisma/schema.prisma
+      - name: Apply Prisma migrations to CI database
+        # `prisma db push` は schema.prisma のモデルのみ反映し、migration.sql を
+        # 実行しない。view (10 個) / materialized view (4 個) は migration.sql のみで
+        # 定義されているため、db push だと view/mv が作られず、それらに依存する test
+        # が構造的に fail する。`pnpm db:deploy` (= prisma migrate deploy) で migration
+        # を順次適用し、view/mv 含めた全スキーマを CI DB に反映する。
+        run: pnpm db:deploy
 
       - name: Generate Prisma client (with TypedSQL)
         run: pnpm db:generate
@@ -110,6 +122,30 @@ jobs:
             src/types/graphql.ts \
             docs/schema.graphql \
             src/infrastructure/prisma/schema.prisma
+
+      - name: Generate test JWT RSA key
+        # firebase-admin の内部 JWT 署名 (RS256) 用に、test 専用の使い捨て RSA 2048
+        # key を毎回生成する。repo / GitHub Secrets に commit しないことで rotation /
+        # 漏洩の懸念を排除。`openssl genpkey -algorithm RSA` の既定出力は PKCS#8
+        # (`-----BEGIN PRIVATE KEY-----`) なので追加フラグは不要。
+        run: |
+          openssl genpkey -algorithm RSA \
+            -out /tmp/test-firebase-key.pem \
+            -pkeyopt rsa_keygen_bits:2048
+          {
+            echo "FIREBASE_PRIVATE_KEY<<EOF"
+            cat /tmp/test-firebase-key.pem
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+          rm /tmp/test-firebase-key.pem
+
+      - name: Run tests (non-blocking until debt is resolved)
+        # blocking 化条件: 残 27 件の実 debt 解消 (別途ステップ 3 で対応) +
+        # 運用上 flaky でないことの確認。全条件を満たしたら `continue-on-error` を
+        # 削除し、branch protection の required status check に本 step を追加する
+        # 別 PR を出す。
+        run: pnpm test
+        continue-on-error: true
 
       - name: Build (typecheck + emit)
         run: pnpm build
