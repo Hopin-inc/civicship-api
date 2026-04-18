@@ -33,6 +33,13 @@ export default class ReportFeedbackResolver {
    * the resolver map in a separate file means the main report resolver
    * does not grow a feedback dependency — the GraphQL runtime merges
    * the two `Report` resolver objects when the schema is assembled.
+   *
+   * `myFeedback` is routed through the per-request DataLoader so a
+   * `reports { myFeedback }` query collapses to one Prisma round trip
+   * per distinct caller userId rather than one per Report. The loader
+   * key is `{ reportId, userId }`; we pass the caller's userId at load
+   * time because the loader factory runs before auth in the request
+   * lifecycle.
    */
   Report = {
     feedbacks: (
@@ -40,8 +47,11 @@ export default class ReportFeedbackResolver {
       args: { first?: number | null; after?: string | null },
       ctx: IContext,
     ) => this.useCase.listFeedbacksForReport(ctx, parent.id, args),
-    myFeedback: (parent: PrismaReport, _: unknown, ctx: IContext) =>
-      this.useCase.getMyFeedback(ctx, parent.id),
+    myFeedback: (parent: PrismaReport, _: unknown, ctx: IContext) => {
+      const userId = ctx.currentUser?.id;
+      if (!userId) return null;
+      return ctx.loaders.myReportFeedback.load({ reportId: parent.id, userId });
+    },
   };
 
   ReportFeedback = {

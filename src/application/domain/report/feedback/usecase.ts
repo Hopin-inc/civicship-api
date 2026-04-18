@@ -155,7 +155,9 @@ export default class ReportFeedbackUseCase {
     return ReportFeedbackPresenter.templateStats(row);
   }
 
-  // Field-resolver helpers used by `Report.feedbacks` / `Report.myFeedback`.
+  // Field-resolver helper used by `Report.feedbacks`. `Report.myFeedback`
+  // is wired directly to a DataLoader in the resolver to keep the per-
+  // Report lookup batched (see `createMyReportFeedbackLoader`).
 
   async listFeedbacksForReport(
     ctx: IContext,
@@ -173,13 +175,6 @@ export default class ReportFeedbackUseCase {
       cursor: params.after ?? null,
     });
     return ReportFeedbackPresenter.connection(result.items, result.totalCount, first);
-  }
-
-  async getMyFeedback(ctx: IContext, reportId: string) {
-    const userId = ctx.currentUser?.id;
-    if (!userId) return null;
-    const feedback = await this.feedbackService.getExistingFeedback(ctx, reportId, userId);
-    return feedback ? ReportFeedbackPresenter.feedback(feedback) : null;
   }
 }
 
