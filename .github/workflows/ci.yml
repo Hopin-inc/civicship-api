@@ -127,11 +127,21 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
+      # test ディレクトリ単位で job 並列化。jest の `--shard` (hash 分散) ではなく
+      # `--testPathPattern` で category split することで、job 名が
+      # unit / integration / e2e / auth という意味的ラベルになり、失敗した
+      # カテゴリが一目で分かる。各 job は独立 Postgres service を持ち、job 内は
+      # --runInBand で直列 (DB race 安全)、job 間は並列で高速化する。
       matrix:
-        # jest --shard=M/N により test を 4 分割並列実行。各 shard は独立 Postgres
-        # service を持ち、shard 内は --runInBand で直列 (race 安全)、shard 間は
-        # job 並列で高速化する。
-        shard: [1, 2, 3, 4]
+        include:
+          - name: unit
+            path: src/__tests__/unit
+          - name: integration
+            path: src/__tests__/integration
+          - name: e2e
+            path: src/__tests__/e2e
+          - name: auth
+            path: src/__tests__/auth
 
     services:
       postgres:
@@ -210,8 +220,8 @@ jobs:
           } >> "$GITHUB_ENV"
           rm /tmp/test-firebase-key.pem
 
-      - name: Run tests (shard ${{ matrix.shard }}/4)
-        run: pnpm test -- --shard=${{ matrix.shard }}/4
+      - name: Run tests (${{ matrix.name }})
+        run: pnpm test -- --testPathPattern="${{ matrix.path }}"
 
   # Aggregator job: branch protection の required status check として
   # `ci` を維持したまま、実体は lint / build / test の複合結果を集約する。
