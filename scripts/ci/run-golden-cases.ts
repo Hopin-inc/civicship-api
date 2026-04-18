@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import { ReportStatus } from "@prisma/client";
 import { container } from "tsyringe";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { AnthropicLlmClient } from "@/infrastructure/libs/llm";
@@ -83,18 +84,23 @@ async function runOneCase(
     minJudgeScore: number;
     forbiddenKeys: string[];
     notes: string | null;
+    expectedStatus: ReportStatus | null;
   },
 ): Promise<CaseOutcome> {
   const payload = goldenCase.payloadFixture as WeeklyReportPayload;
-
   const skipReason = service.evaluateSkipReason(payload);
-  if (skipReason) {
-    if (goldenCase.minJudgeScore !== 0) {
+
+  // SKIPPED-expected branch: skip guard MUST fire; LLM + judge are not
+  // invoked. Verifies both directions of drift — payload edits that
+  // accidentally make the case non-skippable AND skip-guard regressions
+  // that miss this payload.
+  if (goldenCase.expectedStatus === ReportStatus.SKIPPED) {
+    if (!skipReason) {
       return {
         variant: goldenCase.variant,
         label: goldenCase.label,
         pass: false,
-        reason: `SKIPPED-expected case has non-zero minJudgeScore=${goldenCase.minJudgeScore}; should be 0`,
+        reason: `expectedStatus=SKIPPED but skip guard did not fire on the fixture`,
       };
     }
     return {
@@ -102,6 +108,30 @@ async function runOneCase(
       label: goldenCase.label,
       pass: true,
       reason: `SKIPPED as expected (${skipReason})`,
+    };
+  }
+
+  // Future-proof: a status the harness does not know how to verify
+  // (e.g. expectedStatus=PUBLISHED added later) should fail loudly
+  // rather than silently fall through to the DRAFT-expected path.
+  if (goldenCase.expectedStatus !== null && goldenCase.expectedStatus !== undefined) {
+    return {
+      variant: goldenCase.variant,
+      label: goldenCase.label,
+      pass: false,
+      reason: `expectedStatus=${goldenCase.expectedStatus} is not handled by the CI harness`,
+    };
+  }
+
+  // DRAFT-expected branch: skip guard must NOT fire (it would mean the
+  // case lost its activity through a payload edit and the harness
+  // would silently stop testing the LLM path).
+  if (skipReason) {
+    return {
+      variant: goldenCase.variant,
+      label: goldenCase.label,
+      pass: false,
+      reason: `expectedStatus=DRAFT but skip guard fired: ${skipReason}`,
     };
   }
 

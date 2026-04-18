@@ -872,6 +872,7 @@ Table t_report_golden_cases {
   minJudgeScore Int [not null, default: 70]
   forbiddenKeys String[] [not null]
   notes String
+  expectedStatus ReportStatus
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 

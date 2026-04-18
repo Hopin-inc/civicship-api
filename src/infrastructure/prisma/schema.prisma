@@ -1865,6 +1865,21 @@ model ReportGoldenCase {
   forbiddenKeys  String[] @default([]) @map("forbidden_keys")
   notes          String?  @db.Text
 
+  // Which terminal generation status this case expects to reach.
+  // - null: the normal "DRAFT/PUBLISHED" path — generation runs, judge
+  //   grades the output, score must clear minJudgeScore.
+  // - ReportStatus.SKIPPED: the zero-activity sentinel — the skip
+  //   guard must fire BEFORE any LLM call. The CI harness asserts the
+  //   skip guard fires (and conversely, that DRAFT-expected cases
+  //   don't trip it), which catches both regressions in the skip
+  //   logic AND seed data drift in either direction.
+  //
+  // Modelled as the Prisma `ReportStatus` enum (not a free-form
+  // string) so a future status addition forces a compile error in the
+  // CI harness's switch — we want to make a deliberate decision about
+  // each new status rather than silently treat it as "DRAFT-expected".
+  expectedStatus ReportStatus? @map("expected_status")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 

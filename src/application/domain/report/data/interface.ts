@@ -231,6 +231,7 @@ export interface IReportRepository {
       minJudgeScore: number;
       forbiddenKeys: string[];
       notes?: string | null;
+      expectedStatus?: ReportStatus | null;
     },
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportGoldenCase>;

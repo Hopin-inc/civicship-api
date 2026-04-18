@@ -70,6 +70,7 @@ export const reportGoldenCaseSelect = Prisma.validator<Prisma.ReportGoldenCaseSe
   minJudgeScore: true,
   forbiddenKeys: true,
   notes: true,
+  expectedStatus: true,
   createdAt: true,
   updatedAt: true,
 });

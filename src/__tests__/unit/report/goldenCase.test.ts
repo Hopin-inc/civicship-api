@@ -18,6 +18,7 @@
  *   - the judge's actual scoring (that's the CI harness)
  */
 import "reflect-metadata";
+import { ReportStatus } from "@prisma/client";
 import { container } from "tsyringe";
 import ReportService from "@/application/domain/report/service";
 import type { WeeklyReportPayload } from "@/application/domain/report/types";
@@ -39,6 +40,7 @@ interface CapturedCase {
   minJudgeScore: number;
   forbiddenKeys: string[];
   notes: string | null;
+  expectedStatus: ReportStatus | null;
 }
 
 describe("ReportGoldenCases seed", () => {
@@ -58,6 +60,7 @@ describe("ReportGoldenCases seed", () => {
         minJudgeScore: create.minJudgeScore,
         forbiddenKeys: create.forbiddenKeys,
         notes: create.notes,
+        expectedStatus: create.expectedStatus ?? null,
       });
       return Promise.resolve(create);
     });
@@ -90,7 +93,7 @@ describe("ReportGoldenCases seed", () => {
   });
 
   describe("zero-activity case", () => {
-    it("has minJudgeScore=0 and trips the skip guard", () => {
+    it("declares expectedStatus=SKIPPED and trips the skip guard", () => {
       container.reset();
       const repo = {
         findDailySummaries: jest.fn(),
@@ -118,6 +121,11 @@ describe("ReportGoldenCases seed", () => {
       const service = container.resolve(ReportService);
 
       const c = captured.find((x) => x.label === "zero-activity")!;
+      // expectedStatus is the discriminator the CI harness branches
+      // on; minJudgeScore stays at 0 as a defence-in-depth so the
+      // case can't silently pass on a low-quality output if the
+      // expectedStatus field is ever cleared.
+      expect(c.expectedStatus).toBe(ReportStatus.SKIPPED);
       expect(c.minJudgeScore).toBe(0);
       expect(service.evaluateSkipReason(c.payloadFixture)).not.toBeNull();
     });
@@ -154,6 +162,11 @@ describe("ReportGoldenCases seed", () => {
         const service = container.resolve(ReportService);
 
         const c = captured.find((x) => x.label === label)!;
+        // DRAFT-expected = expectedStatus left at null; minJudgeScore
+        // must be a real threshold (the CI harness will compare judge
+        // output against it) and the skip guard must NOT fire (else
+        // the harness silently stops testing the LLM path).
+        expect(c.expectedStatus).toBeNull();
         expect(c.minJudgeScore).toBeGreaterThan(0);
         expect(service.evaluateSkipReason(c.payloadFixture)).toBeNull();
         expect(c.judgeCriteria.items.length).toBeGreaterThan(0);

@@ -450,6 +450,7 @@ export default class ReportRepository implements IReportRepository {
       minJudgeScore: number;
       forbiddenKeys: string[];
       notes?: string | null;
+      expectedStatus?: ReportStatus | null;
     },
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportGoldenCase> {
@@ -464,6 +465,7 @@ export default class ReportRepository implements IReportRepository {
           minJudgeScore: data.minJudgeScore,
           forbiddenKeys: data.forbiddenKeys,
           notes: data.notes ?? null,
+          expectedStatus: data.expectedStatus ?? null,
         },
         update: {
           payloadFixture: data.payloadFixture,
@@ -471,6 +473,7 @@ export default class ReportRepository implements IReportRepository {
           minJudgeScore: data.minJudgeScore,
           forbiddenKeys: data.forbiddenKeys,
           notes: data.notes ?? null,
+          expectedStatus: data.expectedStatus ?? null,
         },
         select: reportGoldenCaseSelect,
       });

@@ -997,6 +997,7 @@ OTHER OTHER
     Int min_judge_score 
     String forbidden_keys 
     String notes "❓"
+    ReportStatus expected_status "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -1393,6 +1394,7 @@ OTHER OTHER
     "t_report_feedbacks" o|--|| "t_reports" : "report"
     "t_report_feedbacks" o|--|| "t_users" : "user"
     "t_report_feedbacks" o|--|o "FeedbackType" : "enum:feedback_type"
+    "t_report_golden_cases" o|--|o "ReportStatus" : "enum:expected_status"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

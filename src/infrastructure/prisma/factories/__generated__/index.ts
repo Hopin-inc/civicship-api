@@ -9953,6 +9953,7 @@ type ReportGoldenCaseFactoryDefineInput = {
     minJudgeScore?: number;
     forbiddenKeys?: Prisma.ReportGoldenCaseCreateforbiddenKeysInput | Array<string>;
     notes?: string | null;
+    expectedStatus?: ReportStatus | null;
     createdAt?: Date;
     updatedAt?: Date | null;
 };

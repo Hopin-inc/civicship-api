@@ -1,3 +1,4 @@
+import { ReportStatus } from "@prisma/client";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { GqlReportVariant } from "@/types/graphql";
 import type { WeeklyReportPayload } from "@/application/domain/report/types";
@@ -24,6 +25,14 @@ interface GoldenCaseDefinition {
   minJudgeScore: number;
   forbiddenKeys: string[];
   notes?: string;
+  /**
+   * Discriminates "expected to reach DRAFT/PUBLISHED" (undefined /
+   * null) from "expected to short-circuit to SKIPPED" (set to
+   * `ReportStatus.SKIPPED`). The CI harness branches on this rather
+   * than the previous `minJudgeScore === 0` sentinel — see the schema
+   * comment on ReportGoldenCase for rationale.
+   */
+  expectedStatus?: ReportStatus;
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +193,12 @@ const sparseCase: GoldenCaseDefinition = {
 const zeroActivityCase: GoldenCaseDefinition = {
   variant: GqlReportVariant.WeeklySummary,
   label: "zero-activity",
+  // minJudgeScore is unused for SKIPPED-expected cases (the CI harness
+  // never invokes the judge), but we keep it at 0 so a future
+  // expectedStatus accidentally being cleared would not let the case
+  // silently pass on a low-quality output.
   minJudgeScore: 0,
+  expectedStatus: ReportStatus.SKIPPED,
   judgeCriteria: { items: [] },
   forbiddenKeys: [],
   notes:
@@ -405,6 +419,7 @@ export async function seedReportGoldenCases() {
           minJudgeScore: c.minJudgeScore,
           forbiddenKeys: c.forbiddenKeys,
           notes: c.notes ?? null,
+          expectedStatus: c.expectedStatus ?? null,
         },
         update: {
           payloadFixture: c.payloadFixture as unknown as object,
@@ -412,6 +427,7 @@ export async function seedReportGoldenCases() {
           minJudgeScore: c.minJudgeScore,
           forbiddenKeys: c.forbiddenKeys,
           notes: c.notes ?? null,
+          expectedStatus: c.expectedStatus ?? null,
         },
       });
       console.info(`  Upserted golden case: ${c.variant}/${c.label}`);

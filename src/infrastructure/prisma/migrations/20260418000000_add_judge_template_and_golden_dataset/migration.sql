@@ -41,6 +41,14 @@ CREATE TABLE "t_report_golden_cases" (
     "min_judge_score" INTEGER NOT NULL DEFAULT 70,
     "forbidden_keys" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "notes" TEXT,
+    -- expected_status uses the same ReportStatus enum as t_reports.status:
+    -- NULL = normal DRAFT-expected path (LLM + judge run);
+    -- 'SKIPPED' = zero-activity sentinel (skip guard must fire before
+    --             any LLM call). The CI harness branches on this column
+    --             rather than the previous `min_judge_score === 0`
+    --             sentinel so the discriminator is explicit and the
+    --             type system catches future status additions.
+    "expected_status" "ReportStatus",
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3),
 
