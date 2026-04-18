@@ -16,12 +16,15 @@
 --      and `skip_reason` records why the run was elided.
 --
 -- DB-layer invariants retained / extended:
---   - @@unique([variant, community_id, version]) covers COMMUNITY scope.
+--   - @@unique([variant, community_id, kind, version]) covers COMMUNITY scope.
+--     `kind` is part of the key so GENERATION and JUDGE rows can share a
+--     (variant, version, community) triple — required for the LLM-as-Judge
+--     work in PR-F7+, which seeds JUDGE prompts into the same table.
 --     The partial unique index `t_report_templates_variant_system_key` is
---     re-created on (variant, version) WHERE community_id IS NULL, keeping
---     SYSTEM-scope uniqueness per (variant, version) pair. We'd prefer a
---     single `UNIQUE NULLS NOT DISTINCT` constraint, but Prisma 6.11 does
---     not yet accept `nullsNotDistinct` on @@unique.
+--     re-created on (variant, kind, version) WHERE community_id IS NULL,
+--     keeping SYSTEM-scope uniqueness per (variant, kind, version) triple.
+--     We'd prefer a single `UNIQUE NULLS NOT DISTINCT` constraint, but
+--     Prisma 6.11 does not yet accept `nullsNotDistinct` on @@unique.
 --   - The existing `t_report_templates_scope_community_id_check` CHECK
 --     constraint (scope ⇔ community_id NULL-ness) is untouched.
 --   - A new CHECK `t_report_templates_traffic_weight_check` bounds
@@ -61,20 +64,22 @@ ALTER COLUMN "cache_read_tokens" DROP NOT NULL,
 ALTER COLUMN "cache_read_tokens" DROP DEFAULT;
 
 -- CreateIndex
-CREATE UNIQUE INDEX "t_report_templates_variant_community_id_version_key" ON "t_report_templates"("variant", "community_id", "version");
+CREATE UNIQUE INDEX "t_report_templates_variant_community_id_kind_version_key" ON "t_report_templates"("variant", "community_id", "kind", "version");
 
 -- ============================================================================
 -- Custom additions beyond Prisma's canonical output
 -- ============================================================================
 
--- Re-create the SYSTEM-scope partial unique index with the new `version`
--- column. The pre-F1 index enforced "one SYSTEM template per variant";
--- with versioning we relax that to "one SYSTEM template per (variant,
--- version)" so a v2 can coexist with v1.
+-- Re-create the SYSTEM-scope partial unique index with the new `kind` and
+-- `version` columns. The pre-F1 index enforced "one SYSTEM template per
+-- variant"; with versioning + kind we relax that to "one SYSTEM template
+-- per (variant, kind, version)" so a GENERATION v2 can coexist with
+-- GENERATION v1, and a JUDGE row (added in PR-F7+) can coexist with
+-- GENERATION rows at the same (variant, version).
 DROP INDEX "t_report_templates_variant_system_key";
 
 CREATE UNIQUE INDEX "t_report_templates_variant_system_key"
-    ON "t_report_templates"("variant", "version")
+    ON "t_report_templates"("variant", "kind", "version")
     WHERE "community_id" IS NULL;
 
 -- CheckConstraint: traffic_weight in 0..100 (belt-and-braces alongside the

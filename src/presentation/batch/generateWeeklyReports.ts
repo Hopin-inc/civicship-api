@@ -6,7 +6,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import ReportUseCase from "@/application/domain/report/usecase";
 import { IContext } from "@/types/server";
-import { GqlReportStatus, GqlReportVariant } from "@/types/graphql";
+import { ReportVariant } from "@/application/domain/report/types";
 import { addDays, truncateToJstDate } from "@/application/domain/report/util";
 
 export async function generateWeeklyReports() {
@@ -42,7 +42,7 @@ export async function generateWeeklyReports() {
         tx.report.findFirst({
           where: {
             communityId: community.id,
-            variant: GqlReportVariant.WeeklySummary,
+            variant: ReportVariant.WeeklySummary,
             periodFrom: weekAgo,
             periodTo: yesterday,
             status: { notIn: [ReportStatus.REJECTED, ReportStatus.SUPERSEDED] },
@@ -60,7 +60,7 @@ export async function generateWeeklyReports() {
         {
           input: {
             communityId: community.id,
-            variant: GqlReportVariant.WeeklySummary,
+            variant: ReportVariant.WeeklySummary,
             periodFrom: weekAgo,
             periodTo: yesterday,
           },
@@ -69,10 +69,13 @@ export async function generateWeeklyReports() {
         ctx,
       );
       // GenerateReportSuccess is the only non-error return; a SKIPPED row
-      // comes back here the same way — distinguished by `status`.
+      // comes back here the same way — distinguished by `status`. The
+      // usecase hands back the row via ReportPresenter.report (which casts
+      // the Prisma row to GqlReport), so `status` at runtime still matches
+      // the Prisma enum value.
       if (
         result.__typename === "GenerateReportSuccess" &&
-        result.report.status === GqlReportStatus.Skipped
+        result.report.status === ReportStatus.SKIPPED
       ) {
         zeroActivitySkipCount++;
         logger.debug(
