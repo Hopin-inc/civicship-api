@@ -416,9 +416,16 @@ export default class ReportRepository implements IReportRepository {
         where: { id },
         data: {
           judgeScore: data.judgeScore,
-          judgeBreakdown: data.judgeBreakdown ?? Prisma.JsonNull,
+          // Use Prisma.DbNull (SQL NULL) rather than Prisma.JsonNull
+          // (the JSON literal `null`). The schema comment on
+          // judge_breakdown / coverage_json reads "left null", which
+          // is SQL NULL — JsonNull would store a four-byte JSON `null`
+          // value that survives `IS NULL` checks differently than
+          // missing data and would force every consumer to handle two
+          // distinct flavours of "no result" for the same column.
+          judgeBreakdown: data.judgeBreakdown ?? Prisma.DbNull,
           judgeTemplateId: data.judgeTemplateId,
-          coverageJson: data.coverageJson ?? Prisma.JsonNull,
+          coverageJson: data.coverageJson ?? Prisma.DbNull,
         },
         select: reportSelect,
       });
@@ -490,9 +497,17 @@ export default class ReportRepository implements IReportRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportTemplate> {
     const scope = communityId ? ReportTemplateScope.COMMUNITY : ReportTemplateScope.SYSTEM;
+    // The admin GraphQL mutation that calls this only edits GENERATION
+    // templates (the GqlUpdateReportTemplateInput has no `kind` field).
+    // Pin the lookup + create to GENERATION so the JUDGE rows added in
+    // PR-F7 cannot be accidentally overwritten when a (variant,
+    // communityId) pair has both a GENERATION and a JUDGE row at v1.
+    // When an admin path for editing JUDGE templates is added, this
+    // method should grow a `kind` parameter and thread it through.
+    const kind = ReportTemplateKind.GENERATION;
     const doUpsert = async (client: Prisma.TransactionClient) => {
       const existing = await client.reportTemplate.findFirst({
-        where: { variant, communityId },
+        where: { variant, communityId, kind },
         select: { id: true },
       });
       if (existing) {
@@ -508,6 +523,7 @@ export default class ReportRepository implements IReportRepository {
             ...data,
             variant,
             scope,
+            kind,
             ...(communityId ? { community: { connect: { id: communityId } } } : {}),
           },
           select: reportTemplateSelect,
@@ -515,7 +531,7 @@ export default class ReportRepository implements IReportRepository {
       } catch (e: unknown) {
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
           const raced = await client.reportTemplate.findFirst({
-            where: { variant, communityId },
+            where: { variant, communityId, kind },
             select: { id: true },
           });
           if (raced) {

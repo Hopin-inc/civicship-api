@@ -70,14 +70,22 @@ export interface JudgeExecutionInput {
  * Callers (usecase, CI script) bucket their logs by checking
  * `instanceof JudgeParseError` so the two streams stay separable in
  * downstream observability without parsing log message strings.
+ *
+ * NOTE on PII: deliberately exposes only `responseLength`, NOT the
+ * raw response body. The judge prompt's input includes user-generated
+ * report content (member names, comments), and a misbehaving judge
+ * could echo that content back. Logging the raw response — even a
+ * 200-char prefix — risks leaking PII into log aggregation. The
+ * length alone is enough to triage "judge produced nothing" vs
+ * "judge produced a runaway essay" without that risk.
  */
 export class JudgeParseError extends Error {
-  constructor(
-    message: string,
-    public readonly rawResponse: string,
-  ) {
+  public readonly responseLength: number;
+
+  constructor(message: string, rawResponse: string) {
     super(message);
     this.name = "JudgeParseError";
+    this.responseLength = rawResponse.length;
   }
 }
 
@@ -176,6 +184,10 @@ function parseJudgeResponse(raw: string): JudgeResult {
   try {
     parsed = JSON.parse(stripped);
   } catch (e) {
+    // Surface only the JSON parser's own diagnostic (e.g. "Unexpected
+    // token X at position N"). Do NOT include `raw` — it can carry
+    // user-generated content the judge echoed back. JudgeParseError
+    // exposes `responseLength` for triage instead.
     throw new JudgeParseError(
       `Judge response was not valid JSON: ${(e as Error).message}`,
       raw,

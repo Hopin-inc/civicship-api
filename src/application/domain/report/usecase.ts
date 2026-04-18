@@ -249,26 +249,50 @@ export default class ReportUseCase {
     // Judge runs in a separate transaction after the report row exists.
     // We deliberately do NOT roll the generation back if the judge step
     // fails — judge failures are observability data, not a generation
-    // halt. Network errors and JSON parse errors both bubble out of
-    // judgeAndPersist and are caught here so generateReport always
-    // returns the persisted row.
-    const judgedReport = await this.judgeAndPersist(ctx, report, payload, llmResult.text);
+    // halt. The outer try/catch additionally protects against the DB
+    // write inside judgeAndPersist itself failing (connection blip,
+    // tx timeout in onlyBelongingCommunity); without it, a successful
+    // generation would surface as a mutation error and the user would
+    // retry, creating a duplicate. The persisted row is always
+    // returned even if every observability persist attempt fails.
+    let judgedReport = report;
+    try {
+      judgedReport = await this.judgeAndPersist(ctx, report, payload, llmResult.text);
+    } catch (e) {
+      console.warn(
+        JSON.stringify({
+          event: "report.judge.failed",
+          reason: "persist_failure",
+          reportId: report.id,
+          variant: report.variant,
+          message: (e as Error).message,
+        }),
+      );
+    }
 
     return { __typename: "GenerateReportSuccess", report: ReportPresenter.report(judgedReport) };
   }
 
   /**
-   * Best-effort judge run. Returns the original report unchanged when:
-   *  - no JUDGE template is seeded for the variant (Phase 1: only
-   *    WEEKLY_SUMMARY has one), or
-   *  - the LLM call / parse throws (logged via console.warn so the
-   *    failure surfaces in the operations log; we deliberately do not
-   *    propagate so a transient Anthropic outage does not abort
-   *    generation).
+   * Best-effort judge run. Persists `coverageJson` on every path
+   * (the substring analysis is pure and cheap), and additionally
+   * persists `judgeScore` / `judgeBreakdown` on the success path.
    *
-   * The coverage analysis is computed unconditionally (it is a pure
-   * substring scan) and persisted alongside the judge result so a
-   * judge-step failure still leaves the cheaper signal intact.
+   * Failure modes are logged as structured JSON with a `reason` field
+   * so observability can route the buckets independently:
+   *   - template_config_error: COMMUNITY-scope JUDGE seed slipped past
+   *     the guard. Config bug; alert.
+   *   - parse_failure: judge prompt producing output the parser can't
+   *     consume. Prompt-quality regression; alert.
+   *   - llm_failure: transient (network / 5xx / abort); retry-friendly.
+   * Note: PII is never logged — JudgeParseError exposes only
+   * `responseLength`, never the raw judge output that could echo
+   * report content.
+   *
+   * Throws to the caller only if the coverage save itself fails
+   * (DB outage); the caller wraps in try/catch and returns the
+   * pre-judge row, preserving the documented "generateReport always
+   * returns the persisted row" contract.
    */
   private async judgeAndPersist(
     ctx: IContext,
@@ -276,14 +300,16 @@ export default class ReportUseCase {
     payload: WeeklyReportPayload,
     outputMarkdown: string,
   ) {
+    // Computed up-front (pure, no side effects) so every persist path
+    // below has the value available — including the
+    // template_config_error catch arm where we still want the cheap
+    // coverage signal recorded.
+    const coverage = analyzeCoverage(payload, outputMarkdown);
+
     let judgeTemplate;
     try {
       judgeTemplate = await this.judgeService.selectJudgeTemplate(ctx, report.variant);
     } catch (e) {
-      // Template selection only throws when a misconfigured row slips
-      // past the seed-side guard (COMMUNITY-scope JUDGE). Treat it as
-      // a config problem distinct from runtime LLM failure so ops can
-      // alert on it specifically.
       console.warn(
         JSON.stringify({
           event: "report.judge.failed",
@@ -293,28 +319,24 @@ export default class ReportUseCase {
           message: (e as Error).message,
         }),
       );
-      return report;
+      return this.persistJudgeOutcome(ctx, report.id, {
+        judgeScore: null,
+        judgeBreakdown: null,
+        judgeTemplateId: null,
+        coverageJson: coverage as unknown as Prisma.InputJsonValue,
+      });
     }
-
-    const coverage = analyzeCoverage(payload, outputMarkdown);
 
     if (!judgeTemplate) {
       // No judge wired up for this variant yet — persist coverage on
       // its own so the field is not perpetually null for variants that
       // never get a judge prompt.
-      return ctx.issuer.onlyBelongingCommunity(ctx, (tx) =>
-        this.service.saveJudgeResult(
-          ctx,
-          report.id,
-          {
-            judgeScore: null,
-            judgeBreakdown: null,
-            judgeTemplateId: null,
-            coverageJson: coverage as unknown as Prisma.InputJsonValue,
-          },
-          tx,
-        ),
-      );
+      return this.persistJudgeOutcome(ctx, report.id, {
+        judgeScore: null,
+        judgeBreakdown: null,
+        judgeTemplateId: null,
+        coverageJson: coverage as unknown as Prisma.InputJsonValue,
+      });
     }
 
     let judgeResult;
@@ -324,15 +346,6 @@ export default class ReportUseCase {
         inputPayload: payload,
       });
     } catch (e) {
-      // Bucket the two failure modes so downstream alerting can route
-      // them differently:
-      //   - parse_failure: judge prompt is producing malformed output;
-      //     this is a prompt-quality regression and should page on
-      //     repeat occurrence.
-      //   - llm_failure: transient (network / rate limit / abort);
-      //     same prompt will likely succeed on the next run.
-      // We log structured-ish JSON so log aggregation can parse a
-      // single field rather than regex the message string.
       const isParseError = e instanceof JudgeParseError;
       const logPayload = {
         event: "report.judge.failed",
@@ -341,38 +354,49 @@ export default class ReportUseCase {
         variant: report.variant,
         judgeTemplateId: judgeTemplate.id,
         message: (e as Error).message,
+        // PII-safe diagnostic: length only. The raw judge output may
+        // echo user-generated report content (member names, comments)
+        // and we deliberately do not propagate it to the log stream.
         ...(isParseError && {
-          rawResponseSample: (e as JudgeParseError).rawResponse.slice(0, 200),
+          responseLength: (e as JudgeParseError).responseLength,
         }),
       };
       console.warn(JSON.stringify(logPayload));
-      return ctx.issuer.onlyBelongingCommunity(ctx, (tx) =>
-        this.service.saveJudgeResult(
-          ctx,
-          report.id,
-          {
-            judgeScore: null,
-            judgeBreakdown: null,
-            judgeTemplateId: judgeTemplate.id,
-            coverageJson: coverage as unknown as Prisma.InputJsonValue,
-          },
-          tx,
-        ),
-      );
+      return this.persistJudgeOutcome(ctx, report.id, {
+        judgeScore: null,
+        judgeBreakdown: null,
+        judgeTemplateId: judgeTemplate.id,
+        coverageJson: coverage as unknown as Prisma.InputJsonValue,
+      });
     }
 
+    return this.persistJudgeOutcome(ctx, report.id, {
+      judgeScore: judgeResult.score,
+      judgeBreakdown: judgeResult as unknown as Prisma.InputJsonValue,
+      judgeTemplateId: judgeTemplate.id,
+      coverageJson: coverage as unknown as Prisma.InputJsonValue,
+    });
+  }
+
+  /**
+   * Single seam for persisting the judge / coverage columns on a
+   * Report row, used by every branch of `judgeAndPersist`. Wrapping
+   * the `onlyBelongingCommunity` issuer call here avoids repeating the
+   * three-line transaction boilerplate at each callsite and gives the
+   * caller a single line to wrap when adding new judge columns later.
+   */
+  private async persistJudgeOutcome(
+    ctx: IContext,
+    reportId: string,
+    data: {
+      judgeScore: number | null;
+      judgeBreakdown: Prisma.InputJsonValue | null;
+      judgeTemplateId: string | null;
+      coverageJson: Prisma.InputJsonValue | null;
+    },
+  ) {
     return ctx.issuer.onlyBelongingCommunity(ctx, (tx) =>
-      this.service.saveJudgeResult(
-        ctx,
-        report.id,
-        {
-          judgeScore: judgeResult.score,
-          judgeBreakdown: judgeResult as unknown as Prisma.InputJsonValue,
-          judgeTemplateId: judgeTemplate.id,
-          coverageJson: coverage as unknown as Prisma.InputJsonValue,
-        },
-        tx,
-      ),
+      this.service.saveJudgeResult(ctx, reportId, data, tx),
     );
   }
 
