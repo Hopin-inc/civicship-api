@@ -1826,6 +1826,13 @@ model ReportFeedback {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  // One feedback per (report, user). Duplicate submissions are rejected
+  // by this unique index; the `submitReportFeedback` mutation surfaces
+  // the violation as a `ValidationError` (both as a pre-check before the
+  // INSERT and as a translation of any racing P2002 into the same error
+  // code). An edit / partial-submit flow is deferred to a later PR — for
+  // now the mutation refuses second submits outright.
+  @@unique([reportId, userId])
   @@index([reportId])
   @@index([userId])
   @@map("t_report_feedbacks")
