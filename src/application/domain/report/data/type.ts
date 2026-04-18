@@ -16,6 +16,10 @@ export const reportSelect = Prisma.validator<Prisma.ReportSelect>()({
   inputTokens: true,
   outputTokens: true,
   cacheReadTokens: true,
+  judgeScore: true,
+  judgeBreakdown: true,
+  judgeTemplateId: true,
+  coverageJson: true,
   targetUserId: true,
   generatedBy: true,
   status: true,
@@ -37,6 +41,7 @@ export const reportTemplateSelect = Prisma.validator<Prisma.ReportTemplateSelect
   id: true,
   variant: true,
   scope: true,
+  kind: true,
   communityId: true,
   systemPrompt: true,
   userPromptTemplate: true,
@@ -46,10 +51,33 @@ export const reportTemplateSelect = Prisma.validator<Prisma.ReportTemplateSelect
   maxTokens: true,
   stopSequences: true,
   isEnabled: true,
+  version: true,
+  isActive: true,
+  experimentKey: true,
+  trafficWeight: true,
+  notes: true,
   updatedBy: true,
   createdAt: true,
   updatedAt: true,
 });
+
+export const reportGoldenCaseSelect = Prisma.validator<Prisma.ReportGoldenCaseSelect>()({
+  id: true,
+  variant: true,
+  label: true,
+  payloadFixture: true,
+  judgeCriteria: true,
+  minJudgeScore: true,
+  forbiddenKeys: true,
+  notes: true,
+  expectedStatus: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PrismaReportGoldenCase = Prisma.ReportGoldenCaseGetPayload<{
+  select: typeof reportGoldenCaseSelect;
+}>;
 
 export type PrismaReportTemplate = Prisma.ReportTemplateGetPayload<{
   select: typeof reportTemplateSelect;
