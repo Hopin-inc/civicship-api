@@ -8,7 +8,12 @@ import { traceContext } from "./formats/traceContext";
 // LOCAL_DEV is injected by `pnpm dev*` scripts so that running locally against
 // a remote env (`dev:https:dev` / `dev:https:prd`) still uses console logging
 // instead of shipping logs to Cloud Logging.
-const isLocal = process.env.ENV === "LOCAL" || process.env.LOCAL_DEV === "true";
+// NODE_ENV === "test" も含めることで、CI / jest 実行時に LoggingWinston が
+// import 時点で GCP Project 自動検出を試みて失敗する事象を防ぐ (credential 不在)。
+const isLocal =
+  process.env.ENV === "LOCAL" ||
+  process.env.LOCAL_DEV === "true" ||
+  process.env.NODE_ENV === "test";
 const isProduction = process.env.NODE_ENV === "production";
 
 const baseFormats: winston.Logform.Format[] = [

@@ -37,12 +37,6 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://civicship:civicship@localhost:5432/civicship_ci
-      # ENV=LOCAL は src/infrastructure/logging/index.ts の `isLocal` 分岐を
-      # 成立させ、@google-cloud/logging-winston の LoggingWinston transport を
-      # Console transport に切り替える。CI には GCP credential / project 指定が
-      # 無いため、これが無いと logger 初期化時点で GCP project 検出に失敗し、
-      # test 全体が unhandled error で落ちる (ローカルは .env.test.local で同値)。
-      ENV: LOCAL
       # Test dummy values (production secret は注入しない、test は DI 通過が目的).
       # ローカル CI 相当環境での実測で、dummy 値でも DI container 登録・初期化が
       # pass することを確認済み。実 API call を行う test はステップ 3 で mock 化する。
