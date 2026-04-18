@@ -8,7 +8,6 @@ import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
 import { PrismaAuthUser } from '@/application/domain/account/user/data/type';
-import { validateNftPayload } from '@/application/domain/account/nft-wallet/data/validator';
 
 const router = express();
 
@@ -29,34 +28,17 @@ router.post('/nft-wallets',
         return res.status(400).json({ error: 'name must be a string' });
       }
 
-      if (nfts !== undefined) {
-        const result = validateNftPayload(nfts);
-        if (result.valid) {
-          logger.info("📨 [dry-run] NFT payload valid", {
-            walletAddress,
-            userId: user.id,
-            nftCount: result.count,
-            sampleItem: result.items[0],
-          });
-        } else {
-          logger.warn("⚠️ [dry-run] NFT payload invalid", {
-            walletAddress,
-            userId: user.id,
-            errors: result.errors,
-          });
-        }
-      }
-
       const issuer = new PrismaClientIssuer();
       const nftWalletUsecase = container.resolve(NFTWalletUsecase);
       const ctx = { issuer } as IContext;
-      
+
       const wallet = await nftWalletUsecase.registerWallet(
         ctx,
         user.id,
         walletAddress,
         name,
         user.name,
+        nfts,
       );
       
       return res.status(200).json({ success: true, walletId: wallet.id });

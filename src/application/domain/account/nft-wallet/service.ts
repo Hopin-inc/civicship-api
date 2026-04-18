@@ -10,6 +10,7 @@ import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/extern
 import pLimit from "p-limit";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
+import { validateNftPayload } from "@/application/domain/account/nft-wallet/validator";
 import crypto from "crypto";
 
 const TOKEN_CACHE_TTL = 24 * 60 * 60 * 1000;
@@ -55,6 +56,25 @@ export default class NFTWalletService {
     @inject("NftInstanceRepository") private nftInstanceRepository: NftInstanceRepository,
     @inject("NmkrClient") private nmkrClient: NmkrClient,
   ) {}
+
+  validateAndLogNftPayload(walletAddress: string, userId: string, nfts: unknown): void {
+    const result = validateNftPayload(nfts);
+    if (result.valid) {
+      logger.info("📨 [dry-run] NFT payload valid", {
+        walletAddress,
+        userId,
+        nftCount: result.count,
+        sampleItem: result.items[0],
+      });
+    } else {
+      logger.warn("⚠️ [dry-run] NFT payload invalid", {
+        walletAddress,
+        userId,
+        errors: result.errors,
+      });
+    }
+  }
+
   async createOrUpdateWalletAddress(
     ctx: IContext,
     userId: string,
