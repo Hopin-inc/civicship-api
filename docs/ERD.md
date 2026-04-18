@@ -958,6 +958,10 @@ OTHER OTHER
     Int inputTokens "❓"
     Int outputTokens "❓"
     Int cacheReadTokens "❓"
+    Int judgeScore "❓"
+    Json judgeBreakdown "❓"
+    String judgeTemplateId "❓"
+    Json coverageJson "❓"
     String skipReason "❓"
     String targetUserId "❓"
     String generatedBy "❓"
@@ -981,6 +985,21 @@ OTHER OTHER
     String section_key "❓"
     String comment "❓"
     DateTime created_at 
+    }
+  
+
+  "t_report_golden_cases" {
+    String id "🗝️"
+    String variant 
+    String label 
+    Json payload_fixture 
+    Json judge_criteria 
+    Int min_judge_score 
+    String forbidden_keys 
+    String notes "❓"
+    ReportStatus expected_status "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
     }
   
 
@@ -1361,8 +1380,10 @@ OTHER OTHER
     "t_report_templates" o|--|o "t_communities" : "community"
     "t_report_templates" o|--|o "t_users" : "updatedByUser"
     "t_report_templates" o{--}o "t_reports" : "reports"
+    "t_report_templates" o{--}o "t_reports" : "judgedReports"
     "t_reports" o|--|| "t_communities" : "community"
     "t_reports" o|--|o "t_report_templates" : "template"
+    "t_reports" o|--|o "t_report_templates" : "judgeTemplate"
     "t_reports" o|--|o "t_users" : "targetUser"
     "t_reports" o|--|o "t_users" : "generatedByUser"
     "t_reports" o|--|| "ReportStatus" : "enum:status"
@@ -1373,6 +1394,7 @@ OTHER OTHER
     "t_report_feedbacks" o|--|| "t_reports" : "report"
     "t_report_feedbacks" o|--|| "t_users" : "user"
     "t_report_feedbacks" o|--|o "FeedbackType" : "enum:feedback_type"
+    "t_report_golden_cases" o|--|o "ReportStatus" : "enum:expected_status"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"
