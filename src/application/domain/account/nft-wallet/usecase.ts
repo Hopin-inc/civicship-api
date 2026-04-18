@@ -31,7 +31,12 @@ export default class NFTWalletUsecase {
     walletAddress: string,
     userName?: string,
     currentUserName?: string,
+    nfts?: unknown,
   ): Promise<RegisterWalletResult> {
+    if (nfts !== undefined) {
+      this.nftWalletService.validateAndLogNftPayload(walletAddress, userId, nfts);
+    }
+
     return await this.issuer.public(ctx, async (tx) => {
       const wallet = await this.nftWalletService.createOrUpdateWalletAddress(
         ctx,

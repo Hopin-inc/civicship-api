@@ -17,9 +17,9 @@ router.post('/nft-wallets',
   validateFirebasePhoneAuth,
   async (req, res) => {
     try {
-      const { walletAddress, name } = req.body;
+      const { walletAddress, name, nfts } = req.body;
       const user = (req as any).user as PrismaAuthUser;
-      
+
       if (!walletAddress || typeof walletAddress !== 'string') {
         return res.status(400).json({ error: 'walletAddress must be a string' });
       }
@@ -27,17 +27,18 @@ router.post('/nft-wallets',
       if (name !== undefined && typeof name !== 'string') {
         return res.status(400).json({ error: 'name must be a string' });
       }
-      
+
       const issuer = new PrismaClientIssuer();
       const nftWalletUsecase = container.resolve(NFTWalletUsecase);
       const ctx = { issuer } as IContext;
-      
+
       const wallet = await nftWalletUsecase.registerWallet(
         ctx,
         user.id,
         walletAddress,
         name,
         user.name,
+        nfts,
       );
       
       return res.status(200).json({ success: true, walletId: wallet.id });
