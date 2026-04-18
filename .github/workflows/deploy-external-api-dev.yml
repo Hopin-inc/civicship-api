@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - develop
-      - hotfix/**
-      - epic/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
