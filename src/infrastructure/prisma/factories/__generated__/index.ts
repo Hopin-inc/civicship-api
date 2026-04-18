@@ -95,6 +95,7 @@ import type { Position } from "@prisma/client";
 import type { VoteGateType } from "@prisma/client";
 import type { VotePowerPolicyType } from "@prisma/client";
 import type { ReportTemplateScope } from "@prisma/client";
+import type { ReportTemplateKind } from "@prisma/client";
 import type { ReportStatus } from "@prisma/client";
 import type { FeedbackType } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
@@ -9325,6 +9326,7 @@ type ReportTemplateFactoryDefineInput = {
     id?: string;
     variant?: string;
     scope?: ReportTemplateScope;
+    kind?: ReportTemplateKind;
     systemPrompt?: string;
     userPromptTemplate?: string;
     communityContext?: string | null;
@@ -9333,6 +9335,11 @@ type ReportTemplateFactoryDefineInput = {
     maxTokens?: number;
     stopSequences?: Prisma.ReportTemplateCreatestopSequencesInput | Array<string>;
     isEnabled?: boolean;
+    version?: number;
+    isActive?: boolean;
+    experimentKey?: string | null;
+    trafficWeight?: number;
+    notes?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     community?: ReportTemplatecommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput;
@@ -9494,12 +9501,6 @@ type ReportScalarOrEnumFields = {
     periodFrom: Date;
     periodTo: Date;
     inputPayload: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
-    outputMarkdown: string;
-    model: string;
-    systemPromptSnapshot: string;
-    userPromptSnapshot: string;
-    inputTokens: number;
-    outputTokens: number;
 };
 
 type ReportcommunityFactory = {
@@ -9538,14 +9539,15 @@ type ReportFactoryDefineInput = {
     periodFrom?: Date;
     periodTo?: Date;
     inputPayload?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
-    outputMarkdown?: string;
-    model?: string;
-    systemPromptSnapshot?: string;
-    userPromptSnapshot?: string;
+    outputMarkdown?: string | null;
+    model?: string | null;
+    systemPromptSnapshot?: string | null;
+    userPromptSnapshot?: string | null;
     communityContextSnapshot?: string | null;
-    inputTokens?: number;
-    outputTokens?: number;
-    cacheReadTokens?: number;
+    inputTokens?: number | null;
+    outputTokens?: number | null;
+    cacheReadTokens?: number | null;
+    skipReason?: string | null;
     status?: ReportStatus;
     publishedAt?: Date | null;
     finalContent?: string | null;
@@ -9625,13 +9627,7 @@ function autoGenerateReportScalarsOrEnums({ seq }: {
         variant: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "variant", isId: false, isUnique: false, seq }),
         periodFrom: getScalarFieldValueGenerator().DateTime({ modelName: "Report", fieldName: "periodFrom", isId: false, isUnique: false, seq }),
         periodTo: getScalarFieldValueGenerator().DateTime({ modelName: "Report", fieldName: "periodTo", isId: false, isUnique: false, seq }),
-        inputPayload: getScalarFieldValueGenerator().Json({ modelName: "Report", fieldName: "inputPayload", isId: false, isUnique: false, seq }),
-        outputMarkdown: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "outputMarkdown", isId: false, isUnique: false, seq }),
-        model: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "model", isId: false, isUnique: false, seq }),
-        systemPromptSnapshot: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "systemPromptSnapshot", isId: false, isUnique: false, seq }),
-        userPromptSnapshot: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "userPromptSnapshot", isId: false, isUnique: false, seq }),
-        inputTokens: getScalarFieldValueGenerator().Int({ modelName: "Report", fieldName: "inputTokens", isId: false, isUnique: false, seq }),
-        outputTokens: getScalarFieldValueGenerator().Int({ modelName: "Report", fieldName: "outputTokens", isId: false, isUnique: false, seq })
+        inputPayload: getScalarFieldValueGenerator().Json({ modelName: "Report", fieldName: "inputPayload", isId: false, isUnique: false, seq })
     };
 }
 

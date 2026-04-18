@@ -2611,16 +2611,16 @@ export type GqlRejectReportSuccess = {
 
 export type GqlReport = {
   __typename?: 'Report';
-  cacheReadTokens: Scalars['Int']['output'];
+  cacheReadTokens?: Maybe<Scalars['Int']['output']>;
   community: GqlCommunity;
   createdAt: Scalars['Datetime']['output'];
   finalContent?: Maybe<Scalars['String']['output']>;
   generatedByUser?: Maybe<GqlUser>;
   id: Scalars['ID']['output'];
-  inputTokens: Scalars['Int']['output'];
-  model: Scalars['String']['output'];
-  outputMarkdown: Scalars['String']['output'];
-  outputTokens: Scalars['Int']['output'];
+  inputTokens?: Maybe<Scalars['Int']['output']>;
+  model?: Maybe<Scalars['String']['output']>;
+  outputMarkdown?: Maybe<Scalars['String']['output']>;
+  outputTokens?: Maybe<Scalars['Int']['output']>;
   parentRun?: Maybe<GqlReport>;
   periodFrom: Scalars['Datetime']['output'];
   periodTo: Scalars['Datetime']['output'];
@@ -2628,6 +2628,7 @@ export type GqlReport = {
   publishedByUser?: Maybe<GqlUser>;
   regenerateCount: Scalars['Int']['output'];
   regenerations: Array<GqlReport>;
+  skipReason?: Maybe<Scalars['String']['output']>;
   status: GqlReportStatus;
   targetUser?: Maybe<GqlUser>;
   template?: Maybe<GqlReportTemplate>;
@@ -2646,6 +2647,7 @@ export const GqlReportStatus = {
   Draft: 'DRAFT',
   Published: 'PUBLISHED',
   Rejected: 'REJECTED',
+  Skipped: 'SKIPPED',
   Superseded: 'SUPERSEDED'
 } as const;
 
@@ -5829,16 +5831,16 @@ export type GqlRejectReportSuccessResolvers<ContextType = any, ParentType extend
 }>;
 
 export type GqlReportResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Report'] = GqlResolversParentTypes['Report']> = ResolversObject<{
-  cacheReadTokens?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  cacheReadTokens?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   community?: Resolver<GqlResolversTypes['Community'], ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   finalContent?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   generatedByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  inputTokens?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  model?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  outputMarkdown?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  outputTokens?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  inputTokens?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  model?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  outputMarkdown?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  outputTokens?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   parentRun?: Resolver<Maybe<GqlResolversTypes['Report']>, ParentType, ContextType>;
   periodFrom?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   periodTo?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
@@ -5846,6 +5848,7 @@ export type GqlReportResolvers<ContextType = any, ParentType extends GqlResolver
   publishedByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   regenerateCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   regenerations?: Resolver<Array<GqlResolversTypes['Report']>, ParentType, ContextType>;
+  skipReason?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ReportStatus'], ParentType, ContextType>;
   targetUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   template?: Resolver<Maybe<GqlResolversTypes['ReportTemplate']>, ParentType, ContextType>;
