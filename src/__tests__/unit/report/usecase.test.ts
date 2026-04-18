@@ -58,7 +58,11 @@ describe("ReportUseCase.generateReport — zero-activity skip path", () => {
     kind: "GENERATION",
   };
 
+  // test-only: full TransactionClient mock unnecessary — the service call
+  // is stubbed below, so the placeholder never has Prisma methods invoked.
   const fakeTx = {} as never;
+  // test-only: production IContext pulls in issuer / auth / loader wiring
+  // we don't exercise here; the cast keeps the mock shape minimal.
   const fakeCtx = {
     issuer: {
       onlyBelongingCommunity: (
@@ -119,6 +123,9 @@ describe("ReportUseCase.generateReport — zero-activity skip path", () => {
       getReportById: jest.fn(),
       assertStatusTransition: jest.fn(),
       updateReportStatus: jest.fn(),
+      // test-only: jest.Mocked<Pick<...>> doesn't satisfy the concrete
+      // method return-type shape without extra layers; the narrowed mock
+      // covers only what the skip path calls.
     } as never;
 
     llmClient = { complete: jest.fn() };
