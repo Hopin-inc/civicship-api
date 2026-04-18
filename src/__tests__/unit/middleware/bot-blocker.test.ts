@@ -8,7 +8,14 @@ function makeReq(userAgent: string | undefined): Partial<Request> {
   };
 }
 
-function makeRes(): { res: Partial<Response>; statusCode: number | undefined; body: unknown } {
+function makeRes(): {
+  res: Partial<Response>;
+  ctx: { statusCode: number | undefined; body: unknown };
+} {
+  // ctx を参照ごと返すことで、mock が後から書き込んだ値を呼出側が観測できる。
+  // 以前は `return { res, ...ctx }` で spread していたが、spread は call 時点の
+  // 値をコピーするため、mock の `ctx.statusCode = code` 更新が届かず、
+  // destructure した `statusCode` は常に初期値 undefined のままだった。
   const ctx: { statusCode: number | undefined; body: unknown } = {
     statusCode: undefined,
     body: undefined,
@@ -23,7 +30,7 @@ function makeRes(): { res: Partial<Response>; statusCode: number | undefined; bo
       return res;
     }),
   };
-  return { res, ...ctx };
+  return { res, ctx };
 }
 
 describe("botBlocker", () => {
@@ -47,14 +54,14 @@ describe("botBlocker", () => {
 
     test.each(botUAs)("UA=%s → 403 を返し next() を呼ばない", (ua) => {
       const req = makeReq(ua);
-      const { res, statusCode } = makeRes();
+      const { res, ctx } = makeRes();
 
       botBlocker(req as Request, res as Response, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({ error: "Bot access blocked" });
       expect(next).not.toHaveBeenCalled();
-      expect(statusCode).toBe(403);
+      expect(ctx.statusCode).toBe(403);
     });
   });
 
