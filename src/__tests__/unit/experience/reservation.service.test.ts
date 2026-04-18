@@ -79,8 +79,9 @@ describe("ReservationService", () => {
         participantCount,
         userIdsIfExists,
         reservationStatuses,
-        undefined,
+        undefined, // comment
         communityId,
+        undefined, // participantCountWithPoints (service.ts:74)
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, createdData, mockTx);
       expect(result).toEqual({ id: "reservation-1" });
