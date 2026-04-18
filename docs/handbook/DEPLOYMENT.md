@@ -185,9 +185,10 @@ Features:
 
 **Authentication:** Workload Identity Federation (WIF). Service account JSON keys
 are no longer used — workflows authenticate via
-`google-github-actions/auth` with `workload_identity_provider` +
-`service_account` secrets. See each workflow file for the concrete step
-definitions. Actions are pinned to 40-char commit SHAs.
+`google-github-actions/auth`, whose `workload_identity_provider` and
+`service_account` inputs are sourced from the `GCP_WIF_PROVIDER` and
+`GCP_SERVICE_ACCOUNT_EMAIL` secrets respectively. See each workflow file for
+the concrete step definitions. Actions are pinned to 40-char commit SHAs.
 
 **Required repo-level secrets (as of the post-β.2 cleanup):**
 
@@ -222,7 +223,7 @@ from **GCP Secret Manager**, not from GitHub Secrets. See
 - **Domain:** `staging-api.civicship.com`
 
 #### Production Environment
-- **Branch:** `main`
+- **Branch:** `master`
 - **Manual Approval:** Required
 - **Database:** Production PostgreSQL
 - **Domain:** `api.civicship.com`
