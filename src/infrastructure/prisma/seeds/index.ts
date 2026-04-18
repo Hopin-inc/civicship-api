@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import { seedMaster } from "@/infrastructure/prisma/seeds/master";
 import { seedUsecase } from "@/infrastructure/prisma/seeds/domains";
 import { seedReportTemplates } from "@/infrastructure/prisma/seeds/reportTemplates";
+import { seedReportGoldenCases } from "@/infrastructure/prisma/seeds/reportGoldenCases";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -26,6 +27,12 @@ async function main() {
     console.info("Starting to seed report templates...");
     await seedReportTemplates();
     console.info("Report templates have been seeded!");
+  }
+
+  if (args.includes("--report-golden-cases")) {
+    console.info("Starting to seed report golden cases...");
+    await seedReportGoldenCases();
+    console.info("Report golden cases have been seeded!");
   }
 }
 

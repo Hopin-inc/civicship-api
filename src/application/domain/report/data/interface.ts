@@ -1,6 +1,10 @@
 import { Prisma, TransactionReason, Role, ReportStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
+import {
+  PrismaReport,
+  PrismaReportGoldenCase,
+  PrismaReportTemplate,
+} from "@/application/domain/report/data/type";
 
 export interface TransactionSummaryDailyRow {
   date: Date;
@@ -186,6 +190,51 @@ export interface IReportRepository {
     variant: string,
     communityId: string | null,
   ): Promise<PrismaReportTemplate | null>;
+
+  /**
+   * Resolve the active SYSTEM-scope JUDGE template for a variant. Returns
+   * null when no such template exists — callers must treat that as a
+   * "skip the judge step" signal rather than failing the generation.
+   * COMMUNITY-scope JUDGE templates are intentionally not seeded; the
+   * runtime guard in the usecase rejects them so per-community judge
+   * customisation does not silently land here.
+   */
+  findJudgeTemplate(
+    ctx: IContext,
+    variant: string,
+  ): Promise<PrismaReportTemplate | null>;
+
+  updateReportJudgeResult(
+    ctx: IContext,
+    id: string,
+    data: {
+      judgeScore: number | null;
+      judgeBreakdown: Prisma.InputJsonValue | null;
+      judgeTemplateId: string | null;
+      coverageJson: Prisma.InputJsonValue | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport>;
+
+  findGoldenCases(
+    ctx: IContext,
+    variant?: string,
+  ): Promise<PrismaReportGoldenCase[]>;
+
+  upsertGoldenCase(
+    ctx: IContext,
+    data: {
+      variant: string;
+      label: string;
+      payloadFixture: Prisma.InputJsonValue;
+      judgeCriteria: Prisma.InputJsonValue;
+      minJudgeScore: number;
+      forbiddenKeys: string[];
+      notes?: string | null;
+      expectedStatus?: ReportStatus | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReportGoldenCase>;
 
   upsertTemplate(
     ctx: IContext,

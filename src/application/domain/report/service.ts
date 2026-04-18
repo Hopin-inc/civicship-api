@@ -12,7 +12,11 @@ import {
   UserProfileForReportRow,
   UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
-import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
+import {
+  PrismaReport,
+  PrismaReportGoldenCase,
+  PrismaReportTemplate,
+} from "@/application/domain/report/data/type";
 import { GqlUpdateReportTemplateInput } from "@/types/graphql";
 import ReportConverter from "@/application/domain/report/data/converter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
@@ -159,6 +163,30 @@ export default class ReportService {
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReport> {
     return this.repository.updateReportStatus(ctx, id, status, extra, tx);
+  }
+
+  /**
+   * Persist judge results onto an existing Report row. Wraps the
+   * repository call so the judge wiring in the usecase has a single
+   * service-shaped seam to mock in unit tests, mirroring the rest of
+   * the report domain.
+   */
+  async saveJudgeResult(
+    ctx: IContext,
+    id: string,
+    data: {
+      judgeScore: number | null;
+      judgeBreakdown: Prisma.InputJsonValue | null;
+      judgeTemplateId: string | null;
+      coverageJson: Prisma.InputJsonValue | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport> {
+    return this.repository.updateReportJudgeResult(ctx, id, data, tx);
+  }
+
+  async getGoldenCases(ctx: IContext, variant?: string): Promise<PrismaReportGoldenCase[]> {
+    return this.repository.findGoldenCases(ctx, variant);
   }
 
   /**
