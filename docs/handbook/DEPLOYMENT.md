@@ -176,73 +176,36 @@ Features:
 
 ### GitHub Actions Workflow
 
-**Configuration File:** `.github/workflows/deploy-to-cloud-run-dev.yml`
+**Configuration Files:**
+- `.github/workflows/deploy-to-cloud-run-dev.yml` (develop → Cloud Run dev)
+- `.github/workflows/deploy-to-cloud-run-prd.yml` (master → Cloud Run prd)
+- `.github/workflows/deploy-external-api-dev.yml` / `deploy-external-api-prd.yml` (External API)
+- `.github/workflows/deploy-richmenu.yml` (LINE rich menu, manual dispatch)
+- `.github/workflows/ci.yml` (lint / build / generated-file check)
 
-```yaml
-name: Deploy to Cloud Run (Development)
+**Authentication:** Workload Identity Federation (WIF). Service account JSON keys
+are no longer used — workflows authenticate via
+`google-github-actions/auth` with `workload_identity_provider` +
+`service_account` secrets. See each workflow file for the concrete step
+definitions. Actions are pinned to 40-char commit SHAs.
 
-on:
-push:
-branches: [ develop ]
-pull_request:
-branches: [ develop ]
+**Required repo-level secrets (as of the post-β.2 cleanup):**
 
-jobs:
-test:
-runs-on: ubuntu-latest
-steps:
-- uses: actions/checkout@v4
-- name: Setup Node.js 20
-uses: actions/setup-node@v4
-with:
-node-version: '20'
-cache: 'pnpm'
+| Secret | Used by |
+| --- | --- |
+| `GCP_WIF_PROVIDER` | all deploy workflows (WIF auth) |
+| `GCP_SERVICE_ACCOUNT_EMAIL` | all deploy workflows (WIF auth) |
+| `GCP_REGION` | all deploy workflows |
+| `ARTIFACT_REGISTRY` / `BATCH_ARTIFACT_REGISTRY` | Cloud Run image push |
+| `APPLICATION_NAME` / `BATCH_NAME` / `EXTERNAL_API_NAME` | Cloud Run service/job names |
+| `CLOUD_SQL_CONNECTION_NAME` | Cloud Run → Cloud SQL |
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Prisma generate via jumpbox |
+| `JUMPBOX_INSTANCE_NAME` / `JUMPBOX_ZONE` | IAP tunnel for jumpbox |
+| `APOLLO_KEY` | Rover schema publish |
 
-- name: Install dependencies
-run: pnpm install
-
-- name: Run tests
-run: pnpm test
-
-- name: Run lint
-run: pnpm lint
-
-build-and-deploy:
-needs: test
-runs-on: ubuntu-latest 
-if: github.ref == 'refs/heads/develop' 
-
-steps: 
-- uses: actions/checkout@v4 
-
-- name: Setup Google Cloud CLI 
-uses: google-github-actions/setup-gcloud@v1 
-with: 
-service_account_key: ${{ secrets.GCP_SA_KEY }} 
-project_id: ${{ secrets.GCP_PROJECT_ID }} 
-
-- name: Configure Docker 
-run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev 
-
-- name: Build Docker images 
-run: | 
-docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} . 
-docker build -f Dockerfile.external -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-external:${{ github.sha }} . 
-docker build -f Dockerfile.batch -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-batch:${{ github.sha }} . 
-
-- name: Push to Container Registry 
-run: | 
-docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} 
-docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-external:${{ github.sha }} 
-docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-batch:${{ github.sha }} 
-
-- name: Deploy to Cloud Run 
-run: | 
-gcloud run deploy civicship-api-internal \ 
---image asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} \ 
---platform managed \ 
---region asia-northeast1 \ --allow-unauthenticated
-```
+Runtime-only secrets (`DATABASE_URL`, `FIREBASE_*`) are supplied to Cloud Run
+from **GCP Secret Manager**, not from GitHub Secrets. See
+[Environment Variable Management](#environment-variable-management) below.
 
 ### Multi-Environment Deployment
 
