@@ -1,0 +1,420 @@
+import { prismaClient } from "@/infrastructure/prisma/client";
+import { GqlReportVariant } from "@/types/graphql";
+import type { WeeklyReportPayload } from "@/application/domain/report/types";
+
+/**
+ * Frozen golden dataset for the WEEKLY_SUMMARY judge harness. Each
+ * case is a (payloadFixture, judgeCriteria, minJudgeScore) triple the
+ * CI script regenerates against the live prompt + judge stack on every
+ * change. Failures here mean either the generation prompt regressed,
+ * the judge prompt regressed, or both — the breakdown returned by the
+ * judge tells which.
+ *
+ * Cases are intentionally small (3): the dataset's job is to detect
+ * regressions, not exhaustively cover every shape. Add more cases when
+ * production reveals a category of error the existing three do not
+ * surface.
+ */
+
+interface GoldenCaseDefinition {
+  variant: GqlReportVariant;
+  label: string;
+  payloadFixture: WeeklyReportPayload;
+  judgeCriteria: { items: string[] };
+  minJudgeScore: number;
+  forbiddenKeys: string[];
+  notes?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Case 1: sparse-but-meaningful
+//
+// Three active members, two DONATION transactions, one chain that
+// reaches depth 9. The point of this case is NOT to test that the
+// model can write a report on lots of data — it is to test that the
+// model does NOT FABRICATE additional activity to fill space. The
+// `forbiddenKeys` list catches the most common confabulation tells
+// observed in spike testing: "[placeholder]", week-over-week
+// comparisons (no prior week is in the payload), and references to
+// upcoming events (no events are in the payload).
+// ---------------------------------------------------------------------------
+
+const sparseCase: GoldenCaseDefinition = {
+  variant: GqlReportVariant.WeeklySummary,
+  label: "sparse-but-meaningful",
+  minJudgeScore: 70,
+  judgeCriteria: {
+    items: [
+      "少ないデータで架空の情報を捏造していないか",
+      "実際のコメント内容を正確に引用しているか",
+      "chain_depth の意味を正しく説明しているか",
+      "具体的な推奨アクションが2件以上あるか",
+    ],
+  },
+  forbiddenKeys: ["TODO", "[placeholder]", "先週比", "月末イベント"],
+  notes:
+    "active_users=3 / tx_count=2 / DONATION only / deepest_chain=9。fabrication 検出が主目的。",
+  payloadFixture: {
+    period: { from: "2026-04-10", to: "2026-04-16" },
+    community_id: "test-sparse",
+    community_context: {
+      community_id: "test-sparse",
+      name: "テストコミュニティ A",
+      point_name: "pt",
+      bio: "小規模コミュニティ",
+      established_at: "2025-01-15",
+      website: null,
+      total_members: 28,
+      active_users_in_window: 3,
+      active_rate: 3 / 28,
+      custom_context: null,
+    },
+    deepest_chain: {
+      transaction_id: "tx-sparse-1",
+      chain_depth: 9,
+      reason: "DONATION",
+      comment: "本当にありがとう。次の人にも繋ぎます。",
+      date: "2026-04-14",
+      from_user_id: "user-a",
+      to_user_id: "user-b",
+      created_by_user_id: "user-a",
+      parent_tx_id: "tx-sparse-parent",
+    },
+    daily_summaries: [
+      {
+        date: "2026-04-12",
+        reason: "DONATION",
+        tx_count: 1,
+        points_sum: 500,
+        chain_root_count: 1,
+        chain_descendant_count: 0,
+        max_chain_depth: 1,
+        avg_chain_depth: 1,
+        issuance_count: 0,
+        burn_count: 0,
+      },
+      {
+        date: "2026-04-14",
+        reason: "DONATION",
+        tx_count: 1,
+        points_sum: 800,
+        chain_root_count: 0,
+        chain_descendant_count: 1,
+        max_chain_depth: 9,
+        avg_chain_depth: 9,
+        issuance_count: 0,
+        burn_count: 0,
+      },
+    ],
+    daily_active_users: [
+      { date: "2026-04-12", active_users: 2, senders: 1, receivers: 1 },
+      { date: "2026-04-14", active_users: 2, senders: 1, receivers: 1 },
+    ],
+    top_users: [
+      {
+        user_id: "user-a",
+        name: "山田",
+        user_bio: null,
+        membership_bio: null,
+        headline: null,
+        role: "MEMBER",
+        joined_at: "2025-08-01",
+        days_since_joined: 258,
+        tx_count_in: 0,
+        tx_count_out: 1,
+        points_in: 0,
+        points_out: 800,
+        donation_out_count: 1,
+        donation_out_points: 800,
+        received_donation_count: 0,
+        chain_root_count: 0,
+        max_chain_depth_started: null,
+        chain_depth_reached_max: null,
+        unique_counterparties_sum: 1,
+      },
+      {
+        user_id: "user-b",
+        name: "佐藤",
+        user_bio: null,
+        membership_bio: null,
+        headline: null,
+        role: "MEMBER",
+        joined_at: "2025-09-10",
+        days_since_joined: 218,
+        tx_count_in: 1,
+        tx_count_out: 0,
+        points_in: 800,
+        points_out: 0,
+        donation_out_count: 0,
+        donation_out_points: 0,
+        received_donation_count: 1,
+        chain_root_count: 0,
+        max_chain_depth_started: null,
+        chain_depth_reached_max: 9,
+        unique_counterparties_sum: 1,
+      },
+    ],
+    highlight_comments: [
+      {
+        transaction_id: "tx-sparse-1",
+        date: "2026-04-14",
+        reason: "DONATION",
+        points: 800,
+        comment: "本当にありがとう。次の人にも繋ぎます。",
+        from_user_id: "user-a",
+        to_user_id: "user-b",
+        created_by_user_id: "user-a",
+        chain_depth: 9,
+      },
+    ],
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Case 2: zero-activity
+//
+// Empty week. The CI harness must short-circuit on this case BEFORE
+// invoking the judge — `evaluateSkipReason` should return non-null,
+// generation should produce a SKIPPED row, and no LLM call should
+// happen. `minJudgeScore: 0` reflects the fact that the judge is
+// never invoked here; the harness uses the value as a "do not even
+// try to score" sentinel.
+// ---------------------------------------------------------------------------
+
+const zeroActivityCase: GoldenCaseDefinition = {
+  variant: GqlReportVariant.WeeklySummary,
+  label: "zero-activity",
+  minJudgeScore: 0,
+  judgeCriteria: { items: [] },
+  forbiddenKeys: [],
+  notes:
+    "SKIPPED 期待ケース。LLM が呼ばれず judge も実行されないことを CI で検証する。",
+  payloadFixture: {
+    period: { from: "2026-04-10", to: "2026-04-16" },
+    community_id: "test-zero",
+    community_context: {
+      community_id: "test-zero",
+      name: "テストコミュニティ B",
+      point_name: "pt",
+      bio: null,
+      established_at: null,
+      website: null,
+      total_members: 100,
+      active_users_in_window: 0,
+      active_rate: 0,
+      custom_context: null,
+    },
+    deepest_chain: null,
+    daily_summaries: [],
+    daily_active_users: [],
+    top_users: [],
+    highlight_comments: [],
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Case 3: bustling-mixed-reason
+//
+// 34 active users, 54 transactions across DONATION / GRANT /
+// ONBOARDING, deepest_chain=17. The point of this case is to test
+// CATEGORY DISCRIMINATION: GRANT (admin-issued reward) is structurally
+// different from DONATION (peer transfer), and a model that lumps them
+// together produces misleading copy. The forbidden phrase
+// "GRANT はメンバー間のドネーション" is the exact mistake observed in
+// spike testing.
+// ---------------------------------------------------------------------------
+
+const bustlingCase: GoldenCaseDefinition = {
+  variant: GqlReportVariant.WeeklySummary,
+  label: "bustling-mixed-reason",
+  minJudgeScore: 75,
+  judgeCriteria: {
+    items: [
+      "DONATION / GRANT / ONBOARDING を別カテゴリとして区別しているか",
+      "新規メンバー（ONBOARDING）への言及があるか",
+      "GRANT を DONATION と混同していないか",
+      "deepest_chain を感謝の連鎖として物語化しているか",
+    ],
+  },
+  forbiddenKeys: ["GRANT はメンバー間のドネーション"],
+  notes: "active_users=34 / tx_count=54 / 3 reasons 混在 / deepest_chain=17。category 弁別が主目的。",
+  payloadFixture: {
+    period: { from: "2026-04-10", to: "2026-04-16" },
+    community_id: "test-bustling",
+    community_context: {
+      community_id: "test-bustling",
+      name: "テストコミュニティ C",
+      point_name: "pt",
+      bio: "活発なコミュニティ",
+      established_at: "2024-04-01",
+      website: "https://example.com",
+      total_members: 150,
+      active_users_in_window: 34,
+      active_rate: 34 / 150,
+      custom_context: null,
+    },
+    deepest_chain: {
+      transaction_id: "tx-bust-1",
+      chain_depth: 17,
+      reason: "DONATION",
+      comment: "皆さんからの感謝が連鎖していて感動しました。",
+      date: "2026-04-15",
+      from_user_id: "user-x",
+      to_user_id: "user-y",
+      created_by_user_id: "user-x",
+      parent_tx_id: "tx-bust-parent",
+    },
+    daily_summaries: [
+      {
+        date: "2026-04-11",
+        reason: "DONATION",
+        tx_count: 12,
+        points_sum: 18500,
+        chain_root_count: 3,
+        chain_descendant_count: 9,
+        max_chain_depth: 12,
+        avg_chain_depth: 6,
+        issuance_count: 0,
+        burn_count: 0,
+      },
+      {
+        date: "2026-04-13",
+        reason: "GRANT",
+        tx_count: 4,
+        points_sum: 40000,
+        chain_root_count: 0,
+        chain_descendant_count: 0,
+        max_chain_depth: null,
+        avg_chain_depth: null,
+        issuance_count: 4,
+        burn_count: 0,
+      },
+      {
+        date: "2026-04-13",
+        reason: "ONBOARDING",
+        tx_count: 5,
+        points_sum: 5000,
+        chain_root_count: 0,
+        chain_descendant_count: 0,
+        max_chain_depth: null,
+        avg_chain_depth: null,
+        issuance_count: 5,
+        burn_count: 0,
+      },
+      {
+        date: "2026-04-15",
+        reason: "DONATION",
+        tx_count: 33,
+        points_sum: 62300,
+        chain_root_count: 4,
+        chain_descendant_count: 29,
+        max_chain_depth: 17,
+        avg_chain_depth: 8,
+        issuance_count: 0,
+        burn_count: 0,
+      },
+    ],
+    daily_active_users: [
+      { date: "2026-04-11", active_users: 14, senders: 8, receivers: 12 },
+      { date: "2026-04-13", active_users: 9, senders: 4, receivers: 9 },
+      { date: "2026-04-15", active_users: 28, senders: 16, receivers: 24 },
+    ],
+    top_users: [
+      {
+        user_id: "user-x",
+        name: "鈴木",
+        user_bio: null,
+        membership_bio: "コミュニティ運営",
+        headline: null,
+        role: "MEMBER",
+        joined_at: "2024-06-01",
+        days_since_joined: 685,
+        tx_count_in: 8,
+        tx_count_out: 11,
+        points_in: 12300,
+        points_out: 19800,
+        donation_out_count: 11,
+        donation_out_points: 19800,
+        received_donation_count: 8,
+        chain_root_count: 4,
+        max_chain_depth_started: 17,
+        chain_depth_reached_max: 12,
+        unique_counterparties_sum: 18,
+      },
+      {
+        user_id: "user-y",
+        name: "高橋",
+        user_bio: null,
+        membership_bio: null,
+        headline: null,
+        role: "MEMBER",
+        joined_at: "2025-02-10",
+        days_since_joined: 432,
+        tx_count_in: 5,
+        tx_count_out: 6,
+        points_in: 8200,
+        points_out: 11000,
+        donation_out_count: 6,
+        donation_out_points: 11000,
+        received_donation_count: 5,
+        chain_root_count: 1,
+        max_chain_depth_started: 8,
+        chain_depth_reached_max: 17,
+        unique_counterparties_sum: 11,
+      },
+    ],
+    highlight_comments: [
+      {
+        transaction_id: "tx-bust-1",
+        date: "2026-04-15",
+        reason: "DONATION",
+        points: 1500,
+        comment: "皆さんからの感謝が連鎖していて感動しました。",
+        from_user_id: "user-x",
+        to_user_id: "user-y",
+        created_by_user_id: "user-x",
+        chain_depth: 17,
+      },
+      {
+        transaction_id: "tx-bust-2",
+        date: "2026-04-13",
+        reason: "ONBOARDING",
+        points: 1000,
+        comment: "新メンバー、ようこそ！",
+        from_user_id: null,
+        to_user_id: "user-new-1",
+        created_by_user_id: "user-x",
+        chain_depth: null,
+      },
+    ],
+  },
+};
+
+const GOLDEN_CASES: GoldenCaseDefinition[] = [sparseCase, zeroActivityCase, bustlingCase];
+
+export async function seedReportGoldenCases() {
+  await prismaClient.$transaction(async (tx) => {
+    for (const c of GOLDEN_CASES) {
+      await tx.reportGoldenCase.upsert({
+        where: { variant_label: { variant: c.variant, label: c.label } },
+        create: {
+          variant: c.variant,
+          label: c.label,
+          payloadFixture: c.payloadFixture as unknown as object,
+          judgeCriteria: c.judgeCriteria as unknown as object,
+          minJudgeScore: c.minJudgeScore,
+          forbiddenKeys: c.forbiddenKeys,
+          notes: c.notes ?? null,
+        },
+        update: {
+          payloadFixture: c.payloadFixture as unknown as object,
+          judgeCriteria: c.judgeCriteria as unknown as object,
+          minJudgeScore: c.minJudgeScore,
+          forbiddenKeys: c.forbiddenKeys,
+          notes: c.notes ?? null,
+        },
+      });
+      console.info(`  Upserted golden case: ${c.variant}/${c.label}`);
+    }
+  });
+}

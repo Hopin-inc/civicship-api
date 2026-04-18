@@ -47,6 +47,7 @@ import type { VoteBallot } from "@prisma/client";
 import type { ReportTemplate } from "@prisma/client";
 import type { Report } from "@prisma/client";
 import type { ReportFeedback } from "@prisma/client";
+import type { ReportGoldenCase } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -1062,6 +1063,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "reports",
                 type: "Report",
                 relationName: "ReportToReportTemplate"
+            }, {
+                name: "judgedReports",
+                type: "Report",
+                relationName: "ReportJudgeTemplate"
             }]
     }, {
         name: "Report",
@@ -1073,6 +1078,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "template",
                 type: "ReportTemplate",
                 relationName: "ReportToReportTemplate"
+            }, {
+                name: "judgeTemplate",
+                type: "ReportTemplate",
+                relationName: "ReportJudgeTemplate"
             }, {
                 name: "targetUser",
                 type: "User",
@@ -1109,6 +1118,9 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "User",
                 relationName: "ReportFeedbackAuthor"
             }]
+    }, {
+        name: "ReportGoldenCase",
+        fields: []
     }, {
         name: "PlacePublicOpportunityCountView",
         fields: [{
@@ -9345,6 +9357,7 @@ type ReportTemplateFactoryDefineInput = {
     community?: ReportTemplatecommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput;
     updatedByUser?: ReportTemplateupdatedByUserFactory | Prisma.UserCreateNestedOneWithoutReportTemplatesUpdatedInput;
     reports?: Prisma.ReportCreateNestedManyWithoutTemplateInput;
+    judgedReports?: Prisma.ReportCreateNestedManyWithoutJudgeTemplateInput;
 };
 
 type ReportTemplateTransientFields = Record<string, unknown> & Partial<Record<keyof ReportTemplateFactoryDefineInput, never>>;
@@ -9513,6 +9526,11 @@ type ReporttemplateFactory = {
     build: () => PromiseLike<Prisma.ReportTemplateCreateNestedOneWithoutReportsInput["create"]>;
 };
 
+type ReportjudgeTemplateFactory = {
+    _factoryFor: "ReportTemplate";
+    build: () => PromiseLike<Prisma.ReportTemplateCreateNestedOneWithoutJudgedReportsInput["create"]>;
+};
+
 type ReporttargetUserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReportsTargetedInput["create"]>;
@@ -9547,6 +9565,9 @@ type ReportFactoryDefineInput = {
     inputTokens?: number | null;
     outputTokens?: number | null;
     cacheReadTokens?: number | null;
+    judgeScore?: number | null;
+    judgeBreakdown?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
+    coverageJson?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     skipReason?: string | null;
     status?: ReportStatus;
     publishedAt?: Date | null;
@@ -9556,6 +9577,7 @@ type ReportFactoryDefineInput = {
     updatedAt?: Date | null;
     community: ReportcommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportsInput;
     template?: ReporttemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutReportsInput;
+    judgeTemplate?: ReportjudgeTemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutJudgedReportsInput;
     targetUser?: ReporttargetUserFactory | Prisma.UserCreateNestedOneWithoutReportsTargetedInput;
     generatedByUser?: ReportgeneratedByUserFactory | Prisma.UserCreateNestedOneWithoutReportsGeneratedInput;
     publishedByUser?: ReportpublishedByUserFactory | Prisma.UserCreateNestedOneWithoutReportsPublishedInput;
@@ -9582,6 +9604,10 @@ function isReportcommunityFactory(x: ReportcommunityFactory | Prisma.CommunityCr
 }
 
 function isReporttemplateFactory(x: ReporttemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutReportsInput | undefined): x is ReporttemplateFactory {
+    return (x as any)?._factoryFor === "ReportTemplate";
+}
+
+function isReportjudgeTemplateFactory(x: ReportjudgeTemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutJudgedReportsInput | undefined): x is ReportjudgeTemplateFactory {
     return (x as any)?._factoryFor === "ReportTemplate";
 }
 
@@ -9670,6 +9696,9 @@ function defineReportFactoryInternal<TTransients extends Record<string, unknown>
                 template: isReporttemplateFactory(defaultData.template) ? {
                     create: await defaultData.template.build()
                 } : defaultData.template,
+                judgeTemplate: isReportjudgeTemplateFactory(defaultData.judgeTemplate) ? {
+                    create: await defaultData.judgeTemplate.build()
+                } : defaultData.judgeTemplate,
                 targetUser: isReporttargetUserFactory(defaultData.targetUser) ? {
                     create: await defaultData.targetUser.build()
                 } : defaultData.targetUser,
@@ -9907,6 +9936,158 @@ export const defineReportFeedbackFactory = (<TOptions extends ReportFeedbackFact
 }) as ReportFeedbackFactoryBuilder;
 
 defineReportFeedbackFactory.withTransientFields = defaultTransientFieldValues => options => defineReportFeedbackFactoryInternal(options, defaultTransientFieldValues);
+
+type ReportGoldenCaseScalarOrEnumFields = {
+    variant: string;
+    label: string;
+    payloadFixture: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    judgeCriteria: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+};
+
+type ReportGoldenCaseFactoryDefineInput = {
+    id?: string;
+    variant?: string;
+    label?: string;
+    payloadFixture?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    judgeCriteria?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    minJudgeScore?: number;
+    forbiddenKeys?: Prisma.ReportGoldenCaseCreateforbiddenKeysInput | Array<string>;
+    notes?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+};
+
+type ReportGoldenCaseTransientFields = Record<string, unknown> & Partial<Record<keyof ReportGoldenCaseFactoryDefineInput, never>>;
+
+type ReportGoldenCaseFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ReportGoldenCaseFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ReportGoldenCase, Prisma.ReportGoldenCaseCreateInput, TTransients>;
+
+type ReportGoldenCaseFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<ReportGoldenCaseFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: ReportGoldenCaseFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ReportGoldenCase, Prisma.ReportGoldenCaseCreateInput, TTransients>;
+
+type ReportGoldenCaseTraitKeys<TOptions extends ReportGoldenCaseFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ReportGoldenCaseFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ReportGoldenCase";
+    build(inputData?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<Prisma.ReportGoldenCaseCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<Prisma.ReportGoldenCaseCreateInput>;
+    buildList(list: readonly Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>[]): PromiseLike<Prisma.ReportGoldenCaseCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<Prisma.ReportGoldenCaseCreateInput[]>;
+    pickForConnect(inputData: ReportGoldenCase): Pick<ReportGoldenCase, "id">;
+    create(inputData?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<ReportGoldenCase>;
+    createList(list: readonly Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>[]): PromiseLike<ReportGoldenCase[]>;
+    createList(count: number, item?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<ReportGoldenCase[]>;
+    createForConnect(inputData?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<Pick<ReportGoldenCase, "id">>;
+}
+
+export interface ReportGoldenCaseFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReportGoldenCaseFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ReportGoldenCaseFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateReportGoldenCaseScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ReportGoldenCaseScalarOrEnumFields {
+    return {
+        variant: getScalarFieldValueGenerator().String({ modelName: "ReportGoldenCase", fieldName: "variant", isId: false, isUnique: true, seq }),
+        label: getScalarFieldValueGenerator().String({ modelName: "ReportGoldenCase", fieldName: "label", isId: false, isUnique: true, seq }),
+        payloadFixture: getScalarFieldValueGenerator().Json({ modelName: "ReportGoldenCase", fieldName: "payloadFixture", isId: false, isUnique: false, seq }),
+        judgeCriteria: getScalarFieldValueGenerator().Json({ modelName: "ReportGoldenCase", fieldName: "judgeCriteria", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineReportGoldenCaseFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReportGoldenCaseFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReportGoldenCaseFactoryInterface<TTransients, ReportGoldenCaseTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ReportGoldenCaseTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("ReportGoldenCase", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateReportGoldenCaseScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ReportGoldenCaseFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ReportGoldenCaseFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.ReportGoldenCaseCreateInput;
+            const data: Prisma.ReportGoldenCaseCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: ReportGoldenCase) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().reportGoldenCase.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ReportGoldenCase" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ReportGoldenCaseTraitKeys<TOptions>, ...names: readonly ReportGoldenCaseTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ReportGoldenCaseFactoryBuilder {
+    <TOptions extends ReportGoldenCaseFactoryDefineOptions>(options?: TOptions): ReportGoldenCaseFactoryInterface<{}, ReportGoldenCaseTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ReportGoldenCaseTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReportGoldenCaseFactoryDefineOptions<TTransients>>(options?: TOptions) => ReportGoldenCaseFactoryInterface<TTransients, ReportGoldenCaseTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link ReportGoldenCase} model.
+ *
+ * @param options
+ * @returns factory {@link ReportGoldenCaseFactoryInterface}
+ */
+export const defineReportGoldenCaseFactory = (<TOptions extends ReportGoldenCaseFactoryDefineOptions>(options?: TOptions): ReportGoldenCaseFactoryInterface<TOptions> => {
+    return defineReportGoldenCaseFactoryInternal(options ?? {}, {});
+}) as ReportGoldenCaseFactoryBuilder;
+
+defineReportGoldenCaseFactory.withTransientFields = defaultTransientFieldValues => options => defineReportGoldenCaseFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;

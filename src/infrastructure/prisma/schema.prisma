@@ -1694,7 +1694,8 @@ model ReportTemplate {
   updatedBy     String? @map("updated_by")
   updatedByUser User?   @relation("ReportTemplateUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
-  reports Report[]
+  reports       Report[]
+  judgedReports Report[] @relation("ReportJudgeTemplate")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1756,6 +1757,26 @@ model Report {
   outputTokens    Int? @map("output_tokens")
   cacheReadTokens Int? @map("cache_read_tokens")
 
+  // LLM-as-Judge results (PR-F8). Populated when a JUDGE template runs
+  // after a successful generation. SKIPPED rows leave these null because
+  // the judge is only meaningful when there is generated output to grade.
+  // - `judgeScore` is the headline 0..100 number returned by the judge.
+  // - `judgeBreakdown` carries per-criterion sub-scores / booleans /
+  //   issues / strengths in the JSON shape the judge prompt emits.
+  // - `judgeTemplateId` pins the row to the exact prompt revision used so
+  //   later judge-prompt edits do not retroactively change the meaning of
+  //   historical scores (mirrors the templateId pin on the generation
+  //   side).
+  // - `coverageJson` is a substring-mention check of key numeric fields
+  //   from the payload against the generated markdown — a cheap
+  //   fabrication-vs-omission signal Phase 1 ships alongside the judge
+  //   score. Phase 2 will fold this into the judge prompt itself.
+  judgeScore      Int?            @map("judge_score")
+  judgeBreakdown  Json?           @map("judge_breakdown")
+  judgeTemplateId String?         @map("judge_template_id")
+  judgeTemplate   ReportTemplate? @relation("ReportJudgeTemplate", fields: [judgeTemplateId], references: [id], onDelete: SetNull)
+  coverageJson    Json?           @map("coverage_json")
+
   // Populated when `status = SKIPPED`. Human-readable reason (e.g.
   // "zero activity in window") so operators can audit skip decisions
   // without re-running the payload builder.
@@ -1808,4 +1829,45 @@ model ReportFeedback {
   @@index([reportId])
   @@index([userId])
   @@map("t_report_feedbacks")
+}
+
+// Golden Dataset (PR-F7). Frozen (variant, payload) pairs the CI script
+// regenerates against the live prompt + judge stack on every change so
+// regressions in either prompt or judge surface as red builds rather
+// than as quiet quality drift in production runs.
+//
+// `payloadFixture` mirrors the WeeklyReportPayload (or analog for other
+// variants) shape the production usecase passes to the LLM — kept as
+// raw JSON so the dataset evolves independently of the TypeScript
+// payload type, without a migration when a new field is added.
+//
+// `judgeCriteria` is fed verbatim into the judge prompt's
+// `{{judge_criteria}}` slot and decides what the judge weighs. Raw JSON
+// for the same forward-compatibility reason as the payload.
+//
+// `minJudgeScore` is the CI failure threshold (0..100). For SKIPPED
+// expected cases (zero-activity), set this to 0 and document the
+// rationale in `notes` — the CI harness must short-circuit before
+// invoking the judge for SKIPPED runs.
+//
+// `forbiddenKeys` are substrings the generated output must never
+// contain. Useful for catching prompt-engineering regressions (e.g. the
+// model starts emitting "[placeholder]" or carries over a
+// previous-prompt phrase).
+model ReportGoldenCase {
+  id String @id @default(cuid())
+
+  variant        String
+  label          String
+  payloadFixture Json     @map("payload_fixture")
+  judgeCriteria  Json     @map("judge_criteria")
+  minJudgeScore  Int      @default(70) @map("min_judge_score")
+  forbiddenKeys  String[] @default([]) @map("forbidden_keys")
+  notes          String?  @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([variant, label])
+  @@map("t_report_golden_cases")
 }

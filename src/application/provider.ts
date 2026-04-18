@@ -6,6 +6,7 @@ import TransactionConverter from "@/application/domain/transaction/data/converte
 import ReportRepository from "@/application/domain/report/data/repository";
 import ReportService from "@/application/domain/report/service";
 import ReportUseCase from "@/application/domain/report/usecase";
+import ReportJudgeService from "@/application/domain/report/judgeService";
 import ICommunityRepository from "@/application/domain/account/community/data/repository";
 import TransactionService from "@/application/domain/transaction/service";
 import MembershipService from "@/application/domain/account/membership/service";
@@ -351,6 +352,7 @@ export function registerProductionDependencies() {
   container.register("ReportRepository", { useClass: ReportRepository });
   container.register("ReportService", { useClass: ReportService });
   container.register("ReportUseCase", { useClass: ReportUseCase });
+  container.register("ReportJudgeService", { useClass: ReportJudgeService });
   container.register("LlmClient", { useClass: AnthropicLlmClient });
 
   // ------------------------------

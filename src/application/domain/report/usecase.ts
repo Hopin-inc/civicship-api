@@ -3,10 +3,12 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
 import ReportService from "@/application/domain/report/service";
+import ReportJudgeService from "@/application/domain/report/judgeService";
 import ReportPresenter from "@/application/domain/report/presenter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
 import { addDays, daysBetweenJst, truncateToJstDate } from "@/application/domain/report/util";
 import { renderPromptTemplate } from "@/application/domain/report/util/promptRenderer";
+import { analyzeCoverage } from "@/application/domain/report/util/coverage";
 import { LlmClient } from "@/infrastructure/libs/llm";
 import {
   GqlGenerateReportPayload,
@@ -43,6 +45,7 @@ export default class ReportUseCase {
   constructor(
     @inject("ReportService") private readonly service: ReportService,
     @inject("LlmClient") private readonly llmClient: LlmClient,
+    @inject("ReportJudgeService") private readonly judgeService: ReportJudgeService,
   ) {}
 
   /**
@@ -243,7 +246,101 @@ export default class ReportUseCase {
       );
     });
 
-    return { __typename: "GenerateReportSuccess", report: ReportPresenter.report(report) };
+    // Judge runs in a separate transaction after the report row exists.
+    // We deliberately do NOT roll the generation back if the judge step
+    // fails — judge failures are observability data, not a generation
+    // halt. Network errors and JSON parse errors both bubble out of
+    // judgeAndPersist and are caught here so generateReport always
+    // returns the persisted row.
+    const judgedReport = await this.judgeAndPersist(ctx, report, payload, llmResult.text);
+
+    return { __typename: "GenerateReportSuccess", report: ReportPresenter.report(judgedReport) };
+  }
+
+  /**
+   * Best-effort judge run. Returns the original report unchanged when:
+   *  - no JUDGE template is seeded for the variant (Phase 1: only
+   *    WEEKLY_SUMMARY has one), or
+   *  - the LLM call / parse throws (logged via console.warn so the
+   *    failure surfaces in the operations log; we deliberately do not
+   *    propagate so a transient Anthropic outage does not abort
+   *    generation).
+   *
+   * The coverage analysis is computed unconditionally (it is a pure
+   * substring scan) and persisted alongside the judge result so a
+   * judge-step failure still leaves the cheaper signal intact.
+   */
+  private async judgeAndPersist(
+    ctx: IContext,
+    report: Awaited<ReturnType<ReportService["createReport"]>>,
+    payload: WeeklyReportPayload,
+    outputMarkdown: string,
+  ) {
+    let judgeTemplate;
+    try {
+      judgeTemplate = await this.judgeService.selectJudgeTemplate(ctx, report.variant);
+    } catch (e) {
+      console.warn(`[report.judge] selectJudgeTemplate failed: ${(e as Error).message}`);
+      return report;
+    }
+
+    const coverage = analyzeCoverage(payload, outputMarkdown);
+
+    if (!judgeTemplate) {
+      // No judge wired up for this variant yet — persist coverage on
+      // its own so the field is not perpetually null for variants that
+      // never get a judge prompt.
+      return ctx.issuer.onlyBelongingCommunity(ctx, (tx) =>
+        this.service.saveJudgeResult(
+          ctx,
+          report.id,
+          {
+            judgeScore: null,
+            judgeBreakdown: null,
+            judgeTemplateId: null,
+            coverageJson: coverage as unknown as Prisma.InputJsonValue,
+          },
+          tx,
+        ),
+      );
+    }
+
+    let judgeResult;
+    try {
+      judgeResult = await this.judgeService.executeJudge(ctx, judgeTemplate, {
+        outputMarkdown,
+        inputPayload: payload,
+      });
+    } catch (e) {
+      console.warn(`[report.judge] executeJudge failed: ${(e as Error).message}`);
+      return ctx.issuer.onlyBelongingCommunity(ctx, (tx) =>
+        this.service.saveJudgeResult(
+          ctx,
+          report.id,
+          {
+            judgeScore: null,
+            judgeBreakdown: null,
+            judgeTemplateId: judgeTemplate.id,
+            coverageJson: coverage as unknown as Prisma.InputJsonValue,
+          },
+          tx,
+        ),
+      );
+    }
+
+    return ctx.issuer.onlyBelongingCommunity(ctx, (tx) =>
+      this.service.saveJudgeResult(
+        ctx,
+        report.id,
+        {
+          judgeScore: judgeResult.score,
+          judgeBreakdown: judgeResult as unknown as Prisma.InputJsonValue,
+          judgeTemplateId: judgeTemplate.id,
+          coverageJson: coverage as unknown as Prisma.InputJsonValue,
+        },
+        tx,
+      ),
+    );
   }
 
   /**

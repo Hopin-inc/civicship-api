@@ -97,8 +97,10 @@ describe("ReportUseCase.generateReport", () => {
     | "getReportById"
     | "assertStatusTransition"
     | "updateReportStatus"
+    | "saveJudgeResult"
   >>;
   let llmClient: { complete: jest.Mock };
+  let judgeService: { selectJudgeTemplate: jest.Mock; executeJudge: jest.Mock };
   let usecase: ReportUseCase;
 
   beforeEach(() => {
@@ -143,15 +145,38 @@ describe("ReportUseCase.generateReport", () => {
       getReportById: jest.fn(),
       assertStatusTransition: jest.fn(),
       updateReportStatus: jest.fn(),
+      // saveJudgeResult is wired to return the latest createReport
+      // result so the LLM happy-path assertions still see
+      // outputMarkdown / status DRAFT after the judge step persists
+      // judge fields. Tests that exercise judge results override this.
+      saveJudgeResult: jest.fn().mockImplementation(async (_ctx, id, data) => {
+        const lastCreateCall = service.createReport.mock.results.at(-1);
+        const created = lastCreateCall ? await lastCreateCall.value : null;
+        return {
+          ...(created ?? { id }),
+          judgeScore: data.judgeScore,
+          judgeBreakdown: data.judgeBreakdown,
+          judgeTemplateId: data.judgeTemplateId,
+          coverageJson: data.coverageJson,
+        };
+      }),
       // test-only: jest.Mocked<Pick<...>> doesn't satisfy the concrete
       // method return-type shape without extra layers; the narrowed mock
       // covers only what the skip path calls.
     } as never;
 
     llmClient = { complete: jest.fn() };
+    // Default: no judge template seeded for the variant under test, so
+    // the usecase's judgeAndPersist short-circuits to a coverage-only
+    // save. Tests that exercise the judge happy path override this.
+    judgeService = {
+      selectJudgeTemplate: jest.fn().mockResolvedValue(null),
+      executeJudge: jest.fn(),
+    };
 
     container.register("ReportService", { useValue: service });
     container.register("LlmClient", { useValue: llmClient });
+    container.register("ReportJudgeService", { useValue: judgeService });
 
     usecase = container.resolve(ReportUseCase);
 

@@ -1,4 +1,10 @@
-import { Prisma, ReportStatus, ReportTemplateScope, TransactionReason } from "@prisma/client";
+import {
+  Prisma,
+  ReportStatus,
+  ReportTemplateKind,
+  ReportTemplateScope,
+  TransactionReason,
+} from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
@@ -14,7 +20,9 @@ import {
 } from "@/application/domain/report/data/interface";
 import {
   PrismaReport,
+  PrismaReportGoldenCase,
   PrismaReportTemplate,
+  reportGoldenCaseSelect,
   reportSelect,
   reportTemplateSelect,
 } from "@/application/domain/report/data/type";
@@ -353,6 +361,7 @@ export default class ReportRepository implements IReportRepository {
       tx.reportTemplate.findFirst({
         where: {
           variant,
+          kind: ReportTemplateKind.GENERATION,
           isEnabled: true,
           OR: [...(communityId ? [{ communityId }] : []), { communityId: null }],
         },
@@ -360,6 +369,114 @@ export default class ReportRepository implements IReportRepository {
         select: reportTemplateSelect,
       }),
     );
+  }
+
+  /**
+   * Resolve the active SYSTEM-scope JUDGE template for a variant.
+   * Filters on `isEnabled` AND `isActive` so the F1 versioning bookkeeping
+   * also gates judge selection — a JUDGE row marked inactive (e.g. a
+   * candidate prompt that is being rolled back) is skipped.
+   * `communityId IS NULL` is hardcoded because the application-layer
+   * guard rejects COMMUNITY-scope JUDGE templates upstream; encoding the
+   * same constraint here means a stray COMMUNITY judge row that
+   * somehow gets seeded in the future will not silently take effect.
+   */
+  async findJudgeTemplate(
+    ctx: IContext,
+    variant: string,
+  ): Promise<PrismaReportTemplate | null> {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.reportTemplate.findFirst({
+        where: {
+          variant,
+          kind: ReportTemplateKind.JUDGE,
+          communityId: null,
+          isEnabled: true,
+          isActive: true,
+        },
+        orderBy: { version: "desc" },
+        select: reportTemplateSelect,
+      }),
+    );
+  }
+
+  async updateReportJudgeResult(
+    ctx: IContext,
+    id: string,
+    data: {
+      judgeScore: number | null;
+      judgeBreakdown: Prisma.InputJsonValue | null;
+      judgeTemplateId: string | null;
+      coverageJson: Prisma.InputJsonValue | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport> {
+    const doUpdate = (client: Prisma.TransactionClient) =>
+      client.report.update({
+        where: { id },
+        data: {
+          judgeScore: data.judgeScore,
+          judgeBreakdown: data.judgeBreakdown ?? Prisma.JsonNull,
+          judgeTemplateId: data.judgeTemplateId,
+          coverageJson: data.coverageJson ?? Prisma.JsonNull,
+        },
+        select: reportSelect,
+      });
+
+    if (tx) return doUpdate(tx);
+    return ctx.issuer.internal(doUpdate);
+  }
+
+  async findGoldenCases(
+    ctx: IContext,
+    variant?: string,
+  ): Promise<PrismaReportGoldenCase[]> {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.reportGoldenCase.findMany({
+        where: variant ? { variant } : undefined,
+        select: reportGoldenCaseSelect,
+        orderBy: [{ variant: "asc" }, { label: "asc" }],
+      }),
+    );
+  }
+
+  async upsertGoldenCase(
+    ctx: IContext,
+    data: {
+      variant: string;
+      label: string;
+      payloadFixture: Prisma.InputJsonValue;
+      judgeCriteria: Prisma.InputJsonValue;
+      minJudgeScore: number;
+      forbiddenKeys: string[];
+      notes?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReportGoldenCase> {
+    const doUpsert = (client: Prisma.TransactionClient) =>
+      client.reportGoldenCase.upsert({
+        where: { variant_label: { variant: data.variant, label: data.label } },
+        create: {
+          variant: data.variant,
+          label: data.label,
+          payloadFixture: data.payloadFixture,
+          judgeCriteria: data.judgeCriteria,
+          minJudgeScore: data.minJudgeScore,
+          forbiddenKeys: data.forbiddenKeys,
+          notes: data.notes ?? null,
+        },
+        update: {
+          payloadFixture: data.payloadFixture,
+          judgeCriteria: data.judgeCriteria,
+          minJudgeScore: data.minJudgeScore,
+          forbiddenKeys: data.forbiddenKeys,
+          notes: data.notes ?? null,
+        },
+        select: reportGoldenCaseSelect,
+      });
+
+    if (tx) return doUpsert(tx);
+    return ctx.issuer.internal(doUpsert);
   }
 
   async upsertTemplate(
