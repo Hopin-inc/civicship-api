@@ -74,6 +74,21 @@ export default class ReportFeedbackUseCase {
       );
     }
 
+    // `ctx.issuer.public` is used here deliberately — `t_report_feedbacks`
+    // ships with a single `community_bypass_policy` RLS rule
+    // (`app.rls_bypass='on'` required), inherited from F1 when the table
+    // was admin-only. Switching to `onlyBelongingCommunity` without first
+    // adding a MEMBER-write RLS policy would flip `rls_bypass='off'` for
+    // non-admin callers and block every legitimate INSERT. Authorization
+    // is already enforced in two places:
+    //   1. `@authz IsCommunityMember` on the GraphQL mutation rejects
+    //      non-members before the resolver is entered.
+    //   2. The explicit `report.communityId === permission.communityId`
+    //      check below stops a member of community A from forging a
+    //      `reportId` belonging to community B.
+    // If we later want defence-in-depth via RLS, a follow-up PR can add
+    // the member-write policy and swap this for `onlyBelongingCommunity`
+    // — entry tracked in the PR description.
     const feedback = await ctx.issuer.public(ctx, async (tx) => {
       const report = await this.reportService.getReportById(ctx, input.reportId, tx);
       if (!report) {
