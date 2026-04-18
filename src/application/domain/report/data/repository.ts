@@ -372,6 +372,36 @@ export default class ReportRepository implements IReportRepository {
   }
 
   /**
+   * Active candidates for (variant, kind, communityId). Unlike `findTemplate`
+   * this does NOT fall back to SYSTEM when `communityId` is non-null — the
+   * caller (the selector) must issue a separate SYSTEM query when the
+   * community-scoped query returns empty, because it needs to distinguish
+   * "community has its own A/B set" from "community uses SYSTEM". Only
+   * `isEnabled=true AND isActive=true` rows are returned so deprecated /
+   * rolled-back candidates never enter the weighted draw.
+   */
+  async findActiveTemplates(
+    ctx: IContext,
+    variant: string,
+    kind: ReportTemplateKind,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate[]> {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.reportTemplate.findMany({
+        where: {
+          variant,
+          kind,
+          communityId,
+          isEnabled: true,
+          isActive: true,
+        },
+        orderBy: { id: "asc" },
+        select: reportTemplateSelect,
+      }),
+    );
+  }
+
+  /**
    * Resolve the active SYSTEM-scope JUDGE template for a variant.
    * Filters on `isEnabled` AND `isActive` so the F1 versioning bookkeeping
    * also gates judge selection — a JUDGE row marked inactive (e.g. a

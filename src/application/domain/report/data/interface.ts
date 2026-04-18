@@ -1,4 +1,10 @@
-import { Prisma, TransactionReason, Role, ReportStatus } from "@prisma/client";
+import {
+  Prisma,
+  TransactionReason,
+  Role,
+  ReportStatus,
+  ReportTemplateKind,
+} from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
   PrismaReport,
@@ -190,6 +196,22 @@ export interface IReportRepository {
     variant: string,
     communityId: string | null,
   ): Promise<PrismaReportTemplate | null>;
+
+  /**
+   * Resolve every active candidate template for a given
+   * (variant, kind, communityId) triple. Scoped strictly to the
+   * `communityId` argument — SYSTEM fallback is the caller's job, so the
+   * selector can tell "community has its own overrides" apart from
+   * "community falls back to SYSTEM". Only `isEnabled=true AND
+   * isActive=true` rows are returned, ordered by `id` for a stable draw
+   * in the weighted selection.
+   */
+  findActiveTemplates(
+    ctx: IContext,
+    variant: string,
+    kind: ReportTemplateKind,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate[]>;
 
   /**
    * Resolve the active SYSTEM-scope JUDGE template for a variant. Returns

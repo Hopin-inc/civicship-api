@@ -861,6 +861,10 @@ Table t_report_feedbacks {
   sectionKey String
   comment String
   createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (reportId, userId) [unique]
+  }
 }
 
 Table t_report_golden_cases {
