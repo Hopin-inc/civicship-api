@@ -24,8 +24,6 @@ jobs:
       STAGE: prd
       # GCP settings
       GCP_REGION: ${{ secrets.GCP_REGION }}
-      # GCP service account credentials
-      SERVICE_ACCOUNT_CREDENTIAL_JSON: ${{ secrets.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
       # DB credentials
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
