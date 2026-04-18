@@ -17,6 +17,11 @@ class MockReportRepository {
   refreshTransactionSummaryDaily = jest.fn();
   refreshUserTransactionDaily = jest.fn();
   findTemplate = jest.fn();
+  findActiveTemplates = jest.fn();
+  findJudgeTemplate = jest.fn();
+  updateReportJudgeResult = jest.fn();
+  findGoldenCases = jest.fn();
+  upsertGoldenCase = jest.fn();
   upsertTemplate = jest.fn();
   createReport = jest.fn();
   findReportById = jest.fn();

@@ -962,6 +962,7 @@ export type GqlMutation = {
   reservationJoin?: Maybe<GqlReservationSetStatusPayload>;
   reservationReject?: Maybe<GqlReservationSetStatusPayload>;
   storePhoneAuthToken?: Maybe<GqlStorePhoneAuthTokenPayload>;
+  submitReportFeedback?: Maybe<GqlSubmitReportFeedbackPayload>;
   ticketClaim?: Maybe<GqlTicketClaimPayload>;
   ticketIssue?: Maybe<GqlTicketIssuePayload>;
   ticketPurchase?: Maybe<GqlTicketPurchasePayload>;
@@ -1262,6 +1263,12 @@ export type GqlMutationReservationRejectArgs = {
 export type GqlMutationStorePhoneAuthTokenArgs = {
   input: GqlStorePhoneAuthTokenInput;
   permission: GqlCheckIsSelfPermissionInput;
+};
+
+
+export type GqlMutationSubmitReportFeedbackArgs = {
+  input: GqlSubmitReportFeedbackInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
@@ -2169,6 +2176,7 @@ export type GqlQuery = {
   portfolios?: Maybe<Array<GqlPortfolio>>;
   report?: Maybe<GqlReport>;
   reportTemplate?: Maybe<GqlReportTemplate>;
+  reportTemplateStats: GqlReportTemplateStats;
   reports: GqlReportsConnection;
   reservation?: Maybe<GqlReservation>;
   reservationHistories: GqlReservationHistoriesConnection;
@@ -2420,6 +2428,12 @@ export type GqlQueryReportTemplateArgs = {
 };
 
 
+export type GqlQueryReportTemplateStatsArgs = {
+  variant: GqlReportVariant;
+  version?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type GqlQueryReportsArgs = {
   communityId: Scalars['ID']['input'];
   cursor?: InputMaybe<Scalars['String']['input']>;
@@ -2614,11 +2628,13 @@ export type GqlReport = {
   cacheReadTokens?: Maybe<Scalars['Int']['output']>;
   community: GqlCommunity;
   createdAt: Scalars['Datetime']['output'];
+  feedbacks: GqlReportFeedbacksConnection;
   finalContent?: Maybe<Scalars['String']['output']>;
   generatedByUser?: Maybe<GqlUser>;
   id: Scalars['ID']['output'];
   inputTokens?: Maybe<Scalars['Int']['output']>;
   model?: Maybe<Scalars['String']['output']>;
+  myFeedback?: Maybe<GqlReportFeedback>;
   outputMarkdown?: Maybe<Scalars['String']['output']>;
   outputTokens?: Maybe<Scalars['Int']['output']>;
   parentRun?: Maybe<GqlReport>;
@@ -2636,10 +2652,50 @@ export type GqlReport = {
   variant: GqlReportVariant;
 };
 
+
+export type GqlReportFeedbacksArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type GqlReportEdge = GqlEdge & {
   __typename?: 'ReportEdge';
   cursor: Scalars['String']['output'];
   node?: Maybe<GqlReport>;
+};
+
+export type GqlReportFeedback = {
+  __typename?: 'ReportFeedback';
+  comment?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['Datetime']['output'];
+  feedbackType?: Maybe<GqlReportFeedbackType>;
+  id: Scalars['ID']['output'];
+  rating: Scalars['Int']['output'];
+  reportId: Scalars['ID']['output'];
+  sectionKey?: Maybe<Scalars['String']['output']>;
+  user: GqlUser;
+};
+
+export type GqlReportFeedbackEdge = GqlEdge & {
+  __typename?: 'ReportFeedbackEdge';
+  cursor: Scalars['String']['output'];
+  node?: Maybe<GqlReportFeedback>;
+};
+
+export const GqlReportFeedbackType = {
+  Accuracy: 'ACCURACY',
+  Other: 'OTHER',
+  Quality: 'QUALITY',
+  Structure: 'STRUCTURE',
+  Tone: 'TONE'
+} as const;
+
+export type GqlReportFeedbackType = typeof GqlReportFeedbackType[keyof typeof GqlReportFeedbackType];
+export type GqlReportFeedbacksConnection = {
+  __typename?: 'ReportFeedbacksConnection';
+  edges?: Maybe<Array<Maybe<GqlReportFeedbackEdge>>>;
+  pageInfo: GqlPageInfo;
+  totalCount: Scalars['Int']['output'];
 };
 
 export const GqlReportStatus = {
@@ -2677,6 +2733,17 @@ export const GqlReportTemplateScope = {
 } as const;
 
 export type GqlReportTemplateScope = typeof GqlReportTemplateScope[keyof typeof GqlReportTemplateScope];
+export type GqlReportTemplateStats = {
+  __typename?: 'ReportTemplateStats';
+  avgJudgeScore?: Maybe<Scalars['Float']['output']>;
+  avgRating?: Maybe<Scalars['Float']['output']>;
+  correlationWarning: Scalars['Boolean']['output'];
+  feedbackCount: Scalars['Int']['output'];
+  judgeHumanCorrelation?: Maybe<Scalars['Float']['output']>;
+  variant: Scalars['String']['output'];
+  version: Scalars['Int']['output'];
+};
+
 export const GqlReportVariant = {
   GrantApplication: 'GRANT_APPLICATION',
   MediaPr: 'MEDIA_PR',
@@ -2873,6 +2940,21 @@ export type GqlStorePhoneAuthTokenPayload = {
   __typename?: 'StorePhoneAuthTokenPayload';
   expiresAt?: Maybe<Scalars['Datetime']['output']>;
   success: Scalars['Boolean']['output'];
+};
+
+export type GqlSubmitReportFeedbackInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
+  feedbackType?: InputMaybe<GqlReportFeedbackType>;
+  rating: Scalars['Int']['input'];
+  reportId: Scalars['ID']['input'];
+  sectionKey?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlSubmitReportFeedbackPayload = GqlSubmitReportFeedbackSuccess;
+
+export type GqlSubmitReportFeedbackSuccess = {
+  __typename?: 'SubmitReportFeedbackSuccess';
+  feedback: GqlReportFeedback;
 };
 
 export const GqlSysRole = {
@@ -3311,12 +3393,15 @@ export type GqlTransactionsConnection = {
 
 export type GqlUpdateReportTemplateInput = {
   communityContext?: InputMaybe<Scalars['String']['input']>;
+  experimentKey?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
   isEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   maxTokens: Scalars['Int']['input'];
   model: Scalars['String']['input'];
   stopSequences?: InputMaybe<Array<Scalars['String']['input']>>;
   systemPrompt: Scalars['String']['input'];
   temperature?: InputMaybe<Scalars['Float']['input']>;
+  trafficWeight?: InputMaybe<Scalars['Int']['input']>;
   userPromptTemplate: Scalars['String']['input'];
 };
 
@@ -3981,6 +4066,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   RejectReportPayload: ( Omit<GqlRejectReportSuccess, 'report'> & { report: _RefType['Report'] } );
   ReservationCreatePayload: ( Omit<GqlReservationCreateSuccess, 'reservation'> & { reservation: _RefType['Reservation'] } );
   ReservationSetStatusPayload: ( Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: _RefType['Reservation'] } );
+  SubmitReportFeedbackPayload: ( Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: _RefType['ReportFeedback'] } );
   TicketClaimPayload: ( Omit<GqlTicketClaimSuccess, 'tickets'> & { tickets: Array<_RefType['Ticket']> } );
   TicketIssuePayload: ( Omit<GqlTicketIssueSuccess, 'issue'> & { issue: _RefType['TicketIssuer'] } );
   TicketPurchasePayload: ( Omit<GqlTicketPurchaseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
@@ -4004,7 +4090,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCityEdge, 'node'> & { node?: Maybe<_RefType['City']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<_RefType['IncentiveGrant']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlNftInstanceEdge, 'node'> & { node: _RefType['NftInstance'] } ) | ( Omit<GqlNftTokenEdge, 'node'> & { node: _RefType['NftToken'] } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlPortfolioEdge, 'node'> & { node?: Maybe<_RefType['Portfolio']> } ) | ( Omit<GqlReportEdge, 'node'> & { node?: Maybe<_RefType['Report']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlStateEdge, 'node'> & { node?: Maybe<_RefType['State']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<_RefType['VcIssuanceRequest']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
+  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCityEdge, 'node'> & { node?: Maybe<_RefType['City']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlIncentiveGrantEdge, 'node'> & { node?: Maybe<_RefType['IncentiveGrant']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlNftInstanceEdge, 'node'> & { node: _RefType['NftInstance'] } ) | ( Omit<GqlNftTokenEdge, 'node'> & { node: _RefType['NftToken'] } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlPortfolioEdge, 'node'> & { node?: Maybe<_RefType['Portfolio']> } ) | ( Omit<GqlReportEdge, 'node'> & { node?: Maybe<_RefType['Report']> } ) | ( Omit<GqlReportFeedbackEdge, 'node'> & { node?: Maybe<_RefType['ReportFeedback']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlStateEdge, 'node'> & { node?: Maybe<_RefType['State']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<_RefType['VcIssuanceRequest']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
   TransactionChainParticipant: ( GqlTransactionChainCommunity ) | ( GqlTransactionChainUser );
 }>;
 
@@ -4246,11 +4332,16 @@ export type GqlResolversTypes = ResolversObject<{
   Query: ResolverTypeWrapper<{}>;
   RejectReportPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['RejectReportPayload']>;
   RejectReportSuccess: ResolverTypeWrapper<Omit<GqlRejectReportSuccess, 'report'> & { report: GqlResolversTypes['Report'] }>;
-  Report: ResolverTypeWrapper<Omit<GqlReport, 'community' | 'generatedByUser' | 'parentRun' | 'publishedByUser' | 'regenerations' | 'targetUser' | 'template'> & { community: GqlResolversTypes['Community'], generatedByUser?: Maybe<GqlResolversTypes['User']>, parentRun?: Maybe<GqlResolversTypes['Report']>, publishedByUser?: Maybe<GqlResolversTypes['User']>, regenerations: Array<GqlResolversTypes['Report']>, targetUser?: Maybe<GqlResolversTypes['User']>, template?: Maybe<GqlResolversTypes['ReportTemplate']> }>;
+  Report: ResolverTypeWrapper<Omit<GqlReport, 'community' | 'feedbacks' | 'generatedByUser' | 'myFeedback' | 'parentRun' | 'publishedByUser' | 'regenerations' | 'targetUser' | 'template'> & { community: GqlResolversTypes['Community'], feedbacks: GqlResolversTypes['ReportFeedbacksConnection'], generatedByUser?: Maybe<GqlResolversTypes['User']>, myFeedback?: Maybe<GqlResolversTypes['ReportFeedback']>, parentRun?: Maybe<GqlResolversTypes['Report']>, publishedByUser?: Maybe<GqlResolversTypes['User']>, regenerations: Array<GqlResolversTypes['Report']>, targetUser?: Maybe<GqlResolversTypes['User']>, template?: Maybe<GqlResolversTypes['ReportTemplate']> }>;
   ReportEdge: ResolverTypeWrapper<Omit<GqlReportEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Report']> }>;
+  ReportFeedback: ResolverTypeWrapper<Omit<GqlReportFeedback, 'user'> & { user: GqlResolversTypes['User'] }>;
+  ReportFeedbackEdge: ResolverTypeWrapper<Omit<GqlReportFeedbackEdge, 'node'> & { node?: Maybe<GqlResolversTypes['ReportFeedback']> }>;
+  ReportFeedbackType: GqlReportFeedbackType;
+  ReportFeedbacksConnection: ResolverTypeWrapper<Omit<GqlReportFeedbacksConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ReportFeedbackEdge']>>> }>;
   ReportStatus: GqlReportStatus;
   ReportTemplate: ResolverTypeWrapper<Omit<GqlReportTemplate, 'community' | 'updatedByUser'> & { community?: Maybe<GqlResolversTypes['Community']>, updatedByUser?: Maybe<GqlResolversTypes['User']> }>;
   ReportTemplateScope: GqlReportTemplateScope;
+  ReportTemplateStats: ResolverTypeWrapper<GqlReportTemplateStats>;
   ReportVariant: GqlReportVariant;
   ReportsConnection: ResolverTypeWrapper<Omit<GqlReportsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ReportEdge']>>> }>;
   Reservation: ResolverTypeWrapper<Omit<GqlReservation, 'createdByUser' | 'histories' | 'opportunitySlot' | 'participations'> & { createdByUser?: Maybe<GqlResolversTypes['User']>, histories?: Maybe<Array<GqlResolversTypes['ReservationHistory']>>, opportunitySlot?: Maybe<GqlResolversTypes['OpportunitySlot']>, participations?: Maybe<Array<GqlResolversTypes['Participation']>> }>;
@@ -4282,6 +4373,9 @@ export type GqlResolversTypes = ResolversObject<{
   StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
   StorePhoneAuthTokenPayload: ResolverTypeWrapper<GqlStorePhoneAuthTokenPayload>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  SubmitReportFeedbackInput: GqlSubmitReportFeedbackInput;
+  SubmitReportFeedbackPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['SubmitReportFeedbackPayload']>;
+  SubmitReportFeedbackSuccess: ResolverTypeWrapper<Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: GqlResolversTypes['ReportFeedback'] }>;
   SysRole: GqlSysRole;
   Ticket: ResolverTypeWrapper<Ticket>;
   TicketClaimInput: GqlTicketClaimInput;
@@ -4628,9 +4722,13 @@ export type GqlResolversParentTypes = ResolversObject<{
   Query: {};
   RejectReportPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['RejectReportPayload'];
   RejectReportSuccess: Omit<GqlRejectReportSuccess, 'report'> & { report: GqlResolversParentTypes['Report'] };
-  Report: Omit<GqlReport, 'community' | 'generatedByUser' | 'parentRun' | 'publishedByUser' | 'regenerations' | 'targetUser' | 'template'> & { community: GqlResolversParentTypes['Community'], generatedByUser?: Maybe<GqlResolversParentTypes['User']>, parentRun?: Maybe<GqlResolversParentTypes['Report']>, publishedByUser?: Maybe<GqlResolversParentTypes['User']>, regenerations: Array<GqlResolversParentTypes['Report']>, targetUser?: Maybe<GqlResolversParentTypes['User']>, template?: Maybe<GqlResolversParentTypes['ReportTemplate']> };
+  Report: Omit<GqlReport, 'community' | 'feedbacks' | 'generatedByUser' | 'myFeedback' | 'parentRun' | 'publishedByUser' | 'regenerations' | 'targetUser' | 'template'> & { community: GqlResolversParentTypes['Community'], feedbacks: GqlResolversParentTypes['ReportFeedbacksConnection'], generatedByUser?: Maybe<GqlResolversParentTypes['User']>, myFeedback?: Maybe<GqlResolversParentTypes['ReportFeedback']>, parentRun?: Maybe<GqlResolversParentTypes['Report']>, publishedByUser?: Maybe<GqlResolversParentTypes['User']>, regenerations: Array<GqlResolversParentTypes['Report']>, targetUser?: Maybe<GqlResolversParentTypes['User']>, template?: Maybe<GqlResolversParentTypes['ReportTemplate']> };
   ReportEdge: Omit<GqlReportEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Report']> };
+  ReportFeedback: Omit<GqlReportFeedback, 'user'> & { user: GqlResolversParentTypes['User'] };
+  ReportFeedbackEdge: Omit<GqlReportFeedbackEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['ReportFeedback']> };
+  ReportFeedbacksConnection: Omit<GqlReportFeedbacksConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ReportFeedbackEdge']>>> };
   ReportTemplate: Omit<GqlReportTemplate, 'community' | 'updatedByUser'> & { community?: Maybe<GqlResolversParentTypes['Community']>, updatedByUser?: Maybe<GqlResolversParentTypes['User']> };
+  ReportTemplateStats: GqlReportTemplateStats;
   ReportsConnection: Omit<GqlReportsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ReportEdge']>>> };
   Reservation: Omit<GqlReservation, 'createdByUser' | 'histories' | 'opportunitySlot' | 'participations'> & { createdByUser?: Maybe<GqlResolversParentTypes['User']>, histories?: Maybe<Array<GqlResolversParentTypes['ReservationHistory']>>, opportunitySlot?: Maybe<GqlResolversParentTypes['OpportunitySlot']>, participations?: Maybe<Array<GqlResolversParentTypes['Participation']>> };
   ReservationCancelInput: GqlReservationCancelInput;
@@ -4656,6 +4754,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
   StorePhoneAuthTokenPayload: GqlStorePhoneAuthTokenPayload;
   String: Scalars['String']['output'];
+  SubmitReportFeedbackInput: GqlSubmitReportFeedbackInput;
+  SubmitReportFeedbackPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['SubmitReportFeedbackPayload'];
+  SubmitReportFeedbackSuccess: Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: GqlResolversParentTypes['ReportFeedback'] };
   Ticket: Ticket;
   TicketClaimInput: GqlTicketClaimInput;
   TicketClaimLink: TicketClaimLink;
@@ -5057,7 +5158,7 @@ export type GqlDidIssuanceRequestResolvers<ContextType = any, ParentType extends
 }>;
 
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'ArticleEdge' | 'CityEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'IncentiveGrantEdge' | 'MembershipEdge' | 'NftInstanceEdge' | 'NftTokenEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'PortfolioEdge' | 'ReportEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'StateEdge' | 'TicketClaimLinkEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'VcIssuanceRequestEdge' | 'WalletEdge', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ArticleEdge' | 'CityEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'IncentiveGrantEdge' | 'MembershipEdge' | 'NftInstanceEdge' | 'NftTokenEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'PortfolioEdge' | 'ReportEdge' | 'ReportFeedbackEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'StateEdge' | 'TicketClaimLinkEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'VcIssuanceRequestEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -5332,6 +5433,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   reservationJoin?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationJoinArgs, 'id'>>;
   reservationReject?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationRejectArgs, 'id' | 'input' | 'permission'>>;
   storePhoneAuthToken?: Resolver<Maybe<GqlResolversTypes['StorePhoneAuthTokenPayload']>, ParentType, ContextType, RequireFields<GqlMutationStorePhoneAuthTokenArgs, 'input' | 'permission'>>;
+  submitReportFeedback?: Resolver<Maybe<GqlResolversTypes['SubmitReportFeedbackPayload']>, ParentType, ContextType, RequireFields<GqlMutationSubmitReportFeedbackArgs, 'input' | 'permission'>>;
   ticketClaim?: Resolver<Maybe<GqlResolversTypes['TicketClaimPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketClaimArgs, 'input'>>;
   ticketIssue?: Resolver<Maybe<GqlResolversTypes['TicketIssuePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketIssueArgs, 'input' | 'permission'>>;
   ticketPurchase?: Resolver<Maybe<GqlResolversTypes['TicketPurchasePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketPurchaseArgs, 'input' | 'permission'>>;
@@ -5791,6 +5893,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   portfolios?: Resolver<Maybe<Array<GqlResolversTypes['Portfolio']>>, ParentType, ContextType, Partial<GqlQueryPortfoliosArgs>>;
   report?: Resolver<Maybe<GqlResolversTypes['Report']>, ParentType, ContextType, RequireFields<GqlQueryReportArgs, 'id'>>;
   reportTemplate?: Resolver<Maybe<GqlResolversTypes['ReportTemplate']>, ParentType, ContextType, RequireFields<GqlQueryReportTemplateArgs, 'variant'>>;
+  reportTemplateStats?: Resolver<GqlResolversTypes['ReportTemplateStats'], ParentType, ContextType, RequireFields<GqlQueryReportTemplateStatsArgs, 'variant'>>;
   reports?: Resolver<GqlResolversTypes['ReportsConnection'], ParentType, ContextType, RequireFields<GqlQueryReportsArgs, 'communityId' | 'permission'>>;
   reservation?: Resolver<Maybe<GqlResolversTypes['Reservation']>, ParentType, ContextType, RequireFields<GqlQueryReservationArgs, 'id'>>;
   reservationHistories?: Resolver<GqlResolversTypes['ReservationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryReservationHistoriesArgs>>;
@@ -5834,11 +5937,13 @@ export type GqlReportResolvers<ContextType = any, ParentType extends GqlResolver
   cacheReadTokens?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   community?: Resolver<GqlResolversTypes['Community'], ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  feedbacks?: Resolver<GqlResolversTypes['ReportFeedbacksConnection'], ParentType, ContextType, Partial<GqlReportFeedbacksArgs>>;
   finalContent?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   generatedByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   inputTokens?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   model?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  myFeedback?: Resolver<Maybe<GqlResolversTypes['ReportFeedback']>, ParentType, ContextType>;
   outputMarkdown?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   outputTokens?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   parentRun?: Resolver<Maybe<GqlResolversTypes['Report']>, ParentType, ContextType>;
@@ -5863,6 +5968,31 @@ export type GqlReportEdgeResolvers<ContextType = any, ParentType extends GqlReso
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlReportFeedbackResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReportFeedback'] = GqlResolversParentTypes['ReportFeedback']> = ResolversObject<{
+  comment?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  feedbackType?: Resolver<Maybe<GqlResolversTypes['ReportFeedbackType']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  rating?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  reportId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  sectionKey?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlReportFeedbackEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReportFeedbackEdge'] = GqlResolversParentTypes['ReportFeedbackEdge']> = ResolversObject<{
+  cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<Maybe<GqlResolversTypes['ReportFeedback']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlReportFeedbacksConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReportFeedbacksConnection'] = GqlResolversParentTypes['ReportFeedbacksConnection']> = ResolversObject<{
+  edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['ReportFeedbackEdge']>>>, ParentType, ContextType>;
+  pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlReportTemplateResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReportTemplate'] = GqlResolversParentTypes['ReportTemplate']> = ResolversObject<{
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   communityContext?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -5879,6 +6009,17 @@ export type GqlReportTemplateResolvers<ContextType = any, ParentType extends Gql
   updatedByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   userPromptTemplate?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   variant?: Resolver<GqlResolversTypes['ReportVariant'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlReportTemplateStatsResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReportTemplateStats'] = GqlResolversParentTypes['ReportTemplateStats']> = ResolversObject<{
+  avgJudgeScore?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  avgRating?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  correlationWarning?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  feedbackCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  judgeHumanCorrelation?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  variant?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  version?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5979,6 +6120,15 @@ export type GqlStatesConnectionResolvers<ContextType = any, ParentType extends G
 export type GqlStorePhoneAuthTokenPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['StorePhoneAuthTokenPayload'] = GqlResolversParentTypes['StorePhoneAuthTokenPayload']> = ResolversObject<{
   expiresAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   success?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSubmitReportFeedbackPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SubmitReportFeedbackPayload'] = GqlResolversParentTypes['SubmitReportFeedbackPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'SubmitReportFeedbackSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlSubmitReportFeedbackSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SubmitReportFeedbackSuccess'] = GqlResolversParentTypes['SubmitReportFeedbackSuccess']> = ResolversObject<{
+  feedback?: Resolver<GqlResolversTypes['ReportFeedback'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -6680,7 +6830,11 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   RejectReportSuccess?: GqlRejectReportSuccessResolvers<ContextType>;
   Report?: GqlReportResolvers<ContextType>;
   ReportEdge?: GqlReportEdgeResolvers<ContextType>;
+  ReportFeedback?: GqlReportFeedbackResolvers<ContextType>;
+  ReportFeedbackEdge?: GqlReportFeedbackEdgeResolvers<ContextType>;
+  ReportFeedbacksConnection?: GqlReportFeedbacksConnectionResolvers<ContextType>;
   ReportTemplate?: GqlReportTemplateResolvers<ContextType>;
+  ReportTemplateStats?: GqlReportTemplateStatsResolvers<ContextType>;
   ReportsConnection?: GqlReportsConnectionResolvers<ContextType>;
   Reservation?: GqlReservationResolvers<ContextType>;
   ReservationCreatePayload?: GqlReservationCreatePayloadResolvers<ContextType>;
@@ -6696,6 +6850,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   StateEdge?: GqlStateEdgeResolvers<ContextType>;
   StatesConnection?: GqlStatesConnectionResolvers<ContextType>;
   StorePhoneAuthTokenPayload?: GqlStorePhoneAuthTokenPayloadResolvers<ContextType>;
+  SubmitReportFeedbackPayload?: GqlSubmitReportFeedbackPayloadResolvers<ContextType>;
+  SubmitReportFeedbackSuccess?: GqlSubmitReportFeedbackSuccessResolvers<ContextType>;
   Ticket?: GqlTicketResolvers<ContextType>;
   TicketClaimLink?: GqlTicketClaimLinkResolvers<ContextType>;
   TicketClaimLinkEdge?: GqlTicketClaimLinkEdgeResolvers<ContextType>;

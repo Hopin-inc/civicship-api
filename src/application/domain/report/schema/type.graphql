@@ -53,6 +53,12 @@ type Report {
   targetUser: User
   generatedByUser: User
 
+  # Feedback (PR-F4). `feedbacks` is paginated for OWNER/MANAGER review;
+  # `myFeedback` returns the caller's own submission (if any) so the UI
+  # can hide the rating button once submitted.
+  feedbacks(first: Int, after: String): ReportFeedbacksConnection!
+  myFeedback: ReportFeedback
+
   createdAt: Datetime!
   updatedAt: Datetime
 }
@@ -119,3 +125,59 @@ type RejectReportSuccess {
 }
 
 union RejectReportPayload = RejectReportSuccess
+
+# ------------------------------
+# Feedback (PR-F4)
+# ------------------------------
+
+enum ReportFeedbackType {
+  QUALITY
+  ACCURACY
+  TONE
+  STRUCTURE
+  OTHER
+}
+
+type ReportFeedback {
+  id: ID!
+  reportId: ID!
+  user: User!
+  rating: Int!
+  feedbackType: ReportFeedbackType
+  sectionKey: String
+  comment: String
+  createdAt: Datetime!
+}
+
+type ReportFeedbackEdge implements Edge {
+  cursor: String!
+  node: ReportFeedback
+}
+
+type ReportFeedbacksConnection {
+  edges: [ReportFeedbackEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SubmitReportFeedbackSuccess {
+  feedback: ReportFeedback!
+}
+
+union SubmitReportFeedbackPayload = SubmitReportFeedbackSuccess
+
+# Aggregate snapshot of feedback / judge signal for a (variant, version)
+# pair. Admin-only. `judgeHumanCorrelation` is Pearson's r across
+# per-report (judgeScore, avgFeedbackRating) pairs; null when too few
+# pairs exist to compute a meaningful correlation. `correlationWarning`
+# is true iff the correlation is present AND below the recalibration
+# threshold (0.7) — a signal that the judge prompt needs re-tuning.
+type ReportTemplateStats {
+  variant: String!
+  version: Int!
+  avgRating: Float
+  feedbackCount: Int!
+  avgJudgeScore: Float
+  judgeHumanCorrelation: Float
+  correlationWarning: Boolean!
+}
