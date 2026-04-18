@@ -128,7 +128,9 @@ describe("OpportunityService", () => {
         "opportunity-1",
         expect.objectContaining({
           title: "Updated Opportunity",
+          // service.ts:102 で uploadedImages 有り時は既存画像を deleteMany で全消去してから create
           images: {
+            deleteMany: {},
             create: [{ id: "uploaded-1" }, { id: "uploaded-2" }],
           },
         }),

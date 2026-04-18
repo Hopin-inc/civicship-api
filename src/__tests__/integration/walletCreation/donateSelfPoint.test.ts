@@ -31,7 +31,11 @@ describe("Transaction DonateSelfPoint Integration Tests", () => {
     await TestDataSourceHelper.disconnect();
   });
 
-  it("should create member wallet if not exists when donate self points", async () => {
+  // donate のフローでは receiver の member wallet は事前存在が前提
+  // (usecase.ts:192 findMemberWalletOrThrow)。grant 経由は createIfNeeded だが、
+  // donation は member-to-member なので auto-create しない。
+  // fixture で明示 create することで test の意図を可視化する (sakata-san 判断 7.4)。
+  it("should donate self points to another existing member wallet", async () => {
     const name = "John Doe";
     const slug = "user-1-slug";
     const createUserInput = {
@@ -77,6 +81,13 @@ describe("Transaction DonateSelfPoint Integration Tests", () => {
     );
     const fromMemberWalletId = fromMemberWalletInserted.id;
 
+    // receiver 側も事前に member wallet を seed
+    await TestDataSourceHelper.createWallet({
+      type: WalletType.MEMBER,
+      community: { connect: { id: communityId } },
+      user: { connect: { id: toUserId } },
+    });
+
     const createTransactionInput = {
       to: fromMemberWalletId,
       toPointChange: 100,
@@ -95,7 +106,7 @@ describe("Transaction DonateSelfPoint Integration Tests", () => {
       transferPoints: donatedPoints,
     };
 
-    await useCase.userDonateSelfPointToAnother(ctx, { 
+    await useCase.userDonateSelfPointToAnother(ctx, {
       input,
       permission: { userId: ctx.currentUser!.id }
     });
