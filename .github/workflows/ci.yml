@@ -44,6 +44,30 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+
+    # Postgres is required because `pnpm db:generate` uses `prisma generate --sql`
+    # (TypedSQL). --sql introspects `src/infrastructure/prisma/sql/*.sql` against
+    # a live DB to type the `@prisma/client/sql` exports which are imported by
+    # src (e.g. refreshMaterializedViewCurrentPoints). Without DB, generate fails
+    # and typecheck breaks at import resolution.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: civicship
+          POSTGRES_PASSWORD: civicship
+          POSTGRES_DB: civicship_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://civicship:civicship@localhost:5432/civicship_ci
+
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
@@ -69,6 +93,12 @@ jobs:
       - name: Audit (non-blocking)
         run: pnpm audit --audit-level=high
         continue-on-error: true
+
+      - name: Apply Prisma migrations to CI database
+        # TypedSQL (`--sql`) は DB 接続を必要とするため、db:generate の前に
+        # migration を当ててスキーマを用意する。view / materialized view も
+        # migration.sql 経由でのみ作成される。
+        run: pnpm db:deploy
 
       - name: Generate Prisma client (with TypedSQL)
         run: pnpm db:generate
