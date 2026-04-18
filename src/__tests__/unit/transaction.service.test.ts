@@ -72,7 +72,6 @@ describe("TransactionService", () => {
 
       mockConverter.issueCommunityPoint.mockReturnValue(convertedData);
       mockRepository.create.mockResolvedValue(mockTransaction);
-      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
       const result = await mockService.issueCommunityPoint(
         mockCtx,
@@ -84,7 +83,6 @@ describe("TransactionService", () => {
 
       expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(walletId, transferPoints, "test-user-id", comment, undefined);
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
-      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
@@ -108,7 +106,6 @@ describe("TransactionService", () => {
 
       mockConverter.grantCommunityPoint.mockReturnValue(convertedData);
       mockRepository.create.mockResolvedValue(mockTransaction);
-      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
       const result = await mockService.grantCommunityPoint(
         mockCtx,
@@ -128,7 +125,6 @@ describe("TransactionService", () => {
         undefined,
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
-      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
@@ -152,7 +148,6 @@ describe("TransactionService", () => {
 
       mockConverter.donateSelfPoint.mockReturnValue(convertedData);
       mockRepository.create.mockResolvedValue(mockTransaction);
-      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
       const result = await mockService.donateSelfPoint(
         mockCtx,
@@ -170,8 +165,8 @@ describe("TransactionService", () => {
         transferPoints,
         "test-user-id",
         comment,
-        undefined, // parentTxId (null → undefined)
-        1,         // chainDepth (no parent → 1)
+        undefined, // parentTxId (no parent)
+        undefined, // chainDepth (no parent → undefined, per service.ts:89)
         undefined, // uploadedImages
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
@@ -243,7 +238,6 @@ describe("TransactionService", () => {
 
       mockConverter.giveRewardPoint.mockReturnValue(convertedData);
       mockRepository.create.mockResolvedValue(mockTransaction);
-      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
       const result = await mockService.giveRewardPoint(
         mockCtx,
@@ -261,8 +255,8 @@ describe("TransactionService", () => {
         participationId,
         transferPoints,
         "test-user-id",
-        undefined, // parentTxId (null → undefined)
-        1,         // chainDepth (no parent → 1)
+        undefined, // parentTxId (no parent)
+        undefined, // chainDepth (no parent → undefined, per service.ts:119)
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(result).toBe(mockTransaction);
@@ -332,7 +326,6 @@ describe("TransactionService", () => {
 
       mockConverter.purchaseTicket.mockReturnValue(convertedData);
       mockRepository.create.mockResolvedValue(mockTransaction);
-      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
       const result = await mockService.purchaseTicket(
         mockCtx,
@@ -344,7 +337,6 @@ describe("TransactionService", () => {
 
       expect(mockConverter.purchaseTicket).toHaveBeenCalledWith(walletId, walletId, transferPoints, "test-user-id");
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
-      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
@@ -368,7 +360,6 @@ describe("TransactionService", () => {
 
       mockConverter.refundTicket.mockReturnValue(convertedData);
       mockRepository.create.mockResolvedValue(mockTransaction);
-      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
       const result = await mockService.refundTicket(
         mockCtx,
@@ -380,7 +371,6 @@ describe("TransactionService", () => {
 
       expect(mockConverter.refundTicket).toHaveBeenCalledWith(walletId, walletId, transferPoints, "test-user-id");
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
-      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
