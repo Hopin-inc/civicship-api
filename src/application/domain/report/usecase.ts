@@ -3,7 +3,7 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
 import ReportService from "@/application/domain/report/service";
-import ReportJudgeService from "@/application/domain/report/judgeService";
+import ReportJudgeService, { JudgeParseError } from "@/application/domain/report/judgeService";
 import ReportPresenter from "@/application/domain/report/presenter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
 import { addDays, daysBetweenJst, truncateToJstDate } from "@/application/domain/report/util";
@@ -280,7 +280,19 @@ export default class ReportUseCase {
     try {
       judgeTemplate = await this.judgeService.selectJudgeTemplate(ctx, report.variant);
     } catch (e) {
-      console.warn(`[report.judge] selectJudgeTemplate failed: ${(e as Error).message}`);
+      // Template selection only throws when a misconfigured row slips
+      // past the seed-side guard (COMMUNITY-scope JUDGE). Treat it as
+      // a config problem distinct from runtime LLM failure so ops can
+      // alert on it specifically.
+      console.warn(
+        JSON.stringify({
+          event: "report.judge.failed",
+          reason: "template_config_error",
+          reportId: report.id,
+          variant: report.variant,
+          message: (e as Error).message,
+        }),
+      );
       return report;
     }
 
@@ -312,7 +324,28 @@ export default class ReportUseCase {
         inputPayload: payload,
       });
     } catch (e) {
-      console.warn(`[report.judge] executeJudge failed: ${(e as Error).message}`);
+      // Bucket the two failure modes so downstream alerting can route
+      // them differently:
+      //   - parse_failure: judge prompt is producing malformed output;
+      //     this is a prompt-quality regression and should page on
+      //     repeat occurrence.
+      //   - llm_failure: transient (network / rate limit / abort);
+      //     same prompt will likely succeed on the next run.
+      // We log structured-ish JSON so log aggregation can parse a
+      // single field rather than regex the message string.
+      const isParseError = e instanceof JudgeParseError;
+      const logPayload = {
+        event: "report.judge.failed",
+        reason: isParseError ? "parse_failure" : "llm_failure",
+        reportId: report.id,
+        variant: report.variant,
+        judgeTemplateId: judgeTemplate.id,
+        message: (e as Error).message,
+        ...(isParseError && {
+          rawResponseSample: (e as JudgeParseError).rawResponse.slice(0, 200),
+        }),
+      };
+      console.warn(JSON.stringify(logPayload));
       return ctx.issuer.onlyBelongingCommunity(ctx, (tx) =>
         this.service.saveJudgeResult(
           ctx,

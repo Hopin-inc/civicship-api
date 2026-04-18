@@ -52,6 +52,35 @@ export interface JudgeExecutionInput {
   judgeCriteria?: unknown;
 }
 
+/**
+ * Marker class for "the LLM returned, but we couldn't make sense of
+ * its response": invalid JSON, missing `score`, wrong outer shape.
+ *
+ * Distinguishing this from generic `Error` matters because the two
+ * failure modes ask for different responses:
+ *
+ *   - LLM-side failure (network / 5xx / abort) is transient — same
+ *     prompt will likely succeed on retry, so the right action is
+ *     to log + try again later.
+ *   - Parse failure means the JUDGE PROMPT is producing output the
+ *     code can't consume. That is a prompt-quality bug, not a
+ *     transient blip; alerting on it is the only way to catch judge
+ *     prompt regressions early.
+ *
+ * Callers (usecase, CI script) bucket their logs by checking
+ * `instanceof JudgeParseError` so the two streams stay separable in
+ * downstream observability without parsing log message strings.
+ */
+export class JudgeParseError extends Error {
+  constructor(
+    message: string,
+    public readonly rawResponse: string,
+  ) {
+    super(message);
+    this.name = "JudgeParseError";
+  }
+}
+
 @injectable()
 export default class ReportJudgeService {
   constructor(
@@ -130,10 +159,11 @@ export default class ReportJudgeService {
 
 /**
  * Strip an optional ```json ... ``` fence, then `JSON.parse` and shape
- * the result to `JudgeResult`. Throws when the response is not valid
- * JSON or is missing the headline `score` field — both are real
- * problems that the calling layer should see (and ideally surface to
- * an alert) rather than silently coerce.
+ * the result to `JudgeResult`. Throws `JudgeParseError` when the
+ * response is not valid JSON, is the wrong outer shape, or is missing
+ * the headline `score` field — all three are prompt-quality signals
+ * the calling layer should bucket separately from transient LLM
+ * failures.
  */
 function parseJudgeResponse(raw: string): JudgeResult {
   const trimmed = raw.trim();
@@ -146,18 +176,19 @@ function parseJudgeResponse(raw: string): JudgeResult {
   try {
     parsed = JSON.parse(stripped);
   } catch (e) {
-    throw new Error(
-      `Judge response was not valid JSON: ${(e as Error).message}; raw=${raw.slice(0, 200)}`,
+    throw new JudgeParseError(
+      `Judge response was not valid JSON: ${(e as Error).message}`,
+      raw,
     );
   }
 
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error(`Judge response is not a JSON object; raw=${raw.slice(0, 200)}`);
+    throw new JudgeParseError("Judge response is not a JSON object", raw);
   }
   const obj = parsed as Record<string, unknown>;
   const score = obj.score;
   if (typeof score !== "number" || !Number.isFinite(score)) {
-    throw new Error(`Judge response missing numeric "score"; raw=${raw.slice(0, 200)}`);
+    throw new JudgeParseError('Judge response missing numeric "score"', raw);
   }
 
   const breakdown =
