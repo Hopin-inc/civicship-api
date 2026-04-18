@@ -72,27 +72,18 @@ export function createMyReportFeedbackLoader(prisma: PrismaClient) {
   type Key = { reportId: string; userId: string };
   return createLoaderByCompositeKey<Key, PrismaReportFeedback, GqlReportFeedback>(
     async (keys) => {
-      // Group by userId — we expect homogeneous userIds within a request,
-      // but a single round-trip per *distinct* user keeps the worst case
-      // bounded at "number of users involved in this batch" rather than
-      // a Cartesian-product `IN (userIds) AND IN (reportIds)` query
-      // that would over-fetch.
-      const byUser = new Map<string, string[]>();
-      for (const k of keys) {
-        const list = byUser.get(k.userId);
-        if (list) list.push(k.reportId);
-        else byUser.set(k.userId, [k.reportId]);
-      }
-
-      const all: PrismaReportFeedback[] = [];
-      for (const [userId, reportIds] of byUser) {
-        const rows = await prisma.reportFeedback.findMany({
-          where: { userId, reportId: { in: reportIds } },
-          select: reportFeedbackSelect,
-        });
-        all.push(...rows);
-      }
-      return all;
+      // Collapse all (reportId, userId) pairs into a single `findMany`
+      // using an OR of exact pairs. This avoids both the per-user
+      // round-trip a group-by-userId loop would do and the over-fetch
+      // a naive `IN (userIds) AND IN (reportIds)` Cartesian query would
+      // cause. The `@@unique([reportId, userId])` index makes each OR
+      // branch a direct index lookup.
+      return prisma.reportFeedback.findMany({
+        where: {
+          OR: keys.map((k) => ({ reportId: k.reportId, userId: k.userId })),
+        },
+        select: reportFeedbackSelect,
+      });
     },
     (record) => ({ reportId: record.reportId, userId: record.userId }),
     ReportFeedbackPresenter.feedback,
