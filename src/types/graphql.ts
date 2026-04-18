@@ -2713,7 +2713,9 @@ export type GqlReportTemplate = {
   community?: Maybe<GqlCommunity>;
   communityContext?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Datetime']['output'];
+  experimentKey?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  isActive: Scalars['Boolean']['output'];
   isEnabled: Scalars['Boolean']['output'];
   maxTokens: Scalars['Int']['output'];
   model: Scalars['String']['output'];
@@ -2721,10 +2723,12 @@ export type GqlReportTemplate = {
   stopSequences: Array<Scalars['String']['output']>;
   systemPrompt: Scalars['String']['output'];
   temperature?: Maybe<Scalars['Float']['output']>;
+  trafficWeight: Scalars['Int']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   updatedByUser?: Maybe<GqlUser>;
   userPromptTemplate: Scalars['String']['output'];
   variant: GqlReportVariant;
+  version: Scalars['Int']['output'];
 };
 
 export const GqlReportTemplateScope = {
@@ -2740,8 +2744,8 @@ export type GqlReportTemplateStats = {
   correlationWarning: Scalars['Boolean']['output'];
   feedbackCount: Scalars['Int']['output'];
   judgeHumanCorrelation?: Maybe<Scalars['Float']['output']>;
-  variant: Scalars['String']['output'];
-  version: Scalars['Int']['output'];
+  variant: GqlReportVariant;
+  version?: Maybe<Scalars['Int']['output']>;
 };
 
 export const GqlReportVariant = {
@@ -5997,7 +6001,9 @@ export type GqlReportTemplateResolvers<ContextType = any, ParentType extends Gql
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   communityContext?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  experimentKey?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  isActive?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   isEnabled?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   maxTokens?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   model?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -6005,10 +6011,12 @@ export type GqlReportTemplateResolvers<ContextType = any, ParentType extends Gql
   stopSequences?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
   systemPrompt?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   temperature?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  trafficWeight?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   updatedByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   userPromptTemplate?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   variant?: Resolver<GqlResolversTypes['ReportVariant'], ParentType, ContextType>;
+  version?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -6018,8 +6026,8 @@ export type GqlReportTemplateStatsResolvers<ContextType = any, ParentType extend
   correlationWarning?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   feedbackCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   judgeHumanCorrelation?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
-  variant?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  version?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  variant?: Resolver<GqlResolversTypes['ReportVariant'], ParentType, ContextType>;
+  version?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

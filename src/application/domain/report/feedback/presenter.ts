@@ -2,6 +2,7 @@ import {
   GqlReportFeedback,
   GqlReportFeedbacksConnection,
   GqlReportTemplateStats,
+  GqlReportVariant,
 } from "@/types/graphql";
 import {
   PrismaReportFeedback,
@@ -42,7 +43,11 @@ export default class ReportFeedbackPresenter {
     row: ReportTemplateStatsRow & { correlationWarning: boolean },
   ): GqlReportTemplateStats {
     return {
-      variant: row.variant,
+      // Upstream only accepts `ReportVariant!` as the query argument, so
+      // the row's `variant` is always one of the enum members — the cast
+      // just narrows the service's `string` return to the codegen enum
+      // without an extra runtime check.
+      variant: row.variant as GqlReportVariant,
       version: row.version,
       avgRating: row.avgRating,
       feedbackCount: row.feedbackCount,

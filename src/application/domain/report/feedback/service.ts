@@ -85,6 +85,9 @@ export default class ReportFeedbackService {
 
     return {
       variant,
+      // `agg.version` is null iff the caller did not pin to a revision —
+      // mirror that through to the GraphQL layer where the field is
+      // nullable to encode "roll-up across all versions".
       version: agg.version,
       avgRating: agg.avgRating,
       feedbackCount: agg.feedbackCount,

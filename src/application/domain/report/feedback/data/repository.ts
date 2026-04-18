@@ -61,7 +61,12 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
         tx.reportFeedback.findMany({
           where: { reportId },
           select: reportFeedbackSelect,
-          orderBy: { createdAt: "desc" },
+          // `id` as a secondary key turns the ordering into a total order —
+          // without it, two rows sharing a `createdAt` (possible when a
+          // seed script bulk-inserts, or under high write concurrency)
+          // can reshuffle between pages and either duplicate or skip
+          // rows across cursor boundaries.
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: params.first + 1,
           ...(params.cursor ? { skip: 1, cursor: { id: params.cursor } } : {}),
         }),
@@ -80,7 +85,7 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
       tx.reportFeedback.findMany({
         where: { reportId: { in: reportIds } },
         select: reportFeedbackSelect,
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
     );
   }
@@ -110,7 +115,7 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
     avgRating: number | null;
     avgJudgeScore: number | null;
     pairs: JudgeFeedbackPairRow[];
-    version: number;
+    version: number | null;
   }> {
     return ctx.issuer.public(ctx, async (tx) => {
       // Report → Template join: template.variant matches, and if `version`
@@ -161,12 +166,12 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
         avgRating: feedbackAgg._avg.rating ?? null,
         avgJudgeScore: judgeAgg._avg.judgeScore ?? null,
         pairs,
-        // When `version` is provided we echo it back. When omitted the
-        // row represents a roll-up across every version — encode that as
-        // `0` in the response rather than leaving the field null, so the
-        // GraphQL schema can keep `version: Int!` non-nullable. Callers
-        // passing `version` always get the exact value they asked for.
-        version: version ?? 0,
+        // Mirror the caller's `version` argument: a concrete value means
+        // the stats are scoped to that revision; null signals a roll-up
+        // across every version of the variant. GraphQL exposes `version`
+        // as nullable so consumers can tell the two cases apart without
+        // relying on a magic sentinel.
+        version: version ?? null,
       };
     });
   }

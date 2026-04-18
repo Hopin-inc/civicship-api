@@ -20,12 +20,17 @@ export type PrismaReportFeedback = Prisma.ReportFeedbackGetPayload<{
  * admin query. `feedbackCount` counts ReportFeedback rows joined on the
  * Report(s) that used the template. `judgeHumanCorrelation` is Pearson's
  * r across the paired (judgeScore, averageFeedbackRating) series per
- * report; null when the series is too short (< 2 reports with both
- * signals) to compute a meaningful correlation.
+ * report; null when the series is too short (< 3 reports with both
+ * signals) to compute a meaningful correlation — two points always
+ * produce ±1 under the classical formula and carry no signal.
+ *
+ * `version` is null when the caller did not pin the query to a specific
+ * template revision — the row then represents a roll-up across every
+ * version of the variant.
  */
 export interface ReportTemplateStatsRow {
   variant: string;
-  version: number;
+  version: number | null;
   avgRating: number | null;
   feedbackCount: number;
   avgJudgeScore: number | null;

@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import { Prisma } from "@prisma/client";
 import { container } from "tsyringe";
 import ReportFeedbackUseCase from "@/application/domain/report/feedback/usecase";
 import type { IContext } from "@/types/server";
@@ -18,6 +19,10 @@ describe("ReportFeedbackUseCase.submitReportFeedback", () => {
   const fakeCtx = {
     currentUser: { id: userId, sysRole: "USER" },
     issuer: {
+      // Pass-through both variants: the usecase wraps the whole
+      // check-then-write in `issuer.public`, while other call sites in
+      // the domain still reach for `onlyBelongingCommunity`.
+      public: (_ctx: IContext, fn: (tx: unknown) => Promise<unknown>) => fn({} as never),
       onlyBelongingCommunity: (_ctx: IContext, fn: (tx: unknown) => Promise<unknown>) =>
         fn({} as never),
     },
@@ -82,6 +87,7 @@ describe("ReportFeedbackUseCase.submitReportFeedback", () => {
     expect(feedbackService.createFeedback).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ reportId, userId, rating: 4 }),
+      expect.anything(), // tx propagated through the atomic wrapper
     );
     expect(result.__typename).toBe("SubmitReportFeedbackSuccess");
   });
@@ -145,6 +151,22 @@ describe("ReportFeedbackUseCase.submitReportFeedback", () => {
     } as unknown as IContext;
     await expect(usecase.submitReportFeedback(defaultInput(), anonCtx)).rejects.toThrow(
       /logged in/,
+    );
+  });
+
+  it("translates a racing P2002 into the same ValidationError as the pre-check", async () => {
+    // Simulate a second writer landing between our duplicate check and
+    // the insert: pre-check sees no row, but Prisma raises P2002 on
+    // write. The usecase must surface the same error code as the
+    // pre-check path so clients get a consistent message.
+    feedbackService.createFeedback.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+    await expect(usecase.submitReportFeedback(defaultInput(), fakeCtx)).rejects.toThrow(
+      /already submitted/,
     );
   });
 });

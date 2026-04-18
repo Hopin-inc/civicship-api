@@ -76,6 +76,13 @@ type ReportTemplate {
   maxTokens: Int!
   stopSequences: [String!]!
   isEnabled: Boolean!
+  # Versioning + A/B control fields (PR-F3). Exposed on the read type so
+  # the admin UI can display and round-trip the current values — they
+  # are writable via `UpdateReportTemplateInput` on the mutation side.
+  version: Int!
+  isActive: Boolean!
+  experimentKey: String
+  trafficWeight: Int!
   updatedByUser: User
   createdAt: Datetime!
   updatedAt: Datetime
@@ -169,12 +176,18 @@ union SubmitReportFeedbackPayload = SubmitReportFeedbackSuccess
 # Aggregate snapshot of feedback / judge signal for a (variant, version)
 # pair. Admin-only. `judgeHumanCorrelation` is Pearson's r across
 # per-report (judgeScore, avgFeedbackRating) pairs; null when too few
-# pairs exist to compute a meaningful correlation. `correlationWarning`
-# is true iff the correlation is present AND below the recalibration
-# threshold (0.7) — a signal that the judge prompt needs re-tuning.
+# pairs (< 3) exist to compute a meaningful correlation.
+# `correlationWarning` is true iff the correlation is present AND below
+# the recalibration threshold (0.7) — a signal that the judge prompt
+# needs re-tuning.
+#
+# `version` is null when the caller did not pin the query to a specific
+# revision — the row then rolls up stats across every version of the
+# variant. Consumers should branch on null vs. concrete number rather
+# than treating them the same.
 type ReportTemplateStats {
-  variant: String!
-  version: Int!
+  variant: ReportVariant!
+  version: Int
   avgRating: Float
   feedbackCount: Int!
   avgJudgeScore: Float

@@ -1826,10 +1826,11 @@ model ReportFeedback {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  // One feedback per (report, user). The GraphQL API (PR-F4) surfaces this
-  // via `ReportFeedbackAlreadyExistsError` so the admin UI can prompt the
-  // user to edit their existing rating rather than silently dropping the
-  // duplicate. The partial-submit "update" flow lives in a later PR; for
+  // One feedback per (report, user). Duplicate submissions are rejected
+  // by this unique index; the `submitReportFeedback` mutation surfaces
+  // the violation as a `ValidationError` (both as a pre-check before the
+  // INSERT and as a translation of any racing P2002 into the same error
+  // code). An edit / partial-submit flow is deferred to a later PR — for
   // now the mutation refuses second submits outright.
   @@unique([reportId, userId])
   @@index([reportId])

@@ -1769,7 +1769,9 @@ type ReportTemplate {
   community: Community
   communityContext: String
   createdAt: Datetime!
+  experimentKey: String
   id: ID!
+  isActive: Boolean!
   isEnabled: Boolean!
   maxTokens: Int!
   model: String!
@@ -1777,10 +1779,12 @@ type ReportTemplate {
   stopSequences: [String!]!
   systemPrompt: String!
   temperature: Float
+  trafficWeight: Int!
   updatedAt: Datetime
   updatedByUser: User
   userPromptTemplate: String!
   variant: ReportVariant!
+  version: Int!
 }
 
 enum ReportTemplateScope {
@@ -1794,8 +1798,8 @@ type ReportTemplateStats {
   correlationWarning: Boolean!
   feedbackCount: Int!
   judgeHumanCorrelation: Float
-  variant: String!
-  version: Int!
+  variant: ReportVariant!
+  version: Int
 }
 
 enum ReportVariant {

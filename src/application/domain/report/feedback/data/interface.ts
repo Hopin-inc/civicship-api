@@ -54,7 +54,9 @@ export interface IReportFeedbackRepository {
    * Returns feedbackCount / avgRating at the (variant, version) level, and
    * the full (judgeScore, avgRating) pair set so the service can compute
    * correlation in-process (Postgres' `corr()` is not wired to Prisma
-   * `$queryRaw` types as cleanly as the plain aggregate).
+   * `$queryRaw` types as cleanly as the plain aggregate). `version` in the
+   * return is the caller's argument echoed back, or null when the caller
+   * requested a roll-up across every version.
    */
   getTemplateFeedbackAggregates(
     ctx: IContext,
@@ -65,6 +67,6 @@ export interface IReportFeedbackRepository {
     avgRating: number | null;
     avgJudgeScore: number | null;
     pairs: JudgeFeedbackPairRow[];
-    version: number;
+    version: number | null;
   }>;
 }
