@@ -43,6 +43,10 @@ describe("ReportService", () => {
       [ReportStatus.APPROVED, ReportStatus.REJECTED],
       [ReportStatus.APPROVED, ReportStatus.SUPERSEDED],
       [ReportStatus.PUBLISHED, ReportStatus.SUPERSEDED],
+      // Force-regenerating from a SKIPPED parent needs this transition so
+      // the shared supersedeParentIfRegenerating helper can mark the prior
+      // row obsolete before the fresh run is persisted.
+      [ReportStatus.SKIPPED, ReportStatus.SUPERSEDED],
     ];
 
     it.each(validTransitions)("allows %s → %s", (from, to) => {
@@ -57,12 +61,12 @@ describe("ReportService", () => {
       [ReportStatus.PUBLISHED, ReportStatus.APPROVED],
       [ReportStatus.PUBLISHED, ReportStatus.DRAFT],
       [ReportStatus.DRAFT, ReportStatus.PUBLISHED],
-      // SKIPPED is a terminal creation-time state (PR-F2); no transitions
-      // out of it are permitted.
+      // SKIPPED only admits SUPERSEDED (covered above); DRAFT / APPROVED /
+      // PUBLISHED don't make sense — there is no generated content to
+      // review or publish.
       [ReportStatus.SKIPPED, ReportStatus.DRAFT],
       [ReportStatus.SKIPPED, ReportStatus.APPROVED],
       [ReportStatus.SKIPPED, ReportStatus.PUBLISHED],
-      [ReportStatus.SKIPPED, ReportStatus.SUPERSEDED],
     ];
 
     it.each(invalidTransitions)("rejects %s → %s", (from, to) => {

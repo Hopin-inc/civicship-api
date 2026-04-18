@@ -11,9 +11,9 @@ import { GqlReportVariant } from "@/types/graphql";
  * `generateReport` is hard to unit-test end-to-end because it stitches
  * together template lookup, payload building, LLM invocation, transaction
  * orchestration, and persistence. The test below targets the narrow
- * behaviour we care about for PR-F2: when `evaluateSkipReason` returns a
- * non-null reason, the LLM client is NOT invoked, and a SKIPPED row is
- * persisted with the reason attached.
+ * behaviour of the zero-activity skip path: when `evaluateSkipReason`
+ * returns a non-null reason, the LLM client is NOT invoked, and a
+ * SKIPPED row is persisted with the reason attached.
  */
 describe("ReportUseCase.generateReport — zero-activity skip path", () => {
   const communityId = "kibotcha";
