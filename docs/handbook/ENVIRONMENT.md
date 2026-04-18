@@ -36,8 +36,11 @@ FIREBASE_AUDIENCE=your_project_id
 GCS_SERVICE_ACCOUNT_BASE64=base64_encoded_service_account_json
 GCS_BUCKET_NAME=your_storage_bucket_name
 GCP_PROJECT_ID=your_gcp_project_id
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 ```
+
+> `GOOGLE_APPLICATION_CREDENTIALS` is not used by this project. CI/CD uses
+> Workload Identity Federation, and runtime uses `GCS_SERVICE_ACCOUNT_BASE64`
+> for GCS access. Do not set it.
 
 ### Security/CORS
 
@@ -107,7 +110,6 @@ cp .env.test .env.test.local
 - `GCS_SERVICE_ACCOUNT_BASE64`: Base64-encoded service account JSON.
 - `GCS_BUCKET_NAME`: Name of the storage bucket to upload files to
 - `GCP_PROJECT_ID`: Google Cloud project ID
-- `GOOGLE_APPLICATION_CREDENTIALS`: Path to the service account JSON
 
 ### LINE Integration-Related Variables
 - The rich menu ID is stored in the database and configured in the admin panel.
