@@ -53,7 +53,7 @@ jobs:
       - name: Lint GitHub Actions workflows (actionlint 1.7.7)
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/repo" \
+            -v "${{ github.workspace }}:/repo:ro" \
             --workdir /repo \
             rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 \
             -color
