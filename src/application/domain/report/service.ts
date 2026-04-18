@@ -172,12 +172,20 @@ export default class ReportService {
    * without the other in edge cases, and their existence is itself
    * report-worthy.
    *
-   * A null `community_context` (no JOINED members yet) is also treated as
-   * zero activity by defaulting `active_users_in_window` to 0.
+   * A null `community_context` is still treated as zero activity (the
+   * community context view returns null only when there are no JOINED
+   * members yet), but the skipReason records `community_context=null`
+   * explicitly so ops can tell a legitimately-empty community apart from
+   * a normal zero-activity week. Both variants share the same
+   * `SKIP_REASON_NO_ACTIVITY_PREFIX`, so `skip_reason LIKE 'No activity%'`
+   * continues to bucket them together.
    */
   evaluateSkipReason(payload: WeeklyReportPayload): string | null {
-    const activeUsers = payload.community_context?.active_users_in_window ?? 0;
-    if (activeUsers === 0 && payload.daily_summaries.length === 0) {
+    if (payload.daily_summaries.length > 0) return null;
+    if (payload.community_context === null) {
+      return `${SKIP_REASON_NO_ACTIVITY_PREFIX}: community_context=null, daily_summaries=[]`;
+    }
+    if (payload.community_context.active_users_in_window === 0) {
       return `${SKIP_REASON_NO_ACTIVITY_PREFIX}: active_users=0, daily_summaries=[]`;
     }
     return null;

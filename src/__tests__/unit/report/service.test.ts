@@ -105,13 +105,18 @@ describe("ReportService", () => {
       expect(reason).toMatch(/daily_summaries=\[\]/);
     });
 
-    it("treats null community_context the same as active_users=0", () => {
+    it("skips null community_context with a distinct reason sharing the same prefix", () => {
+      // null community_context still buckets as "no activity" for LIKE
+      // filtering, but the reason suffix differs so ops can tell a
+      // community-with-no-JOINED-members apart from a dormant active one.
       const reason = service.evaluateSkipReason({
         ...basePayload,
         community_context: null,
       });
       expect(reason).not.toBeNull();
       expect(reason).toContain(SKIP_REASON_NO_ACTIVITY_PREFIX);
+      expect(reason).toMatch(/community_context=null/);
+      expect(reason).not.toMatch(/active_users=0,/);
     });
 
     it("does NOT skip when daily_summaries has rows even if active_users=0", () => {

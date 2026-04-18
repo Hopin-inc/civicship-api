@@ -1679,10 +1679,11 @@ model ReportTemplate {
   //   experimentKey must sum to 100 (enforced at the application layer).
   // - Temporary operational constraint until the selection logic ships
   //   (tracked for PR-F3): the current repository resolver picks a template
-  //   via findFirst with no version / isActive filter, so seeding more
-  //   than one row per (variant, scope, communityId) would make the chosen
-  //   row DB-ordering dependent. Until the selection logic lands, keep
-  //   exactly one active row per key — multi-version seeding is a PR-F3
+  //   via findFirst with no `version` or `isActive` filter, so even an
+  //   inactive historical row could be selected if it's the only ordering
+  //   winner. Until the resolver is made explicit about enabled/active
+  //   rows and ordering, seed at most one row per
+  //   (variant, scope, communityId) — multi-version seeding is a PR-F3
   //   capability, not a PR-F1 one.
   version       Int     @default(1)
   isActive      Boolean @default(true) @map("is_active")

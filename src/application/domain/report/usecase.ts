@@ -175,6 +175,7 @@ export default class ReportUseCase {
           ctx,
           tx,
           input,
+          communityId,
           template.id,
           payload,
           periodFrom,
@@ -218,6 +219,7 @@ export default class ReportUseCase {
         ctx,
         tx,
         input,
+        communityId,
         template.id,
         payload,
         periodFrom,
@@ -258,20 +260,25 @@ export default class ReportUseCase {
     ctx: IContext,
     tx: Prisma.TransactionClient,
     input: { variant: string; parentRunId?: string | null },
+    communityId: string,
     templateId: string,
     payload: WeeklyReportPayload,
     periodFrom: Date,
     periodTo: Date,
   ): Promise<Prisma.ReportUncheckedCreateInput> {
+    // `communityId` is sourced from the already-authorized
+    // `permission.communityId` upstream, rather than re-reading
+    // `payload.community_id`, so the two cannot drift if the payload
+    // builder's responsibilities change later.
     const parentRegenerateCount = await this.supersedeParentIfRegenerating(
       ctx,
       input.parentRunId ?? null,
-      payload.community_id,
+      communityId,
       input.variant,
       tx,
     );
     return {
-      communityId: payload.community_id,
+      communityId,
       variant: input.variant,
       periodFrom,
       periodTo,
