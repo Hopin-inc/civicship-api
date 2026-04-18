@@ -139,13 +139,8 @@ jobs:
           } >> "$GITHUB_ENV"
           rm /tmp/test-firebase-key.pem
 
-      - name: Run tests (non-blocking until debt is resolved)
-        # blocking 化条件: 残 27 件の実 debt 解消 (別途ステップ 3 で対応) +
-        # 運用上 flaky でないことの確認。全条件を満たしたら `continue-on-error` を
-        # 削除し、branch protection の required status check に本 step を追加する
-        # 別 PR を出す。
+      - name: Run tests
         run: pnpm test
-        continue-on-error: true
 
       - name: Build (typecheck + emit)
         run: pnpm build
