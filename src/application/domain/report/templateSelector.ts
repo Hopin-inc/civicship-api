@@ -53,6 +53,14 @@ export default class ReportTemplateSelector {
       // plain `Error` produces). Seed data always ships at least a SYSTEM
       // template for every (variant, kind), so hitting this path means a
       // deployment/config problem worth bubbling up clearly.
+      //
+      // `formatError` in presentation/graphql/server.ts only `logger.error`s
+      // codes of `INTERNAL_SERVER_ERROR` — a NOT_FOUND response would sail
+      // past that gate silently. Log explicitly here so this *server-side*
+      // misconfiguration still reaches Cloud Logging and any alerting
+      // subscribed to `report.template.missing`, even though the client
+      // sees a structured 4xx-style response.
+      logger.error("report.template.missing", { variant, kind, communityId });
       throw new NotFoundError("ReportTemplate", { variant, kind, communityId });
     }
 
@@ -64,8 +72,12 @@ export default class ReportTemplateSelector {
     // Structured-meta form: winston's json() formatter promotes each field
     // to a top-level key in Cloud Logging so queries like
     // `jsonPayload.variant="WEEKLY_SUMMARY"` work. A single `JSON.stringify`
-    // would collapse everything into an opaque `message` string.
+    // would collapse everything into an opaque `message` string. `event`
+    // is duplicated into the metadata so existing dashboards/alerts that
+    // match on `jsonPayload.event` continue to work regardless of how the
+    // log ingestion pipeline maps the winston `message` field.
     logger.info("report.template.selected", {
+      event: "report.template.selected",
       variant,
       kind,
       communityId,
