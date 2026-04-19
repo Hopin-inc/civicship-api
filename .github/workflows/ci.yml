@@ -167,6 +167,13 @@ jobs:
       FIREBASE_PROJECT_ID: test-project-id
       FIREBASE_CLIENT_EMAIL: test@test-project.iam.gserviceaccount.com
       FIREBASE_TOKEN_API_KEY: dummy-for-testing
+      # PointVerifyClient (src/infrastructure/libs/point-verify/client.ts)
+      # は constructor で IDENTUS_API_URL が未設定 / example URL の場合に throw
+      # する。DI resolve 時に auth test が graphql schema 全体を
+      # container.resolve(...) で構築するため、env が無いと全 auth test が fail
+      # する。CI では "example URL でない任意の URL" であれば pass する。
+      IDENTUS_API_URL: http://ci-dummy.invalid
+      IDENTUS_API_KEY: dummy-for-testing
 
     steps:
       - name: Harden runner
