@@ -1677,14 +1677,18 @@ model ReportTemplate {
   // - `trafficWeight` is a percentage in 0..100; when multiple rows with the
   //   same (variant, scope, communityId) are active the weights within an
   //   experimentKey must sum to 100 (enforced at the application layer).
-  // - Temporary operational constraint until the selection logic ships
-  //   (tracked for PR-F3): the current repository resolver picks a template
-  //   via findFirst with no `version` or `isActive` filter, so even an
-  //   inactive historical row could be selected if it's the only ordering
-  //   winner. Until the resolver is made explicit about enabled/active
-  //   rows and ordering, seed at most one row per
-  //   (variant, scope, communityId) — multi-version seeding is a PR-F3
-  //   capability, not a PR-F1 one.
+  // - Read/write paths in `ReportRepository` resolve "the row to use"
+  //   deterministically across coexisting versions:
+  //     * findTemplate filters `isActive=true` (prod must never serve a
+  //       shakeout candidate) and tie-breaks by version DESC.
+  //     * upsertTemplate sorts `isActive DESC, version DESC` without a
+  //       hard isActive filter, so admin edits prefer the live row but
+  //       fall back to the newest inactive row when every template was
+  //       deactivated — avoids an unrecoverable P2002 on the default
+  //       version=1 unique key in that edge case.
+  //   Multi-version seeding (e.g. v1 active alongside a v2 shakeout
+  //   candidate with isActive=false — see PR-F5 §7) is therefore safe
+  //   for both the admin UI and the prod selector.
   version       Int     @default(1)
   isActive      Boolean @default(true) @map("is_active")
   experimentKey String? @map("experiment_key")
@@ -1886,6 +1890,21 @@ model ReportGoldenCase {
   // CI harness's switch — we want to make a deliberate decision about
   // each new status rather than silently treat it as "DRAFT-expected".
   expectedStatus ReportStatus? @map("expected_status")
+
+  // Which template version this case's judgeCriteria belongs to.
+  // - null: shared baseline — runs on every `pnpm ci:report-golden`
+  //   invocation (with or without --version). Criteria listed here
+  //   must be satisfiable by ALL active and candidate template
+  //   versions, so this is where common regressions (fabrication,
+  //   category confusion, etc.) live.
+  // - N (integer): applies only when `--version=N` is passed. Use for
+  //   criteria that are specific to a single prompt version (e.g. "v2
+  //   must mention chain_depth numerically in the opening") and would
+  //   incorrectly fail earlier versions.
+  // The CI harness filters cases by `templateVersion IS NULL OR
+  // templateVersion = N` so new versions can layer in their own
+  // criteria without destabilising the shared baseline.
+  templateVersion Int? @map("template_version")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

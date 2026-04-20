@@ -259,7 +259,7 @@ export interface IReportRepository {
 
   findGoldenCases(
     ctx: IContext,
-    variant?: string,
+    options?: { variant?: string; pinnedVersion?: number | null },
   ): Promise<PrismaReportGoldenCase[]>;
 
   upsertGoldenCase(
@@ -273,6 +273,7 @@ export interface IReportRepository {
       forbiddenKeys: string[];
       notes?: string | null;
       expectedStatus?: ReportStatus | null;
+      templateVersion?: number | null;
     },
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportGoldenCase>;

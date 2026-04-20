@@ -505,11 +505,24 @@ export default class ReportRepository implements IReportRepository {
 
   async findGoldenCases(
     ctx: IContext,
-    variant?: string,
+    options: { variant?: string; pinnedVersion?: number | null } = {},
   ): Promise<PrismaReportGoldenCase[]> {
+    const { variant, pinnedVersion } = options;
+    // Version filter semantics (see ReportGoldenCase.templateVersion comment):
+    //   pinnedVersion=N → shared baseline ∪ v{N}-specific cases.
+    //   pinnedVersion null/undefined → shared baseline only (matches the
+    //   production path where `pnpm ci:report-golden` grades only the
+    //   currently active prompt).
+    const versionWhere: Prisma.ReportGoldenCaseWhereInput =
+      pinnedVersion != null
+        ? { OR: [{ templateVersion: null }, { templateVersion: pinnedVersion }] }
+        : { templateVersion: null };
+    const where: Prisma.ReportGoldenCaseWhereInput = variant
+      ? { AND: [{ variant }, versionWhere] }
+      : versionWhere;
     return ctx.issuer.public(ctx, (tx) =>
       tx.reportGoldenCase.findMany({
-        where: variant ? { variant } : undefined,
+        where,
         select: reportGoldenCaseSelect,
         orderBy: [{ variant: "asc" }, { label: "asc" }],
       }),
@@ -527,6 +540,7 @@ export default class ReportRepository implements IReportRepository {
       forbiddenKeys: string[];
       notes?: string | null;
       expectedStatus?: ReportStatus | null;
+      templateVersion?: number | null;
     },
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportGoldenCase> {
@@ -542,6 +556,7 @@ export default class ReportRepository implements IReportRepository {
           forbiddenKeys: data.forbiddenKeys,
           notes: data.notes ?? null,
           expectedStatus: data.expectedStatus ?? null,
+          templateVersion: data.templateVersion ?? null,
         },
         update: {
           payloadFixture: data.payloadFixture,
@@ -550,6 +565,7 @@ export default class ReportRepository implements IReportRepository {
           forbiddenKeys: data.forbiddenKeys,
           notes: data.notes ?? null,
           expectedStatus: data.expectedStatus ?? null,
+          templateVersion: data.templateVersion ?? null,
         },
         select: reportGoldenCaseSelect,
       });
@@ -574,9 +590,32 @@ export default class ReportRepository implements IReportRepository {
     // When an admin path for editing JUDGE templates is added, this
     // method should grow a `kind` parameter and thread it through.
     const kind = ReportTemplateKind.GENERATION;
+    // Resolve "the row to update" deterministically across both the
+    // multi-version case and the all-inactive edge case:
+    //   - Primary sort `isActive desc`: when a v1 active + v2 shakeout
+    //     candidate (isActive=false) coexist, the active row wins so
+    //     admin edits land on the live template rather than the
+    //     shakeout candidate (the original bug motivating this lookup).
+    //   - Secondary sort `version desc`: ties within the same isActive
+    //     bucket resolve to the newest version — covers both a planned
+    //     multi-active A/B overlap (picks the newer active) and the
+    //     all-inactive fallback (picks the newest inactive) so an
+    //     admin who deactivated every template can still edit the
+    //     last-known row without hitting an unrecoverable P2002 on
+    //     the version-1 unique constraint.
+    const existingWhere = {
+      variant,
+      communityId,
+      kind,
+    } as const;
+    const existingOrderBy = [
+      { isActive: "desc" as const },
+      { version: "desc" as const },
+    ];
     const doUpsert = async (client: Prisma.TransactionClient) => {
       const existing = await client.reportTemplate.findFirst({
-        where: { variant, communityId, kind },
+        where: existingWhere,
+        orderBy: existingOrderBy,
         select: { id: true },
       });
       if (existing) {
@@ -600,7 +639,8 @@ export default class ReportRepository implements IReportRepository {
       } catch (e: unknown) {
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
           const raced = await client.reportTemplate.findFirst({
-            where: { variant, communityId, kind },
+            where: existingWhere,
+            orderBy: existingOrderBy,
             select: { id: true },
           });
           if (raced) {

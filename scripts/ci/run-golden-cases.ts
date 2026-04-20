@@ -154,10 +154,15 @@ async function runOneCase(
       )
     : await service.getTemplate(ctx, goldenCase.variant, null);
   if (!template) {
+    // When no version is pinned, `service.getTemplate` filters by
+    // isActive=true, so surface "active" in the failure message — a
+    // seeded-but-inactive template is the single most common cause of
+    // this branch firing, and the generic message sent engineers
+    // chasing phantom missing rows.
     const detail =
       pinnedVersion !== null
         ? `variant=${goldenCase.variant}, version=${pinnedVersion}`
-        : `variant=${goldenCase.variant}`;
+        : `active variant=${goldenCase.variant}`;
     return {
       variant: goldenCase.variant,
       label: goldenCase.label,
@@ -286,7 +291,11 @@ async function main() {
   const llmClient = container.resolve(AnthropicLlmClient);
   const ctx = makeCiContext();
 
-  const goldenCases = await service.getGoldenCases(ctx);
+  // Filter cases to "shared baseline" ∪ "v{pinnedVersion}-specific".
+  // See ReportGoldenCase.templateVersion schema comment for rationale
+  // — the shared baseline stays stable across template versions so a
+  // new version's criteria cannot retroactively fail earlier versions.
+  const goldenCases = await service.getGoldenCases(ctx, { pinnedVersion });
   if (goldenCases.length === 0) {
     console.error("No golden cases found. Run `pnpm db:seed-report-golden-cases` first.");
     process.exit(2);

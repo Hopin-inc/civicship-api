@@ -9954,6 +9954,7 @@ type ReportGoldenCaseFactoryDefineInput = {
     forbiddenKeys?: Prisma.ReportGoldenCaseCreateforbiddenKeysInput | Array<string>;
     notes?: string | null;
     expectedStatus?: ReportStatus | null;
+    templateVersion?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
 };
