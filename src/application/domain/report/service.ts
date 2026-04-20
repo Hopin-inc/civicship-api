@@ -1,4 +1,4 @@
-import { Prisma, ReportStatus } from "@prisma/client";
+import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
@@ -112,6 +112,23 @@ export default class ReportService {
     communityId: string | null,
   ): Promise<PrismaReportTemplate | null> {
     return this.repository.findTemplate(ctx, variant, communityId);
+  }
+
+  /**
+   * CI-only direct lookup by (variant, kind, version). Wraps
+   * `IReportRepository.findTemplateByVersion` so the Golden Case harness
+   * has the same service-shaped seam as the rest of the report domain.
+   * Production resolvers must not use this — it bypasses the
+   * `isActive` / `isEnabled` gates.
+   */
+  async getTemplateByVersion(
+    ctx: IContext,
+    variant: string,
+    kind: ReportTemplateKind,
+    version: number,
+    communityId: string | null = null,
+  ): Promise<PrismaReportTemplate | null> {
+    return this.repository.findTemplateByVersion(ctx, variant, kind, version, communityId);
   }
 
   async upsertTemplate(

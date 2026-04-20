@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { ReportStatus } from "@prisma/client";
+import { ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { container } from "tsyringe";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { AnthropicLlmClient } from "@/infrastructure/libs/llm";
@@ -14,9 +14,17 @@ import type { IContext } from "@/types/server";
 /**
  * Golden-case CI harness.
  *
+ * Usage:
+ *   pnpm ci:report-golden                 # active SYSTEM template per variant
+ *   pnpm ci:report-golden -- --version=2  # pin to a specific version (bypasses isActive)
+ *
  * For each row in `t_report_golden_cases`:
- *   1. Resolve the active GENERATION template (kind=GENERATION,
- *      isEnabled=true, scope=SYSTEM) for the case's variant.
+ *   1. Resolve the GENERATION template for the case's variant.
+ *      - No `--version`: the active SYSTEM template (same path as prod).
+ *      - `--version=N`: the exact (variant, GENERATION, N, SYSTEM) row,
+ *        regardless of `isActive` / `isEnabled`. This is the only way
+ *        to grade a v2-in-shakeout (PR-F5 §7) candidate before it is
+ *        flipped active.
  *   2. Evaluate the skip guard against the fixture payload. If the
  *      guard fires, the case is treated as the "SKIPPED expected"
  *      sentinel — minJudgeScore must be 0, otherwise the harness
@@ -86,6 +94,7 @@ async function runOneCase(
     notes: string | null;
     expectedStatus: ReportStatus | null;
   },
+  pinnedVersion: number | null,
 ): Promise<CaseOutcome> {
   const payload = goldenCase.payloadFixture as WeeklyReportPayload;
   const skipReason = service.evaluateSkipReason(payload);
@@ -135,13 +144,25 @@ async function runOneCase(
     };
   }
 
-  const template = await service.getTemplate(ctx, goldenCase.variant, null);
+  const template = pinnedVersion !== null
+    ? await service.getTemplateByVersion(
+        ctx,
+        goldenCase.variant,
+        ReportTemplateKind.GENERATION,
+        pinnedVersion,
+        null,
+      )
+    : await service.getTemplate(ctx, goldenCase.variant, null);
   if (!template) {
+    const detail =
+      pinnedVersion !== null
+        ? `variant=${goldenCase.variant}, version=${pinnedVersion}`
+        : `variant=${goldenCase.variant}`;
     return {
       variant: goldenCase.variant,
       label: goldenCase.label,
       pass: false,
-      reason: `No GENERATION template found for variant=${goldenCase.variant}`,
+      reason: `No GENERATION template found for ${detail}`,
     };
   }
 
@@ -228,11 +249,31 @@ async function runOneCase(
   };
 }
 
+/**
+ * Parse `--version=N` from argv. Returns null when absent, a positive
+ * integer when valid, or exits with code 2 on a malformed value so a
+ * typo (`--version=foo` / `--version=-1`) fails the CI run loudly
+ * instead of silently falling back to the active template.
+ */
+function parsePinnedVersion(argv: string[]): number | null {
+  const arg = argv.find((a) => a.startsWith("--version="));
+  if (!arg) return null;
+  const raw = arg.slice("--version=".length);
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    console.error(`Invalid --version value: "${raw}" (must be a positive integer).`);
+    process.exit(2);
+  }
+  return n;
+}
+
 async function main() {
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error("ANTHROPIC_API_KEY is required to run the golden-case harness.");
     process.exit(2);
   }
+
+  const pinnedVersion = parsePinnedVersion(process.argv.slice(2));
 
   container.register("prismaClient", { useValue: prismaClient });
   container.register("ReportRepository", { useClass: ReportRepository });
@@ -251,11 +292,15 @@ async function main() {
     process.exit(2);
   }
 
-  console.info(`Running ${goldenCases.length} golden cases...`);
+  console.info(
+    `Running ${goldenCases.length} golden cases${
+      pinnedVersion !== null ? ` (pinned to GENERATION v${pinnedVersion})` : ""
+    }...`,
+  );
   const outcomes: CaseOutcome[] = [];
   for (const c of goldenCases) {
     console.info(`\n[${c.variant}/${c.label}] ${c.notes ?? ""}`);
-    const outcome = await runOneCase(ctx, service, judgeService, llmClient, c);
+    const outcome = await runOneCase(ctx, service, judgeService, llmClient, c, pinnedVersion);
     outcomes.push(outcome);
     const status = outcome.pass ? "PASS" : "FAIL";
     console.info(`  ${status}: ${outcome.reason}`);
