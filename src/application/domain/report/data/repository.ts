@@ -372,6 +372,27 @@ export default class ReportRepository implements IReportRepository {
   }
 
   /**
+   * CI-only direct lookup. See `IReportRepository.findTemplateByVersion`
+   * for the contract — ignores `isEnabled` / `isActive` so the Golden
+   * Case harness can grade an inactive candidate during the v2
+   * shakeout window (PR-F5 §7). Not for production use.
+   */
+  async findTemplateByVersion(
+    ctx: IContext,
+    variant: string,
+    kind: ReportTemplateKind,
+    version: number,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate | null> {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.reportTemplate.findFirst({
+        where: { variant, kind, version, communityId },
+        select: reportTemplateSelect,
+      }),
+    );
+  }
+
+  /**
    * Active candidates for (variant, kind, communityId). Unlike `findTemplate`
    * this does NOT fall back to SYSTEM when `communityId` is non-null — the
    * caller (the selector) must issue a separate SYSTEM query when the

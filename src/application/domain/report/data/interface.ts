@@ -198,6 +198,25 @@ export interface IReportRepository {
   ): Promise<PrismaReportTemplate | null>;
 
   /**
+   * CI-only direct lookup by (variant, kind, version, communityId).
+   *
+   * Deliberately bypasses the `isEnabled` / `isActive` filters used by
+   * `findTemplate` and `findActiveTemplates` — the Golden Case harness
+   * (`scripts/ci/run-golden-cases.ts`) must be able to grade a template
+   * that is pinned to `isActive=false` during the v2 shakeout window
+   * (PR-F5 §7). Production code paths must NOT call this; use
+   * `ReportTemplateSelector.selectTemplate` instead, which respects the
+   * active/enabled gates and the weighted A/B draw.
+   */
+  findTemplateByVersion(
+    ctx: IContext,
+    variant: string,
+    kind: ReportTemplateKind,
+    version: number,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate | null>;
+
+  /**
    * Resolve every active candidate template for a given
    * (variant, kind, communityId) triple. Scoped strictly to the
    * `communityId` argument — SYSTEM fallback is the caller's job, so the
