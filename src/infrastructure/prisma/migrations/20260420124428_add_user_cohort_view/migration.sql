@@ -52,11 +52,12 @@ SELECT
     mc."user_id",
     mc."onboarding_week",
     fa."first_active_week",
-    EXTRACT(
-        EPOCH FROM (
-            CURRENT_DATE - COALESCE(mc."onboarding_week", fa."first_active_week")
-        )
-    ) / 604800 AS "total_weeks_in_community"
+    -- `CURRENT_DATE - date` returns integer (days) in Postgres, so divide
+    -- by 7 directly rather than EXTRACT(EPOCH FROM interval) / 604800 which
+    -- only works on timestamp subtraction. Cast to float so the quotient
+    -- preserves fractional weeks.
+    (CURRENT_DATE - COALESCE(mc."onboarding_week", fa."first_active_week"))::float / 7
+        AS "total_weeks_in_community"
 FROM membership_cohort mc
 LEFT JOIN first_active fa
     ON fa."community_id" = mc."community_id"

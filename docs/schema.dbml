@@ -1019,6 +1019,18 @@ Table v_user_profile_for_report {
   }
 }
 
+Table v_user_cohort {
+  communityId String [not null]
+  userId String [not null]
+  onboardingWeek DateTime [not null]
+  firstActiveWeek DateTime
+  totalWeeksInCommunity Float
+
+  indexes {
+    (communityId, userId) [pk]
+  }
+}
+
 Table v_earliest_reservable_slot {
   opportunityId String [pk]
   opportunity t_opportunities [not null]

@@ -1117,6 +1117,15 @@ OTHER OTHER
     }
   
 
+  "v_user_cohort" {
+    String communityId "🗝️"
+    String userId "🗝️"
+    DateTime onboardingWeek 
+    DateTime firstActiveWeek "❓"
+    Float totalWeeksInCommunity "❓"
+    }
+  
+
   "v_earliest_reservable_slot" {
     String opportunityId "🗝️"
     DateTime earliestReservableAt "❓"
