@@ -106,7 +106,23 @@ export default class NFTWalletService {
       return { success: false, code: "WALLET_FOREIGN" };
     }
 
-    const wallet = await this.createOrUpdateWalletAddress(ctx, userId, walletAddress, tx);
+    let wallet;
+    try {
+      wallet = await this.createOrUpdateWalletAddress(ctx, userId, walletAddress, tx);
+    } catch (error) {
+      const isUniqueConstraintViolation =
+        error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+      const isForeignWalletError =
+        error instanceof Error && error.message.includes("already linked to another user");
+      if (isUniqueConstraintViolation || isForeignWalletError) {
+        logger.warn("⚠️ NFT sync rejected during wallet upsert: wallet linked to another user", {
+          walletAddress,
+          userId,
+        });
+        return { success: false, code: "WALLET_FOREIGN" };
+      }
+      throw error;
+    }
 
     const uniqueTokens = new Map<string, NftSyncItem["token"] & { rawToken: Record<string, unknown> }>();
     for (const item of validation.items) {

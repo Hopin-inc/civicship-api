@@ -32,38 +32,38 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
   const items: NftSyncItem[] = [];
 
   for (let i = 0; i < input.length; i++) {
-    if (errors.length >= MAX_ERRORS) {
-      errors.push(`... truncated at ${MAX_ERRORS} errors`);
+    if (errors.length >= MAX_ERRORS - 1) {
+      errors.push(`... truncated (first ${MAX_ERRORS - 1} errors shown)`);
       break;
     }
 
     const raw = input[i];
     if (!isPlainObject(raw)) {
-      errors.push(`items[${i}]: expected an object`);
+      errors.push(`nfts[${i}]: expected an object`);
       continue;
     }
 
     const id = toNonEmptyString(raw.id);
     if (id === undefined) {
-      errors.push(`items[${i}].id: expected a non-empty string`);
+      errors.push(`nfts[${i}].id: expected a non-empty string`);
       continue;
     }
 
     const rawToken = raw.token;
     if (!isPlainObject(rawToken)) {
-      errors.push(`items[${i}].token: expected an object`);
+      errors.push(`nfts[${i}].token: expected an object`);
       continue;
     }
 
     const tokenAddress = toNonEmptyString(rawToken.address);
     if (tokenAddress === undefined) {
-      errors.push(`items[${i}].token.address: expected a non-empty string`);
+      errors.push(`nfts[${i}].token.address: expected a non-empty string`);
       continue;
     }
 
     const tokenType = toNonEmptyString(rawToken.type);
     if (tokenType === undefined) {
-      errors.push(`items[${i}].token.type: expected a non-empty string`);
+      errors.push(`nfts[${i}].token.type: expected a non-empty string`);
       continue;
     }
 
@@ -74,7 +74,7 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
     } else if (isPlainObject(rawMetadataInput)) {
       rawMetadata = rawMetadataInput;
     } else {
-      errors.push(`items[${i}].metadata: expected an object, null, or omitted`);
+      errors.push(`nfts[${i}].metadata: expected an object, null, or omitted`);
       continue;
     }
 

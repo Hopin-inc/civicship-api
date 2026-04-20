@@ -26,7 +26,10 @@ router.post('/nfts/sync',
       const { user } = req as AuthedRequest;
 
       if (!walletAddress || typeof walletAddress !== 'string') {
-        const response: SyncNftsResponse = { error: 'walletAddress must be a string' };
+        const response: SyncNftsResponse = {
+          error: 'Invalid payload',
+          errors: ['walletAddress must be a non-empty string'],
+        };
         return res.status(400).json(response);
       }
 
