@@ -38,6 +38,23 @@ export type NftMetadataItem = {
   } | null;
 };
 
+export type NftSyncItem = {
+  id: string;
+  token: {
+    address: string;
+    type: string;
+    name?: string;
+    symbol?: string;
+  };
+  metadata: {
+    name?: string;
+    description?: string;
+    image?: string;
+  } | null;
+  rawToken: Record<string, unknown>;
+  rawMetadata: Record<string, unknown> | null;
+};
+
 export type NftMetadata = {
   items: NftMetadataItem[];
 };

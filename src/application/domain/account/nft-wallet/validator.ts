@@ -1,7 +1,7 @@
-import { NftMetadataItem } from "@/application/domain/account/nft-wallet/service";
+import { NftSyncItem } from "@/application/domain/account/nft-wallet/service";
 
 export type NftPayloadValidationResult =
-  | { valid: true; count: number; items: NftMetadataItem[] }
+  | { valid: true; count: number; items: NftSyncItem[] }
   | { valid: false; errors: string[] };
 
 const MAX_ERRORS = 10;
@@ -15,6 +15,10 @@ function toOptionalString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function toNonEmptyString(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 export function validateNftPayload(input: unknown): NftPayloadValidationResult {
   if (!Array.isArray(input)) {
     return { valid: false, errors: ["nfts: expected an array"] };
@@ -25,7 +29,7 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
   }
 
   const errors: string[] = [];
-  const items: NftMetadataItem[] = [];
+  const items: NftSyncItem[] = [];
 
   for (let i = 0; i < input.length; i++) {
     if (errors.length >= MAX_ERRORS) {
@@ -50,10 +54,15 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
       continue;
     }
 
-    const tokenAddress = toOptionalString(rawToken.address);
-    const tokenAddressHash = toOptionalString(rawToken.address_hash);
-    if (tokenAddress === undefined && tokenAddressHash === undefined) {
-      errors.push(`items[${i}].token: missing address or address_hash`);
+    const tokenAddress = toNonEmptyString(rawToken.address);
+    if (tokenAddress === undefined) {
+      errors.push(`items[${i}].token.address: expected a non-empty string`);
+      continue;
+    }
+
+    const tokenType = toNonEmptyString(rawToken.type);
+    if (tokenType === undefined) {
+      errors.push(`items[${i}].token.type: expected a non-empty string`);
       continue;
     }
 
@@ -63,15 +72,14 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
       continue;
     }
 
-    const token: NftMetadataItem["token"] = {
+    const token: NftSyncItem["token"] = {
       address: tokenAddress,
-      address_hash: tokenAddressHash,
+      type: tokenType,
       name: toOptionalString(rawToken.name),
       symbol: toOptionalString(rawToken.symbol),
-      type: toOptionalString(rawToken.type),
     };
 
-    const metadata: NftMetadataItem["metadata"] = rawMetadata === null
+    const metadata: NftSyncItem["metadata"] = rawMetadata === null
       ? null
       : {
           name: toOptionalString(rawMetadata.name),
@@ -79,7 +87,13 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
           image: toOptionalString(rawMetadata.image),
         };
 
-    items.push({ id: raw.id, token, metadata });
+    items.push({
+      id: raw.id,
+      token,
+      metadata,
+      rawToken,
+      rawMetadata,
+    });
   }
 
   if (errors.length > 0) {
