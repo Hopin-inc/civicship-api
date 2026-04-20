@@ -21,10 +21,14 @@
 -- around re-issuance / manual grants that we don't want to leak into
 -- cohort math.
 --
--- `first_active_week` is the first week the user was on the FROM side of a
--- transaction (i.e. actively sent, not just received) — matches the
--- `is_sender` signal used by the retention aggregate queries so
--- weeks_since_join and the retention numbers tell a consistent story.
+-- `first_active_week` is the first week the user appeared on the FROM side
+-- of any transaction in this view definition (i.e. actively sent, not just
+-- received). Note that this initial migration does NOT filter
+-- `t_transactions.reason`, so ONBOARDING / GRANT / POINT_ISSUED etc. all
+-- contribute here — the "matches the is_sender signal" alignment with the
+-- retention aggregate queries (which are DONATION-scoped) is tightened in
+-- a follow-up migration (20260420131629_scope_v_user_cohort_first_active_to_donation)
+-- that replaces this definition.
 -- ============================================================================
 
 CREATE VIEW "v_user_cohort" AS
