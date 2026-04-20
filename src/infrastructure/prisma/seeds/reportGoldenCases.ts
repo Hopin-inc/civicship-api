@@ -417,7 +417,7 @@ const bustlingCase: GoldenCaseDefinition = {
 // ---------------------------------------------------------------------------
 // v2-specific cases (templateVersion=2)
 //
-// These only run when `pnpm ci:report-golden --version=2` is invoked.
+// These only run when `pnpm ci:report-golden -- --version=2` is invoked.
 // They reuse the same payload fixtures as the shared baseline but hold
 // criteria that are specific to the v2 prompt — putting them in the
 // shared set would incorrectly fail v1 (see PR-F5 §7).
