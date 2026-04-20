@@ -128,7 +128,8 @@ jobs:
     strategy:
       fail-fast: false
       # test ディレクトリ単位で job 並列化。jest の `--shard` (hash 分散) ではなく
-      # `--testPathPattern` で category split することで、job 名が
+      # matrix.path を positional 引数として渡してテスト対象を絞り込む
+      # (Jest の testPathPattern 相当) ことで、job 名が
       # unit / integration / e2e / auth という意味的ラベルになり、失敗した
       # カテゴリが一目で分かる。各 job は独立 Postgres service を持ち、job 内は
       # --runInBand で直列 (DB race 安全)、job 間は並列で高速化する。
