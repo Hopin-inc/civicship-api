@@ -8,6 +8,7 @@ import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
 import { PrismaAuthUser } from '@/application/domain/account/user/data/type';
+import type { SyncNftsResponse } from '@/presentation/router/nft.types';
 
 type AuthedRequest = Request & { user: PrismaAuthUser };
 
@@ -19,11 +20,14 @@ router.post('/nfts/sync',
   validateFirebasePhoneAuth,
   async (req, res) => {
     try {
-      const { walletAddress, nfts } = req.body;
+      const body = req.body as { walletAddress?: unknown; nfts?: unknown };
+      const walletAddress = body.walletAddress;
+      const nfts = body.nfts;
       const { user } = req as AuthedRequest;
 
       if (!walletAddress || typeof walletAddress !== 'string') {
-        return res.status(400).json({ error: 'walletAddress must be a string' });
+        const response: SyncNftsResponse = { error: 'walletAddress must be a string' };
+        return res.status(400).json(response);
       }
 
       const issuer = new PrismaClientIssuer();
@@ -32,18 +36,22 @@ router.post('/nfts/sync',
       const result = await nftWalletUsecase.syncNfts(ctx, user.id, walletAddress, nfts);
 
       if (result.success) {
-        return res.status(200).json({ success: true, processed: result.processed });
+        const response: SyncNftsResponse = { success: true, processed: result.processed };
+        return res.status(200).json(response);
       }
 
       if (result.code === "INVALID_PAYLOAD") {
-        return res.status(400).json({ error: "Invalid payload", errors: result.errors });
+        const response: SyncNftsResponse = { error: "Invalid payload", errors: result.errors };
+        return res.status(400).json(response);
       }
 
       // WALLET_FOREIGN
-      return res.status(403).json({ error: "Wallet is linked to another user" });
+      const response: SyncNftsResponse = { error: "Wallet is linked to another user" };
+      return res.status(403).json(response);
     } catch (error) {
       logger.error('NFT sync error:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+      const response: SyncNftsResponse = { error: 'Internal server error' };
+      return res.status(500).json(response);
     }
   }
 );
