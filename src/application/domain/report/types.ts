@@ -69,12 +69,15 @@ export interface WeeklyReportPayload {
 }
 
 /**
- * AI-facing community snapshot. `active_rate` is `active_users_in_window /
- * total_members` (null when the community has no JOINED members yet, so the
- * LLM does not emit a divide-by-zero ratio). `custom_context` is a free-text
- * markdown field sourced from `ReportTemplate.communityContext`, piped
- * through untouched so editors can steer tone / vision / references without
- * a schema change.
+ * AI-facing community snapshot. `active_users_in_window` is DONATION-scoped
+ * (distinct users with `donation_out_count > 0` or `received_donation_count
+ * > 0` in the window) so the LLM reads peer-to-peer engagement, not a
+ * figure inflated by system-issued ONBOARDING / GRANT transactions.
+ * `active_rate` is `active_users_in_window / total_members` (null when the
+ * community has no JOINED members yet, so the LLM does not emit a
+ * divide-by-zero ratio). `custom_context` is a free-text markdown field
+ * sourced from `ReportTemplate.communityContext`, piped through untouched
+ * so editors can steer tone / vision / references without a schema change.
  */
 export interface CommunityContext {
   community_id: string;
@@ -114,6 +117,14 @@ export interface DailySummaryItem {
   burn_count: number;
 }
 
+/**
+ * Per-day DONATION-scoped distinct user counts. `senders` counts users
+ * who sent at least one DONATION that day, `receivers` counts users who
+ * received at least one DONATION that day, and `active_users` is the
+ * union. Users whose only activity was receiving an admin-issued
+ * ONBOARDING / GRANT are intentionally excluded — the peer-engagement
+ * signal is what drives the narrative, not raw MV reach.
+ */
 export interface DailyActiveUsersItem {
   date: string;
   active_users: number;
@@ -177,6 +188,10 @@ export interface TopUserItem {
  * deliberate subset of the current-period payload — only the counters the
  * LLM needs for high-level growth commentary.
  *
+ * `active_users_in_window` uses the same DONATION-scoped definition as
+ * `CommunityContext.active_users_in_window` so `growth_rate.active_users`
+ * compares the two windows on a consistent peer-engagement frame.
+ *
  * `new_members` uses `t_memberships.created_at` to match `RetentionSummary`
  * (and not `ONBOARDING` transactions, which have operational noise around
  * re-issuance timing).
@@ -191,6 +206,12 @@ export interface PreviousPeriodSummary {
    * Percent week-over-week change, pre-computed. `null` when the previous
    * period's denominator was zero (nothing to compare against) so the LLM
    * is never asked to divide by zero.
+   *
+   * `active_users` is additionally `null` when `community_context` is
+   * null: without the current-window active-user count (which lives on
+   * that block), we have no DONATION-scoped numerator to compare against
+   * the previous window and refuse to fabricate one from a
+   * different-frame proxy.
    */
   growth_rate: {
     active_users: number | null;

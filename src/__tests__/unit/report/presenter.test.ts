@@ -213,6 +213,55 @@ describe("ReportPresenter.weeklyPayload (community_context / deepest_chain)", ()
     });
   });
 
+  // Regression guard for the "null growth_rate.active_users when community
+  // context is missing" fix. Without a current-window active-user
+  // numerator on the same DONATION-scoped frame as previous_period, we
+  // refuse to emit a percentage — the presenter must not fall back to a
+  // different-frame proxy that would produce a scale-mismatched comparison.
+  // tx_count / points_sum are sourced from the daily summaries already in
+  // the payload, so those growth rates still compute even without the
+  // community context.
+  it("nulls out growth_rate.active_users when communityContext is null (preserves tx_count / points_sum)", () => {
+    const payload = ReportPresenter.weeklyPayload({
+      ...baseInput,
+      summaries: [
+        {
+          date: new Date(Date.UTC(2026, 3, 14)),
+          communityId: "community-1",
+          reason: TransactionReason.DONATION,
+          txCount: 20,
+          pointsSum: 10000n,
+          chainRootCount: 0,
+          chainDescendantCount: 0,
+          maxChainDepth: null,
+          sumChainDepth: 0,
+          issuanceCount: 0,
+          burnCount: 0,
+        },
+      ],
+      communityContext: null,
+      deepestChain: null,
+      previousPeriod: {
+        range: {
+          from: new Date(Date.UTC(2026, 3, 3)),
+          to: new Date(Date.UTC(2026, 3, 9)),
+        },
+        aggregate: {
+          activeUsersInWindow: 5,
+          totalTxCount: 10,
+          totalPointsSum: 5000n,
+          newMembers: 1,
+        },
+      },
+    });
+
+    expect(payload.previous_period?.growth_rate).toEqual({
+      active_users: null,
+      tx_count: 100,
+      points_sum: 100,
+    });
+  });
+
   it("leaves pre-existing payload fields intact alongside the new blocks", () => {
     const payload = ReportPresenter.weeklyPayload({
       ...baseInput,

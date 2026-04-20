@@ -165,17 +165,15 @@ export default class ReportPresenter {
       0n,
     );
     const currentPointsSum = bigintToSafeNumber(currentPointsSumBigInt);
-    // Prefer `community_context.active_users_in_window`, but fall back to
-    // the retention aggregate's `current_active_count` when the community
-    // context lookup came back null (missing / soft-deleted community).
-    // Without this fallback, `growth_rate.active_users` collapses to the
-    // previous-window numerator / 0 math and misreports as −100% even
-    // when the current window actually had activity that the retention
-    // pass successfully counted.
-    const currentActiveUsers =
-      input.communityContext?.activeUsersInWindow ??
-      input.retention?.aggregate.currentActiveCount ??
-      0;
+    // Sourced from `findCommunityContext`, which scopes the count to
+    // peer-to-peer DONATION activity — matching the equivalent scoping in
+    // `findPeriodAggregate` so the `growth_rate.active_users` math below
+    // compares self-consistent current-vs-previous numbers. When the
+    // community context lookup returned null we do NOT fall back to the
+    // retention aggregate: even though both are DONATION-scoped now, the
+    // honest answer in that edge case is "no ground truth for the current
+    // window", and `growth_rate.active_users` collapses to `null` below.
+    const currentActiveUsers = input.communityContext?.activeUsersInWindow ?? 0;
 
     const retention: RetentionSummary | null = input.retention
       ? {
@@ -217,10 +215,22 @@ export default class ReportPresenter {
           total_points_sum: bigintToSafeNumber(input.previousPeriod.aggregate.totalPointsSum),
           new_members: input.previousPeriod.aggregate.newMembers,
           growth_rate: {
-            active_users: percentChange(
-              currentActiveUsers,
-              input.previousPeriod.aggregate.activeUsersInWindow,
-            ),
+            // `active_users` is `null` when `communityContext` was not
+            // returned (missing / soft-deleted community): without a
+            // current-window denominator that uses the same DONATION-scope
+            // frame as the previous-window `activeUsersInWindow`, any
+            // percent-change we could compute here would be a
+            // scale-mismatched comparison (e.g. retention-derived narrow
+            // vs period-aggregate broad) and would mis-report the trend.
+            // `tx_count` / `points_sum` are safe because the current-window
+            // numerators derive from the already-passed daily summaries —
+            // no dependency on the community context row.
+            active_users: input.communityContext
+              ? percentChange(
+                  currentActiveUsers,
+                  input.previousPeriod.aggregate.activeUsersInWindow,
+                )
+              : null,
             tx_count: percentChange(currentTxCount, input.previousPeriod.aggregate.totalTxCount),
             points_sum: percentChange(
               currentPointsSum,
