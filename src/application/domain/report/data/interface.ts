@@ -26,6 +26,15 @@ export interface TransactionSummaryDailyRow {
   burnCount: number;
 }
 
+/**
+ * Per-day distinct user counts for a single community, DONATION-scoped to
+ * match the `is_sender` / `is_receiver` frame used by the retention
+ * aggregate: `senders` counts users with `donation_out_count > 0` that
+ * day, `receivers` counts users with `received_donation_count > 0`, and
+ * `activeUsers` is the union (DISTINCT user_id matching either). Users
+ * whose only activity was receiving an admin-issued ONBOARDING / GRANT
+ * transaction are intentionally excluded.
+ */
 export interface TransactionActiveUsersDailyRow {
   date: Date;
   communityId: string;
@@ -106,8 +115,12 @@ export interface UserProfileForReportRow {
  *
  * `activeUsersInWindow` is a *distinct* count across the range (not the
  * sum of per-day active-user counts, which over-counts users active on
- * multiple days). Paired with `totalMembers` it lets the presenter emit an
- * `active_rate` without a second round trip.
+ * multiple days) and DONATION-scoped to match the retention frame — only
+ * users with `donation_out_count > 0` or `received_donation_count > 0` on
+ * at least one day in the window are counted. Paired with `totalMembers`
+ * it lets the presenter emit a peer-to-peer `active_rate` without a
+ * second round trip and without being inflated by system-issued
+ * ONBOARDING / GRANT transactions.
  */
 export interface CommunityContextRow {
   communityId: string;
@@ -143,6 +156,52 @@ export interface DateRange {
   to: Date;
 }
 
+/**
+ * Aggregate counters for a single window, shaped to back the
+ * `PreviousPeriodSummary` payload block. `totalPointsSum` is a BigInt at the
+ * boundary so the presenter can funnel it through the same safe-integer
+ * guard used elsewhere — the underlying SUM over `mv_transaction_summary_daily`
+ * returns `bigint` and we preserve precision until the payload boundary.
+ *
+ * `activeUsersInWindow` uses the same DONATION-scoped definition as
+ * `CommunityContextRow.activeUsersInWindow` so the presenter's
+ * `growth_rate.active_users` (current vs previous window) compares on a
+ * consistent frame; a broad `COUNT DISTINCT` here would silently make
+ * week-over-week engagement changes look smaller than they are.
+ */
+export interface PeriodAggregateRow {
+  activeUsersInWindow: number;
+  totalTxCount: number;
+  totalPointsSum: bigint;
+  newMembers: number;
+}
+
+/**
+ * Per-user "was active as a sender this week" / "was active last week" /
+ * "is a new member" flags aggregated across the community for a single
+ * reporting window. The repository returns the raw counts so the
+ * presenter can divide through `total_members` without the repo needing
+ * to know about the community-context lookup.
+ */
+export interface RetentionAggregateRow {
+  newMembers: number;
+  retainedSenders: number;
+  returnedSenders: number;
+  churnedSenders: number;
+  currentSendersCount: number;
+  currentActiveCount: number;
+}
+
+/**
+ * Week-N retention for a single cohort: numerator / denominator kept raw
+ * so the presenter can emit `null` when the denominator is zero (no
+ * cohort yet) and the prompt template sees a clear "no signal" signal.
+ */
+export interface CohortRetentionRow {
+  cohortSize: number;
+  activeNextWeek: number;
+}
+
 export interface IReportRepository {
   findDailySummaries(
     ctx: IContext,
@@ -162,6 +221,24 @@ export interface IReportRepository {
     range: DateRange,
     topN: number,
   ): Promise<UserTransactionAggregateRow[]>;
+
+  /**
+   * Per-user distinct counterparty count across the whole reporting window,
+   * for the supplied user ids. Sourced from `t_transactions` directly rather
+   * than MVs so distinct is a true set-cardinality over the period, not a
+   * per-day sum. Scoped to the caller-supplied ids (the top-N result) so the
+   * scan stays bounded regardless of community size.
+   *
+   * Returns a Map<userId, count> so the presenter's lookup is O(1) and
+   * users with no outgoing activity simply miss the map (no row shipped from
+   * SQL), letting the payload record them as `null` rather than `0`.
+   */
+  findTrueUniqueCounterpartiesForUsers(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+    userIds: string[],
+  ): Promise<Map<string, number>>;
 
   findCommentsByDateRange(
     ctx: IContext,
@@ -187,6 +264,56 @@ export interface IReportRepository {
     communityId: string,
     range: DateRange,
   ): Promise<DeepestChainRow | null>;
+
+  /**
+   * Aggregate the headline counters (active users, tx count, points volume,
+   * new memberships) for an arbitrary window. Called twice when the usecase
+   * opts into previous-period comparison: once for the current period (not
+   * wired up yet — current-period stats are still derived from the other
+   * repository calls so we don't double-scan) and once for the window
+   * immediately preceding it. The shared method keeps the two calls on the
+   * same SQL, so growth-rate math cannot drift.
+   */
+  findPeriodAggregate(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+  ): Promise<PeriodAggregateRow>;
+
+  /**
+   * Week-over-week retention signal counts for `[currentWeekStart,
+   * nextWeekStart)`, using the week immediately before as the "prev" frame
+   * and a bounded 12-week lookback for the "returned" frame. JST week
+   * boundaries are caller-supplied as half-open UTC dates matching the MV
+   * bucketing (e.g. Monday 00:00 JST). `is_sender` is defined as "had a
+   * DONATION transaction out that day" (donation_out_count > 0 in
+   * mv_user_transaction_daily) — the same definition is applied both
+   * sides of the self-join so retained/returned/churned stay consistent.
+   */
+  findRetentionAggregate(
+    ctx: IContext,
+    communityId: string,
+    range: {
+      currentWeekStart: Date;
+      nextWeekStart: Date;
+      prevWeekStart: Date;
+      twelveWeeksAgo: Date;
+    },
+  ): Promise<RetentionAggregateRow>;
+
+  /**
+   * Week-N retention: fraction of a cohort (joined during
+   * `[cohortStart, cohortEnd)`) that was an `is_sender` in the window
+   * `[activeStart, activeEnd)`. Returning numerator / denominator lets
+   * the presenter emit null for empty cohorts without the repository
+   * caring about display-layer concerns.
+   */
+  findCohortRetention(
+    ctx: IContext,
+    communityId: string,
+    cohort: { cohortStart: Date; cohortEnd: Date },
+    active: { activeStart: Date; activeEnd: Date },
+  ): Promise<CohortRetentionRow>;
 
   refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
   refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;

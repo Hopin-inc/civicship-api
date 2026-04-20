@@ -7,7 +7,12 @@ import ReportJudgeService, { JudgeParseError } from "@/application/domain/report
 import ReportTemplateSelector from "@/application/domain/report/templateSelector";
 import ReportPresenter from "@/application/domain/report/presenter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
-import { addDays, daysBetweenJst, truncateToJstDate } from "@/application/domain/report/util";
+import {
+  addDays,
+  daysBetweenJst,
+  isoWeekStartJst,
+  truncateToJstDate,
+} from "@/application/domain/report/util";
 import { renderPromptTemplate } from "@/application/domain/report/util/promptRenderer";
 import { analyzeCoverage } from "@/application/domain/report/util/coverage";
 import { LlmClient } from "@/infrastructure/libs/llm";
@@ -67,6 +72,28 @@ export default class ReportUseCase {
       topN?: number;
       commentLimit?: number;
       customContext?: string;
+      /**
+       * When true, run a second aggregate pass over the equal-length window
+       * immediately preceding `[from, to]` and attach it (plus growth-rate
+       * math) as `previous_period` on the payload. Defaults to `false` so
+       * today's callers — the generation mutation and the batch refresh —
+       * keep their current single-window behaviour until a prompt template
+       * is updated to consume the new block.
+       */
+      includePreviousPeriod?: boolean;
+      /**
+       * When true, compute retention / cohort counters and attach them as
+       * `retention` on the payload. Defaults to `false` so today's callers
+       * keep their current behaviour until a prompt template is ready to
+       * consume the block.
+       *
+       * The retention frame is always the ISO week (Monday 00:00 JST –
+       * next Monday 00:00 JST) that `referenceDate` falls in, independent
+       * of `windowDays`. Retention is a weekly semantic; using the report
+       * window length here would make week1 / week4 cohort boundaries
+       * drift away from the SQL bucketing in `v_user_cohort`.
+       */
+      includeRetention?: boolean;
     },
   ): Promise<WeeklyReportPayload> {
     const windowDays = clampInt(
@@ -87,19 +114,104 @@ export default class ReportUseCase {
     const from = addDays(to, -(windowDays - 1));
     const range = { from, to };
 
-    const [summaries, activeUsers, topUserAggregates, comments, communityContext, deepestChain] =
-      await Promise.all([
-        this.service.getDailySummaries(ctx, params.communityId, range),
-        this.service.getDailyActiveUsers(ctx, params.communityId, range),
-        this.service.getTopUsersByTotalPoints(ctx, params.communityId, range, topN),
-        this.service.getComments(ctx, params.communityId, range, commentLimit),
-        this.service.getCommunityContext(ctx, params.communityId, range),
-        this.service.getDeepestChain(ctx, params.communityId, range),
-      ]);
+    const previousRange = params.includePreviousPeriod
+      ? { from: addDays(from, -windowDays), to: addDays(from, -1) }
+      : null;
+
+    // Retention is anchored to the ISO week (Monday 00:00 JST) that
+    // `referenceDate` falls in — not a rolling 7-day window ending at `to`.
+    // `isoWeekStartJst` mirrors the SQL `DATE_TRUNC('week', ...)` bucketing
+    // used by `v_user_cohort`, so week1 / week4 cohort boundaries computed
+    // here match the SQL-side buckets exactly. Retention is a weekly
+    // semantic, independent of the (possibly-shorter-or-longer) report
+    // window length.
+    const retentionRange = params.includeRetention
+      ? (() => {
+          const currentWeekStart = isoWeekStartJst(params.referenceDate);
+          const nextWeekStart = addDays(currentWeekStart, 7);
+          const prevWeekStart = addDays(currentWeekStart, -7);
+          // 12 weeks of lookback ending at prevWeekStart (exclusive), so
+          // the range `[twelveWeeksAgo, prevWeekStart)` has 12 full weeks.
+          // Was -7*11 (only 11 weeks); returned_senders was shifted by one
+          // week and silently under-counted people who returned after a
+          // 12-week absence.
+          const twelveWeeksAgo = addDays(prevWeekStart, -7 * 12);
+          return { nextWeekStart, currentWeekStart, prevWeekStart, twelveWeeksAgo };
+        })()
+      : null;
+
+    const [
+      summaries,
+      activeUsers,
+      topUserAggregates,
+      comments,
+      communityContext,
+      deepestChain,
+      previousAggregate,
+      retentionAggregate,
+      week1Cohort,
+      week4Cohort,
+    ] = await Promise.all([
+      this.service.getDailySummaries(ctx, params.communityId, range),
+      this.service.getDailyActiveUsers(ctx, params.communityId, range),
+      this.service.getTopUsersByTotalPoints(ctx, params.communityId, range, topN),
+      this.service.getComments(ctx, params.communityId, range, commentLimit),
+      this.service.getCommunityContext(ctx, params.communityId, range),
+      this.service.getDeepestChain(ctx, params.communityId, range),
+      previousRange
+        ? this.service.getPeriodAggregate(ctx, params.communityId, previousRange)
+        : Promise.resolve(null),
+      retentionRange
+        ? this.service.getRetentionAggregate(ctx, params.communityId, retentionRange)
+        : Promise.resolve(null),
+      retentionRange
+        ? this.service.getCohortRetention(
+            ctx,
+            params.communityId,
+            {
+              // Week-1 retention: cohort that joined 1 week before
+              // currentWeekStart, measured against currentWeek activity.
+              cohortStart: addDays(retentionRange.currentWeekStart, -7),
+              cohortEnd: retentionRange.currentWeekStart,
+            },
+            {
+              activeStart: retentionRange.currentWeekStart,
+              activeEnd: retentionRange.nextWeekStart,
+            },
+          )
+        : Promise.resolve(null),
+      retentionRange
+        ? this.service.getCohortRetention(
+            ctx,
+            params.communityId,
+            {
+              // Week-4 retention: cohort joined 4 weeks before
+              // currentWeekStart, measured against currentWeek activity.
+              cohortStart: addDays(retentionRange.currentWeekStart, -7 * 4),
+              cohortEnd: addDays(retentionRange.currentWeekStart, -7 * 3),
+            },
+            {
+              activeStart: retentionRange.currentWeekStart,
+              activeEnd: retentionRange.nextWeekStart,
+            },
+          )
+        : Promise.resolve(null),
+    ]);
 
     const userIds = topUserAggregates.map((u) => u.userId);
-    const profiles = await this.service.getUserProfiles(ctx, params.communityId, userIds);
+    // Profiles and the true-counterparty lookup both fan out over the
+    // top-N ids we already selected, so issue them in parallel — no
+    // dependency between them and neither blocks the payload build.
+    const [profiles, trueUniqueCounterparties] = await Promise.all([
+      this.service.getUserProfiles(ctx, params.communityId, userIds),
+      this.service.getTrueUniqueCounterpartiesForUsers(ctx, params.communityId, range, userIds),
+    ]);
 
+    // Current-window counters come from the data we already fetched so we
+    // don't re-scan the MVs for numbers the payload already exposes.
+    // `total_tx_count` / `total_points_sum` sum across reason buckets — the
+    // presenter is deliberately given raw rows, not a pre-reduced number,
+    // so growth-rate math stays in the pure presentation layer.
     return ReportPresenter.weeklyPayload({
       communityId: params.communityId,
       range,
@@ -112,6 +224,26 @@ export default class ReportUseCase {
       communityContext,
       deepestChain,
       customContext: params.customContext,
+      trueUniqueCounterparties,
+      previousPeriod: previousAggregate
+        ? { range: previousRange!, aggregate: previousAggregate }
+        : null,
+      // `retention` is gated purely on whether the caller opted in (i.e.
+      // `retentionAggregate` is non-null). Do NOT additionally gate on
+      // `communityContext` — that would silently null out the whole block
+      // whenever the community row is missing / soft-deleted, which breaks
+      // the `includeRetention` opt-in contract. When `communityContext` is
+      // null we surface `totalMembers: null` and the presenter collapses
+      // only the derived rates to null; the raw counters still flow
+      // through so the block stays useful.
+      retention: retentionAggregate
+        ? {
+            aggregate: retentionAggregate,
+            totalMembers: communityContext?.totalMembers ?? null,
+            week1: week1Cohort,
+            week4: week4Cohort,
+          }
+        : null,
     });
   }
 

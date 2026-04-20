@@ -42,15 +42,42 @@ export interface WeeklyReportPayload {
   daily_active_users: DailyActiveUsersItem[];
   top_users: TopUserItem[];
   highlight_comments: CommentItem[];
+  /**
+   * Aggregates for the equal-length window immediately preceding `period`,
+   * plus pre-computed week-over-week growth rates. Populated only when the
+   * caller opts in via `includePreviousPeriod`; otherwise null so the LLM
+   * prompt can key on presence.
+   *
+   * `growth_rate` fields are computed in the presenter (not the LLM) so
+   * divide-by-zero cases land as `null` rather than `NaN` / `Infinity`
+   * leaking into the prompt.
+   */
+  previous_period: PreviousPeriodSummary | null;
+  /**
+   * Cohort / retention signals for the reporting window. Populated only
+   * when the caller opts in via `includeRetention`; otherwise null. The
+   * LLM prompt keys on presence to decide whether to write retention
+   * commentary at all.
+   *
+   * These counters are NOT mutually exclusive (see `RetentionSummary`
+   * comment for the full caveat): a new member who immediately sends a
+   * DONATION will count as both `new_members` and in the denominator of
+   * active_rate_sender, so the prompt template must not sum them and
+   * expect `active_users_in_window`.
+   */
+  retention: RetentionSummary | null;
 }
 
 /**
- * AI-facing community snapshot. `active_rate` is `active_users_in_window /
- * total_members` (null when the community has no JOINED members yet, so the
- * LLM does not emit a divide-by-zero ratio). `custom_context` is a free-text
- * markdown field sourced from `ReportTemplate.communityContext`, piped
- * through untouched so editors can steer tone / vision / references without
- * a schema change.
+ * AI-facing community snapshot. `active_users_in_window` is DONATION-scoped
+ * (distinct users with `donation_out_count > 0` or `received_donation_count
+ * > 0` in the window) so the LLM reads peer-to-peer engagement, not a
+ * figure inflated by system-issued ONBOARDING / GRANT transactions.
+ * `active_rate` is `active_users_in_window / total_members` (null when the
+ * community has no JOINED members yet, so the LLM does not emit a
+ * divide-by-zero ratio). `custom_context` is a free-text markdown field
+ * sourced from `ReportTemplate.communityContext`, piped through untouched
+ * so editors can steer tone / vision / references without a schema change.
  */
 export interface CommunityContext {
   community_id: string;
@@ -90,6 +117,14 @@ export interface DailySummaryItem {
   burn_count: number;
 }
 
+/**
+ * Per-day DONATION-scoped distinct user counts. `senders` counts users
+ * who sent at least one DONATION that day, `receivers` counts users who
+ * received at least one DONATION that day, and `active_users` is the
+ * union. Users whose only activity was receiving an admin-issued
+ * ONBOARDING / GRANT are intentionally excluded — the peer-engagement
+ * signal is what drives the narrative, not raw MV reach.
+ */
 export interface DailyActiveUsersItem {
   date: string;
   active_users: number;
@@ -122,6 +157,103 @@ export interface TopUserItem {
    * same counterparty appearing on multiple days is counted once per day.
    */
   unique_counterparties_sum: number;
+  /**
+   * True distinct *outgoing* counterparty count across the whole reporting
+   * window — how many different people this user sent to, deduplicated
+   * over the full period (a counterparty appearing on multiple days counts
+   * once).
+   *
+   * Asymmetric with `unique_counterparties_sum`: the `sum` field is sourced
+   * from `mv_user_transaction_daily` and counts per-day distincts across
+   * BOTH in and out directions, whereas this field is computed from the
+   * reporting-window slice of `t_transactions` and covers the OUTGOING
+   * direction only (and excludes self-transfers). The two are *not* a
+   * pure "per-day-duplicated vs period-deduplicated" pair — a user with
+   * mostly incoming activity will show a large `sum` and a small `true`
+   * purely from the directional asymmetry, not from overlap. Prompt
+   * authors reading both fields together must account for this before
+   * narrating any "breadth vs depth" intuition.
+   *
+   * Scoped to the top-N users — the target is always a short list of ≤ a
+   * few dozen user ids per community-week so the direct aggregation does
+   * not need an MV. `null` when the repository returned no row for the
+   * user (e.g. receiver with zero outgoing activity).
+   */
+  true_unique_counterparties: number | null;
+}
+
+/**
+ * Aggregate stats for the window immediately preceding the report period,
+ * used to drive "this week vs last week" narrative. The stat set is a
+ * deliberate subset of the current-period payload — only the counters the
+ * LLM needs for high-level growth commentary.
+ *
+ * `active_users_in_window` uses the same DONATION-scoped definition as
+ * `CommunityContext.active_users_in_window` so `growth_rate.active_users`
+ * compares the two windows on a consistent peer-engagement frame.
+ *
+ * `new_members` uses `t_memberships.created_at` to match `RetentionSummary`
+ * (and not `ONBOARDING` transactions, which have operational noise around
+ * re-issuance timing).
+ */
+export interface PreviousPeriodSummary {
+  period: { from: string; to: string };
+  active_users_in_window: number;
+  total_tx_count: number;
+  total_points_sum: number;
+  new_members: number;
+  /**
+   * Percent week-over-week change, pre-computed. `null` when the previous
+   * period's denominator was zero (nothing to compare against) so the LLM
+   * is never asked to divide by zero.
+   *
+   * `active_users` is additionally `null` when `community_context` is
+   * null: without the current-window active-user count (which lives on
+   * that block), we have no DONATION-scoped numerator to compare against
+   * the previous window and refuse to fabricate one from a
+   * different-frame proxy.
+   */
+  growth_rate: {
+    active_users: number | null;
+    tx_count: number | null;
+    points_sum: number | null;
+  };
+}
+
+/**
+ * Retention / cohort snapshot for the reporting window. Signal definitions
+ * use the `is_sender` frame (i.e. DONATION-sent that week) rather than
+ * "any activity" because receiver-only weeks are a weaker engagement
+ * signal and the prompt needs the stronger "did this person actively
+ * contribute" semantic.
+ *
+ * Category overlaps (documented here so prompt authors don't sum them):
+ *   - `new_members` and `retained_senders` are mutually exclusive: a new
+ *     member has no prior-week activity by definition, so even if they
+ *     send a donation their first week they land in `current_senders_count`
+ *     only — not in `retained_senders`, which requires `is_sender` on
+ *     BOTH the current and previous weeks.
+ *   - `active_rate_any` counts DONATION-receivers in the numerator; the
+ *     other rates use the `is_sender` frame. Both sender and receiver
+ *     signals are DONATION-scoped (not `tx_count_in/out > 0`), so
+ *     ONBOARDING / GRANT noise does not inflate the rate on either side.
+ *   - `returned_senders` is bounded to a 12-week lookback; someone
+ *     returning after 13+ weeks of silence lands in none of the buckets.
+ *
+ * Week1 / Week4 retention are based on the cohort that joined exactly
+ * N weeks ago (not all cohorts). `null` when no such cohort exists yet
+ * (e.g. the community is too young), to avoid "0/0 = 0%" masquerading
+ * as genuine zero retention.
+ */
+export interface RetentionSummary {
+  new_members: number;
+  retained_senders: number;
+  returned_senders: number;
+  churned_senders: number;
+  active_rate_sender: number | null;
+  active_rate_any: number | null;
+  week1_retention: number | null;
+  week4_retention: number | null;
 }
 
 export interface CommentItem {
