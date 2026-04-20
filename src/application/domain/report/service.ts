@@ -1,4 +1,4 @@
-import { Prisma, ReportStatus } from "@prisma/client";
+import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
@@ -114,6 +114,30 @@ export default class ReportService {
     return this.repository.findTemplate(ctx, variant, communityId);
   }
 
+  /**
+   * CI-only direct lookup by (variant, kind, version, communityId).
+   * Wraps `IReportRepository.findTemplateByVersion` so the Golden Case
+   * harness has the same service-shaped seam as the rest of the report
+   * domain. Production resolvers must not use this — it bypasses the
+   * `isActive` / `isEnabled` gates.
+   *
+   * `communityId` defaults to `null`, which selects the SYSTEM-scoped
+   * row. The CI harness always fetches SYSTEM (`communityId=null`) since
+   * COMMUNITY-scoped templates are not part of the shared golden
+   * baseline. Callers may pass `communityId=null` explicitly when they
+   * want the SYSTEM contract to be visible at the call site, but omitting
+   * the argument has the same effect.
+   */
+  async getTemplateByVersion(
+    ctx: IContext,
+    variant: string,
+    kind: ReportTemplateKind,
+    version: number,
+    communityId: string | null = null,
+  ): Promise<PrismaReportTemplate | null> {
+    return this.repository.findTemplateByVersion(ctx, variant, kind, version, communityId);
+  }
+
   async upsertTemplate(
     ctx: IContext,
     variant: string,
@@ -185,8 +209,11 @@ export default class ReportService {
     return this.repository.updateReportJudgeResult(ctx, id, data, tx);
   }
 
-  async getGoldenCases(ctx: IContext, variant?: string): Promise<PrismaReportGoldenCase[]> {
-    return this.repository.findGoldenCases(ctx, variant);
+  async getGoldenCases(
+    ctx: IContext,
+    options: { variant?: string; pinnedVersion?: number | null } = {},
+  ): Promise<PrismaReportGoldenCase[]> {
+    return this.repository.findGoldenCases(ctx, options);
   }
 
   /**

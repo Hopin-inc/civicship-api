@@ -998,6 +998,7 @@ OTHER OTHER
     String forbidden_keys 
     String notes "❓"
     ReportStatus expected_status "❓"
+    Int template_version "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
