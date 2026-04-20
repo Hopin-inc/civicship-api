@@ -198,8 +198,11 @@ export interface PreviousPeriodSummary {
  * contribute" semantic.
  *
  * Category overlaps (documented here so prompt authors don't sum them):
- *   - A new member who sends a donation their first week counts in
- *     `new_members` AND `retained_senders` (they have no prior week).
+ *   - `new_members` and `retained_senders` are mutually exclusive: a new
+ *     member has no prior-week activity by definition, so even if they
+ *     send a donation their first week they land in `current_senders_count`
+ *     only — not in `retained_senders`, which requires `is_sender` on
+ *     BOTH the current and previous weeks.
  *   - `active_rate_any` counts receivers in the numerator; the other
  *     rates use the `is_sender` frame.
  *   - `returned_senders` is bounded to a 12-week lookback; someone

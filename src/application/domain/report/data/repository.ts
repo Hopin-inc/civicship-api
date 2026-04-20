@@ -178,8 +178,21 @@ export default class ReportRepository implements IReportRepository {
    *
    * Excludes transactions where the counterparty wallet has no `user_id`
    * (e.g. community wallets) so the count is strictly "people this user sent
-   * points to". Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)`
-   * window to match the MV bucketing elsewhere in this file.
+   * points to", and excludes self-transfers (`tw.user_id = fw.user_id`) from
+   * the DISTINCT via a FILTER clause — the metric is "how many different
+   * *other* people did this user give to", which is what the breadth-of-
+   * activity signal downstream in the prompt is trying to describe.
+   *
+   * Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)` window to match
+   * the MV bucketing elsewhere in this file. `t_transactions.created_at` is
+   * Prisma `DateTime` → `timestamp WITHOUT time zone` holding naive UTC,
+   * so we pass the column through `AT TIME ZONE 'UTC' AT TIME ZONE
+   * 'Asia/Tokyo'` (same idiom as the `v_user_cohort` / report MV
+   * migrations) to land a naive JST wall-clock and compare against the
+   * date boundaries directly. This is deliberately independent of the DB
+   * session timezone — a `timestamp >= timestamptz` comparison (the prior
+   * form) implicitly casts via the session's timezone, so a non-UTC
+   * session would shift the window.
    */
   async findTrueUniqueCounterpartiesForUsers(
     ctx: IContext,
@@ -194,7 +207,9 @@ export default class ReportRepository implements IReportRepository {
       >`
         SELECT
           fw."user_id" AS "user_id",
-          COUNT(DISTINCT tw."user_id")::int AS "true_unique_counterparties"
+          COUNT(DISTINCT tw."user_id") FILTER (
+            WHERE tw."user_id" <> fw."user_id"
+          )::int AS "true_unique_counterparties"
         FROM "t_transactions" t
         INNER JOIN "t_wallets" fw
           ON fw."id" = t."from"
@@ -203,8 +218,8 @@ export default class ReportRepository implements IReportRepository {
         INNER JOIN "t_wallets" tw
           ON tw."id" = t."to"
           AND tw."user_id" IS NOT NULL
-        WHERE t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
-          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+        WHERE (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo') >= ${range.from}::date
+          AND (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo') <  (${range.to}::date + 1)
           AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
         GROUP BY fw."user_id"
       `;
