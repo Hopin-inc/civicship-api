@@ -1677,14 +1677,11 @@ model ReportTemplate {
   // - `trafficWeight` is a percentage in 0..100; when multiple rows with the
   //   same (variant, scope, communityId) are active the weights within an
   //   experimentKey must sum to 100 (enforced at the application layer).
-  // - Temporary operational constraint until the selection logic ships
-  //   (tracked for PR-F3): the current repository resolver picks a template
-  //   via findFirst with no `version` or `isActive` filter, so even an
-  //   inactive historical row could be selected if it's the only ordering
-  //   winner. Until the resolver is made explicit about enabled/active
-  //   rows and ordering, seed at most one row per
-  //   (variant, scope, communityId) — multi-version seeding is a PR-F3
-  //   capability, not a PR-F1 one.
+  // - Read/write paths in `ReportRepository` (findTemplate + upsertTemplate)
+  //   both filter `isActive=true` and tie-break by `version DESC`, so
+  //   multi-version seeding (e.g. v1 active alongside a v2 shakeout candidate
+  //   with isActive=false — see PR-F5 §7) is safe without risking the admin
+  //   UI or prod selector picking the wrong row.
   version       Int     @default(1)
   isActive      Boolean @default(true) @map("is_active")
   experimentKey String? @map("experiment_key")
