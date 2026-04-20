@@ -114,13 +114,12 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       nftTokenId: string;
       status?: NftInstanceStatus;
     },
-    nftTokenId: string,
     tx: Prisma.TransactionClient,
   ) {
     return tx.nftInstance.upsert({
       where: {
         nftTokenId_instanceId: {
-          nftTokenId,
+          nftTokenId: data.nftTokenId,
           instanceId: data.instanceId,
         },
       },
@@ -129,6 +128,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         description: data.description,
         imageUrl: data.imageUrl,
         json: data.json,
+        nftWalletId: data.nftWalletId,
         ...(data.status ? { status: data.status } : {}),
       },
       create: {

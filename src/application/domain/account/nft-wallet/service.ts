@@ -108,19 +108,33 @@ export default class NFTWalletService {
 
     const wallet = await this.createOrUpdateWalletAddress(ctx, userId, walletAddress, tx);
 
-    let processed = 0;
+    const uniqueTokens = new Map<string, NftSyncItem["token"] & { rawToken: Record<string, unknown> }>();
     for (const item of validation.items) {
+      if (!uniqueTokens.has(item.token.address)) {
+        uniqueTokens.set(item.token.address, { ...item.token, rawToken: item.rawToken });
+      }
+    }
+
+    const tokenIdByAddress = new Map<string, string>();
+    for (const [address, token] of uniqueTokens) {
       const nftToken = await this.nftTokenRepository.upsert(
         ctx,
         {
-          address: item.token.address,
-          name: item.token.name ?? null,
-          symbol: item.token.symbol ?? null,
-          type: item.token.type,
-          json: item.rawToken,
+          address,
+          name: token.name ?? null,
+          symbol: token.symbol ?? null,
+          type: token.type,
+          json: token.rawToken,
         },
         tx,
       );
+      tokenIdByAddress.set(address, nftToken.id);
+    }
+
+    let processed = 0;
+    for (const item of validation.items) {
+      const nftTokenId = tokenIdByAddress.get(item.token.address);
+      if (!nftTokenId) continue;
 
       await this.nftInstanceRepository.upsert(
         ctx,
@@ -135,10 +149,9 @@ export default class NFTWalletService {
             metadata: item.rawMetadata,
           },
           nftWalletId: wallet.id,
-          nftTokenId: nftToken.id,
+          nftTokenId,
           status: NftInstanceStatus.OWNED,
         },
-        nftToken.id,
         tx,
       );
 
@@ -412,7 +425,6 @@ export default class NFTWalletService {
           nftWalletId: wallet.id,
           nftTokenId: nftToken.id,
         },
-        nftToken.id,
         tx,
       );
 

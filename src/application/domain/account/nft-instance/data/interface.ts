@@ -47,7 +47,6 @@ export default interface INftInstanceRepository {
       nftTokenId: string;
       status?: NftInstanceStatus;
     },
-    nftTokenId: string,
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string }>;
 

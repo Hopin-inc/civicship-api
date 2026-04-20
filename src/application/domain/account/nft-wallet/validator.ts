@@ -43,8 +43,9 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
       continue;
     }
 
-    if (typeof raw.id !== "string") {
-      errors.push(`items[${i}].id: expected a string`);
+    const id = toNonEmptyString(raw.id);
+    if (id === undefined) {
+      errors.push(`items[${i}].id: expected a non-empty string`);
       continue;
     }
 
@@ -66,9 +67,14 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
       continue;
     }
 
-    const rawMetadata = raw.metadata;
-    if (rawMetadata !== null && !isPlainObject(rawMetadata)) {
-      errors.push(`items[${i}].metadata: expected an object or null`);
+    const rawMetadataInput = raw.metadata;
+    let rawMetadata: Record<string, unknown> | null;
+    if (rawMetadataInput === undefined || rawMetadataInput === null) {
+      rawMetadata = null;
+    } else if (isPlainObject(rawMetadataInput)) {
+      rawMetadata = rawMetadataInput;
+    } else {
+      errors.push(`items[${i}].metadata: expected an object, null, or omitted`);
       continue;
     }
 
@@ -88,7 +94,7 @@ export function validateNftPayload(input: unknown): NftPayloadValidationResult {
         };
 
     items.push({
-      id: raw.id,
+      id,
       token,
       metadata,
       rawToken,
