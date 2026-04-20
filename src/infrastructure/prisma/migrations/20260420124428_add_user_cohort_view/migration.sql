@@ -11,10 +11,14 @@
 -- lookups to callers that belong to the target community (or internal
 -- admin issuer) before invoking queries that reference this view.
 --
--- `onboarding_week` comes from t_memberships.created_at (JOINED semantics
--- are left to the caller's WHERE clause) rather than an ONBOARDING
--- transaction because the bonus tx has operational noise around re-issuance
--- / manual grants that we don't want to leak into cohort math.
+-- `onboarding_week` comes from t_memberships.created_at, filtered to
+-- status = 'JOINED' directly in the view so downstream consumers can
+-- read `v_user_cohort` without re-adding the churn filter — a
+-- view named `v_user_cohort` that silently includes withdrawn members
+-- would be a footgun for future callers. We pick created_at over the
+-- ONBOARDING transaction because the bonus tx has operational noise
+-- around re-issuance / manual grants that we don't want to leak into
+-- cohort math.
 --
 -- `first_active_week` is the first week the user was on the FROM side of a
 -- transaction (i.e. actively sent, not just received) — matches the
@@ -32,6 +36,7 @@ WITH membership_cohort AS (
             m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'
         )::date AS "onboarding_week"
     FROM "t_memberships" m
+    WHERE m."status" = 'JOINED'
 ),
 first_active AS (
     SELECT
