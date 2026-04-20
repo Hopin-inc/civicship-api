@@ -150,6 +150,7 @@ const sparseCase: GoldenCaseDefinition = {
         max_chain_depth_started: null,
         chain_depth_reached_max: null,
         unique_counterparties_sum: 1,
+        true_unique_counterparties: 1,
       },
       {
         user_id: "user-b",
@@ -171,6 +172,7 @@ const sparseCase: GoldenCaseDefinition = {
         max_chain_depth_started: null,
         chain_depth_reached_max: 9,
         unique_counterparties_sum: 1,
+        true_unique_counterparties: null,
       },
     ],
     highlight_comments: [
@@ -186,6 +188,8 @@ const sparseCase: GoldenCaseDefinition = {
         chain_depth: 9,
       },
     ],
+    previous_period: null,
+    retention: null,
   },
 };
 
@@ -233,6 +237,8 @@ const zeroActivityCase: GoldenCaseDefinition = {
     daily_active_users: [],
     top_users: [],
     highlight_comments: [],
+    previous_period: null,
+    retention: null,
   },
 };
 
@@ -364,6 +370,7 @@ const bustlingCase: GoldenCaseDefinition = {
         max_chain_depth_started: 17,
         chain_depth_reached_max: 12,
         unique_counterparties_sum: 18,
+        true_unique_counterparties: 9,
       },
       {
         user_id: "user-y",
@@ -385,6 +392,7 @@ const bustlingCase: GoldenCaseDefinition = {
         max_chain_depth_started: 8,
         chain_depth_reached_max: 17,
         unique_counterparties_sum: 11,
+        true_unique_counterparties: 5,
       },
     ],
     highlight_comments: [
@@ -411,6 +419,8 @@ const bustlingCase: GoldenCaseDefinition = {
         chain_depth: null,
       },
     ],
+    previous_period: null,
+    retention: null,
   },
 };
 

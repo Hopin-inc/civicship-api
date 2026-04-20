@@ -42,6 +42,30 @@ export interface WeeklyReportPayload {
   daily_active_users: DailyActiveUsersItem[];
   top_users: TopUserItem[];
   highlight_comments: CommentItem[];
+  /**
+   * Aggregates for the equal-length window immediately preceding `period`,
+   * plus pre-computed week-over-week growth rates. Populated only when the
+   * caller opts in via `includePreviousPeriod`; otherwise null so the LLM
+   * prompt can key on presence.
+   *
+   * `growth_rate` fields are computed in the presenter (not the LLM) so
+   * divide-by-zero cases land as `null` rather than `NaN` / `Infinity`
+   * leaking into the prompt.
+   */
+  previous_period: PreviousPeriodSummary | null;
+  /**
+   * Cohort / retention signals for the reporting window. Populated only
+   * when the caller opts in via `includeRetention`; otherwise null. The
+   * LLM prompt keys on presence to decide whether to write retention
+   * commentary at all.
+   *
+   * These counters are NOT mutually exclusive (see `RetentionSummary`
+   * comment for the full caveat): a new member who immediately sends a
+   * DONATION will count as both `new_members` and in the denominator of
+   * active_rate_sender, so the prompt template must not sum them and
+   * expect `active_users_in_window`.
+   */
+  retention: RetentionSummary | null;
 }
 
 /**
@@ -122,6 +146,79 @@ export interface TopUserItem {
    * same counterparty appearing on multiple days is counted once per day.
    */
   unique_counterparties_sum: number;
+  /**
+   * True distinct counterparty count across the whole reporting window. The
+   * same counterparty appearing on multiple days counts once. Paired with
+   * `unique_counterparties_sum` this lets the LLM distinguish
+   * "broad-but-shallow" (high `sum`, moderate `true`) from
+   * "deep-to-a-few" (low `true`, high per-day overlap).
+   *
+   * Computed on the reporting-window slice of `t_transactions` scoped to the
+   * top-N users — the target is always a short list of ≤ a few dozen user
+   * ids per community-week so the direct aggregation does not need an MV.
+   * `null` when the repository returned no row for the user (e.g. receiver
+   * with zero outgoing activity).
+   */
+  true_unique_counterparties: number | null;
+}
+
+/**
+ * Aggregate stats for the window immediately preceding the report period,
+ * used to drive "this week vs last week" narrative. The stat set is a
+ * deliberate subset of the current-period payload — only the counters the
+ * LLM needs for high-level growth commentary.
+ *
+ * `new_members` uses `t_memberships.created_at` to match `RetentionSummary`
+ * (and not `ONBOARDING` transactions, which have operational noise around
+ * re-issuance timing).
+ */
+export interface PreviousPeriodSummary {
+  period: { from: string; to: string };
+  active_users_in_window: number;
+  total_tx_count: number;
+  total_points_sum: number;
+  new_members: number;
+  /**
+   * Percent week-over-week change, pre-computed. `null` when the previous
+   * period's denominator was zero (nothing to compare against) so the LLM
+   * is never asked to divide by zero.
+   */
+  growth_rate: {
+    active_users: number | null;
+    tx_count: number | null;
+    points_sum: number | null;
+  };
+}
+
+/**
+ * Retention / cohort snapshot for the reporting window. Signal definitions
+ * use the `is_sender` frame (i.e. DONATION-sent that week) rather than
+ * "any activity" because receiver-only weeks are a weaker engagement
+ * signal and the prompt needs the stronger "did this person actively
+ * contribute" semantic.
+ *
+ * Category overlaps (documented here so prompt authors don't sum them):
+ *   - A new member who sends a donation their first week counts in
+ *     `new_members` AND `retained_senders` (they have no prior week).
+ *   - `active_rate_any` counts receivers in the numerator; the other
+ *     rates use the `is_sender` frame.
+ *   - `returned_senders` is bounded to a 12-week lookback; someone
+ *     returning after 13+ weeks of silence lands in none of the buckets.
+ *
+ * Week1 / Week4 retention are based on the cohort that joined exactly
+ * N weeks ago (not all cohorts). `null` when no such cohort exists yet
+ * (e.g. the community is too young), to avoid "0/0 = 0%" masquerading
+ * as genuine zero retention.
+ */
+export interface RetentionSummary {
+  new_members: number;
+  retained_senders: number;
+  returned_senders: number;
+  churned_senders: number;
+  active_rate_sender: number | null;
+  active_rate_any: number | null;
+  week1_retention: number | null;
+  week4_retention: number | null;
 }
 
 export interface CommentItem {

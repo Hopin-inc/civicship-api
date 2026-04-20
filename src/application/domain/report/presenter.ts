@@ -1,8 +1,11 @@
 import { GqlReport, GqlReportTemplate, GqlReportsConnection } from "@/types/graphql";
 import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 import {
+  CohortRetentionRow,
   CommunityContextRow,
   DeepestChainRow,
+  PeriodAggregateRow,
+  RetentionAggregateRow,
   TransactionActiveUsersDailyRow,
   TransactionCommentRow,
   TransactionSummaryDailyRow,
@@ -12,10 +15,17 @@ import {
 import {
   CommunityContext,
   DeepestChainItem,
+  PreviousPeriodSummary,
+  RetentionSummary,
   TopUserItem,
   WeeklyReportPayload,
 } from "@/application/domain/report/types";
-import { bigintToSafeNumber, daysBetweenJst, toJstIsoDate } from "@/application/domain/report/util";
+import {
+  bigintToSafeNumber,
+  daysBetweenJst,
+  percentChange,
+  toJstIsoDate,
+} from "@/application/domain/report/util";
 
 export default class ReportPresenter {
   static weeklyPayload(input: {
@@ -40,6 +50,39 @@ export default class ReportPresenter {
      * single-variant Phase 1 flow.
      */
     customContext?: string | null;
+    /**
+     * Per-user true distinct counterparty counts for the reporting window,
+     * keyed by userId. A missing key means the user had no outgoing
+     * transactions over the period (the repository only emits rows for
+     * users that actually sent); the presenter surfaces those as `null` on
+     * `TopUserItem` so "gave to zero people" and "receiver-only" are
+     * distinguishable downstream.
+     */
+    trueUniqueCounterparties?: Map<string, number>;
+    /**
+     * Pre-fetched retention counts (sender frame) + cohort retention rows.
+     * `totalMembers` is threaded through from the community context so the
+     * presenter can divide without re-reading the same number. `null` when
+     * the usecase did not opt into retention, in which case the payload's
+     * `retention` field is `null` and the prompt keys on presence.
+     */
+    retention?: {
+      aggregate: RetentionAggregateRow;
+      totalMembers: number;
+      week1: CohortRetentionRow | null;
+      week4: CohortRetentionRow | null;
+    } | null;
+    /**
+     * Pre-fetched aggregate for the window immediately preceding `range`,
+     * plus its range. Present only when the usecase opted into the
+     * previous-period comparison. The presenter computes growth-rate math
+     * here so divide-by-zero falls out as `null` and never leaks into the
+     * LLM prompt.
+     */
+    previousPeriod?: {
+      range: { from: Date; to: Date };
+      aggregate: PeriodAggregateRow;
+    } | null;
   }): WeeklyReportPayload {
     const profileByUserId = new Map(input.profiles.map((p) => [p.userId, p]));
 
@@ -77,6 +120,7 @@ export default class ReportPresenter {
         }
       : null;
 
+    const trueUniqueMap = input.trueUniqueCounterparties;
     const topUsers: TopUserItem[] = input.topUserAggregates.map((u) => {
       const p = profileByUserId.get(u.userId);
       return {
@@ -99,8 +143,69 @@ export default class ReportPresenter {
         max_chain_depth_started: u.maxChainDepthStarted,
         chain_depth_reached_max: u.chainDepthReachedMax,
         unique_counterparties_sum: u.uniqueCounterpartiesSum,
+        true_unique_counterparties: trueUniqueMap?.get(u.userId) ?? null,
       };
     });
+
+    const currentTxCount = input.summaries.reduce((acc, s) => acc + s.txCount, 0);
+    const currentPointsSum = input.summaries.reduce(
+      (acc, s) => acc + bigintToSafeNumber(s.pointsSum),
+      0,
+    );
+    const currentActiveUsers = input.communityContext?.activeUsersInWindow ?? 0;
+
+    const retention: RetentionSummary | null = input.retention
+      ? {
+          new_members: input.retention.aggregate.newMembers,
+          retained_senders: input.retention.aggregate.retainedSenders,
+          returned_senders: input.retention.aggregate.returnedSenders,
+          churned_senders: input.retention.aggregate.churnedSenders,
+          active_rate_sender:
+            input.retention.totalMembers > 0
+              ? input.retention.aggregate.currentSendersCount / input.retention.totalMembers
+              : null,
+          active_rate_any:
+            input.retention.totalMembers > 0
+              ? input.retention.aggregate.currentActiveCount / input.retention.totalMembers
+              : null,
+          // Week-N rows with cohortSize=0 collapse to null here (rather
+          // than 0%) so the LLM doesn't report "0% retention" for a
+          // cohort that never existed — e.g. a community too young to
+          // have a 4-weeks-ago cohort yet.
+          week1_retention:
+            input.retention.week1 && input.retention.week1.cohortSize > 0
+              ? input.retention.week1.activeNextWeek / input.retention.week1.cohortSize
+              : null,
+          week4_retention:
+            input.retention.week4 && input.retention.week4.cohortSize > 0
+              ? input.retention.week4.activeNextWeek / input.retention.week4.cohortSize
+              : null,
+        }
+      : null;
+
+    const previousPeriod: PreviousPeriodSummary | null = input.previousPeriod
+      ? {
+          period: {
+            from: toJstIsoDate(input.previousPeriod.range.from),
+            to: toJstIsoDate(input.previousPeriod.range.to),
+          },
+          active_users_in_window: input.previousPeriod.aggregate.activeUsersInWindow,
+          total_tx_count: input.previousPeriod.aggregate.totalTxCount,
+          total_points_sum: bigintToSafeNumber(input.previousPeriod.aggregate.totalPointsSum),
+          new_members: input.previousPeriod.aggregate.newMembers,
+          growth_rate: {
+            active_users: percentChange(
+              currentActiveUsers,
+              input.previousPeriod.aggregate.activeUsersInWindow,
+            ),
+            tx_count: percentChange(currentTxCount, input.previousPeriod.aggregate.totalTxCount),
+            points_sum: percentChange(
+              currentPointsSum,
+              bigintToSafeNumber(input.previousPeriod.aggregate.totalPointsSum),
+            ),
+          },
+        }
+      : null;
 
     return {
       period: {
@@ -110,6 +215,8 @@ export default class ReportPresenter {
       community_id: input.communityId,
       community_context: communityContext,
       deepest_chain: deepestChain,
+      previous_period: previousPeriod,
+      retention,
       daily_summaries: input.summaries.map((s) => ({
         date: toJstIsoDate(s.date),
         reason: s.reason,

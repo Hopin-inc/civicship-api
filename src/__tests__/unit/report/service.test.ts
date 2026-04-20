@@ -100,6 +100,8 @@ describe("ReportService", () => {
       daily_active_users: [],
       top_users: [],
       highlight_comments: [],
+      previous_period: null,
+      retention: null,
     };
 
     it("returns a prefixed skip reason when active_users=0 AND daily_summaries is empty", () => {
