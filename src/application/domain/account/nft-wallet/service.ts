@@ -43,6 +43,18 @@ export type SyncNftsResult =
   | { success: false; code: "INVALID_PAYLOAD"; errors: string[] }
   | { success: false; code: "WALLET_FOREIGN" };
 
+/**
+ * P2002 (unique constraint) が発生すると PostgreSQL の transaction は aborted 状態になり、
+ * 通常 return しても COMMIT が失敗する。そのため write-path の競合は通常 return ではなく
+ * throw で伝播させ、interactive transaction の外側 (usecase 層) で WALLET_FOREIGN に変換する。
+ */
+export class WalletForeignError extends Error {
+  constructor() {
+    super("wallet is linked to another user");
+    this.name = "WalletForeignError";
+  }
+}
+
 export type NftSyncItem = {
   id: string;
   token: {
@@ -119,7 +131,9 @@ export default class NFTWalletService {
           walletAddress,
           userId,
         });
-        return { success: false, code: "WALLET_FOREIGN" };
+        // tx 内の write 済みクエリが aborted 状態かもしれないので、throw して rollback させ、
+        // usecase 層で WALLET_FOREIGN に変換する。
+        throw new WalletForeignError();
       }
       throw error;
     }

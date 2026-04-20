@@ -1,7 +1,10 @@
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import NFTWalletService, { SyncNftsResult } from "@/application/domain/account/nft-wallet/service";
+import NFTWalletService, {
+  SyncNftsResult,
+  WalletForeignError,
+} from "@/application/domain/account/nft-wallet/service";
 import logger from "@/infrastructure/logging";
 
 export type SyncMetadataResult = {
@@ -31,9 +34,16 @@ export default class NFTWalletUsecase {
     walletAddress: string,
     nfts: unknown,
   ): Promise<SyncNftsResult> {
-    return await this.issuer.public(ctx, async (tx) => {
-      return await this.nftWalletService.syncNfts(ctx, userId, walletAddress, nfts, tx);
-    });
+    try {
+      return await this.issuer.public(ctx, async (tx) => {
+        return await this.nftWalletService.syncNfts(ctx, userId, walletAddress, nfts, tx);
+      });
+    } catch (error) {
+      if (error instanceof WalletForeignError) {
+        return { success: false, code: "WALLET_FOREIGN" };
+      }
+      throw error;
+    }
   }
 
   async registerWallet(
