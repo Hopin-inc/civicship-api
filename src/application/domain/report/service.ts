@@ -115,11 +115,17 @@ export default class ReportService {
   }
 
   /**
-   * CI-only direct lookup by (variant, kind, version). Wraps
-   * `IReportRepository.findTemplateByVersion` so the Golden Case harness
-   * has the same service-shaped seam as the rest of the report domain.
-   * Production resolvers must not use this — it bypasses the
+   * CI-only direct lookup by (variant, kind, version, communityId).
+   * Wraps `IReportRepository.findTemplateByVersion` so the Golden Case
+   * harness has the same service-shaped seam as the rest of the report
+   * domain. Production resolvers must not use this — it bypasses the
    * `isActive` / `isEnabled` gates.
+   *
+   * `communityId` defaults to `null`, which selects the SYSTEM-scoped
+   * row. The CI harness always fetches SYSTEM (communityId=null) since
+   * COMMUNITY-scoped templates are not part of the shared golden
+   * baseline; callers must pass `communityId=null` explicitly when
+   * they want the SYSTEM contract to be visible at the call site.
    */
   async getTemplateByVersion(
     ctx: IContext,
