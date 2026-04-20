@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import logger from "@/infrastructure/logging";
 import walletRouter from "@/presentation/router/wallet";
+import nftRouter from "@/presentation/router/nft";
 import { requestLogger } from "@/presentation/middleware/logger";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -31,6 +32,7 @@ async function startExternalApiServer() {
   });
 
   app.use("/api", walletRouter);
+  app.use("/api", nftRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "external-api" });

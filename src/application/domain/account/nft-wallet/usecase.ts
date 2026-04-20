@@ -25,18 +25,17 @@ export default class NFTWalletUsecase {
     @inject("NFTWalletService") private nftWalletService: NFTWalletService,
   ) {}
 
+  dryRunSyncNfts(userId: string, walletAddress: string, nfts: unknown): void {
+    this.nftWalletService.validateAndLogNftPayload(walletAddress, userId, nfts);
+  }
+
   async registerWallet(
     ctx: IContext,
     userId: string,
     walletAddress: string,
     userName?: string,
     currentUserName?: string,
-    nfts?: unknown,
   ): Promise<RegisterWalletResult> {
-    if (nfts !== undefined) {
-      this.nftWalletService.validateAndLogNftPayload(walletAddress, userId, nfts);
-    }
-
     return await this.issuer.public(ctx, async (tx) => {
       const wallet = await this.nftWalletService.createOrUpdateWalletAddress(
         ctx,
