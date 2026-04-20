@@ -106,7 +106,7 @@ describe("ReportTemplateSelector", () => {
     expect(repository.findActiveTemplates).toHaveBeenCalledTimes(2);
   });
 
-  it("throws when there are no candidates at either scope", async () => {
+  it("throws a structured NotFoundError when there are no candidates at either scope", async () => {
     repository.findActiveTemplates.mockResolvedValue([]);
     await expect(
       selector.selectTemplate(
@@ -116,7 +116,10 @@ describe("ReportTemplateSelector", () => {
         "c-1",
         new Date("2026-04-17"),
       ),
-    ).rejects.toThrow(/No active template/);
+    ).rejects.toMatchObject({
+      name: "NotFoundError",
+      extensions: { code: "NOT_FOUND" },
+    });
   });
 
   it("returns a deterministic template for the same (communityId + week)", async () => {
