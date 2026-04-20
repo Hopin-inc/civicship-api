@@ -1,7 +1,7 @@
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import NFTWalletService from "@/application/domain/account/nft-wallet/service";
+import NFTWalletService, { SyncNftsResult } from "@/application/domain/account/nft-wallet/service";
 import logger from "@/infrastructure/logging";
 
 export type SyncMetadataResult = {
@@ -25,8 +25,15 @@ export default class NFTWalletUsecase {
     @inject("NFTWalletService") private nftWalletService: NFTWalletService,
   ) {}
 
-  dryRunSyncNfts(userId: string, walletAddress: string, nfts: unknown): void {
-    this.nftWalletService.validateAndLogNftPayload(walletAddress, userId, nfts);
+  async syncNfts(
+    ctx: IContext,
+    userId: string,
+    walletAddress: string,
+    nfts: unknown,
+  ): Promise<SyncNftsResult> {
+    return await this.issuer.public(ctx, async (tx) => {
+      return await this.nftWalletService.syncNfts(ctx, userId, walletAddress, nfts, tx);
+    });
   }
 
   async registerWallet(

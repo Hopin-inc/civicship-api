@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { NftWalletType, Prisma } from "@prisma/client";
+import { NftInstanceStatus, NftWalletType, Prisma } from "@prisma/client";
 import { injectable, inject } from "tsyringe";
 import { fetchWithRetry } from "@/utils/retry";
 import logger from "@/infrastructure/logging";
@@ -38,6 +38,11 @@ export type NftMetadataItem = {
   } | null;
 };
 
+export type SyncNftsResult =
+  | { success: true; processed: number }
+  | { success: false; code: "INVALID_PAYLOAD"; errors: string[] }
+  | { success: false; code: "WALLET_FOREIGN" };
+
 export type NftSyncItem = {
   id: string;
   token: {
@@ -74,22 +79,79 @@ export default class NFTWalletService {
     @inject("NmkrClient") private nmkrClient: NmkrClient,
   ) {}
 
-  validateAndLogNftPayload(walletAddress: string, userId: string, nfts: unknown): void {
-    const result = validateNftPayload(nfts);
-    if (result.valid) {
-      logger.info("📨 [dry-run] NFT payload valid", {
+  async syncNfts(
+    ctx: IContext,
+    userId: string,
+    walletAddress: string,
+    nfts: unknown,
+    tx: Prisma.TransactionClient,
+  ): Promise<SyncNftsResult> {
+    const validation = validateNftPayload(nfts);
+    if (!validation.valid) {
+      logger.warn("⚠️ NFT sync payload invalid", {
         walletAddress,
         userId,
-        nftCount: result.count,
-        sampleItem: result.items[0],
+        errors: validation.errors,
       });
-    } else {
-      logger.warn("⚠️ [dry-run] NFT payload invalid", {
-        walletAddress,
-        userId,
-        errors: result.errors,
-      });
+      return { success: false, code: "INVALID_PAYLOAD", errors: validation.errors };
     }
+
+    const existing = await this.nftWalletRepository.findByWalletAddress(ctx, walletAddress);
+    if (existing && existing.userId !== userId) {
+      logger.warn("⚠️ NFT sync rejected: wallet linked to another user", {
+        walletAddress,
+        userId,
+        ownerId: existing.userId,
+      });
+      return { success: false, code: "WALLET_FOREIGN" };
+    }
+
+    const wallet = await this.createOrUpdateWalletAddress(ctx, userId, walletAddress, tx);
+
+    let processed = 0;
+    for (const item of validation.items) {
+      const nftToken = await this.nftTokenRepository.upsert(
+        ctx,
+        {
+          address: item.token.address,
+          name: item.token.name ?? null,
+          symbol: item.token.symbol ?? null,
+          type: item.token.type,
+          json: item.rawToken,
+        },
+        tx,
+      );
+
+      await this.nftInstanceRepository.upsert(
+        ctx,
+        {
+          instanceId: item.id,
+          name: item.metadata?.name ?? null,
+          description: item.metadata?.description ?? null,
+          imageUrl: item.metadata?.image ?? null,
+          json: {
+            id: item.id,
+            token: item.rawToken,
+            metadata: item.rawMetadata,
+          },
+          nftWalletId: wallet.id,
+          nftTokenId: nftToken.id,
+          status: NftInstanceStatus.OWNED,
+        },
+        nftToken.id,
+        tx,
+      );
+
+      processed++;
+    }
+
+    logger.info("✅ NFT sync completed", {
+      walletAddress,
+      userId,
+      processed,
+    });
+
+    return { success: true, processed };
   }
 
   async createOrUpdateWalletAddress(
