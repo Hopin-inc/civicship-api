@@ -6,10 +6,11 @@
 -- (not materialized) so there is no refresh job to schedule and queries always
 -- reflect the latest memberships / transactions.
 --
--- Scope: read-only join over t_memberships + t_transactions. RLS on
--- t_memberships still applies at query time; the report repository scopes
--- lookups to callers that belong to the target community (or internal
--- admin issuer) before invoking queries that reference this view.
+-- Scope: read-only join over t_memberships + t_transactions. Callers must
+-- scope queries by community_id in the application layer before referencing
+-- this view; some code paths (ctx.issuer.public / internal) set
+-- app.rls_bypass='on', so safety must NOT rely on t_memberships RLS being
+-- enforced at query time.
 --
 -- `onboarding_week` comes from t_memberships.created_at, filtered to
 -- status = 'JOINED' directly in the view so downstream consumers can

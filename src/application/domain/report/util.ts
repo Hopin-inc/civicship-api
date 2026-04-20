@@ -73,6 +73,25 @@ export function bigintToSafeNumber(value: bigint): number {
 }
 
 /**
+ * Return the Monday-00:00-JST "ISO week start" day for the JST calendar day
+ * that `d` falls in. Mirrors the DATE_TRUNC('week', ...) semantics used by
+ * `v_user_cohort` and the retention SQL, so retention windows computed in
+ * application code line up 1:1 with the SQL-side week bucketing.
+ *
+ * Output follows the same UTC-encoded-JST-date convention as
+ * `truncateToJstDate`: a Date whose UTC components encode the JST Monday's
+ * year/month/day at UTC 00:00.
+ */
+export function isoWeekStartJst(d: Date): Date {
+  const jstDay = truncateToJstDate(d);
+  // `getUTCDay()` on a UTC-encoded JST date returns the JST day-of-week
+  // (0=Sunday … 6=Saturday). (day + 6) % 7 produces the number of days to
+  // subtract to reach the ISO Monday (Mon=0, Tue=1, … Sun=6).
+  const daysBackToMonday = (jstDay.getUTCDay() + 6) % 7;
+  return addDays(jstDay, -daysBackToMonday);
+}
+
+/**
  * Week-over-week percent change of `current` relative to `previous`.
  *
  * Returns `null` when `previous` is zero so a divide-by-zero never surfaces

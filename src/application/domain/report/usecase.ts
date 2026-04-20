@@ -7,7 +7,12 @@ import ReportJudgeService, { JudgeParseError } from "@/application/domain/report
 import ReportTemplateSelector from "@/application/domain/report/templateSelector";
 import ReportPresenter from "@/application/domain/report/presenter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
-import { addDays, daysBetweenJst, truncateToJstDate } from "@/application/domain/report/util";
+import {
+  addDays,
+  daysBetweenJst,
+  isoWeekStartJst,
+  truncateToJstDate,
+} from "@/application/domain/report/util";
 import { renderPromptTemplate } from "@/application/domain/report/util/promptRenderer";
 import { analyzeCoverage } from "@/application/domain/report/util/coverage";
 import { LlmClient } from "@/infrastructure/libs/llm";
@@ -77,13 +82,16 @@ export default class ReportUseCase {
        */
       includePreviousPeriod?: boolean;
       /**
-       * When true, compute retention / cohort counters for the reporting
-       * window and attach them as `retention` on the payload. Defaults to
-       * `false` so today's callers keep their current behaviour until a
-       * prompt template is ready to consume the block. The retention
-       * query frame is always "the ISO week that `referenceDate` falls
-       * in", i.e. it ignores `windowDays`: retention is a weekly
-       * semantic, not a "whatever length the report uses" semantic.
+       * When true, compute retention / cohort counters and attach them as
+       * `retention` on the payload. Defaults to `false` so today's callers
+       * keep their current behaviour until a prompt template is ready to
+       * consume the block.
+       *
+       * The retention frame is always the ISO week (Monday 00:00 JST –
+       * next Monday 00:00 JST) that `referenceDate` falls in, independent
+       * of `windowDays`. Retention is a weekly semantic; using the report
+       * window length here would make week1 / week4 cohort boundaries
+       * drift away from the SQL bucketing in `v_user_cohort`.
        */
       includeRetention?: boolean;
     },
@@ -110,17 +118,17 @@ export default class ReportUseCase {
       ? { from: addDays(from, -windowDays), to: addDays(from, -1) }
       : null;
 
-    // Retention is always anchored to the ISO week that `to` falls in, not
-    // the (possibly-arbitrary) report window. Boundaries are UTC-midnight
-    // Dates whose year/month/day encode the intended JST date — matching
-    // the convention documented in util.ts and used by the MV @db.Date
-    // columns. `prevWeekStart` / `twelveWeeksAgo` feed the scope-limiting
-    // SQL filters so the churn / returning-user scans never fan out past
-    // the 12-week window.
+    // Retention is anchored to the ISO week (Monday 00:00 JST) that
+    // `referenceDate` falls in — not a rolling 7-day window ending at `to`.
+    // `isoWeekStartJst` mirrors the SQL `DATE_TRUNC('week', ...)` bucketing
+    // used by `v_user_cohort`, so week1 / week4 cohort boundaries computed
+    // here match the SQL-side buckets exactly. Retention is a weekly
+    // semantic, independent of the (possibly-shorter-or-longer) report
+    // window length.
     const retentionRange = params.includeRetention
       ? (() => {
-          const nextWeekStart = addDays(to, 1);
-          const currentWeekStart = addDays(nextWeekStart, -7);
+          const currentWeekStart = isoWeekStartJst(params.referenceDate);
+          const nextWeekStart = addDays(currentWeekStart, 7);
           const prevWeekStart = addDays(currentWeekStart, -7);
           const twelveWeeksAgo = addDays(prevWeekStart, -7 * 11);
           return { nextWeekStart, currentWeekStart, prevWeekStart, twelveWeeksAgo };
