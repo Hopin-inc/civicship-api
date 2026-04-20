@@ -363,9 +363,27 @@ export default class ReportRepository implements IReportRepository {
           variant,
           kind: ReportTemplateKind.GENERATION,
           isEnabled: true,
+          // Filter on `isActive` too: without it, once multiple versions
+          // of the same (variant, kind, scope) coexist — e.g. v1
+          // `isActive=true` alongside a v2 shakeout candidate with
+          // `isActive=false` — `findFirst` matches both and Postgres
+          // picks non-deterministically (see PR-F5 regression report).
+          // The production `templateSelector` already filters on
+          // `isActive=true`; this method is used by the admin
+          // `viewReportTemplate` query and the CI non-pinned path,
+          // both of which expect "the live template" semantics.
+          isActive: true,
           OR: [...(communityId ? [{ communityId }] : []), { communityId: null }],
         },
-        orderBy: { communityId: "asc" },
+        // Primary: prefer the COMMUNITY-scope override when one exists
+        // (communityId NULLS LAST under ASC in Postgres, so a non-null
+        // community row sorts before the SYSTEM fallback).
+        // Secondary: when multiple active versions of the same scope
+        // exist (e.g. a planned overlap during a weighted A/B rollout
+        // that routes prod through `templateSelector`), pin the
+        // single-template admin view to the newest active version
+        // rather than a non-deterministic pick.
+        orderBy: [{ communityId: "asc" }, { version: "desc" }],
         select: reportTemplateSelect,
       }),
     );
