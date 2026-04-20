@@ -877,6 +877,7 @@ Table t_report_golden_cases {
   forbiddenKeys String[] [not null]
   notes String
   expectedStatus ReportStatus
+  templateVersion Int
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 

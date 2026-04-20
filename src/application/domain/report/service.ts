@@ -202,8 +202,11 @@ export default class ReportService {
     return this.repository.updateReportJudgeResult(ctx, id, data, tx);
   }
 
-  async getGoldenCases(ctx: IContext, variant?: string): Promise<PrismaReportGoldenCase[]> {
-    return this.repository.findGoldenCases(ctx, variant);
+  async getGoldenCases(
+    ctx: IContext,
+    options: { variant?: string; pinnedVersion?: number | null } = {},
+  ): Promise<PrismaReportGoldenCase[]> {
+    return this.repository.findGoldenCases(ctx, options);
   }
 
   /**

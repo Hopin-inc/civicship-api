@@ -505,11 +505,24 @@ export default class ReportRepository implements IReportRepository {
 
   async findGoldenCases(
     ctx: IContext,
-    variant?: string,
+    options: { variant?: string; pinnedVersion?: number | null } = {},
   ): Promise<PrismaReportGoldenCase[]> {
+    const { variant, pinnedVersion } = options;
+    // Version filter semantics (see ReportGoldenCase.templateVersion comment):
+    //   pinnedVersion=N → shared baseline ∪ v{N}-specific cases.
+    //   pinnedVersion null/undefined → shared baseline only (matches the
+    //   production path where `pnpm ci:report-golden` grades only the
+    //   currently active prompt).
+    const versionWhere: Prisma.ReportGoldenCaseWhereInput =
+      pinnedVersion != null
+        ? { OR: [{ templateVersion: null }, { templateVersion: pinnedVersion }] }
+        : { templateVersion: null };
+    const where: Prisma.ReportGoldenCaseWhereInput = variant
+      ? { AND: [{ variant }, versionWhere] }
+      : versionWhere;
     return ctx.issuer.public(ctx, (tx) =>
       tx.reportGoldenCase.findMany({
-        where: variant ? { variant } : undefined,
+        where,
         select: reportGoldenCaseSelect,
         orderBy: [{ variant: "asc" }, { label: "asc" }],
       }),
@@ -527,6 +540,7 @@ export default class ReportRepository implements IReportRepository {
       forbiddenKeys: string[];
       notes?: string | null;
       expectedStatus?: ReportStatus | null;
+      templateVersion?: number | null;
     },
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportGoldenCase> {
@@ -542,6 +556,7 @@ export default class ReportRepository implements IReportRepository {
           forbiddenKeys: data.forbiddenKeys,
           notes: data.notes ?? null,
           expectedStatus: data.expectedStatus ?? null,
+          templateVersion: data.templateVersion ?? null,
         },
         update: {
           payloadFixture: data.payloadFixture,
@@ -550,6 +565,7 @@ export default class ReportRepository implements IReportRepository {
           forbiddenKeys: data.forbiddenKeys,
           notes: data.notes ?? null,
           expectedStatus: data.expectedStatus ?? null,
+          templateVersion: data.templateVersion ?? null,
         },
         select: reportGoldenCaseSelect,
       });

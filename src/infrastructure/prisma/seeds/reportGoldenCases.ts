@@ -33,6 +33,16 @@ interface GoldenCaseDefinition {
    * comment on ReportGoldenCase for rationale.
    */
   expectedStatus?: ReportStatus;
+  /**
+   * Template version this case targets (see ReportGoldenCase schema
+   * comment).
+   * - undefined / null: shared baseline — runs on every CI invocation.
+   *   Criteria must be satisfiable by every coexisting prompt version.
+   * - N (integer): runs ONLY when `--version=N` is passed to the CI
+   *   harness. Use for criteria specific to one prompt version that
+   *   would incorrectly fail earlier versions.
+   */
+  templateVersion?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,12 +64,10 @@ const sparseCase: GoldenCaseDefinition = {
   minJudgeScore: 70,
   judgeCriteria: {
     items: [
-      "少ないデータで架空の情報（前週比・存在しないユーザー等）を捏造していないか",
-      "deepest_chain に chain_depth の数値を含めて言及しているか",
-      "実際の highlight_comments のコメント原文を引用しているか",
+      "少ないデータで架空の情報を捏造していないか",
+      "実際のコメント内容を正確に引用しているか",
+      "chain_depth の意味を正しく説明しているか",
       "具体的な推奨アクションが2件以上あるか",
-      "GRANT と DONATION を区別して書いているか（GRANTがある場合）",
-      "前週比・先週比への言及がないか",
     ],
   },
   forbiddenKeys: ["TODO", "[placeholder]", "先週比", "月末イベント"],
@@ -249,9 +257,7 @@ const bustlingCase: GoldenCaseDefinition = {
       "DONATION / GRANT / ONBOARDING を別カテゴリとして区別しているか",
       "新規メンバー（ONBOARDING）への言及があるか",
       "GRANT を DONATION と混同していないか",
-      "deepest_chain を冒頭またはセクション見出しレベルで言及しているか",
-      "前週比・先週比への言及がないか",
-      "point_name（固有のポイント名）を使っているか（「ポイント」と書いていないか）",
+      "deepest_chain を感謝の連鎖として物語化しているか",
     ],
   },
   forbiddenKeys: ["GRANT はメンバー間のドネーション"],
@@ -408,7 +414,65 @@ const bustlingCase: GoldenCaseDefinition = {
   },
 };
 
-const GOLDEN_CASES: GoldenCaseDefinition[] = [sparseCase, zeroActivityCase, bustlingCase];
+// ---------------------------------------------------------------------------
+// v2-specific cases (templateVersion=2)
+//
+// These only run when `pnpm ci:report-golden --version=2` is invoked.
+// They reuse the same payload fixtures as the shared baseline but hold
+// criteria that are specific to the v2 prompt — putting them in the
+// shared set would incorrectly fail v1 (see PR-F5 §7).
+//
+// v2 differs from v1 in three testable ways:
+//   1. deepest_chain is moved to the opening hook with the numeric
+//      chain_depth surfaced explicitly.
+//   2. Week-over-week comparisons are explicitly forbidden (the
+//      payload contains no prior-week data to compare against).
+//   3. `point_name` (e.g. "pt") must be used instead of the generic
+//      word "ポイント".
+// ---------------------------------------------------------------------------
+
+const sparseCaseV2: GoldenCaseDefinition = {
+  variant: GqlReportVariant.WeeklySummary,
+  label: "sparse-but-meaningful-v2",
+  minJudgeScore: 70,
+  templateVersion: 2,
+  judgeCriteria: {
+    items: [
+      "deepest_chain に chain_depth の数値を含めて言及しているか",
+      "前週比・先週比への言及がないか",
+    ],
+  },
+  forbiddenKeys: ["TODO", "[placeholder]", "先週比", "前週比", "月末イベント"],
+  notes:
+    "v2 専用。sparse payload を v2 プロンプトで評価し、chain_depth の数値言及と前週比禁止を検証する。",
+  payloadFixture: sparseCase.payloadFixture,
+};
+
+const bustlingCaseV2: GoldenCaseDefinition = {
+  variant: GqlReportVariant.WeeklySummary,
+  label: "bustling-mixed-reason-v2",
+  minJudgeScore: 75,
+  templateVersion: 2,
+  judgeCriteria: {
+    items: [
+      "deepest_chain を冒頭またはセクション見出しレベルで言及しているか",
+      "前週比・先週比への言及がないか",
+      "point_name（固有のポイント名）を使っているか（「ポイント」と書いていないか）",
+    ],
+  },
+  forbiddenKeys: ["GRANT はメンバー間のドネーション", "先週比", "前週比"],
+  notes:
+    "v2 専用。bustling payload を v2 プロンプトで評価し、deepest_chain の配置・前週比禁止・point_name 使用を検証する。",
+  payloadFixture: bustlingCase.payloadFixture,
+};
+
+const GOLDEN_CASES: GoldenCaseDefinition[] = [
+  sparseCase,
+  zeroActivityCase,
+  bustlingCase,
+  sparseCaseV2,
+  bustlingCaseV2,
+];
 
 export async function seedReportGoldenCases() {
   await prismaClient.$transaction(async (tx) => {
@@ -424,6 +488,7 @@ export async function seedReportGoldenCases() {
           forbiddenKeys: c.forbiddenKeys,
           notes: c.notes ?? null,
           expectedStatus: c.expectedStatus ?? null,
+          templateVersion: c.templateVersion ?? null,
         },
         update: {
           payloadFixture: c.payloadFixture as unknown as object,
@@ -432,6 +497,7 @@ export async function seedReportGoldenCases() {
           forbiddenKeys: c.forbiddenKeys,
           notes: c.notes ?? null,
           expectedStatus: c.expectedStatus ?? null,
+          templateVersion: c.templateVersion ?? null,
         },
       });
       console.info(`  Upserted golden case: ${c.variant}/${c.label}`);

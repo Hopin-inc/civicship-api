@@ -71,6 +71,7 @@ export const reportGoldenCaseSelect = Prisma.validator<Prisma.ReportGoldenCaseSe
   forbiddenKeys: true,
   notes: true,
   expectedStatus: true,
+  templateVersion: true,
   createdAt: true,
   updatedAt: true,
 });

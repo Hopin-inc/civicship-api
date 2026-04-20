@@ -1887,6 +1887,21 @@ model ReportGoldenCase {
   // each new status rather than silently treat it as "DRAFT-expected".
   expectedStatus ReportStatus? @map("expected_status")
 
+  // Which template version this case's judgeCriteria belongs to.
+  // - null: shared baseline — runs on every `pnpm ci:report-golden`
+  //   invocation (with or without --version). Criteria listed here
+  //   must be satisfiable by ALL active and candidate template
+  //   versions, so this is where common regressions (fabrication,
+  //   category confusion, etc.) live.
+  // - N (integer): applies only when `--version=N` is passed. Use for
+  //   criteria that are specific to a single prompt version (e.g. "v2
+  //   must mention chain_depth numerically in the opening") and would
+  //   incorrectly fail earlier versions.
+  // The CI harness filters cases by `templateVersion IS NULL OR
+  // templateVersion = N` so new versions can layer in their own
+  // criteria without destabilising the shared baseline.
+  templateVersion Int? @map("template_version")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
