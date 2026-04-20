@@ -14,6 +14,19 @@ export default class ReportConverter {
       maxTokens: input.maxTokens,
       stopSequences: input.stopSequences ?? [],
       isEnabled: input.isEnabled ?? true,
+      // A/B selection fields (PR-F3). The Prisma defaults are applied on
+      // CREATE (isActive=true, trafficWeight=100, experimentKey=null) so we
+      // only forward values the caller explicitly provided; on UPDATE the
+      // explicit values overwrite any prior state.
+      ...(input.isActive !== undefined && input.isActive !== null
+        ? { isActive: input.isActive }
+        : {}),
+      ...(input.trafficWeight !== undefined && input.trafficWeight !== null
+        ? { trafficWeight: input.trafficWeight }
+        : {}),
+      ...(input.experimentKey !== undefined
+        ? { experimentKey: input.experimentKey }
+        : {}),
     };
   }
 

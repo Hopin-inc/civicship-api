@@ -7,6 +7,10 @@ import ReportRepository from "@/application/domain/report/data/repository";
 import ReportService from "@/application/domain/report/service";
 import ReportUseCase from "@/application/domain/report/usecase";
 import ReportJudgeService from "@/application/domain/report/judgeService";
+import ReportTemplateSelector from "@/application/domain/report/templateSelector";
+import ReportFeedbackRepository from "@/application/domain/report/feedback/data/repository";
+import ReportFeedbackService from "@/application/domain/report/feedback/service";
+import ReportFeedbackUseCase from "@/application/domain/report/feedback/usecase";
 import ICommunityRepository from "@/application/domain/account/community/data/repository";
 import TransactionService from "@/application/domain/transaction/service";
 import MembershipService from "@/application/domain/account/membership/service";
@@ -353,6 +357,10 @@ export function registerProductionDependencies() {
   container.register("ReportService", { useClass: ReportService });
   container.register("ReportUseCase", { useClass: ReportUseCase });
   container.register("ReportJudgeService", { useClass: ReportJudgeService });
+  container.register("ReportTemplateSelector", { useClass: ReportTemplateSelector });
+  container.register("ReportFeedbackRepository", { useClass: ReportFeedbackRepository });
+  container.register("ReportFeedbackService", { useClass: ReportFeedbackService });
+  container.register("ReportFeedbackUseCase", { useClass: ReportFeedbackUseCase });
   container.register("LlmClient", { useClass: AnthropicLlmClient });
 
   // ------------------------------

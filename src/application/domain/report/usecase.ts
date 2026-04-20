@@ -1,9 +1,10 @@
-import { Prisma, ReportStatus } from "@prisma/client";
+import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
 import ReportService from "@/application/domain/report/service";
 import ReportJudgeService, { JudgeParseError } from "@/application/domain/report/judgeService";
+import ReportTemplateSelector from "@/application/domain/report/templateSelector";
 import ReportPresenter from "@/application/domain/report/presenter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
 import { addDays, daysBetweenJst, truncateToJstDate } from "@/application/domain/report/util";
@@ -46,6 +47,7 @@ export default class ReportUseCase {
     @inject("ReportService") private readonly service: ReportService,
     @inject("LlmClient") private readonly llmClient: LlmClient,
     @inject("ReportJudgeService") private readonly judgeService: ReportJudgeService,
+    @inject("ReportTemplateSelector") private readonly templateSelector: ReportTemplateSelector,
   ) {}
 
   /**
@@ -137,12 +139,6 @@ export default class ReportUseCase {
       throw new ValidationError("communityId in input does not match permission.communityId", []);
     }
     const communityId = permission.communityId;
-    const template = await this.service.getTemplate(ctx, input.variant, communityId);
-    if (!template) {
-      throw new Error(
-        `No enabled template found for variant=${input.variant}, communityId=${communityId}`,
-      );
-    }
 
     const periodFrom = truncateToJstDate(input.periodFrom);
     const periodTo = truncateToJstDate(input.periodTo);
@@ -160,6 +156,18 @@ export default class ReportUseCase {
         ["periodFrom", "periodTo"],
       );
     }
+
+    // Select the generation template via the A/B-aware selector. The
+    // reference date is `periodTo`, which — combined with the selector's
+    // `${communityId}-${isoWeekStartJst}` seed — pins a regenerate within
+    // the same ISO week to the same template as the original run.
+    const template = await this.templateSelector.selectTemplate(
+      ctx,
+      input.variant,
+      ReportTemplateKind.GENERATION,
+      communityId,
+      periodTo,
+    );
     const payload = await this.buildReportPayload(ctx, {
       communityId,
       referenceDate: periodTo,
@@ -517,6 +525,24 @@ export default class ReportUseCase {
     { communityId, variant, input }: GqlMutationUpdateReportTemplateArgs,
     ctx: IContext,
   ): Promise<GqlUpdateReportTemplatePayload> {
+    // App-layer bounds check on trafficWeight. The DB already enforces the
+    // same invariant via `t_report_templates_traffic_weight_check`, but a
+    // CHECK-constraint violation surfaces as an opaque
+    // PrismaClientKnownRequestError — we want the admin UI to see a
+    // structured ValidationError with an attribution to the offending
+    // field instead.
+    if (input.trafficWeight !== undefined && input.trafficWeight !== null) {
+      if (
+        !Number.isInteger(input.trafficWeight) ||
+        input.trafficWeight < 0 ||
+        input.trafficWeight > 100
+      ) {
+        throw new ValidationError("trafficWeight must be an integer between 0 and 100", [
+          "trafficWeight",
+        ]);
+      }
+    }
+
     const template = await ctx.issuer.admin(ctx, (tx) =>
       this.service.upsertTemplate(
         ctx,
