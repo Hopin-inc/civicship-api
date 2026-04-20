@@ -1,4 +1,19 @@
 # Node.js dependencies
+#
+# node_modules is intentionally NOT excluded from the build context.
+#
+# The current Dockerfile relies on the CI/CD runner having pre-built
+# node_modules (including Prisma TypedSQL generated types at
+# @prisma/client/sql/*.d.ts) that are copied into the image via
+# `COPY . ./`. This is because `prisma generate --sql` requires
+# database connectivity (via jumpbox tunnel) which is not available
+# during `docker build`.
+#
+# This is intentional tech debt. A multi-stage build with CI artifact
+# injection is the proper fix - see the git log around this file and
+# the associated PR description for context. Do NOT re-enable the
+# `node_modules` exclusion below without first resolving the build
+# flow (runner-dependent -> self-contained).
 # node_modules
 npm-debug.log*
 yarn-debug.log*

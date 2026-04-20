@@ -1,5 +1,16 @@
-import { Prisma, TransactionReason, Role } from "@prisma/client";
+import {
+  Prisma,
+  TransactionReason,
+  Role,
+  ReportStatus,
+  ReportTemplateKind,
+} from "@prisma/client";
 import { IContext } from "@/types/server";
+import {
+  PrismaReport,
+  PrismaReportGoldenCase,
+  PrismaReportTemplate,
+} from "@/application/domain/report/data/type";
 
 export interface TransactionSummaryDailyRow {
   date: Date;
@@ -132,6 +143,46 @@ export interface DateRange {
   to: Date;
 }
 
+/**
+ * Aggregate counters for a single window, shaped to back the
+ * `PreviousPeriodSummary` payload block. `totalPointsSum` is a BigInt at the
+ * boundary so the presenter can funnel it through the same safe-integer
+ * guard used elsewhere — the underlying SUM over `mv_transaction_summary_daily`
+ * returns `bigint` and we preserve precision until the payload boundary.
+ */
+export interface PeriodAggregateRow {
+  activeUsersInWindow: number;
+  totalTxCount: number;
+  totalPointsSum: bigint;
+  newMembers: number;
+}
+
+/**
+ * Per-user "was active as a sender this week" / "was active last week" /
+ * "is a new member" flags aggregated across the community for a single
+ * reporting window. The repository returns the raw counts so the
+ * presenter can divide through `total_members` without the repo needing
+ * to know about the community-context lookup.
+ */
+export interface RetentionAggregateRow {
+  newMembers: number;
+  retainedSenders: number;
+  returnedSenders: number;
+  churnedSenders: number;
+  currentSendersCount: number;
+  currentActiveCount: number;
+}
+
+/**
+ * Week-N retention for a single cohort: numerator / denominator kept raw
+ * so the presenter can emit `null` when the denominator is zero (no
+ * cohort yet) and the prompt template sees a clear "no signal" signal.
+ */
+export interface CohortRetentionRow {
+  cohortSize: number;
+  activeNextWeek: number;
+}
+
 export interface IReportRepository {
   findDailySummaries(
     ctx: IContext,
@@ -151,6 +202,24 @@ export interface IReportRepository {
     range: DateRange,
     topN: number,
   ): Promise<UserTransactionAggregateRow[]>;
+
+  /**
+   * Per-user distinct counterparty count across the whole reporting window,
+   * for the supplied user ids. Sourced from `t_transactions` directly rather
+   * than MVs so distinct is a true set-cardinality over the period, not a
+   * per-day sum. Scoped to the caller-supplied ids (the top-N result) so the
+   * scan stays bounded regardless of community size.
+   *
+   * Returns a Map<userId, count> so the presenter's lookup is O(1) and
+   * users with no outgoing activity simply miss the map (no row shipped from
+   * SQL), letting the payload record them as `null` rather than `0`.
+   */
+  findTrueUniqueCounterpartiesForUsers(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+    userIds: string[],
+  ): Promise<Map<string, number>>;
 
   findCommentsByDateRange(
     ctx: IContext,
@@ -177,6 +246,184 @@ export interface IReportRepository {
     range: DateRange,
   ): Promise<DeepestChainRow | null>;
 
+  /**
+   * Aggregate the headline counters (active users, tx count, points volume,
+   * new memberships) for an arbitrary window. Called twice when the usecase
+   * opts into previous-period comparison: once for the current period (not
+   * wired up yet — current-period stats are still derived from the other
+   * repository calls so we don't double-scan) and once for the window
+   * immediately preceding it. The shared method keeps the two calls on the
+   * same SQL, so growth-rate math cannot drift.
+   */
+  findPeriodAggregate(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+  ): Promise<PeriodAggregateRow>;
+
+  /**
+   * Week-over-week retention signal counts for `[currentWeekStart,
+   * nextWeekStart)`, using the week immediately before as the "prev" frame
+   * and a bounded 12-week lookback for the "returned" frame. JST week
+   * boundaries are caller-supplied as half-open UTC dates matching the MV
+   * bucketing (e.g. Monday 00:00 JST). `is_sender` is defined as "had a
+   * DONATION transaction out that day" (donation_out_count > 0 in
+   * mv_user_transaction_daily) — the same definition is applied both
+   * sides of the self-join so retained/returned/churned stay consistent.
+   */
+  findRetentionAggregate(
+    ctx: IContext,
+    communityId: string,
+    range: {
+      currentWeekStart: Date;
+      nextWeekStart: Date;
+      prevWeekStart: Date;
+      twelveWeeksAgo: Date;
+    },
+  ): Promise<RetentionAggregateRow>;
+
+  /**
+   * Week-N retention: fraction of a cohort (joined during
+   * `[cohortStart, cohortEnd)`) that was an `is_sender` in the window
+   * `[activeStart, activeEnd)`. Returning numerator / denominator lets
+   * the presenter emit null for empty cohorts without the repository
+   * caring about display-layer concerns.
+   */
+  findCohortRetention(
+    ctx: IContext,
+    communityId: string,
+    cohort: { cohortStart: Date; cohortEnd: Date },
+    active: { activeStart: Date; activeEnd: Date },
+  ): Promise<CohortRetentionRow>;
+
   refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
   refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
+
+  findTemplate(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate | null>;
+
+  /**
+   * CI-only direct lookup by (variant, kind, version, communityId).
+   *
+   * Deliberately bypasses the `isEnabled` / `isActive` filters used by
+   * `findTemplate` and `findActiveTemplates` — the Golden Case harness
+   * (`scripts/ci/run-golden-cases.ts`) must be able to grade a template
+   * that is pinned to `isActive=false` during the v2 shakeout window
+   * (PR-F5 §7). Production code paths must NOT call this; use
+   * `ReportTemplateSelector.selectTemplate` instead, which respects the
+   * active/enabled gates and the weighted A/B draw.
+   */
+  findTemplateByVersion(
+    ctx: IContext,
+    variant: string,
+    kind: ReportTemplateKind,
+    version: number,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate | null>;
+
+  /**
+   * Resolve every active candidate template for a given
+   * (variant, kind, communityId) triple. Scoped strictly to the
+   * `communityId` argument — SYSTEM fallback is the caller's job, so the
+   * selector can tell "community has its own overrides" apart from
+   * "community falls back to SYSTEM". Only `isEnabled=true AND
+   * isActive=true` rows are returned, ordered by `id` for a stable draw
+   * in the weighted selection.
+   */
+  findActiveTemplates(
+    ctx: IContext,
+    variant: string,
+    kind: ReportTemplateKind,
+    communityId: string | null,
+  ): Promise<PrismaReportTemplate[]>;
+
+  /**
+   * Resolve the active SYSTEM-scope JUDGE template for a variant. Returns
+   * null when no such template exists — callers must treat that as a
+   * "skip the judge step" signal rather than failing the generation.
+   * COMMUNITY-scope JUDGE templates are intentionally not seeded; the
+   * runtime guard in the usecase rejects them so per-community judge
+   * customisation does not silently land here.
+   */
+  findJudgeTemplate(
+    ctx: IContext,
+    variant: string,
+  ): Promise<PrismaReportTemplate | null>;
+
+  updateReportJudgeResult(
+    ctx: IContext,
+    id: string,
+    data: {
+      judgeScore: number | null;
+      judgeBreakdown: Prisma.InputJsonValue | null;
+      judgeTemplateId: string | null;
+      coverageJson: Prisma.InputJsonValue | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport>;
+
+  findGoldenCases(
+    ctx: IContext,
+    options?: { variant?: string; pinnedVersion?: number | null },
+  ): Promise<PrismaReportGoldenCase[]>;
+
+  upsertGoldenCase(
+    ctx: IContext,
+    data: {
+      variant: string;
+      label: string;
+      payloadFixture: Prisma.InputJsonValue;
+      judgeCriteria: Prisma.InputJsonValue;
+      minJudgeScore: number;
+      forbiddenKeys: string[];
+      notes?: string | null;
+      expectedStatus?: ReportStatus | null;
+      templateVersion?: number | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReportGoldenCase>;
+
+  upsertTemplate(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+    data: Omit<Prisma.ReportTemplateCreateInput, "variant" | "scope" | "community">,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReportTemplate>;
+
+  createReport(
+    ctx: IContext,
+    data: Prisma.ReportUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport>;
+
+  findReportById(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaReport | null>;
+
+  findReports(
+    ctx: IContext,
+    params: {
+      communityId: string;
+      variant?: string;
+      status?: ReportStatus;
+      cursor?: string;
+      first?: number;
+    },
+  ): Promise<{ items: PrismaReport[]; totalCount: number }>;
+
+  updateReportStatus(
+    ctx: IContext,
+    id: string,
+    status: ReportStatus,
+    extra?: {
+      publishedAt?: Date;
+      publishedBy?: string;
+      finalContent?: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaReport>;
+
+  findReportsByParentRunId(ctx: IContext, parentRunIds: string[]): Promise<PrismaReport[]>;
 }

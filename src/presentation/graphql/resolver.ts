@@ -27,6 +27,8 @@ import MasterResolver from "@/application/domain/location/master/controller/reso
 import NftInstanceResolver from "@/application/domain/account/nft-instance/controller/resolver";
 import NftTokenResolver from "@/application/domain/account/nft-token/controller/resolver";
 import VoteResolver from "@/application/domain/vote/controller/resolver";
+import ReportResolver from "@/application/domain/report/controller/resolver";
+import ReportFeedbackResolver from "@/application/domain/report/feedback/controller/resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
 
 const identity = container.resolve(IdentityResolver);
@@ -61,6 +63,8 @@ const transaction = container.resolve(TransactionResolver);
 const transactionVerification = container.resolve(TransactionVerificationResolver);
 const incentiveGrant = container.resolve(IncentiveGrantResolver);
 const vote = container.resolve(VoteResolver);
+const report = container.resolve(ReportResolver);
+const reportFeedback = container.resolve(ReportFeedbackResolver);
 
 const resolvers = {
   Query: {
@@ -90,6 +94,8 @@ const resolvers = {
     ...transactionVerification.Query,
     ...incentiveGrant.Query,
     ...vote.Query,
+    ...report.Query,
+    ...reportFeedback.Query,
   },
   Mutation: {
     ...identity.Mutation,
@@ -108,6 +114,8 @@ const resolvers = {
     ...transaction.Mutation,
     ...incentiveGrant.Mutation,
     ...vote.Mutation,
+    ...report.Mutation,
+    ...reportFeedback.Mutation,
   },
   Identity: identity.Identity,
   User: user.User,
@@ -142,6 +150,16 @@ const resolvers = {
   VoteGate: vote.VoteGate,
   VotePowerPolicy: vote.VotePowerPolicy,
   VoteBallot: vote.VoteBallot,
+
+  Report: { ...report.Report, ...reportFeedback.Report },
+  ReportTemplate: report.ReportTemplate,
+  ReportFeedback: reportFeedback.ReportFeedback,
+  GenerateReportPayload: report.GenerateReportPayload,
+  UpdateReportTemplatePayload: report.UpdateReportTemplatePayload,
+  ApproveReportPayload: report.ApproveReportPayload,
+  PublishReportPayload: report.PublishReportPayload,
+  RejectReportPayload: report.RejectReportPayload,
+  SubmitReportFeedbackPayload: reportFeedback.SubmitReportFeedbackPayload,
 
   ...scalarResolvers,
 };

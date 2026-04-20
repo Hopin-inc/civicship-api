@@ -1,0 +1,24 @@
+# ------------------------------
+# Report Query Definitions
+# ------------------------------
+extend type Query {
+  reports(
+    communityId: ID!
+    variant: ReportVariant
+    status: ReportStatus
+    cursor: String
+    first: Int
+    permission: CheckCommunityPermissionInput!
+  ): ReportsConnection! @authz(compositeRules: [{ or: [IsCommunityManager, IsAdmin] }])
+
+  report(id: ID!): Report @authz(rules: [IsAdmin])
+
+  reportTemplate(communityId: ID, variant: ReportVariant!): ReportTemplate @authz(rules: [IsAdmin])
+
+  # PR-F4: SYS_ADMIN-only snapshot of how a (variant, version) is
+  # performing — avg feedback rating, avg judge score, and Pearson's
+  # correlation between them. Used to decide when the judge prompt
+  # needs re-calibration (correlation < 0.7 → flagged).
+  reportTemplateStats(variant: ReportVariant!, version: Int): ReportTemplateStats!
+    @authz(rules: [IsAdmin])
+}

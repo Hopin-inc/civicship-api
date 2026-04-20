@@ -780,24 +780,31 @@ Table t_report_templates {
   id String [pk]
   variant String [not null]
   scope ReportTemplateScope [not null]
+  kind ReportTemplateKind [not null, default: 'GENERATION']
   communityId String
   community t_communities
   systemPrompt String [not null]
   userPromptTemplate String [not null]
   communityContext String
   model String [not null]
-  temperature Float [not null, default: 1]
+  temperature Float [default: 1]
   maxTokens Int [not null]
   stopSequences String[] [not null]
   isEnabled Boolean [not null, default: true]
+  version Int [not null, default: 1]
+  isActive Boolean [not null, default: true]
+  experimentKey String
+  trafficWeight Int [not null, default: 100]
+  notes String
   updatedBy String
   updatedByUser t_users
   reports t_reports [not null]
+  judgedReports t_reports [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 
   indexes {
-    (variant, communityId) [unique]
+    (variant, communityId, kind, version) [unique]
   }
 }
 
@@ -811,14 +818,20 @@ Table t_reports {
   templateId String
   template t_report_templates
   inputPayload Json [not null]
-  outputMarkdown String [not null]
-  model String [not null]
-  systemPromptSnapshot String [not null]
-  userPromptSnapshot String [not null]
+  outputMarkdown String
+  model String
+  systemPromptSnapshot String
+  userPromptSnapshot String
   communityContextSnapshot String
-  inputTokens Int [not null]
-  outputTokens Int [not null]
-  cacheReadTokens Int [not null, default: 0]
+  inputTokens Int
+  outputTokens Int
+  cacheReadTokens Int
+  judgeScore Int
+  judgeBreakdown Json
+  judgeTemplateId String
+  judgeTemplate t_report_templates
+  coverageJson Json
+  skipReason String
   targetUserId String
   targetUser t_users
   generatedBy String
@@ -848,6 +861,29 @@ Table t_report_feedbacks {
   sectionKey String
   comment String
   createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (reportId, userId) [unique]
+  }
+}
+
+Table t_report_golden_cases {
+  id String [pk]
+  variant String [not null]
+  label String [not null]
+  payloadFixture Json [not null]
+  judgeCriteria Json [not null]
+  minJudgeScore Int [not null, default: 70]
+  forbiddenKeys String[] [not null]
+  notes String
+  expectedStatus ReportStatus
+  templateVersion Int
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (variant, label) [unique]
+  }
 }
 
 Table v_place_public_opportunity_count {
@@ -980,6 +1016,18 @@ Table v_user_profile_for_report {
 
   indexes {
     (userId, communityId) [pk]
+  }
+}
+
+Table v_user_cohort {
+  communityId String [not null]
+  userId String [not null]
+  onboardingWeek DateTime [not null]
+  firstActiveWeek DateTime
+  totalWeeksInCommunity Float
+
+  indexes {
+    (communityId, userId) [pk]
   }
 }
 
@@ -1270,12 +1318,18 @@ Enum ReportTemplateScope {
   COMMUNITY
 }
 
+Enum ReportTemplateKind {
+  GENERATION
+  JUDGE
+}
+
 Enum ReportStatus {
   DRAFT
   APPROVED
   PUBLISHED
   REJECTED
   SUPERSEDED
+  SKIPPED
 }
 
 Enum FeedbackType {
@@ -1457,6 +1511,8 @@ Ref: t_report_templates.updatedBy > t_users.id [delete: Set Null]
 Ref: t_reports.communityId > t_communities.id [delete: Cascade]
 
 Ref: t_reports.templateId > t_report_templates.id [delete: Set Null]
+
+Ref: t_reports.judgeTemplateId > t_report_templates.id [delete: Set Null]
 
 Ref: t_reports.targetUserId > t_users.id [delete: Set Null]
 

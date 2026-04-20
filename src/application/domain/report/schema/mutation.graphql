@@ -1,0 +1,66 @@
+# ------------------------------
+# Report Mutation Definitions
+# ------------------------------
+input GenerateReportInput {
+  communityId: ID!
+  variant: ReportVariant!
+  periodFrom: Datetime!
+  periodTo: Datetime!
+  parentRunId: ID
+}
+
+input UpdateReportTemplateInput {
+  systemPrompt: String!
+  userPromptTemplate: String!
+  communityContext: String
+  model: String!
+  temperature: Float
+  maxTokens: Int!
+  stopSequences: [String!]
+  isEnabled: Boolean
+  # A/B selection controls (PR-F3). Omitted = leave unchanged on update,
+  # default on create (`isActive=true`, `trafficWeight=100`, null key).
+  isActive: Boolean
+  experimentKey: String
+  trafficWeight: Int
+}
+
+input SubmitReportFeedbackInput {
+  reportId: ID!
+  rating: Int!
+  # Optional category for the feedback — defaults to a plain rating
+  # when omitted. `sectionKey` is the identifier of a sub-section of the
+  # report (e.g. "top_users", "highlights") and is only meaningful
+  # alongside a section-specific rating.
+  feedbackType: ReportFeedbackType
+  sectionKey: String
+  comment: String
+}
+
+extend type Mutation {
+  generateReport(
+    input: GenerateReportInput!
+    permission: CheckCommunityPermissionInput!
+  ): GenerateReportPayload @authz(compositeRules: [{ or: [IsCommunityManager, IsAdmin] }])
+
+  updateReportTemplate(
+    communityId: ID
+    variant: ReportVariant!
+    input: UpdateReportTemplateInput!
+  ): UpdateReportTemplatePayload @authz(rules: [IsAdmin])
+
+  approveReport(id: ID!): ApproveReportPayload @authz(rules: [IsAdmin])
+
+  publishReport(id: ID!, finalContent: String!): PublishReportPayload @authz(rules: [IsAdmin])
+
+  rejectReport(id: ID!): RejectReportPayload @authz(rules: [IsAdmin])
+
+  # PR-F4: Anyone in the target community (MEMBER or higher) may submit
+  # a rating. The usecase additionally verifies that `input.reportId`
+  # belongs to `permission.communityId` — otherwise a member of
+  # community A could rate a report of community B by forging the id.
+  submitReportFeedback(
+    input: SubmitReportFeedbackInput!
+    permission: CheckCommunityPermissionInput!
+  ): SubmitReportFeedbackPayload @authz(compositeRules: [{ or: [IsCommunityMember, IsAdmin] }])
+}

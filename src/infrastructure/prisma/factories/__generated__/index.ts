@@ -47,6 +47,7 @@ import type { VoteBallot } from "@prisma/client";
 import type { ReportTemplate } from "@prisma/client";
 import type { Report } from "@prisma/client";
 import type { ReportFeedback } from "@prisma/client";
+import type { ReportGoldenCase } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -58,6 +59,7 @@ import type { TransactionSummaryDailyView } from "@prisma/client";
 import type { UserTransactionDailyView } from "@prisma/client";
 import type { TransactionCommentView } from "@prisma/client";
 import type { UserProfileForReportView } from "@prisma/client";
+import type { UserCohortView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { OpportunityAccumulatedParticipantsView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
@@ -95,6 +97,7 @@ import type { Position } from "@prisma/client";
 import type { VoteGateType } from "@prisma/client";
 import type { VotePowerPolicyType } from "@prisma/client";
 import type { ReportTemplateScope } from "@prisma/client";
+import type { ReportTemplateKind } from "@prisma/client";
 import type { ReportStatus } from "@prisma/client";
 import type { FeedbackType } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
@@ -1061,6 +1064,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "reports",
                 type: "Report",
                 relationName: "ReportToReportTemplate"
+            }, {
+                name: "judgedReports",
+                type: "Report",
+                relationName: "ReportJudgeTemplate"
             }]
     }, {
         name: "Report",
@@ -1072,6 +1079,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "template",
                 type: "ReportTemplate",
                 relationName: "ReportToReportTemplate"
+            }, {
+                name: "judgeTemplate",
+                type: "ReportTemplate",
+                relationName: "ReportJudgeTemplate"
             }, {
                 name: "targetUser",
                 type: "User",
@@ -1108,6 +1119,9 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "User",
                 relationName: "ReportFeedbackAuthor"
             }]
+    }, {
+        name: "ReportGoldenCase",
+        fields: []
     }, {
         name: "PlacePublicOpportunityCountView",
         fields: [{
@@ -1168,6 +1182,9 @@ const modelFieldDefinitions: ModelWithFields[] = [{
         fields: []
     }, {
         name: "UserProfileForReportView",
+        fields: []
+    }, {
+        name: "UserCohortView",
         fields: []
     }, {
         name: "EarliestReservableSlotView",
@@ -9325,19 +9342,26 @@ type ReportTemplateFactoryDefineInput = {
     id?: string;
     variant?: string;
     scope?: ReportTemplateScope;
+    kind?: ReportTemplateKind;
     systemPrompt?: string;
     userPromptTemplate?: string;
     communityContext?: string | null;
     model?: string;
-    temperature?: number;
+    temperature?: number | null;
     maxTokens?: number;
     stopSequences?: Prisma.ReportTemplateCreatestopSequencesInput | Array<string>;
     isEnabled?: boolean;
+    version?: number;
+    isActive?: boolean;
+    experimentKey?: string | null;
+    trafficWeight?: number;
+    notes?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     community?: ReportTemplatecommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportTemplatesInput;
     updatedByUser?: ReportTemplateupdatedByUserFactory | Prisma.UserCreateNestedOneWithoutReportTemplatesUpdatedInput;
     reports?: Prisma.ReportCreateNestedManyWithoutTemplateInput;
+    judgedReports?: Prisma.ReportCreateNestedManyWithoutJudgeTemplateInput;
 };
 
 type ReportTemplateTransientFields = Record<string, unknown> & Partial<Record<keyof ReportTemplateFactoryDefineInput, never>>;
@@ -9494,12 +9518,6 @@ type ReportScalarOrEnumFields = {
     periodFrom: Date;
     periodTo: Date;
     inputPayload: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
-    outputMarkdown: string;
-    model: string;
-    systemPromptSnapshot: string;
-    userPromptSnapshot: string;
-    inputTokens: number;
-    outputTokens: number;
 };
 
 type ReportcommunityFactory = {
@@ -9510,6 +9528,11 @@ type ReportcommunityFactory = {
 type ReporttemplateFactory = {
     _factoryFor: "ReportTemplate";
     build: () => PromiseLike<Prisma.ReportTemplateCreateNestedOneWithoutReportsInput["create"]>;
+};
+
+type ReportjudgeTemplateFactory = {
+    _factoryFor: "ReportTemplate";
+    build: () => PromiseLike<Prisma.ReportTemplateCreateNestedOneWithoutJudgedReportsInput["create"]>;
 };
 
 type ReporttargetUserFactory = {
@@ -9538,14 +9561,18 @@ type ReportFactoryDefineInput = {
     periodFrom?: Date;
     periodTo?: Date;
     inputPayload?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
-    outputMarkdown?: string;
-    model?: string;
-    systemPromptSnapshot?: string;
-    userPromptSnapshot?: string;
+    outputMarkdown?: string | null;
+    model?: string | null;
+    systemPromptSnapshot?: string | null;
+    userPromptSnapshot?: string | null;
     communityContextSnapshot?: string | null;
-    inputTokens?: number;
-    outputTokens?: number;
-    cacheReadTokens?: number;
+    inputTokens?: number | null;
+    outputTokens?: number | null;
+    cacheReadTokens?: number | null;
+    judgeScore?: number | null;
+    judgeBreakdown?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
+    coverageJson?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
+    skipReason?: string | null;
     status?: ReportStatus;
     publishedAt?: Date | null;
     finalContent?: string | null;
@@ -9554,6 +9581,7 @@ type ReportFactoryDefineInput = {
     updatedAt?: Date | null;
     community: ReportcommunityFactory | Prisma.CommunityCreateNestedOneWithoutReportsInput;
     template?: ReporttemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutReportsInput;
+    judgeTemplate?: ReportjudgeTemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutJudgedReportsInput;
     targetUser?: ReporttargetUserFactory | Prisma.UserCreateNestedOneWithoutReportsTargetedInput;
     generatedByUser?: ReportgeneratedByUserFactory | Prisma.UserCreateNestedOneWithoutReportsGeneratedInput;
     publishedByUser?: ReportpublishedByUserFactory | Prisma.UserCreateNestedOneWithoutReportsPublishedInput;
@@ -9580,6 +9608,10 @@ function isReportcommunityFactory(x: ReportcommunityFactory | Prisma.CommunityCr
 }
 
 function isReporttemplateFactory(x: ReporttemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutReportsInput | undefined): x is ReporttemplateFactory {
+    return (x as any)?._factoryFor === "ReportTemplate";
+}
+
+function isReportjudgeTemplateFactory(x: ReportjudgeTemplateFactory | Prisma.ReportTemplateCreateNestedOneWithoutJudgedReportsInput | undefined): x is ReportjudgeTemplateFactory {
     return (x as any)?._factoryFor === "ReportTemplate";
 }
 
@@ -9625,13 +9657,7 @@ function autoGenerateReportScalarsOrEnums({ seq }: {
         variant: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "variant", isId: false, isUnique: false, seq }),
         periodFrom: getScalarFieldValueGenerator().DateTime({ modelName: "Report", fieldName: "periodFrom", isId: false, isUnique: false, seq }),
         periodTo: getScalarFieldValueGenerator().DateTime({ modelName: "Report", fieldName: "periodTo", isId: false, isUnique: false, seq }),
-        inputPayload: getScalarFieldValueGenerator().Json({ modelName: "Report", fieldName: "inputPayload", isId: false, isUnique: false, seq }),
-        outputMarkdown: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "outputMarkdown", isId: false, isUnique: false, seq }),
-        model: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "model", isId: false, isUnique: false, seq }),
-        systemPromptSnapshot: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "systemPromptSnapshot", isId: false, isUnique: false, seq }),
-        userPromptSnapshot: getScalarFieldValueGenerator().String({ modelName: "Report", fieldName: "userPromptSnapshot", isId: false, isUnique: false, seq }),
-        inputTokens: getScalarFieldValueGenerator().Int({ modelName: "Report", fieldName: "inputTokens", isId: false, isUnique: false, seq }),
-        outputTokens: getScalarFieldValueGenerator().Int({ modelName: "Report", fieldName: "outputTokens", isId: false, isUnique: false, seq })
+        inputPayload: getScalarFieldValueGenerator().Json({ modelName: "Report", fieldName: "inputPayload", isId: false, isUnique: false, seq })
     };
 }
 
@@ -9674,6 +9700,9 @@ function defineReportFactoryInternal<TTransients extends Record<string, unknown>
                 template: isReporttemplateFactory(defaultData.template) ? {
                     create: await defaultData.template.build()
                 } : defaultData.template,
+                judgeTemplate: isReportjudgeTemplateFactory(defaultData.judgeTemplate) ? {
+                    create: await defaultData.judgeTemplate.build()
+                } : defaultData.judgeTemplate,
                 targetUser: isReporttargetUserFactory(defaultData.targetUser) ? {
                     create: await defaultData.targetUser.build()
                 } : defaultData.targetUser,
@@ -9911,6 +9940,160 @@ export const defineReportFeedbackFactory = (<TOptions extends ReportFeedbackFact
 }) as ReportFeedbackFactoryBuilder;
 
 defineReportFeedbackFactory.withTransientFields = defaultTransientFieldValues => options => defineReportFeedbackFactoryInternal(options, defaultTransientFieldValues);
+
+type ReportGoldenCaseScalarOrEnumFields = {
+    variant: string;
+    label: string;
+    payloadFixture: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    judgeCriteria: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+};
+
+type ReportGoldenCaseFactoryDefineInput = {
+    id?: string;
+    variant?: string;
+    label?: string;
+    payloadFixture?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    judgeCriteria?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    minJudgeScore?: number;
+    forbiddenKeys?: Prisma.ReportGoldenCaseCreateforbiddenKeysInput | Array<string>;
+    notes?: string | null;
+    expectedStatus?: ReportStatus | null;
+    templateVersion?: number | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+};
+
+type ReportGoldenCaseTransientFields = Record<string, unknown> & Partial<Record<keyof ReportGoldenCaseFactoryDefineInput, never>>;
+
+type ReportGoldenCaseFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ReportGoldenCaseFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ReportGoldenCase, Prisma.ReportGoldenCaseCreateInput, TTransients>;
+
+type ReportGoldenCaseFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<ReportGoldenCaseFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: ReportGoldenCaseFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ReportGoldenCase, Prisma.ReportGoldenCaseCreateInput, TTransients>;
+
+type ReportGoldenCaseTraitKeys<TOptions extends ReportGoldenCaseFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ReportGoldenCaseFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ReportGoldenCase";
+    build(inputData?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<Prisma.ReportGoldenCaseCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<Prisma.ReportGoldenCaseCreateInput>;
+    buildList(list: readonly Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>[]): PromiseLike<Prisma.ReportGoldenCaseCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<Prisma.ReportGoldenCaseCreateInput[]>;
+    pickForConnect(inputData: ReportGoldenCase): Pick<ReportGoldenCase, "id">;
+    create(inputData?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<ReportGoldenCase>;
+    createList(list: readonly Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>[]): PromiseLike<ReportGoldenCase[]>;
+    createList(count: number, item?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<ReportGoldenCase[]>;
+    createForConnect(inputData?: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>): PromiseLike<Pick<ReportGoldenCase, "id">>;
+}
+
+export interface ReportGoldenCaseFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReportGoldenCaseFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ReportGoldenCaseFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateReportGoldenCaseScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ReportGoldenCaseScalarOrEnumFields {
+    return {
+        variant: getScalarFieldValueGenerator().String({ modelName: "ReportGoldenCase", fieldName: "variant", isId: false, isUnique: true, seq }),
+        label: getScalarFieldValueGenerator().String({ modelName: "ReportGoldenCase", fieldName: "label", isId: false, isUnique: true, seq }),
+        payloadFixture: getScalarFieldValueGenerator().Json({ modelName: "ReportGoldenCase", fieldName: "payloadFixture", isId: false, isUnique: false, seq }),
+        judgeCriteria: getScalarFieldValueGenerator().Json({ modelName: "ReportGoldenCase", fieldName: "judgeCriteria", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineReportGoldenCaseFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReportGoldenCaseFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReportGoldenCaseFactoryInterface<TTransients, ReportGoldenCaseTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ReportGoldenCaseTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("ReportGoldenCase", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateReportGoldenCaseScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ReportGoldenCaseFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ReportGoldenCaseFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.ReportGoldenCaseCreateInput;
+            const data: Prisma.ReportGoldenCaseCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: ReportGoldenCase) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().reportGoldenCase.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReportGoldenCaseCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ReportGoldenCaseCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ReportGoldenCase" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ReportGoldenCaseTraitKeys<TOptions>, ...names: readonly ReportGoldenCaseTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ReportGoldenCaseFactoryBuilder {
+    <TOptions extends ReportGoldenCaseFactoryDefineOptions>(options?: TOptions): ReportGoldenCaseFactoryInterface<{}, ReportGoldenCaseTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ReportGoldenCaseTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReportGoldenCaseFactoryDefineOptions<TTransients>>(options?: TOptions) => ReportGoldenCaseFactoryInterface<TTransients, ReportGoldenCaseTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link ReportGoldenCase} model.
+ *
+ * @param options
+ * @returns factory {@link ReportGoldenCaseFactoryInterface}
+ */
+export const defineReportGoldenCaseFactory = (<TOptions extends ReportGoldenCaseFactoryDefineOptions>(options?: TOptions): ReportGoldenCaseFactoryInterface<TOptions> => {
+    return defineReportGoldenCaseFactoryInternal(options ?? {}, {});
+}) as ReportGoldenCaseFactoryBuilder;
+
+defineReportGoldenCaseFactory.withTransientFields = defaultTransientFieldValues => options => defineReportGoldenCaseFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;
@@ -11647,6 +11830,152 @@ export const defineUserProfileForReportViewFactory = (<TOptions extends UserProf
 }) as UserProfileForReportViewFactoryBuilder;
 
 defineUserProfileForReportViewFactory.withTransientFields = defaultTransientFieldValues => options => defineUserProfileForReportViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type UserCohortViewScalarOrEnumFields = {
+    communityId: string;
+    userId: string;
+    onboardingWeek: Date;
+};
+
+type UserCohortViewFactoryDefineInput = {
+    communityId?: string;
+    userId?: string;
+    onboardingWeek?: Date;
+    firstActiveWeek?: Date | null;
+    totalWeeksInCommunity?: number | null;
+};
+
+type UserCohortViewTransientFields = Record<string, unknown> & Partial<Record<keyof UserCohortViewFactoryDefineInput, never>>;
+
+type UserCohortViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<UserCohortViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<UserCohortView, Prisma.UserCohortViewCreateInput, TTransients>;
+
+type UserCohortViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<UserCohortViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: UserCohortViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<UserCohortView, Prisma.UserCohortViewCreateInput, TTransients>;
+
+type UserCohortViewTraitKeys<TOptions extends UserCohortViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface UserCohortViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "UserCohortView";
+    build(inputData?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<Prisma.UserCohortViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<Prisma.UserCohortViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.UserCohortViewCreateInput & TTransients>[]): PromiseLike<Prisma.UserCohortViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<Prisma.UserCohortViewCreateInput[]>;
+    pickForConnect(inputData: UserCohortView): Pick<UserCohortView, "communityId" | "userId">;
+    create(inputData?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<UserCohortView>;
+    createList(list: readonly Partial<Prisma.UserCohortViewCreateInput & TTransients>[]): PromiseLike<UserCohortView[]>;
+    createList(count: number, item?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<UserCohortView[]>;
+    createForConnect(inputData?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<Pick<UserCohortView, "communityId" | "userId">>;
+}
+
+export interface UserCohortViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UserCohortViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): UserCohortViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateUserCohortViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): UserCohortViewScalarOrEnumFields {
+    return {
+        communityId: getScalarFieldValueGenerator().String({ modelName: "UserCohortView", fieldName: "communityId", isId: true, isUnique: false, seq }),
+        userId: getScalarFieldValueGenerator().String({ modelName: "UserCohortView", fieldName: "userId", isId: true, isUnique: false, seq }),
+        onboardingWeek: getScalarFieldValueGenerator().DateTime({ modelName: "UserCohortView", fieldName: "onboardingWeek", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineUserCohortViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UserCohortViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UserCohortViewFactoryInterface<TTransients, UserCohortViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly UserCohortViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("UserCohortView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.UserCohortViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateUserCohortViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<UserCohortViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<UserCohortViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.UserCohortViewCreateInput;
+            const data: Prisma.UserCohortViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserCohortViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: UserCohortView) => ({
+            communityId: inputData.communityId,
+            userId: inputData.userId
+        });
+        const create = async (inputData: Partial<Prisma.UserCohortViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().userCohortView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserCohortViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.UserCohortViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "UserCohortView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: UserCohortViewTraitKeys<TOptions>, ...names: readonly UserCohortViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface UserCohortViewFactoryBuilder {
+    <TOptions extends UserCohortViewFactoryDefineOptions>(options?: TOptions): UserCohortViewFactoryInterface<{}, UserCohortViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends UserCohortViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UserCohortViewFactoryDefineOptions<TTransients>>(options?: TOptions) => UserCohortViewFactoryInterface<TTransients, UserCohortViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link UserCohortView} model.
+ *
+ * @param options
+ * @returns factory {@link UserCohortViewFactoryInterface}
+ */
+export const defineUserCohortViewFactory = (<TOptions extends UserCohortViewFactoryDefineOptions>(options?: TOptions): UserCohortViewFactoryInterface<TOptions> => {
+    return defineUserCohortViewFactoryInternal(options ?? {}, {});
+}) as UserCohortViewFactoryBuilder;
+
+defineUserCohortViewFactory.withTransientFields = defaultTransientFieldValues => options => defineUserCohortViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type EarliestReservableSlotViewScalarOrEnumFields = {};
 

@@ -4,8 +4,10 @@ on:
   push:
     branches:
       - develop
-      - hotfix/**
-      - epic/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -22,8 +24,6 @@ jobs:
       STAGE: dev
       # GCP settings
       GCP_REGION: ${{ secrets.GCP_REGION }}
-      # GCP service account credentials
-      SERVICE_ACCOUNT_CREDENTIAL_JSON: ${{ secrets.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
       # DB credentials
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -65,7 +65,7 @@ jobs:
         service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
     - name: Set up gcloud SDK
-      uses: google-github-actions/setup-gcloud@v2
+      uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
 
     - name: pnpm db:generate
       env:
@@ -78,7 +78,7 @@ jobs:
           --quiet -- -N -L 5432:localhost:5432 &
         SSH_PID=$!
         sleep 60
-        for i in {1..5}; do
+        for _ in {1..5}; do
           pg_isready -h localhost -p 5432 -d ${{ env.DB_NAME }} && break
           sleep 60
         done
@@ -118,7 +118,7 @@ jobs:
 
     - name: Deploy Internal API to Cloud Run
       id: 'deploy'
-      uses: 'google-github-actions/deploy-cloudrun@v2' # v2.8.1
+      uses: 'google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522' # v2.7.6
       with:
         service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest

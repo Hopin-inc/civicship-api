@@ -1,0 +1,201 @@
+# ------------------------------
+# Report AI Generation Types
+# ------------------------------
+
+enum ReportVariant {
+  WEEKLY_SUMMARY
+  GRANT_APPLICATION
+  MEDIA_PR
+  PERSONAL_RECAP
+  MEMBER_NEWSLETTER
+}
+
+enum ReportStatus {
+  DRAFT
+  APPROVED
+  PUBLISHED
+  REJECTED
+  SUPERSEDED
+  SKIPPED
+}
+
+enum ReportTemplateScope {
+  SYSTEM
+  COMMUNITY
+}
+
+type Report {
+  id: ID!
+  community: Community!
+  variant: ReportVariant!
+  periodFrom: Datetime!
+  periodTo: Datetime!
+  template: ReportTemplate
+
+  # LLM-generation artefacts. All nullable because SKIPPED reports never
+  # invoked the model — see `skipReason` for why the run was elided.
+  outputMarkdown: String
+  model: String
+  inputTokens: Int
+  outputTokens: Int
+  cacheReadTokens: Int
+
+  status: ReportStatus!
+  skipReason: String
+  publishedAt: Datetime
+  publishedByUser: User
+  finalContent: String
+
+  regenerateCount: Int!
+  parentRun: Report
+  regenerations: [Report!]!
+
+  targetUser: User
+  generatedByUser: User
+
+  # Feedback (PR-F4). `feedbacks` is paginated for OWNER/MANAGER review;
+  # `myFeedback` returns the caller's own submission (if any) so the UI
+  # can hide the rating button once submitted. Reachable today through
+  # the `reports` / `report` queries (MANAGER+/ADMIN) — MEMBER-level
+  # read access to `Report` is not yet exposed, so MEMBER clients rely
+  # on the `submitReportFeedback` mutation's response to learn their
+  # own submission state. Follow-up to open a MEMBER-accessible read
+  # path is tracked in PR-F5.
+  feedbacks(first: Int, after: String): ReportFeedbacksConnection!
+  myFeedback: ReportFeedback
+
+  createdAt: Datetime!
+  updatedAt: Datetime
+}
+
+type ReportTemplate {
+  id: ID!
+  variant: ReportVariant!
+  scope: ReportTemplateScope!
+  community: Community
+  systemPrompt: String!
+  userPromptTemplate: String!
+  communityContext: String
+  model: String!
+  temperature: Float
+  maxTokens: Int!
+  stopSequences: [String!]!
+  isEnabled: Boolean!
+  # Versioning + A/B control fields (PR-F3). Exposed on the read type so
+  # the admin UI can display and round-trip the current values — they
+  # are writable via `UpdateReportTemplateInput` on the mutation side.
+  version: Int!
+  isActive: Boolean!
+  experimentKey: String
+  trafficWeight: Int!
+  updatedByUser: User
+  createdAt: Datetime!
+  updatedAt: Datetime
+}
+
+type ReportEdge implements Edge {
+  cursor: String!
+  node: Report
+}
+
+type ReportsConnection {
+  edges: [ReportEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+# ------------------------------
+# Mutation Payloads
+# ------------------------------
+
+type GenerateReportSuccess {
+  report: Report!
+}
+
+union GenerateReportPayload = GenerateReportSuccess
+
+type UpdateReportTemplateSuccess {
+  reportTemplate: ReportTemplate!
+}
+
+union UpdateReportTemplatePayload = UpdateReportTemplateSuccess
+
+type ApproveReportSuccess {
+  report: Report!
+}
+
+union ApproveReportPayload = ApproveReportSuccess
+
+type PublishReportSuccess {
+  report: Report!
+}
+
+union PublishReportPayload = PublishReportSuccess
+
+type RejectReportSuccess {
+  report: Report!
+}
+
+union RejectReportPayload = RejectReportSuccess
+
+# ------------------------------
+# Feedback (PR-F4)
+# ------------------------------
+
+enum ReportFeedbackType {
+  QUALITY
+  ACCURACY
+  TONE
+  STRUCTURE
+  OTHER
+}
+
+type ReportFeedback {
+  id: ID!
+  reportId: ID!
+  user: User!
+  rating: Int!
+  feedbackType: ReportFeedbackType
+  sectionKey: String
+  comment: String
+  createdAt: Datetime!
+}
+
+type ReportFeedbackEdge implements Edge {
+  cursor: String!
+  node: ReportFeedback
+}
+
+type ReportFeedbacksConnection {
+  edges: [ReportFeedbackEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SubmitReportFeedbackSuccess {
+  feedback: ReportFeedback!
+}
+
+union SubmitReportFeedbackPayload = SubmitReportFeedbackSuccess
+
+# Aggregate snapshot of feedback / judge signal for a (variant, version)
+# pair. Admin-only. `judgeHumanCorrelation` is Pearson's r across
+# per-report (judgeScore, avgFeedbackRating) pairs; null when too few
+# pairs (< 3) exist to compute a meaningful correlation.
+# `correlationWarning` is true iff the correlation is present AND below
+# the recalibration threshold (0.7) — a signal that the judge prompt
+# needs re-tuning.
+#
+# `version` is null when the caller did not pin the query to a specific
+# revision — the row then rolls up stats across every version of the
+# variant. Consumers should branch on null vs. concrete number rather
+# than treating them the same.
+type ReportTemplateStats {
+  variant: ReportVariant!
+  version: Int
+  avgRating: Float
+  feedbackCount: Int!
+  avgJudgeScore: Float
+  judgeHumanCorrelation: Float
+  correlationWarning: Boolean!
+}

@@ -1,125 +1,31 @@
+import { GqlReport, GqlReportTemplate, GqlReportsConnection } from "@/types/graphql";
+import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 import {
+  CohortRetentionRow,
   CommunityContextRow,
   DeepestChainRow,
+  PeriodAggregateRow,
+  RetentionAggregateRow,
   TransactionActiveUsersDailyRow,
   TransactionCommentRow,
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
   UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
-import { bigintToSafeNumber, daysBetweenJst, toJstIsoDate } from "@/application/domain/report/util";
-
-// ---------------------------------------------------------------------------
-// AI-facing report payload types
-//
-// These are plain, JSON-serialisable shapes designed to be fed to an LLM as
-// the dataset for report generation. Keep keys snake_case for LLM-friendly
-// token boundaries, and convert BigInt to number (safe: point amounts fit
-// well inside Number.MAX_SAFE_INTEGER for our scale).
-// ---------------------------------------------------------------------------
-
-export interface WeeklyReportPayload {
-  period: { from: string; to: string };
-  community_id: string;
-  community_context: CommunityContext | null;
-  deepest_chain: DeepestChainItem | null;
-  daily_summaries: DailySummaryItem[];
-  daily_active_users: DailyActiveUsersItem[];
-  top_users: TopUserItem[];
-  highlight_comments: CommentItem[];
-}
-
-/**
- * AI-facing community snapshot. `active_rate` is `active_users_in_window /
- * total_members` (null when the community has no JOINED members yet, so the
- * LLM does not emit a divide-by-zero ratio). `custom_context` is a free-text
- * markdown field sourced from `ReportTemplate.communityContext`, piped
- * through untouched so editors can steer tone / vision / references without
- * a schema change.
- */
-export interface CommunityContext {
-  community_id: string;
-  name: string;
-  point_name: string;
-  bio: string | null;
-  established_at: string | null;
-  website: string | null;
-  total_members: number;
-  active_users_in_window: number;
-  active_rate: number | null;
-  custom_context: string | null;
-}
-
-export interface DeepestChainItem {
-  transaction_id: string;
-  chain_depth: number;
-  reason: string;
-  comment: string | null;
-  date: string;
-  from_user_id: string | null;
-  to_user_id: string | null;
-  created_by_user_id: string | null;
-  parent_tx_id: string | null;
-}
-
-export interface DailySummaryItem {
-  date: string;
-  reason: string;
-  tx_count: number;
-  points_sum: number;
-  chain_root_count: number;
-  chain_descendant_count: number;
-  max_chain_depth: number | null;
-  avg_chain_depth: number | null;
-  issuance_count: number;
-  burn_count: number;
-}
-
-export interface DailyActiveUsersItem {
-  date: string;
-  active_users: number;
-  senders: number;
-  receivers: number;
-}
-
-export interface TopUserItem {
-  user_id: string;
-  name: string;
-  user_bio: string | null;
-  membership_bio: string | null;
-  headline: string | null;
-  role: string;
-  joined_at: string;
-  days_since_joined: number;
-  tx_count_in: number;
-  tx_count_out: number;
-  points_in: number;
-  points_out: number;
-  donation_out_count: number;
-  donation_out_points: number;
-  received_donation_count: number;
-  chain_root_count: number;
-  max_chain_depth_started: number | null;
-  chain_depth_reached_max: number | null;
-  /**
-   * Sum of per-day distinct counterparty counts across the reporting window.
-   * NOT a deduplicated count of distinct counterparties for the period — the
-   * same counterparty appearing on multiple days is counted once per day.
-   */
-  unique_counterparties_sum: number;
-}
-
-export interface CommentItem {
-  transaction_id: string;
-  date: string;
-  reason: string;
-  points: number;
-  comment: string;
-  from_user_id: string | null;
-  to_user_id: string | null;
-  created_by_user_id: string | null;
-  chain_depth: number | null;
-}
+import {
+  CommunityContext,
+  DeepestChainItem,
+  PreviousPeriodSummary,
+  RetentionSummary,
+  TopUserItem,
+  WeeklyReportPayload,
+} from "@/application/domain/report/types";
+import {
+  bigintToSafeNumber,
+  daysBetweenJst,
+  percentChange,
+  toJstIsoDate,
+} from "@/application/domain/report/util";
 
 export default class ReportPresenter {
   static weeklyPayload(input: {
@@ -144,6 +50,39 @@ export default class ReportPresenter {
      * single-variant Phase 1 flow.
      */
     customContext?: string | null;
+    /**
+     * Per-user true distinct counterparty counts for the reporting window,
+     * keyed by userId. A missing key means the user had no outgoing
+     * transactions over the period (the repository only emits rows for
+     * users that actually sent); the presenter surfaces those as `null` on
+     * `TopUserItem` so "gave to zero people" and "receiver-only" are
+     * distinguishable downstream.
+     */
+    trueUniqueCounterparties?: Map<string, number>;
+    /**
+     * Pre-fetched retention counts (sender frame) + cohort retention rows.
+     * `totalMembers` is threaded through from the community context so the
+     * presenter can divide without re-reading the same number. `null` when
+     * the usecase did not opt into retention, in which case the payload's
+     * `retention` field is `null` and the prompt keys on presence.
+     */
+    retention?: {
+      aggregate: RetentionAggregateRow;
+      totalMembers: number;
+      week1: CohortRetentionRow | null;
+      week4: CohortRetentionRow | null;
+    } | null;
+    /**
+     * Pre-fetched aggregate for the window immediately preceding `range`,
+     * plus its range. Present only when the usecase opted into the
+     * previous-period comparison. The presenter computes growth-rate math
+     * here so divide-by-zero falls out as `null` and never leaks into the
+     * LLM prompt.
+     */
+    previousPeriod?: {
+      range: { from: Date; to: Date };
+      aggregate: PeriodAggregateRow;
+    } | null;
   }): WeeklyReportPayload {
     const profileByUserId = new Map(input.profiles.map((p) => [p.userId, p]));
 
@@ -181,6 +120,7 @@ export default class ReportPresenter {
         }
       : null;
 
+    const trueUniqueMap = input.trueUniqueCounterparties;
     const topUsers: TopUserItem[] = input.topUserAggregates.map((u) => {
       const p = profileByUserId.get(u.userId);
       return {
@@ -203,8 +143,75 @@ export default class ReportPresenter {
         max_chain_depth_started: u.maxChainDepthStarted,
         chain_depth_reached_max: u.chainDepthReachedMax,
         unique_counterparties_sum: u.uniqueCounterpartiesSum,
+        true_unique_counterparties: trueUniqueMap?.get(u.userId) ?? null,
       };
     });
+
+    const currentTxCount = input.summaries.reduce((acc, s) => acc + s.txCount, 0);
+    // Accumulate the BigInt sums before narrowing so the safe-integer guard
+    // runs against the TOTAL rather than each reason row. Narrowing per row
+    // and then summing as Number would let a total that exceeds
+    // Number.MAX_SAFE_INTEGER slip through silently even when each individual
+    // row is safe.
+    const currentPointsSumBigInt = input.summaries.reduce(
+      (acc, s) => acc + s.pointsSum,
+      0n,
+    );
+    const currentPointsSum = bigintToSafeNumber(currentPointsSumBigInt);
+    const currentActiveUsers = input.communityContext?.activeUsersInWindow ?? 0;
+
+    const retention: RetentionSummary | null = input.retention
+      ? {
+          new_members: input.retention.aggregate.newMembers,
+          retained_senders: input.retention.aggregate.retainedSenders,
+          returned_senders: input.retention.aggregate.returnedSenders,
+          churned_senders: input.retention.aggregate.churnedSenders,
+          active_rate_sender:
+            input.retention.totalMembers > 0
+              ? input.retention.aggregate.currentSendersCount / input.retention.totalMembers
+              : null,
+          active_rate_any:
+            input.retention.totalMembers > 0
+              ? input.retention.aggregate.currentActiveCount / input.retention.totalMembers
+              : null,
+          // Week-N rows with cohortSize=0 collapse to null here (rather
+          // than 0%) so the LLM doesn't report "0% retention" for a
+          // cohort that never existed — e.g. a community too young to
+          // have a 4-weeks-ago cohort yet.
+          week1_retention:
+            input.retention.week1 && input.retention.week1.cohortSize > 0
+              ? input.retention.week1.activeNextWeek / input.retention.week1.cohortSize
+              : null,
+          week4_retention:
+            input.retention.week4 && input.retention.week4.cohortSize > 0
+              ? input.retention.week4.activeNextWeek / input.retention.week4.cohortSize
+              : null,
+        }
+      : null;
+
+    const previousPeriod: PreviousPeriodSummary | null = input.previousPeriod
+      ? {
+          period: {
+            from: toJstIsoDate(input.previousPeriod.range.from),
+            to: toJstIsoDate(input.previousPeriod.range.to),
+          },
+          active_users_in_window: input.previousPeriod.aggregate.activeUsersInWindow,
+          total_tx_count: input.previousPeriod.aggregate.totalTxCount,
+          total_points_sum: bigintToSafeNumber(input.previousPeriod.aggregate.totalPointsSum),
+          new_members: input.previousPeriod.aggregate.newMembers,
+          growth_rate: {
+            active_users: percentChange(
+              currentActiveUsers,
+              input.previousPeriod.aggregate.activeUsersInWindow,
+            ),
+            tx_count: percentChange(currentTxCount, input.previousPeriod.aggregate.totalTxCount),
+            points_sum: percentChange(
+              currentPointsSum,
+              bigintToSafeNumber(input.previousPeriod.aggregate.totalPointsSum),
+            ),
+          },
+        }
+      : null;
 
     return {
       period: {
@@ -214,6 +221,8 @@ export default class ReportPresenter {
       community_id: input.communityId,
       community_context: communityContext,
       deepest_chain: deepestChain,
+      previous_period: previousPeriod,
+      retention,
       daily_summaries: input.summaries.map((s) => ({
         date: toJstIsoDate(s.date),
         reason: s.reason,
@@ -252,6 +261,41 @@ export default class ReportPresenter {
         created_by_user_id: c.createdByUserId,
         chain_depth: c.chainDepth,
       })),
+    };
+  }
+
+  // Relationship fields (community, template, parentRun, regenerations,
+  // generatedByUser, publishedByUser, targetUser, updatedByUser) are
+  // resolved by field resolvers via DataLoaders — the Prisma select shape
+  // intentionally omits them.  The cast bridges the type gap until
+  // Report/ReportTemplate are added to codegen.yaml mappers.
+  static report(r: PrismaReport): GqlReport {
+    return r as unknown as GqlReport;
+  }
+
+  static reportTemplate(t: PrismaReportTemplate): GqlReportTemplate {
+    return t as unknown as GqlReportTemplate;
+  }
+
+  static reportsConnection(
+    items: PrismaReport[],
+    totalCount: number,
+    requestedFirst: number,
+  ): GqlReportsConnection {
+    const hasNextPage = items.length > requestedFirst;
+    const page = hasNextPage ? items.slice(0, requestedFirst) : items;
+    return {
+      edges: page.map((r) => ({
+        cursor: r.id,
+        node: ReportPresenter.report(r),
+      })),
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage: false,
+        startCursor: page[0]?.id ?? null,
+        endCursor: page[page.length - 1]?.id ?? null,
+      },
+      totalCount,
     };
   }
 }

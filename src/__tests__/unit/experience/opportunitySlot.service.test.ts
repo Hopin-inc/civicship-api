@@ -21,6 +21,8 @@ class MockOpportunitySlotConverter {
   sort = jest.fn();
   createMany = jest.fn();
   update = jest.fn();
+  // service.ts:75 setOpportunitySlotHostingStatus は converter.setStatus(input) を呼ぶ
+  setStatus = jest.fn();
 }
 
 describe("OpportunitySlotService", () => {
@@ -46,6 +48,13 @@ describe("OpportunitySlotService", () => {
   describe("setOpportunitySlotHostingStatus", () => {
     it("should set hosting status after finding the slot", async () => {
       mockRepository.find.mockResolvedValue({ id: "slot-1" });
+      // service.ts:75 が converter.setStatus(input) を呼び、その戻り値を repository.setHostingStatus
+      // の第3引数として渡すため、mock に戻り値を設定しないと undefined が流れる。
+      mockConverter.setStatus.mockReturnValue({
+        status: OpportunitySlotHostingStatus.SCHEDULED,
+        capacity: 20,
+        comment: "任意コメント",
+      });
       mockRepository.setHostingStatus.mockResolvedValue({
         id: "slot-1",
         status: OpportunitySlotHostingStatus.SCHEDULED,

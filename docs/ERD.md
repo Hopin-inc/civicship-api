@@ -300,12 +300,20 @@ COMMUNITY COMMUNITY
     
 
 
+        ReportTemplateKind {
+            GENERATION GENERATION
+JUDGE JUDGE
+        }
+    
+
+
         ReportStatus {
             DRAFT DRAFT
 APPROVED APPROVED
 PUBLISHED PUBLISHED
 REJECTED REJECTED
 SUPERSEDED SUPERSEDED
+SKIPPED SKIPPED
         }
     
 
@@ -913,15 +921,21 @@ OTHER OTHER
     String id "🗝️"
     String variant 
     ReportTemplateScope scope 
+    ReportTemplateKind kind 
     String community_id "❓"
     String system_prompt 
     String user_prompt_template 
     String community_context "❓"
     String model 
-    Float temperature 
+    Float temperature "❓"
     Int maxTokens 
     String stopSequences 
     Boolean isEnabled 
+    Int version 
+    Boolean isActive 
+    String experimentKey "❓"
+    Int trafficWeight 
+    String notes "❓"
     String updatedBy "❓"
     DateTime createdAt 
     DateTime updatedAt "❓"
@@ -936,14 +950,19 @@ OTHER OTHER
     DateTime period_to 
     String template_id "❓"
     Json input_payload 
-    String output_markdown 
-    String model 
-    String systemPromptSnapshot 
-    String userPromptSnapshot 
+    String outputMarkdown "❓"
+    String model "❓"
+    String systemPromptSnapshot "❓"
+    String userPromptSnapshot "❓"
     String communityContextSnapshot "❓"
-    Int inputTokens 
-    Int outputTokens 
-    Int cacheReadTokens 
+    Int inputTokens "❓"
+    Int outputTokens "❓"
+    Int cacheReadTokens "❓"
+    Int judgeScore "❓"
+    Json judgeBreakdown "❓"
+    String judgeTemplateId "❓"
+    Json coverageJson "❓"
+    String skipReason "❓"
     String targetUserId "❓"
     String generatedBy "❓"
     ReportStatus status 
@@ -966,6 +985,22 @@ OTHER OTHER
     String section_key "❓"
     String comment "❓"
     DateTime created_at 
+    }
+  
+
+  "t_report_golden_cases" {
+    String id "🗝️"
+    String variant 
+    String label 
+    Json payload_fixture 
+    Json judge_criteria 
+    Int min_judge_score 
+    String forbidden_keys 
+    String notes "❓"
+    ReportStatus expected_status "❓"
+    Int template_version "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
     }
   
 
@@ -1079,6 +1114,15 @@ OTHER OTHER
     String headline "❓"
     Role role 
     DateTime joinedAt 
+    }
+  
+
+  "v_user_cohort" {
+    String communityId "🗝️"
+    String userId "🗝️"
+    DateTime onboardingWeek 
+    DateTime firstActiveWeek "❓"
+    Float totalWeeksInCommunity "❓"
     }
   
 
@@ -1342,11 +1386,14 @@ OTHER OTHER
     "t_vote_ballots" o|--|| "t_vote_topics" : "topic"
     "t_vote_ballots" o|--|| "t_vote_options" : "option"
     "t_report_templates" o|--|| "ReportTemplateScope" : "enum:scope"
+    "t_report_templates" o|--|| "ReportTemplateKind" : "enum:kind"
     "t_report_templates" o|--|o "t_communities" : "community"
     "t_report_templates" o|--|o "t_users" : "updatedByUser"
     "t_report_templates" o{--}o "t_reports" : "reports"
+    "t_report_templates" o{--}o "t_reports" : "judgedReports"
     "t_reports" o|--|| "t_communities" : "community"
     "t_reports" o|--|o "t_report_templates" : "template"
+    "t_reports" o|--|o "t_report_templates" : "judgeTemplate"
     "t_reports" o|--|o "t_users" : "targetUser"
     "t_reports" o|--|o "t_users" : "generatedByUser"
     "t_reports" o|--|| "ReportStatus" : "enum:status"
@@ -1357,6 +1404,7 @@ OTHER OTHER
     "t_report_feedbacks" o|--|| "t_reports" : "report"
     "t_report_feedbacks" o|--|| "t_users" : "user"
     "t_report_feedbacks" o|--|o "FeedbackType" : "enum:feedback_type"
+    "t_report_golden_cases" o|--|o "ReportStatus" : "enum:expected_status"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

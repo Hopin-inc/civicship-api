@@ -339,21 +339,25 @@ describe("Point Reward Tests", () => {
     const vcRequest = vcRequests[0];
     const claims = vcRequest.claims as any;
 
+    // EvaluationCredentialClaim 型 (vcIssuanceRequest/data/type.ts:3-21) に沿って assert。
+    // type 上で claims.id は evaluation.id を格納する (converter.ts:38)。
+    // participationId / comment / opportunity.pointsToEarn は現時点の spec には
+    // 含まれない (VC claim 拡張は別 scope の spec 議論で扱う)。
     expect(claims.type).toBe("EvaluationCredential");
     expect(claims.score).toBe("PASSED");
-    expect(claims.participationId).toBe(participationId);
-    expect(claims.evaluationId).toBeDefined();
-    expect(claims.comment).toBe(testSetup.comment);
-    
+    expect(claims.id).toBeDefined();
+
     expect(claims.evaluator.id).toBe(opportunityOwnerUserId);
-    expect(claims.evaluator.name).toBe("Manager");
-    
+    // fixture では opportunityOwner も participation user も `testSetup.userName` を共有する
+    expect(claims.evaluator.name).toBe(testSetup.userName);
+
     expect(claims.participant.id).toBe(participationUserId);
     expect(claims.participant.name).toBeDefined();
-    
+
     expect(claims.opportunity.id).toBeDefined();
     expect(claims.opportunity.title).toBe("opportunity");
-    expect(claims.opportunity.pointsToEarn).toBe(testSetup.pointsToEarn);
+    expect(claims.opportunity.startsAt).toBeDefined();
+    expect(claims.opportunity.endsAt).toBeDefined();
   });
 
   it("creates multiple VC issuance requests for bulk evaluations", async () => {

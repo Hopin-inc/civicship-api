@@ -754,6 +754,22 @@ view UserProfileForReportView {
   @@map("v_user_profile_for_report")
 }
 
+// Per-(community, user) cohort metadata backing the AI report retention
+// block. Regular (non-materialized) view so no refresh job is needed — the
+// join is cheap enough for the ad-hoc lookup path used by the report
+// payload builder. See migration 20260420124428_add_user_cohort_view for
+// the SQL definition.
+view UserCohortView {
+  communityId           String    @map("community_id")
+  userId                String    @map("user_id")
+  onboardingWeek        DateTime  @map("onboarding_week") @db.Date
+  firstActiveWeek       DateTime? @map("first_active_week") @db.Date
+  totalWeeksInCommunity Float?    @map("total_weeks_in_community")
+
+  @@id([communityId, userId])
+  @@map("v_user_cohort")
+}
+
 enum WalletType {
   COMMUNITY
   MEMBER
@@ -1626,12 +1642,18 @@ enum ReportTemplateScope {
   COMMUNITY
 }
 
+enum ReportTemplateKind {
+  GENERATION
+  JUDGE
+}
+
 enum ReportStatus {
   DRAFT
   APPROVED
   PUBLISHED
   REJECTED
   SUPERSEDED
+  SKIPPED
 }
 
 enum FeedbackType {
@@ -1647,6 +1669,7 @@ model ReportTemplate {
 
   variant String
   scope   ReportTemplateScope
+  kind    ReportTemplateKind  @default(GENERATION)
 
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -1656,35 +1679,71 @@ model ReportTemplate {
   communityContext   String? @map("community_context") @db.Text
 
   model         String
-  temperature   Float    @default(1.0)
+  temperature   Float?   @default(1.0)
   maxTokens     Int      @map("max_tokens")
   stopSequences String[] @default([]) @map("stop_sequences")
   isEnabled     Boolean  @default(true) @map("is_enabled")
 
+  // Versioning + A/B test support (see also PR-F3).
+  // - `version` + `isActive` track the history of prompt iterations so a
+  //   generation run pins to a specific (variant, scope, communityId, version)
+  //   via Report.templateId.
+  // - `experimentKey` groups concurrent candidates so the selection logic
+  //   in PR-F3 can sample by `trafficWeight` across rows sharing the key.
+  // - `trafficWeight` is a percentage in 0..100; when multiple rows with the
+  //   same (variant, scope, communityId) are active the weights within an
+  //   experimentKey must sum to 100 (enforced at the application layer).
+  // - Read/write paths in `ReportRepository` resolve "the row to use"
+  //   deterministically across coexisting versions:
+  //     * findTemplate filters `isActive=true` (prod must never serve a
+  //       shakeout candidate) and tie-breaks by version DESC.
+  //     * upsertTemplate sorts `isActive DESC, version DESC` without a
+  //       hard isActive filter, so admin edits prefer the live row but
+  //       fall back to the newest inactive row when every template was
+  //       deactivated — avoids an unrecoverable P2002 on the default
+  //       version=1 unique key in that edge case.
+  //   Multi-version seeding (e.g. v1 active alongside a v2 shakeout
+  //   candidate with isActive=false — see PR-F5 §7) is therefore safe
+  //   for both the admin UI and the prod selector.
+  version       Int     @default(1)
+  isActive      Boolean @default(true) @map("is_active")
+  experimentKey String? @map("experiment_key")
+  trafficWeight Int     @default(100) @map("traffic_weight")
+  notes         String? @db.Text
+
   updatedBy     String? @map("updated_by")
   updatedByUser User?   @relation("ReportTemplateUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
-  reports Report[]
+  reports       Report[]
+  judgedReports Report[] @relation("ReportJudgeTemplate")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  // NOTE on uniqueness/consistency invariants enforced at the DB layer:
-  //   1. @@unique([variant, communityId]) covers the COMMUNITY scope
-  //      (variant + non-NULL community_id pair). PostgreSQL treats NULL
-  //      as distinct in regular unique indexes, so this attribute alone
-  //      does NOT prevent duplicate SYSTEM-scope templates.
+  // Uniqueness / consistency invariants enforced at the DB layer:
+  //   1. @@unique([variant, communityId, kind, version]) covers COMMUNITY-scope
+  //      rows (variant + non-NULL community_id + kind + version quadruple).
+  //      `kind` is part of the key so a GENERATION row and a JUDGE row at the
+  //      same variant+version+community can coexist (LLM-as-Judge lands on
+  //      the same table in PR-F7+). PostgreSQL treats NULL as distinct in
+  //      regular unique indexes, so this attribute alone does NOT prevent
+  //      duplicate SYSTEM-scope templates on the same (variant, kind, version).
+  //      (Ideally this would be `nullsNotDistinct: true` and absorb both
+  //      scopes in a single constraint, but Prisma 6.11 only supports that
+  //      argument on field-level `@unique`, not `@@unique`. The partial
+  //      index below is the documented workaround until Prisma lands it.)
   //   2. The partial unique index `t_report_templates_variant_system_key`
-  //      (defined in the migration as a raw SQL `CREATE UNIQUE INDEX ...
-  //      WHERE community_id IS NULL`) limits SYSTEM scope to one template
-  //      per variant. Prisma's @@unique cannot express partial indexes,
-  //      so it lives only in the migration.
-  //   3. The CHECK constraint
-  //      `t_report_templates_scope_community_id_check` enforces
-  //      scope='SYSTEM' ⇔ community_id IS NULL and
-  //      scope='COMMUNITY' ⇔ community_id IS NOT NULL, so the two
-  //      indexes above can rely on the scope/community_id pairing.
-  @@unique([variant, communityId])
+  //      (defined in the corresponding migration as raw SQL
+  //      `CREATE UNIQUE INDEX ... ON (variant, kind, version) WHERE
+  //      community_id IS NULL`) limits SYSTEM scope to one template per
+  //      (variant, kind, version) triple.
+  //   3. The CHECK constraint `t_report_templates_scope_community_id_check`
+  //      continues to enforce scope='SYSTEM' ⇔ community_id IS NULL and
+  //      scope='COMMUNITY' ⇔ community_id IS NOT NULL, so (1) and (2) can
+  //      rely on the scope/community_id pairing.
+  //   4. `trafficWeight` is bounded 0..100 via
+  //      `t_report_templates_traffic_weight_check` (see migration).
+  @@unique([variant, communityId, kind, version])
   @@map("t_report_templates")
 }
 
@@ -1701,17 +1760,47 @@ model Report {
   templateId String?         @map("template_id")
   template   ReportTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
-  inputPayload   Json   @map("input_payload")
-  outputMarkdown String @map("output_markdown") @db.Text
+  // Payload is built prior to the skip decision, so it is always present
+  // (SKIPPED rows still have an inputPayload recording what was evaluated).
+  inputPayload Json @map("input_payload")
 
-  model                    String
-  systemPromptSnapshot     String  @map("system_prompt_snapshot") @db.Text
-  userPromptSnapshot       String  @map("user_prompt_snapshot") @db.Text
+  // LLM-generation artefacts. All nullable because SKIPPED runs never call
+  // the model — no output, no snapshots, no tokens. Non-SKIPPED rows must
+  // populate these at the application layer.
+  outputMarkdown           String? @map("output_markdown") @db.Text
+  model                    String?
+  systemPromptSnapshot     String? @map("system_prompt_snapshot") @db.Text
+  userPromptSnapshot       String? @map("user_prompt_snapshot") @db.Text
   communityContextSnapshot String? @map("community_context_snapshot") @db.Text
 
-  inputTokens     Int @map("input_tokens")
-  outputTokens    Int @map("output_tokens")
-  cacheReadTokens Int @default(0) @map("cache_read_tokens")
+  inputTokens     Int? @map("input_tokens")
+  outputTokens    Int? @map("output_tokens")
+  cacheReadTokens Int? @map("cache_read_tokens")
+
+  // LLM-as-Judge results (PR-F8). Populated when a JUDGE template runs
+  // after a successful generation. SKIPPED rows leave these null because
+  // the judge is only meaningful when there is generated output to grade.
+  // - `judgeScore` is the headline 0..100 number returned by the judge.
+  // - `judgeBreakdown` carries per-criterion sub-scores / booleans /
+  //   issues / strengths in the JSON shape the judge prompt emits.
+  // - `judgeTemplateId` pins the row to the exact prompt revision used so
+  //   later judge-prompt edits do not retroactively change the meaning of
+  //   historical scores (mirrors the templateId pin on the generation
+  //   side).
+  // - `coverageJson` is a substring-mention check of key numeric fields
+  //   from the payload against the generated markdown — a cheap
+  //   fabrication-vs-omission signal Phase 1 ships alongside the judge
+  //   score. Phase 2 will fold this into the judge prompt itself.
+  judgeScore      Int?            @map("judge_score")
+  judgeBreakdown  Json?           @map("judge_breakdown")
+  judgeTemplateId String?         @map("judge_template_id")
+  judgeTemplate   ReportTemplate? @relation("ReportJudgeTemplate", fields: [judgeTemplateId], references: [id], onDelete: SetNull)
+  coverageJson    Json?           @map("coverage_json")
+
+  // Populated when `status = SKIPPED`. Human-readable reason (e.g.
+  // "zero activity in window") so operators can audit skip decisions
+  // without re-running the payload builder.
+  skipReason String? @map("skip_reason") @db.Text
 
   targetUserId String? @map("target_user_id")
   targetUser   User?   @relation("ReportTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
@@ -1757,7 +1846,85 @@ model ReportFeedback {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  // One feedback per (report, user). Duplicate submissions are rejected
+  // by this unique index; the `submitReportFeedback` mutation surfaces
+  // the violation as a `ValidationError` (both as a pre-check before the
+  // INSERT and as a translation of any racing P2002 into the same error
+  // code). An edit / partial-submit flow is deferred to a later PR — for
+  // now the mutation refuses second submits outright.
+  @@unique([reportId, userId])
   @@index([reportId])
   @@index([userId])
   @@map("t_report_feedbacks")
+}
+
+// Golden Dataset (PR-F7). Frozen (variant, payload) pairs the CI script
+// regenerates against the live prompt + judge stack on every change so
+// regressions in either prompt or judge surface as red builds rather
+// than as quiet quality drift in production runs.
+//
+// `payloadFixture` mirrors the WeeklyReportPayload (or analog for other
+// variants) shape the production usecase passes to the LLM — kept as
+// raw JSON so the dataset evolves independently of the TypeScript
+// payload type, without a migration when a new field is added.
+//
+// `judgeCriteria` is fed verbatim into the judge prompt's
+// `{{judge_criteria}}` slot and decides what the judge weighs. Raw JSON
+// for the same forward-compatibility reason as the payload.
+//
+// `minJudgeScore` is the CI failure threshold (0..100). For SKIPPED
+// expected cases (zero-activity), set this to 0 and document the
+// rationale in `notes` — the CI harness must short-circuit before
+// invoking the judge for SKIPPED runs.
+//
+// `forbiddenKeys` are substrings the generated output must never
+// contain. Useful for catching prompt-engineering regressions (e.g. the
+// model starts emitting "[placeholder]" or carries over a
+// previous-prompt phrase).
+model ReportGoldenCase {
+  id String @id @default(cuid())
+
+  variant        String
+  label          String
+  payloadFixture Json     @map("payload_fixture")
+  judgeCriteria  Json     @map("judge_criteria")
+  minJudgeScore  Int      @default(70) @map("min_judge_score")
+  forbiddenKeys  String[] @default([]) @map("forbidden_keys")
+  notes          String?  @db.Text
+
+  // Which terminal generation status this case expects to reach.
+  // - null: the normal "DRAFT/PUBLISHED" path — generation runs, judge
+  //   grades the output, score must clear minJudgeScore.
+  // - ReportStatus.SKIPPED: the zero-activity sentinel — the skip
+  //   guard must fire BEFORE any LLM call. The CI harness asserts the
+  //   skip guard fires (and conversely, that DRAFT-expected cases
+  //   don't trip it), which catches both regressions in the skip
+  //   logic AND seed data drift in either direction.
+  //
+  // Modelled as the Prisma `ReportStatus` enum (not a free-form
+  // string) so a future status addition forces a compile error in the
+  // CI harness's switch — we want to make a deliberate decision about
+  // each new status rather than silently treat it as "DRAFT-expected".
+  expectedStatus ReportStatus? @map("expected_status")
+
+  // Which template version this case's judgeCriteria belongs to.
+  // - null: shared baseline — runs on every `pnpm ci:report-golden`
+  //   invocation (with or without --version). Criteria listed here
+  //   must be satisfiable by ALL active and candidate template
+  //   versions, so this is where common regressions (fabrication,
+  //   category confusion, etc.) live.
+  // - N (integer): applies only when `--version=N` is passed. Use for
+  //   criteria that are specific to a single prompt version (e.g. "v2
+  //   must mention chain_depth numerically in the opening") and would
+  //   incorrectly fail earlier versions.
+  // The CI harness filters cases by `templateVersion IS NULL OR
+  // templateVersion = N` so new versions can layer in their own
+  // criteria without destabilising the shared baseline.
+  templateVersion Int? @map("template_version")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([variant, label])
+  @@map("t_report_golden_cases")
 }

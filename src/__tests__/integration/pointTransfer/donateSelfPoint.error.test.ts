@@ -115,6 +115,15 @@ describe("Point Donation Error Handling Tests", () => {
       user: { connect: { id: user1.id } },
     });
 
+    // donation は receiver wallet の事前存在が前提。insufficient balance を検証する
+    // には wallet not found で落ちる前に balance validator に到達させる必要がある
+    // (sakata-san 判断 7.4)。
+    await TestDataSourceHelper.createWallet({
+      type: WalletType.MEMBER,
+      community: { connect: { id: community.id } },
+      user: { connect: { id: user2.id } },
+    });
+
     await TestDataSourceHelper.createTransaction({
       toWallet: { connect: { id: user1Wallet.id } },
       toPointChange: 30,
