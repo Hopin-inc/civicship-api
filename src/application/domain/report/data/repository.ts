@@ -503,6 +503,14 @@ export default class ReportRepository implements IReportRepository {
    * admin wallet but not `donation_out_count`, and we want retention to
    * track peer-to-peer DONATION behaviour specifically.
    *
+   * `is_receiver` is gated symmetrically on `received_donation_count > 0`
+   * (DONATION-only) rather than `tx_count_in > 0`. The same ONBOARDING /
+   * GRANT noise that we filter out of the sender frame also shows up on
+   * the receiver side (admin-issued grants land as incoming transactions
+   * on every recipient's wallet); including those in `is_receiver` would
+   * inflate `current_active_count` and the `active_rate_any` the
+   * presenter divides out of it, overstating peer-to-peer engagement.
+   *
    * The `ever_before` CTE is bounded to a 12-week lookback to keep the
    * returning-users scan from fanning out to years of history on mature
    * communities; the trade-off is documented in the design notes —
@@ -533,7 +541,7 @@ export default class ReportRepository implements IReportRepository {
           SELECT
             "user_id",
             BOOL_OR("donation_out_count" > 0) AS is_sender,
-            BOOL_OR("tx_count_in" > 0) AS is_receiver
+            BOOL_OR("received_donation_count" > 0) AS is_receiver
           FROM "mv_user_transaction_daily"
           WHERE "community_id" = ${communityId}
             AND "date" >= ${range.currentWeekStart}::date

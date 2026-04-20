@@ -212,8 +212,10 @@ export interface PreviousPeriodSummary {
  *     send a donation their first week they land in `current_senders_count`
  *     only — not in `retained_senders`, which requires `is_sender` on
  *     BOTH the current and previous weeks.
- *   - `active_rate_any` counts receivers in the numerator; the other
- *     rates use the `is_sender` frame.
+ *   - `active_rate_any` counts DONATION-receivers in the numerator; the
+ *     other rates use the `is_sender` frame. Both sender and receiver
+ *     signals are DONATION-scoped (not `tx_count_in/out > 0`), so
+ *     ONBOARDING / GRANT noise does not inflate the rate on either side.
  *   - `returned_senders` is bounded to a 12-week lookback; someone
  *     returning after 13+ weeks of silence lands in none of the buckets.
  *

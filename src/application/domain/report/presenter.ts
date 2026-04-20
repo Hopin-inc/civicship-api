@@ -65,10 +65,17 @@ export default class ReportPresenter {
      * presenter can divide without re-reading the same number. `null` when
      * the usecase did not opt into retention, in which case the payload's
      * `retention` field is `null` and the prompt keys on presence.
+     *
+     * `totalMembers` is `null` when the community context lookup came back
+     * empty (missing / soft-deleted community) — in that case the rate
+     * fields collapse to `null` instead of leaking a divide-by-zero or a
+     * bogus "100%" from using the aggregate's own counts as the denominator.
+     * The raw counters (new_members / retained_senders / ...) still surface
+     * so the block remains useful; only the derived rates go null.
      */
     retention?: {
       aggregate: RetentionAggregateRow;
-      totalMembers: number;
+      totalMembers: number | null;
       week1: CohortRetentionRow | null;
       week4: CohortRetentionRow | null;
     } | null;
@@ -158,7 +165,17 @@ export default class ReportPresenter {
       0n,
     );
     const currentPointsSum = bigintToSafeNumber(currentPointsSumBigInt);
-    const currentActiveUsers = input.communityContext?.activeUsersInWindow ?? 0;
+    // Prefer `community_context.active_users_in_window`, but fall back to
+    // the retention aggregate's `current_active_count` when the community
+    // context lookup came back null (missing / soft-deleted community).
+    // Without this fallback, `growth_rate.active_users` collapses to the
+    // previous-window numerator / 0 math and misreports as −100% even
+    // when the current window actually had activity that the retention
+    // pass successfully counted.
+    const currentActiveUsers =
+      input.communityContext?.activeUsersInWindow ??
+      input.retention?.aggregate.currentActiveCount ??
+      0;
 
     const retention: RetentionSummary | null = input.retention
       ? {
@@ -167,11 +184,11 @@ export default class ReportPresenter {
           returned_senders: input.retention.aggregate.returnedSenders,
           churned_senders: input.retention.aggregate.churnedSenders,
           active_rate_sender:
-            input.retention.totalMembers > 0
+            input.retention.totalMembers !== null && input.retention.totalMembers > 0
               ? input.retention.aggregate.currentSendersCount / input.retention.totalMembers
               : null,
           active_rate_any:
-            input.retention.totalMembers > 0
+            input.retention.totalMembers !== null && input.retention.totalMembers > 0
               ? input.retention.aggregate.currentActiveCount / input.retention.totalMembers
               : null,
           // Week-N rows with cohortSize=0 collapse to null here (rather
