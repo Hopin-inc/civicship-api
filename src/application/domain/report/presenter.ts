@@ -148,10 +148,16 @@ export default class ReportPresenter {
     });
 
     const currentTxCount = input.summaries.reduce((acc, s) => acc + s.txCount, 0);
-    const currentPointsSum = input.summaries.reduce(
-      (acc, s) => acc + bigintToSafeNumber(s.pointsSum),
-      0,
+    // Accumulate the BigInt sums before narrowing so the safe-integer guard
+    // runs against the TOTAL rather than each reason row. Narrowing per row
+    // and then summing as Number would let a total that exceeds
+    // Number.MAX_SAFE_INTEGER slip through silently even when each individual
+    // row is safe.
+    const currentPointsSumBigInt = input.summaries.reduce(
+      (acc, s) => acc + s.pointsSum,
+      0n,
     );
+    const currentPointsSum = bigintToSafeNumber(currentPointsSumBigInt);
     const currentActiveUsers = input.communityContext?.activeUsersInWindow ?? 0;
 
     const retention: RetentionSummary | null = input.retention

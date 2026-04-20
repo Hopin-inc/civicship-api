@@ -130,7 +130,12 @@ export default class ReportUseCase {
           const currentWeekStart = isoWeekStartJst(params.referenceDate);
           const nextWeekStart = addDays(currentWeekStart, 7);
           const prevWeekStart = addDays(currentWeekStart, -7);
-          const twelveWeeksAgo = addDays(prevWeekStart, -7 * 11);
+          // 12 weeks of lookback ending at prevWeekStart (exclusive), so
+          // the range `[twelveWeeksAgo, prevWeekStart)` has 12 full weeks.
+          // Was -7*11 (only 11 weeks); returned_senders was shifted by one
+          // week and silently under-counted people who returned after a
+          // 12-week absence.
+          const twelveWeeksAgo = addDays(prevWeekStart, -7 * 12);
           return { nextWeekStart, currentWeekStart, prevWeekStart, twelveWeeksAgo };
         })()
       : null;

@@ -178,8 +178,22 @@ export default class ReportRepository implements IReportRepository {
    *
    * Excludes transactions where the counterparty wallet has no `user_id`
    * (e.g. community wallets) so the count is strictly "people this user sent
-   * points to". Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)`
-   * window to match the MV bucketing elsewhere in this file.
+   * points to", and excludes self-transfers (`tw.user_id = fw.user_id`) from
+   * the DISTINCT via a FILTER clause — the metric is "how many different
+   * *other* people did this user give to", which is what the breadth-of-
+   * activity signal downstream in the prompt is trying to describe.
+   *
+   * Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)` window to match
+   * the MV bucketing elsewhere in this file. `t_transactions.created_at` is
+   * Prisma `DateTime` → `timestamp WITHOUT time zone` holding naive UTC,
+   * so we convert the JST date boundaries to naive UTC on the constant side
+   * (`::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'`): first cast the
+   * date to a timestamptz at JST midnight, then render that instant as a
+   * naive UTC wall-clock — the same value the column holds. Keeping the
+   * transform off the column preserves index usage (SARGable) while still
+   * being independent of the DB session timezone, unlike the prior
+   * `timestamp >= timestamptz` form which implicitly cast via the
+   * session's timezone.
    */
   async findTrueUniqueCounterpartiesForUsers(
     ctx: IContext,
@@ -194,7 +208,9 @@ export default class ReportRepository implements IReportRepository {
       >`
         SELECT
           fw."user_id" AS "user_id",
-          COUNT(DISTINCT tw."user_id")::int AS "true_unique_counterparties"
+          COUNT(DISTINCT tw."user_id") FILTER (
+            WHERE tw."user_id" <> fw."user_id"
+          )::int AS "true_unique_counterparties"
         FROM "t_transactions" t
         INNER JOIN "t_wallets" fw
           ON fw."id" = t."from"
@@ -203,8 +219,8 @@ export default class ReportRepository implements IReportRepository {
         INNER JOIN "t_wallets" tw
           ON tw."id" = t."to"
           AND tw."user_id" IS NOT NULL
-        WHERE t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
-          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+        WHERE t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
         GROUP BY fw."user_id"
       `;
@@ -352,7 +368,13 @@ export default class ReportRepository implements IReportRepository {
           t."chain_depth"::int AS "chain_depth",
           t."reason",
           t."comment",
-          ((t."created_at" AT TIME ZONE 'Asia/Tokyo')::date) AS "date",
+          -- Double AT TIME ZONE to convert the naive-UTC timestamp
+          -- column to a JST calendar day. A single AT TIME ZONE
+          -- 'Asia/Tokyo' would treat the value AS JST and shift it by
+          -- -9h, mis-bucketing transactions between 00:00-08:59 JST --
+          -- the same bug the 20260416000001_fix_report_views_jst_bucketing
+          -- migration fixed in the MV side.
+          ((t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) AS "date",
           fw."user_id" AS "from_user_id",
           tw."user_id" AS "to_user_id",
           t."created_by" AS "created_by_user_id",
@@ -365,14 +387,18 @@ export default class ReportRepository implements IReportRepository {
                OR tw."community_id" IS NULL
                OR fw."community_id" = tw."community_id")
           AND t."chain_depth" IS NOT NULL
-          -- SARGable timestamptz comparison so the planner can use the
-          -- B-tree index on "created_at" (wrapping it in
-          -- (... AT TIME ZONE ...)::date would suppress the index).
           -- Half-open window [from JST 00:00, (to + 1 day) JST 00:00)
           -- covers exactly the JST calendar days from..to inclusive,
-          -- matching the bucketing used by the report MVs.
-          AND t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
-          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+          -- matching the bucketing used by the report MVs. created_at
+          -- is timestamp WITHOUT time zone (Prisma DateTime default)
+          -- holding naive UTC, so we convert the JST date boundaries to
+          -- naive UTC on the constant side (::date AT TIME ZONE
+          -- 'Asia/Tokyo' AT TIME ZONE 'UTC') to match the column's
+          -- storage format -- independent of DB session timezone, and
+          -- the column stays untouched so the B-tree index on
+          -- "created_at" can still be used.
+          AND t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
         ORDER BY t."chain_depth" DESC, t."created_at" ASC
         LIMIT 1
       `;
@@ -437,8 +463,14 @@ export default class ReportRepository implements IReportRepository {
           FROM "t_memberships"
           WHERE "community_id" = ${communityId}
             AND "status" = 'JOINED'
-            AND "created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
-            AND "created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+            -- created_at is timestamp WITHOUT time zone (Prisma
+            -- default) holding naive UTC, so convert the JST date
+            -- boundaries to naive UTC on the constant side. See the
+            -- commentary on findDeepestChain for the full rationale;
+            -- keeping the column untouched preserves the B-tree index
+            -- and the comparison is session-TZ-independent.
+            AND "created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
         )
         SELECT
           au.n                 AS "active_users_in_window",
@@ -531,8 +563,13 @@ export default class ReportRepository implements IReportRepository {
           FROM "t_memberships"
           WHERE "community_id" = ${communityId}
             AND "status" = 'JOINED'
-            AND "created_at" >= (${range.currentWeekStart}::date AT TIME ZONE 'Asia/Tokyo')
-            AND "created_at" <  (${range.nextWeekStart}::date AT TIME ZONE 'Asia/Tokyo')
+            -- created_at is naive-UTC timestamp -- see the boundary
+            -- conversion rationale in findDeepestChain. The
+            -- ::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+            -- dance pins the window to JST midnight regardless of the
+            -- DB session timezone.
+            AND "created_at" >= (${range.currentWeekStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  (${range.nextWeekStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
         ),
         joined AS (
           SELECT
@@ -606,8 +643,11 @@ export default class ReportRepository implements IReportRepository {
           FROM "t_memberships"
           WHERE "community_id" = ${communityId}
             AND "status" = 'JOINED'
-            AND "created_at" >= (${cohort.cohortStart}::date AT TIME ZONE 'Asia/Tokyo')
-            AND "created_at" <  (${cohort.cohortEnd}::date AT TIME ZONE 'Asia/Tokyo')
+            -- Naive-UTC timestamp column vs JST-midnight boundary:
+            -- see the findDeepestChain comment for the full
+            -- explanation of the double AT TIME ZONE dance.
+            AND "created_at" >= (${cohort.cohortStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  (${cohort.cohortEnd}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
         ),
         active_members AS (
           SELECT DISTINCT "user_id"

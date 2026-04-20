@@ -147,17 +147,26 @@ export interface TopUserItem {
    */
   unique_counterparties_sum: number;
   /**
-   * True distinct counterparty count across the whole reporting window. The
-   * same counterparty appearing on multiple days counts once. Paired with
-   * `unique_counterparties_sum` this lets the LLM distinguish
-   * "broad-but-shallow" (high `sum`, moderate `true`) from
-   * "deep-to-a-few" (low `true`, high per-day overlap).
+   * True distinct *outgoing* counterparty count across the whole reporting
+   * window — how many different people this user sent to, deduplicated
+   * over the full period (a counterparty appearing on multiple days counts
+   * once).
    *
-   * Computed on the reporting-window slice of `t_transactions` scoped to the
-   * top-N users — the target is always a short list of ≤ a few dozen user
-   * ids per community-week so the direct aggregation does not need an MV.
-   * `null` when the repository returned no row for the user (e.g. receiver
-   * with zero outgoing activity).
+   * Asymmetric with `unique_counterparties_sum`: the `sum` field is sourced
+   * from `mv_user_transaction_daily` and counts per-day distincts across
+   * BOTH in and out directions, whereas this field is computed from the
+   * reporting-window slice of `t_transactions` and covers the OUTGOING
+   * direction only (and excludes self-transfers). The two are *not* a
+   * pure "per-day-duplicated vs period-deduplicated" pair — a user with
+   * mostly incoming activity will show a large `sum` and a small `true`
+   * purely from the directional asymmetry, not from overlap. Prompt
+   * authors reading both fields together must account for this before
+   * narrating any "breadth vs depth" intuition.
+   *
+   * Scoped to the top-N users — the target is always a short list of ≤ a
+   * few dozen user ids per community-week so the direct aggregation does
+   * not need an MV. `null` when the repository returned no row for the
+   * user (e.g. receiver with zero outgoing activity).
    */
   true_unique_counterparties: number | null;
 }
@@ -198,8 +207,11 @@ export interface PreviousPeriodSummary {
  * contribute" semantic.
  *
  * Category overlaps (documented here so prompt authors don't sum them):
- *   - A new member who sends a donation their first week counts in
- *     `new_members` AND `retained_senders` (they have no prior week).
+ *   - `new_members` and `retained_senders` are mutually exclusive: a new
+ *     member has no prior-week activity by definition, so even if they
+ *     send a donation their first week they land in `current_senders_count`
+ *     only — not in `retained_senders`, which requires `is_sender` on
+ *     BOTH the current and previous weeks.
  *   - `active_rate_any` counts receivers in the numerator; the other
  *     rates use the `is_sender` frame.
  *   - `returned_senders` is bounded to a 12-week lookback; someone
