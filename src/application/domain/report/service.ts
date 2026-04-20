@@ -2,10 +2,13 @@ import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
+  CohortRetentionRow,
   CommunityContextRow,
   DateRange,
   DeepestChainRow,
   IReportRepository,
+  PeriodAggregateRow,
+  RetentionAggregateRow,
   TransactionActiveUsersDailyRow,
   TransactionCommentRow,
   TransactionSummaryDailyRow,
@@ -61,6 +64,15 @@ export default class ReportService {
     return this.repository.findTopUsersByTotalPoints(ctx, communityId, range, topN);
   }
 
+  async getTrueUniqueCounterpartiesForUsers(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+    userIds: string[],
+  ): Promise<Map<string, number>> {
+    return this.repository.findTrueUniqueCounterpartiesForUsers(ctx, communityId, range, userIds);
+  }
+
   async getComments(
     ctx: IContext,
     communityId: string,
@@ -92,6 +104,36 @@ export default class ReportService {
     range: DateRange,
   ): Promise<DeepestChainRow | null> {
     return this.repository.findDeepestChain(ctx, communityId, range);
+  }
+
+  async getPeriodAggregate(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+  ): Promise<PeriodAggregateRow> {
+    return this.repository.findPeriodAggregate(ctx, communityId, range);
+  }
+
+  async getRetentionAggregate(
+    ctx: IContext,
+    communityId: string,
+    range: {
+      currentWeekStart: Date;
+      nextWeekStart: Date;
+      prevWeekStart: Date;
+      twelveWeeksAgo: Date;
+    },
+  ): Promise<RetentionAggregateRow> {
+    return this.repository.findRetentionAggregate(ctx, communityId, range);
+  }
+
+  async getCohortRetention(
+    ctx: IContext,
+    communityId: string,
+    cohort: { cohortStart: Date; cohortEnd: Date },
+    active: { activeStart: Date; activeEnd: Date },
+  ): Promise<CohortRetentionRow> {
+    return this.repository.findCohortRetention(ctx, communityId, cohort, active);
   }
 
   async refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {

@@ -59,6 +59,7 @@ import type { TransactionSummaryDailyView } from "@prisma/client";
 import type { UserTransactionDailyView } from "@prisma/client";
 import type { TransactionCommentView } from "@prisma/client";
 import type { UserProfileForReportView } from "@prisma/client";
+import type { UserCohortView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { OpportunityAccumulatedParticipantsView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
@@ -1181,6 +1182,9 @@ const modelFieldDefinitions: ModelWithFields[] = [{
         fields: []
     }, {
         name: "UserProfileForReportView",
+        fields: []
+    }, {
+        name: "UserCohortView",
         fields: []
     }, {
         name: "EarliestReservableSlotView",
@@ -11826,6 +11830,152 @@ export const defineUserProfileForReportViewFactory = (<TOptions extends UserProf
 }) as UserProfileForReportViewFactoryBuilder;
 
 defineUserProfileForReportViewFactory.withTransientFields = defaultTransientFieldValues => options => defineUserProfileForReportViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type UserCohortViewScalarOrEnumFields = {
+    communityId: string;
+    userId: string;
+    onboardingWeek: Date;
+};
+
+type UserCohortViewFactoryDefineInput = {
+    communityId?: string;
+    userId?: string;
+    onboardingWeek?: Date;
+    firstActiveWeek?: Date | null;
+    totalWeeksInCommunity?: number | null;
+};
+
+type UserCohortViewTransientFields = Record<string, unknown> & Partial<Record<keyof UserCohortViewFactoryDefineInput, never>>;
+
+type UserCohortViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<UserCohortViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<UserCohortView, Prisma.UserCohortViewCreateInput, TTransients>;
+
+type UserCohortViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<UserCohortViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: UserCohortViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<UserCohortView, Prisma.UserCohortViewCreateInput, TTransients>;
+
+type UserCohortViewTraitKeys<TOptions extends UserCohortViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface UserCohortViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "UserCohortView";
+    build(inputData?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<Prisma.UserCohortViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<Prisma.UserCohortViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.UserCohortViewCreateInput & TTransients>[]): PromiseLike<Prisma.UserCohortViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<Prisma.UserCohortViewCreateInput[]>;
+    pickForConnect(inputData: UserCohortView): Pick<UserCohortView, "communityId" | "userId">;
+    create(inputData?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<UserCohortView>;
+    createList(list: readonly Partial<Prisma.UserCohortViewCreateInput & TTransients>[]): PromiseLike<UserCohortView[]>;
+    createList(count: number, item?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<UserCohortView[]>;
+    createForConnect(inputData?: Partial<Prisma.UserCohortViewCreateInput & TTransients>): PromiseLike<Pick<UserCohortView, "communityId" | "userId">>;
+}
+
+export interface UserCohortViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UserCohortViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): UserCohortViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateUserCohortViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): UserCohortViewScalarOrEnumFields {
+    return {
+        communityId: getScalarFieldValueGenerator().String({ modelName: "UserCohortView", fieldName: "communityId", isId: true, isUnique: false, seq }),
+        userId: getScalarFieldValueGenerator().String({ modelName: "UserCohortView", fieldName: "userId", isId: true, isUnique: false, seq }),
+        onboardingWeek: getScalarFieldValueGenerator().DateTime({ modelName: "UserCohortView", fieldName: "onboardingWeek", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineUserCohortViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UserCohortViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UserCohortViewFactoryInterface<TTransients, UserCohortViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly UserCohortViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("UserCohortView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.UserCohortViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateUserCohortViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<UserCohortViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<UserCohortViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.UserCohortViewCreateInput;
+            const data: Prisma.UserCohortViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserCohortViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: UserCohortView) => ({
+            communityId: inputData.communityId,
+            userId: inputData.userId
+        });
+        const create = async (inputData: Partial<Prisma.UserCohortViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().userCohortView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserCohortViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.UserCohortViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "UserCohortView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: UserCohortViewTraitKeys<TOptions>, ...names: readonly UserCohortViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface UserCohortViewFactoryBuilder {
+    <TOptions extends UserCohortViewFactoryDefineOptions>(options?: TOptions): UserCohortViewFactoryInterface<{}, UserCohortViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends UserCohortViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UserCohortViewFactoryDefineOptions<TTransients>>(options?: TOptions) => UserCohortViewFactoryInterface<TTransients, UserCohortViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link UserCohortView} model.
+ *
+ * @param options
+ * @returns factory {@link UserCohortViewFactoryInterface}
+ */
+export const defineUserCohortViewFactory = (<TOptions extends UserCohortViewFactoryDefineOptions>(options?: TOptions): UserCohortViewFactoryInterface<TOptions> => {
+    return defineUserCohortViewFactoryInternal(options ?? {}, {});
+}) as UserCohortViewFactoryBuilder;
+
+defineUserCohortViewFactory.withTransientFields = defaultTransientFieldValues => options => defineUserCohortViewFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type EarliestReservableSlotViewScalarOrEnumFields = {};
 

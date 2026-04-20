@@ -8,10 +8,13 @@ import {
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
+  CohortRetentionRow,
   CommunityContextRow,
   DateRange,
   DeepestChainRow,
   IReportRepository,
+  PeriodAggregateRow,
+  RetentionAggregateRow,
   TransactionActiveUsersDailyRow,
   TransactionCommentRow,
   TransactionSummaryDailyRow,
@@ -157,6 +160,55 @@ export default class ReportRepository implements IReportRepository {
         chainDepthReachedMax: r.chain_depth_reached_max,
         uniqueCounterpartiesSum: r.unique_counterparties_sum,
       }));
+    });
+  }
+
+  /**
+   * Distinct counterparty count across the whole reporting window for the
+   * supplied users. Unlike `unique_counterparties_sum` (which lives in
+   * mv_user_transaction_daily and is a sum of *per-day* distincts), this is
+   * a genuine set cardinality over the period — "how many different people
+   * did this user give to across the whole week", not "sum of new-per-day
+   * counterparties".
+   *
+   * Scoped with `userIds` so the scan fans out only to the top-N ids already
+   * selected by the upstream query. `t_wallets.user_id` has an index
+   * (`t_wallets_user_id_idx`) so the lookup joining the sender-side is cheap
+   * even without a dedicated MV.
+   *
+   * Excludes transactions where the counterparty wallet has no `user_id`
+   * (e.g. community wallets) so the count is strictly "people this user sent
+   * points to". Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)`
+   * window to match the MV bucketing elsewhere in this file.
+   */
+  async findTrueUniqueCounterpartiesForUsers(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+    userIds: string[],
+  ): Promise<Map<string, number>> {
+    if (userIds.length === 0) return new Map();
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        { user_id: string; true_unique_counterparties: number }[]
+      >`
+        SELECT
+          fw."user_id" AS "user_id",
+          COUNT(DISTINCT tw."user_id")::int AS "true_unique_counterparties"
+        FROM "t_transactions" t
+        INNER JOIN "t_wallets" fw
+          ON fw."id" = t."from"
+          AND fw."user_id" = ANY(${userIds}::text[])
+          AND fw."community_id" = ${communityId}
+        INNER JOIN "t_wallets" tw
+          ON tw."id" = t."to"
+          AND tw."user_id" IS NOT NULL
+        WHERE t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
+          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+          AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
+        GROUP BY fw."user_id"
+      `;
+      return new Map(rows.map((r) => [r.user_id, r.true_unique_counterparties]));
     });
   }
 
@@ -337,6 +389,242 @@ export default class ReportRepository implements IReportRepository {
         createdByUserId: r.created_by_user_id,
         parentTxId: r.parent_tx_id,
       };
+    });
+  }
+
+  /**
+   * Headline aggregates (active users / tx count / points volume / new
+   * memberships) for an arbitrary JST window. Backs the
+   * `previous_period` payload block. One round trip per call — three
+   * independent scans combined via CROSS JOIN of single-row CTEs so the
+   * planner sees them as a single statement.
+   *
+   * `new_members` is sourced from `t_memberships.created_at` (JOINED) to
+   * stay consistent with `RetentionSummary.new_members`, rather than from
+   * `ONBOARDING` transactions which have operational noise around
+   * re-issuance.
+   */
+  async findPeriodAggregate(
+    ctx: IContext,
+    communityId: string,
+    range: DateRange,
+  ): Promise<PeriodAggregateRow> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          active_users_in_window: number;
+          total_tx_count: number;
+          total_points_sum: bigint;
+          new_members: number;
+        }[]
+      >`
+        WITH active_users AS (
+          SELECT COUNT(DISTINCT "user_id")::int AS n
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ${communityId}
+            AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
+        ),
+        tx_totals AS (
+          SELECT
+            COALESCE(SUM("tx_count"), 0)::int AS tx_count,
+            COALESCE(SUM("points_sum"), 0)::bigint AS points_sum
+          FROM "mv_transaction_summary_daily"
+          WHERE "community_id" = ${communityId}
+            AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
+        ),
+        new_members AS (
+          SELECT COUNT(*)::int AS n
+          FROM "t_memberships"
+          WHERE "community_id" = ${communityId}
+            AND "status" = 'JOINED'
+            AND "created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
+            AND "created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+        )
+        SELECT
+          au.n                 AS "active_users_in_window",
+          tt.tx_count          AS "total_tx_count",
+          tt.points_sum        AS "total_points_sum",
+          nm.n                 AS "new_members"
+        FROM active_users au, tx_totals tt, new_members nm
+      `;
+      const r = rows[0];
+      return {
+        activeUsersInWindow: r.active_users_in_window,
+        totalTxCount: r.total_tx_count,
+        totalPointsSum: r.total_points_sum,
+        newMembers: r.new_members,
+      };
+    });
+  }
+
+  /**
+   * Retention signals for one week. Computed via FULL OUTER JOIN on the
+   * week-aggregated sender sets for [currentWeekStart, nextWeekStart) and
+   * [prevWeekStart, currentWeekStart) so each user contributes one row
+   * regardless of which weeks they appear in — a naive two-pass COUNT
+   * would double-count people active in both weeks.
+   *
+   * `is_sender` is gated on `donation_out_count > 0` (not
+   * `tx_count_out > 0`) so the definition stays consistent with
+   * `returned_senders` which scans the same MV column. This matters:
+   * ONBOARDING / GRANT transactions increment `tx_count_out` for the
+   * admin wallet but not `donation_out_count`, and we want retention to
+   * track peer-to-peer DONATION behaviour specifically.
+   *
+   * The `ever_before` CTE is bounded to a 12-week lookback to keep the
+   * returning-users scan from fanning out to years of history on mature
+   * communities; the trade-off is documented in the design notes —
+   * 13+-week comebacks land in no bucket.
+   */
+  async findRetentionAggregate(
+    ctx: IContext,
+    communityId: string,
+    range: {
+      currentWeekStart: Date;
+      nextWeekStart: Date;
+      prevWeekStart: Date;
+      twelveWeeksAgo: Date;
+    },
+  ): Promise<RetentionAggregateRow> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          new_members: number;
+          retained_senders: number;
+          returned_senders: number;
+          churned_senders: number;
+          current_senders_count: number;
+          current_active_count: number;
+        }[]
+      >`
+        WITH current_week AS (
+          SELECT
+            "user_id",
+            BOOL_OR("donation_out_count" > 0) AS is_sender,
+            BOOL_OR("tx_count_in" > 0) AS is_receiver
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ${communityId}
+            AND "date" >= ${range.currentWeekStart}::date
+            AND "date" <  ${range.nextWeekStart}::date
+          GROUP BY "user_id"
+        ),
+        prev_week AS (
+          SELECT
+            "user_id",
+            BOOL_OR("donation_out_count" > 0) AS is_sender
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ${communityId}
+            AND "date" >= ${range.prevWeekStart}::date
+            AND "date" <  ${range.currentWeekStart}::date
+          GROUP BY "user_id"
+        ),
+        ever_before AS (
+          SELECT DISTINCT "user_id"
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ${communityId}
+            AND "date" >= ${range.twelveWeeksAgo}::date
+            AND "date" <  ${range.prevWeekStart}::date
+            AND "donation_out_count" > 0
+        ),
+        new_this_week AS (
+          SELECT "user_id"
+          FROM "t_memberships"
+          WHERE "community_id" = ${communityId}
+            AND "status" = 'JOINED'
+            AND "created_at" >= (${range.currentWeekStart}::date AT TIME ZONE 'Asia/Tokyo')
+            AND "created_at" <  (${range.nextWeekStart}::date AT TIME ZONE 'Asia/Tokyo')
+        ),
+        joined AS (
+          SELECT
+            cw."user_id" AS cw_user,
+            pw."user_id" AS pw_user,
+            cw.is_sender AS cw_is_sender,
+            cw.is_receiver AS cw_is_receiver,
+            pw.is_sender AS pw_is_sender,
+            eb."user_id" AS eb_user
+          FROM current_week cw
+          FULL OUTER JOIN prev_week pw
+            ON cw."user_id" = pw."user_id"
+          LEFT JOIN ever_before eb
+            ON COALESCE(cw."user_id", pw."user_id") = eb."user_id"
+        )
+        SELECT
+          (SELECT COUNT(*)::int FROM new_this_week) AS "new_members",
+          COUNT(*) FILTER (
+            WHERE cw_is_sender = true AND pw_is_sender = true
+          )::int AS "retained_senders",
+          COUNT(*) FILTER (
+            WHERE cw_is_sender = true
+              AND (pw_is_sender IS NULL OR pw_is_sender = false)
+              AND eb_user IS NOT NULL
+          )::int AS "returned_senders",
+          COUNT(*) FILTER (
+            WHERE pw_is_sender = true
+              AND (cw_is_sender IS NULL OR cw_is_sender = false)
+          )::int AS "churned_senders",
+          COUNT(*) FILTER (WHERE cw_is_sender = true)::int AS "current_senders_count",
+          COUNT(*) FILTER (
+            WHERE cw_is_sender = true OR cw_is_receiver = true
+          )::int AS "current_active_count"
+        FROM joined
+      `;
+      const r = rows[0];
+      return {
+        newMembers: r.new_members,
+        retainedSenders: r.retained_senders,
+        returnedSenders: r.returned_senders,
+        churnedSenders: r.churned_senders,
+        currentSendersCount: r.current_senders_count,
+        currentActiveCount: r.current_active_count,
+      };
+    });
+  }
+
+  /**
+   * Week-N retention lookup: how many members of the cohort that joined
+   * during `[cohortStart, cohortEnd)` were senders during
+   * `[activeStart, activeEnd)`. Returns raw numerator / denominator so
+   * an empty cohort surfaces as `cohortSize = 0` and the presenter
+   * converts that to `null` rather than `0 / 0`.
+   *
+   * `is_sender` uses the same `donation_out_count > 0` frame as
+   * `findRetentionAggregate` so week1/week4 retention and the weekly
+   * retention counters are apples-to-apples.
+   */
+  async findCohortRetention(
+    ctx: IContext,
+    communityId: string,
+    cohort: { cohortStart: Date; cohortEnd: Date },
+    active: { activeStart: Date; activeEnd: Date },
+  ): Promise<CohortRetentionRow> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        { cohort_size: number; active_next_week: number }[]
+      >`
+        WITH cohort AS (
+          SELECT "user_id"
+          FROM "t_memberships"
+          WHERE "community_id" = ${communityId}
+            AND "status" = 'JOINED'
+            AND "created_at" >= (${cohort.cohortStart}::date AT TIME ZONE 'Asia/Tokyo')
+            AND "created_at" <  (${cohort.cohortEnd}::date AT TIME ZONE 'Asia/Tokyo')
+        ),
+        active_members AS (
+          SELECT DISTINCT "user_id"
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ${communityId}
+            AND "date" >= ${active.activeStart}::date
+            AND "date" <  ${active.activeEnd}::date
+            AND "donation_out_count" > 0
+        )
+        SELECT
+          COUNT(DISTINCT c."user_id")::int AS "cohort_size",
+          COUNT(DISTINCT a."user_id")::int AS "active_next_week"
+        FROM cohort c
+        LEFT JOIN active_members a USING ("user_id")
+      `;
+      const r = rows[0];
+      return { cohortSize: r.cohort_size, activeNextWeek: r.active_next_week };
     });
   }
 

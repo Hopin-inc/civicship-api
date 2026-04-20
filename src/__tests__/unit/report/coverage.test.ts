@@ -31,6 +31,8 @@ const basePayload: WeeklyReportPayload = {
   daily_active_users: [],
   top_users: [],
   highlight_comments: [],
+  previous_period: null,
+  retention: null,
 };
 
 describe("analyzeCoverage", () => {
