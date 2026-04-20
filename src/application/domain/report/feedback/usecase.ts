@@ -122,8 +122,13 @@ export default class ReportFeedbackUseCase {
             reportId: input.reportId,
             userId,
             rating: input.rating,
+            // The GraphQL `ReportFeedbackType` and Prisma `FeedbackType`
+            // enums share identical member names by contract (Prisma's
+            // enum is the source of truth and the GraphQL schema mirrors
+            // it), so a plain assertion is enough — no `as unknown`
+            // intermediate needed.
             feedbackType: input.feedbackType
-              ? (input.feedbackType as unknown as FeedbackType)
+              ? (input.feedbackType as FeedbackType)
               : null,
             sectionKey: input.sectionKey ?? null,
             comment: input.comment ?? null,

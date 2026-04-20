@@ -2,6 +2,7 @@ import { ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
+import { NotFoundError } from "@/errors/graphql";
 import { IReportRepository } from "@/application/domain/report/data/interface";
 import { PrismaReportTemplate } from "@/application/domain/report/data/type";
 import { truncateToJstDate } from "@/application/domain/report/util";
@@ -47,9 +48,20 @@ export default class ReportTemplateSelector {
         : await this.repository.findActiveTemplates(ctx, variant, kind, null);
 
     if (candidates.length === 0) {
-      throw new Error(
-        `No active template for variant=${variant}, kind=${kind}, communityId=${communityId}`,
-      );
+      // Surface as NOT_FOUND so the GraphQL boundary exposes a structured
+      // error code (rather than the opaque INTERNAL_SERVER_ERROR that a
+      // plain `Error` produces). Seed data always ships at least a SYSTEM
+      // template for every (variant, kind), so hitting this path means a
+      // deployment/config problem worth bubbling up clearly.
+      //
+      // `formatError` in presentation/graphql/server.ts only `logger.error`s
+      // codes of `INTERNAL_SERVER_ERROR` — a NOT_FOUND response would sail
+      // past that gate silently. Log explicitly here so this *server-side*
+      // misconfiguration still reaches Cloud Logging and any alerting
+      // subscribed to `report.template.missing`, even though the client
+      // sees a structured 4xx-style response.
+      logger.error("report.template.missing", { variant, kind, communityId });
+      throw new NotFoundError("ReportTemplate", { variant, kind, communityId });
     }
 
     const selected =
@@ -57,19 +69,24 @@ export default class ReportTemplateSelector {
         ? candidates[0]
         : this.weightedRandom(candidates, communityId, referenceDate);
 
-    logger.info(
-      JSON.stringify({
-        event: "report.template.selected",
-        variant,
-        kind,
-        communityId,
-        selectedTemplateId: selected.id,
-        selectedVersion: selected.version,
-        selectedScope: selected.scope,
-        candidateCount: candidates.length,
-        isAbTest: candidates.length > 1,
-      }),
-    );
+    // Structured-meta form: winston's json() formatter promotes each field
+    // to a top-level key in Cloud Logging so queries like
+    // `jsonPayload.variant="WEEKLY_SUMMARY"` work. A single `JSON.stringify`
+    // would collapse everything into an opaque `message` string. `event`
+    // is duplicated into the metadata so existing dashboards/alerts that
+    // match on `jsonPayload.event` continue to work regardless of how the
+    // log ingestion pipeline maps the winston `message` field.
+    logger.info("report.template.selected", {
+      event: "report.template.selected",
+      variant,
+      kind,
+      communityId,
+      selectedTemplateId: selected.id,
+      selectedVersion: selected.version,
+      selectedScope: selected.scope,
+      candidateCount: candidates.length,
+      isAbTest: candidates.length > 1,
+    });
 
     return selected;
   }
