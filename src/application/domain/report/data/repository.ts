@@ -186,13 +186,14 @@ export default class ReportRepository implements IReportRepository {
    * Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)` window to match
    * the MV bucketing elsewhere in this file. `t_transactions.created_at` is
    * Prisma `DateTime` → `timestamp WITHOUT time zone` holding naive UTC,
-   * so we pass the column through `AT TIME ZONE 'UTC' AT TIME ZONE
-   * 'Asia/Tokyo'` (same idiom as the `v_user_cohort` / report MV
-   * migrations) to land a naive JST wall-clock and compare against the
-   * date boundaries directly. This is deliberately independent of the DB
-   * session timezone — a `timestamp >= timestamptz` comparison (the prior
-   * form) implicitly casts via the session's timezone, so a non-UTC
-   * session would shift the window.
+   * so we convert the JST date boundaries to naive UTC on the constant side
+   * (`::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'`): first cast the
+   * date to a timestamptz at JST midnight, then render that instant as a
+   * naive UTC wall-clock — the same value the column holds. Keeping the
+   * transform off the column preserves index usage (SARGable) while still
+   * being independent of the DB session timezone, unlike the prior
+   * `timestamp >= timestamptz` form which implicitly cast via the
+   * session's timezone.
    */
   async findTrueUniqueCounterpartiesForUsers(
     ctx: IContext,
@@ -218,8 +219,8 @@ export default class ReportRepository implements IReportRepository {
         INNER JOIN "t_wallets" tw
           ON tw."id" = t."to"
           AND tw."user_id" IS NOT NULL
-        WHERE (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo') >= ${range.from}::date
-          AND (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo') <  (${range.to}::date + 1)
+        WHERE t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
         GROUP BY fw."user_id"
       `;
