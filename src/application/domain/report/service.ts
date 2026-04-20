@@ -122,10 +122,11 @@ export default class ReportService {
    * `isActive` / `isEnabled` gates.
    *
    * `communityId` defaults to `null`, which selects the SYSTEM-scoped
-   * row. The CI harness always fetches SYSTEM (communityId=null) since
+   * row. The CI harness always fetches SYSTEM (`communityId=null`) since
    * COMMUNITY-scoped templates are not part of the shared golden
-   * baseline; callers must pass `communityId=null` explicitly when
-   * they want the SYSTEM contract to be visible at the call site.
+   * baseline. Callers may pass `communityId=null` explicitly when they
+   * want the SYSTEM contract to be visible at the call site, but omitting
+   * the argument has the same effect.
    */
   async getTemplateByVersion(
     ctx: IContext,
