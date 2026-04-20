@@ -4,7 +4,10 @@
  * the CI harness pays the LLM cost to discover them.
  *
  * What we DO check:
- *   - exactly the three documented labels exist
+ *   - the documented shared baseline labels exist alongside any
+ *     templateVersion-specific labels (the set grows when a new prompt
+ *     version ships; see ReportGoldenCase.templateVersion for the
+ *     filtering contract)
  *   - SKIPPED-expected case has minJudgeScore=0 and matches the skip
  *     guard
  *   - non-skip cases produce non-null skipReason=null when run through
@@ -41,6 +44,7 @@ interface CapturedCase {
   forbiddenKeys: string[];
   notes: string | null;
   expectedStatus: ReportStatus | null;
+  templateVersion: number | null;
 }
 
 describe("ReportGoldenCases seed", () => {
@@ -61,6 +65,7 @@ describe("ReportGoldenCases seed", () => {
         forbiddenKeys: create.forbiddenKeys,
         notes: create.notes,
         expectedStatus: create.expectedStatus ?? null,
+        templateVersion: create.templateVersion ?? null,
       });
       return Promise.resolve(create);
     });
@@ -83,13 +88,30 @@ describe("ReportGoldenCases seed", () => {
     }
   });
 
-  it("seeds exactly three cases with the documented labels", () => {
+  it("seeds the shared baseline + v2 cases with the documented labels", () => {
     const labels = captured.map((c) => `${c.variant}/${c.label}`).sort();
+    // Shared baseline (templateVersion=null) — runs on every CI
+    // invocation. v2-specific cases (templateVersion=2) layer on top
+    // when `--version=2` is passed to the harness.
     expect(labels).toEqual([
       "WEEKLY_SUMMARY/bustling-mixed-reason",
+      "WEEKLY_SUMMARY/bustling-mixed-reason-v2",
       "WEEKLY_SUMMARY/sparse-but-meaningful",
+      "WEEKLY_SUMMARY/sparse-but-meaningful-v2",
       "WEEKLY_SUMMARY/zero-activity",
     ]);
+  });
+
+  it("tags cases with the correct templateVersion", () => {
+    const byLabel = new Map(captured.map((c) => [c.label, c.templateVersion]));
+    // Shared baseline leaves templateVersion null so the CI harness
+    // runs them on every invocation (with or without --version=N).
+    expect(byLabel.get("sparse-but-meaningful")).toBeNull();
+    expect(byLabel.get("bustling-mixed-reason")).toBeNull();
+    expect(byLabel.get("zero-activity")).toBeNull();
+    // v2-specific cases only run when --version=2 is passed.
+    expect(byLabel.get("sparse-but-meaningful-v2")).toBe(2);
+    expect(byLabel.get("bustling-mixed-reason-v2")).toBe(2);
   });
 
   describe("zero-activity case", () => {
@@ -132,7 +154,12 @@ describe("ReportGoldenCases seed", () => {
   });
 
   describe("non-skip cases", () => {
-    it.each(["sparse-but-meaningful", "bustling-mixed-reason"])(
+    it.each([
+      "sparse-but-meaningful",
+      "bustling-mixed-reason",
+      "sparse-but-meaningful-v2",
+      "bustling-mixed-reason-v2",
+    ])(
       "%s does NOT trip the skip guard and has discrimination criteria",
       (label) => {
         container.reset();

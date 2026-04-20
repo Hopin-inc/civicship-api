@@ -590,21 +590,28 @@ export default class ReportRepository implements IReportRepository {
     // When an admin path for editing JUDGE templates is added, this
     // method should grow a `kind` parameter and thread it through.
     const kind = ReportTemplateKind.GENERATION;
-    // Target the live row: filter on `isActive=true` and break ties
-    // with `version: desc`. Without both, once multiple versions of the
-    // same (variant, communityId, kind) coexist — e.g. v1 active
-    // alongside a v2 shakeout candidate `isActive=false` — findFirst
-    // would match both and Postgres would pick non-deterministically,
-    // silently landing the admin edit on the wrong row. Mirrors the
-    // read path in `findTemplate` so admin UI + prod selection agree
-    // on which row is "the current template".
+    // Resolve "the row to update" deterministically across both the
+    // multi-version case and the all-inactive edge case:
+    //   - Primary sort `isActive desc`: when a v1 active + v2 shakeout
+    //     candidate (isActive=false) coexist, the active row wins so
+    //     admin edits land on the live template rather than the
+    //     shakeout candidate (the original bug motivating this lookup).
+    //   - Secondary sort `version desc`: ties within the same isActive
+    //     bucket resolve to the newest version — covers both a planned
+    //     multi-active A/B overlap (picks the newer active) and the
+    //     all-inactive fallback (picks the newest inactive) so an
+    //     admin who deactivated every template can still edit the
+    //     last-known row without hitting an unrecoverable P2002 on
+    //     the version-1 unique constraint.
     const existingWhere = {
       variant,
       communityId,
       kind,
-      isActive: true,
     } as const;
-    const existingOrderBy = [{ version: "desc" as const }];
+    const existingOrderBy = [
+      { isActive: "desc" as const },
+      { version: "desc" as const },
+    ];
     const doUpsert = async (client: Prisma.TransactionClient) => {
       const existing = await client.reportTemplate.findFirst({
         where: existingWhere,
