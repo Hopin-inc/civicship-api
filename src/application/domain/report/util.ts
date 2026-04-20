@@ -71,3 +71,16 @@ export function bigintToSafeNumber(value: bigint): number {
   }
   return Number(value);
 }
+
+/**
+ * Week-over-week percent change of `current` relative to `previous`.
+ *
+ * Returns `null` when `previous` is zero so a divide-by-zero never surfaces
+ * as `Infinity` / `NaN` in the LLM payload. Callers should treat `null` as
+ * "no prior period signal to compare against" — a legitimately-new community
+ * with no activity last week should not imply "infinite growth".
+ */
+export function percentChange(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  return ((current - previous) / previous) * 100;
+}

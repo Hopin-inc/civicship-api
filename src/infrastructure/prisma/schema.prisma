@@ -754,6 +754,22 @@ view UserProfileForReportView {
   @@map("v_user_profile_for_report")
 }
 
+// Per-(community, user) cohort metadata backing the AI report retention
+// block. Regular (non-materialized) view so no refresh job is needed — the
+// join is cheap enough for the ad-hoc lookup path used by the report
+// payload builder. See migration 20260420120000_add_user_cohort_view for
+// the SQL definition.
+view UserCohortView {
+  communityId           String    @map("community_id")
+  userId                String    @map("user_id")
+  onboardingWeek        DateTime  @map("onboarding_week") @db.Date
+  firstActiveWeek       DateTime? @map("first_active_week") @db.Date
+  totalWeeksInCommunity Float?    @map("total_weeks_in_community")
+
+  @@id([communityId, userId])
+  @@map("v_user_cohort")
+}
+
 enum WalletType {
   COMMUNITY
   MEMBER

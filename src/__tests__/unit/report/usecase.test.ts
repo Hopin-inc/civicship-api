@@ -55,6 +55,8 @@ describe("ReportUseCase.generateReport", () => {
     daily_active_users: [],
     top_users: [],
     highlight_comments: [],
+    previous_period: null,
+    retention: null,
   };
 
   const stubTemplate = {
