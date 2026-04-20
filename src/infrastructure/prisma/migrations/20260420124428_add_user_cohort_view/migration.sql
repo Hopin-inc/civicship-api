@@ -52,12 +52,17 @@ SELECT
     mc."user_id",
     mc."onboarding_week",
     fa."first_active_week",
-    -- `CURRENT_DATE - date` returns integer (days) in Postgres, so divide
-    -- by 7 directly rather than EXTRACT(EPOCH FROM interval) / 604800 which
+    -- JST-truncated "today" rather than `CURRENT_DATE`, which reads the DB
+    -- server's timezone setting and would drift from the rest of this
+    -- codebase (every other date math uses `AT TIME ZONE 'Asia/Tokyo'`).
+    -- `date - date` returns integer (days) in Postgres, so divide by 7
+    -- directly rather than EXTRACT(EPOCH FROM interval) / 604800 which
     -- only works on timestamp subtraction. Cast to float so the quotient
     -- preserves fractional weeks.
-    (CURRENT_DATE - COALESCE(mc."onboarding_week", fa."first_active_week"))::float / 7
-        AS "total_weeks_in_community"
+    (
+        (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Tokyo')::date
+        - COALESCE(mc."onboarding_week", fa."first_active_week")
+    )::float / 7 AS "total_weeks_in_community"
 FROM membership_cohort mc
 LEFT JOIN first_active fa
     ON fa."community_id" = mc."community_id"
