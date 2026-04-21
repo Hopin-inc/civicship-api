@@ -13,6 +13,7 @@ import SysAdminService, {
   DEFAULT_SEGMENT_THRESHOLDS,
   DEFAULT_WINDOW_MONTHS,
   MAX_LIMIT,
+  MAX_WINDOW_MONTHS,
   SegmentThresholds,
 } from "@/application/domain/sysadmin/service";
 import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
@@ -98,7 +99,14 @@ export default class SysAdminUseCase {
   ): Promise<GqlSysAdminCommunityDetailPayload> {
     const asOf = input.asOf ?? new Date();
     const thresholds = resolveThresholds(input.segmentThresholds);
-    const windowMonths = input.windowMonths ?? DEFAULT_WINDOW_MONTHS;
+    // Clamp to [1, MAX_WINDOW_MONTHS]. `getCohortRetention` and the
+    // retention-trend fan-out both scale linearly with this value, so
+    // a cap prevents a single request from exhausting the connection
+    // pool on unbounded input.
+    const windowMonths = Math.min(
+      Math.max(input.windowMonths ?? DEFAULT_WINDOW_MONTHS, 1),
+      MAX_WINDOW_MONTHS,
+    );
 
     // Resolve the community row first so we can 404 early if the id is
     // bogus and also thread `communityName` through the payload.

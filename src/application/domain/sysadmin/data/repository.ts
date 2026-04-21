@@ -76,12 +76,20 @@ export default class SysAdminRepository implements ISysAdminRepository {
         }[]
       >`
         WITH members AS (
+          -- Filter to members whose membership existed at `asOf`.
+          -- Without this, a historic `asOf` would include members who
+          -- joined after that point — inflating stageCounts.total,
+          -- polluting stage classification, and leaking future members
+          -- into the paginated list. `findMonthActivity` already scopes
+          -- `total_members` this way; mirroring it keeps the activity
+          -- rate's denominator consistent with stageCounts.total.
           SELECT
             m."user_id",
             m."created_at"
           FROM "t_memberships" m
           WHERE m."community_id" = ${communityId}
             AND m."status" = 'JOINED'
+            AND m."created_at" <= ${asOf}::timestamp
         ),
         donation_months AS (
           SELECT
@@ -118,38 +126,25 @@ export default class SysAdminRepository implements ISysAdminRepository {
           )::int AS months_in,
           COALESCE(COUNT(DISTINCT dm.jst_month), 0)::int AS donation_out_months,
           COALESCE(SUM(dm.month_points_out), 0)::bigint AS total_points_out,
-          CASE
-            WHEN GREATEST(
-              1,
-              (
-                (
-                  EXTRACT(YEAR FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                  - EXTRACT(YEAR FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                ) * 12
-                + (
-                  EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                  - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                )
-              )
-            ) = 0 THEN 0::double precision
-            ELSE ROUND(
-              COALESCE(COUNT(DISTINCT dm.jst_month), 0)::numeric
-                / GREATEST(
-                    1,
+          -- GREATEST(1, ...) guarantees the denominator is >= 1, so no
+          -- divide-by-zero guard is needed around ROUND.
+          ROUND(
+            COALESCE(COUNT(DISTINCT dm.jst_month), 0)::numeric
+              / GREATEST(
+                  1,
+                  (
                     (
-                      (
-                        EXTRACT(YEAR FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                        - EXTRACT(YEAR FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                      ) * 12
-                      + (
-                        EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                        - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                      )
+                      EXTRACT(YEAR FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                      - EXTRACT(YEAR FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                    ) * 12
+                    + (
+                      EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                      - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
                     )
-                  )::numeric,
-              3
-            )::double precision
-          END AS user_send_rate
+                  )
+                )::numeric,
+            3
+          )::double precision AS user_send_rate
         FROM members m
         LEFT JOIN donation_months dm ON dm.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"

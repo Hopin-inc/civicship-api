@@ -102,6 +102,15 @@ export type AlertFlags = {
 };
 
 export const DEFAULT_WINDOW_MONTHS = 10;
+/**
+ * Upper bound on `windowMonths`. Defensive guard against a caller
+ * (or a tampered persisted query) requesting an unreasonably long
+ * trend — `getCohortRetention` fires 4 SQL calls per month in the
+ * window, so unbounded input would let a single request fan out
+ * arbitrarily. 36 months (3 years) comfortably covers every
+ * analytics need the spec references today.
+ */
+export const MAX_WINDOW_MONTHS = 36;
 export const MAX_LIMIT = 200;
 export const ACTIVE_DROP_THRESHOLD = -0.2; // month-over-month fraction
 export const NO_NEW_MEMBERS_WINDOW_DAYS = 14;
@@ -505,7 +514,12 @@ export default class SysAdminService {
     const nextWeekStart = addDays(latestWeekStart, 7);
     const prevWeekStart = addDays(latestWeekStart, -7);
     const twelveWeeksAgo = addDays(latestWeekStart, -7 * 12);
-    const fourteenDaysAgo = addDays(latestWeekStart, -NO_NEW_MEMBERS_WINDOW_DAYS);
+    // `noNewMembers` window is anchored to `asOf` (not the ISO week
+    // boundary) so the lookback is exactly `NO_NEW_MEMBERS_WINDOW_DAYS`
+    // long and aligns with the schema description ("直近14日間"). The
+    // repository applies a `::date AT TIME ZONE 'Asia/Tokyo'` cast on
+    // both bounds so the final JST window is `[asOf-14d, asOf)`.
+    const fourteenDaysAgo = addDays(asOf, -NO_NEW_MEMBERS_WINDOW_DAYS);
 
     const [retention, newMembers] = await Promise.all([
       this.reportRepository.findRetentionAggregate(ctx, communityId, {
@@ -514,7 +528,7 @@ export default class SysAdminService {
         prevWeekStart,
         twelveWeeksAgo,
       }),
-      this.repository.findNewMemberCount(ctx, communityId, fourteenDaysAgo, nextWeekStart),
+      this.repository.findNewMemberCount(ctx, communityId, fourteenDaysAgo, asOf),
     ]);
 
     return {
