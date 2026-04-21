@@ -45,6 +45,7 @@ export default interface INftInstanceRepository {
       json: Record<string, unknown>;
       nftWalletId: string;
       nftTokenId: string;
+      communityId?: string | null;
     },
     nftTokenId: string,
     tx: Prisma.TransactionClient,

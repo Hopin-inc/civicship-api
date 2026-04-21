@@ -66,6 +66,7 @@ export default class NftTokenRepository implements INftTokenRepository {
       select: {
         id: true,
         address: true,
+        communityId: true,
       },
     });
   }

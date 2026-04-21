@@ -13,7 +13,7 @@ export interface INftTokenRepository {
       json?: Record<string, unknown>;
     },
     tx: Prisma.TransactionClient,
-  ): Promise<{ id: string; address: string }>;
+  ): Promise<{ id: string; address: string; communityId: string | null }>;
 
   findByAddress(
     ctx: IContext,
