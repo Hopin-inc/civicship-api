@@ -1,4 +1,6 @@
 import fetch, { RequestInit, ResponseInit } from "node-fetch";
+import http from "http";
+import https from "https";
 
 export interface FetchOptions extends RequestInit {
   timeout?: number;
@@ -7,6 +9,17 @@ export interface FetchOptions extends RequestInit {
 const DEFAULT_HEADERS = {
   'User-Agent': 'civicship-api/1.0',
   'Accept': 'application/json',
+};
+
+// Cloud Run Jobs egress cannot reliably reach IPv6 endpoints; AAAA records
+// returned by DNS cause TCP SYN to time out (~5–6s ETIMEDOUT). Force IPv4.
+const ipv4HttpAgent = new http.Agent({ family: 4 });
+const ipv4HttpsAgent = new https.Agent({ family: 4 });
+
+const selectAgent = (url: string) => {
+  if (url.startsWith("https:")) return ipv4HttpsAgent;
+  if (url.startsWith("http:")) return ipv4HttpAgent;
+  return undefined;
 };
 
 function isAbortError(error: unknown): boolean {
@@ -36,6 +49,7 @@ export const fetchData = async <T = unknown>(
         ...init?.headers,
       },
       signal: controller.signal,
+      agent: init?.agent ?? selectAgent(url),
     });
 
     clearTimeout(timeoutId);
