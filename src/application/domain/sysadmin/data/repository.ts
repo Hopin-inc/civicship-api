@@ -249,7 +249,18 @@ export default class SysAdminRepository implements ISysAdminRepository {
         month_bounds AS (
           SELECT
             month_start,
-            (month_start + INTERVAL '1 month')::date AS next_month_start
+            (month_start + INTERVAL '1 month')::date AS next_month_start,
+            -- Membership-side upper bound: clamp at (asOf JST day + 1)
+            -- so the most recent month doesn't count members who
+            -- joined after asOf. For past months the LEAST collapses
+            -- to next_month_start, so behaviour is unchanged. Mirrors
+            -- the clamp findMemberStats / findMonthActivity already
+            -- apply, so totalMembersEndOfMonth on the trend lines up
+            -- with stageCounts.total and the summary-card rate.
+            LEAST(
+              (month_start + INTERVAL '1 month')::date,
+              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+            ) AS member_upper
           FROM month_starts
         ),
         senders AS (
@@ -290,6 +301,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
           GROUP BY mb.month_start
         ),
         new_members AS (
+          -- Use member_upper instead of next_month_start so the asOf
+          -- month only counts joiners up to asOf itself.
           SELECT
             mb.month_start,
             COUNT(m."user_id")::int AS new_members
@@ -298,10 +311,13 @@ export default class SysAdminRepository implements ISysAdminRepository {
             ON m."community_id" = ${communityId}
             AND m."status" = 'JOINED'
             AND m."created_at" >= (mb.month_start AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-            AND m."created_at" <  (mb.next_month_start AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND m."created_at" <  (mb.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           GROUP BY mb.month_start
         ),
         total_members AS (
+          -- Same clamp on the cumulative count: asOf month's
+          -- denominator stops at asOf+1 JST day, never the full
+          -- calendar month.
           SELECT
             mb.month_start,
             COUNT(m."user_id")::int AS total_members_end_of_month
@@ -309,7 +325,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           LEFT JOIN "t_memberships" m
             ON m."community_id" = ${communityId}
             AND m."status" = 'JOINED'
-            AND m."created_at" <  (mb.next_month_start AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND m."created_at" <  (mb.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           GROUP BY mb.month_start
         )
         SELECT
