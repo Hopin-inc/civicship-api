@@ -308,6 +308,12 @@ export default class SysAdminService {
     const latestWeekStart = isoWeekStartJst(asOf);
     const firstMonthStart = jstMonthStartOffset(asOf, -(windowMonths - 1));
     const firstWeekStart = isoWeekStartJst(firstMonthStart);
+    // Upper bound for the current (asOf) week's denominator: a week
+    // ending after asOf would let memberships that don't exist yet
+    // leak into `total_members`. Clamp each week's `nextWeekStart`
+    // at asOf+1 (JST day) so mid-week reads count only memberships
+    // that existed at or before asOf.
+    const asOfJstDayPlusOne = addDays(truncateToJstDate(asOf), 1);
 
     const weekStarts: Date[] = [];
     for (let wk = firstWeekStart; wk <= latestWeekStart; wk = addDays(wk, 7)) {
@@ -319,6 +325,8 @@ export default class SysAdminService {
         const nextWeekStart = addDays(weekStart, 7);
         const prevWeekStart = addDays(weekStart, -7);
         const twelveWeeksAgo = addDays(weekStart, -7 * 12);
+        const denominatorUpperBound =
+          nextWeekStart < asOfJstDayPlusOne ? nextWeekStart : asOfJstDayPlusOne;
         const [retention, snapshot] = await Promise.all([
           this.reportService.getRetentionAggregate(ctx, communityId, {
             currentWeekStart: weekStart,
@@ -327,9 +335,15 @@ export default class SysAdminService {
             twelveWeeksAgo,
           }),
           // Denominator for the rate: all JOINED members as of week
-          // end (the same "as-of week end" convention the L1 month
-          // rate uses at the month boundary).
-          this.repository.findMonthActivity(ctx, communityId, weekStart, nextWeekStart),
+          // end (or asOf, whichever is earlier). Without the clamp,
+          // the current-week row would include members who joined
+          // between asOf and the next Monday in its denominator.
+          this.repository.findMonthActivity(
+            ctx,
+            communityId,
+            weekStart,
+            denominatorUpperBound,
+          ),
         ]);
         const communityActivityRate =
           snapshot.totalMembers === 0
@@ -363,7 +377,6 @@ export default class SysAdminService {
     windowMonths: number,
   ): Promise<MonthlyCohortPoint[]> {
     const latestMonthStart = jstMonthStart(asOf);
-    const asOfMonthEnd = jstNextMonthStart(asOf);
 
     const cohortMonths: Date[] = [];
     for (let i = windowMonths - 1; i >= 0; i--) {
@@ -384,7 +397,14 @@ export default class SysAdminService {
           activeStart: Date,
           activeEnd: Date,
         ): Promise<number | null> => {
-          if (activeEnd > asOfMonthEnd) return null;
+          // Skip any window whose end hasn't passed the START of the
+          // asOf month. The asOf month itself is still in progress —
+          // showing a cohort's retention against a partially-observed
+          // month makes the number look artificially low (members
+          // still have the rest of the month to donate). Only release
+          // the value once `activeEnd` sits entirely in completed
+          // history (i.e. at or before the current month's start).
+          if (activeEnd > latestMonthStart) return null;
           const row = await this.reportService.getCohortRetention(
             ctx,
             communityId,
@@ -442,15 +462,33 @@ export default class SysAdminService {
     const monthStart = jstMonthStart(asOf);
     const nextMonthStart = jstNextMonthStart(asOf);
     const prevMonthStart = jstMonthStartOffset(monthStart, -1);
+    // Cap the current-month upper bound at asOf+1 (JST day) so
+    // mid-month / historic-asOf snapshots don't count memberships
+    // created after asOf in the denominator. `findMonthActivity`
+    // filters total_members with `created_at < upper`; passing the
+    // raw next-month start would pull in future joiners. The prev
+    // month call doesn't need clamping because its upper bound
+    // (monthStart) is strictly in the past.
+    const asOfJstDayPlusOne = addDays(truncateToJstDate(asOf), 1);
+    const currNextBound =
+      nextMonthStart < asOfJstDayPlusOne ? nextMonthStart : asOfJstDayPlusOne;
 
     const [curr, prev] = await Promise.all([
-      this.repository.findMonthActivity(ctx, communityId, monthStart, nextMonthStart),
+      this.repository.findMonthActivity(ctx, communityId, monthStart, currNextBound),
       this.repository.findMonthActivity(ctx, communityId, prevMonthStart, monthStart),
     ]);
 
     const currRate = curr.totalMembers === 0 ? 0 : curr.senderCount / curr.totalMembers;
     const prevRate = prev.totalMembers === 0 ? 0 : prev.senderCount / prev.totalMembers;
-    const growth = prev.totalMembers === 0 ? null : percentChange(currRate, prevRate);
+    // Explicit `prevRate === 0` guard: `percentChange` already returns
+    // null when the denominator is 0, but making both conditions
+    // visible at the call site keeps the Infinity risk obvious to the
+    // next reader and doesn't rely on implementation details of the
+    // shared util.
+    const growth =
+      prev.totalMembers === 0 || prevRate === 0
+        ? null
+        : percentChange(currRate, prevRate);
 
     return {
       current: {
@@ -536,7 +574,16 @@ export default class SysAdminService {
     // `truncateToJstDate` collapses to the JST calendar day, encoded
     // as UTC-midnight, which is what the repo pattern expects.
     const asOfJstDay = truncateToJstDate(asOf);
+    // Window is half-open `[from, to)` in the repo SQL. Going back
+    // `NO_NEW_MEMBERS_WINDOW_DAYS` days from `asOfJstDay` and letting
+    // the upper bound be `asOfJstDay + 1 day` means:
+    //   - the JST calendar day containing `asOf` IS included, so a
+    //     member who joined earlier today counts as "new"; and
+    //   - the span covers the last 14 JST calendar days ending at the
+    //     current day (inclusive), matching how operators read
+    //     "直近14日間" on the dashboard.
     const fourteenDaysAgo = addDays(asOfJstDay, -NO_NEW_MEMBERS_WINDOW_DAYS);
+    const upperExclusive = addDays(asOfJstDay, 1);
 
     const [retention, newMembers] = await Promise.all([
       this.reportService.getRetentionAggregate(ctx, communityId, {
@@ -545,7 +592,7 @@ export default class SysAdminService {
         prevWeekStart,
         twelveWeeksAgo,
       }),
-      this.repository.findNewMemberCount(ctx, communityId, fourteenDaysAgo, asOfJstDay),
+      this.repository.findNewMemberCount(ctx, communityId, fourteenDaysAgo, upperExclusive),
     ]);
 
     return {
