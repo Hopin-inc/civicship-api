@@ -17,7 +17,7 @@ import SysAdminService, {
 } from "@/application/domain/sysadmin/service";
 import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
 import { jstMonthStart, jstNextMonthStart } from "@/application/domain/sysadmin/util";
-import { addDays, truncateToJstDate } from "@/application/domain/report/util";
+import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 
 @injectable()
 export default class SysAdminUseCase {
@@ -41,17 +41,12 @@ export default class SysAdminUseCase {
     const thresholds = resolveThresholds(input?.segmentThresholds);
 
     const monthStart = jstMonthStart(asOf);
-    const nextMonthStart = jstNextMonthStart(asOf);
     // Clamp the platform-totals upper bound at asOf+1 JST day so a
     // mid-month or historic asOf doesn't count memberships that
     // hadn't been created yet. findPlatformTotals applies
-    // `created_at < upper` on t_memberships. The donation-points MV
-    // is bucketed by date and has no rows past asOf anyway, but
-    // clamping keeps member-count semantics aligned with
-    // findMemberStats / getMonthActivityWithPrev.
-    const asOfJstDayPlusOne = addDays(truncateToJstDate(asOf), 1);
-    const platformUpperBound =
-      nextMonthStart < asOfJstDayPlusOne ? nextMonthStart : asOfJstDayPlusOne;
+    // `created_at < upper` on t_memberships; asOfBounds.clampFuture
+    // collapses back to next_month_start for past months.
+    const platformUpperBound = asOfBounds(asOf).clampFuture(jstNextMonthStart(asOf));
 
     const [platform, communities] = await Promise.all([
       this.service.getPlatformTotals(ctx, monthStart, platformUpperBound),

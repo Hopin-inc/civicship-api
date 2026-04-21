@@ -6,17 +6,13 @@ import {
   SysAdminMemberStatsRow,
   SysAdminMonthlyActivityRow,
 } from "@/application/domain/sysadmin/data/type";
-import {
-  addDays,
-  isoWeekStartJst,
-  percentChange,
-  truncateToJstDate,
-} from "@/application/domain/report/util";
+import { addDays, isoWeekStartJst, percentChange } from "@/application/domain/report/util";
 import {
   jstMonthStart,
   jstMonthStartOffset,
   jstNextMonthStart,
 } from "@/application/domain/sysadmin/util";
+import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 
 /**
  * Stage-count thresholds come from the client. tier1 >= tier2 >= 0 is
@@ -372,12 +368,10 @@ export default class SysAdminService {
     const latestWeekStart = isoWeekStartJst(asOf);
     const firstMonthStart = jstMonthStartOffset(asOf, -(windowMonths - 1));
     const firstWeekStart = isoWeekStartJst(firstMonthStart);
-    // Upper bound for the current (asOf) week's denominator: a week
-    // ending after asOf would let memberships that don't exist yet
-    // leak into `total_members`. Clamp each week's `nextWeekStart`
-    // at asOf+1 (JST day) so mid-week reads count only memberships
-    // that existed at or before asOf.
-    const asOfJstDayPlusOne = addDays(truncateToJstDate(asOf), 1);
+    // Clamp each week's `nextWeekStart` at asOf+1 JST day so
+    // mid-week reads don't leak memberships that joined after asOf
+    // into the activity-rate denominator.
+    const bounds = asOfBounds(asOf);
 
     const weekStarts: Date[] = [];
     for (let wk = firstWeekStart; wk <= latestWeekStart; wk = addDays(wk, 7)) {
@@ -389,8 +383,7 @@ export default class SysAdminService {
         const nextWeekStart = addDays(weekStart, 7);
         const prevWeekStart = addDays(weekStart, -7);
         const twelveWeeksAgo = addDays(weekStart, -7 * 12);
-        const denominatorUpperBound =
-          nextWeekStart < asOfJstDayPlusOne ? nextWeekStart : asOfJstDayPlusOne;
+        const denominatorUpperBound = bounds.clampFuture(nextWeekStart);
         const [retention, snapshot] = await Promise.all([
           this.reportService.getRetentionAggregate(ctx, communityId, {
             currentWeekStart: weekStart,
@@ -524,18 +517,14 @@ export default class SysAdminService {
     growthRateActivity: number | null;
   }> {
     const monthStart = jstMonthStart(asOf);
-    const nextMonthStart = jstNextMonthStart(asOf);
     const prevMonthStart = jstMonthStartOffset(monthStart, -1);
-    // Cap the current-month upper bound at asOf+1 (JST day) so
+    // Cap the current-month upper bound at asOf+1 JST day so
     // mid-month / historic-asOf snapshots don't count memberships
     // created after asOf in the denominator. `findActivitySnapshot`
-    // filters total_members with `created_at < upper`; passing the
-    // raw next-month start would pull in future joiners. The prev
+    // filters total_members with `created_at < upper`. The prev
     // month call doesn't need clamping because its upper bound
     // (monthStart) is strictly in the past.
-    const asOfJstDayPlusOne = addDays(truncateToJstDate(asOf), 1);
-    const currNextBound =
-      nextMonthStart < asOfJstDayPlusOne ? nextMonthStart : asOfJstDayPlusOne;
+    const currNextBound = asOfBounds(asOf).clampFuture(jstNextMonthStart(asOf));
 
     const [curr, prev] = await Promise.all([
       this.repository.findActivitySnapshot(ctx, communityId, monthStart, currNextBound),
@@ -637,16 +626,18 @@ export default class SysAdminService {
     // the 15:00–23:59 UTC / 00:00–08:59 JST next-day range.
     // `truncateToJstDate` collapses to the JST calendar day, encoded
     // as UTC-midnight, which is what the repo pattern expects.
-    const asOfJstDay = truncateToJstDate(asOf);
     // Half-open `[from, to)` window in the repo SQL:
     //   from = asOfJstDay - (NO_NEW_MEMBERS_WINDOW_DAYS - 1)
-    //   to   = asOfJstDay + 1 day
+    //   to   = asOfJstDay + 1 day  (= bounds.asOfJstDayPlusOne)
     // Spans exactly NO_NEW_MEMBERS_WINDOW_DAYS JST calendar days
     // ending at the current day (inclusive), matching the schema
-    // description "直近14日間". A lower bound of `-14` (as in an
-    // earlier revision) would accidentally produce a 15-day window.
-    const fourteenDaysAgo = addDays(asOfJstDay, -(NO_NEW_MEMBERS_WINDOW_DAYS - 1));
-    const upperExclusive = addDays(asOfJstDay, 1);
+    // description "直近14日間".
+    const bounds = asOfBounds(asOf);
+    const fourteenDaysAgo = addDays(
+      bounds.asOfJstDayPlusOne,
+      -NO_NEW_MEMBERS_WINDOW_DAYS,
+    );
+    const upperExclusive = bounds.asOfJstDayPlusOne;
 
     const [retention, newMembers] = await Promise.all([
       this.reportService.getRetentionAggregate(ctx, communityId, {
