@@ -7,7 +7,6 @@ import {
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
-  SysAdminWeeklyRetentionRow,
 } from "@/application/domain/sysadmin/data/type";
 
 /**
@@ -76,21 +75,4 @@ export interface ISysAdminRepository {
     jstMonthStart: Date,
     jstNextMonthStart: Date,
   ): Promise<SysAdminPlatformTotalsRow>;
-
-  /**
-   * Bulk weekly retention series for the L2 detail trend. Each entry
-   * in `weekStarts` must be a JST Monday encoded as a UTC-midnight
-   * Date (same convention as `isoWeekStartJst` output). Returns one
-   * row per input week in ascending order.
-   *
-   * Replaces the per-week `findRetentionAggregate` loop: a single
-   * round-trip pre-aggregates user-week flags over the whole series
-   * (including the 12-week returning-user lookback) and derives every
-   * target-week counter from the shared CTE.
-   */
-  findWeeklyRetentionSeries(
-    ctx: IContext,
-    communityId: string,
-    weekStarts: Date[],
-  ): Promise<SysAdminWeeklyRetentionRow[]>;
 }

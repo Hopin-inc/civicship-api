@@ -263,11 +263,22 @@ export default class SysAdminService {
   // ==========================================================================
 
   /**
-   * Week-by-week retention series across `windowMonths`. One bulk SQL
-   * round-trip via `findWeeklyRetentionSeries` — all per-week flags
-   * and the 12-week ever_before lookback are shared across weeks in a
-   * single pre-aggregation. Replaces the prior per-week loop that fed
-   * ~86 queries through the connection pool on every L2 page load.
+   * Week-by-week retention series across `windowMonths`.
+   *
+   * Fans out one `findRetentionAggregate` + one `findMonthActivity`
+   * per target week, fired in parallel via `Promise.all`. At the
+   * default `windowMonths=10` that's ~43 weeks × 2 = ~86 small SQL
+   * statements.
+   *
+   * This was briefly rewritten as a single bulk CTE query but the
+   * benchmark (`scripts/sysadmin_bench.ts`) showed the bulk form was
+   * 5× slower at 100 members, 40× slower at 500, and 364× slower at
+   * 2000. The `ever_before` lookup combined with the
+   * `per_target` FULL OUTER JOIN scaled super-linearly in member
+   * count, while the per-week loop's narrow single-week scans stay
+   * cheap thanks to the `mv_user_transaction_daily`
+   * `(community_id, date)` index. Postgres handles the parallel
+   * queries efficiently over a single connection-pool checkout.
    */
   async getRetentionTrend(
     ctx: IContext,
@@ -284,21 +295,39 @@ export default class SysAdminService {
       weekStarts.push(wk);
     }
 
-    const rows = await this.repository.findWeeklyRetentionSeries(
-      ctx,
-      communityId,
-      weekStarts,
+    const points = await Promise.all(
+      weekStarts.map(async (weekStart) => {
+        const nextWeekStart = addDays(weekStart, 7);
+        const prevWeekStart = addDays(weekStart, -7);
+        const twelveWeeksAgo = addDays(weekStart, -7 * 12);
+        const [retention, snapshot] = await Promise.all([
+          this.reportRepository.findRetentionAggregate(ctx, communityId, {
+            currentWeekStart: weekStart,
+            nextWeekStart,
+            prevWeekStart,
+            twelveWeeksAgo,
+          }),
+          // Denominator for the rate: all JOINED members as of week
+          // end (the same "as-of week end" convention the L1 month
+          // rate uses at the month boundary).
+          this.repository.findMonthActivity(ctx, communityId, weekStart, nextWeekStart),
+        ]);
+        const communityActivityRate =
+          snapshot.totalMembers === 0
+            ? null
+            : retention.currentSendersCount / snapshot.totalMembers;
+        return {
+          weekStart,
+          retainedSenders: retention.retainedSenders,
+          churnedSenders: retention.churnedSenders,
+          returnedSenders: retention.returnedSenders,
+          newMembers: retention.newMembers,
+          communityActivityRate,
+        };
+      }),
     );
 
-    return rows.map((r) => ({
-      weekStart: r.weekStart,
-      retainedSenders: r.retainedSenders,
-      churnedSenders: r.churnedSenders,
-      returnedSenders: r.returnedSenders,
-      newMembers: r.newMembers,
-      communityActivityRate:
-        r.totalMembers === 0 ? null : r.currentSendersCount / r.totalMembers,
-    }));
+    return points;
   }
 
   /**
