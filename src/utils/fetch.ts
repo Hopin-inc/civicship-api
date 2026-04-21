@@ -13,12 +13,17 @@ const DEFAULT_HEADERS = {
 
 // Cloud Run Jobs egress cannot reliably reach IPv6 endpoints; AAAA records
 // returned by DNS cause TCP SYN to time out (~5–6s ETIMEDOUT). Force IPv4.
-const ipv4HttpAgent = new http.Agent({ family: 4 });
-const ipv4HttpsAgent = new https.Agent({ family: 4 });
+const ipv4HttpAgent = new http.Agent({ family: 4, keepAlive: true });
+const ipv4HttpsAgent = new https.Agent({ family: 4, keepAlive: true });
 
 const selectAgent = (url: string) => {
-  if (url.startsWith("https:")) return ipv4HttpsAgent;
-  if (url.startsWith("http:")) return ipv4HttpAgent;
+  try {
+    const { protocol } = new URL(url);
+    if (protocol === "https:") return ipv4HttpsAgent;
+    if (protocol === "http:") return ipv4HttpAgent;
+  } catch {
+    // Malformed URL — let node-fetch surface its own error
+  }
   return undefined;
 };
 
