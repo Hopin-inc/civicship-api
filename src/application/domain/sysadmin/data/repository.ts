@@ -76,13 +76,13 @@ export default class SysAdminRepository implements ISysAdminRepository {
         }[]
       >`
         WITH members AS (
-          -- Filter to members whose membership existed at `asOf`.
-          -- Without this, a historic `asOf` would include members who
-          -- joined after that point — inflating stageCounts.total,
+          -- Filter to members whose membership existed at asOf.
+          -- Without this, a historic asOf would include members who
+          -- joined after that point, inflating stageCounts.total,
           -- polluting stage classification, and leaking future members
-          -- into the paginated list. `findMonthActivity` already scopes
-          -- `total_members` this way; mirroring it keeps the activity
-          -- rate's denominator consistent with stageCounts.total.
+          -- into the paginated list. findMonthActivity already scopes
+          -- total_members this way; mirroring it keeps the activity
+          -- rate denominator consistent with stageCounts.total.
           SELECT
             m."user_id",
             m."created_at"
