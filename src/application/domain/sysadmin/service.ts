@@ -102,6 +102,20 @@ export type AlertFlags = {
   noNewMembers: boolean;
 };
 
+/**
+ * Return shape of `getMonthActivityWithPrev`. Flat, not nested, because
+ * every caller only reads the current-month fields plus the derived
+ * `growthRateActivity`; keeping a `previous` sub-tree around was dead
+ * payload that tempted readers to assume the previous-month snapshot
+ * was part of the API contract.
+ */
+export type MonthActivityWithPrev = {
+  currentRate: number;
+  currentSenderCount: number;
+  currentTotalMembers: number;
+  growthRateActivity: number | null;
+};
+
 export const DEFAULT_WINDOW_MONTHS = 10;
 /**
  * Upper bound on `windowMonths`. Defensive guard against a caller
@@ -511,11 +525,7 @@ export default class SysAdminService {
     ctx: IContext,
     communityId: string,
     asOf: Date,
-  ): Promise<{
-    current: { rate: number; senderCount: number; totalMembers: number };
-    previous: { rate: number; senderCount: number; totalMembers: number } | null;
-    growthRateActivity: number | null;
-  }> {
+  ): Promise<MonthActivityWithPrev> {
     const monthStart = jstMonthStart(asOf);
     const prevMonthStart = jstMonthStartOffset(monthStart, -1);
     // Cap the current-month upper bound at asOf+1 JST day so
@@ -544,19 +554,9 @@ export default class SysAdminService {
         : percentChange(currRate, prevRate);
 
     return {
-      current: {
-        rate: currRate,
-        senderCount: curr.senderCount,
-        totalMembers: curr.totalMembers,
-      },
-      previous:
-        prev.totalMembers === 0
-          ? null
-          : {
-              rate: prevRate,
-              senderCount: prev.senderCount,
-              totalMembers: prev.totalMembers,
-            },
+      currentRate: currRate,
+      currentSenderCount: curr.senderCount,
+      currentTotalMembers: curr.totalMembers,
       // percentChange returns a percentage (×100). Convert back to a
       // fraction so downstream comparisons (`<= -20%` → `<= -0.2`) line
       // up with the requirement-doc spelling and the schema docstring.
