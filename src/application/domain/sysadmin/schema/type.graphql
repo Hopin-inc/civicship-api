@@ -85,7 +85,15 @@ input SysAdminUserListFilter {
 Sort direction for the member list.
 """
 enum SysAdminSortOrder {
+  """
+  Ascending — smallest value first (e.g. SEND_RATE ASC puts latent
+  and occasional members before habitual).
+  """
   ASC
+  """
+  Descending — largest value first (e.g. SEND_RATE DESC puts habitual
+  members at the top). This is the default.
+  """
   DESC
 }
 
@@ -111,8 +119,20 @@ enum SysAdminUserSortField {
   TOTAL_POINTS_OUT
 }
 
+"""
+Sort configuration for the L2 member list. Both fields are optional;
+omitting either falls back to the default (SEND_RATE DESC) so the
+"top habitual members first" view renders out of the box.
+"""
 input SysAdminUserListSort {
+  """
+  Column to sort on. See SysAdminUserSortField for what each value
+  addresses. Default: SEND_RATE.
+  """
   field: SysAdminUserSortField = SEND_RATE
+  """
+  Sort direction. Default: DESC.
+  """
   order: SysAdminSortOrder = DESC
 }
 

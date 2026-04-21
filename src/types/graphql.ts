@@ -3357,7 +3357,15 @@ export type GqlSysAdminSegmentThresholdsInput = {
 
 /** Sort direction for the member list. */
 export const GqlSysAdminSortOrder = {
+  /**
+   * Ascending — smallest value first (e.g. SEND_RATE ASC puts latent
+   * and occasional members before habitual).
+   */
   Asc: 'ASC',
+  /**
+   * Descending — largest value first (e.g. SEND_RATE DESC puts habitual
+   * members at the top). This is the default.
+   */
   Desc: 'DESC'
 } as const;
 
@@ -3417,8 +3425,18 @@ export type GqlSysAdminUserListFilter = {
   minSendRate?: InputMaybe<Scalars['Float']['input']>;
 };
 
+/**
+ * Sort configuration for the L2 member list. Both fields are optional;
+ * omitting either falls back to the default (SEND_RATE DESC) so the
+ * "top habitual members first" view renders out of the box.
+ */
 export type GqlSysAdminUserListSort = {
+  /**
+   * Column to sort on. See SysAdminUserSortField for what each value
+   * addresses. Default: SEND_RATE.
+   */
   field?: InputMaybe<GqlSysAdminUserSortField>;
+  /** Sort direction. Default: DESC. */
   order?: InputMaybe<GqlSysAdminSortOrder>;
 };
 
