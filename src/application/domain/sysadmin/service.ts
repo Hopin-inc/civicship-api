@@ -574,15 +574,14 @@ export default class SysAdminService {
     // `truncateToJstDate` collapses to the JST calendar day, encoded
     // as UTC-midnight, which is what the repo pattern expects.
     const asOfJstDay = truncateToJstDate(asOf);
-    // Window is half-open `[from, to)` in the repo SQL. Going back
-    // `NO_NEW_MEMBERS_WINDOW_DAYS` days from `asOfJstDay` and letting
-    // the upper bound be `asOfJstDay + 1 day` means:
-    //   - the JST calendar day containing `asOf` IS included, so a
-    //     member who joined earlier today counts as "new"; and
-    //   - the span covers the last 14 JST calendar days ending at the
-    //     current day (inclusive), matching how operators read
-    //     "直近14日間" on the dashboard.
-    const fourteenDaysAgo = addDays(asOfJstDay, -NO_NEW_MEMBERS_WINDOW_DAYS);
+    // Half-open `[from, to)` window in the repo SQL:
+    //   from = asOfJstDay - (NO_NEW_MEMBERS_WINDOW_DAYS - 1)
+    //   to   = asOfJstDay + 1 day
+    // Spans exactly NO_NEW_MEMBERS_WINDOW_DAYS JST calendar days
+    // ending at the current day (inclusive), matching the schema
+    // description "直近14日間". A lower bound of `-14` (as in an
+    // earlier revision) would accidentally produce a 15-day window.
+    const fourteenDaysAgo = addDays(asOfJstDay, -(NO_NEW_MEMBERS_WINDOW_DAYS - 1));
     const upperExclusive = addDays(asOfJstDay, 1);
 
     const [retention, newMembers] = await Promise.all([

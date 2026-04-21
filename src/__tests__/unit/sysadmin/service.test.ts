@@ -32,13 +32,13 @@ function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStats
  */
 class MockSysAdminRepository {
   findAllCommunities = jest.fn();
+  findCommunityById = jest.fn();
   findMemberStats = jest.fn();
   findMonthlyActivity = jest.fn();
   findMonthActivity = jest.fn();
   findNewMemberCount = jest.fn();
   findAllTimeTotals = jest.fn();
   findPlatformTotals = jest.fn();
-  findWeeklyRetentionSeries = jest.fn();
 }
 
 /**

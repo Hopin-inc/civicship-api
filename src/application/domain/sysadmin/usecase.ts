@@ -120,9 +120,10 @@ export default class SysAdminUseCase {
     );
 
     // Resolve the community row first so we can 404 early if the id is
-    // bogus and also thread `communityName` through the payload.
-    const communities = await this.repository.findAllCommunities(ctx);
-    const community = communities.find((c) => c.communityId === input.communityId);
+    // bogus and also thread `communityName` through the payload. Using
+    // the indexed-by-id lookup rather than scanning every community
+    // keeps the query cost flat as the platform grows.
+    const community = await this.repository.findCommunityById(ctx, input.communityId);
     if (!community) {
       throw new NotFoundError("Community", { id: input.communityId });
     }

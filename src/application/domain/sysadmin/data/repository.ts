@@ -39,6 +39,23 @@ export default class SysAdminRepository implements ISysAdminRepository {
     });
   }
 
+  async findCommunityById(
+    ctx: IContext,
+    communityId: string,
+  ): Promise<SysAdminCommunityRow | null> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<{ id: string; name: string }[]>`
+        SELECT c."id", c."name"
+        FROM "t_communities" c
+        WHERE c."id" = ${communityId}
+        LIMIT 1
+      `;
+      if (rows.length === 0) return null;
+      const r = rows[0];
+      return { communityId: r.id, communityName: r.name };
+    });
+  }
+
   /**
    * One row per JOINED member with tenure + donation-out counters at
    * `asOf`. `months_in` is the JST-calendar-month difference (floor,
@@ -89,7 +106,10 @@ export default class SysAdminRepository implements ISysAdminRepository {
           FROM "t_memberships" m
           WHERE m."community_id" = ${communityId}
             AND m."status" = 'JOINED'
-            AND m."created_at" <= ${asOf}::timestamp
+            AND m."created_at" < (
+              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+            )
         ),
         donation_months AS (
           SELECT
@@ -105,7 +125,15 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND fw."community_id" = ${communityId}
           INNER JOIN members m ON m."user_id" = fw."user_id"
           WHERE t."reason" = 'DONATION'
-            AND t."created_at" <= ${asOf}::timestamp
+            AND t."created_at" < (
+              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+            )
+            -- JST-day-unit upper bound so donation activity lines up
+            -- with the member-tenure bound in the members CTE above.
+            -- findMonthActivity / findPlatformTotals also use this
+            -- unit, so stageCounts.total and the activity-rate
+            -- denominator agree on what "as of asOf" includes.
           GROUP BY fw."user_id", jst_month
         )
         SELECT

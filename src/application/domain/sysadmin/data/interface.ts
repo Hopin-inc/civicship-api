@@ -21,6 +21,16 @@ export interface ISysAdminRepository {
   findAllCommunities(ctx: IContext): Promise<SysAdminCommunityRow[]>;
 
   /**
+   * Resolve one community by id, returning the same projection shape
+   * as `findAllCommunities`. Returns null when the id is unknown so
+   * the usecase can surface a NotFoundError without a fallback scan.
+   */
+  findCommunityById(
+    ctx: IContext,
+    communityId: string,
+  ): Promise<SysAdminCommunityRow | null>;
+
+  /**
    * Per-member LTV-variable counters at `asOf` for one community.
    * Scoped to `status='JOINED'`. A member with zero DONATION-outs is
    * still present (donationOutMonths=0, userSendRate=0, latent stage).
