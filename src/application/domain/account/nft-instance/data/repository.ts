@@ -129,7 +129,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         description: data.description,
         imageUrl: data.imageUrl,
         json: data.json,
-        communityId: data.communityId ?? null,
+        communityId: data.communityId,
       },
       create: {
         instanceId: data.instanceId,
@@ -139,7 +139,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         json: data.json,
         nftWalletId: data.nftWalletId,
         nftTokenId: data.nftTokenId,
-        communityId: data.communityId ?? null,
+        communityId: data.communityId,
       },
       select: {
         id: true,
