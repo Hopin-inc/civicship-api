@@ -103,3 +103,50 @@ export function percentChange(current: number, previous: number): number | null 
   if (previous === 0) return null;
   return ((current - previous) / previous) * 100;
 }
+
+// ============================================================================
+// JST month-level helpers
+//
+// Same UTC-encoded-JST convention as `truncateToJstDate`: a "JST month
+// start" is a Date whose UTC components encode the first day of the JST
+// calendar month at UTC 00:00. Round-trips through Prisma `@db.Date`
+// filters and the `::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'`
+// SQL pattern the report / sysadmin repositories use.
+//
+// Lived under sysadmin/util.ts originally; moved here so every analytics
+// domain imports from the same place as the day/week helpers above.
+// ============================================================================
+
+/**
+ * Return the first day of the JST calendar month that `d` falls in,
+ * encoded as a UTC-midnight Date.
+ */
+export function jstMonthStart(d: Date): Date {
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return new Date(Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), 1));
+}
+
+/**
+ * Return the first day of the JST month `offset` months away from the
+ * month containing `d` (negative = earlier, positive = later).
+ */
+export function jstMonthStartOffset(d: Date, offset: number): Date {
+  const start = jstMonthStart(d);
+  return new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + offset, 1));
+}
+
+/** Same as `jstMonthStartOffset(d, 1)` — start of the month after `d`. */
+export function jstNextMonthStart(d: Date): Date {
+  return jstMonthStartOffset(d, 1);
+}
+
+/**
+ * Format a JST-month-start Date (or any Date) as `YYYY-MM`. Uses the
+ * date's UTC components because, by convention, JST month starts are
+ * stored with their JST year/month encoded at UTC 00:00.
+ */
+export function formatJstMonth(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}

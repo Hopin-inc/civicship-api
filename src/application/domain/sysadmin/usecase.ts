@@ -16,7 +16,7 @@ import SysAdminService, {
   SegmentThresholds,
 } from "@/application/domain/sysadmin/service";
 import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
-import { jstMonthStart, jstNextMonthStart } from "@/application/domain/sysadmin/util";
+import { jstMonthStart, jstNextMonthStart } from "@/application/domain/report/util";
 import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 
 @injectable()

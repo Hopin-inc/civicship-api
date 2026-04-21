@@ -3,7 +3,7 @@ import {
   jstMonthStart,
   jstMonthStartOffset,
   jstNextMonthStart,
-} from "@/application/domain/sysadmin/util";
+} from "@/application/domain/report/util";
 
 /**
  * JST month helpers live on top of the day-level helpers in

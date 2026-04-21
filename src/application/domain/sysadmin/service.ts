@@ -6,12 +6,14 @@ import {
   SysAdminMemberStatsRow,
   SysAdminMonthlyActivityRow,
 } from "@/application/domain/sysadmin/data/type";
-import { addDays, isoWeekStartJst, percentChange } from "@/application/domain/report/util";
 import {
+  addDays,
+  isoWeekStartJst,
   jstMonthStart,
   jstMonthStartOffset,
   jstNextMonthStart,
-} from "@/application/domain/sysadmin/util";
+  percentChange,
+} from "@/application/domain/report/util";
 import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 
 /**
