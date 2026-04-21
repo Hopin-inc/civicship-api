@@ -6,7 +6,12 @@ import {
   SysAdminMemberStatsRow,
   SysAdminMonthlyActivityRow,
 } from "@/application/domain/sysadmin/data/type";
-import { addDays, isoWeekStartJst, percentChange } from "@/application/domain/report/util";
+import {
+  addDays,
+  isoWeekStartJst,
+  percentChange,
+  truncateToJstDate,
+} from "@/application/domain/report/util";
 import {
   jstMonthStart,
   jstMonthStartOffset,
@@ -516,10 +521,17 @@ export default class SysAdminService {
     const twelveWeeksAgo = addDays(latestWeekStart, -7 * 12);
     // `noNewMembers` window is anchored to `asOf` (not the ISO week
     // boundary) so the lookback is exactly `NO_NEW_MEMBERS_WINDOW_DAYS`
-    // long and aligns with the schema description ("直近14日間"). The
-    // repository applies a `::date AT TIME ZONE 'Asia/Tokyo'` cast on
-    // both bounds so the final JST window is `[asOf-14d, asOf)`.
-    const fourteenDaysAgo = addDays(asOf, -NO_NEW_MEMBERS_WINDOW_DAYS);
+    // long and aligns with the schema description ("直近14日間").
+    //
+    // `findNewMemberCount` expects JST-encoded dates (its SQL applies
+    // `::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'` to the
+    // bounds). Raw timestamps would get their UTC date truncated,
+    // which shifts the window by up to one day when `asOf` falls in
+    // the 15:00–23:59 UTC / 00:00–08:59 JST next-day range.
+    // `truncateToJstDate` collapses to the JST calendar day, encoded
+    // as UTC-midnight, which is what the repo pattern expects.
+    const asOfJstDay = truncateToJstDate(asOf);
+    const fourteenDaysAgo = addDays(asOfJstDay, -NO_NEW_MEMBERS_WINDOW_DAYS);
 
     const [retention, newMembers] = await Promise.all([
       this.reportRepository.findRetentionAggregate(ctx, communityId, {
@@ -528,7 +540,7 @@ export default class SysAdminService {
         prevWeekStart,
         twelveWeeksAgo,
       }),
-      this.repository.findNewMemberCount(ctx, communityId, fourteenDaysAgo, asOf),
+      this.repository.findNewMemberCount(ctx, communityId, fourteenDaysAgo, asOfJstDay),
     ]);
 
     return {

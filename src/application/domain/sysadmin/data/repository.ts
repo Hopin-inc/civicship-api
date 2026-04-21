@@ -111,6 +111,16 @@ export default class SysAdminRepository implements ISysAdminRepository {
         SELECT
           m."user_id",
           u."name" AS "name",
+          -- months_in counts the DISTINCT JST calendar months the
+          -- member has been present in (join-month through asOf-month
+          -- inclusive), NOT the raw month-number difference. A member
+          -- who joined March 15 and is measured on April 10 has been
+          -- present in 2 distinct months (March and April), so
+          -- months_in = 2. Matches the frame used by
+          -- donation_out_months (COUNT DISTINCT jst_month) so
+          -- user_send_rate stays bounded in [0, 1]. The +1 is what
+          -- turns "month diff" into "month span"; GREATEST(1, ...)
+          -- stays as a defense against any future clock-skew surprise.
           GREATEST(
             1,
             (
@@ -122,12 +132,14 @@ export default class SysAdminRepository implements ISysAdminRepository {
                 EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
                 - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
               )
+              + 1
             )
           )::int AS months_in,
           COALESCE(COUNT(DISTINCT dm.jst_month), 0)::int AS donation_out_months,
           COALESCE(SUM(dm.month_points_out), 0)::bigint AS total_points_out,
-          -- GREATEST(1, ...) guarantees the denominator is >= 1, so no
-          -- divide-by-zero guard is needed around ROUND.
+          -- Denominator matches the months_in expression above so
+          -- user_send_rate is guaranteed in [0, 1]. GREATEST(1, ...)
+          -- keeps the divisor >= 1; no explicit zero-branch needed.
           ROUND(
             COALESCE(COUNT(DISTINCT dm.jst_month), 0)::numeric
               / GREATEST(
@@ -141,6 +153,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
                       EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
                       - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
                     )
+                    + 1
                   )
                 )::numeric,
             3
