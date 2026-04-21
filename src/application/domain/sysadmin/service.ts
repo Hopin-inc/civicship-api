@@ -1,7 +1,7 @@
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
-import { IReportRepository } from "@/application/domain/report/data/interface";
+import ReportService from "@/application/domain/report/service";
 import {
   SysAdminMemberStatsRow,
   SysAdminMonthlyActivityRow,
@@ -124,7 +124,12 @@ export const NO_NEW_MEMBERS_WINDOW_DAYS = 14;
 export default class SysAdminService {
   constructor(
     @inject("SysAdminRepository") private readonly repository: ISysAdminRepository,
-    @inject("ReportRepository") private readonly reportRepository: IReportRepository,
+    // Cross-domain reads route through ReportService (the report
+    // domain's service-layer entry point), not the report repository.
+    // CLAUDE.md restricts services to "Call other domain services
+    // (read operations only)" — going straight to the repository
+    // would couple sysadmin to the report domain's data layer.
+    @inject("ReportService") private readonly reportService: ReportService,
   ) {}
 
   // ==========================================================================
@@ -315,7 +320,7 @@ export default class SysAdminService {
         const prevWeekStart = addDays(weekStart, -7);
         const twelveWeeksAgo = addDays(weekStart, -7 * 12);
         const [retention, snapshot] = await Promise.all([
-          this.reportRepository.findRetentionAggregate(ctx, communityId, {
+          this.reportService.getRetentionAggregate(ctx, communityId, {
             currentWeekStart: weekStart,
             nextWeekStart,
             prevWeekStart,
@@ -380,7 +385,7 @@ export default class SysAdminService {
           activeEnd: Date,
         ): Promise<number | null> => {
           if (activeEnd > asOfMonthEnd) return null;
-          const row = await this.reportRepository.findCohortRetention(
+          const row = await this.reportService.getCohortRetention(
             ctx,
             communityId,
             { cohortStart, cohortEnd },
@@ -397,7 +402,7 @@ export default class SysAdminService {
           // Re-use findCohortRetention with an active-window that
           // overlaps the cohort month itself just to read the
           // cohort_size counter; the numerator is ignored.
-          this.reportRepository.findCohortRetention(
+          this.reportService.getCohortRetention(
             ctx,
             communityId,
             { cohortStart, cohortEnd },
@@ -493,7 +498,7 @@ export default class SysAdminService {
     const monthStart = jstMonthStart(asOf);
     const prevMonthStart = jstMonthStartOffset(monthStart, -1);
     const nextMonthStart = jstNextMonthStart(asOf);
-    const row = await this.reportRepository.findCohortRetention(
+    const row = await this.reportService.getCohortRetention(
       ctx,
       communityId,
       { cohortStart: prevMonthStart, cohortEnd: monthStart },
@@ -534,7 +539,7 @@ export default class SysAdminService {
     const fourteenDaysAgo = addDays(asOfJstDay, -NO_NEW_MEMBERS_WINDOW_DAYS);
 
     const [retention, newMembers] = await Promise.all([
-      this.reportRepository.findRetentionAggregate(ctx, communityId, {
+      this.reportService.getRetentionAggregate(ctx, communityId, {
         currentWeekStart: latestWeekStart,
         nextWeekStart,
         prevWeekStart,

@@ -41,48 +41,27 @@ class MockSysAdminRepository {
   findWeeklyRetentionSeries = jest.fn();
 }
 
-class MockReportRepository {
-  findRetentionAggregate = jest.fn();
-  findCohortRetention = jest.fn();
-  // The report repo has many more methods; only the ones
-  // SysAdminService actually touches need real mocks.
-  findDailySummaries = jest.fn();
-  findDailyActiveUsers = jest.fn();
-  findTopUsersByTotalPoints = jest.fn();
-  findCommentsByDateRange = jest.fn();
-  findUserProfiles = jest.fn();
-  findCommunityContext = jest.fn();
-  findDeepestChain = jest.fn();
-  findPeriodAggregate = jest.fn();
-  findTrueUniqueCounterpartiesForUsers = jest.fn();
-  refreshTransactionSummaryDaily = jest.fn();
-  refreshUserTransactionDaily = jest.fn();
-  findTemplate = jest.fn();
-  findActiveTemplates = jest.fn();
-  findTemplateByVersion = jest.fn();
-  findJudgeTemplate = jest.fn();
-  updateReportJudgeResult = jest.fn();
-  findGoldenCases = jest.fn();
-  upsertGoldenCase = jest.fn();
-  upsertTemplate = jest.fn();
-  createReport = jest.fn();
-  findReportById = jest.fn();
-  findReports = jest.fn();
-  updateReportStatus = jest.fn();
-  findReportsByParentRunId = jest.fn();
+/**
+ * Stub the few ReportService wrappers SysAdminService leans on.
+ * Per CLAUDE.md the cross-domain boundary is the service, not the
+ * repository, so the test follows the same boundary.
+ */
+class MockReportService {
+  getRetentionAggregate = jest.fn();
+  getCohortRetention = jest.fn();
 }
 
 describe("SysAdminService", () => {
   let service: SysAdminService;
   let repo: MockSysAdminRepository;
-  let reportRepo: MockReportRepository;
+  let reportService: MockReportService;
 
   beforeEach(() => {
     container.reset();
     repo = new MockSysAdminRepository();
-    reportRepo = new MockReportRepository();
+    reportService = new MockReportService();
     container.register("SysAdminRepository", { useValue: repo });
-    container.register("ReportRepository", { useValue: reportRepo });
+    container.register("ReportService", { useValue: reportService });
     service = container.resolve(SysAdminService);
   });
 
@@ -434,7 +413,7 @@ describe("SysAdminService", () => {
       retainedSenders: number;
       churnedSenders: number;
     }, newMemberCount: number) {
-      reportRepo.findRetentionAggregate.mockResolvedValue({
+      reportService.getRetentionAggregate.mockResolvedValue({
         newMembers: 0,
         retainedSenders: retention.retainedSenders,
         returnedSenders: 0,
