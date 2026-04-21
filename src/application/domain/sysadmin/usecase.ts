@@ -8,7 +8,6 @@ import {
   GqlSysAdminCommunityOverview,
   GqlSysAdminDashboardPayload,
 } from "@/types/graphql";
-import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
 import SysAdminService, {
   DEFAULT_SEGMENT_THRESHOLDS,
   DEFAULT_WINDOW_MONTHS,
@@ -22,10 +21,10 @@ import { addDays, truncateToJstDate } from "@/application/domain/report/util";
 
 @injectable()
 export default class SysAdminUseCase {
-  constructor(
-    @inject("SysAdminRepository") private readonly repository: ISysAdminRepository,
-    @inject("SysAdminService") private readonly service: SysAdminService,
-  ) {}
+  // Only the service is injected. Per CLAUDE.md the UseCase layer
+  // must not talk to the repository directly — repository reads are
+  // routed through SysAdminService's `get*` pass-throughs.
+  constructor(@inject("SysAdminService") private readonly service: SysAdminService) {}
 
   /**
    * L1 dashboard: platform totals + one row per community.
@@ -45,24 +44,24 @@ export default class SysAdminUseCase {
     const nextMonthStart = jstNextMonthStart(asOf);
     // Clamp the platform-totals upper bound at asOf+1 JST day so a
     // mid-month or historic asOf doesn't count memberships that
-    // hadn't been created yet (`findPlatformTotals` applies
-    // `created_at < upper` on t_memberships). Donation points use an
-    // MV bucketed by date, which has no rows past asOf anyway, but
-    // the clamp keeps the member-count semantics aligned with
-    // `findMemberStats` / `getMonthActivityWithPrev`.
+    // hadn't been created yet. findPlatformTotals applies
+    // `created_at < upper` on t_memberships. The donation-points MV
+    // is bucketed by date and has no rows past asOf anyway, but
+    // clamping keeps member-count semantics aligned with
+    // findMemberStats / getMonthActivityWithPrev.
     const asOfJstDayPlusOne = addDays(truncateToJstDate(asOf), 1);
     const platformUpperBound =
       nextMonthStart < asOfJstDayPlusOne ? nextMonthStart : asOfJstDayPlusOne;
 
     const [platform, communities] = await Promise.all([
-      this.repository.findPlatformTotals(ctx, monthStart, platformUpperBound),
-      this.repository.findAllCommunities(ctx),
+      this.service.getPlatformTotals(ctx, monthStart, platformUpperBound),
+      this.service.getAllCommunities(ctx),
     ]);
 
     const rows = await Promise.all(
       communities.map(async (c): Promise<GqlSysAdminCommunityOverview> => {
         const [members, monthActivity, latestCohortRetentionM1] = await Promise.all([
-          this.repository.findMemberStats(ctx, c.communityId, asOf),
+          this.service.getMemberStats(ctx, c.communityId, asOf),
           this.service.getMonthActivityWithPrev(ctx, c.communityId, asOf),
           this.service.getLatestCohortRetentionM1(ctx, c.communityId, asOf),
         ]);
@@ -110,7 +109,7 @@ export default class SysAdminUseCase {
   ): Promise<GqlSysAdminCommunityDetailPayload> {
     const asOf = input.asOf ?? new Date();
     const thresholds = resolveThresholds(input.segmentThresholds);
-    // Clamp to [1, MAX_WINDOW_MONTHS]. `getCohortRetention` and the
+    // Clamp to [1, MAX_WINDOW_MONTHS]. getCohortRetention and the
     // retention-trend fan-out both scale linearly with this value, so
     // a cap prevents a single request from exhausting the connection
     // pool on unbounded input.
@@ -120,10 +119,9 @@ export default class SysAdminUseCase {
     );
 
     // Resolve the community row first so we can 404 early if the id is
-    // bogus and also thread `communityName` through the payload. Using
-    // the indexed-by-id lookup rather than scanning every community
-    // keeps the query cost flat as the platform grows.
-    const community = await this.repository.findCommunityById(ctx, input.communityId);
+    // bogus and also thread communityName through the payload. The
+    // id-indexed lookup keeps cost flat as the platform grows.
+    const community = await this.service.getCommunityById(ctx, input.communityId);
     if (!community) {
       throw new NotFoundError("Community", { id: input.communityId });
     }
@@ -136,9 +134,9 @@ export default class SysAdminUseCase {
       retentionTrend,
       cohortRetention,
     ] = await Promise.all([
-      this.repository.findMemberStats(ctx, community.communityId, asOf),
-      this.repository.findMonthlyActivity(ctx, community.communityId, asOf, windowMonths),
-      this.repository.findAllTimeTotals(ctx, community.communityId),
+      this.service.getMemberStats(ctx, community.communityId, asOf),
+      this.service.getMonthlyActivity(ctx, community.communityId, asOf, windowMonths),
+      this.service.getAllTimeTotals(ctx, community.communityId),
       this.service.getMonthActivityWithPrev(ctx, community.communityId, asOf),
       this.service.getRetentionTrend(ctx, community.communityId, asOf, windowMonths),
       this.service.getCohortRetention(ctx, community.communityId, asOf, windowMonths),

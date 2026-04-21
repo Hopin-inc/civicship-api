@@ -281,6 +281,49 @@ export default class SysAdminService {
   // Orchestrators — the methods the usecase actually calls
   // ==========================================================================
 
+  // --------------------------------------------------------------------------
+  // Thin pass-throughs to the repository.
+  //
+  // Per CLAUDE.md, the UseCase layer must not talk to repositories
+  // directly — cross-layer calls go UseCase → Service → Repository.
+  // These `get*` methods mirror the matching `find*` methods on the
+  // repo 1:1 so the usecase can stay service-only without forcing the
+  // repo to rename or split its surface.
+  // --------------------------------------------------------------------------
+
+  async getAllCommunities(ctx: IContext) {
+    return this.repository.findAllCommunities(ctx);
+  }
+
+  async getCommunityById(ctx: IContext, communityId: string) {
+    return this.repository.findCommunityById(ctx, communityId);
+  }
+
+  async getMemberStats(ctx: IContext, communityId: string, asOf: Date) {
+    return this.repository.findMemberStats(ctx, communityId, asOf);
+  }
+
+  async getMonthlyActivity(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+    windowMonths: number,
+  ) {
+    return this.repository.findMonthlyActivity(ctx, communityId, asOf, windowMonths);
+  }
+
+  async getAllTimeTotals(ctx: IContext, communityId: string) {
+    return this.repository.findAllTimeTotals(ctx, communityId);
+  }
+
+  async getPlatformTotals(
+    ctx: IContext,
+    jstMonthStart: Date,
+    jstNextMonthStart: Date,
+  ) {
+    return this.repository.findPlatformTotals(ctx, jstMonthStart, jstNextMonthStart);
+  }
+
   /**
    * Week-by-week retention series across `windowMonths`.
    *
