@@ -165,6 +165,17 @@ async function runBatched<T, R>(
   return results;
 }
 
+/**
+ * Fraction of the community that sent DONATION in a window:
+ * `senderCount / totalMembers`, or 0 when the community had no members
+ * during the window. Appears verbatim in several orchestrators
+ * (getMonthActivityWithPrev, getAlerts, computeActivityRate3mAvg); one
+ * helper keeps the "divide-by-zero ⇒ 0" convention in a single place.
+ */
+function rateOf(senderCount: number, totalMembers: number): number {
+  return totalMembers === 0 ? 0 : senderCount / totalMembers;
+}
+
 @injectable()
 export default class SysAdminService {
   constructor(
@@ -593,8 +604,8 @@ export default class SysAdminService {
       this.repository.findActivitySnapshot(ctx, communityId, prevMonthStart, monthStart),
     ]);
 
-    const currRate = curr.totalMembers === 0 ? 0 : curr.senderCount / curr.totalMembers;
-    const prevRate = prev.totalMembers === 0 ? 0 : prev.senderCount / prev.totalMembers;
+    const currRate = rateOf(curr.senderCount, curr.totalMembers);
+    const prevRate = rateOf(prev.senderCount, prev.totalMembers);
     // Explicit `prevRate === 0` guard: `percentChange` already returns
     // null when the denominator is 0, but making both conditions
     // visible at the call site keeps the Infinity risk obvious to the
@@ -621,10 +632,10 @@ export default class SysAdminService {
   computeActivityRate3mAvg(trend: SysAdminMonthlyActivityRow[]): number | null {
     if (trend.length < 3) return null;
     const last3 = trend.slice(-3);
-    const sumRates = last3.reduce((acc, r) => {
-      const rate = r.totalMembersEndOfMonth === 0 ? 0 : r.senderCount / r.totalMembersEndOfMonth;
-      return acc + rate;
-    }, 0);
+    const sumRates = last3.reduce(
+      (acc, r) => acc + rateOf(r.senderCount, r.totalMembersEndOfMonth),
+      0,
+    );
     return sumRates / 3;
   }
 
@@ -718,16 +729,13 @@ export default class SysAdminService {
     // activeDrop derives its own growth fraction from the
     // completed-month snapshot pair (prev vs prev-prev), independent
     // of the UI's growthRateActivity which tracks current-vs-prev.
-    const prevRate =
-      prevMonth.totalMembers === 0 ? 0 : prevMonth.senderCount / prevMonth.totalMembers;
-    const prevPrevRate =
-      prevPrevMonth.totalMembers === 0
-        ? 0
-        : prevPrevMonth.senderCount / prevPrevMonth.totalMembers;
-    const alertGrowth =
-      prevPrevMonth.totalMembers === 0 || prevPrevRate === 0
-        ? null
-        : (prevRate - prevPrevRate) / prevPrevRate;
+    // percentChange returns a percentage (× 100) and null when the
+    // denominator is 0, so converting to a fraction needs one extra
+    // divide — matches the same pattern getMonthActivityWithPrev uses.
+    const prevRate = rateOf(prevMonth.senderCount, prevMonth.totalMembers);
+    const prevPrevRate = rateOf(prevPrevMonth.senderCount, prevPrevMonth.totalMembers);
+    const alertGrowthPct = percentChange(prevRate, prevPrevRate);
+    const alertGrowth = alertGrowthPct == null ? null : alertGrowthPct / 100;
 
     return {
       churnSpike: retention.churnedSenders > retention.retainedSenders,

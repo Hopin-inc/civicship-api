@@ -128,7 +128,7 @@ communityActivityRate = 直近月の DONATION sender 数 / 月末時点の total
 > ⚠️ 過去 / 現在進行中の月では分母を **asOf 当日まで**にクランプする必要がある。
 > `findMonthlyActivity` の `member_upper = LEAST(next_month_start, asOf+1日)` パターンを参照。
 
-### 2.4. `growthRateActivity`（前月比）
+### 2.4. `growthRateActivity`（前月比 — UI 用 informational signal）
 
 ```
 growthRateActivity = (currRate − prevRate) / prevRate
@@ -136,6 +136,11 @@ growthRateActivity = (currRate − prevRate) / prevRate
 
 - `prev.totalMembers === 0` または `prevRate === 0` のとき **null を返す**
 - そのまま割ると `Infinity` になり、GraphQL `Float` がエラーを返す
+
+> ⚠️ **これはダッシュボードに出す表示用の値**で、**`activeDrop` アラートの判定には使わない**。
+> アラートは「進行中月を対象にしない」ため、current vs prev ではなく
+> prev vs prev-prev で判定する（§4 参照）。
+> 同じ「前月比」でも表示用とアラート用で参照期間が違う点に注意。
 
 ### 2.5. `community_activity_rate_3m_avg`（3 ヶ月移動平均）
 
@@ -245,10 +250,16 @@ const upperExclusive = addDays(asOfJstDay, 1);            // 翌日 0:00 JST
 > - `addDays(latestWeekStart, -14)` 起点 → 窓が 14〜21 日に可変
 > - `addDays(asOfJstDay, -14)` + `asOfJstDay + 1` → 15 日窓（off-by-one）
 
-### 4.2. `activeDrop` の `prevRate === 0` ガード
+### 4.2. `activeDrop` のゼロ除算ガード
 
-`growthRateActivity` が null（前月データなし or 前月稼働率 0）のときは
-**`activeDrop` を発火させない**。
+`activeDrop` は **prev-month rate vs prev-prev-month rate** で判定する
+（§4 の表参照）。次のいずれかで `null` を返し、アラートは発火させない:
+
+- `prevPrevMonth.totalMembers === 0`（prev-prev 月にメンバーがいない）
+- `prevPrevRate === 0`（prev-prev 月の稼働率が 0）
+
+`percentChange(prevRate, prevPrevRate)` が内部で `null` を返すケースと
+同じで、そのまま割ると `Infinity` になり GraphQL `Float` がエラーになる。
 
 ---
 
