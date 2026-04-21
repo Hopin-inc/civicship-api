@@ -213,6 +213,55 @@ describe("ReportPresenter.weeklyPayload (community_context / deepest_chain)", ()
     });
   });
 
+  // Regression guard for the "null growth_rate.active_users when community
+  // context is missing" fix. Without a current-window active-user
+  // numerator on the same DONATION-scoped frame as previous_period, we
+  // refuse to emit a percentage — the presenter must not fall back to a
+  // different-frame proxy that would produce a scale-mismatched comparison.
+  // tx_count / points_sum are sourced from the daily summaries already in
+  // the payload, so those growth rates still compute even without the
+  // community context.
+  it("nulls out growth_rate.active_users when communityContext is null (preserves tx_count / points_sum)", () => {
+    const payload = ReportPresenter.weeklyPayload({
+      ...baseInput,
+      summaries: [
+        {
+          date: new Date(Date.UTC(2026, 3, 14)),
+          communityId: "community-1",
+          reason: TransactionReason.DONATION,
+          txCount: 20,
+          pointsSum: 10000n,
+          chainRootCount: 0,
+          chainDescendantCount: 0,
+          maxChainDepth: null,
+          sumChainDepth: 0,
+          issuanceCount: 0,
+          burnCount: 0,
+        },
+      ],
+      communityContext: null,
+      deepestChain: null,
+      previousPeriod: {
+        range: {
+          from: new Date(Date.UTC(2026, 3, 3)),
+          to: new Date(Date.UTC(2026, 3, 9)),
+        },
+        aggregate: {
+          activeUsersInWindow: 5,
+          totalTxCount: 10,
+          totalPointsSum: 5000n,
+          newMembers: 1,
+        },
+      },
+    });
+
+    expect(payload.previous_period?.growth_rate).toEqual({
+      active_users: null,
+      tx_count: 100,
+      points_sum: 100,
+    });
+  });
+
   it("leaves pre-existing payload fields intact alongside the new blocks", () => {
     const payload = ReportPresenter.weeklyPayload({
       ...baseInput,
@@ -338,5 +387,113 @@ describe("ReportPresenter.weeklyPayload (community_context / deepest_chain)", ()
     expect(payload.top_users[0].true_unique_counterparties).toBe(3);
     // user-b missed the map → null (distinguishes receiver-only from zero).
     expect(payload.top_users[1].true_unique_counterparties).toBeNull();
+  });
+
+  // Regression guard for the BigInt-then-narrow fix: each row's pointsSum
+  // fits in Number.MAX_SAFE_INTEGER but the total does not. The presenter
+  // must sum as BigInt and narrow once at the boundary so the safe-integer
+  // guard fires on the TOTAL; narrowing per row and summing as Number would
+  // silently lose precision on the sum.
+  it("throws RangeError when the sum of individually-safe pointsSum values exceeds MAX_SAFE_INTEGER", () => {
+    const nearMax = BigInt(Number.MAX_SAFE_INTEGER);
+    expect(() =>
+      ReportPresenter.weeklyPayload({
+        ...baseInput,
+        summaries: [
+          {
+            date: new Date(Date.UTC(2026, 3, 14)),
+            communityId: "community-1",
+            reason: TransactionReason.DONATION,
+            txCount: 1,
+            pointsSum: nearMax,
+            chainRootCount: 0,
+            chainDescendantCount: 0,
+            maxChainDepth: null,
+            sumChainDepth: 0,
+            issuanceCount: 0,
+            burnCount: 0,
+          },
+          {
+            date: new Date(Date.UTC(2026, 3, 15)),
+            communityId: "community-1",
+            reason: TransactionReason.POINT_REWARD,
+            txCount: 1,
+            pointsSum: nearMax,
+            chainRootCount: 0,
+            chainDescendantCount: 0,
+            maxChainDepth: null,
+            sumChainDepth: 0,
+            issuanceCount: 0,
+            burnCount: 0,
+          },
+        ],
+        communityContext: sampleContext,
+        deepestChain: null,
+        previousPeriod: {
+          range: {
+            from: new Date(Date.UTC(2026, 3, 3)),
+            to: new Date(Date.UTC(2026, 3, 9)),
+          },
+          aggregate: {
+            activeUsersInWindow: 1,
+            totalTxCount: 1,
+            totalPointsSum: 1n,
+            newMembers: 0,
+          },
+        },
+      }),
+    ).toThrow(RangeError);
+  });
+
+  it("narrows the pointsSum total once at the boundary when individual rows and the total are all in safe range", () => {
+    const payload = ReportPresenter.weeklyPayload({
+      ...baseInput,
+      summaries: [
+        {
+          date: new Date(Date.UTC(2026, 3, 14)),
+          communityId: "community-1",
+          reason: TransactionReason.DONATION,
+          txCount: 3,
+          pointsSum: 1_000_000n,
+          chainRootCount: 0,
+          chainDescendantCount: 0,
+          maxChainDepth: null,
+          sumChainDepth: 0,
+          issuanceCount: 0,
+          burnCount: 0,
+        },
+        {
+          date: new Date(Date.UTC(2026, 3, 15)),
+          communityId: "community-1",
+          reason: TransactionReason.POINT_REWARD,
+          txCount: 2,
+          pointsSum: 500_000n,
+          chainRootCount: 0,
+          chainDescendantCount: 0,
+          maxChainDepth: null,
+          sumChainDepth: 0,
+          issuanceCount: 0,
+          burnCount: 0,
+        },
+      ],
+      communityContext: { ...sampleContext, activeUsersInWindow: 10 },
+      deepestChain: null,
+      previousPeriod: {
+        range: {
+          from: new Date(Date.UTC(2026, 3, 3)),
+          to: new Date(Date.UTC(2026, 3, 9)),
+        },
+        aggregate: {
+          activeUsersInWindow: 10,
+          totalTxCount: 5,
+          totalPointsSum: 1_500_000n,
+          newMembers: 0,
+        },
+      },
+    });
+
+    // 1_000_000 + 500_000 = 1_500_000, matching previous period → 0% growth.
+    expect(payload.previous_period?.total_points_sum).toBe(1_500_000);
+    expect(payload.previous_period?.growth_rate.points_sum).toBe(0);
   });
 });

@@ -367,6 +367,102 @@ describe("ReportUseCase.generateReport", () => {
   });
 });
 
+describe("ReportUseCase.buildReportPayload retention window", () => {
+  const communityId = "community-retention";
+
+  function makeUseCase() {
+    container.reset();
+    // Capture the range passed into getRetentionAggregate so the test can
+    // assert on the exact boundaries the inline week-math computes. Every
+    // other service method is a no-op stub because the presenter just sees
+    // empty lists / nulls and still assembles a payload.
+    let capturedRetentionRange:
+      | {
+          currentWeekStart: Date;
+          nextWeekStart: Date;
+          prevWeekStart: Date;
+          twelveWeeksAgo: Date;
+        }
+      | null = null;
+
+    const service = {
+      getDailySummaries: jest.fn().mockResolvedValue([]),
+      getDailyActiveUsers: jest.fn().mockResolvedValue([]),
+      getTopUsersByTotalPoints: jest.fn().mockResolvedValue([]),
+      getComments: jest.fn().mockResolvedValue([]),
+      getCommunityContext: jest.fn().mockResolvedValue(null),
+      getDeepestChain: jest.fn().mockResolvedValue(null),
+      getPeriodAggregate: jest.fn().mockResolvedValue({
+        activeUsersInWindow: 0,
+        totalTxCount: 0,
+        totalPointsSum: 0n,
+        newMembers: 0,
+      }),
+      getRetentionAggregate: jest.fn().mockImplementation(async (_ctx, _communityId, range) => {
+        capturedRetentionRange = range;
+        return {
+          newMembers: 0,
+          retainedSenders: 0,
+          returnedSenders: 0,
+          churnedSenders: 0,
+          currentSendersCount: 0,
+          currentActiveCount: 0,
+        };
+      }),
+      getCohortRetention: jest
+        .fn()
+        .mockResolvedValue({ cohortSize: 0, activeNextWeek: 0 }),
+      getUserProfiles: jest.fn().mockResolvedValue([]),
+      getTrueUniqueCounterpartiesForUsers: jest.fn().mockResolvedValue(new Map()),
+    };
+
+    container.register("ReportService", { useValue: service });
+    container.register("LlmClient", { useValue: { complete: jest.fn() } });
+    container.register("ReportJudgeService", {
+      useValue: { selectJudgeTemplate: jest.fn(), executeJudge: jest.fn() },
+    });
+    container.register("ReportTemplateSelector", {
+      useValue: { selectTemplate: jest.fn() },
+    });
+
+    return {
+      service,
+      usecase: container.resolve(ReportUseCase),
+      getCapturedRange: () => capturedRetentionRange,
+    };
+  }
+
+  // Regression guard for the -7*11 → -7*12 fix. `returned_senders` keys on
+  // the half-open `[twelveWeeksAgo, prevWeekStart)` window: 84 days covers
+  // 12 full weeks; the prior -7*11 (77 days) only covered 11, silently
+  // under-counting the 12th-week returners.
+  it("passes range.twelveWeeksAgo exactly 84 days before prevWeekStart to service.getRetentionAggregate", async () => {
+    const { usecase, service, getCapturedRange } = makeUseCase();
+    const fakeCtx = {} as unknown as IContext;
+
+    await usecase.buildReportPayload(fakeCtx, {
+      communityId,
+      // Wednesday → current-week Monday is the JST Monday of that week.
+      referenceDate: new Date(Date.UTC(2026, 3, 22)),
+      includeRetention: true,
+    });
+
+    expect(service.getRetentionAggregate).toHaveBeenCalledTimes(1);
+    const range = getCapturedRange();
+    expect(range).not.toBeNull();
+    const diffDays =
+      (range!.prevWeekStart.getTime() - range!.twelveWeeksAgo.getTime()) / (24 * 60 * 60 * 1000);
+    expect(diffDays).toBe(84);
+    // prevWeekStart is one week before currentWeekStart by definition —
+    // locking this down so the 84-day assertion keeps its meaning even if
+    // the currentWeekStart computation itself regresses.
+    const prevVsCurrentDays =
+      (range!.currentWeekStart.getTime() - range!.prevWeekStart.getTime()) /
+      (24 * 60 * 60 * 1000);
+    expect(prevVsCurrentDays).toBe(7);
+  });
+});
+
 describe("ReportUseCase.updateReportTemplate trafficWeight validation (PR-F3)", () => {
   // The DB has a CHECK constraint on trafficWeight BETWEEN 0 AND 100, but
   // a constraint violation surfaces as an opaque PrismaClientKnownRequestError

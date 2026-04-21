@@ -69,12 +69,15 @@ export interface WeeklyReportPayload {
 }
 
 /**
- * AI-facing community snapshot. `active_rate` is `active_users_in_window /
- * total_members` (null when the community has no JOINED members yet, so the
- * LLM does not emit a divide-by-zero ratio). `custom_context` is a free-text
- * markdown field sourced from `ReportTemplate.communityContext`, piped
- * through untouched so editors can steer tone / vision / references without
- * a schema change.
+ * AI-facing community snapshot. `active_users_in_window` is DONATION-scoped
+ * (distinct users with `donation_out_count > 0` or `received_donation_count
+ * > 0` in the window) so the LLM reads peer-to-peer engagement, not a
+ * figure inflated by system-issued ONBOARDING / GRANT transactions.
+ * `active_rate` is `active_users_in_window / total_members` (null when the
+ * community has no JOINED members yet, so the LLM does not emit a
+ * divide-by-zero ratio). `custom_context` is a free-text markdown field
+ * sourced from `ReportTemplate.communityContext`, piped through untouched
+ * so editors can steer tone / vision / references without a schema change.
  */
 export interface CommunityContext {
   community_id: string;
@@ -114,6 +117,14 @@ export interface DailySummaryItem {
   burn_count: number;
 }
 
+/**
+ * Per-day DONATION-scoped distinct user counts. `senders` counts users
+ * who sent at least one DONATION that day, `receivers` counts users who
+ * received at least one DONATION that day, and `active_users` is the
+ * union. Users whose only activity was receiving an admin-issued
+ * ONBOARDING / GRANT are intentionally excluded — the peer-engagement
+ * signal is what drives the narrative, not raw MV reach.
+ */
 export interface DailyActiveUsersItem {
   date: string;
   active_users: number;
@@ -147,17 +158,26 @@ export interface TopUserItem {
    */
   unique_counterparties_sum: number;
   /**
-   * True distinct counterparty count across the whole reporting window. The
-   * same counterparty appearing on multiple days counts once. Paired with
-   * `unique_counterparties_sum` this lets the LLM distinguish
-   * "broad-but-shallow" (high `sum`, moderate `true`) from
-   * "deep-to-a-few" (low `true`, high per-day overlap).
+   * True distinct *outgoing* counterparty count across the whole reporting
+   * window — how many different people this user sent to, deduplicated
+   * over the full period (a counterparty appearing on multiple days counts
+   * once).
    *
-   * Computed on the reporting-window slice of `t_transactions` scoped to the
-   * top-N users — the target is always a short list of ≤ a few dozen user
-   * ids per community-week so the direct aggregation does not need an MV.
-   * `null` when the repository returned no row for the user (e.g. receiver
-   * with zero outgoing activity).
+   * Asymmetric with `unique_counterparties_sum`: the `sum` field is sourced
+   * from `mv_user_transaction_daily` and counts per-day distincts across
+   * BOTH in and out directions, whereas this field is computed from the
+   * reporting-window slice of `t_transactions` and covers the OUTGOING
+   * direction only (and excludes self-transfers). The two are *not* a
+   * pure "per-day-duplicated vs period-deduplicated" pair — a user with
+   * mostly incoming activity will show a large `sum` and a small `true`
+   * purely from the directional asymmetry, not from overlap. Prompt
+   * authors reading both fields together must account for this before
+   * narrating any "breadth vs depth" intuition.
+   *
+   * Scoped to the top-N users — the target is always a short list of ≤ a
+   * few dozen user ids per community-week so the direct aggregation does
+   * not need an MV. `null` when the repository returned no row for the
+   * user (e.g. receiver with zero outgoing activity).
    */
   true_unique_counterparties: number | null;
 }
@@ -167,6 +187,10 @@ export interface TopUserItem {
  * used to drive "this week vs last week" narrative. The stat set is a
  * deliberate subset of the current-period payload — only the counters the
  * LLM needs for high-level growth commentary.
+ *
+ * `active_users_in_window` uses the same DONATION-scoped definition as
+ * `CommunityContext.active_users_in_window` so `growth_rate.active_users`
+ * compares the two windows on a consistent peer-engagement frame.
  *
  * `new_members` uses `t_memberships.created_at` to match `RetentionSummary`
  * (and not `ONBOARDING` transactions, which have operational noise around
@@ -182,6 +206,12 @@ export interface PreviousPeriodSummary {
    * Percent week-over-week change, pre-computed. `null` when the previous
    * period's denominator was zero (nothing to compare against) so the LLM
    * is never asked to divide by zero.
+   *
+   * `active_users` is additionally `null` when `community_context` is
+   * null: without the current-window active-user count (which lives on
+   * that block), we have no DONATION-scoped numerator to compare against
+   * the previous window and refuse to fabricate one from a
+   * different-frame proxy.
    */
   growth_rate: {
     active_users: number | null;
@@ -198,10 +228,15 @@ export interface PreviousPeriodSummary {
  * contribute" semantic.
  *
  * Category overlaps (documented here so prompt authors don't sum them):
- *   - A new member who sends a donation their first week counts in
- *     `new_members` AND `retained_senders` (they have no prior week).
- *   - `active_rate_any` counts receivers in the numerator; the other
- *     rates use the `is_sender` frame.
+ *   - `new_members` and `retained_senders` are mutually exclusive: a new
+ *     member has no prior-week activity by definition, so even if they
+ *     send a donation their first week they land in `current_senders_count`
+ *     only — not in `retained_senders`, which requires `is_sender` on
+ *     BOTH the current and previous weeks.
+ *   - `active_rate_any` counts DONATION-receivers in the numerator; the
+ *     other rates use the `is_sender` frame. Both sender and receiver
+ *     signals are DONATION-scoped (not `tx_count_in/out > 0`), so
+ *     ONBOARDING / GRANT noise does not inflate the rate on either side.
  *   - `returned_senders` is bounded to a 12-week lookback; someone
  *     returning after 13+ weeks of silence lands in none of the buckets.
  *

@@ -22,11 +22,11 @@ export async function syncNftMetadata() {
     const SYNC_INTERVAL_HOURS = 24;
     const RATE_LIMIT_DELAY_MS = 100;
 
-    let skip = 0;
     let totalProcessed = 0;
     let totalErrors = 0;
     let totalSkipped = 0;
     let totalNftsProcessed = 0;
+    let batchNumber = 0;
     let hasMore = true;
 
     const syncCutoffTime = new Date(Date.now() - SYNC_INTERVAL_HOURS * 60 * 60 * 1000);
@@ -47,8 +47,11 @@ export async function syncNftMetadata() {
             id: true,
             walletAddress: true,
           },
+          // Processed wallets leave the predicate on updatedAt, so each
+          // iteration naturally advances through the queue. Using `skip`
+          // here would leap past unprocessed wallets.
+          orderBy: { updatedAt: { sort: "asc", nulls: "first" } },
           take: BATCH_SIZE,
-          skip: skip,
         });
       });
 
@@ -57,10 +60,11 @@ export async function syncNftMetadata() {
         break;
       }
 
+      batchNumber++;
+
       logger.debug("📦 Processing batch", {
-        batchNumber: Math.floor(skip / BATCH_SIZE) + 1,
+        batchNumber,
         walletCount: nftWallets.length,
-        skip,
       });
 
       for (const wallet of nftWallets) {
@@ -87,11 +91,10 @@ export async function syncNftMetadata() {
       }
 
       logger.debug("✅ Batch iteration completed", {
-        batchNumber: Math.floor(skip / BATCH_SIZE) + 1,
+        batchNumber,
         durationMs: Date.now() - batchIterationStartTime,
       });
 
-      skip += BATCH_SIZE;
       if (nftWallets.length < BATCH_SIZE) {
         hasMore = false;
       }

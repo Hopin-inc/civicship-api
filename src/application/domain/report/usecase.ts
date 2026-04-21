@@ -130,7 +130,12 @@ export default class ReportUseCase {
           const currentWeekStart = isoWeekStartJst(params.referenceDate);
           const nextWeekStart = addDays(currentWeekStart, 7);
           const prevWeekStart = addDays(currentWeekStart, -7);
-          const twelveWeeksAgo = addDays(prevWeekStart, -7 * 11);
+          // 12 weeks of lookback ending at prevWeekStart (exclusive), so
+          // the range `[twelveWeeksAgo, prevWeekStart)` has 12 full weeks.
+          // Was -7*11 (only 11 weeks); returned_senders was shifted by one
+          // week and silently under-counted people who returned after a
+          // 12-week absence.
+          const twelveWeeksAgo = addDays(prevWeekStart, -7 * 12);
           return { nextWeekStart, currentWeekStart, prevWeekStart, twelveWeeksAgo };
         })()
       : null;
@@ -223,15 +228,22 @@ export default class ReportUseCase {
       previousPeriod: previousAggregate
         ? { range: previousRange!, aggregate: previousAggregate }
         : null,
-      retention:
-        retentionAggregate && communityContext
-          ? {
-              aggregate: retentionAggregate,
-              totalMembers: communityContext.totalMembers,
-              week1: week1Cohort,
-              week4: week4Cohort,
-            }
-          : null,
+      // `retention` is gated purely on whether the caller opted in (i.e.
+      // `retentionAggregate` is non-null). Do NOT additionally gate on
+      // `communityContext` — that would silently null out the whole block
+      // whenever the community row is missing / soft-deleted, which breaks
+      // the `includeRetention` opt-in contract. When `communityContext` is
+      // null we surface `totalMembers: null` and the presenter collapses
+      // only the derived rates to null; the raw counters still flow
+      // through so the block stays useful.
+      retention: retentionAggregate
+        ? {
+            aggregate: retentionAggregate,
+            totalMembers: communityContext?.totalMembers ?? null,
+            week1: week1Cohort,
+            week4: week4Cohort,
+          }
+        : null,
     });
   }
 

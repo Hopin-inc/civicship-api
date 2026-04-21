@@ -59,6 +59,16 @@ export default class ReportRepository implements IReportRepository {
    * mv_user_transaction_daily. Aggregating in SQL with FILTER clauses keeps
    * us from shipping a separate MV just for distinct-count queries.
    *
+   * All three counters are scoped to peer-to-peer DONATION activity
+   * (`donation_out_count` / `received_donation_count`) to stay consistent
+   * with the `is_sender` / `is_receiver` frame in `findRetentionAggregate`
+   * and `v_user_cohort.first_active_week`. ONBOARDING / GRANT / POINT_ISSUED
+   * transactions would otherwise inflate `active_users` / `receivers` for
+   * anyone who merely received a system-issued grant, overstating
+   * peer-to-peer engagement across the daily curve and — downstream — the
+   * week-over-week `growth_rate` that divides current vs previous
+   * `active_users_in_window`.
+   *
    * `date` is an `@db.Date` column; the explicit `::date` cast on the bound
    * parameters avoids Postgres treating the JS Date as a timestamp(tz) and
    * losing the index on a boundary compare.
@@ -79,9 +89,11 @@ export default class ReportRepository implements IReportRepository {
       >`
         SELECT
           "date",
-          COUNT(DISTINCT "user_id")::int AS "active_users",
-          COUNT(DISTINCT "user_id") FILTER (WHERE "tx_count_out" > 0)::int AS "senders",
-          COUNT(DISTINCT "user_id") FILTER (WHERE "tx_count_in" > 0)::int AS "receivers"
+          COUNT(DISTINCT "user_id") FILTER (
+            WHERE "donation_out_count" > 0 OR "received_donation_count" > 0
+          )::int AS "active_users",
+          COUNT(DISTINCT "user_id") FILTER (WHERE "donation_out_count" > 0)::int AS "senders",
+          COUNT(DISTINCT "user_id") FILTER (WHERE "received_donation_count" > 0)::int AS "receivers"
         FROM "mv_user_transaction_daily"
         WHERE "community_id" = ${communityId}
           AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
@@ -178,8 +190,22 @@ export default class ReportRepository implements IReportRepository {
    *
    * Excludes transactions where the counterparty wallet has no `user_id`
    * (e.g. community wallets) so the count is strictly "people this user sent
-   * points to". Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)`
-   * window to match the MV bucketing elsewhere in this file.
+   * points to", and excludes self-transfers (`tw.user_id = fw.user_id`) from
+   * the DISTINCT via a FILTER clause — the metric is "how many different
+   * *other* people did this user give to", which is what the breadth-of-
+   * activity signal downstream in the prompt is trying to describe.
+   *
+   * Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)` window to match
+   * the MV bucketing elsewhere in this file. `t_transactions.created_at` is
+   * Prisma `DateTime` → `timestamp WITHOUT time zone` holding naive UTC,
+   * so we convert the JST date boundaries to naive UTC on the constant side
+   * (`::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'`): first cast the
+   * date to a timestamptz at JST midnight, then render that instant as a
+   * naive UTC wall-clock — the same value the column holds. Keeping the
+   * transform off the column preserves index usage (SARGable) while still
+   * being independent of the DB session timezone, unlike the prior
+   * `timestamp >= timestamptz` form which implicitly cast via the
+   * session's timezone.
    */
   async findTrueUniqueCounterpartiesForUsers(
     ctx: IContext,
@@ -194,7 +220,9 @@ export default class ReportRepository implements IReportRepository {
       >`
         SELECT
           fw."user_id" AS "user_id",
-          COUNT(DISTINCT tw."user_id")::int AS "true_unique_counterparties"
+          COUNT(DISTINCT tw."user_id") FILTER (
+            WHERE tw."user_id" <> fw."user_id"
+          )::int AS "true_unique_counterparties"
         FROM "t_transactions" t
         INNER JOIN "t_wallets" fw
           ON fw."id" = t."from"
@@ -203,8 +231,8 @@ export default class ReportRepository implements IReportRepository {
         INNER JOIN "t_wallets" tw
           ON tw."id" = t."to"
           AND tw."user_id" IS NOT NULL
-        WHERE t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
-          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+        WHERE t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
         GROUP BY fw."user_id"
       `;
@@ -254,6 +282,15 @@ export default class ReportRepository implements IReportRepository {
    * `mv_user_transaction_daily` for the same JST window used by the report
    * helpers elsewhere in this file.
    *
+   * `active_users_in_window` is scoped to peer-to-peer DONATION activity
+   * (`donation_out_count > 0 OR received_donation_count > 0`) to stay
+   * consistent with the retention frame — a user is "active" only if they
+   * actually participated in a peer donation, not if they merely received
+   * an admin-issued ONBOARDING / GRANT / POINT_ISSUED transaction. The
+   * derived `active_rate` (computed in the presenter as
+   * `active_users_in_window / total_members`) therefore reports
+   * peer-to-peer engagement rather than system-noise-inflated reach.
+   *
    * Returns null when the community is not found; the presenter treats this
    * as an optional block so the payload still serialises for a soft-deleted
    * or mis-passed community id.
@@ -287,6 +324,7 @@ export default class ReportRepository implements IReportRepository {
           FROM "mv_user_transaction_daily"
           WHERE "community_id" = ${communityId}
             AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
+            AND ("donation_out_count" > 0 OR "received_donation_count" > 0)
         )
         SELECT
           c."id",
@@ -352,7 +390,13 @@ export default class ReportRepository implements IReportRepository {
           t."chain_depth"::int AS "chain_depth",
           t."reason",
           t."comment",
-          ((t."created_at" AT TIME ZONE 'Asia/Tokyo')::date) AS "date",
+          -- Double AT TIME ZONE to convert the naive-UTC timestamp
+          -- column to a JST calendar day. A single AT TIME ZONE
+          -- 'Asia/Tokyo' would treat the value AS JST and shift it by
+          -- -9h, mis-bucketing transactions between 00:00-08:59 JST --
+          -- the same bug the 20260416000001_fix_report_views_jst_bucketing
+          -- migration fixed in the MV side.
+          ((t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) AS "date",
           fw."user_id" AS "from_user_id",
           tw."user_id" AS "to_user_id",
           t."created_by" AS "created_by_user_id",
@@ -365,14 +409,18 @@ export default class ReportRepository implements IReportRepository {
                OR tw."community_id" IS NULL
                OR fw."community_id" = tw."community_id")
           AND t."chain_depth" IS NOT NULL
-          -- SARGable timestamptz comparison so the planner can use the
-          -- B-tree index on "created_at" (wrapping it in
-          -- (... AT TIME ZONE ...)::date would suppress the index).
           -- Half-open window [from JST 00:00, (to + 1 day) JST 00:00)
           -- covers exactly the JST calendar days from..to inclusive,
-          -- matching the bucketing used by the report MVs.
-          AND t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
-          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+          -- matching the bucketing used by the report MVs. created_at
+          -- is timestamp WITHOUT time zone (Prisma DateTime default)
+          -- holding naive UTC, so we convert the JST date boundaries to
+          -- naive UTC on the constant side (::date AT TIME ZONE
+          -- 'Asia/Tokyo' AT TIME ZONE 'UTC') to match the column's
+          -- storage format -- independent of DB session timezone, and
+          -- the column stays untouched so the B-tree index on
+          -- "created_at" can still be used.
+          AND t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
         ORDER BY t."chain_depth" DESC, t."created_at" ASC
         LIMIT 1
       `;
@@ -399,6 +447,15 @@ export default class ReportRepository implements IReportRepository {
    * independent scans combined via CROSS JOIN of single-row CTEs so the
    * planner sees them as a single statement.
    *
+   * `active_users_in_window` is scoped to peer-to-peer DONATION activity
+   * (`donation_out_count > 0 OR received_donation_count > 0`), matching
+   * `findCommunityContext` / `findDailyActiveUsers` so the
+   * `growth_rate.active_users` in the presenter (current vs previous
+   * window) compares apples-to-apples. A broad `COUNT DISTINCT user_id`
+   * here would inflate the previous-window numerator for communities with
+   * heavy admin-issued ONBOARDING / GRANT activity and make
+   * week-over-week peer-engagement changes look smaller than they are.
+   *
    * `new_members` is sourced from `t_memberships.created_at` (JOINED) to
    * stay consistent with `RetentionSummary.new_members`, rather than from
    * `ONBOARDING` transactions which have operational noise around
@@ -423,6 +480,7 @@ export default class ReportRepository implements IReportRepository {
           FROM "mv_user_transaction_daily"
           WHERE "community_id" = ${communityId}
             AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
+            AND ("donation_out_count" > 0 OR "received_donation_count" > 0)
         ),
         tx_totals AS (
           SELECT
@@ -437,8 +495,14 @@ export default class ReportRepository implements IReportRepository {
           FROM "t_memberships"
           WHERE "community_id" = ${communityId}
             AND "status" = 'JOINED'
-            AND "created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo')
-            AND "created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo')
+            -- created_at is timestamp WITHOUT time zone (Prisma
+            -- default) holding naive UTC, so convert the JST date
+            -- boundaries to naive UTC on the constant side. See the
+            -- commentary on findDeepestChain for the full rationale;
+            -- keeping the column untouched preserves the B-tree index
+            -- and the comparison is session-TZ-independent.
+            AND "created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
         )
         SELECT
           au.n                 AS "active_users_in_window",
@@ -471,6 +535,14 @@ export default class ReportRepository implements IReportRepository {
    * admin wallet but not `donation_out_count`, and we want retention to
    * track peer-to-peer DONATION behaviour specifically.
    *
+   * `is_receiver` is gated symmetrically on `received_donation_count > 0`
+   * (DONATION-only) rather than `tx_count_in > 0`. The same ONBOARDING /
+   * GRANT noise that we filter out of the sender frame also shows up on
+   * the receiver side (admin-issued grants land as incoming transactions
+   * on every recipient's wallet); including those in `is_receiver` would
+   * inflate `current_active_count` and the `active_rate_any` the
+   * presenter divides out of it, overstating peer-to-peer engagement.
+   *
    * The `ever_before` CTE is bounded to a 12-week lookback to keep the
    * returning-users scan from fanning out to years of history on mature
    * communities; the trade-off is documented in the design notes —
@@ -501,7 +573,7 @@ export default class ReportRepository implements IReportRepository {
           SELECT
             "user_id",
             BOOL_OR("donation_out_count" > 0) AS is_sender,
-            BOOL_OR("tx_count_in" > 0) AS is_receiver
+            BOOL_OR("received_donation_count" > 0) AS is_receiver
           FROM "mv_user_transaction_daily"
           WHERE "community_id" = ${communityId}
             AND "date" >= ${range.currentWeekStart}::date
@@ -531,8 +603,13 @@ export default class ReportRepository implements IReportRepository {
           FROM "t_memberships"
           WHERE "community_id" = ${communityId}
             AND "status" = 'JOINED'
-            AND "created_at" >= (${range.currentWeekStart}::date AT TIME ZONE 'Asia/Tokyo')
-            AND "created_at" <  (${range.nextWeekStart}::date AT TIME ZONE 'Asia/Tokyo')
+            -- created_at is naive-UTC timestamp -- see the boundary
+            -- conversion rationale in findDeepestChain. The
+            -- ::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+            -- dance pins the window to JST midnight regardless of the
+            -- DB session timezone.
+            AND "created_at" >= (${range.currentWeekStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  (${range.nextWeekStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
         ),
         joined AS (
           SELECT
@@ -606,8 +683,11 @@ export default class ReportRepository implements IReportRepository {
           FROM "t_memberships"
           WHERE "community_id" = ${communityId}
             AND "status" = 'JOINED'
-            AND "created_at" >= (${cohort.cohortStart}::date AT TIME ZONE 'Asia/Tokyo')
-            AND "created_at" <  (${cohort.cohortEnd}::date AT TIME ZONE 'Asia/Tokyo')
+            -- Naive-UTC timestamp column vs JST-midnight boundary:
+            -- see the findDeepestChain comment for the full
+            -- explanation of the double AT TIME ZONE dance.
+            AND "created_at" >= (${cohort.cohortStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  (${cohort.cohortEnd}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
         ),
         active_members AS (
           SELECT DISTINCT "user_id"
