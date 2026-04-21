@@ -64,7 +64,7 @@
     "@faker-js/faker": "^9.7.0",
     "@graphql-codegen/cli": "^5.0.5",
     "@graphql-codegen/typescript": "^4.1.6",
-    "@graphql-codegen/typescript-operations": "^4.6.0",
+    "@graphql-codegen/typescript-operations": "^5.0.9",
     "@graphql-codegen/typescript-react-apollo": "^4.4.1",
     "@graphql-codegen/typescript-resolvers": "^4.5.0",
     "@mermaid-js/mermaid-cli": "^10.9.1",
