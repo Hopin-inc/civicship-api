@@ -228,15 +228,22 @@ export default class ReportUseCase {
       previousPeriod: previousAggregate
         ? { range: previousRange!, aggregate: previousAggregate }
         : null,
-      retention:
-        retentionAggregate && communityContext
-          ? {
-              aggregate: retentionAggregate,
-              totalMembers: communityContext.totalMembers,
-              week1: week1Cohort,
-              week4: week4Cohort,
-            }
-          : null,
+      // `retention` is gated purely on whether the caller opted in (i.e.
+      // `retentionAggregate` is non-null). Do NOT additionally gate on
+      // `communityContext` — that would silently null out the whole block
+      // whenever the community row is missing / soft-deleted, which breaks
+      // the `includeRetention` opt-in contract. When `communityContext` is
+      // null we surface `totalMembers: null` and the presenter collapses
+      // only the derived rates to null; the raw counters still flow
+      // through so the block stays useful.
+      retention: retentionAggregate
+        ? {
+            aggregate: retentionAggregate,
+            totalMembers: communityContext?.totalMembers ?? null,
+            week1: week1Cohort,
+            week4: week4Cohort,
+          }
+        : null,
     });
   }
 
