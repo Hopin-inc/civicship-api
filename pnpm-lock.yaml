@@ -170,8 +170,8 @@ importers:
         specifier: ^6.1.35
         version: 6.1.35(graphql@16.10.0)
       graphql-scalars:
-        specifier: ^1.24.2
-        version: 1.24.2(graphql@16.10.0)
+        specifier: ^1.25.0
+        version: 1.25.0(graphql@16.10.0)
       graphql-upload:
         specifier: ^17.0.0
         version: 17.0.0(@types/express@4.17.23)(@types/koa@2.15.0)(graphql@16.10.0)
@@ -5509,8 +5509,8 @@ packages:
     peerDependencies:
       graphql: 14 - 16
 
-  graphql-scalars@1.24.2:
-    resolution: {integrity: sha512-FoZ11yxIauEnH0E5rCUkhDXHVn/A6BBfovJdimRZCQlFCl+h7aVvarKmI15zG4VtQunmCDdqdtNs6ixThy3uAg==}
+  graphql-scalars@1.25.0:
+    resolution: {integrity: sha512-b0xyXZeRFkne4Eq7NAnL400gStGqG/Sx9VqX0A05nHyEbv57UJnWKsjNnrpVqv5e/8N1MUxkt0wwcRXbiyKcFg==}
     engines: {node: '>=10'}
     peerDependencies:
       graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
@@ -11083,7 +11083,7 @@ snapshots:
       '@graphql-tools/utils': 8.9.0(graphql@16.10.0)
       dataloader: 2.1.0
       graphql: 16.10.0
-      tslib: 2.4.1
+      tslib: 2.8.1
       value-or-promise: 1.0.11
 
   '@graphql-tools/batch-execute@9.0.17(graphql@16.10.0)':
@@ -11329,7 +11329,7 @@ snapshots:
       '@ardatan/relay-compiler': 12.0.3(graphql@16.10.0)
       '@graphql-tools/utils': 10.8.6(graphql@16.10.0)
       graphql: 16.10.0
-      tslib: 2.6.3
+      tslib: 2.8.1
     transitivePeerDependencies:
       - encoding
 
@@ -15764,7 +15764,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  graphql-scalars@1.24.2(graphql@16.10.0):
+  graphql-scalars@1.25.0(graphql@16.10.0):
     dependencies:
       graphql: 16.10.0
       tslib: 2.8.1
