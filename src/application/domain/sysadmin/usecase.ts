@@ -1,0 +1,195 @@
+import { inject, injectable } from "tsyringe";
+import { IContext } from "@/types/server";
+import { NotFoundError } from "@/errors/graphql";
+import {
+  GqlQuerySysAdminCommunityDetailArgs,
+  GqlQuerySysAdminDashboardArgs,
+  GqlSysAdminCommunityDetailPayload,
+  GqlSysAdminCommunityOverview,
+  GqlSysAdminDashboardPayload,
+} from "@/types/graphql";
+import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
+import SysAdminService, {
+  DEFAULT_SEGMENT_THRESHOLDS,
+  DEFAULT_WINDOW_MONTHS,
+  MAX_LIMIT,
+  SegmentThresholds,
+} from "@/application/domain/sysadmin/service";
+import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
+import { jstMonthStart, jstNextMonthStart } from "@/application/domain/sysadmin/util";
+
+@injectable()
+export default class SysAdminUseCase {
+  constructor(
+    @inject("SysAdminRepository") private readonly repository: ISysAdminRepository,
+    @inject("SysAdminService") private readonly service: SysAdminService,
+  ) {}
+
+  /**
+   * L1 dashboard: platform totals + one row per community.
+   *
+   * Fan-out is N in-process calls. At today's community count (~6)
+   * this is cheaper than a new bulk repository method; revisit once
+   * the platform exceeds ~20 communities (documented in the spec).
+   */
+  async getDashboard(
+    { input }: GqlQuerySysAdminDashboardArgs,
+    ctx: IContext,
+  ): Promise<GqlSysAdminDashboardPayload> {
+    const asOf = input?.asOf ?? new Date();
+    const thresholds = resolveThresholds(input?.segmentThresholds);
+
+    const monthStart = jstMonthStart(asOf);
+    const nextMonthStart = jstNextMonthStart(asOf);
+
+    const [platform, communities] = await Promise.all([
+      this.repository.findPlatformTotals(ctx, monthStart, nextMonthStart),
+      this.repository.findAllCommunities(ctx),
+    ]);
+
+    const rows = await Promise.all(
+      communities.map(async (c): Promise<GqlSysAdminCommunityOverview> => {
+        const [members, monthActivity, latestCohortRetentionM1] = await Promise.all([
+          this.repository.findMemberStats(ctx, c.communityId, asOf),
+          this.service.getMonthActivityWithPrev(ctx, c.communityId, asOf),
+          this.service.getLatestCohortRetentionM1(ctx, c.communityId, asOf),
+        ]);
+        const stageCounts = this.service.computeStageCounts(members, thresholds);
+        const alerts = await this.service.getAlerts(
+          ctx,
+          c.communityId,
+          asOf,
+          monthActivity.growthRateActivity,
+        );
+        return SysAdminPresenter.overviewRow({
+          communityId: c.communityId,
+          communityName: c.communityName,
+          totalMembers: stageCounts.total,
+          stageCounts,
+          communityActivityRate: monthActivity.current.rate,
+          growthRateActivity: monthActivity.growthRateActivity,
+          latestCohortRetentionM1,
+          alerts,
+        });
+      }),
+    );
+
+    // Sort by latest-month communityActivityRate descending — matches
+    // the "ソート: 直近月の community_activity_rate 降順（デフォルト）"
+    // behaviour in the requirement doc. Clients can still re-sort in
+    // the browser since the payload is small.
+    rows.sort((a, b) => b.communityActivityRate - a.communityActivityRate);
+
+    return SysAdminPresenter.dashboard({
+      asOf,
+      platform,
+      communities: rows,
+    });
+  }
+
+  /**
+   * L2 detail: summary card + stage breakdown + trailing-window trends
+   * + cohort retention + paginated member list + alerts for one
+   * community.
+   */
+  async getCommunityDetail(
+    { input }: GqlQuerySysAdminCommunityDetailArgs,
+    ctx: IContext,
+  ): Promise<GqlSysAdminCommunityDetailPayload> {
+    const asOf = input.asOf ?? new Date();
+    const thresholds = resolveThresholds(input.segmentThresholds);
+    const windowMonths = input.windowMonths ?? DEFAULT_WINDOW_MONTHS;
+
+    // Resolve the community row first so we can 404 early if the id is
+    // bogus and also thread `communityName` through the payload.
+    const communities = await this.repository.findAllCommunities(ctx);
+    const community = communities.find((c) => c.communityId === input.communityId);
+    if (!community) {
+      throw new NotFoundError("Community", { id: input.communityId });
+    }
+
+    const [
+      members,
+      monthlyActivity,
+      allTimeTotals,
+      monthActivity,
+      retentionTrend,
+      cohortRetention,
+    ] = await Promise.all([
+      this.repository.findMemberStats(ctx, community.communityId, asOf),
+      this.repository.findMonthlyActivity(ctx, community.communityId, asOf, windowMonths),
+      this.repository.findAllTimeTotals(ctx, community.communityId),
+      this.service.getMonthActivityWithPrev(ctx, community.communityId, asOf),
+      this.service.getRetentionTrend(ctx, community.communityId, asOf, windowMonths),
+      this.service.getCohortRetention(ctx, community.communityId, asOf, windowMonths),
+    ]);
+
+    const stageCounts = this.service.computeStageCounts(members, thresholds);
+    const stageBreakdown = this.service.computeStageBreakdown(members, thresholds);
+
+    const alerts = await this.service.getAlerts(
+      ctx,
+      community.communityId,
+      asOf,
+      monthActivity.growthRateActivity,
+    );
+
+    const memberList = this.service.paginateMembers(members, {
+      minSendRate: input.userFilter?.minSendRate ?? 0.7,
+      maxSendRate: input.userFilter?.maxSendRate ?? null,
+      minMonthsIn: input.userFilter?.minMonthsIn ?? null,
+      minDonationOutMonths: input.userFilter?.minDonationOutMonths ?? null,
+      sortField: input.userSort?.field ?? "SEND_RATE",
+      sortOrder: input.userSort?.order ?? "DESC",
+      limit: clampLimit(input.limit),
+      cursor: input.cursor ?? null,
+    });
+
+    const summary = SysAdminPresenter.summaryCard({
+      communityId: community.communityId,
+      communityName: community.communityName,
+      totalMembers: stageCounts.total,
+      communityActivityRate: monthActivity.current.rate,
+      communityActivityRate3mAvg: this.service.computeActivityRate3mAvg(monthlyActivity),
+      growthRateActivity: monthActivity.growthRateActivity,
+      tier2Count: stageCounts.tier2Count,
+      allTimeTotals,
+    });
+
+    return SysAdminPresenter.communityDetail({
+      communityId: community.communityId,
+      communityName: community.communityName,
+      asOf,
+      windowMonths,
+      summary,
+      stages: SysAdminPresenter.stages(stageBreakdown),
+      monthlyActivityTrend: monthlyActivity.map(SysAdminPresenter.monthlyActivityPoint),
+      retentionTrend: retentionTrend.map(SysAdminPresenter.retentionTrendPoint),
+      cohortRetention: cohortRetention.map(SysAdminPresenter.cohortPoint),
+      memberList: SysAdminPresenter.memberList(memberList),
+      alerts: SysAdminPresenter.alerts(alerts),
+    });
+  }
+}
+
+function resolveThresholds(
+  input:
+    | {
+        tier1?: number | null;
+        tier2?: number | null;
+      }
+    | null
+    | undefined,
+): SegmentThresholds {
+  const tier1 = input?.tier1 ?? DEFAULT_SEGMENT_THRESHOLDS.tier1;
+  const tier2 = input?.tier2 ?? DEFAULT_SEGMENT_THRESHOLDS.tier2;
+  // If a caller flips them (tier2 > tier1), swap silently rather than
+  // erroring — the "higher boundary" invariant is what the rest of the
+  // service relies on, and a swap is a less confusing DX than a 400.
+  return tier1 >= tier2 ? { tier1, tier2 } : { tier1: tier2, tier2: tier1 };
+}
+
+function clampLimit(limit: number | null | undefined): number {
+  const n = limit ?? 50;
+  return Math.min(Math.max(n, 1), MAX_LIMIT);
+}

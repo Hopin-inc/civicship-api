@@ -2184,6 +2184,21 @@ export type GqlQuery = {
   reservations: GqlReservationsConnection;
   signupBonusConfig?: Maybe<GqlCommunitySignupBonusConfig>;
   states: GqlStatesConnection;
+  /**
+   * L2 detail for a single community: summary card, stage distribution,
+   * trailing-window trends, cohort retention, and a paginated member list.
+   * Intended for answering "what are kibotcha's numbers?" in an external
+   * report conversation.
+   */
+  sysAdminCommunityDetail: GqlSysAdminCommunityDetailPayload;
+  /**
+   * L1 overview: platform totals plus one row per community. Intended for
+   * the "is any community stalling?" scan. Community fan-out is served
+   * with N in-process calls (acceptable at today's community count —
+   * switch to a GROUP BY implementation once the platform exceeds ~20
+   * communities).
+   */
+  sysAdminDashboard: GqlSysAdminDashboardPayload;
   ticket?: Maybe<GqlTicket>;
   ticketClaimLink?: Maybe<GqlTicketClaimLink>;
   ticketClaimLinks: GqlTicketClaimLinksConnection;
@@ -2479,6 +2494,16 @@ export type GqlQueryStatesArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<GqlStatesInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type GqlQuerySysAdminCommunityDetailArgs = {
+  input: GqlSysAdminCommunityDetailInput;
+};
+
+
+export type GqlQuerySysAdminDashboardArgs = {
+  input?: InputMaybe<GqlSysAdminDashboardInput>;
 };
 
 
@@ -2961,6 +2986,455 @@ export type GqlSubmitReportFeedbackSuccess = {
   feedback: GqlReportFeedback;
 };
 
+/** One entry-month cohort's retention curve. */
+export type GqlSysAdminCohortRetentionPoint = {
+  __typename?: 'SysAdminCohortRetentionPoint';
+  /** Entry month, first day JST (e.g. 2025-10-01T00:00+09:00). */
+  cohortMonth: Scalars['Datetime']['output'];
+  /** Cohort size at entry (status='JOINED' joiners in the month). */
+  cohortSize: Scalars['Int']['output'];
+  /**
+   * Fraction of the cohort with a DONATION out in the SECOND month after
+   * entry (m+1). null for an empty cohort or a cohort too recent to have
+   * a completed m+1 window.
+   */
+  retentionM1?: Maybe<Scalars['Float']['output']>;
+  /** Fraction active in m+3. */
+  retentionM3?: Maybe<Scalars['Float']['output']>;
+  /** Fraction active in m+6. */
+  retentionM6?: Maybe<Scalars['Float']['output']>;
+};
+
+/**
+ * API-side alert flags. Boolean only: the server owns the cross-field
+ * judgement, the client just renders the badge.
+ */
+export type GqlSysAdminCommunityAlerts = {
+  __typename?: 'SysAdminCommunityAlerts';
+  /** Month-over-month communityActivityRate change <= -20%. */
+  activeDrop: Scalars['Boolean']['output'];
+  /** Latest-week churned_senders > retained_senders. */
+  churnSpike: Scalars['Boolean']['output'];
+  /** No t_memberships.created_at rows (status='JOINED') in the last 14 days. */
+  noNewMembers: Scalars['Boolean']['output'];
+};
+
+export type GqlSysAdminCommunityDetailInput = {
+  /** As-of timestamp (see SysAdminDashboardInput.asOf). */
+  asOf?: InputMaybe<Scalars['Datetime']['input']>;
+  /** Target community id. */
+  communityId: Scalars['ID']['input'];
+  /** Opaque cursor for pagination (member id of the last row on prior page). */
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  /** Member list page size (default 50, max 200). */
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  /** Stage-count thresholds for the stage distribution and tier counts. */
+  segmentThresholds?: InputMaybe<GqlSysAdminSegmentThresholdsInput>;
+  /** Member list filter. Defaults to `minSendRate = 0.7` (habitual only). */
+  userFilter?: InputMaybe<GqlSysAdminUserListFilter>;
+  /** Member list sort. Defaults to SEND_RATE DESC. */
+  userSort?: InputMaybe<GqlSysAdminUserListSort>;
+  /**
+   * How many trailing JST months to include in the trend / cohort arrays.
+   * Default 10.
+   */
+  windowMonths?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/** Root payload for sysAdminCommunityDetail (L2). */
+export type GqlSysAdminCommunityDetailPayload = {
+  __typename?: 'SysAdminCommunityDetailPayload';
+  /** Alert flags (same structure as L1, evaluated for this community). */
+  alerts: GqlSysAdminCommunityAlerts;
+  /** As-of timestamp echoed back. */
+  asOf: Scalars['Datetime']['output'];
+  /**
+   * One entry per entry month (length <= windowMonths), newest last.
+   * `retentionM*` fields are null when the cohort is empty or too recent.
+   */
+  cohortRetention: Array<GqlSysAdminCohortRetentionPoint>;
+  /** Community id. */
+  communityId: Scalars['ID']['output'];
+  /** Community display name. */
+  communityName: Scalars['String']['output'];
+  /** Paginated member list — see type doc. */
+  memberList: GqlSysAdminMemberList;
+  /**
+   * One entry per month (length <= windowMonths), newest last. Older
+   * months with no MV data are omitted rather than zero-padded.
+   */
+  monthlyActivityTrend: Array<GqlSysAdminMonthlyActivityPoint>;
+  /**
+   * One entry per ISO week, newest last. Length approximates
+   * `windowMonths * ~4.3` weeks; sparse weeks with no activity still emit
+   * a row with zero counters.
+   */
+  retentionTrend: Array<GqlSysAdminRetentionTrendPoint>;
+  /**
+   * Stage distribution, classified server-side with the request's
+   * thresholds. Computed over ALL members (independent of member-list
+   * filter).
+   */
+  stages: GqlSysAdminStageDistribution;
+  /** Summary card — see type doc. */
+  summary: GqlSysAdminCommunitySummaryCard;
+  /** Trailing window length in JST months (echoed back). */
+  windowMonths: Scalars['Int']['output'];
+};
+
+/**
+ * One row of the L1 all-community table. See the module docstring for the
+ * distinction between `communityActivityRate` (this type) and
+ * `userSendRate` (SysAdminMemberRow).
+ */
+export type GqlSysAdminCommunityOverview = {
+  __typename?: 'SysAdminCommunityOverview';
+  /** Alert flags (see SysAdminCommunityAlerts). */
+  alerts: GqlSysAdminCommunityAlerts;
+  /**
+   * Community activity rate for the JST calendar month containing asOf:
+   * unique DONATION senders in that month / month-end total_members.
+   * 0.0–1.0. NOT the individual-level userSendRate.
+   */
+  communityActivityRate: Scalars['Float']['output'];
+  /** Community id. */
+  communityId: Scalars['ID']['output'];
+  /** Community display name (t_communities.name). */
+  communityName: Scalars['String']['output'];
+  /**
+   * Month-over-month % change in communityActivityRate.
+   * Returned as a fraction (e.g. -0.2 == -20%). null when the prior month
+   * has no data to compare against.
+   */
+  growthRateActivity?: Maybe<Scalars['Float']['output']>;
+  /**
+   * Retention rate of the most recent completed cohort (members who joined
+   * in asOf's previous JST month) measured in the month after joining.
+   * null when that cohort is empty.
+   */
+  latestCohortRetentionM1?: Maybe<Scalars['Float']['output']>;
+  /**
+   * Direct member count for the "latent" stage (never donated).
+   * Convenience field (== segmentCounts.passiveCount).
+   */
+  passiveCount: Scalars['Int']['output'];
+  /** Stage counts under the supplied thresholds (cumulative, see type doc). */
+  segmentCounts: GqlSysAdminSegmentCounts;
+  /**
+   * Direct member count for the "habitual" stage (userSendRate >= tier1).
+   * Convenience field (== segmentCounts.tier1Count).
+   */
+  tier1Count: Scalars['Int']['output'];
+  /**
+   * Direct member count for the "regular+habitual" stage
+   * (userSendRate >= tier2). Convenience field (== segmentCounts.tier2Count).
+   */
+  tier2Count: Scalars['Int']['output'];
+  /** Total status='JOINED' members at asOf. */
+  totalMembers: Scalars['Int']['output'];
+};
+
+/**
+ * Summary card for a single community. Fronts the L2 detail screen and
+ * answers "is this community improving?" in one row of numbers.
+ */
+export type GqlSysAdminCommunitySummaryCard = {
+  __typename?: 'SysAdminCommunitySummaryCard';
+  /**
+   * Latest-month communityActivityRate (PRIMARY indicator — see module
+   * docstring for the distinction vs userSendRate).
+   */
+  communityActivityRate: Scalars['Float']['output'];
+  /**
+   * 3-month trailing average of communityActivityRate, ending at the JST
+   * calendar month containing asOf (inclusive). null when fewer than 3
+   * months of data exist.
+   */
+  communityActivityRate3mAvg?: Maybe<Scalars['Float']['output']>;
+  /** Community id. */
+  communityId: Scalars['ID']['output'];
+  /** Community display name. */
+  communityName: Scalars['String']['output'];
+  /** Oldest date with MV data for this community (JST calendar). */
+  dataFrom?: Maybe<Scalars['Datetime']['output']>;
+  /** Newest date with MV data for this community (JST calendar). */
+  dataTo?: Maybe<Scalars['Datetime']['output']>;
+  /**
+   * Month-over-month % change in communityActivityRate (fraction, e.g.
+   * -0.2 == -20%). null when the prior month has no data.
+   */
+  growthRateActivity?: Maybe<Scalars['Float']['output']>;
+  /**
+   * Maximum chain depth observed in any DONATION, all-time. null when
+   * no chained transactions exist.
+   */
+  maxChainDepthAllTime?: Maybe<Scalars['Int']['output']>;
+  /** Cumulative members in tier2 or above under the supplied thresholds. */
+  tier2Count: Scalars['Int']['output'];
+  /** tier2Count / totalMembers (0.0–1.0). */
+  tier2Pct: Scalars['Float']['output'];
+  /**
+   * Total DONATION points transferred, all-time (no window). Uses
+   * t_transactions directly so the value is independent of MV retention.
+   */
+  totalDonationPointsAllTime: Scalars['Float']['output'];
+  /** Total status='JOINED' members at asOf. */
+  totalMembers: Scalars['Int']['output'];
+};
+
+/** Input for the L1 all-community overview (`sysAdminDashboard`). */
+export type GqlSysAdminDashboardInput = {
+  /**
+   * The "as of" timestamp. All trailing-window calculations are anchored
+   * here: the "latest month" is the JST calendar month containing asOf,
+   * and "latest week" is the ISO-week containing asOf. Defaults to now
+   * when omitted.
+   */
+  asOf?: InputMaybe<Scalars['Datetime']['input']>;
+  /** Stage-count thresholds (see SysAdminSegmentThresholdsInput). */
+  segmentThresholds?: InputMaybe<GqlSysAdminSegmentThresholdsInput>;
+};
+
+/** Root payload for sysAdminDashboard (L1). */
+export type GqlSysAdminDashboardPayload = {
+  __typename?: 'SysAdminDashboardPayload';
+  /** As-of timestamp echoed back (UTC instant). */
+  asOf: Scalars['Datetime']['output'];
+  /** One row per community, in dashboard sort order. */
+  communities: Array<GqlSysAdminCommunityOverview>;
+  /** Platform-wide aggregate row. */
+  platform: GqlSysAdminPlatformSummary;
+};
+
+/** Paginated member list for the L2 detail. */
+export type GqlSysAdminMemberList = {
+  __typename?: 'SysAdminMemberList';
+  /** Whether more pages exist after this one. */
+  hasNextPage: Scalars['Boolean']['output'];
+  /**
+   * Opaque cursor to pass back in `SysAdminCommunityDetailInput.cursor` to
+   * fetch the next page. null when no further pages exist.
+   */
+  nextCursor?: Maybe<Scalars['String']['output']>;
+  /**
+   * Member rows for the current page, matching filter & sort applied
+   * server-side.
+   */
+  users: Array<GqlSysAdminMemberRow>;
+};
+
+/**
+ * One row of the L2 member list. Raw values only — stage classification
+ * (habitual / regular / occasional / latent) is the client's concern so
+ * server-side thresholds can be tuned without a schema change.
+ */
+export type GqlSysAdminMemberRow = {
+  __typename?: 'SysAdminMemberRow';
+  /** Distinct months with at least one DONATION out. */
+  donationOutMonths: Scalars['Int']['output'];
+  /** Tenure in JST calendar months (floor, minimum 1). */
+  monthsIn: Scalars['Int']['output'];
+  /** User display name (users.name). null when the user has no name set. */
+  name?: Maybe<Scalars['String']['output']>;
+  /** All-time DONATION points sent by this user in this community. */
+  totalPointsOut: Scalars['Float']['output'];
+  /** User id. */
+  userId: Scalars['ID']['output'];
+  /**
+   * Individual monthly-send rate: `donationOutMonths / monthsIn`, 0.0–1.0,
+   * rounded to 3 decimals. INDIVIDUAL LTV variable (not the same as
+   * communityActivityRate elsewhere in this schema).
+   */
+  userSendRate: Scalars['Float']['output'];
+};
+
+/** One month of community activity trend. */
+export type GqlSysAdminMonthlyActivityPoint = {
+  __typename?: 'SysAdminMonthlyActivityPoint';
+  /**
+   * Share of DONATION transactions that were part of a chain (chain_depth
+   * > 0) in the month. 0.0–1.0.
+   */
+  chainPct?: Maybe<Scalars['Float']['output']>;
+  /**
+   * senderCount / month-end totalMembers. Read alongside newMembers: a
+   * month with many new joiners can dip the rate even if absolute activity
+   * grew.
+   */
+  communityActivityRate: Scalars['Float']['output'];
+  /** Sum of DONATION points transferred in the month. */
+  donationPointsSum: Scalars['Float']['output'];
+  /** First day (JST) of the calendar month, e.g. 2025-10-01T00:00+09:00. */
+  month: Scalars['Datetime']['output'];
+  /** t_memberships.created_at (status='JOINED') rows falling in the month. */
+  newMembers: Scalars['Int']['output'];
+  /** Distinct DONATION senders in the month. */
+  senderCount: Scalars['Int']['output'];
+};
+
+/**
+ * Platform-wide headline, computed by summing across every community in
+ * scope for the caller (which is every community since this query is
+ * SYS_ADMIN-gated).
+ */
+export type GqlSysAdminPlatformSummary = {
+  __typename?: 'SysAdminPlatformSummary';
+  /** Number of communities included in the response. */
+  communitiesCount: Scalars['Int']['output'];
+  /**
+   * Sum of DONATION points transferred during the JST calendar month
+   * containing `asOf`, across every community.
+   */
+  latestMonthDonationPoints: Scalars['Float']['output'];
+  /** Sum of status='JOINED' members across every community. */
+  totalMembers: Scalars['Int']['output'];
+};
+
+/** One ISO week of retention signals. */
+export type GqlSysAdminRetentionTrendPoint = {
+  __typename?: 'SysAdminRetentionTrendPoint';
+  /** Senders in the prior week who did NOT send this week. */
+  churnedSenders: Scalars['Int']['output'];
+  /**
+   * Community activity rate for the week: distinct senders / totalMembers
+   * as of week end. null when the community had zero members during the
+   * week.
+   */
+  communityActivityRate?: Maybe<Scalars['Float']['output']>;
+  /** New t_memberships.created_at rows (status='JOINED') this week. */
+  newMembers: Scalars['Int']['output'];
+  /**
+   * Senders in both the prior week and this week (same-user on
+   * donation_out_count > 0).
+   */
+  retainedSenders: Scalars['Int']['output'];
+  /**
+   * Senders this week who did NOT send last week but DID send some week
+   * in the prior 12-week window.
+   */
+  returnedSenders: Scalars['Int']['output'];
+  /** Monday 00:00 JST of the ISO week. */
+  week: Scalars['Datetime']['output'];
+};
+
+/**
+ * Stage-count snapshot for one community, computed by the server using the
+ * client-supplied `SysAdminSegmentThresholdsInput`. Cumulative semantics:
+ * `tier2Count` INCLUDES members counted in `tier1Count`.
+ */
+export type GqlSysAdminSegmentCounts = {
+  __typename?: 'SysAdminSegmentCounts';
+  /** Members with userSendRate > 0 (excludes latent). */
+  activeCount: Scalars['Int']['output'];
+  /** Members with donationOutMonths == 0 (latent / not-yet-participated). */
+  passiveCount: Scalars['Int']['output'];
+  /** Members with userSendRate >= tier1. */
+  tier1Count: Scalars['Int']['output'];
+  /** Members with userSendRate >= tier2 (includes tier1). */
+  tier2Count: Scalars['Int']['output'];
+  /** Total status='JOINED' members at asOf. */
+  total: Scalars['Int']['output'];
+};
+
+/**
+ * Stage classification thresholds, supplied by the client.
+ * Thresholds define WHERE the boundary between stages sits, but naming
+ * (habitual / regular / occasional / latent) remains fixed on the server.
+ */
+export type GqlSysAdminSegmentThresholdsInput = {
+  /**
+   * Habitual stage threshold. A user with `userSendRate >= tier1` is
+   * counted as "habitual" (i.e. sends donations in at least tier1 share
+   * of their tenure). Default 0.7.
+   */
+  tier1?: InputMaybe<Scalars['Float']['input']>;
+  /**
+   * Regular stage threshold. `userSendRate >= tier2` AND `< tier1`
+   * classifies as "regular". Default 0.4.
+   */
+  tier2?: InputMaybe<Scalars['Float']['input']>;
+};
+
+/** Sort direction for the member list. */
+export const GqlSysAdminSortOrder = {
+  Asc: 'ASC',
+  Desc: 'DESC'
+} as const;
+
+export type GqlSysAdminSortOrder = typeof GqlSysAdminSortOrder[keyof typeof GqlSysAdminSortOrder];
+/**
+ * Summary for one stage (habitual / regular / occasional / latent).
+ * Stage membership is classified server-side using the thresholds supplied
+ * in the request. `pointsContributionPct` is the share of total DONATION
+ * points-out attributed to members in this stage, in the asOf month.
+ */
+export type GqlSysAdminStageBucket = {
+  __typename?: 'SysAdminStageBucket';
+  /** Average monthsIn across members in this stage. */
+  avgMonthsIn: Scalars['Float']['output'];
+  /** Average userSendRate across members in this stage (0.0–1.0). */
+  avgSendRate: Scalars['Float']['output'];
+  /** Number of members in this stage. */
+  count: Scalars['Int']['output'];
+  /** count / totalMembers (0.0–1.0). */
+  pct: Scalars['Float']['output'];
+  /**
+   * Stage's share of DONATION points-out in the asOf month (0.0–1.0).
+   * 0 for the latent stage by definition.
+   */
+  pointsContributionPct: Scalars['Float']['output'];
+};
+
+/**
+ * Four-stage distribution of the community's membership.
+ * `pointsContributionPct` on `latent` is always 0 since latent members
+ * haven't donated by definition.
+ */
+export type GqlSysAdminStageDistribution = {
+  __typename?: 'SysAdminStageDistribution';
+  /** userSendRate >= tier1. */
+  habitual: GqlSysAdminStageBucket;
+  /** donationOutMonths == 0. */
+  latent: GqlSysAdminStageBucket;
+  /** 0 < userSendRate < tier2. */
+  occasional: GqlSysAdminStageBucket;
+  /** tier2 <= userSendRate < tier1. */
+  regular: GqlSysAdminStageBucket;
+};
+
+/**
+ * Member-list filters for the L2 detail (`sysAdminCommunityDetail`).
+ * All conditions AND together. Unspecified fields do not filter.
+ */
+export type GqlSysAdminUserListFilter = {
+  /** Inclusive upper bound on userSendRate. */
+  maxSendRate?: InputMaybe<Scalars['Float']['input']>;
+  /** Inclusive lower bound on donationOutMonths. */
+  minDonationOutMonths?: InputMaybe<Scalars['Int']['input']>;
+  /** Inclusive lower bound on monthsIn (JST-calendar months). */
+  minMonthsIn?: InputMaybe<Scalars['Int']['input']>;
+  /** Inclusive lower bound on userSendRate. Default 0.7 (habitual only). */
+  minSendRate?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export type GqlSysAdminUserListSort = {
+  field?: InputMaybe<GqlSysAdminUserSortField>;
+  order?: InputMaybe<GqlSysAdminSortOrder>;
+};
+
+/** Sortable columns on the member list. */
+export const GqlSysAdminUserSortField = {
+  /** donationOutMonths (distinct months with a DONATION out). */
+  DonationOutMonths: 'DONATION_OUT_MONTHS',
+  /** monthsIn (tenure in JST calendar months). */
+  MonthsIn: 'MONTHS_IN',
+  /** userSendRate (individual monthly-send rate, 0.0–1.0). */
+  SendRate: 'SEND_RATE',
+  /** totalPointsOut (lifetime DONATION points sent). */
+  TotalPointsOut: 'TOTAL_POINTS_OUT'
+} as const;
+
+export type GqlSysAdminUserSortField = typeof GqlSysAdminUserSortField[keyof typeof GqlSysAdminUserSortField];
 export const GqlSysRole = {
   SysAdmin: 'SYS_ADMIN',
   User: 'USER'
@@ -4380,6 +4854,27 @@ export type GqlResolversTypes = ResolversObject<{
   SubmitReportFeedbackInput: GqlSubmitReportFeedbackInput;
   SubmitReportFeedbackPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['SubmitReportFeedbackPayload']>;
   SubmitReportFeedbackSuccess: ResolverTypeWrapper<Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: GqlResolversTypes['ReportFeedback'] }>;
+  SysAdminCohortRetentionPoint: ResolverTypeWrapper<GqlSysAdminCohortRetentionPoint>;
+  SysAdminCommunityAlerts: ResolverTypeWrapper<GqlSysAdminCommunityAlerts>;
+  SysAdminCommunityDetailInput: GqlSysAdminCommunityDetailInput;
+  SysAdminCommunityDetailPayload: ResolverTypeWrapper<GqlSysAdminCommunityDetailPayload>;
+  SysAdminCommunityOverview: ResolverTypeWrapper<GqlSysAdminCommunityOverview>;
+  SysAdminCommunitySummaryCard: ResolverTypeWrapper<GqlSysAdminCommunitySummaryCard>;
+  SysAdminDashboardInput: GqlSysAdminDashboardInput;
+  SysAdminDashboardPayload: ResolverTypeWrapper<GqlSysAdminDashboardPayload>;
+  SysAdminMemberList: ResolverTypeWrapper<GqlSysAdminMemberList>;
+  SysAdminMemberRow: ResolverTypeWrapper<GqlSysAdminMemberRow>;
+  SysAdminMonthlyActivityPoint: ResolverTypeWrapper<GqlSysAdminMonthlyActivityPoint>;
+  SysAdminPlatformSummary: ResolverTypeWrapper<GqlSysAdminPlatformSummary>;
+  SysAdminRetentionTrendPoint: ResolverTypeWrapper<GqlSysAdminRetentionTrendPoint>;
+  SysAdminSegmentCounts: ResolverTypeWrapper<GqlSysAdminSegmentCounts>;
+  SysAdminSegmentThresholdsInput: GqlSysAdminSegmentThresholdsInput;
+  SysAdminSortOrder: GqlSysAdminSortOrder;
+  SysAdminStageBucket: ResolverTypeWrapper<GqlSysAdminStageBucket>;
+  SysAdminStageDistribution: ResolverTypeWrapper<GqlSysAdminStageDistribution>;
+  SysAdminUserListFilter: GqlSysAdminUserListFilter;
+  SysAdminUserListSort: GqlSysAdminUserListSort;
+  SysAdminUserSortField: GqlSysAdminUserSortField;
   SysRole: GqlSysRole;
   Ticket: ResolverTypeWrapper<Ticket>;
   TicketClaimInput: GqlTicketClaimInput;
@@ -4761,6 +5256,25 @@ export type GqlResolversParentTypes = ResolversObject<{
   SubmitReportFeedbackInput: GqlSubmitReportFeedbackInput;
   SubmitReportFeedbackPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['SubmitReportFeedbackPayload'];
   SubmitReportFeedbackSuccess: Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: GqlResolversParentTypes['ReportFeedback'] };
+  SysAdminCohortRetentionPoint: GqlSysAdminCohortRetentionPoint;
+  SysAdminCommunityAlerts: GqlSysAdminCommunityAlerts;
+  SysAdminCommunityDetailInput: GqlSysAdminCommunityDetailInput;
+  SysAdminCommunityDetailPayload: GqlSysAdminCommunityDetailPayload;
+  SysAdminCommunityOverview: GqlSysAdminCommunityOverview;
+  SysAdminCommunitySummaryCard: GqlSysAdminCommunitySummaryCard;
+  SysAdminDashboardInput: GqlSysAdminDashboardInput;
+  SysAdminDashboardPayload: GqlSysAdminDashboardPayload;
+  SysAdminMemberList: GqlSysAdminMemberList;
+  SysAdminMemberRow: GqlSysAdminMemberRow;
+  SysAdminMonthlyActivityPoint: GqlSysAdminMonthlyActivityPoint;
+  SysAdminPlatformSummary: GqlSysAdminPlatformSummary;
+  SysAdminRetentionTrendPoint: GqlSysAdminRetentionTrendPoint;
+  SysAdminSegmentCounts: GqlSysAdminSegmentCounts;
+  SysAdminSegmentThresholdsInput: GqlSysAdminSegmentThresholdsInput;
+  SysAdminStageBucket: GqlSysAdminStageBucket;
+  SysAdminStageDistribution: GqlSysAdminStageDistribution;
+  SysAdminUserListFilter: GqlSysAdminUserListFilter;
+  SysAdminUserListSort: GqlSysAdminUserListSort;
   Ticket: Ticket;
   TicketClaimInput: GqlTicketClaimInput;
   TicketClaimLink: TicketClaimLink;
@@ -5905,6 +6419,8 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   reservations?: Resolver<GqlResolversTypes['ReservationsConnection'], ParentType, ContextType, Partial<GqlQueryReservationsArgs>>;
   signupBonusConfig?: Resolver<Maybe<GqlResolversTypes['CommunitySignupBonusConfig']>, ParentType, ContextType, RequireFields<GqlQuerySignupBonusConfigArgs, 'communityId'>>;
   states?: Resolver<GqlResolversTypes['StatesConnection'], ParentType, ContextType, Partial<GqlQueryStatesArgs>>;
+  sysAdminCommunityDetail?: Resolver<GqlResolversTypes['SysAdminCommunityDetailPayload'], ParentType, ContextType, RequireFields<GqlQuerySysAdminCommunityDetailArgs, 'input'>>;
+  sysAdminDashboard?: Resolver<GqlResolversTypes['SysAdminDashboardPayload'], ParentType, ContextType, Partial<GqlQuerySysAdminDashboardArgs>>;
   ticket?: Resolver<Maybe<GqlResolversTypes['Ticket']>, ParentType, ContextType, RequireFields<GqlQueryTicketArgs, 'id'>>;
   ticketClaimLink?: Resolver<Maybe<GqlResolversTypes['TicketClaimLink']>, ParentType, ContextType, RequireFields<GqlQueryTicketClaimLinkArgs, 'id'>>;
   ticketClaimLinks?: Resolver<GqlResolversTypes['TicketClaimLinksConnection'], ParentType, ContextType, Partial<GqlQueryTicketClaimLinksArgs>>;
@@ -6137,6 +6653,145 @@ export type GqlSubmitReportFeedbackPayloadResolvers<ContextType = any, ParentTyp
 
 export type GqlSubmitReportFeedbackSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SubmitReportFeedbackSuccess'] = GqlResolversParentTypes['SubmitReportFeedbackSuccess']> = ResolversObject<{
   feedback?: Resolver<GqlResolversTypes['ReportFeedback'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminCohortRetentionPointResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCohortRetentionPoint'] = GqlResolversParentTypes['SysAdminCohortRetentionPoint']> = ResolversObject<{
+  cohortMonth?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  cohortSize?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  retentionM1?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  retentionM3?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  retentionM6?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminCommunityAlertsResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCommunityAlerts'] = GqlResolversParentTypes['SysAdminCommunityAlerts']> = ResolversObject<{
+  activeDrop?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  churnSpike?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  noNewMembers?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminCommunityDetailPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCommunityDetailPayload'] = GqlResolversParentTypes['SysAdminCommunityDetailPayload']> = ResolversObject<{
+  alerts?: Resolver<GqlResolversTypes['SysAdminCommunityAlerts'], ParentType, ContextType>;
+  asOf?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  cohortRetention?: Resolver<Array<GqlResolversTypes['SysAdminCohortRetentionPoint']>, ParentType, ContextType>;
+  communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  communityName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  memberList?: Resolver<GqlResolversTypes['SysAdminMemberList'], ParentType, ContextType>;
+  monthlyActivityTrend?: Resolver<Array<GqlResolversTypes['SysAdminMonthlyActivityPoint']>, ParentType, ContextType>;
+  retentionTrend?: Resolver<Array<GqlResolversTypes['SysAdminRetentionTrendPoint']>, ParentType, ContextType>;
+  stages?: Resolver<GqlResolversTypes['SysAdminStageDistribution'], ParentType, ContextType>;
+  summary?: Resolver<GqlResolversTypes['SysAdminCommunitySummaryCard'], ParentType, ContextType>;
+  windowMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminCommunityOverviewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCommunityOverview'] = GqlResolversParentTypes['SysAdminCommunityOverview']> = ResolversObject<{
+  alerts?: Resolver<GqlResolversTypes['SysAdminCommunityAlerts'], ParentType, ContextType>;
+  communityActivityRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  communityName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  growthRateActivity?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  latestCohortRetentionM1?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  passiveCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  segmentCounts?: Resolver<GqlResolversTypes['SysAdminSegmentCounts'], ParentType, ContextType>;
+  tier1Count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  tier2Count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  totalMembers?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminCommunitySummaryCardResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCommunitySummaryCard'] = GqlResolversParentTypes['SysAdminCommunitySummaryCard']> = ResolversObject<{
+  communityActivityRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  communityActivityRate3mAvg?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  communityName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  dataFrom?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  dataTo?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  growthRateActivity?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  maxChainDepthAllTime?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  tier2Count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  tier2Pct?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  totalDonationPointsAllTime?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  totalMembers?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminDashboardPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminDashboardPayload'] = GqlResolversParentTypes['SysAdminDashboardPayload']> = ResolversObject<{
+  asOf?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  communities?: Resolver<Array<GqlResolversTypes['SysAdminCommunityOverview']>, ParentType, ContextType>;
+  platform?: Resolver<GqlResolversTypes['SysAdminPlatformSummary'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminMemberListResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminMemberList'] = GqlResolversParentTypes['SysAdminMemberList']> = ResolversObject<{
+  hasNextPage?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  nextCursor?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  users?: Resolver<Array<GqlResolversTypes['SysAdminMemberRow']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminMemberRowResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminMemberRow'] = GqlResolversParentTypes['SysAdminMemberRow']> = ResolversObject<{
+  donationOutMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  monthsIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  totalPointsOut?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  userId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  userSendRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminMonthlyActivityPointResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminMonthlyActivityPoint'] = GqlResolversParentTypes['SysAdminMonthlyActivityPoint']> = ResolversObject<{
+  chainPct?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  communityActivityRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  donationPointsSum?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  month?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  newMembers?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  senderCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminPlatformSummaryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminPlatformSummary'] = GqlResolversParentTypes['SysAdminPlatformSummary']> = ResolversObject<{
+  communitiesCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  latestMonthDonationPoints?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  totalMembers?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminRetentionTrendPointResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminRetentionTrendPoint'] = GqlResolversParentTypes['SysAdminRetentionTrendPoint']> = ResolversObject<{
+  churnedSenders?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  communityActivityRate?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  newMembers?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  retainedSenders?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  returnedSenders?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  week?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminSegmentCountsResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminSegmentCounts'] = GqlResolversParentTypes['SysAdminSegmentCounts']> = ResolversObject<{
+  activeCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  passiveCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  tier1Count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  tier2Count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  total?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminStageBucketResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminStageBucket'] = GqlResolversParentTypes['SysAdminStageBucket']> = ResolversObject<{
+  avgMonthsIn?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  avgSendRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  pct?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  pointsContributionPct?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminStageDistributionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminStageDistribution'] = GqlResolversParentTypes['SysAdminStageDistribution']> = ResolversObject<{
+  habitual?: Resolver<GqlResolversTypes['SysAdminStageBucket'], ParentType, ContextType>;
+  latent?: Resolver<GqlResolversTypes['SysAdminStageBucket'], ParentType, ContextType>;
+  occasional?: Resolver<GqlResolversTypes['SysAdminStageBucket'], ParentType, ContextType>;
+  regular?: Resolver<GqlResolversTypes['SysAdminStageBucket'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -6860,6 +7515,20 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   StorePhoneAuthTokenPayload?: GqlStorePhoneAuthTokenPayloadResolvers<ContextType>;
   SubmitReportFeedbackPayload?: GqlSubmitReportFeedbackPayloadResolvers<ContextType>;
   SubmitReportFeedbackSuccess?: GqlSubmitReportFeedbackSuccessResolvers<ContextType>;
+  SysAdminCohortRetentionPoint?: GqlSysAdminCohortRetentionPointResolvers<ContextType>;
+  SysAdminCommunityAlerts?: GqlSysAdminCommunityAlertsResolvers<ContextType>;
+  SysAdminCommunityDetailPayload?: GqlSysAdminCommunityDetailPayloadResolvers<ContextType>;
+  SysAdminCommunityOverview?: GqlSysAdminCommunityOverviewResolvers<ContextType>;
+  SysAdminCommunitySummaryCard?: GqlSysAdminCommunitySummaryCardResolvers<ContextType>;
+  SysAdminDashboardPayload?: GqlSysAdminDashboardPayloadResolvers<ContextType>;
+  SysAdminMemberList?: GqlSysAdminMemberListResolvers<ContextType>;
+  SysAdminMemberRow?: GqlSysAdminMemberRowResolvers<ContextType>;
+  SysAdminMonthlyActivityPoint?: GqlSysAdminMonthlyActivityPointResolvers<ContextType>;
+  SysAdminPlatformSummary?: GqlSysAdminPlatformSummaryResolvers<ContextType>;
+  SysAdminRetentionTrendPoint?: GqlSysAdminRetentionTrendPointResolvers<ContextType>;
+  SysAdminSegmentCounts?: GqlSysAdminSegmentCountsResolvers<ContextType>;
+  SysAdminStageBucket?: GqlSysAdminStageBucketResolvers<ContextType>;
+  SysAdminStageDistribution?: GqlSysAdminStageDistributionResolvers<ContextType>;
   Ticket?: GqlTicketResolvers<ContextType>;
   TicketClaimLink?: GqlTicketClaimLinkResolvers<ContextType>;
   TicketClaimLinkEdge?: GqlTicketClaimLinkEdgeResolvers<ContextType>;

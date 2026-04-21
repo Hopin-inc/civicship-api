@@ -128,6 +128,9 @@ import VoteUseCase from "@/application/domain/vote/usecase";
 import VoteService from "@/application/domain/vote/service";
 import VoteConverter from "@/application/domain/vote/data/converter";
 import VoteRepository from "@/application/domain/vote/data/repository";
+import SysAdminRepository from "@/application/domain/sysadmin/data/repository";
+import SysAdminService from "@/application/domain/sysadmin/service";
+import SysAdminUseCase from "@/application/domain/sysadmin/usecase";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -371,6 +374,14 @@ export function registerProductionDependencies() {
   container.register("VoteService", { useClass: VoteService });
   container.register("VoteConverter", { useClass: VoteConverter });
   container.register("VoteRepository", { useClass: VoteRepository });
+
+  // ------------------------------
+  // 🛰️ SysAdmin (platform operator analytics)
+  // ------------------------------
+
+  container.register("SysAdminRepository", { useClass: SysAdminRepository });
+  container.register("SysAdminService", { useClass: SysAdminService });
+  container.register("SysAdminUseCase", { useClass: SysAdminUseCase });
 
   // ------------------------------
   // 👓 View

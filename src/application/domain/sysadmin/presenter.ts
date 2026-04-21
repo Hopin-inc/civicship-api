@@ -1,0 +1,238 @@
+import { bigintToSafeNumber } from "@/application/domain/report/util";
+import {
+  GqlSysAdminCohortRetentionPoint,
+  GqlSysAdminCommunityAlerts,
+  GqlSysAdminCommunityDetailPayload,
+  GqlSysAdminCommunityOverview,
+  GqlSysAdminCommunitySummaryCard,
+  GqlSysAdminDashboardPayload,
+  GqlSysAdminMemberList,
+  GqlSysAdminMemberRow,
+  GqlSysAdminMonthlyActivityPoint,
+  GqlSysAdminPlatformSummary,
+  GqlSysAdminRetentionTrendPoint,
+  GqlSysAdminSegmentCounts,
+  GqlSysAdminStageBucket,
+  GqlSysAdminStageDistribution,
+} from "@/types/graphql";
+import {
+  SysAdminAllTimeTotalsRow,
+  SysAdminMemberStatsRow,
+  SysAdminMonthlyActivityRow,
+  SysAdminPlatformTotalsRow,
+} from "@/application/domain/sysadmin/data/type";
+import {
+  AlertFlags,
+  MemberListResult,
+  MonthlyCohortPoint,
+  StageBreakdown,
+  StageBucketStats,
+  StageCounts,
+  WeeklyRetentionPoint,
+} from "@/application/domain/sysadmin/service";
+
+/**
+ * Prisma / service rows → GraphQL payload shapes. Pure functions.
+ *
+ * BigInt → number conversions go through `bigintToSafeNumber` so values
+ * beyond `Number.MAX_SAFE_INTEGER` throw loudly rather than silently
+ * losing precision in the externally-reported totals.
+ */
+export default class SysAdminPresenter {
+  static platform(row: SysAdminPlatformTotalsRow): GqlSysAdminPlatformSummary {
+    return {
+      communitiesCount: row.communitiesCount,
+      totalMembers: row.totalMembers,
+      latestMonthDonationPoints: bigintToSafeNumber(row.latestMonthDonationPoints),
+    };
+  }
+
+  static segmentCounts(counts: StageCounts): GqlSysAdminSegmentCounts {
+    return {
+      total: counts.total,
+      tier1Count: counts.tier1Count,
+      tier2Count: counts.tier2Count,
+      activeCount: counts.activeCount,
+      passiveCount: counts.passiveCount,
+    };
+  }
+
+  static alerts(flags: AlertFlags): GqlSysAdminCommunityAlerts {
+    return {
+      churnSpike: flags.churnSpike,
+      activeDrop: flags.activeDrop,
+      noNewMembers: flags.noNewMembers,
+    };
+  }
+
+  static overviewRow(params: {
+    communityId: string;
+    communityName: string;
+    totalMembers: number;
+    stageCounts: StageCounts;
+    communityActivityRate: number;
+    growthRateActivity: number | null;
+    latestCohortRetentionM1: number | null;
+    alerts: AlertFlags;
+  }): GqlSysAdminCommunityOverview {
+    return {
+      communityId: params.communityId,
+      communityName: params.communityName,
+      totalMembers: params.totalMembers,
+      segmentCounts: SysAdminPresenter.segmentCounts(params.stageCounts),
+      tier1Count: params.stageCounts.tier1Count,
+      tier2Count: params.stageCounts.tier2Count,
+      passiveCount: params.stageCounts.passiveCount,
+      communityActivityRate: params.communityActivityRate,
+      growthRateActivity: params.growthRateActivity,
+      latestCohortRetentionM1: params.latestCohortRetentionM1,
+      alerts: SysAdminPresenter.alerts(params.alerts),
+    };
+  }
+
+  static dashboard(params: {
+    asOf: Date;
+    platform: SysAdminPlatformTotalsRow;
+    communities: GqlSysAdminCommunityOverview[];
+  }): GqlSysAdminDashboardPayload {
+    return {
+      asOf: params.asOf,
+      platform: SysAdminPresenter.platform(params.platform),
+      communities: params.communities,
+    };
+  }
+
+  // --- L2 ----------------------------------------------------------------
+
+  static summaryCard(params: {
+    communityId: string;
+    communityName: string;
+    totalMembers: number;
+    communityActivityRate: number;
+    communityActivityRate3mAvg: number | null;
+    growthRateActivity: number | null;
+    tier2Count: number;
+    allTimeTotals: SysAdminAllTimeTotalsRow;
+  }): GqlSysAdminCommunitySummaryCard {
+    const tier2Pct = params.totalMembers === 0 ? 0 : params.tier2Count / params.totalMembers;
+    return {
+      communityId: params.communityId,
+      communityName: params.communityName,
+      totalMembers: params.totalMembers,
+      communityActivityRate: params.communityActivityRate,
+      communityActivityRate3mAvg: params.communityActivityRate3mAvg,
+      growthRateActivity: params.growthRateActivity,
+      tier2Count: params.tier2Count,
+      tier2Pct,
+      totalDonationPointsAllTime: bigintToSafeNumber(params.allTimeTotals.totalDonationPoints),
+      maxChainDepthAllTime: params.allTimeTotals.maxChainDepth,
+      dataFrom: params.allTimeTotals.dataFrom,
+      dataTo: params.allTimeTotals.dataTo,
+    };
+  }
+
+  private static stageBucket(b: StageBucketStats): GqlSysAdminStageBucket {
+    return {
+      count: b.count,
+      pct: b.pct,
+      pointsContributionPct: b.pointsContributionPct,
+      avgSendRate: b.avgSendRate,
+      avgMonthsIn: b.avgMonthsIn,
+    };
+  }
+
+  static stages(breakdown: StageBreakdown): GqlSysAdminStageDistribution {
+    return {
+      habitual: SysAdminPresenter.stageBucket(breakdown.habitual),
+      regular: SysAdminPresenter.stageBucket(breakdown.regular),
+      occasional: SysAdminPresenter.stageBucket(breakdown.occasional),
+      // The latent bucket's pointsContributionPct is always 0 by
+      // definition (latent ≡ never-donated). summarize() already
+      // computes 0 because `sumPointsOut` is 0 for latent rows.
+      latent: SysAdminPresenter.stageBucket(breakdown.latent),
+    };
+  }
+
+  static monthlyActivityPoint(row: SysAdminMonthlyActivityRow): GqlSysAdminMonthlyActivityPoint {
+    const rate =
+      row.totalMembersEndOfMonth === 0 ? 0 : row.senderCount / row.totalMembersEndOfMonth;
+    const chainPct =
+      row.donationTxCount === 0 ? null : row.donationChainTxCount / row.donationTxCount;
+    return {
+      month: row.monthStart,
+      senderCount: row.senderCount,
+      communityActivityRate: rate,
+      newMembers: row.newMembers,
+      donationPointsSum: bigintToSafeNumber(row.donationPointsSum),
+      chainPct,
+    };
+  }
+
+  static retentionTrendPoint(point: WeeklyRetentionPoint): GqlSysAdminRetentionTrendPoint {
+    return {
+      week: point.weekStart,
+      retainedSenders: point.retainedSenders,
+      churnedSenders: point.churnedSenders,
+      returnedSenders: point.returnedSenders,
+      newMembers: point.newMembers,
+      communityActivityRate: point.communityActivityRate,
+    };
+  }
+
+  static cohortPoint(point: MonthlyCohortPoint): GqlSysAdminCohortRetentionPoint {
+    return {
+      cohortMonth: point.cohortMonthStart,
+      cohortSize: point.cohortSize,
+      retentionM1: point.retentionM1,
+      retentionM3: point.retentionM3,
+      retentionM6: point.retentionM6,
+    };
+  }
+
+  static memberRow(row: SysAdminMemberStatsRow): GqlSysAdminMemberRow {
+    return {
+      userId: row.userId,
+      name: row.name,
+      userSendRate: row.userSendRate,
+      monthsIn: row.monthsIn,
+      donationOutMonths: row.donationOutMonths,
+      totalPointsOut: bigintToSafeNumber(row.totalPointsOut),
+    };
+  }
+
+  static memberList(result: MemberListResult): GqlSysAdminMemberList {
+    return {
+      users: result.users.map(SysAdminPresenter.memberRow),
+      hasNextPage: result.hasNextPage,
+      nextCursor: result.nextCursor,
+    };
+  }
+
+  static communityDetail(params: {
+    communityId: string;
+    communityName: string;
+    asOf: Date;
+    windowMonths: number;
+    summary: GqlSysAdminCommunitySummaryCard;
+    stages: GqlSysAdminStageDistribution;
+    monthlyActivityTrend: GqlSysAdminMonthlyActivityPoint[];
+    retentionTrend: GqlSysAdminRetentionTrendPoint[];
+    cohortRetention: GqlSysAdminCohortRetentionPoint[];
+    memberList: GqlSysAdminMemberList;
+    alerts: GqlSysAdminCommunityAlerts;
+  }): GqlSysAdminCommunityDetailPayload {
+    return {
+      communityId: params.communityId,
+      communityName: params.communityName,
+      asOf: params.asOf,
+      windowMonths: params.windowMonths,
+      summary: params.summary,
+      stages: params.stages,
+      monthlyActivityTrend: params.monthlyActivityTrend,
+      retentionTrend: params.retentionTrend,
+      cohortRetention: params.cohortRetention,
+      memberList: params.memberList,
+      alerts: params.alerts,
+    };
+  }
+}
