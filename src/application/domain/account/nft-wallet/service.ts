@@ -312,6 +312,7 @@ export default class NFTWalletService {
           json: item,
           nftWalletId: wallet.id,
           nftTokenId: nftToken.id,
+          communityId: nftToken.communityId,
         },
         nftToken.id,
         tx,
