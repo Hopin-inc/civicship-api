@@ -1649,6 +1649,23 @@ type Query {
   reservations(cursor: String, filter: ReservationFilterInput, first: Int, sort: ReservationSortInput): ReservationsConnection!
   signupBonusConfig(communityId: ID!): CommunitySignupBonusConfig
   states(cursor: String, filter: StatesInput, first: Int): StatesConnection!
+
+  """
+  L2 detail for a single community: summary card, stage distribution,
+  trailing-window trends, cohort retention, and a paginated member list.
+  Intended for answering "what are kibotcha's numbers?" in an external
+  report conversation.
+  """
+  sysAdminCommunityDetail(input: SysAdminCommunityDetailInput!): SysAdminCommunityDetailPayload!
+
+  """
+  L1 overview: platform totals plus one row per community. Intended for
+  the "is any community stalling?" scan. Community fan-out is served
+  with N in-process calls (acceptable at today's community count —
+  switch to a GROUP BY implementation once the platform exceeds ~20
+  communities).
+  """
+  sysAdminDashboard(input: SysAdminDashboardInput): SysAdminDashboardPayload!
   ticket(id: ID!): Ticket
   ticketClaimLink(id: ID!): TicketClaimLink
   ticketClaimLinks(cursor: String, filter: TicketClaimLinkFilterInput, first: Int, sort: TicketClaimLinkSortInput): TicketClaimLinksConnection!
@@ -1993,6 +2010,551 @@ union SubmitReportFeedbackPayload = SubmitReportFeedbackSuccess
 
 type SubmitReportFeedbackSuccess {
   feedback: ReportFeedback!
+}
+
+"""One entry-month cohort's retention curve."""
+type SysAdminCohortRetentionPoint {
+  """Entry month, first day JST (e.g. 2025-10-01T00:00+09:00)."""
+  cohortMonth: Datetime!
+
+  """Cohort size at entry (status='JOINED' joiners in the month)."""
+  cohortSize: Int!
+
+  """
+  Fraction of the cohort with a DONATION out in the SECOND month after
+  entry (m+1). null for an empty cohort or a cohort too recent to have
+  a completed m+1 window.
+  """
+  retentionM1: Float
+
+  """Fraction active in m+3."""
+  retentionM3: Float
+
+  """Fraction active in m+6."""
+  retentionM6: Float
+}
+
+"""
+API-side alert flags. Boolean only: the server owns the cross-field
+judgement, the client just renders the badge.
+"""
+type SysAdminCommunityAlerts {
+  """Month-over-month communityActivityRate change <= -20%."""
+  activeDrop: Boolean!
+
+  """Latest-week churned_senders > retained_senders."""
+  churnSpike: Boolean!
+
+  """
+  No t_memberships.created_at rows (status='JOINED') in the last 14 days.
+  """
+  noNewMembers: Boolean!
+}
+
+input SysAdminCommunityDetailInput {
+  """As-of timestamp (see SysAdminDashboardInput.asOf)."""
+  asOf: Datetime
+
+  """Target community id."""
+  communityId: ID!
+
+  """
+  Opaque cursor for pagination. Internally a base64-encoded offset of
+  the prior page's position. Treat as opaque — pass back the cursor
+  returned by the previous response unchanged.
+  """
+  cursor: String
+
+  """Member list page size (default 50, max 200)."""
+  limit: Int = 50
+
+  """Stage-count thresholds for the stage distribution and tier counts."""
+  segmentThresholds: SysAdminSegmentThresholdsInput
+
+  """Member list filter. Defaults to `minSendRate = 0.7` (habitual only)."""
+  userFilter: SysAdminUserListFilter
+
+  """Member list sort. Defaults to SEND_RATE DESC."""
+  userSort: SysAdminUserListSort
+
+  """
+  How many trailing JST months to include in the trend / cohort arrays.
+  Default 10.
+  """
+  windowMonths: Int = 10
+}
+
+"""Root payload for sysAdminCommunityDetail (L2)."""
+type SysAdminCommunityDetailPayload {
+  """Alert flags (same structure as L1, evaluated for this community)."""
+  alerts: SysAdminCommunityAlerts!
+
+  """As-of timestamp echoed back."""
+  asOf: Datetime!
+
+  """
+  One entry per entry month (length <= windowMonths), newest last.
+  `retentionM*` fields are null when the cohort is empty or too recent.
+  """
+  cohortRetention: [SysAdminCohortRetentionPoint!]!
+
+  """Community id."""
+  communityId: ID!
+
+  """Community display name."""
+  communityName: String!
+
+  """Paginated member list — see type doc."""
+  memberList: SysAdminMemberList!
+
+  """
+  One entry per month (length <= windowMonths), newest last. Older
+  months with no MV data are omitted rather than zero-padded.
+  """
+  monthlyActivityTrend: [SysAdminMonthlyActivityPoint!]!
+
+  """
+  One entry per ISO week, newest last. Length approximates
+  `windowMonths * ~4.3` weeks; sparse weeks with no activity still emit
+  a row with zero counters.
+  """
+  retentionTrend: [SysAdminRetentionTrendPoint!]!
+
+  """
+  Stage distribution, classified server-side with the request's
+  thresholds. Computed over ALL members (independent of member-list
+  filter).
+  """
+  stages: SysAdminStageDistribution!
+
+  """Summary card — see type doc."""
+  summary: SysAdminCommunitySummaryCard!
+
+  """Trailing window length in JST months (echoed back)."""
+  windowMonths: Int!
+}
+
+"""
+One row of the L1 all-community table. See the module docstring for the
+distinction between `communityActivityRate` (this type) and
+`userSendRate` (SysAdminMemberRow).
+"""
+type SysAdminCommunityOverview {
+  """Alert flags (see SysAdminCommunityAlerts)."""
+  alerts: SysAdminCommunityAlerts!
+
+  """
+  Community activity rate for the JST calendar month containing asOf:
+  unique DONATION senders in that month / month-end total_members.
+  0.0–1.0. NOT the individual-level userSendRate.
+  """
+  communityActivityRate: Float!
+
+  """Community id."""
+  communityId: ID!
+
+  """Community display name (t_communities.name)."""
+  communityName: String!
+
+  """
+  Month-over-month % change in communityActivityRate.
+  Returned as a fraction (e.g. -0.2 == -20%). null when the prior month
+  has no data to compare against.
+  """
+  growthRateActivity: Float
+
+  """
+  Retention rate of the most recent completed cohort (members who joined
+  in asOf's previous JST month) measured in the month after joining.
+  null when that cohort is empty.
+  """
+  latestCohortRetentionM1: Float
+
+  """
+  Direct member count for the "latent" stage (never donated).
+  Convenience field (== segmentCounts.passiveCount).
+  """
+  passiveCount: Int!
+
+  """Stage counts under the supplied thresholds (cumulative, see type doc)."""
+  segmentCounts: SysAdminSegmentCounts!
+
+  """
+  Direct member count for the "habitual" stage (userSendRate >= tier1).
+  Convenience field (== segmentCounts.tier1Count).
+  """
+  tier1Count: Int!
+
+  """
+  Direct member count for the "regular+habitual" stage
+  (userSendRate >= tier2). Convenience field (== segmentCounts.tier2Count).
+  """
+  tier2Count: Int!
+
+  """Total status='JOINED' members at asOf."""
+  totalMembers: Int!
+}
+
+"""
+Summary card for a single community. Fronts the L2 detail screen and
+answers "is this community improving?" in one row of numbers.
+"""
+type SysAdminCommunitySummaryCard {
+  """
+  Latest-month communityActivityRate (PRIMARY indicator — see module
+  docstring for the distinction vs userSendRate).
+  """
+  communityActivityRate: Float!
+
+  """
+  3-month trailing average of communityActivityRate, ending at the JST
+  calendar month containing asOf (inclusive). null when fewer than 3
+  months of data exist.
+  """
+  communityActivityRate3mAvg: Float
+
+  """Community id."""
+  communityId: ID!
+
+  """Community display name."""
+  communityName: String!
+
+  """Oldest date with MV data for this community (JST calendar)."""
+  dataFrom: Datetime
+
+  """Newest date with MV data for this community (JST calendar)."""
+  dataTo: Datetime
+
+  """
+  Month-over-month % change in communityActivityRate (fraction, e.g.
+  -0.2 == -20%). null when the prior month has no data.
+  """
+  growthRateActivity: Float
+
+  """
+  Maximum chain depth observed in any DONATION, all-time. null when
+  no chained transactions exist.
+  """
+  maxChainDepthAllTime: Int
+
+  """Cumulative members in tier2 or above under the supplied thresholds."""
+  tier2Count: Int!
+
+  """tier2Count / totalMembers (0.0–1.0)."""
+  tier2Pct: Float!
+
+  """
+  Total DONATION points transferred, all-time (no window). Uses
+  t_transactions directly so the value is independent of MV retention.
+  """
+  totalDonationPointsAllTime: Float!
+
+  """Total status='JOINED' members at asOf."""
+  totalMembers: Int!
+}
+
+"""Input for the L1 all-community overview (`sysAdminDashboard`)."""
+input SysAdminDashboardInput {
+  """
+  The "as of" timestamp. All trailing-window calculations are anchored
+  here: the "latest month" is the JST calendar month containing asOf,
+  and "latest week" is the ISO-week containing asOf. Defaults to now
+  when omitted.
+  """
+  asOf: Datetime
+
+  """Stage-count thresholds (see SysAdminSegmentThresholdsInput)."""
+  segmentThresholds: SysAdminSegmentThresholdsInput
+}
+
+"""Root payload for sysAdminDashboard (L1)."""
+type SysAdminDashboardPayload {
+  """As-of timestamp echoed back (UTC instant)."""
+  asOf: Datetime!
+
+  """One row per community, in dashboard sort order."""
+  communities: [SysAdminCommunityOverview!]!
+
+  """Platform-wide aggregate row."""
+  platform: SysAdminPlatformSummary!
+}
+
+"""Paginated member list for the L2 detail."""
+type SysAdminMemberList {
+  """Whether more pages exist after this one."""
+  hasNextPage: Boolean!
+
+  """
+  Opaque cursor to pass back in `SysAdminCommunityDetailInput.cursor` to
+  fetch the next page. null when no further pages exist.
+  """
+  nextCursor: String
+
+  """
+  Member rows for the current page, matching filter & sort applied
+  server-side.
+  """
+  users: [SysAdminMemberRow!]!
+}
+
+"""
+One row of the L2 member list. Raw values only — stage classification
+(habitual / regular / occasional / latent) is the client's concern so
+server-side thresholds can be tuned without a schema change.
+"""
+type SysAdminMemberRow {
+  """Distinct months with at least one DONATION out."""
+  donationOutMonths: Int!
+
+  """Tenure in JST calendar months (floor, minimum 1)."""
+  monthsIn: Int!
+
+  """User display name (users.name). null when the user has no name set."""
+  name: String
+
+  """All-time DONATION points sent by this user in this community."""
+  totalPointsOut: Float!
+
+  """User id."""
+  userId: ID!
+
+  """
+  Individual monthly-send rate: `donationOutMonths / monthsIn`, 0.0–1.0,
+  rounded to 3 decimals. INDIVIDUAL LTV variable (not the same as
+  communityActivityRate elsewhere in this schema).
+  """
+  userSendRate: Float!
+}
+
+"""One month of community activity trend."""
+type SysAdminMonthlyActivityPoint {
+  """
+  Share of DONATION transactions that were part of a chain (chain_depth
+  > 0) in the month. 0.0–1.0.
+  """
+  chainPct: Float
+
+  """
+  senderCount / month-end totalMembers. Read alongside newMembers: a
+  month with many new joiners can dip the rate even if absolute activity
+  grew.
+  """
+  communityActivityRate: Float!
+
+  """Sum of DONATION points transferred in the month."""
+  donationPointsSum: Float!
+
+  """First day (JST) of the calendar month, e.g. 2025-10-01T00:00+09:00."""
+  month: Datetime!
+
+  """t_memberships.created_at (status='JOINED') rows falling in the month."""
+  newMembers: Int!
+
+  """Distinct DONATION senders in the month."""
+  senderCount: Int!
+}
+
+"""
+Platform-wide headline, computed by summing across every community in
+scope for the caller (which is every community since this query is
+SYS_ADMIN-gated).
+"""
+type SysAdminPlatformSummary {
+  """Number of communities included in the response."""
+  communitiesCount: Int!
+
+  """
+  Sum of DONATION points transferred during the JST calendar month
+  containing `asOf`, across every community.
+  """
+  latestMonthDonationPoints: Float!
+
+  """Sum of status='JOINED' members across every community."""
+  totalMembers: Int!
+}
+
+"""One ISO week of retention signals."""
+type SysAdminRetentionTrendPoint {
+  """Senders in the prior week who did NOT send this week."""
+  churnedSenders: Int!
+
+  """
+  Community activity rate for the week: distinct senders / totalMembers
+  as of week end. null when the community had zero members during the
+  week.
+  """
+  communityActivityRate: Float
+
+  """New t_memberships.created_at rows (status='JOINED') this week."""
+  newMembers: Int!
+
+  """
+  Senders in both the prior week and this week (same-user on
+  donation_out_count > 0).
+  """
+  retainedSenders: Int!
+
+  """
+  Senders this week who did NOT send last week but DID send some week
+  in the prior 12-week window.
+  """
+  returnedSenders: Int!
+
+  """Monday 00:00 JST of the ISO week."""
+  week: Datetime!
+}
+
+"""
+Stage-count snapshot for one community, computed by the server using the
+client-supplied `SysAdminSegmentThresholdsInput`. Cumulative semantics:
+`tier2Count` INCLUDES members counted in `tier1Count`.
+"""
+type SysAdminSegmentCounts {
+  """Members with userSendRate > 0 (excludes latent)."""
+  activeCount: Int!
+
+  """Members with donationOutMonths == 0 (latent / not-yet-participated)."""
+  passiveCount: Int!
+
+  """Members with userSendRate >= tier1."""
+  tier1Count: Int!
+
+  """Members with userSendRate >= tier2 (includes tier1)."""
+  tier2Count: Int!
+
+  """Total status='JOINED' members at asOf."""
+  total: Int!
+}
+
+"""
+Stage classification thresholds, supplied by the client.
+Thresholds define WHERE the boundary between stages sits, but naming
+(habitual / regular / occasional / latent) remains fixed on the server.
+"""
+input SysAdminSegmentThresholdsInput {
+  """
+  Habitual stage threshold. A user with `userSendRate >= tier1` is
+  counted as "habitual" (i.e. sends donations in at least tier1 share
+  of their tenure). Default 0.7.
+  """
+  tier1: Float = 0.7
+
+  """
+  Regular stage threshold. `userSendRate >= tier2` AND `< tier1`
+  classifies as "regular". Default 0.4.
+  """
+  tier2: Float = 0.4
+}
+
+"""Sort direction for the member list."""
+enum SysAdminSortOrder {
+  """
+  Ascending — smallest value first (e.g. SEND_RATE ASC puts latent
+  and occasional members before habitual).
+  """
+  ASC
+
+  """
+  Descending — largest value first (e.g. SEND_RATE DESC puts habitual
+  members at the top). This is the default.
+  """
+  DESC
+}
+
+"""
+Summary for one stage (habitual / regular / occasional / latent).
+Stage membership is classified server-side using the thresholds supplied
+in the request. `pointsContributionPct` is the share of total DONATION
+points-out attributed to members in this stage, in the asOf month.
+"""
+type SysAdminStageBucket {
+  """Average monthsIn across members in this stage."""
+  avgMonthsIn: Float!
+
+  """Average userSendRate across members in this stage (0.0–1.0)."""
+  avgSendRate: Float!
+
+  """Number of members in this stage."""
+  count: Int!
+
+  """count / totalMembers (0.0–1.0)."""
+  pct: Float!
+
+  """
+  Stage's share of this community's all-time DONATION points-out
+  (0.0–1.0). Numerator is the sum of `totalPointsOut` across the
+  stage's members; denominator is the same sum across all members.
+  0 for the latent stage by definition.
+  """
+  pointsContributionPct: Float!
+}
+
+"""
+Four-stage distribution of the community's membership.
+`pointsContributionPct` on `latent` is always 0 since latent members
+haven't donated by definition.
+"""
+type SysAdminStageDistribution {
+  """userSendRate >= tier1."""
+  habitual: SysAdminStageBucket!
+
+  """donationOutMonths == 0."""
+  latent: SysAdminStageBucket!
+
+  """0 < userSendRate < tier2."""
+  occasional: SysAdminStageBucket!
+
+  """tier2 <= userSendRate < tier1."""
+  regular: SysAdminStageBucket!
+}
+
+"""
+Member-list filters for the L2 detail (`sysAdminCommunityDetail`).
+All conditions AND together. Unspecified fields do not filter.
+"""
+input SysAdminUserListFilter {
+  """Inclusive upper bound on userSendRate."""
+  maxSendRate: Float
+
+  """Inclusive lower bound on donationOutMonths."""
+  minDonationOutMonths: Int
+
+  """Inclusive lower bound on monthsIn (JST-calendar months)."""
+  minMonthsIn: Int
+
+  """Inclusive lower bound on userSendRate. Default 0.7 (habitual only)."""
+  minSendRate: Float = 0.7
+}
+
+"""
+Sort configuration for the L2 member list. Both fields are optional;
+omitting either falls back to the default (SEND_RATE DESC) so the
+"top habitual members first" view renders out of the box.
+"""
+input SysAdminUserListSort {
+  """
+  Column to sort on. See SysAdminUserSortField for what each value
+  addresses. Default: SEND_RATE.
+  """
+  field: SysAdminUserSortField = SEND_RATE
+
+  """Sort direction. Default: DESC."""
+  order: SysAdminSortOrder = DESC
+}
+
+"""Sortable columns on the member list."""
+enum SysAdminUserSortField {
+  """donationOutMonths (distinct months with a DONATION out)."""
+  DONATION_OUT_MONTHS
+
+  """monthsIn (tenure in JST calendar months)."""
+  MONTHS_IN
+
+  """userSendRate (individual monthly-send rate, 0.0–1.0)."""
+  SEND_RATE
+
+  """totalPointsOut (lifetime DONATION points sent)."""
+  TOTAL_POINTS_OUT
 }
 
 enum SysRole {
