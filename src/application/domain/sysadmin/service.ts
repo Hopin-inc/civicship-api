@@ -446,7 +446,13 @@ export default class SysAdminService {
       const [retention, snapshot] = await Promise.all([
         this.reportService.getRetentionAggregate(ctx, communityId, {
           currentWeekStart: weekStart,
-          nextWeekStart,
+          // Clamp the upper bound of the "current week" too: for a
+          // historic asOf the MV holds data past asOf, and a raw
+          // `nextWeekStart` would let future sender rows into the
+          // in-progress week's numerator. Past weeks' nextWeekStart
+          // stays unchanged because `clampFuture` no-ops when the
+          // boundary is already before asOf+1.
+          nextWeekStart: denominatorUpperBound,
           prevWeekStart,
           twelveWeeksAgo,
         }),
@@ -623,9 +629,15 @@ export default class SysAdminService {
   }
 
   /**
-   * Retention of the members who joined during asOf's previous JST
-   * month, measured in asOf's current month. null when the prior-month
-   * cohort is empty (no one joined).
+   * Most recent COMPLETED m1 retention: the fraction of members who
+   * joined two JST months before asOf and sent a DONATION during the
+   * month-after-that (= the month just before asOf's month).
+   *
+   * Shifted back from "prev-month cohort, asOf-month active" so the
+   * active window is always a fully completed month — matches the L2
+   * cohort-retention convention (README §3.4: "進行中の月は除外") and
+   * avoids reporting artificially low numbers on the 1st of every
+   * month. Returns null when the cohort is empty.
    */
   async getLatestCohortRetentionM1(
     ctx: IContext,
@@ -633,51 +645,51 @@ export default class SysAdminService {
     asOf: Date,
   ): Promise<number | null> {
     const monthStart = jstMonthStart(asOf);
-    const prevMonthStart = jstMonthStartOffset(monthStart, -1);
-    const nextMonthStart = jstNextMonthStart(asOf);
+    const cohortStart = jstMonthStartOffset(monthStart, -2); // 2 months before asOf
+    const cohortEnd = jstMonthStartOffset(monthStart, -1); // 1 month before asOf
+    const activeStart = cohortEnd;
+    const activeEnd = monthStart; // last completed month's end
     const row = await this.reportService.getCohortRetention(
       ctx,
       communityId,
-      { cohortStart: prevMonthStart, cohortEnd: monthStart },
-      { activeStart: monthStart, activeEnd: nextMonthStart },
+      { cohortStart, cohortEnd },
+      { activeStart, activeEnd },
     );
     if (row.cohortSize === 0) return null;
     return row.activeNextWeek / row.cohortSize;
   }
 
   /**
-   * Evaluate all three alert flags in one pass. Uses the latest ISO
-   * week for churn_spike, month-over-month fractional change for
-   * active_drop, and a 14-day lookback on `t_memberships` for
-   * no_new_members.
+   * Evaluate all three alert flags in one pass.
+   *
+   * churnSpike / activeDrop use the LAST COMPLETED period (prev-week
+   * vs week-before, prev-month vs month-before) rather than the
+   * in-progress asOf week/month. Comparing a partially-observed week
+   * against a full prior week would reliably fire the alert on
+   * Monday-Tuesday of every week (the in-progress side has almost no
+   * data yet). The UI's own `growthRateActivity` (current vs prev)
+   * remains visible as an informational, non-alerting signal.
+   *
+   * noNewMembers stays anchored to asOf itself: "have any members
+   * joined in the last NO_NEW_MEMBERS_WINDOW_DAYS JST days, ending
+   * today." The schema description "直近14日間" uses the half-open
+   * interval [asOfJstDay - (N-1), asOfJstDay + 1) so the full JST
+   * calendar day containing asOf is included.
    */
-  async getAlerts(
-    ctx: IContext,
-    communityId: string,
-    asOf: Date,
-    growthRateActivity: number | null,
-  ): Promise<AlertFlags> {
+  async getAlerts(ctx: IContext, communityId: string, asOf: Date): Promise<AlertFlags> {
     const latestWeekStart = isoWeekStartJst(asOf);
-    const nextWeekStart = addDays(latestWeekStart, 7);
+    // Alert frame: the completed week just before asOf's week.
     const prevWeekStart = addDays(latestWeekStart, -7);
-    const twelveWeeksAgo = addDays(latestWeekStart, -7 * 12);
-    // `noNewMembers` window is anchored to `asOf` (not the ISO week
-    // boundary) so the lookback is exactly `NO_NEW_MEMBERS_WINDOW_DAYS`
-    // long and aligns with the schema description ("直近14日間").
-    //
-    // `findNewMemberCount` expects JST-encoded dates (its SQL applies
-    // `::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'` to the
-    // bounds). Raw timestamps would get their UTC date truncated,
-    // which shifts the window by up to one day when `asOf` falls in
-    // the 15:00–23:59 UTC / 00:00–08:59 JST next-day range.
-    // `truncateToJstDate` collapses to the JST calendar day, encoded
-    // as UTC-midnight, which is what the repo pattern expects.
-    // Half-open `[from, to)` window in the repo SQL:
-    //   from = asOfJstDay - (NO_NEW_MEMBERS_WINDOW_DAYS - 1)
-    //   to   = asOfJstDay + 1 day  (= bounds.asOfJstDayPlusOne)
-    // Spans exactly NO_NEW_MEMBERS_WINDOW_DAYS JST calendar days
-    // ending at the current day (inclusive), matching the schema
-    // description "直近14日間".
+    const prevPrevWeekStart = addDays(prevWeekStart, -7);
+    const twelveWeeksAgo = addDays(prevWeekStart, -7 * 12);
+
+    // Month frame: compare the last TWO completed months so an asOf
+    // early in the month doesn't trigger activeDrop purely because
+    // the in-progress month is empty.
+    const monthStart = jstMonthStart(asOf);
+    const prevMonthStart = jstMonthStartOffset(monthStart, -1);
+    const prevPrevMonthStart = jstMonthStartOffset(monthStart, -2);
+
     const bounds = asOfBounds(asOf);
     const fourteenDaysAgo = addDays(
       bounds.asOfJstDayPlusOne,
@@ -685,19 +697,41 @@ export default class SysAdminService {
     );
     const upperExclusive = bounds.asOfJstDayPlusOne;
 
-    const [retention, newMembers] = await Promise.all([
+    const [retention, newMembers, prevMonth, prevPrevMonth] = await Promise.all([
       this.reportService.getRetentionAggregate(ctx, communityId, {
-        currentWeekStart: latestWeekStart,
-        nextWeekStart,
-        prevWeekStart,
+        // Evaluate retention on the last completed week.
+        currentWeekStart: prevWeekStart,
+        nextWeekStart: latestWeekStart,
+        prevWeekStart: prevPrevWeekStart,
         twelveWeeksAgo,
       }),
       this.repository.findNewMemberCount(ctx, communityId, fourteenDaysAgo, upperExclusive),
+      this.repository.findActivitySnapshot(ctx, communityId, prevMonthStart, monthStart),
+      this.repository.findActivitySnapshot(
+        ctx,
+        communityId,
+        prevPrevMonthStart,
+        prevMonthStart,
+      ),
     ]);
+
+    // activeDrop derives its own growth fraction from the
+    // completed-month snapshot pair (prev vs prev-prev), independent
+    // of the UI's growthRateActivity which tracks current-vs-prev.
+    const prevRate =
+      prevMonth.totalMembers === 0 ? 0 : prevMonth.senderCount / prevMonth.totalMembers;
+    const prevPrevRate =
+      prevPrevMonth.totalMembers === 0
+        ? 0
+        : prevPrevMonth.senderCount / prevPrevMonth.totalMembers;
+    const alertGrowth =
+      prevPrevMonth.totalMembers === 0 || prevPrevRate === 0
+        ? null
+        : (prevRate - prevPrevRate) / prevPrevRate;
 
     return {
       churnSpike: retention.churnedSenders > retention.retainedSenders,
-      activeDrop: growthRateActivity != null && growthRateActivity <= ACTIVE_DROP_THRESHOLD,
+      activeDrop: alertGrowth != null && alertGrowth <= ACTIVE_DROP_THRESHOLD,
       noNewMembers: newMembers.count === 0,
     };
   }

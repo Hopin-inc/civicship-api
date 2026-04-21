@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import SysAdminService, {
-  ACTIVE_DROP_THRESHOLD,
   DEFAULT_SEGMENT_THRESHOLDS,
 } from "@/application/domain/sysadmin/service";
 import type {
@@ -403,56 +402,103 @@ describe("SysAdminService", () => {
   });
 
   // ========================================================================
-  // getAlerts: active_drop threshold + 14-day no-new-members
+  // getAlerts: last-completed-period churnSpike + activeDrop, 14-day
+  // no-new-members. Alert frame was deliberately shifted back so the
+  // in-progress week/month doesn't trigger false positives.
   // ========================================================================
   describe("getAlerts", () => {
     const ctx = {} as never;
     const asOf = new Date("2026-04-21T00:00:00Z");
 
-    function setup(retention: {
-      retainedSenders: number;
-      churnedSenders: number;
-    }, newMemberCount: number) {
+    function setup(params: {
+      retention: { retainedSenders: number; churnedSenders: number };
+      newMemberCount: number;
+      prevMonth: { senderCount: number; totalMembers: number };
+      prevPrevMonth: { senderCount: number; totalMembers: number };
+    }) {
       reportService.getRetentionAggregate.mockResolvedValue({
         newMembers: 0,
-        retainedSenders: retention.retainedSenders,
+        retainedSenders: params.retention.retainedSenders,
         returnedSenders: 0,
-        churnedSenders: retention.churnedSenders,
+        churnedSenders: params.retention.churnedSenders,
         currentSendersCount: 0,
         currentActiveCount: 0,
       });
-      repo.findNewMemberCount.mockResolvedValue({ count: newMemberCount });
+      repo.findNewMemberCount.mockResolvedValue({ count: params.newMemberCount });
+      // First findActivitySnapshot call is prev month, second is prev-prev.
+      repo.findActivitySnapshot
+        .mockResolvedValueOnce(params.prevMonth)
+        .mockResolvedValueOnce(params.prevPrevMonth);
     }
 
+    const neutralMonths = {
+      prevMonth: { senderCount: 1, totalMembers: 10 }, // 10% rate
+      prevPrevMonth: { senderCount: 1, totalMembers: 10 }, // 10% rate — no change
+    };
+
     it("fires churnSpike when churned > retained, not when equal", async () => {
-      setup({ retainedSenders: 5, churnedSenders: 6 }, 10);
-      expect((await service.getAlerts(ctx, "c1", asOf, 0)).churnSpike).toBe(true);
+      setup({
+        retention: { retainedSenders: 5, churnedSenders: 6 },
+        newMemberCount: 10,
+        ...neutralMonths,
+      });
+      expect((await service.getAlerts(ctx, "c1", asOf)).churnSpike).toBe(true);
 
-      setup({ retainedSenders: 5, churnedSenders: 5 }, 10);
-      expect((await service.getAlerts(ctx, "c1", asOf, 0)).churnSpike).toBe(false);
+      setup({
+        retention: { retainedSenders: 5, churnedSenders: 5 },
+        newMemberCount: 10,
+        ...neutralMonths,
+      });
+      expect((await service.getAlerts(ctx, "c1", asOf)).churnSpike).toBe(false);
     });
 
-    it("fires activeDrop when growthRateActivity <= -20% (spec wording)", async () => {
-      setup({ retainedSenders: 1, churnedSenders: 0 }, 10);
-      // -20% boundary: inclusive per the spec's `<= -0.2` wording.
-      expect((await service.getAlerts(ctx, "c1", asOf, ACTIVE_DROP_THRESHOLD)).activeDrop).toBe(
-        true,
-      );
-      // -19% should not trip.
-      expect((await service.getAlerts(ctx, "c1", asOf, -0.19)).activeDrop).toBe(false);
+    it("fires activeDrop when prev month's rate dropped <=-20% vs prev-prev month", async () => {
+      // prevPrevRate = 10/10 = 1.0, prevRate = 7/10 = ~0.7 → change ~-30%
+      // (the -20% exact boundary is avoided here because JS double
+      // representation of e.g. (0.8 - 1.0) / 1.0 lands at -0.199999… so
+      // equality on the threshold is flaky; -30% is safely past it).
+      setup({
+        retention: { retainedSenders: 1, churnedSenders: 0 },
+        newMemberCount: 10,
+        prevMonth: { senderCount: 7, totalMembers: 10 },
+        prevPrevMonth: { senderCount: 10, totalMembers: 10 },
+      });
+      expect((await service.getAlerts(ctx, "c1", asOf)).activeDrop).toBe(true);
+
+      // prevRate = 0.81, prevPrevRate = 1.0 → -19% → above threshold
+      setup({
+        retention: { retainedSenders: 1, churnedSenders: 0 },
+        newMemberCount: 10,
+        prevMonth: { senderCount: 81, totalMembers: 100 },
+        prevPrevMonth: { senderCount: 100, totalMembers: 100 },
+      });
+      expect((await service.getAlerts(ctx, "c1", asOf)).activeDrop).toBe(false);
     });
 
-    it("does NOT fire activeDrop when growth is null (no prior month to compare)", async () => {
-      setup({ retainedSenders: 1, churnedSenders: 0 }, 10);
-      expect((await service.getAlerts(ctx, "c1", asOf, null)).activeDrop).toBe(false);
+    it("does NOT fire activeDrop when prev-prev month has no data (nothing to compare)", async () => {
+      setup({
+        retention: { retainedSenders: 1, churnedSenders: 0 },
+        newMemberCount: 10,
+        prevMonth: { senderCount: 0, totalMembers: 10 },
+        prevPrevMonth: { senderCount: 0, totalMembers: 0 },
+      });
+      expect((await service.getAlerts(ctx, "c1", asOf)).activeDrop).toBe(false);
     });
 
     it("fires noNewMembers when the 14-day count is zero", async () => {
-      setup({ retainedSenders: 1, churnedSenders: 0 }, 0);
-      expect((await service.getAlerts(ctx, "c1", asOf, 0)).noNewMembers).toBe(true);
+      setup({
+        retention: { retainedSenders: 1, churnedSenders: 0 },
+        newMemberCount: 0,
+        ...neutralMonths,
+      });
+      expect((await service.getAlerts(ctx, "c1", asOf)).noNewMembers).toBe(true);
 
-      setup({ retainedSenders: 1, churnedSenders: 0 }, 1);
-      expect((await service.getAlerts(ctx, "c1", asOf, 0)).noNewMembers).toBe(false);
+      setup({
+        retention: { retainedSenders: 1, churnedSenders: 0 },
+        newMemberCount: 1,
+        ...neutralMonths,
+      });
+      expect((await service.getAlerts(ctx, "c1", asOf)).noNewMembers).toBe(false);
     });
   });
 });

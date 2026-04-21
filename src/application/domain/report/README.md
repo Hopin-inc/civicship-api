@@ -201,6 +201,15 @@ if (activeEnd > latestMonthStart) return null;
 理由：asOf を含む月は完了していないので、retention が不当に低く出る。
 完了済みの月のみ評価することで、外部報告で使える正確な数値になる。
 
+#### L1 の `latestCohortRetentionM1` も同じ規則
+
+L1 ダッシュボードに出る「直近コホート retention_m1」も、**asOf 月を
+active 期間として扱うと同じ問題**が起きるため、cohort を 1 ヶ月
+遡らせて「2 ヶ月前に joined した人の 1 ヶ月後 retention（= 先月中の
+DONATION 送信率）」として算出する。active 期間は asOf 月の直前で
+終わる完了月になるため、L2 の `activeEnd > latestMonthStart` ルールと
+整合する。
+
 ---
 
 ## 4. アラート判定
@@ -208,11 +217,18 @@ if (activeEnd > latestMonthStart) return null;
 集計指標を組み合わせた boolean フラグは **API 側で確定**してから返す
 （フロントは表示するだけ）。
 
-| フラグ | 条件 |
-|---|---|
-| `churnSpike` | `churned_senders > retained_senders`（直近週） |
-| `activeDrop` | 前月比 `communityActivityRate <= -20%` |
-| `noNewMembers` | 直近 14 日間（JST）に `JOINED` が 0 件 |
+| フラグ | 条件 | 判定対象期間 |
+|---|---|---|
+| `churnSpike` | `churned_senders > retained_senders` | **直近の完了済み週** vs その前の週 |
+| `activeDrop` | 月次稼働率の変化 `<= -20%` | **直近の完了済み月** vs その前の月 |
+| `noNewMembers` | 直近 14 日間（JST）に `JOINED` が 0 件 | `asOf` を終点に含む 14 日間 |
+
+> ⚠️ **進行中の週 / 月はアラート判定の対象にしない**。
+> asOf を含む週 / 月を対象にすると、週の月曜や月初で
+> データ蓄積が途中のまま完了期間と比較してしまい、
+> 毎週 / 毎月の週頭・月初で必ず誤検知する。
+> 判定は常に「完了済み直近期間」を参照する。
+> UI に出す `growthRateActivity`（current vs prev）は別の informational signal として維持される。
 
 ### 4.1. `noNewMembers` 窓の作り方
 

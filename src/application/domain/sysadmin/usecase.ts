@@ -61,12 +61,7 @@ export default class SysAdminUseCase {
           this.service.getLatestCohortRetentionM1(ctx, c.communityId, asOf),
         ]);
         const stageCounts = this.service.computeStageCounts(members, thresholds);
-        const alerts = await this.service.getAlerts(
-          ctx,
-          c.communityId,
-          asOf,
-          currentMonthActivity.growthRateActivity,
-        );
+        const alerts = await this.service.getAlerts(ctx, c.communityId, asOf);
         return SysAdminPresenter.overviewRow({
           communityId: c.communityId,
           communityName: c.communityName,
@@ -140,12 +135,7 @@ export default class SysAdminUseCase {
     const stageCounts = this.service.computeStageCounts(members, thresholds);
     const stageBreakdown = this.service.computeStageBreakdown(members, thresholds);
 
-    const alerts = await this.service.getAlerts(
-      ctx,
-      community.communityId,
-      asOf,
-      currentMonthActivity.growthRateActivity,
-    );
+    const alerts = await this.service.getAlerts(ctx, community.communityId, asOf);
 
     const memberList = this.service.paginateMembers(members, {
       minSendRate: input.userFilter?.minSendRate ?? 0.7,
