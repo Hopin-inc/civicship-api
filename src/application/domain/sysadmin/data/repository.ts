@@ -262,7 +262,12 @@ export default class SysAdminRepository implements ISysAdminRepository {
           LEFT JOIN "mv_user_transaction_daily" mv
             ON mv."community_id" = ${communityId}
             AND mv."date" >= mb.month_start
-            AND mv."date" <  mb.next_month_start
+            -- Use member_upper (LEAST of next_month_start and
+            -- asOf+1 JST) as the upper bound so the asOf month's
+            -- sender count doesn't include MV rows past asOf when a
+            -- historic asOf is supplied. Keeps the numerator aligned
+            -- with total_members in member_counts below.
+            AND mv."date" <  mb.member_upper
             AND mv."donation_out_count" > 0
           GROUP BY mb.month_start
         ),
@@ -292,7 +297,11 @@ export default class SysAdminRepository implements ISysAdminRepository {
           LEFT JOIN "mv_transaction_summary_daily" ts
             ON ts."community_id" = ${communityId}
             AND ts."date" >= mb.month_start
-            AND ts."date" <  mb.next_month_start
+            -- Match the member_counts / senders clamp. Historic asOf
+            -- queries must not pull tx activity from dates past
+            -- asOf; past months collapse member_upper back to
+            -- next_month_start so behaviour is unchanged there.
+            AND ts."date" <  mb.member_upper
           GROUP BY mb.month_start
         ),
         member_counts AS (
