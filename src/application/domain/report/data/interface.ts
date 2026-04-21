@@ -26,6 +26,15 @@ export interface TransactionSummaryDailyRow {
   burnCount: number;
 }
 
+/**
+ * Per-day distinct user counts for a single community, DONATION-scoped to
+ * match the `is_sender` / `is_receiver` frame used by the retention
+ * aggregate: `senders` counts users with `donation_out_count > 0` that
+ * day, `receivers` counts users with `received_donation_count > 0`, and
+ * `activeUsers` is the union (DISTINCT user_id matching either). Users
+ * whose only activity was receiving an admin-issued ONBOARDING / GRANT
+ * transaction are intentionally excluded.
+ */
 export interface TransactionActiveUsersDailyRow {
   date: Date;
   communityId: string;
@@ -106,8 +115,12 @@ export interface UserProfileForReportRow {
  *
  * `activeUsersInWindow` is a *distinct* count across the range (not the
  * sum of per-day active-user counts, which over-counts users active on
- * multiple days). Paired with `totalMembers` it lets the presenter emit an
- * `active_rate` without a second round trip.
+ * multiple days) and DONATION-scoped to match the retention frame — only
+ * users with `donation_out_count > 0` or `received_donation_count > 0` on
+ * at least one day in the window are counted. Paired with `totalMembers`
+ * it lets the presenter emit a peer-to-peer `active_rate` without a
+ * second round trip and without being inflated by system-issued
+ * ONBOARDING / GRANT transactions.
  */
 export interface CommunityContextRow {
   communityId: string;
@@ -149,6 +162,12 @@ export interface DateRange {
  * boundary so the presenter can funnel it through the same safe-integer
  * guard used elsewhere — the underlying SUM over `mv_transaction_summary_daily`
  * returns `bigint` and we preserve precision until the payload boundary.
+ *
+ * `activeUsersInWindow` uses the same DONATION-scoped definition as
+ * `CommunityContextRow.activeUsersInWindow` so the presenter's
+ * `growth_rate.active_users` (current vs previous window) compares on a
+ * consistent frame; a broad `COUNT DISTINCT` here would silently make
+ * week-over-week engagement changes look smaller than they are.
  */
 export interface PeriodAggregateRow {
   activeUsersInWindow: number;

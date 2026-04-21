@@ -65,10 +65,17 @@ export default class ReportPresenter {
      * presenter can divide without re-reading the same number. `null` when
      * the usecase did not opt into retention, in which case the payload's
      * `retention` field is `null` and the prompt keys on presence.
+     *
+     * `totalMembers` is `null` when the community context lookup came back
+     * empty (missing / soft-deleted community) — in that case the rate
+     * fields collapse to `null` instead of leaking a divide-by-zero or a
+     * bogus "100%" from using the aggregate's own counts as the denominator.
+     * The raw counters (new_members / retained_senders / ...) still surface
+     * so the block remains useful; only the derived rates go null.
      */
     retention?: {
       aggregate: RetentionAggregateRow;
-      totalMembers: number;
+      totalMembers: number | null;
       week1: CohortRetentionRow | null;
       week4: CohortRetentionRow | null;
     } | null;
@@ -158,6 +165,14 @@ export default class ReportPresenter {
       0n,
     );
     const currentPointsSum = bigintToSafeNumber(currentPointsSumBigInt);
+    // Sourced from `findCommunityContext`, which scopes the count to
+    // peer-to-peer DONATION activity — matching the equivalent scoping in
+    // `findPeriodAggregate` so the `growth_rate.active_users` math below
+    // compares self-consistent current-vs-previous numbers. When the
+    // community context lookup returned null we do NOT fall back to the
+    // retention aggregate: even though both are DONATION-scoped now, the
+    // honest answer in that edge case is "no ground truth for the current
+    // window", and `growth_rate.active_users` collapses to `null` below.
     const currentActiveUsers = input.communityContext?.activeUsersInWindow ?? 0;
 
     const retention: RetentionSummary | null = input.retention
@@ -167,11 +182,11 @@ export default class ReportPresenter {
           returned_senders: input.retention.aggregate.returnedSenders,
           churned_senders: input.retention.aggregate.churnedSenders,
           active_rate_sender:
-            input.retention.totalMembers > 0
+            input.retention.totalMembers !== null && input.retention.totalMembers > 0
               ? input.retention.aggregate.currentSendersCount / input.retention.totalMembers
               : null,
           active_rate_any:
-            input.retention.totalMembers > 0
+            input.retention.totalMembers !== null && input.retention.totalMembers > 0
               ? input.retention.aggregate.currentActiveCount / input.retention.totalMembers
               : null,
           // Week-N rows with cohortSize=0 collapse to null here (rather
@@ -200,10 +215,22 @@ export default class ReportPresenter {
           total_points_sum: bigintToSafeNumber(input.previousPeriod.aggregate.totalPointsSum),
           new_members: input.previousPeriod.aggregate.newMembers,
           growth_rate: {
-            active_users: percentChange(
-              currentActiveUsers,
-              input.previousPeriod.aggregate.activeUsersInWindow,
-            ),
+            // `active_users` is `null` when `communityContext` was not
+            // returned (missing / soft-deleted community): without a
+            // current-window denominator that uses the same DONATION-scope
+            // frame as the previous-window `activeUsersInWindow`, any
+            // percent-change we could compute here would be a
+            // scale-mismatched comparison (e.g. retention-derived narrow
+            // vs period-aggregate broad) and would mis-report the trend.
+            // `tx_count` / `points_sum` are safe because the current-window
+            // numerators derive from the already-passed daily summaries —
+            // no dependency on the community context row.
+            active_users: input.communityContext
+              ? percentChange(
+                  currentActiveUsers,
+                  input.previousPeriod.aggregate.activeUsersInWindow,
+                )
+              : null,
             tx_count: percentChange(currentTxCount, input.previousPeriod.aggregate.totalTxCount),
             points_sum: percentChange(
               currentPointsSum,

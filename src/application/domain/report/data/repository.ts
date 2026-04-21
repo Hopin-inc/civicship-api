@@ -59,6 +59,16 @@ export default class ReportRepository implements IReportRepository {
    * mv_user_transaction_daily. Aggregating in SQL with FILTER clauses keeps
    * us from shipping a separate MV just for distinct-count queries.
    *
+   * All three counters are scoped to peer-to-peer DONATION activity
+   * (`donation_out_count` / `received_donation_count`) to stay consistent
+   * with the `is_sender` / `is_receiver` frame in `findRetentionAggregate`
+   * and `v_user_cohort.first_active_week`. ONBOARDING / GRANT / POINT_ISSUED
+   * transactions would otherwise inflate `active_users` / `receivers` for
+   * anyone who merely received a system-issued grant, overstating
+   * peer-to-peer engagement across the daily curve and — downstream — the
+   * week-over-week `growth_rate` that divides current vs previous
+   * `active_users_in_window`.
+   *
    * `date` is an `@db.Date` column; the explicit `::date` cast on the bound
    * parameters avoids Postgres treating the JS Date as a timestamp(tz) and
    * losing the index on a boundary compare.
@@ -79,9 +89,11 @@ export default class ReportRepository implements IReportRepository {
       >`
         SELECT
           "date",
-          COUNT(DISTINCT "user_id")::int AS "active_users",
-          COUNT(DISTINCT "user_id") FILTER (WHERE "tx_count_out" > 0)::int AS "senders",
-          COUNT(DISTINCT "user_id") FILTER (WHERE "tx_count_in" > 0)::int AS "receivers"
+          COUNT(DISTINCT "user_id") FILTER (
+            WHERE "donation_out_count" > 0 OR "received_donation_count" > 0
+          )::int AS "active_users",
+          COUNT(DISTINCT "user_id") FILTER (WHERE "donation_out_count" > 0)::int AS "senders",
+          COUNT(DISTINCT "user_id") FILTER (WHERE "received_donation_count" > 0)::int AS "receivers"
         FROM "mv_user_transaction_daily"
         WHERE "community_id" = ${communityId}
           AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
@@ -270,6 +282,15 @@ export default class ReportRepository implements IReportRepository {
    * `mv_user_transaction_daily` for the same JST window used by the report
    * helpers elsewhere in this file.
    *
+   * `active_users_in_window` is scoped to peer-to-peer DONATION activity
+   * (`donation_out_count > 0 OR received_donation_count > 0`) to stay
+   * consistent with the retention frame — a user is "active" only if they
+   * actually participated in a peer donation, not if they merely received
+   * an admin-issued ONBOARDING / GRANT / POINT_ISSUED transaction. The
+   * derived `active_rate` (computed in the presenter as
+   * `active_users_in_window / total_members`) therefore reports
+   * peer-to-peer engagement rather than system-noise-inflated reach.
+   *
    * Returns null when the community is not found; the presenter treats this
    * as an optional block so the payload still serialises for a soft-deleted
    * or mis-passed community id.
@@ -303,6 +324,7 @@ export default class ReportRepository implements IReportRepository {
           FROM "mv_user_transaction_daily"
           WHERE "community_id" = ${communityId}
             AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
+            AND ("donation_out_count" > 0 OR "received_donation_count" > 0)
         )
         SELECT
           c."id",
@@ -425,6 +447,15 @@ export default class ReportRepository implements IReportRepository {
    * independent scans combined via CROSS JOIN of single-row CTEs so the
    * planner sees them as a single statement.
    *
+   * `active_users_in_window` is scoped to peer-to-peer DONATION activity
+   * (`donation_out_count > 0 OR received_donation_count > 0`), matching
+   * `findCommunityContext` / `findDailyActiveUsers` so the
+   * `growth_rate.active_users` in the presenter (current vs previous
+   * window) compares apples-to-apples. A broad `COUNT DISTINCT user_id`
+   * here would inflate the previous-window numerator for communities with
+   * heavy admin-issued ONBOARDING / GRANT activity and make
+   * week-over-week peer-engagement changes look smaller than they are.
+   *
    * `new_members` is sourced from `t_memberships.created_at` (JOINED) to
    * stay consistent with `RetentionSummary.new_members`, rather than from
    * `ONBOARDING` transactions which have operational noise around
@@ -449,6 +480,7 @@ export default class ReportRepository implements IReportRepository {
           FROM "mv_user_transaction_daily"
           WHERE "community_id" = ${communityId}
             AND "date" BETWEEN ${range.from}::date AND ${range.to}::date
+            AND ("donation_out_count" > 0 OR "received_donation_count" > 0)
         ),
         tx_totals AS (
           SELECT
@@ -503,6 +535,14 @@ export default class ReportRepository implements IReportRepository {
    * admin wallet but not `donation_out_count`, and we want retention to
    * track peer-to-peer DONATION behaviour specifically.
    *
+   * `is_receiver` is gated symmetrically on `received_donation_count > 0`
+   * (DONATION-only) rather than `tx_count_in > 0`. The same ONBOARDING /
+   * GRANT noise that we filter out of the sender frame also shows up on
+   * the receiver side (admin-issued grants land as incoming transactions
+   * on every recipient's wallet); including those in `is_receiver` would
+   * inflate `current_active_count` and the `active_rate_any` the
+   * presenter divides out of it, overstating peer-to-peer engagement.
+   *
    * The `ever_before` CTE is bounded to a 12-week lookback to keep the
    * returning-users scan from fanning out to years of history on mature
    * communities; the trade-off is documented in the design notes —
@@ -533,7 +573,7 @@ export default class ReportRepository implements IReportRepository {
           SELECT
             "user_id",
             BOOL_OR("donation_out_count" > 0) AS is_sender,
-            BOOL_OR("tx_count_in" > 0) AS is_receiver
+            BOOL_OR("received_donation_count" > 0) AS is_receiver
           FROM "mv_user_transaction_daily"
           WHERE "community_id" = ${communityId}
             AND "date" >= ${range.currentWeekStart}::date
