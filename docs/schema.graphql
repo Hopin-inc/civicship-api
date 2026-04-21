@@ -2059,7 +2059,9 @@ input SysAdminCommunityDetailInput {
   communityId: ID!
 
   """
-  Opaque cursor for pagination (member id of the last row on prior page).
+  Opaque cursor for pagination. Internally a base64-encoded offset of
+  the prior page's position. Treat as opaque — pass back the cursor
+  returned by the previous response unchanged.
   """
   cursor: String
 
@@ -2479,7 +2481,9 @@ type SysAdminStageBucket {
   pct: Float!
 
   """
-  Stage's share of DONATION points-out in the asOf month (0.0–1.0).
+  Stage's share of this community's all-time DONATION points-out
+  (0.0–1.0). Numerator is the sum of `totalPointsOut` across the
+  stage's members; denominator is the same sum across all members.
   0 for the latent stage by definition.
   """
   pointsContributionPct: Float!

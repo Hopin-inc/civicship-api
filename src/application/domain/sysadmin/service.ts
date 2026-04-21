@@ -8,6 +8,7 @@ import {
 } from "@/application/domain/sysadmin/data/type";
 import {
   addDays,
+  bigintToSafeNumber,
   isoWeekStartJst,
   jstMonthStart,
   jstMonthStartOffset,
@@ -132,6 +133,38 @@ export const MAX_LIMIT = 200;
 export const ACTIVE_DROP_THRESHOLD = -0.2; // month-over-month fraction
 export const NO_NEW_MEMBERS_WINDOW_DAYS = 14;
 
+/**
+ * Cap on how many DB round-trips the retention-trend and cohort-
+ * retention orchestrators will keep in flight at once. At the MAX
+ * windowMonths (36) those loops otherwise fan out to ~310 concurrent
+ * `$queryRaw` calls (each under its own `ctx.issuer.public` tx),
+ * which can exhaust the Prisma connection pool and stall the whole
+ * request. Keep the degree of concurrency small — bench measurements
+ * showed Postgres handles per-week scans in ~1ms each, so serialising
+ * chunks adds only a few ms of wall-clock latency.
+ */
+export const FANOUT_CONCURRENCY = 8;
+
+/**
+ * Run `fn(item)` across `items` with a bounded number of in-flight
+ * promises. Returns results in the same order as `items`. No library
+ * dependency — the loop is short enough to inline rather than reach
+ * for `p-limit`.
+ */
+async function runBatched<T, R>(
+  items: readonly T[],
+  batchSize: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const chunk = items.slice(i, i + batchSize);
+    const chunkResults = await Promise.all(chunk.map(fn));
+    results.push(...chunkResults);
+  }
+  return results;
+}
+
 @injectable()
 export default class SysAdminService {
   constructor(
@@ -228,8 +261,15 @@ export default class SysAdminService {
         }),
         { sumSendRate: 0, sumMonthsIn: 0, sumPointsOut: BigInt(0) },
       );
+      // Route both sides of pointsContributionPct through
+      // bigintToSafeNumber so an extreme community's cumulative
+      // points total surfaces as a RangeError instead of silently
+      // truncating through `Number(bigint)`. The ratio itself is a
+      // [0, 1] fraction regardless of magnitude.
       const pointsContributionPct =
-        totalPointsOut === BigInt(0) ? 0 : Number(sumPointsOut) / Number(totalPointsOut);
+        totalPointsOut === BigInt(0)
+          ? 0
+          : bigintToSafeNumber(sumPointsOut) / bigintToSafeNumber(totalPointsOut);
       return {
         count,
         pct: totalMembers === 0 ? 0 : count / totalMembers,
@@ -345,8 +385,8 @@ export default class SysAdminService {
     return this.repository.findMonthlyActivity(ctx, communityId, asOf, windowMonths);
   }
 
-  async getAllTimeTotals(ctx: IContext, communityId: string) {
-    return this.repository.findAllTimeTotals(ctx, communityId);
+  async getAllTimeTotals(ctx: IContext, communityId: string, asOf: Date) {
+    return this.repository.findAllTimeTotals(ctx, communityId, asOf);
   }
 
   async getPlatformTotals(
@@ -394,44 +434,46 @@ export default class SysAdminService {
       weekStarts.push(wk);
     }
 
-    const points = await Promise.all(
-      weekStarts.map(async (weekStart) => {
-        const nextWeekStart = addDays(weekStart, 7);
-        const prevWeekStart = addDays(weekStart, -7);
-        const twelveWeeksAgo = addDays(weekStart, -7 * 12);
-        const denominatorUpperBound = bounds.clampFuture(nextWeekStart);
-        const [retention, snapshot] = await Promise.all([
-          this.reportService.getRetentionAggregate(ctx, communityId, {
-            currentWeekStart: weekStart,
-            nextWeekStart,
-            prevWeekStart,
-            twelveWeeksAgo,
-          }),
-          // Denominator for the rate: all JOINED members as of week
-          // end (or asOf, whichever is earlier). Without the clamp,
-          // the current-week row would include members who joined
-          // between asOf and the next Monday in its denominator.
-          this.repository.findActivitySnapshot(
-            ctx,
-            communityId,
-            weekStart,
-            denominatorUpperBound,
-          ),
-        ]);
-        const communityActivityRate =
-          snapshot.totalMembers === 0
-            ? null
-            : retention.currentSendersCount / snapshot.totalMembers;
-        return {
+    // Each week fires 2 queries (retention + activity snapshot).
+    // At MAX windowMonths that's ~310 concurrent queries if we did a
+    // naive Promise.all; FANOUT_CONCURRENCY caps it at a
+    // pool-friendly 8 weeks (= 16 queries) at a time.
+    const points = await runBatched(weekStarts, FANOUT_CONCURRENCY, async (weekStart) => {
+      const nextWeekStart = addDays(weekStart, 7);
+      const prevWeekStart = addDays(weekStart, -7);
+      const twelveWeeksAgo = addDays(weekStart, -7 * 12);
+      const denominatorUpperBound = bounds.clampFuture(nextWeekStart);
+      const [retention, snapshot] = await Promise.all([
+        this.reportService.getRetentionAggregate(ctx, communityId, {
+          currentWeekStart: weekStart,
+          nextWeekStart,
+          prevWeekStart,
+          twelveWeeksAgo,
+        }),
+        // Denominator for the rate: all JOINED members as of week
+        // end (or asOf, whichever is earlier). Without the clamp,
+        // the current-week row would include members who joined
+        // between asOf and the next Monday in its denominator.
+        this.repository.findActivitySnapshot(
+          ctx,
+          communityId,
           weekStart,
-          retainedSenders: retention.retainedSenders,
-          churnedSenders: retention.churnedSenders,
-          returnedSenders: retention.returnedSenders,
-          newMembers: retention.newMembers,
-          communityActivityRate,
-        };
-      }),
-    );
+          denominatorUpperBound,
+        ),
+      ]);
+      const communityActivityRate =
+        snapshot.totalMembers === 0
+          ? null
+          : retention.currentSendersCount / snapshot.totalMembers;
+      return {
+        weekStart,
+        retainedSenders: retention.retainedSenders,
+        churnedSenders: retention.churnedSenders,
+        returnedSenders: retention.returnedSenders,
+        newMembers: retention.newMembers,
+        communityActivityRate,
+      };
+    });
 
     return points;
   }
@@ -456,62 +498,64 @@ export default class SysAdminService {
       cohortMonths.push(jstMonthStartOffset(latestMonthStart, -i));
     }
 
-    const points = await Promise.all(
-      cohortMonths.map(async (cohortStart) => {
-        const cohortEnd = jstMonthStartOffset(cohortStart, 1);
-        const activeM1Start = jstMonthStartOffset(cohortStart, 1);
-        const activeM1End = jstMonthStartOffset(cohortStart, 2);
-        const activeM3Start = jstMonthStartOffset(cohortStart, 3);
-        const activeM3End = jstMonthStartOffset(cohortStart, 4);
-        const activeM6Start = jstMonthStartOffset(cohortStart, 6);
-        const activeM6End = jstMonthStartOffset(cohortStart, 7);
+    // Each cohort issues up to 4 getCohortRetention calls (m1/m3/m6
+    // + cohort_size probe). At MAX windowMonths=36 that's 144 queries
+    // if we Promise.all'd naively; FANOUT_CONCURRENCY keeps concurrent
+    // work to 8 cohorts × 4 = 32 queries, well under Prisma pool size.
+    const points = await runBatched(cohortMonths, FANOUT_CONCURRENCY, async (cohortStart) => {
+      const cohortEnd = jstMonthStartOffset(cohortStart, 1);
+      const activeM1Start = jstMonthStartOffset(cohortStart, 1);
+      const activeM1End = jstMonthStartOffset(cohortStart, 2);
+      const activeM3Start = jstMonthStartOffset(cohortStart, 3);
+      const activeM3End = jstMonthStartOffset(cohortStart, 4);
+      const activeM6Start = jstMonthStartOffset(cohortStart, 6);
+      const activeM6End = jstMonthStartOffset(cohortStart, 7);
 
-        const fetchRetention = async (
-          activeStart: Date,
-          activeEnd: Date,
-        ): Promise<number | null> => {
-          // Skip any window whose end hasn't passed the START of the
-          // asOf month. The asOf month itself is still in progress —
-          // showing a cohort's retention against a partially-observed
-          // month makes the number look artificially low (members
-          // still have the rest of the month to donate). Only release
-          // the value once `activeEnd` sits entirely in completed
-          // history (i.e. at or before the current month's start).
-          if (activeEnd > latestMonthStart) return null;
-          const row = await this.reportService.getCohortRetention(
-            ctx,
-            communityId,
-            { cohortStart, cohortEnd },
-            { activeStart, activeEnd },
-          );
-          if (row.cohortSize === 0) return null;
-          return row.activeNextWeek / row.cohortSize;
-        };
+      const fetchRetention = async (
+        activeStart: Date,
+        activeEnd: Date,
+      ): Promise<number | null> => {
+        // Skip any window whose end hasn't passed the START of the
+        // asOf month. The asOf month itself is still in progress —
+        // showing a cohort's retention against a partially-observed
+        // month makes the number look artificially low (members
+        // still have the rest of the month to donate). Only release
+        // the value once `activeEnd` sits entirely in completed
+        // history (i.e. at or before the current month's start).
+        if (activeEnd > latestMonthStart) return null;
+        const row = await this.reportService.getCohortRetention(
+          ctx,
+          communityId,
+          { cohortStart, cohortEnd },
+          { activeStart, activeEnd },
+        );
+        if (row.cohortSize === 0) return null;
+        return row.activeNextWeek / row.cohortSize;
+      };
 
-        const [retentionM1, retentionM3, retentionM6, cohortSizeRow] = await Promise.all([
-          fetchRetention(activeM1Start, activeM1End),
-          fetchRetention(activeM3Start, activeM3End),
-          fetchRetention(activeM6Start, activeM6End),
-          // Re-use findCohortRetention with an active-window that
-          // overlaps the cohort month itself just to read the
-          // cohort_size counter; the numerator is ignored.
-          this.reportService.getCohortRetention(
-            ctx,
-            communityId,
-            { cohortStart, cohortEnd },
-            { activeStart: cohortStart, activeEnd: cohortEnd },
-          ),
-        ]);
+      const [retentionM1, retentionM3, retentionM6, cohortSizeRow] = await Promise.all([
+        fetchRetention(activeM1Start, activeM1End),
+        fetchRetention(activeM3Start, activeM3End),
+        fetchRetention(activeM6Start, activeM6End),
+        // Re-use findCohortRetention with an active-window that
+        // overlaps the cohort month itself just to read the
+        // cohort_size counter; the numerator is ignored.
+        this.reportService.getCohortRetention(
+          ctx,
+          communityId,
+          { cohortStart, cohortEnd },
+          { activeStart: cohortStart, activeEnd: cohortEnd },
+        ),
+      ]);
 
-        return {
-          cohortMonthStart: cohortStart,
-          cohortSize: cohortSizeRow.cohortSize,
-          retentionM1,
-          retentionM3,
-          retentionM6,
-        };
-      }),
-    );
+      return {
+        cohortMonthStart: cohortStart,
+        cohortSize: cohortSizeRow.cohortSize,
+        retentionM1,
+        retentionM3,
+        retentionM6,
+      };
+    });
 
     return points;
   }

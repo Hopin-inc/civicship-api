@@ -76,8 +76,14 @@ export interface ISysAdminRepository {
     to: Date,
   ): Promise<SysAdminNewMemberCountRow>;
 
-  /** All-time DONATION totals + MV data window for the summary card. */
-  findAllTimeTotals(ctx: IContext, communityId: string): Promise<SysAdminAllTimeTotalsRow>;
+  /** All-time DONATION totals + MV data window for the summary card,
+   * clamped at `asOf` for historic-asOf consistency with the rest of
+   * the dashboard. */
+  findAllTimeTotals(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+  ): Promise<SysAdminAllTimeTotalsRow>;
 
   /** Platform-wide headline row for the L1 dashboard. */
   findPlatformTotals(

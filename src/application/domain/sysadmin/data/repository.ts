@@ -425,11 +425,16 @@ export default class SysAdminRepository implements ISysAdminRepository {
 
   /**
    * All-time DONATION totals + the data window actually covered by the
-   * MV for this community. `max_chain_depth` reads the live
+   * MV for this community, clamped at `asOf` for historic-asOf
+   * consistency. `max_chain_depth` reads the live
    * `t_transactions.chain_depth` column so the summary card surfaces
    * the literal deepest chain rather than a month-bucketed max.
    */
-  async findAllTimeTotals(ctx: IContext, communityId: string): Promise<SysAdminAllTimeTotalsRow> {
+  async findAllTimeTotals(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+  ): Promise<SysAdminAllTimeTotalsRow> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<
         {
@@ -439,7 +444,19 @@ export default class SysAdminRepository implements ISysAdminRepository {
           data_to: Date | null;
         }[]
       >`
-        WITH donation_totals AS (
+        WITH asof_bound AS (
+          -- Same (asOf JST day + 1) clamp the other sysadmin queries
+          -- use. Historic asOf must not count DONATION transactions
+          -- or chain depths from dates past asOf; otherwise the
+          -- summary card would mix the past-point view with whatever
+          -- landed after, contradicting stageCounts.total /
+          -- communityActivityRate which ARE clamped.
+          SELECT (
+            ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+            AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+          ) AS upper_ts
+        ),
+        donation_totals AS (
           SELECT
             COALESCE(SUM(t."from_point_change"), 0)::bigint AS total_donation_points,
             MAX(t."chain_depth")::int AS max_chain_depth
@@ -447,14 +464,22 @@ export default class SysAdminRepository implements ISysAdminRepository {
           INNER JOIN "t_wallets" fw
             ON fw."id" = t."from"
             AND fw."community_id" = ${communityId}
+          CROSS JOIN asof_bound ab
           WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
         ),
         data_range AS (
+          -- MV "date" column is a JST-encoded date; compare against
+          -- the JST calendar date of asOf (ab.upper_ts is JST-midnight
+          -- in naive UTC, so dropping back to ::date gives the JST
+          -- day after asOf; exclusive less-than keeps the last
+          -- included day as asOf).
           SELECT
             MIN("date") AS data_from,
             MAX("date") AS data_to
-          FROM "mv_transaction_summary_daily"
+          FROM "mv_transaction_summary_daily", asof_bound
           WHERE "community_id" = ${communityId}
+            AND "date" < ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
         )
         SELECT
           dt.total_donation_points,

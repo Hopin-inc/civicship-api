@@ -131,7 +131,7 @@ export default class SysAdminUseCase {
     ] = await Promise.all([
       this.service.getMemberStats(ctx, community.communityId, asOf),
       this.service.getMonthlyActivity(ctx, community.communityId, asOf, windowMonths),
-      this.service.getAllTimeTotals(ctx, community.communityId),
+      this.service.getAllTimeTotals(ctx, community.communityId, asOf),
       this.service.getMonthActivityWithPrev(ctx, community.communityId, asOf),
       this.service.getRetentionTrend(ctx, community.communityId, asOf, windowMonths),
       this.service.getCohortRetention(ctx, community.communityId, asOf, windowMonths),
@@ -194,8 +194,12 @@ function resolveThresholds(
     | null
     | undefined,
 ): SegmentThresholds {
-  const tier1 = input?.tier1 ?? DEFAULT_SEGMENT_THRESHOLDS.tier1;
-  const tier2 = input?.tier2 ?? DEFAULT_SEGMENT_THRESHOLDS.tier2;
+  // Clamp negative inputs to 0 so the downstream invariant
+  // `tier1 >= tier2 >= 0` holds. Without this, a negative tier2 would
+  // make `userSendRate >= tier2` trivially true for every member and
+  // produce misleading stage counts.
+  const tier1 = Math.max(input?.tier1 ?? DEFAULT_SEGMENT_THRESHOLDS.tier1, 0);
+  const tier2 = Math.max(input?.tier2 ?? DEFAULT_SEGMENT_THRESHOLDS.tier2, 0);
   // If a caller flips them (tier2 > tier1), swap silently rather than
   // erroring — the "higher boundary" invariant is what the rest of the
   // service relies on, and a swap is a less confusing DX than a 400.

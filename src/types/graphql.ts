@@ -3024,7 +3024,11 @@ export type GqlSysAdminCommunityDetailInput = {
   asOf?: InputMaybe<Scalars['Datetime']['input']>;
   /** Target community id. */
   communityId: Scalars['ID']['input'];
-  /** Opaque cursor for pagination (member id of the last row on prior page). */
+  /**
+   * Opaque cursor for pagination. Internally a base64-encoded offset of
+   * the prior page's position. Treat as opaque — pass back the cursor
+   * returned by the previous response unchanged.
+   */
   cursor?: InputMaybe<Scalars['String']['input']>;
   /** Member list page size (default 50, max 200). */
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -3387,7 +3391,9 @@ export type GqlSysAdminStageBucket = {
   /** count / totalMembers (0.0–1.0). */
   pct: Scalars['Float']['output'];
   /**
-   * Stage's share of DONATION points-out in the asOf month (0.0–1.0).
+   * Stage's share of this community's all-time DONATION points-out
+   * (0.0–1.0). Numerator is the sum of `totalPointsOut` across the
+   * stage's members; denominator is the same sum across all members.
    * 0 for the latent stage by definition.
    */
   pointsContributionPct: Scalars['Float']['output'];
