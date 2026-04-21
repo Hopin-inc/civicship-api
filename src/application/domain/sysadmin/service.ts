@@ -204,9 +204,18 @@ export default class SysAdminService {
           avgMonthsIn: 0,
         };
       }
-      const sumSendRate = rows.reduce((acc, r) => acc + r.userSendRate, 0);
-      const sumMonthsIn = rows.reduce((acc, r) => acc + r.monthsIn, 0);
-      const sumPointsOut = rows.reduce<bigint>((acc, r) => acc + r.totalPointsOut, BigInt(0));
+      // Single-pass reduce over rows so we visit the bucket once
+      // instead of three times. At realistic bucket sizes the
+      // difference is negligible, but it keeps the intent ("summarise
+      // this bucket") in one place.
+      const { sumSendRate, sumMonthsIn, sumPointsOut } = rows.reduce(
+        (acc, r) => ({
+          sumSendRate: acc.sumSendRate + r.userSendRate,
+          sumMonthsIn: acc.sumMonthsIn + r.monthsIn,
+          sumPointsOut: acc.sumPointsOut + r.totalPointsOut,
+        }),
+        { sumSendRate: 0, sumMonthsIn: 0, sumPointsOut: BigInt(0) },
+      );
       const pointsContributionPct =
         totalPointsOut === BigInt(0) ? 0 : Number(sumPointsOut) / Number(totalPointsOut);
       return {

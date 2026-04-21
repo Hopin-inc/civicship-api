@@ -135,61 +135,52 @@ export default class SysAdminRepository implements ISysAdminRepository {
             -- unit, so stageCounts.total and the activity-rate
             -- denominator agree on what "as of asOf" includes.
           GROUP BY fw."user_id", jst_month
+        ),
+        member_tenure AS (
+          -- Compute months_in ONCE per member so the final SELECT can
+          -- reuse it as both months_in and the denominator of
+          -- user_send_rate. The formula is "distinct JST calendar
+          -- months the member has been present in (join-month through
+          -- asOf-month inclusive)" — the +1 turns the month-number
+          -- diff into a span count, matching how
+          -- donation_out_months (COUNT DISTINCT jst_month) counts.
+          -- GREATEST(1, ...) defends against any future clock skew.
+          SELECT
+            m."user_id",
+            GREATEST(
+              1,
+              (
+                (
+                  EXTRACT(YEAR FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                  - EXTRACT(YEAR FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                ) * 12
+                + (
+                  EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                  - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                )
+                + 1
+              )
+            )::int AS months_in
+          FROM members m
         )
         SELECT
           m."user_id",
           u."name" AS "name",
-          -- months_in counts the DISTINCT JST calendar months the
-          -- member has been present in (join-month through asOf-month
-          -- inclusive), NOT the raw month-number difference. A member
-          -- who joined March 15 and is measured on April 10 has been
-          -- present in 2 distinct months (March and April), so
-          -- months_in = 2. Matches the frame used by
-          -- donation_out_months (COUNT DISTINCT jst_month) so
-          -- user_send_rate stays bounded in [0, 1]. The +1 is what
-          -- turns "month diff" into "month span"; GREATEST(1, ...)
-          -- stays as a defense against any future clock-skew surprise.
-          GREATEST(
-            1,
-            (
-              (
-                EXTRACT(YEAR FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                - EXTRACT(YEAR FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-              ) * 12
-              + (
-                EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-              )
-              + 1
-            )
-          )::int AS months_in,
+          mt.months_in,
           COALESCE(COUNT(DISTINCT dm.jst_month), 0)::int AS donation_out_months,
           COALESCE(SUM(dm.month_points_out), 0)::bigint AS total_points_out,
-          -- Denominator matches the months_in expression above so
-          -- user_send_rate is guaranteed in [0, 1]. GREATEST(1, ...)
-          -- keeps the divisor >= 1; no explicit zero-branch needed.
+          -- GREATEST(1, ...) inside member_tenure guarantees the
+          -- divisor is >= 1; no zero branch needed around ROUND.
           ROUND(
             COALESCE(COUNT(DISTINCT dm.jst_month), 0)::numeric
-              / GREATEST(
-                  1,
-                  (
-                    (
-                      EXTRACT(YEAR FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                      - EXTRACT(YEAR FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                    ) * 12
-                    + (
-                      EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                      - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
-                    )
-                    + 1
-                  )
-                )::numeric,
+              / mt.months_in::numeric,
             3
           )::double precision AS user_send_rate
         FROM members m
+        INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
         LEFT JOIN donation_months dm ON dm.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
-        GROUP BY m."user_id", m."created_at", u."name"
+        GROUP BY m."user_id", mt.months_in, u."name"
         ORDER BY m."user_id"
       `;
       return rows.map((r) => ({
@@ -287,9 +278,13 @@ export default class SysAdminRepository implements ISysAdminRepository {
             -- chain_root_count is chain_depth=1 (root of a chain),
             -- chain_descendant_count is chain_depth>=2. The sum is
             -- "transactions that are part of a chain" for this reason.
+            -- COALESCE each column so a hypothetical NULL (MV reshape,
+            -- LEFT JOIN miss) doesn't null out the whole addition and
+            -- silently drop from SUM.
             COALESCE(SUM(
               CASE WHEN ts."reason" = 'DONATION'
-                THEN ts."chain_root_count" + ts."chain_descendant_count"
+                THEN COALESCE(ts."chain_root_count", 0)
+                     + COALESCE(ts."chain_descendant_count", 0)
                 ELSE 0
               END
             ), 0)::int AS donation_chain_tx_count
@@ -300,26 +295,19 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND ts."date" <  mb.next_month_start
           GROUP BY mb.month_start
         ),
-        new_members AS (
-          -- Use member_upper instead of next_month_start so the asOf
-          -- month only counts joiners up to asOf itself.
+        member_counts AS (
+          -- Single-scan pass over t_memberships computes both
+          -- new_members and total_members_end_of_month. The JOIN
+          -- predicate bounds everything at member_upper (asOf+1 JST
+          -- day for the asOf month, next_month_start otherwise); the
+          -- new_members FILTER narrows further to rows that joined
+          -- in the month itself. Collapsing the two previous CTEs
+          -- halves the LEFT JOINs against t_memberships.
           SELECT
             mb.month_start,
-            COUNT(m."user_id")::int AS new_members
-          FROM month_bounds mb
-          LEFT JOIN "t_memberships" m
-            ON m."community_id" = ${communityId}
-            AND m."status" = 'JOINED'
-            AND m."created_at" >= (mb.month_start AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-            AND m."created_at" <  (mb.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-          GROUP BY mb.month_start
-        ),
-        total_members AS (
-          -- Same clamp on the cumulative count: asOf month's
-          -- denominator stops at asOf+1 JST day, never the full
-          -- calendar month.
-          SELECT
-            mb.month_start,
+            COUNT(m."user_id") FILTER (
+              WHERE m."created_at" >= (mb.month_start AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            )::int AS new_members,
             COUNT(m."user_id")::int AS total_members_end_of_month
           FROM month_bounds mb
           LEFT JOIN "t_memberships" m
@@ -331,16 +319,15 @@ export default class SysAdminRepository implements ISysAdminRepository {
         SELECT
           mb.month_start,
           COALESCE(s.sender_count, 0)::int AS sender_count,
-          COALESCE(tm.total_members_end_of_month, 0)::int AS total_members_end_of_month,
-          COALESCE(nm.new_members, 0)::int AS new_members,
+          COALESCE(mc.total_members_end_of_month, 0)::int AS total_members_end_of_month,
+          COALESCE(mc.new_members, 0)::int AS new_members,
           COALESCE(tt.donation_points_sum, 0)::bigint AS donation_points_sum,
           COALESCE(tt.donation_tx_count, 0)::int AS donation_tx_count,
           COALESCE(tt.donation_chain_tx_count, 0)::int AS donation_chain_tx_count
         FROM month_bounds mb
         LEFT JOIN senders s USING (month_start)
         LEFT JOIN tx_totals tt USING (month_start)
-        LEFT JOIN new_members nm USING (month_start)
-        LEFT JOIN total_members tm USING (month_start)
+        LEFT JOIN member_counts mc USING (month_start)
         ORDER BY mb.month_start ASC
       `;
       return rows.map((r) => ({
