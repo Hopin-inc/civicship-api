@@ -82,7 +82,7 @@ AND m."created_at" < (${jstUpper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE '
 - 「ある週」 → `[weekStart, weekStart + 7日)`
 
 `<= asOf::timestamp` のような閉区間と JST 日単位の `< (...)::date` を
-混在させると `findMemberStats` と `findMonthActivity` で精度がズレるので統一する。
+混在させると `findMemberStats` と `findActivitySnapshot` で精度がズレるので統一する。
 
 ---
 

@@ -60,7 +60,7 @@ export default class SysAdminUseCase {
 
     const rows = await Promise.all(
       communities.map(async (c): Promise<GqlSysAdminCommunityOverview> => {
-        const [members, monthActivity, latestCohortRetentionM1] = await Promise.all([
+        const [members, currentMonthActivity, latestCohortRetentionM1] = await Promise.all([
           this.service.getMemberStats(ctx, c.communityId, asOf),
           this.service.getMonthActivityWithPrev(ctx, c.communityId, asOf),
           this.service.getLatestCohortRetentionM1(ctx, c.communityId, asOf),
@@ -70,15 +70,15 @@ export default class SysAdminUseCase {
           ctx,
           c.communityId,
           asOf,
-          monthActivity.growthRateActivity,
+          currentMonthActivity.growthRateActivity,
         );
         return SysAdminPresenter.overviewRow({
           communityId: c.communityId,
           communityName: c.communityName,
           totalMembers: stageCounts.total,
           stageCounts,
-          communityActivityRate: monthActivity.current.rate,
-          growthRateActivity: monthActivity.growthRateActivity,
+          communityActivityRate: currentMonthActivity.current.rate,
+          growthRateActivity: currentMonthActivity.growthRateActivity,
           latestCohortRetentionM1,
           alerts,
         });
@@ -130,7 +130,7 @@ export default class SysAdminUseCase {
       members,
       monthlyActivity,
       allTimeTotals,
-      monthActivity,
+      currentMonthActivity,
       retentionTrend,
       cohortRetention,
     ] = await Promise.all([
@@ -149,7 +149,7 @@ export default class SysAdminUseCase {
       ctx,
       community.communityId,
       asOf,
-      monthActivity.growthRateActivity,
+      currentMonthActivity.growthRateActivity,
     );
 
     const memberList = this.service.paginateMembers(members, {
@@ -167,9 +167,9 @@ export default class SysAdminUseCase {
       communityId: community.communityId,
       communityName: community.communityName,
       totalMembers: stageCounts.total,
-      communityActivityRate: monthActivity.current.rate,
+      communityActivityRate: currentMonthActivity.current.rate,
       communityActivityRate3mAvg: this.service.computeActivityRate3mAvg(monthlyActivity),
-      growthRateActivity: monthActivity.growthRateActivity,
+      growthRateActivity: currentMonthActivity.growthRateActivity,
       tier2Count: stageCounts.tier2Count,
       allTimeTotals,
     });

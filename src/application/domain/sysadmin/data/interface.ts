@@ -3,7 +3,7 @@ import {
   SysAdminAllTimeTotalsRow,
   SysAdminCommunityRow,
   SysAdminMemberStatsRow,
-  SysAdminMonthActivitySnapshotRow,
+  SysAdminActivitySnapshotRow,
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
@@ -58,12 +58,12 @@ export interface ISysAdminRepository {
    * Latest-month unique sender count + total_members snapshot used to
    * compute `communityActivityRate` and power growth-rate math.
    */
-  findMonthActivity(
+  findActivitySnapshot(
     ctx: IContext,
     communityId: string,
     jstMonthStart: Date,
     jstNextMonthStart: Date,
-  ): Promise<SysAdminMonthActivitySnapshotRow>;
+  ): Promise<SysAdminActivitySnapshotRow>;
 
   /**
    * Count of `t_memberships.status='JOINED'` rows whose `created_at`

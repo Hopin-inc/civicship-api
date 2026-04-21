@@ -256,7 +256,7 @@ export default class SysAdminService {
     });
 
     const sign = params.sortOrder === "ASC" ? 1 : -1;
-    const keyOf = (m: SysAdminMemberStatsRow): number => {
+    const numericKey = (m: SysAdminMemberStatsRow): number => {
       switch (params.sortField) {
         case "SEND_RATE":
           return m.userSendRate;
@@ -265,11 +265,23 @@ export default class SysAdminService {
         case "DONATION_OUT_MONTHS":
           return m.donationOutMonths;
         case "TOTAL_POINTS_OUT":
-          return Number(m.totalPointsOut);
+          // Handled in the bigint branch below; placeholder here so
+          // the switch is exhaustive.
+          return 0;
       }
     };
     const sorted = [...filtered].sort((a, b) => {
-      const cmp = keyOf(a) - keyOf(b);
+      let cmp: number;
+      if (params.sortField === "TOTAL_POINTS_OUT") {
+        // Compare bigints directly — Number(bigint) would silently
+        // lose precision past Number.MAX_SAFE_INTEGER and quietly
+        // mis-order the leaderboard for extreme donors.
+        if (a.totalPointsOut < b.totalPointsOut) cmp = -1;
+        else if (a.totalPointsOut > b.totalPointsOut) cmp = 1;
+        else cmp = 0;
+      } else {
+        cmp = numericKey(a) - numericKey(b);
+      }
       if (cmp !== 0) return sign * cmp;
       // Stable secondary sort on userId to make the cursor deterministic.
       return a.userId.localeCompare(b.userId);
@@ -336,7 +348,7 @@ export default class SysAdminService {
   /**
    * Week-by-week retention series across `windowMonths`.
    *
-   * Fans out one `findRetentionAggregate` + one `findMonthActivity`
+   * Fans out one `findRetentionAggregate` + one `findActivitySnapshot`
    * per target week, fired in parallel via `Promise.all`. At the
    * default `windowMonths=10` that's ~43 weeks × 2 = ~86 small SQL
    * statements.
@@ -390,7 +402,7 @@ export default class SysAdminService {
           // end (or asOf, whichever is earlier). Without the clamp,
           // the current-week row would include members who joined
           // between asOf and the next Monday in its denominator.
-          this.repository.findMonthActivity(
+          this.repository.findActivitySnapshot(
             ctx,
             communityId,
             weekStart,
@@ -516,7 +528,7 @@ export default class SysAdminService {
     const prevMonthStart = jstMonthStartOffset(monthStart, -1);
     // Cap the current-month upper bound at asOf+1 (JST day) so
     // mid-month / historic-asOf snapshots don't count memberships
-    // created after asOf in the denominator. `findMonthActivity`
+    // created after asOf in the denominator. `findActivitySnapshot`
     // filters total_members with `created_at < upper`; passing the
     // raw next-month start would pull in future joiners. The prev
     // month call doesn't need clamping because its upper bound
@@ -526,8 +538,8 @@ export default class SysAdminService {
       nextMonthStart < asOfJstDayPlusOne ? nextMonthStart : asOfJstDayPlusOne;
 
     const [curr, prev] = await Promise.all([
-      this.repository.findMonthActivity(ctx, communityId, monthStart, currNextBound),
-      this.repository.findMonthActivity(ctx, communityId, prevMonthStart, monthStart),
+      this.repository.findActivitySnapshot(ctx, communityId, monthStart, currNextBound),
+      this.repository.findActivitySnapshot(ctx, communityId, prevMonthStart, monthStart),
     ]);
 
     const currRate = curr.totalMembers === 0 ? 0 : curr.senderCount / curr.totalMembers;

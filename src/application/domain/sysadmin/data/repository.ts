@@ -4,7 +4,7 @@ import {
   SysAdminAllTimeTotalsRow,
   SysAdminCommunityRow,
   SysAdminMemberStatsRow,
-  SysAdminMonthActivitySnapshotRow,
+  SysAdminActivitySnapshotRow,
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
@@ -92,27 +92,31 @@ export default class SysAdminRepository implements ISysAdminRepository {
           user_send_rate: number;
         }[]
       >`
-        WITH asof_bound AS (
+        WITH asof_jst AS (
+          -- The asOf instant expressed in JST, computed once so every
+          -- downstream CTE can reuse the same naive JST timestamp
+          -- (for year/month extraction and day-boundary derivation).
+          SELECT (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo') AS ts
+        ),
+        asof_bound AS (
           -- Derive the "asOf JST day + 1, at JST midnight, expressed
           -- as a naive UTC timestamp" once and reuse everywhere the
           -- query wants an exclusive upper bound on t_*.created_at.
-          -- The expression is the same JST-day clamp findMonthActivity
+          -- The expression is the same JST-day clamp findActivitySnapshot
           -- / findMonthlyActivity receive pre-computed from the
           -- service layer; inlining it into a single CTE here keeps
           -- findMemberStats' signature unchanged without duplicating
           -- the double-AT TIME ZONE dance across three WHERE clauses.
           SELECT
-            (
-              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
-              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
-            ) AS upper_ts
+            ((ts::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC') AS upper_ts
+          FROM asof_jst
         ),
         members AS (
           -- Filter to members whose membership existed at asOf.
           -- Without this, a historic asOf would include members who
           -- joined after that point, inflating stageCounts.total,
           -- polluting stage classification, and leaking future members
-          -- into the paginated list. findMonthActivity already scopes
+          -- into the paginated list. findActivitySnapshot already scopes
           -- total_members this way; mirroring it keeps the activity
           -- rate denominator consistent with stageCounts.total.
           SELECT
@@ -141,7 +145,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND t."created_at" < ab.upper_ts
             -- JST-day-unit upper bound so donation activity lines up
             -- with the member-tenure bound in the members CTE above.
-            -- findMonthActivity / findPlatformTotals also use this
+            -- findActivitySnapshot / findPlatformTotals also use this
             -- unit, so stageCounts.total and the activity-rate
             -- denominator agree on what "as of asOf" includes.
           GROUP BY fw."user_id", jst_month
@@ -155,23 +159,25 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- diff into a span count, matching how
           -- donation_out_months (COUNT DISTINCT jst_month) counts.
           -- GREATEST(1, ...) defends against any future clock skew.
+          -- Pulling the asOf-side conversion from asof_jst.ts avoids
+          -- re-running the double AT TIME ZONE cast once per row.
           SELECT
             m."user_id",
             GREATEST(
               1,
               (
                 (
-                  EXTRACT(YEAR FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                  EXTRACT(YEAR FROM aj.ts)::int
                   - EXTRACT(YEAR FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
                 ) * 12
                 + (
-                  EXTRACT(MONTH FROM (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                  EXTRACT(MONTH FROM aj.ts)::int
                   - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
                 )
                 + 1
               )
             )::int AS months_in
-          FROM members m
+          FROM members m, asof_jst aj
         )
         SELECT
           m."user_id",
@@ -255,7 +261,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
             -- so the most recent month doesn't count members who
             -- joined after asOf. For past months the LEAST collapses
             -- to next_month_start, so behaviour is unchanged. Mirrors
-            -- the clamp findMemberStats / findMonthActivity already
+            -- the clamp findMemberStats / findActivitySnapshot already
             -- apply, so totalMembersEndOfMonth on the trend lines up
             -- with stageCounts.total and the summary-card rate.
             LEAST(
@@ -364,12 +370,12 @@ export default class SysAdminRepository implements ISysAdminRepository {
     });
   }
 
-  async findMonthActivity(
+  async findActivitySnapshot(
     ctx: IContext,
     communityId: string,
     jstMonthStart: Date,
     jstNextMonthStart: Date,
-  ): Promise<SysAdminMonthActivitySnapshotRow> {
+  ): Promise<SysAdminActivitySnapshotRow> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<{ sender_count: number; total_members: number }[]>`
         WITH senders AS (

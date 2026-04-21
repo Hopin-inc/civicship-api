@@ -57,7 +57,7 @@ export type SysAdminAllTimeTotalsRow = {
 };
 
 /** Latest-month activity snapshot used by the L1 dashboard + summary card. */
-export type SysAdminMonthActivitySnapshotRow = {
+export type SysAdminActivitySnapshotRow = {
   senderCount: number;
   totalMembers: number;
 };
