@@ -70,3 +70,24 @@ export type SysAdminPlatformTotalsRow = {
   totalMembers: number;
   latestMonthDonationPoints: bigint;
 };
+
+/**
+ * One row per target week in a weekly retention series. Returned in
+ * ascending `weekStart` order. Counters use the same
+ * `donation_out_count > 0` frame as `ReportRepository.findRetentionAggregate`
+ * so the two APIs stay apples-to-apples for a single week.
+ *
+ * `totalMembers` is the JOINED-member count at the week's end boundary
+ * so the service can compute `communityActivityRate` without a second
+ * round-trip.
+ */
+export type SysAdminWeeklyRetentionRow = {
+  weekStart: Date;
+  retainedSenders: number;
+  churnedSenders: number;
+  returnedSenders: number;
+  currentSendersCount: number;
+  currentActiveCount: number;
+  newMembers: number;
+  totalMembers: number;
+};

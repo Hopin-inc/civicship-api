@@ -8,6 +8,7 @@ import {
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
+  SysAdminWeeklyRetentionRow,
 } from "@/application/domain/sysadmin/data/type";
 import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
 
@@ -447,6 +448,191 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalMembers: r.total_members,
         latestMonthDonationPoints: r.latest_month_donation_points,
       };
+    });
+  }
+
+  /**
+   * Bulk weekly retention series. Replaces the per-week loop that
+   * fired 2 × `windowMonths × ~4.3` queries per L2 detail load.
+   *
+   * Single round-trip, three phases:
+   *   1. Pre-aggregate `mv_user_transaction_daily` into per-user-week
+   *      `is_sender` / `is_receiver` flags, scanning [earliest target
+   *      week - 12 weeks, latest target week + 7 days) exactly once.
+   *   2. For each (target_week, user) with sender/receiver activity in
+   *      either the current or previous week, evaluate the
+   *      retained / churned / returned / current_active cells via a
+   *      FULL OUTER JOIN on (user_id, week) between current and prev.
+   *      `has_ever_before` is a set lookup against the same
+   *      pre-aggregation, bounded to the 12-week lookback.
+   *   3. Layer in `new_members` (t_memberships.created_at) and
+   *      `total_members` (JOINED count as of week end) from separate
+   *      per-week aggregates so the response needs no second call.
+   *
+   * Retention semantics match `ReportRepository.findRetentionAggregate`:
+   *   - `is_sender` ⇔ `donation_out_count > 0` (peer-to-peer DONATION
+   *     only; ONBOARDING / GRANT recipients don't count).
+   *   - 12-week `ever_before` lookback is the same bounded-history
+   *     window so "returned" semantics match the single-week method.
+   *
+   * Input contract: `weekStarts` is a non-empty array of JST Mondays
+   * encoded as UTC-midnight dates, strictly ascending, each exactly
+   * 7 days apart. The service layer produces this via `isoWeekStartJst`
+   * + `addDays(wk, 7)`.
+   */
+  async findWeeklyRetentionSeries(
+    ctx: IContext,
+    communityId: string,
+    weekStarts: Date[],
+  ): Promise<SysAdminWeeklyRetentionRow[]> {
+    if (weekStarts.length === 0) return [];
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          week_start: Date;
+          retained_senders: number;
+          churned_senders: number;
+          returned_senders: number;
+          current_senders_count: number;
+          current_active_count: number;
+          new_members: number;
+          total_members: number;
+        }[]
+      >`
+        WITH target_weeks AS (
+          SELECT unnest(${weekStarts}::date[]) AS week_start
+        ),
+        lookback_bounds AS (
+          -- 12 weeks before the earliest target week powers the
+          -- ever_before lookback; the +7 days past the latest target
+          -- week makes sure the last week's "is_sender" aggregation
+          -- sees its full 7-day bucket.
+          SELECT
+            (MIN(week_start) - INTERVAL '12 weeks')::date AS first_date,
+            (MAX(week_start) + INTERVAL '7 days')::date   AS last_date
+          FROM target_weeks
+        ),
+        user_week_flags AS (
+          SELECT
+            mv."user_id",
+            DATE_TRUNC('week', mv."date")::date AS week_start,
+            BOOL_OR(mv."donation_out_count" > 0) AS is_sender,
+            BOOL_OR(mv."received_donation_count" > 0) AS is_receiver
+          FROM "mv_user_transaction_daily" mv
+          CROSS JOIN lookback_bounds lb
+          WHERE mv."community_id" = ${communityId}
+            AND mv."date" >= lb.first_date
+            AND mv."date" <  lb.last_date
+          GROUP BY mv."user_id", DATE_TRUNC('week', mv."date")
+        ),
+        ever_before AS (
+          -- For each (target_week, user), has the user sent in any
+          -- week within [target_week - 12w, target_week - 7d)? Set
+          -- lookup kept separate so per-user-week we evaluate it once.
+          SELECT DISTINCT
+            tw.week_start AS target_week,
+            uwf."user_id"
+          FROM target_weeks tw
+          INNER JOIN user_week_flags uwf
+            ON uwf.week_start >= (tw.week_start - INTERVAL '12 weeks')::date
+            AND uwf.week_start <  (tw.week_start - INTERVAL '7 days')::date
+            AND uwf.is_sender = true
+        ),
+        per_target AS (
+          -- current-week ⊕ prev-week via FULL OUTER JOIN on user_id so
+          -- a user active in either frame contributes exactly one row
+          -- per target week.
+          SELECT
+            tw.week_start AS target_week,
+            COALESCE(cw."user_id", pw."user_id") AS user_id,
+            cw.is_sender AS curr_is_sender,
+            cw.is_receiver AS curr_is_receiver,
+            pw.is_sender AS prev_is_sender
+          FROM target_weeks tw
+          LEFT JOIN user_week_flags cw
+            ON cw.week_start = tw.week_start
+          FULL OUTER JOIN user_week_flags pw
+            ON pw.week_start = (tw.week_start - INTERVAL '7 days')::date
+            AND (cw."user_id" IS NULL OR pw."user_id" = cw."user_id")
+          WHERE cw."user_id" IS NOT NULL OR pw."user_id" IS NOT NULL
+        ),
+        retention_counts AS (
+          SELECT
+            pt.target_week AS week_start,
+            COUNT(*) FILTER (
+              WHERE pt.curr_is_sender = true AND pt.prev_is_sender = true
+            )::int AS retained_senders,
+            COUNT(*) FILTER (
+              WHERE pt.prev_is_sender = true
+                AND (pt.curr_is_sender IS NULL OR pt.curr_is_sender = false)
+            )::int AS churned_senders,
+            COUNT(*) FILTER (
+              WHERE pt.curr_is_sender = true
+                AND (pt.prev_is_sender IS NULL OR pt.prev_is_sender = false)
+                AND eb."user_id" IS NOT NULL
+            )::int AS returned_senders,
+            COUNT(*) FILTER (WHERE pt.curr_is_sender = true)::int AS current_senders_count,
+            COUNT(*) FILTER (
+              WHERE pt.curr_is_sender = true OR pt.curr_is_receiver = true
+            )::int AS current_active_count
+          FROM per_target pt
+          LEFT JOIN ever_before eb
+            ON eb.target_week = pt.target_week
+            AND eb."user_id" = pt.user_id
+          GROUP BY pt.target_week
+        ),
+        new_members_per_week AS (
+          SELECT
+            tw.week_start,
+            COUNT(m."user_id")::int AS new_members
+          FROM target_weeks tw
+          LEFT JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."status" = 'JOINED'
+            AND m."created_at" >= (tw.week_start::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND m."created_at" <  ((tw.week_start + INTERVAL '7 days')::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          GROUP BY tw.week_start
+        ),
+        total_members_per_week AS (
+          -- Week-end total_members denominator for the rate. Counts
+          -- JOINED memberships with created_at strictly before the
+          -- following Monday (JST) — same "as-of week end" frame the
+          -- L1 month rate uses at the month boundary.
+          SELECT
+            tw.week_start,
+            COUNT(m."user_id")::int AS total_members
+          FROM target_weeks tw
+          LEFT JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  ((tw.week_start + INTERVAL '7 days')::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          GROUP BY tw.week_start
+        )
+        SELECT
+          tw.week_start,
+          COALESCE(rc.retained_senders, 0)::int      AS retained_senders,
+          COALESCE(rc.churned_senders, 0)::int       AS churned_senders,
+          COALESCE(rc.returned_senders, 0)::int      AS returned_senders,
+          COALESCE(rc.current_senders_count, 0)::int AS current_senders_count,
+          COALESCE(rc.current_active_count, 0)::int  AS current_active_count,
+          COALESCE(nm.new_members, 0)::int           AS new_members,
+          COALESCE(tm.total_members, 0)::int         AS total_members
+        FROM target_weeks tw
+        LEFT JOIN retention_counts      rc ON rc.week_start = tw.week_start
+        LEFT JOIN new_members_per_week  nm ON nm.week_start = tw.week_start
+        LEFT JOIN total_members_per_week tm ON tm.week_start = tw.week_start
+        ORDER BY tw.week_start ASC
+      `;
+      return rows.map((r) => ({
+        weekStart: r.week_start,
+        retainedSenders: r.retained_senders,
+        churnedSenders: r.churned_senders,
+        returnedSenders: r.returned_senders,
+        currentSendersCount: r.current_senders_count,
+        currentActiveCount: r.current_active_count,
+        newMembers: r.new_members,
+        totalMembers: r.total_members,
+      }));
     });
   }
 }
