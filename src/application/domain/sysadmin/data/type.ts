@@ -29,7 +29,14 @@ export type SysAdminMemberStatsRow = {
   userSendRate: number;
 };
 
-/** Monthly activity counters, sourced from `mv_*` + `t_memberships`. */
+/** Monthly activity counters, sourced from `mv_*` + `t_memberships`.
+ *
+ * `donationTxCount` / `donationChainTxCount` are bigint because the
+ * underlying SUM can exceed int32 on long-running communities (the
+ * per-day `tx_count` column is int32 but cumulative window sums
+ * could legitimately hit 2B+). The presenter layer converts through
+ * `bigintToSafeNumber` before the value leaves the domain.
+ */
 export type SysAdminMonthlyActivityRow = {
   /** JST month start (UTC-encoded, first day of the month at 00:00). */
   monthStart: Date;
@@ -37,8 +44,8 @@ export type SysAdminMonthlyActivityRow = {
   totalMembersEndOfMonth: number;
   newMembers: number;
   donationPointsSum: bigint;
-  donationTxCount: number;
-  donationChainTxCount: number;
+  donationTxCount: bigint;
+  donationChainTxCount: bigint;
 };
 
 /** All-time totals for the summary card, keyed by community. */

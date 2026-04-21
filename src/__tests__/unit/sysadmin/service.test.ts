@@ -353,8 +353,8 @@ describe("SysAdminService", () => {
         totalMembersEndOfMonth: totalMembers,
         newMembers: 0,
         donationPointsSum: BigInt(0),
-        donationTxCount: 0,
-        donationChainTxCount: 0,
+        donationTxCount: BigInt(0),
+        donationChainTxCount: BigInt(0),
       };
     }
 

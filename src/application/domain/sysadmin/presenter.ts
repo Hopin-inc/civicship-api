@@ -156,8 +156,14 @@ export default class SysAdminPresenter {
   static monthlyActivityPoint(row: SysAdminMonthlyActivityRow): GqlSysAdminMonthlyActivityPoint {
     const rate =
       row.totalMembersEndOfMonth === 0 ? 0 : row.senderCount / row.totalMembersEndOfMonth;
+    // Route both sides of chainPct through bigintToSafeNumber so an
+    // extreme community's tx-count sums surface as a RangeError
+    // instead of silently truncating to Number. The ratio itself is
+    // a small [0, 1] fraction regardless of cumulative counts.
+    const donationTxCount = bigintToSafeNumber(row.donationTxCount);
+    const donationChainTxCount = bigintToSafeNumber(row.donationChainTxCount);
     const chainPct =
-      row.donationTxCount === 0 ? null : row.donationChainTxCount / row.donationTxCount;
+      donationTxCount === 0 ? null : donationChainTxCount / donationTxCount;
     return {
       month: row.monthStart,
       senderCount: row.senderCount,

@@ -139,15 +139,15 @@ describe("SysAdminPresenter", () => {
       totalMembersEndOfMonth: 0,
       newMembers: 0,
       donationPointsSum: BigInt(0),
-      donationTxCount: 0,
-      donationChainTxCount: 0,
+      donationTxCount: BigInt(0),
+      donationChainTxCount: BigInt(0),
     };
 
     it("returns null chainPct when no DONATION tx occurred that month", () => {
       const out = SysAdminPresenter.monthlyActivityPoint({
         ...baseRow,
-        donationTxCount: 0,
-        donationChainTxCount: 0,
+        donationTxCount: BigInt(0),
+        donationChainTxCount: BigInt(0),
       });
       expect(out.chainPct).toBeNull();
     });
@@ -166,13 +166,26 @@ describe("SysAdminPresenter", () => {
         ...baseRow,
         senderCount: 4,
         totalMembersEndOfMonth: 20,
-        donationTxCount: 10,
-        donationChainTxCount: 3,
+        donationTxCount: BigInt(10),
+        donationChainTxCount: BigInt(3),
         donationPointsSum: BigInt(5_000),
       });
       expect(out.communityActivityRate).toBeCloseTo(0.2);
       expect(out.chainPct).toBeCloseTo(0.3);
       expect(out.donationPointsSum).toBe(5_000);
+    });
+
+    it("throws RangeError when donation tx count overflows safe integer", () => {
+      // ::bigint on the SUM keeps the SQL side safe; the presenter
+      // should fail loud (not silently truncate) if cumulative tx
+      // counts somehow exceed Number.MAX_SAFE_INTEGER.
+      expect(() =>
+        SysAdminPresenter.monthlyActivityPoint({
+          ...baseRow,
+          donationTxCount: BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1),
+          donationChainTxCount: BigInt(0),
+        }),
+      ).toThrow(RangeError);
     });
   });
 

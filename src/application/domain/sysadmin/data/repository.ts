@@ -92,7 +92,22 @@ export default class SysAdminRepository implements ISysAdminRepository {
           user_send_rate: number;
         }[]
       >`
-        WITH members AS (
+        WITH asof_bound AS (
+          -- Derive the "asOf JST day + 1, at JST midnight, expressed
+          -- as a naive UTC timestamp" once and reuse everywhere the
+          -- query wants an exclusive upper bound on t_*.created_at.
+          -- The expression is the same JST-day clamp findMonthActivity
+          -- / findMonthlyActivity receive pre-computed from the
+          -- service layer; inlining it into a single CTE here keeps
+          -- findMemberStats' signature unchanged without duplicating
+          -- the double-AT TIME ZONE dance across three WHERE clauses.
+          SELECT
+            (
+              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+            ) AS upper_ts
+        ),
+        members AS (
           -- Filter to members whose membership existed at asOf.
           -- Without this, a historic asOf would include members who
           -- joined after that point, inflating stageCounts.total,
@@ -103,13 +118,10 @@ export default class SysAdminRepository implements ISysAdminRepository {
           SELECT
             m."user_id",
             m."created_at"
-          FROM "t_memberships" m
+          FROM "t_memberships" m, asof_bound ab
           WHERE m."community_id" = ${communityId}
             AND m."status" = 'JOINED'
-            AND m."created_at" < (
-              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
-              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
-            )
+            AND m."created_at" < ab.upper_ts
         ),
         donation_months AS (
           SELECT
@@ -124,11 +136,9 @@ export default class SysAdminRepository implements ISysAdminRepository {
             ON fw."id" = t."from"
             AND fw."community_id" = ${communityId}
           INNER JOIN members m ON m."user_id" = fw."user_id"
+          CROSS JOIN asof_bound ab
           WHERE t."reason" = 'DONATION'
-            AND t."created_at" < (
-              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
-              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
-            )
+            AND t."created_at" < ab.upper_ts
             -- JST-day-unit upper bound so donation activity lines up
             -- with the member-tenure bound in the members CTE above.
             -- findMonthActivity / findPlatformTotals also use this
@@ -219,8 +229,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
           total_members_end_of_month: number;
           new_members: number;
           donation_points_sum: bigint;
-          donation_tx_count: number;
-          donation_chain_tx_count: number;
+          donation_tx_count: bigint;
+          donation_chain_tx_count: bigint;
         }[]
       >`
         WITH month_starts AS (
@@ -279,20 +289,23 @@ export default class SysAdminRepository implements ISysAdminRepository {
             ), 0)::bigint AS donation_points_sum,
             COALESCE(SUM(
               CASE WHEN ts."reason" = 'DONATION' THEN ts."tx_count" ELSE 0 END
-            ), 0)::int AS donation_tx_count,
+            ), 0)::bigint AS donation_tx_count,
             -- chain_root_count is chain_depth=1 (root of a chain),
             -- chain_descendant_count is chain_depth>=2. The sum is
             -- "transactions that are part of a chain" for this reason.
             -- COALESCE each column so a hypothetical NULL (MV reshape,
             -- LEFT JOIN miss) doesn't null out the whole addition and
-            -- silently drop from SUM.
+            -- silently drop from SUM. ::bigint so the tx count cannot
+            -- overflow int32 (~2.1B) on long-running or busy
+            -- communities — the Presenter converts through
+            -- bigintToSafeNumber before it hits the GraphQL payload.
             COALESCE(SUM(
               CASE WHEN ts."reason" = 'DONATION'
                 THEN COALESCE(ts."chain_root_count", 0)
                      + COALESCE(ts."chain_descendant_count", 0)
                 ELSE 0
               END
-            ), 0)::int AS donation_chain_tx_count
+            ), 0)::bigint AS donation_chain_tx_count
           FROM month_bounds mb
           LEFT JOIN "mv_transaction_summary_daily" ts
             ON ts."community_id" = ${communityId}
@@ -331,8 +344,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
           COALESCE(mc.total_members_end_of_month, 0)::int AS total_members_end_of_month,
           COALESCE(mc.new_members, 0)::int AS new_members,
           COALESCE(tt.donation_points_sum, 0)::bigint AS donation_points_sum,
-          COALESCE(tt.donation_tx_count, 0)::int AS donation_tx_count,
-          COALESCE(tt.donation_chain_tx_count, 0)::int AS donation_chain_tx_count
+          COALESCE(tt.donation_tx_count, 0)::bigint AS donation_tx_count,
+          COALESCE(tt.donation_chain_tx_count, 0)::bigint AS donation_chain_tx_count
         FROM month_bounds mb
         LEFT JOIN senders s USING (month_start)
         LEFT JOIN tx_totals tt USING (month_start)
