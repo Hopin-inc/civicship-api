@@ -112,6 +112,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       json: unknown;
       nftWalletId: string;
       nftTokenId: string;
+      communityId?: string | null;
     },
     nftTokenId: string,
     tx: Prisma.TransactionClient,
@@ -128,6 +129,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         description: data.description,
         imageUrl: data.imageUrl,
         json: data.json,
+        communityId: data.communityId ?? null,
       },
       create: {
         instanceId: data.instanceId,
@@ -137,6 +139,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         json: data.json,
         nftWalletId: data.nftWalletId,
         nftTokenId: data.nftTokenId,
+        communityId: data.communityId ?? null,
       },
       select: {
         id: true,
