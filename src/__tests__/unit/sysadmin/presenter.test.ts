@@ -7,7 +7,6 @@ import type {
   SysAdminPlatformTotalsRow,
 } from "@/application/domain/sysadmin/data/type";
 import type {
-  AlertFlags,
   MemberListResult,
   MonthlyCohortPoint,
   StageBreakdown,
@@ -271,8 +270,8 @@ describe("SysAdminPresenter", () => {
     });
   });
 
-  describe("overviewRow — cumulative count passthrough", () => {
-    it("copies tier1/tier2/passive counts to BOTH segmentCounts and top-level convenience fields", () => {
+  describe("overviewRow — nested raw signal passthrough", () => {
+    it("forwards stage / window / weekly retention / latest cohort counts unchanged", () => {
       const counts: StageCounts = {
         total: 10,
         tier1Count: 2,
@@ -280,28 +279,40 @@ describe("SysAdminPresenter", () => {
         activeCount: 7,
         passiveCount: 3,
       };
-      const alerts: AlertFlags = {
-        churnSpike: false,
-        activeDrop: true,
-        noNewMembers: false,
-      };
       const out = SysAdminPresenter.overviewRow({
         communityId: "c1",
         communityName: "C",
         totalMembers: 10,
         stageCounts: counts,
-        communityActivityRate: 0.3,
-        growthRateActivity: -0.25,
-        latestCohortRetentionM1: 0.5,
-        alerts,
+        windowActivity: {
+          senderCount: 4,
+          senderCountPrev: 6,
+          newMemberCount: 1,
+          newMemberCountPrev: 2,
+        },
+        weeklyRetention: {
+          retainedSenders: 3,
+          churnedSenders: 5,
+        },
+        latestCohort: {
+          size: 8,
+          activeAtM1: 4,
+        },
       });
-      expect(out.tier1Count).toBe(2);
       expect(out.segmentCounts.tier1Count).toBe(2);
-      expect(out.tier2Count).toBe(5);
       expect(out.segmentCounts.tier2Count).toBe(5);
-      expect(out.passiveCount).toBe(3);
       expect(out.segmentCounts.passiveCount).toBe(3);
-      expect(out.alerts.activeDrop).toBe(true);
+      expect(out.windowActivity).toEqual({
+        senderCount: 4,
+        senderCountPrev: 6,
+        newMemberCount: 1,
+        newMemberCountPrev: 2,
+      });
+      expect(out.weeklyRetention).toEqual({
+        retainedSenders: 3,
+        churnedSenders: 5,
+      });
+      expect(out.latestCohort).toEqual({ size: 8, activeAtM1: 4 });
     });
   });
 });
