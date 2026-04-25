@@ -27,6 +27,7 @@ export type SysAdminMemberStatsRow = {
   donationOutMonths: number;
   totalPointsOut: bigint;
   userSendRate: number;
+  uniqueDonationRecipients: number;
 };
 
 /** Monthly activity counters, sourced from `mv_*` + `t_memberships`.

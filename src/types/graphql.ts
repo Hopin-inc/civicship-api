@@ -3265,6 +3265,22 @@ export type GqlSysAdminMemberRow = {
   name?: Maybe<Scalars['String']['output']>;
   /** All-time DONATION points sent by this user in this community. */
   totalPointsOut: Scalars['Float']['output'];
+  /**
+   * All-time count of distinct OTHER users this member has sent at
+   * least one DONATION to in this community. The "network breadth"
+   * half of the donor profile (paired with frequency-based
+   * `userSendRate` and volume-based `totalPointsOut`):
+   *
+   *   breadth × frequency × volume → the client's per-member
+   *   classification space (e.g. true hub vs single-target loyal vs
+   *   rare-but-far-reaching).
+   *
+   * Counts unique counterparty user_id, not transaction count, so a
+   * member who sent 100 donations to the same recipient still scores
+   * 1. Excludes burn / system targets (recipient wallets without a
+   * user_id).
+   */
+  uniqueDonationRecipients: Scalars['Int']['output'];
   /** User id. */
   userId: Scalars['ID']['output'];
   /**
@@ -6849,6 +6865,7 @@ export type GqlSysAdminMemberRowResolvers<ContextType = any, ParentType extends 
   monthsIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   totalPointsOut?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  uniqueDonationRecipients?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   userId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   userSendRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

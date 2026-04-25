@@ -91,6 +91,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           donation_out_months: number;
           total_points_out: bigint;
           user_send_rate: number;
+          unique_donation_recipients: number;
         }[]
       >`
         WITH asof_jst AS (
@@ -151,6 +152,39 @@ export default class SysAdminRepository implements ISysAdminRepository {
             -- denominator agree on what "as of asOf" includes.
           GROUP BY fw."user_id", jst_month
         ),
+        donation_recipients AS (
+          -- Per-sender count of DISTINCT recipient user_ids over the
+          -- whole tenure (clamped at asOf). This is the "network
+          -- breadth" half of the donor profile and cannot be derived
+          -- from mv_user_transaction_daily — that MV's
+          -- unique_counterparties column is per-day and does not
+          -- compose into an all-time DISTINCT (the same recipient
+          -- across multiple days would double-count under SUM).
+          --
+          -- Scoped to (a) DONATION transactions only, (b) sender wallet
+          -- in this community, and (c) recipient wallet either
+          -- in-community or unattached — same "no cross-community
+          -- leakage" guard that mv_user_transaction_daily and
+          -- v_transaction_comments apply at the view layer. Wallets
+          -- without a user_id (burn / system targets) are excluded so
+          -- a member who only donated into a burn target scores 0.
+          SELECT
+            fw."user_id" AS user_id,
+            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ${communityId}
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."user_id" IS NOT NULL
+          INNER JOIN members m ON m."user_id" = fw."user_id"
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
+          GROUP BY fw."user_id"
+        ),
         member_tenure AS (
           -- Compute months_in ONCE per member so the final SELECT can
           -- reuse it as both months_in and the denominator of
@@ -192,10 +226,18 @@ export default class SysAdminRepository implements ISysAdminRepository {
             COALESCE(COUNT(DISTINCT dm.jst_month), 0)::numeric
               / mt.months_in::numeric,
             3
-          )::double precision AS user_send_rate
+          )::double precision AS user_send_rate,
+          -- donation_recipients is pre-grouped by user_id, so each
+          -- sender appears at most once on the right side of the
+          -- LEFT JOIN. MAX() (rather than adding the column to GROUP
+          -- BY) propagates that single value through the per-user
+          -- grouping cleanly and matches the COALESCE/MAX pattern
+          -- used elsewhere when joining a pre-aggregated CTE.
+          COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients
         FROM members m
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
         LEFT JOIN donation_months dm ON dm.user_id = m."user_id"
+        LEFT JOIN donation_recipients dr ON dr.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
         GROUP BY m."user_id", mt.months_in, u."name"
         ORDER BY m."user_id"
@@ -207,6 +249,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
         donationOutMonths: r.donation_out_months,
         totalPointsOut: r.total_points_out,
         userSendRate: r.user_send_rate,
+        uniqueDonationRecipients: r.unique_donation_recipients,
       }));
     });
   }

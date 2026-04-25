@@ -21,6 +21,7 @@ function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStats
     donationOutMonths: overrides.donationOutMonths ?? 0,
     totalPointsOut: overrides.totalPointsOut ?? BigInt(0),
     userSendRate: overrides.userSendRate ?? 0,
+    uniqueDonationRecipients: overrides.uniqueDonationRecipients ?? 0,
   };
 }
 

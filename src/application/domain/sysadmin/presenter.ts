@@ -228,6 +228,7 @@ export default class SysAdminPresenter {
       monthsIn: row.monthsIn,
       donationOutMonths: row.donationOutMonths,
       totalPointsOut: bigintToSafeNumber(row.totalPointsOut),
+      uniqueDonationRecipients: row.uniqueDonationRecipients,
     };
   }
 
