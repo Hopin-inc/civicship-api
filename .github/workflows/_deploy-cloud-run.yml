@@ -5,9 +5,9 @@ name: _deploy-cloud-run (reusable)
 #   - deploy-external-api-{dev,prd}.yml         (service=external)
 #
 # Variation surface is expressed as `inputs` so the four caller workflows
-# can stay as thin wrappers. Behavior is intended to be byte-equivalent to
-# the pre-refactor workflows; tightening (cache / db:generate / pnpm setup)
-# happens in subsequent commits.
+# stay as thin wrappers. TypedSQL generation runs against an ephemeral
+# Postgres service (not the live Cloud SQL via jumpbox) so deploy is
+# decoupled from prod DB availability and SSH tunnel timing.
 
 on:
   workflow_call:
@@ -76,21 +76,35 @@ jobs:
       # request write here; non-tagging callers still don't push anything.
       contents: write
 
+    # Ephemeral Postgres for `prisma generate --sql` (TypedSQL). Same pattern
+    # as ci.yml — migrations are the source of truth so a fresh DB seeded via
+    # `pnpm db:deploy` produces a schema identical to production for the
+    # purposes of TypedSQL type introspection.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: civicship
+          POSTGRES_PASSWORD: civicship
+          POSTGRES_DB: civicship_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
       STAGE: ${{ inputs.stage }}
       GCP_REGION: ${{ secrets.GCP_REGION }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
       ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
       APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
       EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
       BATCH_ARTIFACT_REGISTRY: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}
       BATCH_NAME: ${{ secrets.BATCH_NAME }}
-      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
-      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
       APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
+      DATABASE_URL: postgresql://civicship:civicship@localhost:5432/civicship_ci
 
     steps:
       - name: Checkout code
@@ -117,27 +131,14 @@ jobs:
       - name: Set up gcloud SDK
         uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
 
+      - name: Apply Prisma migrations to ephemeral Postgres
+        # TypedSQL (`prisma generate --sql`) introspects the live DB to type
+        # `@prisma/client/sql` exports. Migrations create the views / mvs that
+        # those .sql snippets reference, so they must be applied first.
+        run: pnpm db:deploy
+
       - name: pnpm db:generate
-        env:
-          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
-        run: |
-          echo "--- Connecting to DB via jumpbox ---"
-          gcloud compute ssh ${{ env.JUMPBOX_INSTANCE_NAME }} \
-            --tunnel-through-iap \
-            --zone=${{ env.JUMPBOX_ZONE }} \
-            --quiet -- -N -L 5432:localhost:5432 &
-          SSH_PID=$!
-          sleep 60
-          for _ in {1..5}; do
-            pg_isready -h localhost -p 5432 -d ${{ env.DB_NAME }} && break
-            sleep 60
-          done
-
-          echo "--- Running prisma generate ---"
-          pnpm db:generate
-
-          echo "Killing SSH tunnel"
-          kill $SSH_PID
+        run: pnpm db:generate
 
       - name: pnpm gql:generate
         if: ${{ inputs.publish_apollo }}
@@ -233,7 +234,3 @@ jobs:
 
           git tag "$TAG_NAME"
           git push origin "$TAG_NAME"
-
-      - name: Cleanup SSH Key
-        if: always()
-        run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub
