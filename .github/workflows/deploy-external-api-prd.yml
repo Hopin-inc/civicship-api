@@ -5,120 +5,30 @@ on:
     branches:
       - master
 
+permissions:
+  # Caps the reusable workflow's GITHUB_TOKEN to the minimum this caller
+  # needs: id-token for WIF, contents: write because the prd caller pushes
+  # a release tag after deploy (create_tag=true).
+  contents: write
+  id-token: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    environment: co-creation-dao-prod
-    timeout-minutes: 30
-
-    permissions:
-      id-token: write
-      contents: write
-
-    env:
-      STAGE: prd
-      GCP_REGION: ${{ secrets.GCP_REGION }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
-      ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
-      EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
-      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
-      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-    - name: Install pnpm
-      run: npm install -g pnpm
-
-    - name: Set up Node.js
-      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-      with:
-        node-version: '20'
-        cache: 'pnpm'
-
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-
-    - name: Authenticate to Google Cloud (Workload Identity Federation)
-      uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
-      with:
-        workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-
-    - name: Set up gcloud SDK
-      uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
-
-    - name: pnpm db:generate
-      env:
-        DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
-      run: |
-        echo "--- Connecting to DB via jumpbox ---"
-        gcloud compute ssh ${{ env.JUMPBOX_INSTANCE_NAME }} \
-          --tunnel-through-iap \
-          --zone=${{ env.JUMPBOX_ZONE }} \
-          --quiet -- -N -L 5432:localhost:5432 &
-        SSH_PID=$!
-        sleep 60
-        for _ in {1..5}; do
-          pg_isready -h localhost -p 5432 -d ${{ env.DB_NAME }} && break
-          sleep 60
-        done
-
-        echo "--- Running prisma generate ---"
-        pnpm db:generate
-
-        echo "Killing SSH tunnel"
-        kill $SSH_PID
-
-    - name: pnpm build
-      run: pnpm build
-
-    - name: Configure Docker for GCP Artifact Registry
-      run: |
-        gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
-        gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
-
-    - name: Build External API Docker image
-      run: |
-        docker build --no-cache -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest -f Dockerfile.external .
-
-    - name: Push External API Docker image to Artifact Registry
-      run: |
-        docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
-
-    - name: Deploy External API to Cloud Run
-      id: 'deploy'
-      uses: 'google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522' # v2.7.6
-      with:
-        service: ${{ env.EXTERNAL_API_NAME }}
-        image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
-        region: ${{ env.GCP_REGION }}
-        flags: '--allow-unauthenticated --port=3000'
-        env_vars: |
-          NODE_ENV=production
-
-    - name: Create Git tag for External API
-      run: |
-        sudo apt-get update && sudo apt-get install -y tzdata
-        sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
-        sudo dpkg-reconfigure -f noninteractive tzdata
-        
-        TAG_NAME="external-api-$(date +"%Y%m%d%H%M%S")"
-        
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        
-        git tag "$TAG_NAME"
-        git push origin "$TAG_NAME"
-
-    - name: Cleanup SSH Key
-      if: always()
-      run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub
+    uses: ./.github/workflows/_deploy-cloud-run.yml
+    with:
+      service: external
+      stage: prd
+      environment: co-creation-dao-prod
+      dockerfile: Dockerfile.external
+      cloud_run_flags: '--allow-unauthenticated --port=3000'
+      env_vars: |
+        NODE_ENV=production
+      publish_apollo: false
+      deploy_batch: false
+      create_tag: true
+      tag_prefix: 'external-api-'
+    secrets: inherit
