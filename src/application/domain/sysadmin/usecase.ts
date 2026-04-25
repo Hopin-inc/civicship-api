@@ -116,21 +116,32 @@ export default class SysAdminUseCase {
       throw new NotFoundError("Community", { id: input.communityId });
     }
 
-    const [
-      members,
-      monthlyActivity,
-      allTimeTotals,
-      currentMonthActivity,
-      retentionTrend,
-      cohortRetention,
-    ] = await Promise.all([
+    const [members, monthlyActivity, allTimeTotals, currentMonthActivity] = await Promise.all([
       this.service.getMemberStats(ctx, community.communityId, asOf),
       this.service.getMonthlyActivity(ctx, community.communityId, asOf, windowMonths),
       this.service.getAllTimeTotals(ctx, community.communityId, asOf),
       this.service.getMonthActivityWithPrev(ctx, community.communityId, asOf),
-      this.service.getRetentionTrend(ctx, community.communityId, asOf, windowMonths),
-      this.service.getCohortRetention(ctx, community.communityId, asOf, windowMonths),
     ]);
+
+    // getRetentionTrend and getCohortRetention each fan out internally
+    // and rely on FANOUT_CONCURRENCY to cap in-flight queries. Running
+    // them in the same Promise.all would let both first batches fire
+    // simultaneously (16 + 32 = 48 concurrent queries), defeating the
+    // pool-protection contract documented on FANOUT_CONCURRENCY. Keep
+    // them serial — at realistic windowMonths the latency cost is tens
+    // of ms, well worth the connection-pool safety.
+    const retentionTrend = await this.service.getRetentionTrend(
+      ctx,
+      community.communityId,
+      asOf,
+      windowMonths,
+    );
+    const cohortRetention = await this.service.getCohortRetention(
+      ctx,
+      community.communityId,
+      asOf,
+      windowMonths,
+    );
 
     const stageCounts = this.service.computeStageCounts(members, thresholds);
     const stageBreakdown = this.service.computeStageBreakdown(members, thresholds);
