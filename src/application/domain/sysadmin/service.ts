@@ -181,6 +181,20 @@ export const MIN_WINDOW_DAYS = 7;
 export const MAX_WINDOW_DAYS = 90;
 
 /**
+ * Hub breadth threshold defaults & defensive bounds. The threshold
+ * decides how many DISTINCT DONATION recipients within the window
+ * a member needs to qualify as a hub. Default is intentionally low
+ * (3) because civicship's per-member donation cadence is sparse;
+ * portal can tune via SysAdminDashboardInput.hubBreadthThreshold
+ * once real-data hub distribution is observed. Effective range
+ * 1..1000 — values outside are clamped at the usecase boundary the
+ * same way `windowDays` is.
+ */
+export const DEFAULT_HUB_BREADTH_THRESHOLD = 3;
+export const MIN_HUB_BREADTH_THRESHOLD = 1;
+export const MAX_HUB_BREADTH_THRESHOLD = 1000;
+
+/**
  * Cap on how many DB round-trips the retention-trend and cohort-
  * retention orchestrators will keep in flight at once. At the MAX
  * windowMonths (36) those loops otherwise fan out to ~310 concurrent
@@ -721,6 +735,40 @@ export default class SysAdminService {
       currLower,
       upper,
     );
+  }
+
+  /**
+   * Count of members classified as hubs within the parametric
+   * window: those who sent DONATION to at least
+   * `hubBreadthThreshold` DISTINCT counterparties during
+   * `[asOf - windowDays, asOf + 1 JST日)`.
+   *
+   * Single-axis classification (breadth only) — reaching the
+   * threshold inherently requires that many transactions, so a
+   * separate frequency floor would be redundant. The service's
+   * only job is the date arithmetic; the count itself comes from a
+   * dedicated repository SQL because it needs DISTINCT recipient
+   * aggregation against `t_transactions` (which the per-day MV
+   * cannot compose into a window-wide DISTINCT).
+   */
+  async getWindowHubMemberCount(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+    windowDays: number,
+    hubBreadthThreshold: number,
+  ): Promise<number> {
+    const upper = asOfBounds(asOf).asOfJstDayPlusOne;
+    const currLower = addDays(upper, -windowDays);
+
+    const row = await this.repository.findWindowHubMemberCount(
+      ctx,
+      communityId,
+      currLower,
+      upper,
+      hubBreadthThreshold,
+    );
+    return row.count;
   }
 
   /**

@@ -53,10 +53,12 @@ describe("SysAdminPresenter", () => {
         donationOutMonths: 10,
         userSendRate: 0.833,
         totalPointsOut: BigInt(5_000),
+        uniqueDonationRecipients: 4,
       };
       const out = SysAdminPresenter.memberRow(row);
       expect(out.totalPointsOut).toBe(5_000);
       expect(typeof out.totalPointsOut).toBe("number");
+      expect(out.uniqueDonationRecipients).toBe(4);
     });
 
     it("passes null name through untouched", () => {
@@ -67,6 +69,7 @@ describe("SysAdminPresenter", () => {
         donationOutMonths: 0,
         userSendRate: 0,
         totalPointsOut: BigInt(0),
+        uniqueDonationRecipients: 0,
       };
       expect(SysAdminPresenter.memberRow(row).name).toBeNull();
     });
@@ -227,6 +230,7 @@ describe("SysAdminPresenter", () => {
             donationOutMonths: 1,
             userSendRate: 1,
             totalPointsOut: BigInt(0),
+            uniqueDonationRecipients: 0,
           },
         ],
         hasNextPage: true,
@@ -299,6 +303,7 @@ describe("SysAdminPresenter", () => {
           size: 8,
           activeAtM1: 4,
         },
+        hubMemberCount: 2,
       });
       expect(out.segmentCounts.tier1Count).toBe(2);
       expect(out.segmentCounts.tier2Count).toBe(5);
@@ -315,6 +320,7 @@ describe("SysAdminPresenter", () => {
         churnedSenders: 5,
       });
       expect(out.latestCohort).toEqual({ size: 8, activeAtM1: 4 });
+      expect(out.hubMemberCount).toBe(2);
     });
   });
 });

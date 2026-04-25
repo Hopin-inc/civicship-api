@@ -2151,6 +2151,36 @@ type SysAdminCommunityOverview {
   communityName: String!
 
   """
+  Number of members classified as a "hub" within the parametric
+  window (`windowDays`):
+  
+    hubMemberCount = COUNT(member)
+      WHERE windowUniqueDonationRecipients >= input.hubBreadthThreshold
+  
+  `windowUniqueDonationRecipients` is the count of DISTINCT users
+  this member sent a DONATION to during
+  `[asOf - windowDays JST日, asOf + 1 JST日)` — distinct from the
+  L2 `SysAdminMemberRow.uniqueDonationRecipients` field which is
+  tenure-wide. The window-scoped variant is computed on demand in
+  this aggregate but not exposed per-member at L1 (members
+  themselves are an L2 concern).
+  
+  Hub classification deliberately uses BREADTH only — a member
+  who reached `hubBreadthThreshold` distinct recipients during
+  the window necessarily transacted at least that many times,
+  making an explicit frequency floor redundant. This keeps the
+  threshold knobs to one (`hubBreadthThreshold`).
+  
+  Invariants (the client may assert these):
+    hubMemberCount <= windowActivity.senderCount <= totalMembers
+  
+  The first holds because any hub member donated >= 3 times in
+  the window and is therefore a window sender; the second because
+  any window sender is a JOINED member at asOf.
+  """
+  hubMemberCount: Int!
+
+  """
   Latest completed monthly cohort and its M+1 activity. See
   SysAdminLatestCohort.
   """
@@ -2248,6 +2278,30 @@ input SysAdminDashboardInput {
   """
   asOf: Datetime
 
+  """
+  Minimum number of distinct DONATION recipients within the
+  parametric window (`windowDays`) for a member to be classified
+  as a hub. Used to populate `SysAdminCommunityOverview.hubMemberCount`.
+  
+  Defaults to 3, meaning "sent DONATION to at least 3 different
+  people during the window". The threshold is on **unique
+  counterparties** (set cardinality), not transaction count, so a
+  member who donated 100 times to the same recipient does not
+  qualify on this axis alone.
+  
+  Effective range 1..1000; values outside are silently clamped on
+  the server.
+  
+  This is intentionally an absolute threshold rather than a
+  community-relative percentile: a percentile-based hub would
+  always classify ~N% of members as hubs by definition, defeating
+  cross-community comparison ("which communities have the highest
+  hub ratio?"). Community size differences are absorbed
+  client-side by displaying `hubMemberCount / totalMembers` rather
+  than the raw count.
+  """
+  hubBreadthThreshold: Int = 3
+
   """Stage classification thresholds (see SysAdminSegmentThresholdsInput)."""
   segmentThresholds: SysAdminSegmentThresholdsInput
 
@@ -2334,6 +2388,23 @@ type SysAdminMemberRow {
 
   """All-time DONATION points sent by this user in this community."""
   totalPointsOut: Float!
+
+  """
+  All-time count of distinct OTHER users this member has sent at
+  least one DONATION to in this community. The "network breadth"
+  half of the donor profile (paired with frequency-based
+  `userSendRate` and volume-based `totalPointsOut`):
+  
+    breadth × frequency × volume → the client's per-member
+    classification space (e.g. true hub vs single-target loyal vs
+    rare-but-far-reaching).
+  
+  Counts unique counterparty user_id, not transaction count, so a
+  member who sent 100 donations to the same recipient still scores
+  1. Excludes burn / system targets (recipient wallets without a
+  user_id).
+  """
+  uniqueDonationRecipients: Int!
 
   """User id."""
   userId: ID!

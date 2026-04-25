@@ -27,6 +27,7 @@ export type SysAdminMemberStatsRow = {
   donationOutMonths: number;
   totalPointsOut: bigint;
   userSendRate: number;
+  uniqueDonationRecipients: number;
 };
 
 /** Monthly activity counters, sourced from `mv_*` + `t_memberships`.
@@ -64,6 +65,16 @@ export type SysAdminActivitySnapshotRow = {
 
 /** New-member count within an arbitrary window (used for `no_new_members`). */
 export type SysAdminNewMemberCountRow = {
+  count: number;
+};
+
+/**
+ * Window-scoped count of members classified as hubs. A member is a
+ * hub if they sent DONATION to at least `hubBreadthThreshold` DISTINCT
+ * counterparties during `[currLower, upper)` JST. Powers
+ * `SysAdminCommunityOverview.hubMemberCount`.
+ */
+export type SysAdminHubMemberCountRow = {
   count: number;
 };
 
