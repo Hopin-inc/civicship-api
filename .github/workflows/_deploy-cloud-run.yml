@@ -156,6 +156,9 @@ jobs:
         run: pnpm build
 
       - name: Configure Docker for GCP Artifact Registry
+        # Writes a credHelper entry to ~/.docker/config.json so both classic
+        # `docker push` and buildx (which shares the same config) can auth to
+        # Artifact Registry via the gcloud-issued OAuth token.
         run: |
           gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
           gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
@@ -165,49 +168,46 @@ jobs:
         run: |
           if [ "${{ inputs.service }}" = "internal" ]; then
             echo "name=${{ env.APPLICATION_NAME }}" >> "$GITHUB_OUTPUT"
-            echo "service_name=${{ env.APPLICATION_NAME }}" >> "$GITHUB_OUTPUT"
           else
             echo "name=${{ env.EXTERNAL_API_NAME }}" >> "$GITHUB_OUTPUT"
-            echo "service_name=${{ env.EXTERNAL_API_NAME }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Build Docker image (internal uses dotenvx)
-        if: ${{ inputs.service == 'internal' }}
-        run: |
-          pnpm dotenvx run -- docker build --no-cache \
-            -t ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest \
-            -f ${{ inputs.dockerfile }} .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
 
-      - name: Build Docker image (external)
-        if: ${{ inputs.service == 'external' }}
-        run: |
-          docker build --no-cache \
-            -t ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest \
-            -f ${{ inputs.dockerfile }} .
-
-      - name: Push Docker image to Artifact Registry
-        run: |
-          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest
+      - name: Build and push service image
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
+        with:
+          context: .
+          file: ${{ inputs.dockerfile }}
+          push: true
+          tags: ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest
+          # Per-(service, stage) cache scope. Branches sharing a scope reuse
+          # layers; mode=max also exports intermediate layers, not just the
+          # final stage, which speeds up rebuilds when only late layers change.
+          cache-from: type=gha,scope=${{ inputs.service }}-${{ inputs.stage }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.service }}-${{ inputs.stage }}
 
       - name: Deploy to Cloud Run
         id: 'deploy'
         uses: 'google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522' # v2.7.6
         with:
-          service: ${{ steps.image.outputs.service_name }}
+          service: ${{ steps.image.outputs.name }}
           image: ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest
           region: ${{ env.GCP_REGION }}
           flags: ${{ inputs.cloud_run_flags }}
           env_vars: ${{ inputs.env_vars }}
 
-      - name: Build Docker image for batch job
+      - name: Build and push batch image
         if: ${{ inputs.deploy_batch }}
-        run: |
-          docker build -t ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest -f Dockerfile.batch .
-
-      - name: Push Docker image for batch job to Artifact Registry
-        if: ${{ inputs.deploy_batch }}
-        run: |
-          docker push ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
+        with:
+          context: .
+          file: Dockerfile.batch
+          push: true
+          tags: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
+          cache-from: type=gha,scope=batch-${{ inputs.stage }}
+          cache-to: type=gha,mode=max,scope=batch-${{ inputs.stage }}
 
       - name: Update Cloud Run Job (batch) to new image
         if: ${{ inputs.deploy_batch }}
