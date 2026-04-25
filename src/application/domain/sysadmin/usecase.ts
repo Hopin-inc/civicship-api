@@ -81,8 +81,9 @@ export default class SysAdminUseCase {
     // Sorting moved to the client. The L1 payload no longer carries
     // a single canonical "rate" the server can sort on, and the
     // browser's filter()/sort() over <100 rows is sub-millisecond.
-    // Rows are returned in repository order (community id) for
-    // deterministic display before the client applies its own sort.
+    // Rows are returned in `findAllCommunities` order (community
+    // name ASC, see SysAdminRepository) so the response is
+    // deterministic before the client applies its own sort.
 
     return SysAdminPresenter.dashboard({
       asOf,
