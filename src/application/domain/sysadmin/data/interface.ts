@@ -7,7 +7,7 @@ import {
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
-  SysAdminRetainedSenderCountRow,
+  SysAdminWindowActivityCountsRow,
 } from "@/application/domain/sysadmin/data/type";
 
 /**
@@ -78,18 +78,22 @@ export interface ISysAdminRepository {
   ): Promise<SysAdminNewMemberCountRow>;
 
   /**
-   * Unique users who sent at least one DONATION in BOTH windows
-   * `[currLower, currUpper)` AND `[prevLower, prevUpper)`. Powers
-   * `SysAdminWindowActivity.retainedSenders`.
+   * All five raw counts the L1 `SysAdminWindowActivity` payload needs
+   * for the parametric window pair driven by `windowDays`. Issues a
+   * single SQL with two scans (one over `mv_user_transaction_daily`
+   * and one over `t_memberships`), each spanning `[prevLower, upper)`.
+   *
+   * Replaces three separate `findActivitySnapshot` / intersection
+   * calls and two `findNewMemberCount` calls; the previous design
+   * scanned the same MV three times for overlapping windows.
    */
-  findRetainedSenderCount(
+  findWindowActivityCounts(
     ctx: IContext,
     communityId: string,
-    currLower: Date,
-    currUpper: Date,
     prevLower: Date,
-    prevUpper: Date,
-  ): Promise<SysAdminRetainedSenderCountRow>;
+    currLower: Date,
+    upper: Date,
+  ): Promise<SysAdminWindowActivityCountsRow>;
 
   /** All-time DONATION totals + MV data window for the summary card,
    * clamped at `asOf` for historic-asOf consistency with the rest of

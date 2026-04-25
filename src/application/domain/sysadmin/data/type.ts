@@ -68,14 +68,23 @@ export type SysAdminNewMemberCountRow = {
 };
 
 /**
- * Count of unique users who sent at least one DONATION in BOTH of two
- * supplied windows (set intersection on user_id). Powers
- * `SysAdminWindowActivity.retainedSenders` so the client can derive
- * window-scale activity flow (newly activated vs. churned) without
- * a second round-trip.
+ * All five raw counts the L1 `SysAdminWindowActivity` payload needs,
+ * derived from a single MV scan + a single membership scan over
+ * `[prevLower, upper)`. Consolidates what used to be 3 overlapping
+ * mv_user_transaction_daily reads (curr senders, prev senders,
+ * intersection) and 2 overlapping t_memberships reads (curr/prev
+ * new members) into one method so the dashboard load cost grows
+ * linearly with community count instead of with a 5x multiplier.
+ *
+ * Field shape mirrors `WindowActivityCounts` so the service can
+ * pass the row through without re-mapping.
  */
-export type SysAdminRetainedSenderCountRow = {
-  count: number;
+export type SysAdminWindowActivityCountsRow = {
+  senderCount: number;
+  senderCountPrev: number;
+  retainedSenders: number;
+  newMemberCount: number;
+  newMemberCountPrev: number;
 };
 
 /**

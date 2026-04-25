@@ -8,7 +8,7 @@ import {
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
-  SysAdminRetainedSenderCountRow,
+  SysAdminWindowActivityCountsRow,
 } from "@/application/domain/sysadmin/data/type";
 import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
 
@@ -424,34 +424,83 @@ export default class SysAdminRepository implements ISysAdminRepository {
     });
   }
 
-  async findRetainedSenderCount(
+  async findWindowActivityCounts(
     ctx: IContext,
     communityId: string,
-    currLower: Date,
-    currUpper: Date,
     prevLower: Date,
-    prevUpper: Date,
-  ): Promise<SysAdminRetainedSenderCountRow> {
+    currLower: Date,
+    upper: Date,
+  ): Promise<SysAdminWindowActivityCountsRow> {
     return ctx.issuer.public(ctx, async (tx) => {
-      const rows = await tx.$queryRaw<{ n: number }[]>`
-        SELECT COUNT(*)::int AS n
-        FROM (
-          SELECT "user_id"
-          FROM "mv_user_transaction_daily"
-          WHERE "community_id" = ${communityId}
-            AND "donation_out_count" > 0
-            AND "date" >= ${currLower}::date
-            AND "date" <  ${currUpper}::date
-          INTERSECT
-          SELECT "user_id"
+      const rows = await tx.$queryRaw<
+        {
+          curr_sender_count: number;
+          prev_sender_count: number;
+          retained_count: number;
+          curr_new_member_count: number;
+          prev_new_member_count: number;
+        }[]
+      >`
+        WITH window_senders AS (
+          -- One MV scan over [prevLower, upper). Per-user aggregation
+          -- collapses each user's daily rows into two booleans
+          -- recording whether they sent a DONATION in the current /
+          -- previous window. The outer FILTER clauses then count
+          -- senders, prev-senders, and the intersection (retained)
+          -- without rescanning the MV.
+          SELECT
+            "user_id",
+            bool_or("date" >= ${currLower}::date AND "date" <  ${upper}::date) AS in_curr,
+            bool_or("date" >= ${prevLower}::date AND "date" <  ${currLower}::date) AS in_prev
           FROM "mv_user_transaction_daily"
           WHERE "community_id" = ${communityId}
             AND "donation_out_count" > 0
             AND "date" >= ${prevLower}::date
-            AND "date" <  ${prevUpper}::date
-        ) AS intersection
+            AND "date" <  ${upper}::date
+          GROUP BY "user_id"
+        ),
+        sender_aggregates AS (
+          SELECT
+            COUNT(*) FILTER (WHERE in_curr)::int                AS curr_sender_count,
+            COUNT(*) FILTER (WHERE in_prev)::int                AS prev_sender_count,
+            COUNT(*) FILTER (WHERE in_curr AND in_prev)::int    AS retained_count
+          FROM window_senders
+        ),
+        new_members AS (
+          -- One t_memberships scan over [prevLower, upper).
+          -- Same FILTER pattern: split current vs previous in one pass.
+          SELECT
+            COUNT(*) FILTER (
+              WHERE "created_at" >= (${currLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+                AND "created_at" <  (${upper}::date     AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            )::int AS curr_new_member_count,
+            COUNT(*) FILTER (
+              WHERE "created_at" >= (${prevLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+                AND "created_at" <  (${currLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            )::int AS prev_new_member_count
+          FROM "t_memberships"
+          WHERE "community_id" = ${communityId}
+            AND "status" = 'JOINED'
+            AND "created_at" >= (${prevLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  (${upper}::date     AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+        )
+        SELECT
+          COALESCE(s.curr_sender_count, 0)     AS curr_sender_count,
+          COALESCE(s.prev_sender_count, 0)     AS prev_sender_count,
+          COALESCE(s.retained_count, 0)        AS retained_count,
+          COALESCE(n.curr_new_member_count, 0) AS curr_new_member_count,
+          COALESCE(n.prev_new_member_count, 0) AS prev_new_member_count
+        FROM sender_aggregates s
+        CROSS JOIN new_members n
       `;
-      return { count: rows[0]?.n ?? 0 };
+      const r = rows[0];
+      return {
+        senderCount: r?.curr_sender_count ?? 0,
+        senderCountPrev: r?.prev_sender_count ?? 0,
+        retainedSenders: r?.retained_count ?? 0,
+        newMemberCount: r?.curr_new_member_count ?? 0,
+        newMemberCountPrev: r?.prev_new_member_count ?? 0,
+      };
     });
   }
 
