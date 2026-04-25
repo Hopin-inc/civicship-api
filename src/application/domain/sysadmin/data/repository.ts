@@ -132,14 +132,38 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND m."status" = 'JOINED'
             AND m."created_at" < ab.upper_ts
         ),
-        donation_months AS (
+        donation_activity AS (
+          -- Per-(user, JST calendar day) DONATION activity: emits one
+          -- row per day the user sent a DONATION, carrying both the
+          -- aggregated points for that day and the day's JST month
+          -- bucket. The final SELECT then derives:
+          --   donation_out_months = COUNT(DISTINCT jst_month)
+          --   donation_out_days   = COUNT(DISTINCT jst_day)
+          --   total_points_out    = SUM(day_points_out)
+          --
+          -- This consolidates what used to be two parallel CTEs
+          -- (donation_months + donation_days). Joining both into the
+          -- final SELECT on user_id created an N×M cross product —
+          -- COUNT(DISTINCT) was unaffected, but SUM(month_points_out)
+          -- got inflated by M (= number of donation days), corrupting
+          -- total_points_out and every downstream consumer
+          -- (pointsContributionPct, sort orderings, etc.). Pre-
+          -- aggregating per-day in a single CTE removes the cross
+          -- product entirely and is also one fewer t_transactions
+          -- scan since both old CTEs read the same rows.
+          --
+          -- JST date bucketing matches the rest of the query so
+          -- daysIn / donationOutDays line up with the member-tenure
+          -- boundary, and findActivitySnapshot / findPlatformTotals
+          -- agree on what "as of asOf" includes.
           SELECT
             fw."user_id" AS user_id,
+            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
             DATE_TRUNC(
               'month',
               (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
             ) AS jst_month,
-            SUM(t."from_point_change") AS month_points_out
+            SUM(t."from_point_change") AS day_points_out
           FROM "t_transactions" t
           INNER JOIN "t_wallets" fw
             ON fw."id" = t."from"
@@ -148,36 +172,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           CROSS JOIN asof_bound ab
           WHERE t."reason" = 'DONATION'
             AND t."created_at" < ab.upper_ts
-            -- JST-day-unit upper bound so donation activity lines up
-            -- with the member-tenure bound in the members CTE above.
-            -- findActivitySnapshot / findPlatformTotals also use this
-            -- unit, so stageCounts.total and the activity-rate
-            -- denominator agree on what "as of asOf" includes.
-          GROUP BY fw."user_id", jst_month
-        ),
-        donation_days AS (
-          -- Daily-grain counterpart to donation_months: emits one
-          -- row per (user, JST calendar day) the user sent a
-          -- DONATION on. The final SELECT takes COUNT(DISTINCT)
-          -- to derive donation_out_days for the daysIn-based
-          -- daily-cadence rate exposed alongside userSendRate.
-          --
-          -- Date bucketing is JST (matches donation_months and the
-          -- JST-day clamp the rest of the query uses) so daysIn /
-          -- donationOutDays line up with the JST member-tenure
-          -- boundary.
-          SELECT
-            fw."user_id" AS user_id,
-            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ${communityId}
-          INNER JOIN members m ON m."user_id" = fw."user_id"
-          CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
-          GROUP BY fw."user_id", jst_day
+          GROUP BY fw."user_id", jst_day, jst_month
         ),
         donation_recipients AS (
           -- Per-sender count of DISTINCT recipient user_ids over the
@@ -266,13 +261,17 @@ export default class SysAdminRepository implements ISysAdminRepository {
           u."name" AS "name",
           mt.months_in,
           mt.days_in,
-          COALESCE(COUNT(DISTINCT dm.jst_month), 0)::int AS donation_out_months,
-          COALESCE(COUNT(DISTINCT dd.jst_day), 0)::int AS donation_out_days,
-          COALESCE(SUM(dm.month_points_out), 0)::bigint AS total_points_out,
+          COALESCE(COUNT(DISTINCT da.jst_month), 0)::int AS donation_out_months,
+          COALESCE(COUNT(DISTINCT da.jst_day), 0)::int AS donation_out_days,
+          -- SUM is over per-day rows (one row per user per donation
+          -- day in donation_activity). No cross product with another
+          -- per-user-multi-row CTE, so each day's points are summed
+          -- exactly once.
+          COALESCE(SUM(da.day_points_out), 0)::bigint AS total_points_out,
           -- GREATEST(1, ...) inside member_tenure guarantees the
           -- divisor is >= 1; no zero branch needed around ROUND.
           ROUND(
-            COALESCE(COUNT(DISTINCT dm.jst_month), 0)::numeric
+            COALESCE(COUNT(DISTINCT da.jst_month), 0)::numeric
               / mt.months_in::numeric,
             3
           )::double precision AS user_send_rate,
@@ -285,8 +284,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients
         FROM members m
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
-        LEFT JOIN donation_months dm ON dm.user_id = m."user_id"
-        LEFT JOIN donation_days dd ON dd.user_id = m."user_id"
+        LEFT JOIN donation_activity da ON da.user_id = m."user_id"
         LEFT JOIN donation_recipients dr ON dr.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
         GROUP BY m."user_id", mt.months_in, mt.days_in, u."name"
