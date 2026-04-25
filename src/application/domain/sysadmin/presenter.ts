@@ -77,6 +77,7 @@ export default class SysAdminPresenter {
       senderCountPrev: counts.senderCountPrev,
       newMemberCount: counts.newMemberCount,
       newMemberCountPrev: counts.newMemberCountPrev,
+      retainedSenders: counts.retainedSenders,
     };
   }
 

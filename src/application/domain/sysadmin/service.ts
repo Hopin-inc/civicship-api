@@ -130,6 +130,7 @@ export type WindowActivityCounts = {
   senderCountPrev: number;
   newMemberCount: number;
   newMemberCountPrev: number;
+  retainedSenders: number;
 };
 
 /**
@@ -695,8 +696,13 @@ export default class SysAdminService {
    *   current  = [asOf - windowDays JST日, asOf + 1 JST日)
    *   previous = [asOf - 2 * windowDays, asOf - windowDays)
    *
-   * Both windows reuse `findActivitySnapshot` / `findNewMemberCount`,
-   * so no new SQL is introduced — only the date arguments change.
+   * All five counts come from a single repository call
+   * (`findWindowActivityCounts`) which scans `mv_user_transaction_daily`
+   * once over `[prevLower, upper)` and `t_memberships` once over the
+   * same span — collapsing what used to be five overlapping scans
+   * (curr senders + prev senders + intersection + curr new members +
+   * prev new members) into two. The service's only job here is the
+   * date-window arithmetic.
    */
   async getWindowActivity(
     ctx: IContext,
@@ -708,19 +714,13 @@ export default class SysAdminService {
     const currLower = addDays(upper, -windowDays);
     const prevLower = addDays(upper, -windowDays * 2);
 
-    const [curr, prev, currNew, prevNew] = await Promise.all([
-      this.repository.findActivitySnapshot(ctx, communityId, currLower, upper),
-      this.repository.findActivitySnapshot(ctx, communityId, prevLower, currLower),
-      this.repository.findNewMemberCount(ctx, communityId, currLower, upper),
-      this.repository.findNewMemberCount(ctx, communityId, prevLower, currLower),
-    ]);
-
-    return {
-      senderCount: curr.senderCount,
-      senderCountPrev: prev.senderCount,
-      newMemberCount: currNew.count,
-      newMemberCountPrev: prevNew.count,
-    };
+    return this.repository.findWindowActivityCounts(
+      ctx,
+      communityId,
+      prevLower,
+      currLower,
+      upper,
+    );
   }
 
   /**

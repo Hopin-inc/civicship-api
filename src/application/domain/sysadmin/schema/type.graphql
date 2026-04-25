@@ -298,6 +298,17 @@ type SysAdminWindowActivity {
   Same metric for the previous window.
   """
   newMemberCountPrev: Int!
+
+  """
+  Users who sent at least one DONATION in BOTH the current window
+  AND the previous window (set intersection on user_id). Same
+  shape as SysAdminWeeklyRetention.retainedSenders but at
+  windowDays scale, enabling client-side leaky-bucket derivation:
+
+    newlyActivatedSenders = senderCount     - retainedSenders
+    churnedSenders        = senderCountPrev - retainedSenders
+  """
+  retainedSenders: Int!
 }
 
 """
