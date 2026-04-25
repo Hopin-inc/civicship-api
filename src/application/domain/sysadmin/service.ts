@@ -130,6 +130,7 @@ export type WindowActivityCounts = {
   senderCountPrev: number;
   newMemberCount: number;
   newMemberCountPrev: number;
+  retainedSenders: number;
 };
 
 /**
@@ -708,11 +709,19 @@ export default class SysAdminService {
     const currLower = addDays(upper, -windowDays);
     const prevLower = addDays(upper, -windowDays * 2);
 
-    const [curr, prev, currNew, prevNew] = await Promise.all([
+    const [curr, prev, currNew, prevNew, retained] = await Promise.all([
       this.repository.findActivitySnapshot(ctx, communityId, currLower, upper),
       this.repository.findActivitySnapshot(ctx, communityId, prevLower, currLower),
       this.repository.findNewMemberCount(ctx, communityId, currLower, upper),
       this.repository.findNewMemberCount(ctx, communityId, prevLower, currLower),
+      this.repository.findRetainedSenderCount(
+        ctx,
+        communityId,
+        currLower,
+        upper,
+        prevLower,
+        currLower,
+      ),
     ]);
 
     return {
@@ -720,6 +729,7 @@ export default class SysAdminService {
       senderCountPrev: prev.senderCount,
       newMemberCount: currNew.count,
       newMemberCountPrev: prevNew.count,
+      retainedSenders: retained.count,
     };
   }
 

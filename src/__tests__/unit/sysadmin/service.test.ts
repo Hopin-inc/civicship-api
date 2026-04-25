@@ -36,6 +36,7 @@ class MockSysAdminRepository {
   findMonthlyActivity = jest.fn();
   findActivitySnapshot = jest.fn();
   findNewMemberCount = jest.fn();
+  findRetainedSenderCount = jest.fn();
   findAllTimeTotals = jest.fn();
   findPlatformTotals = jest.fn();
 }

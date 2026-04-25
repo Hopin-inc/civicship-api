@@ -8,6 +8,7 @@ import {
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
+  SysAdminRetainedSenderCountRow,
 } from "@/application/domain/sysadmin/data/type";
 import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
 
@@ -418,6 +419,40 @@ export default class SysAdminRepository implements ISysAdminRepository {
           AND "status" = 'JOINED'
           AND "created_at" >= (${from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           AND "created_at" <  (${to}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+      `;
+      return { count: rows[0]?.n ?? 0 };
+    });
+  }
+
+  async findRetainedSenderCount(
+    ctx: IContext,
+    communityId: string,
+    currLower: Date,
+    currUpper: Date,
+    prevLower: Date,
+    prevUpper: Date,
+  ): Promise<SysAdminRetainedSenderCountRow> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<{ n: number }[]>`
+        WITH curr_senders AS (
+          SELECT DISTINCT "user_id"
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ${communityId}
+            AND "donation_out_count" > 0
+            AND "date" >= ${currLower}::date
+            AND "date" <  ${currUpper}::date
+        ),
+        prev_senders AS (
+          SELECT DISTINCT "user_id"
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ${communityId}
+            AND "donation_out_count" > 0
+            AND "date" >= ${prevLower}::date
+            AND "date" <  ${prevUpper}::date
+        )
+        SELECT COUNT(*)::int AS n
+        FROM curr_senders c
+        INNER JOIN prev_senders p USING ("user_id")
       `;
       return { count: rows[0]?.n ?? 0 };
     });

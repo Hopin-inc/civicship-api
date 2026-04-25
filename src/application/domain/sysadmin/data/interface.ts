@@ -7,6 +7,7 @@ import {
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
+  SysAdminRetainedSenderCountRow,
 } from "@/application/domain/sysadmin/data/type";
 
 /**
@@ -75,6 +76,20 @@ export interface ISysAdminRepository {
     from: Date,
     to: Date,
   ): Promise<SysAdminNewMemberCountRow>;
+
+  /**
+   * Unique users who sent at least one DONATION in BOTH windows
+   * `[currLower, currUpper)` AND `[prevLower, prevUpper)`. Powers
+   * `SysAdminWindowActivity.retainedSenders`.
+   */
+  findRetainedSenderCount(
+    ctx: IContext,
+    communityId: string,
+    currLower: Date,
+    currUpper: Date,
+    prevLower: Date,
+    prevUpper: Date,
+  ): Promise<SysAdminRetainedSenderCountRow>;
 
   /** All-time DONATION totals + MV data window for the summary card,
    * clamped at `asOf` for historic-asOf consistency with the rest of

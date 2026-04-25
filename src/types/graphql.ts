@@ -3520,6 +3520,16 @@ export type GqlSysAdminWindowActivity = {
   /** Same metric for the previous window. */
   newMemberCountPrev: Scalars['Int']['output'];
   /**
+   * Users who sent at least one DONATION in BOTH the current window
+   * AND the previous window (set intersection on user_id). Same
+   * shape as SysAdminWeeklyRetention.retainedSenders but at
+   * windowDays scale, enabling client-side leaky-bucket derivation:
+   *
+   *   newlyActivatedSenders = senderCount     - retainedSenders
+   *   churnedSenders        = senderCountPrev - retainedSenders
+   */
+  retainedSenders: Scalars['Int']['output'];
+  /**
    * Unique users with at least one outgoing DONATION transaction
    * during the current window (donation_out_count > 0 in
    * mv_user_transaction_daily).
@@ -6906,6 +6916,7 @@ export type GqlSysAdminWeeklyRetentionResolvers<ContextType = any, ParentType ex
 export type GqlSysAdminWindowActivityResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminWindowActivity'] = GqlResolversParentTypes['SysAdminWindowActivity']> = ResolversObject<{
   newMemberCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   newMemberCountPrev?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  retainedSenders?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   senderCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   senderCountPrev?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

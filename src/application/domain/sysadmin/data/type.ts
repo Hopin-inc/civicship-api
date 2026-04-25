@@ -68,6 +68,17 @@ export type SysAdminNewMemberCountRow = {
 };
 
 /**
+ * Count of unique users who sent at least one DONATION in BOTH of two
+ * supplied windows (set intersection on user_id). Powers
+ * `SysAdminWindowActivity.retainedSenders` so the client can derive
+ * window-scale activity flow (newly activated vs. churned) without
+ * a second round-trip.
+ */
+export type SysAdminRetainedSenderCountRow = {
+  count: number;
+};
+
+/**
  * Platform-wide totals for the L1 dashboard header. Derived in one CTE
  * query rather than summing per-community payloads in memory so the
  * answer stays atomic with a single asOf timestamp.

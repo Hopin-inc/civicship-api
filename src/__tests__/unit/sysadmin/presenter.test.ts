@@ -289,6 +289,7 @@ describe("SysAdminPresenter", () => {
           senderCountPrev: 6,
           newMemberCount: 1,
           newMemberCountPrev: 2,
+          retainedSenders: 3,
         },
         weeklyRetention: {
           retainedSenders: 3,
@@ -307,6 +308,7 @@ describe("SysAdminPresenter", () => {
         senderCountPrev: 6,
         newMemberCount: 1,
         newMemberCountPrev: 2,
+        retainedSenders: 3,
       });
       expect(out.weeklyRetention).toEqual({
         retainedSenders: 3,
