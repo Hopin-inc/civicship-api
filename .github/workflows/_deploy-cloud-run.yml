@@ -1,0 +1,239 @@
+name: _deploy-cloud-run (reusable)
+
+# Reusable deploy pipeline shared by:
+#   - deploy-to-cloud-run-{dev,prd}.yml         (service=internal)
+#   - deploy-external-api-{dev,prd}.yml         (service=external)
+#
+# Variation surface is expressed as `inputs` so the four caller workflows
+# can stay as thin wrappers. Behavior is intended to be byte-equivalent to
+# the pre-refactor workflows; tightening (cache / db:generate / pnpm setup)
+# happens in subsequent commits.
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: 'internal | external'
+        required: true
+        type: string
+      stage:
+        description: 'dev | prd'
+        required: true
+        type: string
+      environment:
+        description: 'GitHub environment name (e.g. dev, co-creation-dao-prod)'
+        required: true
+        type: string
+      env_vars:
+        description: 'Multiline env_vars passed to deploy-cloudrun (KEY=VALUE per line)'
+        required: true
+        type: string
+      dockerfile:
+        description: 'Dockerfile path for the service image'
+        required: true
+        type: string
+      cloud_run_flags:
+        description: 'Extra flags forwarded to deploy-cloudrun (empty for internal)'
+        required: false
+        type: string
+        default: ''
+      apollo_variant:
+        description: 'Apollo Studio variant (only used when publish_apollo=true)'
+        required: false
+        type: string
+        default: ''
+      publish_apollo:
+        description: 'Run rover graph publish'
+        required: false
+        type: boolean
+        default: false
+      deploy_batch:
+        description: 'Build + deploy Dockerfile.batch as a Cloud Run Job'
+        required: false
+        type: boolean
+        default: false
+      create_tag:
+        description: 'Create and push a timestamped Git tag after deploy'
+        required: false
+        type: boolean
+        default: false
+      tag_prefix:
+        description: 'Prefix for the timestamp tag (e.g. "external-api-")'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+
+    permissions:
+      id-token: write
+      # `create_tag` pushes a tag back to the repo, requiring contents: write.
+      # GitHub Actions does not allow conditional permissions, so we always
+      # request write here; non-tagging callers still don't push anything.
+      contents: write
+
+    env:
+      STAGE: ${{ inputs.stage }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+      ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
+      APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+      EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
+      BATCH_ARTIFACT_REGISTRY: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}
+      BATCH_NAME: ${{ secrets.BATCH_NAME }}
+      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
+      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+      APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
+
+      - name: pnpm db:generate
+        env:
+          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+        run: |
+          echo "--- Connecting to DB via jumpbox ---"
+          gcloud compute ssh ${{ env.JUMPBOX_INSTANCE_NAME }} \
+            --tunnel-through-iap \
+            --zone=${{ env.JUMPBOX_ZONE }} \
+            --quiet -- -N -L 5432:localhost:5432 &
+          SSH_PID=$!
+          sleep 60
+          for _ in {1..5}; do
+            pg_isready -h localhost -p 5432 -d ${{ env.DB_NAME }} && break
+            sleep 60
+          done
+
+          echo "--- Running prisma generate ---"
+          pnpm db:generate
+
+          echo "Killing SSH tunnel"
+          kill $SSH_PID
+
+      - name: pnpm gql:generate
+        if: ${{ inputs.publish_apollo }}
+        run: pnpm gql:generate
+
+      - name: Install and Publish via Rover CLI
+        if: ${{ inputs.publish_apollo }}
+        env:
+          APOLLO_KEY: ${{ env.APOLLO_KEY }}
+        run: |
+          curl -sSL https://rover.apollo.dev/nix/latest | sh
+          export PATH="$HOME/.rover/bin:$PATH"
+          rover graph publish civicship-api-jq1988@${{ inputs.apollo_variant }} --schema ./docs/schema.graphql
+
+      - name: pnpm build
+        run: pnpm build
+
+      - name: Configure Docker for GCP Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
+          gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+      - name: Resolve service image name
+        id: image
+        run: |
+          if [ "${{ inputs.service }}" = "internal" ]; then
+            echo "name=${{ env.APPLICATION_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "service_name=${{ env.APPLICATION_NAME }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ env.EXTERNAL_API_NAME }}" >> "$GITHUB_OUTPUT"
+            echo "service_name=${{ env.EXTERNAL_API_NAME }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Docker image (internal uses dotenvx)
+        if: ${{ inputs.service == 'internal' }}
+        run: |
+          pnpm dotenvx run -- docker build --no-cache \
+            -t ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest \
+            -f ${{ inputs.dockerfile }} .
+
+      - name: Build Docker image (external)
+        if: ${{ inputs.service == 'external' }}
+        run: |
+          docker build --no-cache \
+            -t ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest \
+            -f ${{ inputs.dockerfile }} .
+
+      - name: Push Docker image to Artifact Registry
+        run: |
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest
+
+      - name: Deploy to Cloud Run
+        id: 'deploy'
+        uses: 'google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522' # v2.7.6
+        with:
+          service: ${{ steps.image.outputs.service_name }}
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ steps.image.outputs.name }}:latest
+          region: ${{ env.GCP_REGION }}
+          flags: ${{ inputs.cloud_run_flags }}
+          env_vars: ${{ inputs.env_vars }}
+
+      - name: Build Docker image for batch job
+        if: ${{ inputs.deploy_batch }}
+        run: |
+          docker build -t ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest -f Dockerfile.batch .
+
+      - name: Push Docker image for batch job to Artifact Registry
+        if: ${{ inputs.deploy_batch }}
+        run: |
+          docker push ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
+
+      - name: Update Cloud Run Job (batch) to new image
+        if: ${{ inputs.deploy_batch }}
+        # docker push :latest alone does not roll the Cloud Run Job to the new
+        # image — Cloud Run Jobs pin the image digest at deploy time, so we
+        # need an explicit `run jobs update` to create a new revision.
+        run: |
+          gcloud run jobs update ${{ env.BATCH_NAME }} \
+            --region=${{ env.GCP_REGION }} \
+            --image=${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
+
+      - name: Create Git tag
+        if: ${{ inputs.create_tag }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y tzdata
+          sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+          sudo dpkg-reconfigure -f noninteractive tzdata
+
+          TAG_NAME="${{ inputs.tag_prefix }}$(date +"%Y%m%d%H%M%S")"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+
+      - name: Cleanup SSH Key
+        if: always()
+        run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub
