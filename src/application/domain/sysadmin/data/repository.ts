@@ -169,6 +169,11 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- v_transaction_comments apply at the view layer. Wallets
           -- without a user_id (burn / system targets) are excluded so
           -- a member who only donated into a burn target scores 0.
+          -- Self-donations (fw.user_id = tw.user_id) are excluded so
+          -- the count matches the "distinct OTHER users" wording in
+          -- SysAdminMemberRow.uniqueDonationRecipients — the wallet
+          -- validator does not block same-user transfers, so the
+          -- guard has to live here.
           SELECT
             fw."user_id" AS user_id,
             COUNT(DISTINCT tw."user_id")::int AS unique_recipients
@@ -179,6 +184,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           INNER JOIN "t_wallets" tw
             ON tw."id" = t."to"
             AND tw."user_id" IS NOT NULL
+            AND tw."user_id" <> fw."user_id"
           INNER JOIN members m ON m."user_id" = fw."user_id"
           CROSS JOIN asof_bound ab
           WHERE t."reason" = 'DONATION'
@@ -570,7 +576,13 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- Cross-community + burn-target guards mirror the defenses
           -- on mv_user_transaction_daily / v_transaction_comments so
           -- a system-target wallet (no user_id) does not silently
-          -- inflate the recipient count.
+          -- inflate the recipient count. Self-donations are excluded
+          -- (matches the "different people" wording in
+          -- SysAdminCommunityOverview.hubMemberCount and the
+          -- "distinct OTHER users" definition in
+          -- SysAdminMemberRow.uniqueDonationRecipients) — the wallet
+          -- validator does not block same-user transfers, so the
+          -- guard has to live in this query.
           SELECT
             fw."user_id" AS user_id,
             COUNT(DISTINCT tw."user_id")::int AS unique_recipients
@@ -581,6 +593,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           INNER JOIN "t_wallets" tw
             ON tw."id" = t."to"
             AND tw."user_id" IS NOT NULL
+            AND tw."user_id" <> fw."user_id"
           WHERE t."reason" = 'DONATION'
             AND t."created_at" >= (${currLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
             AND t."created_at" <  (${upper}::date     AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
