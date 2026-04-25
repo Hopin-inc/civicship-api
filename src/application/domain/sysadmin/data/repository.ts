@@ -245,7 +245,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
             DATE_TRUNC(
               'month',
               (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
-            ) - make_interval(months => ${windowMonths} - 1),
+            ) - make_interval(months => (${windowMonths})::int - 1),
             DATE_TRUNC(
               'month',
               (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
