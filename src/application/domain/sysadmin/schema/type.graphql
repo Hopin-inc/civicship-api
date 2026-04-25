@@ -45,15 +45,24 @@ Input for the L1 all-community overview (`sysAdminDashboard`).
 """
 input SysAdminDashboardInput {
   """
-  The "as of" timestamp. All trailing-window calculations are anchored
-  here: the "latest month" is the JST calendar month containing asOf,
-  and "latest week" is the ISO-week containing asOf. Defaults to now
-  when omitted.
+  As-of timestamp anchor. All trailing-window calculations are
+  anchored here:
+    - parametric activity window: [asOf - windowDays, asOf + 1 JST日)
+    - weekly retention: latest completed ISO week before asOf
+    - latest cohort: (asOf JST月 - 2) so its M+1 window is fully past
+  Defaults to now when omitted.
   """
   asOf: Datetime
 
   """
-  Stage-count thresholds (see SysAdminSegmentThresholdsInput).
+  Length of the rolling activity window in JST days. Effective
+  range 7-90; values outside are silently clamped on the server.
+  Defaults to 28 (= 4 weeks, absorbs day-of-week variance).
+  """
+  windowDays: Int = 28
+
+  """
+  Stage classification thresholds (see SysAdminSegmentThresholdsInput).
   """
   segmentThresholds: SysAdminSegmentThresholdsInput
 }
@@ -258,71 +267,134 @@ type SysAdminPlatformSummary {
 }
 
 """
-One row of the L1 all-community table. See the module docstring for the
-distinction between `communityActivityRate` (this type) and
-`userSendRate` (SysAdminMemberRow).
+DONATION activity within the parametric window driven by
+`SysAdminDashboardInput.windowDays`. Both the current window and
+the immediately preceding window of equal length are returned so
+the client can derive growth rates without a second query.
+
+  current  = [asOf - windowDays JST日, asOf + 1 JST日)
+  previous = [asOf - 2 * windowDays, asOf - windowDays)
+"""
+type SysAdminWindowActivity {
+  """
+  Unique users with at least one outgoing DONATION transaction
+  during the current window (donation_out_count > 0 in
+  mv_user_transaction_daily).
+  """
+  senderCount: Int!
+
+  """
+  Same metric for the previous window of equal length.
+  """
+  senderCountPrev: Int!
+
+  """
+  New JOINED memberships (t_memberships.created_at within the
+  current window, status='JOINED').
+  """
+  newMemberCount: Int!
+
+  """
+  Same metric for the previous window.
+  """
+  newMemberCountPrev: Int!
+}
+
+"""
+DONATION sender retention against the most recently completed
+ISO week (Monday 00:00 JST). Raw signals only; the client composes
+churn alerts (e.g. churnedSenders > retainedSenders).
+"""
+type SysAdminWeeklyRetention {
+  """
+  Users who sent DONATION in the latest completed week AND in
+  the week before it. "Engaged this week, was engaged last week."
+  """
+  retainedSenders: Int!
+
+  """
+  Users who sent DONATION in the week-before-latest but NOT in
+  the latest completed week. "Lost this week, was engaged last week."
+  """
+  churnedSenders: Int!
+}
+
+"""
+Most recently completed monthly cohort plus its M+1 activity.
+"M+1" follows standard cohort-analysis convention: the calendar
+month immediately after the joining month.
+
+The cohort is selected as (asOf's JST month - 2 months) so its
+M+1 window — the JST month immediately preceding asOf's month —
+is fully past. This avoids reporting an artificially low retention
+during the in-progress month.
+
+Raw counts are returned; the client divides for the retention rate
+and decides how to handle small-N cohorts via `size`.
+"""
+type SysAdminLatestCohort {
+  """
+  Cohort size: status='JOINED' members whose created_at falls
+  within the cohort month. 0 when no one joined that month
+  (callers should treat M+1 retention as null in that case).
+  """
+  size: Int!
+
+  """
+  Of those cohort members, how many sent at least one DONATION
+  during the M+1 month.
+  """
+  activeAtM1: Int!
+}
+
+"""
+One row of the L1 all-community table. Designed for at-a-glance
+intervention judgment: each row carries the raw counts the client
+needs to derive rates, growth, alerts, sort keys, and filter
+predicates without a second round-trip.
+
+Calendar-month metrics live on the L2 detail card
+(SysAdminCommunitySummaryCard) — L1 is rolling-window only.
 """
 type SysAdminCommunityOverview {
   """
   Community id.
   """
   communityId: ID!
+
   """
   Community display name (t_communities.name).
   """
   communityName: String!
 
   """
-  Total status='JOINED' members at asOf.
+  Total status='JOINED' members as of asOf. Members whose
+  created_at is after asOf are excluded from the count.
   """
   totalMembers: Int!
 
   """
-  Stage counts under the supplied thresholds (cumulative, see type doc).
+  Per-stage member counts (tier1 / tier2 / passive, cumulative
+  per the type doc) classified against input.segmentThresholds.
   """
   segmentCounts: SysAdminSegmentCounts!
 
   """
-  Direct member count for the "habitual" stage (userSendRate >= tier1).
-  Convenience field (== segmentCounts.tier1Count).
+  Rolling-window DONATION activity. See SysAdminWindowActivity.
   """
-  tier1Count: Int!
-  """
-  Direct member count for the "regular+habitual" stage
-  (userSendRate >= tier2). Convenience field (== segmentCounts.tier2Count).
-  """
-  tier2Count: Int!
-  """
-  Direct member count for the "latent" stage (never donated).
-  Convenience field (== segmentCounts.passiveCount).
-  """
-  passiveCount: Int!
+  windowActivity: SysAdminWindowActivity!
 
   """
-  Community activity rate for the JST calendar month containing asOf:
-  unique DONATION senders in that month / month-end total_members.
-  0.0–1.0. NOT the individual-level userSendRate.
+  Latest completed-week retention signals for client-side churn
+  detection. See SysAdminWeeklyRetention.
   """
-  communityActivityRate: Float!
+  weeklyRetention: SysAdminWeeklyRetention!
 
   """
-  Month-over-month % change in communityActivityRate.
-  Returned as a fraction (e.g. -0.2 == -20%). null when the prior month
-  has no data to compare against.
+  Latest completed monthly cohort and its M+1 activity. See
+  SysAdminLatestCohort.
   """
-  growthRateActivity: Float
-
-  """
-  Retention rate of the most recent completed cohort (members who joined
-  in asOf's previous JST month) measured in the month after joining.
-  null when that cohort is empty.
-  """
-  latestCohortRetentionM1: Float
-
-  """
-  Alert flags (see SysAdminCommunityAlerts).
-  """
-  alerts: SysAdminCommunityAlerts!
+  latestCohort: SysAdminLatestCohort!
 }
 
 """
