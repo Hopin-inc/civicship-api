@@ -5,6 +5,13 @@ on:
     branches:
       - master
 
+permissions:
+  # Caps the reusable workflow's GITHUB_TOKEN to the minimum this caller
+  # needs: id-token for WIF, contents: write because the prd caller pushes
+  # a release tag after deploy (create_tag=true).
+  contents: write
+  id-token: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false

@@ -5,6 +5,13 @@ on:
     branches:
       - develop
 
+permissions:
+  # Caps the reusable workflow's GITHUB_TOKEN to the minimum this caller
+  # needs: id-token for WIF, contents: read for checkout. The dev caller
+  # does not tag (create_tag=false), so contents: write is not required.
+  contents: read
+  id-token: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
