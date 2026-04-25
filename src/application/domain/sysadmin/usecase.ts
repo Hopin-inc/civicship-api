@@ -10,9 +10,12 @@ import {
 } from "@/types/graphql";
 import SysAdminService, {
   DEFAULT_SEGMENT_THRESHOLDS,
+  DEFAULT_WINDOW_DAYS,
   DEFAULT_WINDOW_MONTHS,
   MAX_LIMIT,
+  MAX_WINDOW_DAYS,
   MAX_WINDOW_MONTHS,
+  MIN_WINDOW_DAYS,
   SegmentThresholds,
 } from "@/application/domain/sysadmin/service";
 import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
@@ -39,6 +42,7 @@ export default class SysAdminUseCase {
   ): Promise<GqlSysAdminDashboardPayload> {
     const asOf = input?.asOf ?? new Date();
     const thresholds = resolveThresholds(input?.segmentThresholds);
+    const windowDays = clampWindowDays(input?.windowDays);
 
     const monthStart = jstMonthStart(asOf);
     // Clamp the platform-totals upper bound at asOf+1 JST day so a
@@ -55,31 +59,31 @@ export default class SysAdminUseCase {
 
     const rows = await Promise.all(
       communities.map(async (c): Promise<GqlSysAdminCommunityOverview> => {
-        const [members, currentMonthActivity, latestCohortRetentionM1] = await Promise.all([
+        const [members, windowActivity, weeklyRetention, latestCohort] = await Promise.all([
           this.service.getMemberStats(ctx, c.communityId, asOf),
-          this.service.getMonthActivityWithPrev(ctx, c.communityId, asOf),
-          this.service.getLatestCohortRetentionM1(ctx, c.communityId, asOf),
+          this.service.getWindowActivity(ctx, c.communityId, asOf, windowDays),
+          this.service.getWeeklyRetention(ctx, c.communityId, asOf),
+          this.service.getLatestCohort(ctx, c.communityId, asOf),
         ]);
         const stageCounts = this.service.computeStageCounts(members, thresholds);
-        const alerts = await this.service.getAlerts(ctx, c.communityId, asOf);
         return SysAdminPresenter.overviewRow({
           communityId: c.communityId,
           communityName: c.communityName,
           totalMembers: stageCounts.total,
           stageCounts,
-          communityActivityRate: currentMonthActivity.currentRate,
-          growthRateActivity: currentMonthActivity.growthRateActivity,
-          latestCohortRetentionM1,
-          alerts,
+          windowActivity,
+          weeklyRetention,
+          latestCohort,
         });
       }),
     );
 
-    // Sort by latest-month communityActivityRate descending — matches
-    // the "ソート: 直近月の community_activity_rate 降順（デフォルト）"
-    // behaviour in the requirement doc. Clients can still re-sort in
-    // the browser since the payload is small.
-    rows.sort((a, b) => b.communityActivityRate - a.communityActivityRate);
+    // Sorting moved to the client. The L1 payload no longer carries
+    // a single canonical "rate" the server can sort on, and the
+    // browser's filter()/sort() over <100 rows is sub-millisecond.
+    // Rows are returned in `findAllCommunities` order (community
+    // name ASC, see SysAdminRepository) so the response is
+    // deterministic before the client applies its own sort.
 
     return SysAdminPresenter.dashboard({
       asOf,
@@ -199,4 +203,16 @@ function resolveThresholds(
 function clampLimit(limit: number | null | undefined): number {
   const n = limit ?? 50;
   return Math.min(Math.max(n, 1), MAX_LIMIT);
+}
+
+/**
+ * L1 dashboard activity-window length, in JST days. Defaults to 28
+ * (= 4 weeks) when omitted, and is silently clamped to
+ * [MIN_WINDOW_DAYS, MAX_WINDOW_DAYS] so a malformed/hostile input can't
+ * fan the per-community DB scan out to year-long ranges. Documented in
+ * the SysAdminDashboardInput.windowDays SDL description.
+ */
+function clampWindowDays(input: number | null | undefined): number {
+  const n = input ?? DEFAULT_WINDOW_DAYS;
+  return Math.min(Math.max(n, MIN_WINDOW_DAYS), MAX_WINDOW_DAYS);
 }

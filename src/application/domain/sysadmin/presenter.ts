@@ -6,6 +6,7 @@ import {
   GqlSysAdminCommunityOverview,
   GqlSysAdminCommunitySummaryCard,
   GqlSysAdminDashboardPayload,
+  GqlSysAdminLatestCohort,
   GqlSysAdminMemberList,
   GqlSysAdminMemberRow,
   GqlSysAdminMonthlyActivityPoint,
@@ -14,6 +15,8 @@ import {
   GqlSysAdminSegmentCounts,
   GqlSysAdminStageBucket,
   GqlSysAdminStageDistribution,
+  GqlSysAdminWeeklyRetention,
+  GqlSysAdminWindowActivity,
 } from "@/types/graphql";
 import {
   SysAdminAllTimeTotalsRow,
@@ -23,12 +26,15 @@ import {
 } from "@/application/domain/sysadmin/data/type";
 import {
   AlertFlags,
+  LatestCohortCounts,
   MemberListResult,
   MonthlyCohortPoint,
   StageBreakdown,
   StageBucketStats,
   StageCounts,
+  WeeklyRetentionCounts,
   WeeklyRetentionPoint,
+  WindowActivityCounts,
 } from "@/application/domain/sysadmin/service";
 
 /**
@@ -65,28 +71,46 @@ export default class SysAdminPresenter {
     };
   }
 
+  static windowActivity(counts: WindowActivityCounts): GqlSysAdminWindowActivity {
+    return {
+      senderCount: counts.senderCount,
+      senderCountPrev: counts.senderCountPrev,
+      newMemberCount: counts.newMemberCount,
+      newMemberCountPrev: counts.newMemberCountPrev,
+    };
+  }
+
+  static weeklyRetention(counts: WeeklyRetentionCounts): GqlSysAdminWeeklyRetention {
+    return {
+      retainedSenders: counts.retainedSenders,
+      churnedSenders: counts.churnedSenders,
+    };
+  }
+
+  static latestCohort(counts: LatestCohortCounts): GqlSysAdminLatestCohort {
+    return {
+      size: counts.size,
+      activeAtM1: counts.activeAtM1,
+    };
+  }
+
   static overviewRow(params: {
     communityId: string;
     communityName: string;
     totalMembers: number;
     stageCounts: StageCounts;
-    communityActivityRate: number;
-    growthRateActivity: number | null;
-    latestCohortRetentionM1: number | null;
-    alerts: AlertFlags;
+    windowActivity: WindowActivityCounts;
+    weeklyRetention: WeeklyRetentionCounts;
+    latestCohort: LatestCohortCounts;
   }): GqlSysAdminCommunityOverview {
     return {
       communityId: params.communityId,
       communityName: params.communityName,
       totalMembers: params.totalMembers,
       segmentCounts: SysAdminPresenter.segmentCounts(params.stageCounts),
-      tier1Count: params.stageCounts.tier1Count,
-      tier2Count: params.stageCounts.tier2Count,
-      passiveCount: params.stageCounts.passiveCount,
-      communityActivityRate: params.communityActivityRate,
-      growthRateActivity: params.growthRateActivity,
-      latestCohortRetentionM1: params.latestCohortRetentionM1,
-      alerts: SysAdminPresenter.alerts(params.alerts),
+      windowActivity: SysAdminPresenter.windowActivity(params.windowActivity),
+      weeklyRetention: SysAdminPresenter.weeklyRetention(params.weeklyRetention),
+      latestCohort: SysAdminPresenter.latestCohort(params.latestCohort),
     };
   }
 

@@ -119,6 +119,42 @@ export type MonthActivityWithPrev = {
   growthRateActivity: number | null;
 };
 
+/**
+ * Raw activity counts for the parametric window driven by
+ * `windowDays`. The L1 overview returns these as-is so the client
+ * derives rates / growth rates / threshold alerts on its own (see
+ * SysAdminWindowActivity in schema/type.graphql).
+ */
+export type WindowActivityCounts = {
+  senderCount: number;
+  senderCountPrev: number;
+  newMemberCount: number;
+  newMemberCountPrev: number;
+};
+
+/**
+ * Raw weekly retention counts against the most recent COMPLETED ISO
+ * week. Exposing both halves lets the client compose churn alerts
+ * (e.g. churnedSenders > retainedSenders) without a server-side
+ * threshold judgement.
+ */
+export type WeeklyRetentionCounts = {
+  retainedSenders: number;
+  churnedSenders: number;
+};
+
+/**
+ * Raw counts for the most recently completed monthly cohort and its
+ * M+1 activity. Cohort = (asOf JST月 - 2). Returning the count pair
+ * (size, activeAtM1) instead of the pre-divided ratio lets the client
+ * decide how to handle small-N cohorts (e.g. greying out values when
+ * `size` is below a confidence threshold).
+ */
+export type LatestCohortCounts = {
+  size: number;
+  activeAtM1: number;
+};
+
 export const DEFAULT_WINDOW_MONTHS = 10;
 /**
  * Upper bound on `windowMonths`. Defensive guard against a caller
@@ -132,6 +168,16 @@ export const MAX_WINDOW_MONTHS = 36;
 export const MAX_LIMIT = 200;
 export const ACTIVE_DROP_THRESHOLD = -0.2; // month-over-month fraction
 export const NO_NEW_MEMBERS_WINDOW_DAYS = 14;
+
+/**
+ * Bounds for the L1 overview's parametric activity window. The lower
+ * bound (7) keeps the previous-window comparison meaningful; the upper
+ * bound (90) caps the per-community DB scan even on a malformed input
+ * value. Both are silent clamps applied at the usecase boundary.
+ */
+export const DEFAULT_WINDOW_DAYS = 28;
+export const MIN_WINDOW_DAYS = 7;
+export const MAX_WINDOW_DAYS = 90;
 
 /**
  * Cap on how many DB round-trips the retention-trend and cohort-
@@ -640,34 +686,104 @@ export default class SysAdminService {
   }
 
   /**
-   * Most recent COMPLETED m1 retention: the fraction of members who
-   * joined two JST months before asOf and sent a DONATION during the
-   * month-after-that (= the month just before asOf's month).
+   * Rolling-window DONATION activity for the L1 overview. Returns the
+   * raw sender / new-member counts for both the current window and the
+   * immediately preceding window of equal length. The client divides
+   * by `totalMembers` for rates and computes growth as
+   * `(currRate - prevRate) / prevRate` with a null guard.
    *
-   * Shifted back from "prev-month cohort, asOf-month active" so the
-   * active window is always a fully completed month — matches the L2
-   * cohort-retention convention (README §3.4: "進行中の月は除外") and
-   * avoids reporting artificially low numbers on the 1st of every
-   * month. Returns null when the cohort is empty.
+   *   current  = [asOf - windowDays JST日, asOf + 1 JST日)
+   *   previous = [asOf - 2 * windowDays, asOf - windowDays)
+   *
+   * Both windows reuse `findActivitySnapshot` / `findNewMemberCount`,
+   * so no new SQL is introduced — only the date arguments change.
    */
-  async getLatestCohortRetentionM1(
+  async getWindowActivity(
     ctx: IContext,
     communityId: string,
     asOf: Date,
-  ): Promise<number | null> {
+    windowDays: number,
+  ): Promise<WindowActivityCounts> {
+    const upper = asOfBounds(asOf).asOfJstDayPlusOne;
+    const currLower = addDays(upper, -windowDays);
+    const prevLower = addDays(upper, -windowDays * 2);
+
+    const [curr, prev, currNew, prevNew] = await Promise.all([
+      this.repository.findActivitySnapshot(ctx, communityId, currLower, upper),
+      this.repository.findActivitySnapshot(ctx, communityId, prevLower, currLower),
+      this.repository.findNewMemberCount(ctx, communityId, currLower, upper),
+      this.repository.findNewMemberCount(ctx, communityId, prevLower, currLower),
+    ]);
+
+    return {
+      senderCount: curr.senderCount,
+      senderCountPrev: prev.senderCount,
+      newMemberCount: currNew.count,
+      newMemberCountPrev: prevNew.count,
+    };
+  }
+
+  /**
+   * DONATION sender retention against the most recently completed ISO
+   * week. The asOf-containing week is in progress, so the "latest
+   * completed" week is the one starting `latestWeekStart - 7d`. The
+   * existing `getRetentionAggregate` already returns these counts —
+   * we just pass through the raw integers instead of reducing them to
+   * a boolean alert flag, leaving the threshold judgement to the client.
+   */
+  async getWeeklyRetention(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+  ): Promise<WeeklyRetentionCounts> {
+    const latestWeekStart = isoWeekStartJst(asOf);
+    const prevWeekStart = addDays(latestWeekStart, -7);
+    const prevPrevWeekStart = addDays(prevWeekStart, -7);
+    const twelveWeeksAgo = addDays(prevWeekStart, -7 * 12);
+
+    const retention = await this.reportService.getRetentionAggregate(ctx, communityId, {
+      currentWeekStart: prevWeekStart,
+      nextWeekStart: latestWeekStart,
+      prevWeekStart: prevPrevWeekStart,
+      twelveWeeksAgo,
+    });
+
+    return {
+      retainedSenders: retention.retainedSenders,
+      churnedSenders: retention.churnedSenders,
+    };
+  }
+
+  /**
+   * Most recently completed monthly cohort + its M+1 activity, as raw
+   * counts. The cohort is selected as (asOf JST月 - 2) so the M+1
+   * window — which is (asOf JST月 - 1) — is fully past; this matches
+   * the L2 cohort-retention convention (README §3.4 "進行中の月は除外").
+   *
+   * Returning {size, activeAtM1} instead of a pre-divided Float lets
+   * the client treat empty cohorts (size === 0) as null retention and
+   * grey out small-N cohorts via its own confidence threshold.
+   */
+  async getLatestCohort(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+  ): Promise<LatestCohortCounts> {
     const monthStart = jstMonthStart(asOf);
-    const cohortStart = jstMonthStartOffset(monthStart, -2); // 2 months before asOf
-    const cohortEnd = jstMonthStartOffset(monthStart, -1); // 1 month before asOf
+    const cohortStart = jstMonthStartOffset(monthStart, -2);
+    const cohortEnd = jstMonthStartOffset(monthStart, -1);
     const activeStart = cohortEnd;
-    const activeEnd = monthStart; // last completed month's end
+    const activeEnd = monthStart;
     const row = await this.reportService.getCohortRetention(
       ctx,
       communityId,
       { cohortStart, cohortEnd },
       { activeStart, activeEnd },
     );
-    if (row.cohortSize === 0) return null;
-    return row.activeNextWeek / row.cohortSize;
+    return {
+      size: row.cohortSize,
+      activeAtM1: row.activeNextWeek,
+    };
   }
 
   /**
