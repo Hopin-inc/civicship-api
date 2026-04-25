@@ -3141,6 +3141,15 @@ export type GqlSysAdminCommunityOverview = {
    */
   segmentCounts: GqlSysAdminSegmentCounts;
   /**
+   * Tenure-bucket distribution of members at asOf. See
+   * SysAdminTenureDistribution. Sum of buckets equals totalMembers.
+   *
+   * Lets the client surface community age structure at L1 without
+   * drilling into the L2 member list (which would otherwise force
+   * an N+1 round trip per community to compute distribution).
+   */
+  tenureDistribution: GqlSysAdminTenureDistribution;
+  /**
    * Total status='JOINED' members as of asOf. Members whose
    * created_at is after asOf are excluded from the count.
    */
@@ -3185,8 +3194,27 @@ export type GqlSysAdminCommunitySummaryCard = {
    */
   growthRateActivity?: Maybe<Scalars['Float']['output']>;
   /**
-   * Maximum chain depth observed in any DONATION, all-time. null when
-   * no chained transactions exist.
+   * Maximum `chain_depth` observed in any DONATION, all-time, in
+   * this community. null when no DONATION transactions exist.
+   *
+   * `chain_depth` semantics (set in transaction creation —
+   * src/application/domain/transaction/service.ts:89, via
+   * `findLatestReceivedTx`):
+   *   - chain_depth = 1: a "root" donation. Either the sender
+   *     had no prior received DONATION (= self-funded gift) or
+   *     this is treated as the start of a chain.
+   *   - chain_depth = N + 1: the sender's most recent received
+   *     DONATION (parentTx) had `chain_depth = N`; the new
+   *     donation propagates the chain by one step.
+   *
+   * Example trace: A donates to B → chain_depth 1.
+   * B then donates to C, citing the receipt from A → chain_depth 2.
+   * C donates to D similarly → chain_depth 3.
+   *
+   * `maxChainDepthAllTime = 1` therefore means "no propagation
+   * ever happened" (every donation was a fresh root).
+   * `maxChainDepthAllTime >= 2` means at least one
+   * receive-then-pass-it-on event occurred.
    */
   maxChainDepthAllTime?: Maybe<Scalars['Int']['output']>;
   /** Cumulative members in tier2 or above under the supplied thresholds. */
@@ -3309,6 +3337,21 @@ export type GqlSysAdminMemberList = {
  */
 export type GqlSysAdminMemberRow = {
   __typename?: 'SysAdminMemberRow';
+  /**
+   * Tenure in JST calendar days (floor, minimum 1). Daily-grain
+   * counterpart to `monthsIn`. Useful when the client wants a
+   * finer-grained activity rate than the monthly `userSendRate`,
+   * or when grouping members into tenure buckets that don't align
+   * with calendar-month boundaries.
+   */
+  daysIn: Scalars['Int']['output'];
+  /**
+   * Distinct JST days the member sent at least one DONATION.
+   * Daily-grain counterpart to `donationOutMonths`. Combined with
+   * `daysIn`, the client can compute `donationOutDays / daysIn` as
+   * a daily-cadence rate, complementing the monthly `userSendRate`.
+   */
+  donationOutDays: Scalars['Int']['output'];
   /** Distinct months with at least one DONATION out. */
   donationOutMonths: Scalars['Int']['output'];
   /** Tenure in JST calendar months (floor, minimum 1). */
@@ -3438,6 +3481,26 @@ export type GqlSysAdminSegmentCounts = {
  */
 export type GqlSysAdminSegmentThresholdsInput = {
   /**
+   * Minimum tenure (in JST calendar months) a member must have
+   * before being eligible for tier1 / tier2 classification. Filters
+   * out the short-tenure artifact where a 1-month-tenure member who
+   * donated once gets `userSendRate = 1/1 = 1.0` and is auto-
+   * classified as habitual despite no actual track record.
+   *
+   * Only affects `tier1Count` and `tier2Count`; `activeCount`
+   * ("ever donated") and `passiveCount` ("never donated") are
+   * semantically tenure-independent and remain unfiltered.
+   *
+   * Default 1 (no filter, preserves the existing classification
+   * behaviour). Set to 3 for "must have been around 3+ months" so
+   * the operator-facing reading of `tier1Count` matches the
+   * intuitive meaning of "habitual sender".
+   *
+   * Effective range 1..120; values outside are silently clamped on
+   * the server.
+   */
+  minMonthsIn?: InputMaybe<Scalars['Int']['input']>;
+  /**
    * Habitual stage threshold. A user with `userSendRate >= tier1` is
    * counted as "habitual" (i.e. sends donations in at least tier1 share
    * of their tenure). Default 0.7.
@@ -3505,6 +3568,38 @@ export type GqlSysAdminStageDistribution = {
   occasional: GqlSysAdminStageBucket;
   /** tier2 <= userSendRate < tier1. */
   regular: GqlSysAdminStageBucket;
+};
+
+/**
+ * Tenure-bucket distribution of a community's members at asOf,
+ * classified on `daysIn` (JST calendar-day tenure). Lets the L1
+ * dashboard surface community age structure (e.g. "lots of brand
+ * new members, few established") without drilling into the L2
+ * member list.
+ *
+ * Buckets are mutually exclusive and exhaustive; the sum equals
+ * totalMembers. Boundaries are intentionally calendar-day rather
+ * than month so a 28-day-tenure member doesn't get double-counted
+ * into "1 month" purely because of `monthsIn`'s GREATEST(1, ...)
+ * floor.
+ */
+export type GqlSysAdminTenureDistribution = {
+  __typename?: 'SysAdminTenureDistribution';
+  /**
+   * Members with `daysIn >= 365` — long-time members. Combined
+   * with `lt1Month`, signals the community's age structure.
+   */
+  gte12Months: Scalars['Int']['output'];
+  /**
+   * Members with `daysIn < 30` — newly joined cohort. Useful for
+   * spotting communities flooded with new members where downstream
+   * metrics (userSendRate, retention) are not yet meaningful.
+   */
+  lt1Month: Scalars['Int']['output'];
+  /** Members with `30 <= daysIn < 90` — "still settling in" cohort. */
+  m1to3Months: Scalars['Int']['output'];
+  /** Members with `90 <= daysIn < 365` — established members. */
+  m3to12Months: Scalars['Int']['output'];
 };
 
 /**
@@ -5045,6 +5140,7 @@ export type GqlResolversTypes = ResolversObject<{
   SysAdminSortOrder: GqlSysAdminSortOrder;
   SysAdminStageBucket: ResolverTypeWrapper<GqlSysAdminStageBucket>;
   SysAdminStageDistribution: ResolverTypeWrapper<GqlSysAdminStageDistribution>;
+  SysAdminTenureDistribution: ResolverTypeWrapper<GqlSysAdminTenureDistribution>;
   SysAdminUserListFilter: GqlSysAdminUserListFilter;
   SysAdminUserListSort: GqlSysAdminUserListSort;
   SysAdminUserSortField: GqlSysAdminUserSortField;
@@ -5449,6 +5545,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   SysAdminSegmentThresholdsInput: GqlSysAdminSegmentThresholdsInput;
   SysAdminStageBucket: GqlSysAdminStageBucket;
   SysAdminStageDistribution: GqlSysAdminStageDistribution;
+  SysAdminTenureDistribution: GqlSysAdminTenureDistribution;
   SysAdminUserListFilter: GqlSysAdminUserListFilter;
   SysAdminUserListSort: GqlSysAdminUserListSort;
   SysAdminWeeklyRetention: GqlSysAdminWeeklyRetention;
@@ -6871,6 +6968,7 @@ export type GqlSysAdminCommunityOverviewResolvers<ContextType = any, ParentType 
   hubMemberCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   latestCohort?: Resolver<GqlResolversTypes['SysAdminLatestCohort'], ParentType, ContextType>;
   segmentCounts?: Resolver<GqlResolversTypes['SysAdminSegmentCounts'], ParentType, ContextType>;
+  tenureDistribution?: Resolver<GqlResolversTypes['SysAdminTenureDistribution'], ParentType, ContextType>;
   totalMembers?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   weeklyRetention?: Resolver<GqlResolversTypes['SysAdminWeeklyRetention'], ParentType, ContextType>;
   windowActivity?: Resolver<GqlResolversTypes['SysAdminWindowActivity'], ParentType, ContextType>;
@@ -6914,6 +7012,8 @@ export type GqlSysAdminMemberListResolvers<ContextType = any, ParentType extends
 }>;
 
 export type GqlSysAdminMemberRowResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminMemberRow'] = GqlResolversParentTypes['SysAdminMemberRow']> = ResolversObject<{
+  daysIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  donationOutDays?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   donationOutMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   monthsIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -6974,6 +7074,14 @@ export type GqlSysAdminStageDistributionResolvers<ContextType = any, ParentType 
   latent?: Resolver<GqlResolversTypes['SysAdminStageBucket'], ParentType, ContextType>;
   occasional?: Resolver<GqlResolversTypes['SysAdminStageBucket'], ParentType, ContextType>;
   regular?: Resolver<GqlResolversTypes['SysAdminStageBucket'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminTenureDistributionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminTenureDistribution'] = GqlResolversParentTypes['SysAdminTenureDistribution']> = ResolversObject<{
+  gte12Months?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  lt1Month?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  m1to3Months?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  m3to12Months?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -7727,6 +7835,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   SysAdminSegmentCounts?: GqlSysAdminSegmentCountsResolvers<ContextType>;
   SysAdminStageBucket?: GqlSysAdminStageBucketResolvers<ContextType>;
   SysAdminStageDistribution?: GqlSysAdminStageDistributionResolvers<ContextType>;
+  SysAdminTenureDistribution?: GqlSysAdminTenureDistributionResolvers<ContextType>;
   SysAdminWeeklyRetention?: GqlSysAdminWeeklyRetentionResolvers<ContextType>;
   SysAdminWindowActivity?: GqlSysAdminWindowActivityResolvers<ContextType>;
   Ticket?: GqlTicketResolvers<ContextType>;

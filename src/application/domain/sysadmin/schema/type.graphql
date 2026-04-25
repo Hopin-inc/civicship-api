@@ -38,6 +38,27 @@ input SysAdminSegmentThresholdsInput {
   classifies as "regular". Default 0.4.
   """
   tier2: Float = 0.4
+
+  """
+  Minimum tenure (in JST calendar months) a member must have
+  before being eligible for tier1 / tier2 classification. Filters
+  out the short-tenure artifact where a 1-month-tenure member who
+  donated once gets `userSendRate = 1/1 = 1.0` and is auto-
+  classified as habitual despite no actual track record.
+
+  Only affects `tier1Count` and `tier2Count`; `activeCount`
+  ("ever donated") and `passiveCount` ("never donated") are
+  semantically tenure-independent and remain unfiltered.
+
+  Default 1 (no filter, preserves the existing classification
+  behaviour). Set to 3 for "must have been around 3+ months" so
+  the operator-facing reading of `tier1Count` matches the
+  intuitive meaning of "habitual sender".
+
+  Effective range 1..120; values outside are silently clamped on
+  the server.
+  """
+  minMonthsIn: Int = 1
 }
 
 """
@@ -383,6 +404,44 @@ type SysAdminLatestCohort {
 }
 
 """
+Tenure-bucket distribution of a community's members at asOf,
+classified on `daysIn` (JST calendar-day tenure). Lets the L1
+dashboard surface community age structure (e.g. "lots of brand
+new members, few established") without drilling into the L2
+member list.
+
+Buckets are mutually exclusive and exhaustive; the sum equals
+totalMembers. Boundaries are intentionally calendar-day rather
+than month so a 28-day-tenure member doesn't get double-counted
+into "1 month" purely because of `monthsIn`'s GREATEST(1, ...)
+floor.
+"""
+type SysAdminTenureDistribution {
+  """
+  Members with `daysIn < 30` — newly joined cohort. Useful for
+  spotting communities flooded with new members where downstream
+  metrics (userSendRate, retention) are not yet meaningful.
+  """
+  lt1Month: Int!
+
+  """
+  Members with `30 <= daysIn < 90` — "still settling in" cohort.
+  """
+  m1to3Months: Int!
+
+  """
+  Members with `90 <= daysIn < 365` — established members.
+  """
+  m3to12Months: Int!
+
+  """
+  Members with `daysIn >= 365` — long-time members. Combined
+  with `lt1Month`, signals the community's age structure.
+  """
+  gte12Months: Int!
+}
+
+"""
 One row of the L1 all-community table. Designed for at-a-glance
 intervention judgment: each row carries the raw counts the client
 needs to derive rates, growth, alerts, sort keys, and filter
@@ -460,6 +519,16 @@ type SysAdminCommunityOverview {
   any window sender is a JOINED member at asOf.
   """
   hubMemberCount: Int!
+
+  """
+  Tenure-bucket distribution of members at asOf. See
+  SysAdminTenureDistribution. Sum of buckets equals totalMembers.
+
+  Lets the client surface community age structure at L1 without
+  drilling into the L2 member list (which would otherwise force
+  an N+1 round trip per community to compute distribution).
+  """
+  tenureDistribution: SysAdminTenureDistribution!
 }
 
 """
@@ -534,8 +603,27 @@ type SysAdminCommunitySummaryCard {
   """
   totalDonationPointsAllTime: Float!
   """
-  Maximum chain depth observed in any DONATION, all-time. null when
-  no chained transactions exist.
+  Maximum `chain_depth` observed in any DONATION, all-time, in
+  this community. null when no DONATION transactions exist.
+
+  `chain_depth` semantics (set in transaction creation —
+  src/application/domain/transaction/service.ts:89, via
+  `findLatestReceivedTx`):
+    - chain_depth = 1: a "root" donation. Either the sender
+      had no prior received DONATION (= self-funded gift) or
+      this is treated as the start of a chain.
+    - chain_depth = N + 1: the sender's most recent received
+      DONATION (parentTx) had `chain_depth = N`; the new
+      donation propagates the chain by one step.
+
+  Example trace: A donates to B → chain_depth 1.
+  B then donates to C, citing the receipt from A → chain_depth 2.
+  C donates to D similarly → chain_depth 3.
+
+  `maxChainDepthAllTime = 1` therefore means "no propagation
+  ever happened" (every donation was a fresh root).
+  `maxChainDepthAllTime >= 2` means at least one
+  receive-then-pass-it-on event occurred.
   """
   maxChainDepthAllTime: Int
 
@@ -748,6 +836,23 @@ type SysAdminMemberRow {
   user_id).
   """
   uniqueDonationRecipients: Int!
+
+  """
+  Tenure in JST calendar days (floor, minimum 1). Daily-grain
+  counterpart to `monthsIn`. Useful when the client wants a
+  finer-grained activity rate than the monthly `userSendRate`,
+  or when grouping members into tenure buckets that don't align
+  with calendar-month boundaries.
+  """
+  daysIn: Int!
+
+  """
+  Distinct JST days the member sent at least one DONATION.
+  Daily-grain counterpart to `donationOutMonths`. Combined with
+  `daysIn`, the client can compute `donationOutDays / daysIn` as
+  a daily-cadence rate, complementing the monthly `userSendRate`.
+  """
+  donationOutDays: Int!
 }
 
 """
