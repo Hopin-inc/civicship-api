@@ -89,7 +89,9 @@ export default class SysAdminRepository implements ISysAdminRepository {
           user_id: string;
           name: string | null;
           months_in: number;
+          days_in: number;
           donation_out_months: number;
+          donation_out_days: number;
           total_points_out: bigint;
           user_send_rate: number;
           unique_donation_recipients: number;
@@ -153,6 +155,30 @@ export default class SysAdminRepository implements ISysAdminRepository {
             -- denominator agree on what "as of asOf" includes.
           GROUP BY fw."user_id", jst_month
         ),
+        donation_days AS (
+          -- Daily-grain counterpart to donation_months: emits one
+          -- row per (user, JST calendar day) the user sent a
+          -- DONATION on. The final SELECT takes COUNT(DISTINCT)
+          -- to derive donation_out_days for the daysIn-based
+          -- daily-cadence rate exposed alongside userSendRate.
+          --
+          -- Date bucketing is JST (matches donation_months and the
+          -- JST-day clamp the rest of the query uses) so daysIn /
+          -- donationOutDays line up with the JST member-tenure
+          -- boundary.
+          SELECT
+            fw."user_id" AS user_id,
+            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ${communityId}
+          INNER JOIN members m ON m."user_id" = fw."user_id"
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+          GROUP BY fw."user_id", jst_day
+        ),
         donation_recipients AS (
           -- Per-sender count of DISTINCT recipient user_ids over the
           -- whole tenure (clamped at asOf). This is the "network
@@ -193,16 +219,24 @@ export default class SysAdminRepository implements ISysAdminRepository {
           GROUP BY fw."user_id"
         ),
         member_tenure AS (
-          -- Compute months_in ONCE per member so the final SELECT can
-          -- reuse it as both months_in and the denominator of
-          -- user_send_rate. The formula is "distinct JST calendar
-          -- months the member has been present in (join-month through
-          -- asOf-month inclusive)" — the +1 turns the month-number
-          -- diff into a span count, matching how
-          -- donation_out_months (COUNT DISTINCT jst_month) counts.
-          -- GREATEST(1, ...) defends against any future clock skew.
-          -- Pulling the asOf-side conversion from asof_jst.ts avoids
-          -- re-running the double AT TIME ZONE cast once per row.
+          -- Compute months_in / days_in ONCE per member so the
+          -- final SELECT can reuse them as both raw fields and as
+          -- the denominators of monthly / daily activity rates.
+          --
+          -- months_in: "distinct JST calendar months the member
+          -- has been present in (join-month through asOf-month
+          -- inclusive)" — the +1 turns the month-number diff into
+          -- a span count, matching how donation_out_months
+          -- (COUNT DISTINCT jst_month) counts.
+          --
+          -- days_in: "distinct JST calendar days the member has
+          -- been present in" — same +1 inclusivity, matching how
+          -- donation_out_days (COUNT DISTINCT jst_day) counts.
+          --
+          -- GREATEST(1, ...) defends against any future clock
+          -- skew on both. Pulling the asOf-side conversion from
+          -- asof_jst avoids re-running the double AT TIME ZONE
+          -- cast once per row.
           SELECT
             m."user_id",
             GREATEST(
@@ -218,14 +252,22 @@ export default class SysAdminRepository implements ISysAdminRepository {
                 )
                 + 1
               )
-            )::int AS months_in
+            )::int AS months_in,
+            GREATEST(
+              1,
+              (
+                (aj.ts::date - (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) + 1
+              )
+            )::int AS days_in
           FROM members m, asof_jst aj
         )
         SELECT
           m."user_id",
           u."name" AS "name",
           mt.months_in,
+          mt.days_in,
           COALESCE(COUNT(DISTINCT dm.jst_month), 0)::int AS donation_out_months,
+          COALESCE(COUNT(DISTINCT dd.jst_day), 0)::int AS donation_out_days,
           COALESCE(SUM(dm.month_points_out), 0)::bigint AS total_points_out,
           -- GREATEST(1, ...) inside member_tenure guarantees the
           -- divisor is >= 1; no zero branch needed around ROUND.
@@ -244,16 +286,19 @@ export default class SysAdminRepository implements ISysAdminRepository {
         FROM members m
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
         LEFT JOIN donation_months dm ON dm.user_id = m."user_id"
+        LEFT JOIN donation_days dd ON dd.user_id = m."user_id"
         LEFT JOIN donation_recipients dr ON dr.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
-        GROUP BY m."user_id", mt.months_in, u."name"
+        GROUP BY m."user_id", mt.months_in, mt.days_in, u."name"
         ORDER BY m."user_id"
       `;
       return rows.map((r) => ({
         userId: r.user_id,
         name: r.name,
         monthsIn: r.months_in,
+        daysIn: r.days_in,
         donationOutMonths: r.donation_out_months,
+        donationOutDays: r.donation_out_days,
         totalPointsOut: r.total_points_out,
         userSendRate: r.user_send_rate,
         uniqueDonationRecipients: r.unique_donation_recipients,

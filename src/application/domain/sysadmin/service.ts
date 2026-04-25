@@ -25,12 +25,24 @@ import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 export type SegmentThresholds = {
   tier1: number;
   tier2: number;
+  /**
+   * Minimum tenure (in JST calendar months) required for tier1 / tier2
+   * eligibility. Filters out the short-tenure artifact where a brand
+   * new member with one donation gets `userSendRate = 1/1 = 1.0` and
+   * is auto-classified as habitual. `activeCount` and `passiveCount`
+   * are unaffected (they're tenure-independent by construction).
+   */
+  minMonthsIn: number;
 };
 
 export const DEFAULT_SEGMENT_THRESHOLDS: SegmentThresholds = {
   tier1: 0.7,
   tier2: 0.4,
+  minMonthsIn: 1,
 };
+
+export const MIN_MIN_MONTHS_IN = 1;
+export const MAX_MIN_MONTHS_IN = 120;
 
 /**
  * Result of classifying a community's members against the supplied
@@ -60,6 +72,21 @@ export type StageBreakdown = {
   regular: StageBucketStats;
   occasional: StageBucketStats;
   latent: StageBucketStats;
+};
+
+/**
+ * Tenure-bucket distribution of a community's members at asOf,
+ * classified on `daysIn` (JST calendar-day tenure). Buckets are
+ * mutually exclusive and exhaustive; the four counts always sum to
+ * the input `members.length`. Boundaries are intentionally
+ * day-based (not month-based) to side-step the GREATEST(1, ...)
+ * floor that `monthsIn` carries.
+ */
+export type TenureDistribution = {
+  lt1Month: number;
+  m1to3Months: number;
+  m3to12Months: number;
+  gte12Months: number;
 };
 
 export type WeeklyRetentionPoint = {
@@ -273,6 +300,14 @@ export default class SysAdminService {
         continue;
       }
       activeCount++;
+      // tier1 / tier2 require both the rate threshold AND a minimum
+      // tenure: a member with monthsIn < minMonthsIn cannot be
+      // habitual/regular regardless of their userSendRate. This is
+      // the short-tenure artifact guard — without it, a 1-month
+      // tenure member who donated once gets userSendRate = 1.0 and
+      // sails over tier1. activeCount / passiveCount are unaffected
+      // because they are tenure-independent by construction.
+      if (m.monthsIn < thresholds.minMonthsIn) continue;
       if (m.userSendRate >= thresholds.tier1) tier1Count++;
       if (m.userSendRate >= thresholds.tier2) tier2Count++;
     }
@@ -301,9 +336,20 @@ export default class SysAdminService {
     for (const m of members) {
       if (m.donationOutMonths === 0) {
         buckets.latent.push(m);
-      } else if (m.userSendRate >= thresholds.tier1) {
+      } else if (
+        // habitual / regular require minimum tenure in addition to
+        // the rate threshold (matches computeStageCounts). A donating
+        // member who hasn't been around long enough falls through to
+        // `occasional` — they've shown some activity, but we don't
+        // have enough tenure-data to elevate their classification.
+        m.monthsIn >= thresholds.minMonthsIn &&
+        m.userSendRate >= thresholds.tier1
+      ) {
         buckets.habitual.push(m);
-      } else if (m.userSendRate >= thresholds.tier2) {
+      } else if (
+        m.monthsIn >= thresholds.minMonthsIn &&
+        m.userSendRate >= thresholds.tier2
+      ) {
         buckets.regular.push(m);
       } else {
         buckets.occasional.push(m);
@@ -360,6 +406,37 @@ export default class SysAdminService {
       // naturally without a special case.
       latent: summarize(buckets.latent),
     };
+  }
+
+  /**
+   * Bucket members into 4 mutually exclusive tenure ranges by their
+   * `daysIn` (JST calendar-day tenure). Backs
+   * `SysAdminCommunityOverview.tenureDistribution` so the L1
+   * dashboard can render community age structure (new-heavy,
+   * established, etc.) without an L2 round-trip per community.
+   *
+   * Boundaries (left-inclusive, right-exclusive):
+   *   < 30 days       → lt1Month
+   *   [30, 90)        → m1to3Months
+   *   [90, 365)       → m3to12Months
+   *   >= 365          → gte12Months
+   *
+   * Day-based (not month-based) so a brand-new member never gets
+   * lifted into the "1 month" bucket purely because of `monthsIn`'s
+   * GREATEST(1, ...) floor.
+   */
+  computeTenureDistribution(members: SysAdminMemberStatsRow[]): TenureDistribution {
+    let lt1Month = 0;
+    let m1to3Months = 0;
+    let m3to12Months = 0;
+    let gte12Months = 0;
+    for (const m of members) {
+      if (m.daysIn < 30) lt1Month++;
+      else if (m.daysIn < 90) m1to3Months++;
+      else if (m.daysIn < 365) m3to12Months++;
+      else gte12Months++;
+    }
+    return { lt1Month, m1to3Months, m3to12Months, gte12Months };
   }
 
   /**
