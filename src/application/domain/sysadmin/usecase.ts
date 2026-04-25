@@ -9,12 +9,15 @@ import {
   GqlSysAdminDashboardPayload,
 } from "@/types/graphql";
 import SysAdminService, {
+  DEFAULT_HUB_BREADTH_THRESHOLD,
   DEFAULT_SEGMENT_THRESHOLDS,
   DEFAULT_WINDOW_DAYS,
   DEFAULT_WINDOW_MONTHS,
+  MAX_HUB_BREADTH_THRESHOLD,
   MAX_LIMIT,
   MAX_WINDOW_DAYS,
   MAX_WINDOW_MONTHS,
+  MIN_HUB_BREADTH_THRESHOLD,
   MIN_WINDOW_DAYS,
   SegmentThresholds,
 } from "@/application/domain/sysadmin/service";
@@ -43,6 +46,7 @@ export default class SysAdminUseCase {
     const asOf = input?.asOf ?? new Date();
     const thresholds = resolveThresholds(input?.segmentThresholds);
     const windowDays = clampWindowDays(input?.windowDays);
+    const hubBreadthThreshold = clampHubBreadthThreshold(input?.hubBreadthThreshold);
 
     const monthStart = jstMonthStart(asOf);
     // Clamp the platform-totals upper bound at asOf+1 JST day so a
@@ -59,12 +63,20 @@ export default class SysAdminUseCase {
 
     const rows = await Promise.all(
       communities.map(async (c): Promise<GqlSysAdminCommunityOverview> => {
-        const [members, windowActivity, weeklyRetention, latestCohort] = await Promise.all([
-          this.service.getMemberStats(ctx, c.communityId, asOf),
-          this.service.getWindowActivity(ctx, c.communityId, asOf, windowDays),
-          this.service.getWeeklyRetention(ctx, c.communityId, asOf),
-          this.service.getLatestCohort(ctx, c.communityId, asOf),
-        ]);
+        const [members, windowActivity, weeklyRetention, latestCohort, hubMemberCount] =
+          await Promise.all([
+            this.service.getMemberStats(ctx, c.communityId, asOf),
+            this.service.getWindowActivity(ctx, c.communityId, asOf, windowDays),
+            this.service.getWeeklyRetention(ctx, c.communityId, asOf),
+            this.service.getLatestCohort(ctx, c.communityId, asOf),
+            this.service.getWindowHubMemberCount(
+              ctx,
+              c.communityId,
+              asOf,
+              windowDays,
+              hubBreadthThreshold,
+            ),
+          ]);
         const stageCounts = this.service.computeStageCounts(members, thresholds);
         return SysAdminPresenter.overviewRow({
           communityId: c.communityId,
@@ -74,6 +86,7 @@ export default class SysAdminUseCase {
           windowActivity,
           weeklyRetention,
           latestCohort,
+          hubMemberCount,
         });
       }),
     );
@@ -215,4 +228,19 @@ function clampLimit(limit: number | null | undefined): number {
 function clampWindowDays(input: number | null | undefined): number {
   const n = input ?? DEFAULT_WINDOW_DAYS;
   return Math.min(Math.max(n, MIN_WINDOW_DAYS), MAX_WINDOW_DAYS);
+}
+
+/**
+ * Hub-classification breadth threshold, in distinct DONATION
+ * recipients within the parametric window. Defaults to 3 when
+ * omitted, and clamped to
+ * [MIN_HUB_BREADTH_THRESHOLD, MAX_HUB_BREADTH_THRESHOLD] so a
+ * malformed/hostile input can't disable hub classification entirely
+ * (negative threshold) or scan-stall the comparison (gigantic
+ * threshold). Documented in the SysAdminDashboardInput
+ * .hubBreadthThreshold SDL description.
+ */
+function clampHubBreadthThreshold(input: number | null | undefined): number {
+  const n = input ?? DEFAULT_HUB_BREADTH_THRESHOLD;
+  return Math.min(Math.max(n, MIN_HUB_BREADTH_THRESHOLD), MAX_HUB_BREADTH_THRESHOLD);
 }

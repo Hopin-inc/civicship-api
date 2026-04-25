@@ -6,6 +6,7 @@ import {
   SysAdminMemberStatsRow,
   SysAdminActivitySnapshotRow,
   SysAdminMonthlyActivityRow,
+  SysAdminHubMemberCountRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
   SysAdminWindowActivityCountsRow,
@@ -544,6 +545,53 @@ export default class SysAdminRepository implements ISysAdminRepository {
         newMemberCount: r?.curr_new_member_count ?? 0,
         newMemberCountPrev: r?.prev_new_member_count ?? 0,
       };
+    });
+  }
+
+  async findWindowHubMemberCount(
+    ctx: IContext,
+    communityId: string,
+    currLower: Date,
+    upper: Date,
+    hubBreadthThreshold: number,
+  ): Promise<SysAdminHubMemberCountRow> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<{ n: number }[]>`
+        WITH window_recipients AS (
+          -- Per-sender DISTINCT recipient count over the parametric
+          -- window. Same shape as the donation_recipients CTE in
+          -- findMemberStats but window-clamped on both sides instead
+          -- of tenure-clamped (upper only). Cannot reuse
+          -- mv_user_transaction_daily because its per-day
+          -- unique_counterparties does not compose into a window-wide
+          -- DISTINCT (same recipient across multiple days would
+          -- double-count under SUM).
+          --
+          -- Cross-community + burn-target guards mirror the defenses
+          -- on mv_user_transaction_daily / v_transaction_comments so
+          -- a system-target wallet (no user_id) does not silently
+          -- inflate the recipient count.
+          SELECT
+            fw."user_id" AS user_id,
+            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ${communityId}
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."user_id" IS NOT NULL
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" >= (${currLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND t."created_at" <  (${upper}::date     AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
+          GROUP BY fw."user_id"
+        )
+        SELECT COUNT(*)::int AS n
+        FROM window_recipients
+        WHERE unique_recipients >= ${hubBreadthThreshold}
+      `;
+      return { count: rows[0]?.n ?? 0 };
     });
   }
 

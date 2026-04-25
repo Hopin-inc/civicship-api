@@ -303,6 +303,7 @@ describe("SysAdminPresenter", () => {
           size: 8,
           activeAtM1: 4,
         },
+        hubMemberCount: 2,
       });
       expect(out.segmentCounts.tier1Count).toBe(2);
       expect(out.segmentCounts.tier2Count).toBe(5);
@@ -319,6 +320,7 @@ describe("SysAdminPresenter", () => {
         churnedSenders: 5,
       });
       expect(out.latestCohort).toEqual({ size: 8, activeAtM1: 4 });
+      expect(out.hubMemberCount).toBe(2);
     });
   });
 });

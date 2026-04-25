@@ -69,6 +69,16 @@ export type SysAdminNewMemberCountRow = {
 };
 
 /**
+ * Window-scoped count of members classified as hubs. A member is a
+ * hub if they sent DONATION to at least `hubBreadthThreshold` DISTINCT
+ * counterparties during `[currLower, upper)` JST. Powers
+ * `SysAdminCommunityOverview.hubMemberCount`.
+ */
+export type SysAdminHubMemberCountRow = {
+  count: number;
+};
+
+/**
  * All five raw counts the L1 `SysAdminWindowActivity` payload needs,
  * derived from a single MV scan + a single membership scan over
  * `[prevLower, upper)`. Consolidates what used to be 3 overlapping

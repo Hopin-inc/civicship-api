@@ -4,6 +4,7 @@ import {
   SysAdminCommunityRow,
   SysAdminMemberStatsRow,
   SysAdminActivitySnapshotRow,
+  SysAdminHubMemberCountRow,
   SysAdminMonthlyActivityRow,
   SysAdminNewMemberCountRow,
   SysAdminPlatformTotalsRow,
@@ -76,6 +77,28 @@ export interface ISysAdminRepository {
     from: Date,
     to: Date,
   ): Promise<SysAdminNewMemberCountRow>;
+
+  /**
+   * Per-community count of members whose distinct DONATION
+   * recipient count within `[currLower, upper)` reaches
+   * `hubBreadthThreshold`. Backs
+   * `SysAdminCommunityOverview.hubMemberCount`.
+   *
+   * The recipient count is computed against `t_transactions`
+   * directly (not `mv_user_transaction_daily`) because the MV's
+   * per-day `unique_counterparties` does not compose into a
+   * window-wide DISTINCT — the same recipient across multiple days
+   * would double-count under SUM. Same reasoning as the
+   * `donation_recipients` CTE in `findMemberStats`, restricted to
+   * the parametric window instead of the full tenure.
+   */
+  findWindowHubMemberCount(
+    ctx: IContext,
+    communityId: string,
+    currLower: Date,
+    upper: Date,
+    hubBreadthThreshold: number,
+  ): Promise<SysAdminHubMemberCountRow>;
 
   /**
    * All five raw counts the L1 `SysAdminWindowActivity` payload needs

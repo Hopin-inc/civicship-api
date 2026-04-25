@@ -103,6 +103,7 @@ export default class SysAdminPresenter {
     windowActivity: WindowActivityCounts;
     weeklyRetention: WeeklyRetentionCounts;
     latestCohort: LatestCohortCounts;
+    hubMemberCount: number;
   }): GqlSysAdminCommunityOverview {
     return {
       communityId: params.communityId,
@@ -112,6 +113,7 @@ export default class SysAdminPresenter {
       windowActivity: SysAdminPresenter.windowActivity(params.windowActivity),
       weeklyRetention: SysAdminPresenter.weeklyRetention(params.weeklyRetention),
       latestCohort: SysAdminPresenter.latestCohort(params.latestCohort),
+      hubMemberCount: params.hubMemberCount,
     };
   }
 
