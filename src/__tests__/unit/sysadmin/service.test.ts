@@ -427,6 +427,28 @@ describe("SysAdminService", () => {
       expect(service.computeDormantCount(members, asOf, 365)).toBe(0);
     });
 
+    it("treats edge case as active even when asOf has a nonzero time-of-day (regression)", () => {
+      // Production asOf is `new Date()` with the wall-clock time
+      // component preserved (e.g. 06:17:55Z). lastDonationDay is a
+      // JST calendar day at UTC 00:00 (the SQL ::date cast in
+      // findMemberStats strips the time). Without truncating asOf
+      // to its JST date before subtracting days, a member who
+      // donated on the cutoff day has lastDonationDay = cutoff-day
+      // 00:00Z < cutoff-day HH:MM:SSZ → they'd be misclassified as
+      // dormant whenever asOf carried any nonzero time component.
+      // This test pins down the truncate-then-subtract contract.
+      const asOfWithTime = new Date("2026-04-26T06:17:55Z");
+      const members = [
+        member({
+          userId: "edge",
+          donationOutMonths: 1,
+          // 30 days before 2026-04-26 in JST is 2026-03-27 → at UTC 00:00
+          lastDonationDay: new Date("2026-03-27T00:00:00Z"),
+        }),
+      ];
+      expect(service.computeDormantCount(members, asOfWithTime, 30)).toBe(0);
+    });
+
     it("respects the dormantCount <= totalMembers - latent invariant", () => {
       // 3 latent + 2 active + 1 dormant. dormantCount = 1, latent = 3,
       // total = 6, so dormantCount (1) <= total (6) - latent (3) = 3.

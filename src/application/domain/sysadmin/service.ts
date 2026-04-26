@@ -14,6 +14,7 @@ import {
   jstMonthStartOffset,
   jstNextMonthStart,
   percentChange,
+  truncateToJstDate,
 } from "@/application/domain/report/util";
 import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 
@@ -160,6 +161,15 @@ export function classifyMember(
  * recent DONATION is strictly older than the threshold; equality
  * is treated as "still active" so a member who donated exactly
  * `dormantThresholdDays` days ago does NOT qualify.
+ *
+ * The cutoff is computed off the JST-truncated asOf so the
+ * comparison stays deterministic regardless of the request's
+ * wall-clock time. `lastDonationDay` is a JST calendar day at
+ * UTC 00:00 (PostgreSQL `::date` cast); truncating asOf the same
+ * way is the only way the strict-less-than has a stable boundary
+ * — without it, a member who donated on the cutoff day would be
+ * (incorrectly) dormant whenever `asOf` carried a nonzero
+ * time-of-day component (i.e. essentially always in production).
  */
 export function isDormant(
   m: SysAdminMemberStatsRow,
@@ -167,7 +177,7 @@ export function isDormant(
   dormantThresholdDays: number,
 ): boolean {
   if (m.donationOutMonths === 0 || m.lastDonationDay === null) return false;
-  const cutoff = addDays(asOf, -dormantThresholdDays);
+  const cutoff = addDays(truncateToJstDate(asOf), -dormantThresholdDays);
   return m.lastDonationDay < cutoff;
 }
 
