@@ -150,6 +150,27 @@ export function classifyMember(
   return "occasional";
 }
 
+/**
+ * "Has this member donated before but gone quiet?" — the
+ * latent-vs-dormant distinction operators care about for choosing
+ * between onboarding and re-engagement interventions.
+ *
+ * False for never-donated members (latent / passive), regardless
+ * of how long ago they joined. True only when the member's most
+ * recent DONATION is strictly older than the threshold; equality
+ * is treated as "still active" so a member who donated exactly
+ * `dormantThresholdDays` days ago does NOT qualify.
+ */
+export function isDormant(
+  m: SysAdminMemberStatsRow,
+  asOf: Date,
+  dormantThresholdDays: number,
+): boolean {
+  if (m.donationOutMonths === 0 || m.lastDonationDay === null) return false;
+  const cutoff = addDays(asOf, -dormantThresholdDays);
+  return m.lastDonationDay < cutoff;
+}
+
 export type WeeklyRetentionPoint = {
   weekStart: Date;
   retainedSenders: number;
@@ -281,6 +302,17 @@ export const MAX_WINDOW_DAYS = 90;
 export const DEFAULT_HUB_BREADTH_THRESHOLD = 3;
 export const MIN_HUB_BREADTH_THRESHOLD = 1;
 export const MAX_HUB_BREADTH_THRESHOLD = 1000;
+
+/**
+ * Days-of-silence threshold above which an ever-donated member is
+ * classified as "dormant" (= sender who went quiet, distinct from
+ * the never-donated "latent" cohort). Default 30 (≈ one month).
+ * Effective range 1..365 enforced at the usecase boundary the same
+ * way `windowDays` is.
+ */
+export const DEFAULT_DORMANT_THRESHOLD_DAYS = 30;
+export const MIN_DORMANT_THRESHOLD_DAYS = 1;
+export const MAX_DORMANT_THRESHOLD_DAYS = 365;
 
 /**
  * Cap on how many DB round-trips the retention-trend and cohort-
@@ -485,6 +517,27 @@ export default class SysAdminService {
       else gte12Months++;
     }
     return { lt1Month, m1to3Months, m3to12Months, gte12Months };
+  }
+
+  /**
+   * Count of members who donated at some point in the past but
+   * whose most recent DONATION is older than `dormantThresholdDays`.
+   * Excludes never-donated members (they're "latent" / passiveCount,
+   * not dormant — different intervention surface).
+   *
+   * Pure function over the member rows already fetched for the
+   * dashboard; no extra SQL.
+   */
+  computeDormantCount(
+    members: SysAdminMemberStatsRow[],
+    asOf: Date,
+    dormantThresholdDays: number,
+  ): number {
+    let dormant = 0;
+    for (const m of members) {
+      if (isDormant(m, asOf, dormantThresholdDays)) dormant++;
+    }
+    return dormant;
   }
 
   /**
