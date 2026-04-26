@@ -15,9 +15,11 @@ import SysAdminService, {
   DEFAULT_WINDOW_MONTHS,
   MAX_HUB_BREADTH_THRESHOLD,
   MAX_LIMIT,
+  MAX_MIN_MONTHS_IN,
   MAX_WINDOW_DAYS,
   MAX_WINDOW_MONTHS,
   MIN_HUB_BREADTH_THRESHOLD,
+  MIN_MIN_MONTHS_IN,
   MIN_WINDOW_DAYS,
   SegmentThresholds,
 } from "@/application/domain/sysadmin/service";
@@ -78,6 +80,7 @@ export default class SysAdminUseCase {
             ),
           ]);
         const stageCounts = this.service.computeStageCounts(members, thresholds);
+        const tenureDistribution = this.service.computeTenureDistribution(members);
         return SysAdminPresenter.overviewRow({
           communityId: c.communityId,
           communityName: c.communityName,
@@ -87,6 +90,7 @@ export default class SysAdminUseCase {
           weeklyRetention,
           latestCohort,
           hubMemberCount,
+          tenureDistribution,
         });
       }),
     );
@@ -197,6 +201,7 @@ function resolveThresholds(
     | {
         tier1?: number | null;
         tier2?: number | null;
+        minMonthsIn?: number | null;
       }
     | null
     | undefined,
@@ -207,10 +212,21 @@ function resolveThresholds(
   // produce misleading stage counts.
   const tier1 = Math.max(input?.tier1 ?? DEFAULT_SEGMENT_THRESHOLDS.tier1, 0);
   const tier2 = Math.max(input?.tier2 ?? DEFAULT_SEGMENT_THRESHOLDS.tier2, 0);
+  // Clamp minMonthsIn to [MIN, MAX]. Default 1 preserves pre-issue-918
+  // behaviour (no tenure filter); portal opts in to a stricter
+  // classification by passing 3+. Hard ceiling 120 prevents an
+  // accidental "minMonthsIn = 9999" that classifies every member as
+  // ineligible.
+  const minMonthsIn = Math.min(
+    Math.max(input?.minMonthsIn ?? DEFAULT_SEGMENT_THRESHOLDS.minMonthsIn, MIN_MIN_MONTHS_IN),
+    MAX_MIN_MONTHS_IN,
+  );
   // If a caller flips them (tier2 > tier1), swap silently rather than
   // erroring — the "higher boundary" invariant is what the rest of the
   // service relies on, and a swap is a less confusing DX than a 400.
-  return tier1 >= tier2 ? { tier1, tier2 } : { tier1: tier2, tier2: tier1 };
+  return tier1 >= tier2
+    ? { tier1, tier2, minMonthsIn }
+    : { tier1: tier2, tier2: tier1, minMonthsIn };
 }
 
 function clampLimit(limit: number | null | undefined): number {

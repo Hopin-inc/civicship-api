@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import SysAdminService, {
   DEFAULT_SEGMENT_THRESHOLDS,
+  classifyMember,
 } from "@/application/domain/sysadmin/service";
 import type {
   SysAdminMemberStatsRow,
@@ -14,14 +15,22 @@ import type {
  * non-interesting values.
  */
 function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStatsRow {
+  const monthsIn = overrides.monthsIn ?? 1;
   return {
     userId: overrides.userId ?? "u",
     name: overrides.name ?? null,
-    monthsIn: overrides.monthsIn ?? 1,
+    monthsIn,
     donationOutMonths: overrides.donationOutMonths ?? 0,
     totalPointsOut: overrides.totalPointsOut ?? BigInt(0),
     userSendRate: overrides.userSendRate ?? 0,
     uniqueDonationRecipients: overrides.uniqueDonationRecipients ?? 0,
+    // daysIn defaults to monthsIn × 30 so test cases that only
+    // care about the calendar-month tenure stay consistent with
+    // the daysIn-based check inside classifyMember. Override
+    // explicitly when testing the cross-month-boundary artifact
+    // (monthsIn high, daysIn low).
+    daysIn: overrides.daysIn ?? monthsIn * 30,
+    donationOutDays: overrides.donationOutDays ?? 0,
   };
 }
 
@@ -52,6 +61,89 @@ class MockReportService {
   getRetentionAggregate = jest.fn();
   getCohortRetention = jest.fn();
 }
+
+// ============================================================================
+// classifyMember: shared classifier feeding both computeStageCounts and
+// computeStageBreakdown. The methods only depend on this contract; the table
+// of cases below is the source of truth for stage-rule behaviour.
+// ============================================================================
+describe("classifyMember", () => {
+  const t = { tier1: 0.7, tier2: 0.4, minMonthsIn: 1 };
+
+  it("returns latent when the member has never donated", () => {
+    expect(
+      classifyMember(member({ donationOutMonths: 0, userSendRate: 0, monthsIn: 12 }), t),
+    ).toBe("latent");
+  });
+
+  it("returns habitual when both rate and tenure clear the bar", () => {
+    expect(
+      classifyMember(member({ donationOutMonths: 8, userSendRate: 0.8, monthsIn: 10 }), t),
+    ).toBe("habitual");
+  });
+
+  it("returns regular when rate clears tier2 but not tier1", () => {
+    expect(
+      classifyMember(member({ donationOutMonths: 5, userSendRate: 0.5, monthsIn: 10 }), t),
+    ).toBe("regular");
+  });
+
+  it("returns occasional when rate is below tier2", () => {
+    expect(
+      classifyMember(member({ donationOutMonths: 1, userSendRate: 0.1, monthsIn: 10 }), t),
+    ).toBe("occasional");
+  });
+
+  it("returns occasional when daysIn is below the tenure floor even at rate=1.0", () => {
+    // The short-tenure artifact case. With minMonthsIn = 3 (= 90
+    // days), a member with 30 days tenure who donated once
+    // (rate = 1.0) cannot be habitual or regular, but they DID
+    // donate so they are not latent — they fall through to occasional.
+    expect(
+      classifyMember(
+        member({ donationOutMonths: 1, userSendRate: 1.0, monthsIn: 1, daysIn: 30 }),
+        { tier1: 0.7, tier2: 0.4, minMonthsIn: 3 },
+      ),
+    ).toBe("occasional");
+  });
+
+  it("uses daysIn (not monthsIn) for the tenure floor — cross-month-boundary case", () => {
+    // The reason classifyMember checks daysIn rather than monthsIn:
+    // a member who joined Jan 31 and is observed Feb 1 has
+    // monthsIn = 2 (calendar months touched: Jan + Feb) but only
+    // daysIn = 2. With minMonthsIn = 2, a monthsIn-based check
+    // would silently admit them; daysIn-based check correctly
+    // demotes (daysIn 2 < 2 × 30 = 60).
+    expect(
+      classifyMember(
+        member({ donationOutMonths: 1, userSendRate: 1.0, monthsIn: 2, daysIn: 2 }),
+        { tier1: 0.7, tier2: 0.4, minMonthsIn: 2 },
+      ),
+    ).toBe("occasional");
+  });
+
+  it("checks tier1 before tier2 so habitual takes precedence over regular", () => {
+    // userSendRate 0.9 clears both tier1 (0.7) and tier2 (0.4); the
+    // function should return habitual, not regular.
+    expect(
+      classifyMember(member({ donationOutMonths: 9, userSendRate: 0.9, monthsIn: 12 }), t),
+    ).toBe("habitual");
+  });
+
+  it("checks latent before tenure floor so a never-donated member is never occasional", () => {
+    // monthsIn = 0 fails the tenure floor, but donationOutMonths = 0
+    // is checked first → latent, not occasional. This matches the
+    // "passive is tenure-independent" promise on
+    // SysAdminSegmentThresholdsInput.minMonthsIn.
+    expect(
+      classifyMember(member({ donationOutMonths: 0, userSendRate: 0, monthsIn: 0 }), {
+        tier1: 0.7,
+        tier2: 0.4,
+        minMonthsIn: 3,
+      }),
+    ).toBe("latent");
+  });
+});
 
 describe("SysAdminService", () => {
   let service: SysAdminService;
@@ -129,9 +221,133 @@ describe("SysAdminService", () => {
         member({ userId: "b", donationOutMonths: 5, userSendRate: 0.9 }),
       ];
       // Loosen tier1 to 0.5: now BOTH users are habitual.
-      const counts = service.computeStageCounts(members, { tier1: 0.5, tier2: 0.3 });
+      // minMonthsIn defaults to 1 (no tenure floor) so both qualify.
+      const counts = service.computeStageCounts(members, {
+        tier1: 0.5,
+        tier2: 0.3,
+        minMonthsIn: 1,
+      });
       expect(counts.tier1Count).toBe(2);
       expect(counts.tier2Count).toBe(2);
+    });
+
+    // ====================================================================
+    // minMonthsIn: short-tenure artifact guard (issue #918, refinement 1)
+    // ====================================================================
+    it("minMonthsIn = 1 (default) admits a 1-month-tenure habitual sender", () => {
+      // Reproduces the artifact: a brand-new member who donated once
+      // their first month — userSendRate = 1/1 = 1.0, comfortably
+      // over tier1 = 0.7. With the legacy minMonthsIn = 1, they
+      // count as habitual.
+      const members = [member({ userId: "n", monthsIn: 1, donationOutMonths: 1, userSendRate: 1.0 })];
+      const counts = service.computeStageCounts(members, {
+        tier1: 0.7,
+        tier2: 0.4,
+        minMonthsIn: 1,
+      });
+      expect(counts.tier1Count).toBe(1);
+      expect(counts.tier2Count).toBe(1);
+      expect(counts.activeCount).toBe(1);
+      expect(counts.passiveCount).toBe(0);
+    });
+
+    it("minMonthsIn = 3 demotes the same 1-month-tenure habitual sender out of tier1 / tier2", () => {
+      // Same input, stricter tenure floor. The member is no longer
+      // eligible for tier1 / tier2 — they fall through to active
+      // (they did donate) but neither tier counts them.
+      const members = [member({ userId: "n", monthsIn: 1, donationOutMonths: 1, userSendRate: 1.0 })];
+      const counts = service.computeStageCounts(members, {
+        tier1: 0.7,
+        tier2: 0.4,
+        minMonthsIn: 3,
+      });
+      expect(counts.tier1Count).toBe(0);
+      expect(counts.tier2Count).toBe(0);
+      // activeCount / passiveCount are tenure-independent: the member
+      // donated, so they count as active either way.
+      expect(counts.activeCount).toBe(1);
+      expect(counts.passiveCount).toBe(0);
+    });
+
+    it("minMonthsIn does not demote established members above the rate threshold", () => {
+      // 6 months tenure, 5 of them with a donation: rate ~ 0.83,
+      // habitual. minMonthsIn = 3 has no effect — they cleared the
+      // tenure floor years ago.
+      const members = [
+        member({ userId: "old", monthsIn: 6, donationOutMonths: 5, userSendRate: 0.83 }),
+      ];
+      const counts = service.computeStageCounts(members, {
+        tier1: 0.7,
+        tier2: 0.4,
+        minMonthsIn: 3,
+      });
+      expect(counts.tier1Count).toBe(1);
+      expect(counts.tier2Count).toBe(1);
+    });
+
+    it("minMonthsIn does not affect passiveCount", () => {
+      // Even with a strict tenure floor, "never donated" is still
+      // "passive" — the tenure filter applies only to tier1 / tier2
+      // promotion, not to the passive bucket.
+      const members = [
+        member({ userId: "p1", monthsIn: 1, donationOutMonths: 0, userSendRate: 0 }),
+        member({ userId: "p2", monthsIn: 12, donationOutMonths: 0, userSendRate: 0 }),
+      ];
+      const counts = service.computeStageCounts(members, {
+        tier1: 0.7,
+        tier2: 0.4,
+        minMonthsIn: 3,
+      });
+      expect(counts.passiveCount).toBe(2);
+      expect(counts.activeCount).toBe(0);
+    });
+  });
+
+  // ========================================================================
+  // computeTenureDistribution: 4-bucket daysIn classification (issue #918, refinement 2)
+  // ========================================================================
+  describe("computeTenureDistribution", () => {
+    it("buckets members by daysIn boundaries", () => {
+      const members = [
+        member({ userId: "a", daysIn: 1 }), // lt1Month
+        member({ userId: "b", daysIn: 29 }), // lt1Month
+        member({ userId: "c", daysIn: 30 }), // m1to3Months (boundary, inclusive)
+        member({ userId: "d", daysIn: 89 }), // m1to3Months
+        member({ userId: "e", daysIn: 90 }), // m3to12Months (boundary)
+        member({ userId: "f", daysIn: 364 }), // m3to12Months
+        member({ userId: "g", daysIn: 365 }), // gte12Months (boundary)
+        member({ userId: "h", daysIn: 1500 }), // gte12Months
+      ];
+      const dist = service.computeTenureDistribution(members);
+      expect(dist).toEqual({
+        lt1Month: 2,
+        m1to3Months: 2,
+        m3to12Months: 2,
+        gte12Months: 2,
+      });
+    });
+
+    it("returns all-zero buckets for empty input", () => {
+      expect(service.computeTenureDistribution([])).toEqual({
+        lt1Month: 0,
+        m1to3Months: 0,
+        m3to12Months: 0,
+        gte12Months: 0,
+      });
+    });
+
+    it("buckets sum to total member count (no double-counting / no drops)", () => {
+      const members = [
+        member({ userId: "a", daysIn: 5 }),
+        member({ userId: "b", daysIn: 50 }),
+        member({ userId: "c", daysIn: 200 }),
+        member({ userId: "d", daysIn: 800 }),
+        member({ userId: "e", daysIn: 800 }),
+      ];
+      const dist = service.computeTenureDistribution(members);
+      expect(dist.lt1Month + dist.m1to3Months + dist.m3to12Months + dist.gte12Months).toBe(
+        members.length,
+      );
     });
   });
 
