@@ -3030,6 +3030,16 @@ export type GqlSysAdminCommunityDetailInput = {
    * returned by the previous response unchanged.
    */
   cursor?: InputMaybe<Scalars['String']['input']>;
+  /**
+   * Days since a member's most recent DONATION above which they are
+   * classified as "dormant". Used to populate
+   * `SysAdminCommunityDetailPayload.dormantCount`. See the same-named
+   * field on SysAdminDashboardInput for the full semantic.
+   *
+   * Default 30 (≈ one month of silence). Effective range 1..365;
+   * values outside are silently clamped on the server.
+   */
+  dormantThresholdDays?: InputMaybe<Scalars['Int']['input']>;
   /** Member list page size (default 50, max 200). */
   limit?: InputMaybe<Scalars['Int']['input']>;
   /** Stage-count thresholds for the stage distribution and tier counts. */
@@ -3061,6 +3071,15 @@ export type GqlSysAdminCommunityDetailPayload = {
   communityId: Scalars['ID']['output'];
   /** Community display name. */
   communityName: Scalars['String']['output'];
+  /**
+   * Members who donated at some point but whose most recent
+   * DONATION is older than `dormantThresholdDays` (default 30). See
+   * the same-named field on `SysAdminCommunityOverview` for the
+   * full semantic. Exposed at L2 so the user-scope card can show
+   * the dormancy ratio directly without re-aggregating from the
+   * member list.
+   */
+  dormantCount: Scalars['Int']['output'];
   /** Paginated member list — see type doc. */
   memberList: GqlSysAdminMemberList;
   /**
@@ -3101,6 +3120,28 @@ export type GqlSysAdminCommunityOverview = {
   communityId: Scalars['ID']['output'];
   /** Community display name (t_communities.name). */
   communityName: Scalars['String']['output'];
+  /**
+   * Members who donated at some point but whose most recent
+   * DONATION is older than `dormantThresholdDays` (default 30).
+   * Distinct from `segmentCounts.passiveCount` (= "latent", never
+   * donated): operators care about the difference because the
+   * intervention is different — re-engage the dormant, onboard the
+   * latent.
+   *
+   * Computed as
+   *   COUNT(DISTINCT user_id)
+   *   WHERE the user has at least one historical DONATION in this
+   *     community AND `MAX(donation.created_at) < asOf -
+   *     dormantThresholdDays`
+   *     AND status='JOINED' at asOf
+   *
+   * Invariants the client may assert:
+   *   0 <= dormantCount <= totalMembers - segmentCounts.passiveCount
+   *
+   * The upper bound holds because dormant members are by
+   * construction ever-donated, which `passiveCount` excludes.
+   */
+  dormantCount: Scalars['Int']['output'];
   /**
    * Number of members classified as a "hub" within the parametric
    * window (`windowDays`):
@@ -3241,6 +3282,22 @@ export type GqlSysAdminDashboardInput = {
    * Defaults to now when omitted.
    */
   asOf?: InputMaybe<Scalars['Datetime']['input']>;
+  /**
+   * Days since a member's most recent DONATION above which they are
+   * classified as "dormant" — i.e. they donated at some point but
+   * have gone quiet. Used to populate
+   * `SysAdminCommunityOverview.dormantCount`.
+   *
+   * Distinct from `segmentCounts.passiveCount` (= "latent", never
+   * donated): operators care about the difference because the
+   * intervention is different (re-engage a sleeper vs onboard a
+   * newcomer). A member with `MAX(donation.created_at) < asOf -
+   * dormantThresholdDays` is dormant.
+   *
+   * Default 30 (≈ one month of silence). Effective range 1..365;
+   * values outside are silently clamped on the server.
+   */
+  dormantThresholdDays?: InputMaybe<Scalars['Int']['input']>;
   /**
    * Minimum number of distinct DONATION recipients within the
    * parametric window (`windowDays`) for a member to be classified
@@ -6959,6 +7016,7 @@ export type GqlSysAdminCommunityDetailPayloadResolvers<ContextType = any, Parent
   cohortRetention?: Resolver<Array<GqlResolversTypes['SysAdminCohortRetentionPoint']>, ParentType, ContextType>;
   communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   communityName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  dormantCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   memberList?: Resolver<GqlResolversTypes['SysAdminMemberList'], ParentType, ContextType>;
   monthlyActivityTrend?: Resolver<Array<GqlResolversTypes['SysAdminMonthlyActivityPoint']>, ParentType, ContextType>;
   retentionTrend?: Resolver<Array<GqlResolversTypes['SysAdminRetentionTrendPoint']>, ParentType, ContextType>;
@@ -6971,6 +7029,7 @@ export type GqlSysAdminCommunityDetailPayloadResolvers<ContextType = any, Parent
 export type GqlSysAdminCommunityOverviewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCommunityOverview'] = GqlResolversParentTypes['SysAdminCommunityOverview']> = ResolversObject<{
   communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   communityName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  dormantCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   hubMemberCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   latestCohort?: Resolver<GqlResolversTypes['SysAdminLatestCohort'], ParentType, ContextType>;
   segmentCounts?: Resolver<GqlResolversTypes['SysAdminSegmentCounts'], ParentType, ContextType>;

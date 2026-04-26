@@ -116,6 +116,7 @@ export default class SysAdminPresenter {
     latestCohort: LatestCohortCounts;
     hubMemberCount: number;
     tenureDistribution: TenureDistribution;
+    dormantCount: number;
   }): GqlSysAdminCommunityOverview {
     return {
       communityId: params.communityId,
@@ -127,6 +128,7 @@ export default class SysAdminPresenter {
       latestCohort: SysAdminPresenter.latestCohort(params.latestCohort),
       hubMemberCount: params.hubMemberCount,
       tenureDistribution: SysAdminPresenter.tenureDistribution(params.tenureDistribution),
+      dormantCount: params.dormantCount,
     };
   }
 
@@ -269,6 +271,7 @@ export default class SysAdminPresenter {
     cohortRetention: GqlSysAdminCohortRetentionPoint[];
     memberList: GqlSysAdminMemberList;
     alerts: GqlSysAdminCommunityAlerts;
+    dormantCount: number;
   }): GqlSysAdminCommunityDetailPayload {
     return {
       communityId: params.communityId,
@@ -282,6 +285,7 @@ export default class SysAdminPresenter {
       cohortRetention: params.cohortRetention,
       memberList: params.memberList,
       alerts: params.alerts,
+      dormantCount: params.dormantCount,
     };
   }
 }

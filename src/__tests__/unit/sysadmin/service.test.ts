@@ -16,6 +16,11 @@ import type {
  */
 function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStatsRow {
   const monthsIn = overrides.monthsIn ?? 1;
+  // lastDonationDay defaults to undefined → null so a member that
+  // hasn't been given a donation history is "latent". Override
+  // explicitly when testing isDormant / computeDormantCount.
+  const lastDonationDay =
+    overrides.lastDonationDay === undefined ? null : overrides.lastDonationDay;
   return {
     userId: overrides.userId ?? "u",
     name: overrides.name ?? null,
@@ -31,6 +36,7 @@ function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStats
     // (monthsIn high, daysIn low).
     daysIn: overrides.daysIn ?? monthsIn * 30,
     donationOutDays: overrides.donationOutDays ?? 0,
+    lastDonationDay,
   };
 }
 
@@ -348,6 +354,116 @@ describe("SysAdminService", () => {
       expect(dist.lt1Month + dist.m1to3Months + dist.m3to12Months + dist.gte12Months).toBe(
         members.length,
       );
+    });
+  });
+
+  // ========================================================================
+  // isDormant + computeDormantCount: latent vs dormant distinction
+  // (issue #918 follow-up: separate "never donated" from "went quiet")
+  // ========================================================================
+  describe("computeDormantCount", () => {
+    const asOf = new Date("2026-04-26T00:00:00Z");
+    const dayBefore = (n: number) => new Date(asOf.getTime() - n * 24 * 60 * 60 * 1000);
+
+    it("counts only members whose last donation is older than the threshold", () => {
+      const members = [
+        // never donated → latent, NOT dormant
+        member({ userId: "latent", donationOutMonths: 0, lastDonationDay: null }),
+        // donated 5 days ago → still active
+        member({
+          userId: "active",
+          donationOutMonths: 3,
+          lastDonationDay: dayBefore(5),
+        }),
+        // donated 31 days ago → dormant under default 30
+        member({
+          userId: "dormant",
+          donationOutMonths: 3,
+          lastDonationDay: dayBefore(31),
+        }),
+        // donated 90 days ago → dormant
+        member({
+          userId: "very-dormant",
+          donationOutMonths: 3,
+          lastDonationDay: dayBefore(90),
+        }),
+      ];
+      expect(service.computeDormantCount(members, asOf, 30)).toBe(2);
+    });
+
+    it("treats last-donation-exactly-N-days-ago as STILL ACTIVE (strict <)", () => {
+      // The cutoff is asOf - N days. lastDonationDay must be
+      // strictly older than the cutoff to qualify. A member who
+      // donated exactly N days ago sits at the cutoff and is not
+      // dormant — gives operators a deterministic boundary.
+      const members = [
+        member({
+          userId: "edge",
+          donationOutMonths: 1,
+          lastDonationDay: dayBefore(30),
+        }),
+      ];
+      expect(service.computeDormantCount(members, asOf, 30)).toBe(0);
+    });
+
+    it("never counts latent members regardless of threshold", () => {
+      // donationOutMonths === 0 short-circuits to false even when
+      // lastDonationDay is somehow set (defensive).
+      const members = [
+        member({ userId: "n1", donationOutMonths: 0, lastDonationDay: null }),
+        member({ userId: "n2", donationOutMonths: 0, lastDonationDay: null }),
+      ];
+      expect(service.computeDormantCount(members, asOf, 1)).toBe(0);
+      expect(service.computeDormantCount(members, asOf, 365)).toBe(0);
+    });
+
+    it("scales with the threshold — larger thresholds shrink the dormant set", () => {
+      const members = [
+        member({ userId: "a", donationOutMonths: 1, lastDonationDay: dayBefore(45) }),
+        member({ userId: "b", donationOutMonths: 1, lastDonationDay: dayBefore(120) }),
+      ];
+      expect(service.computeDormantCount(members, asOf, 30)).toBe(2);
+      expect(service.computeDormantCount(members, asOf, 60)).toBe(1);
+      expect(service.computeDormantCount(members, asOf, 365)).toBe(0);
+    });
+
+    it("treats edge case as active even when asOf has a nonzero time-of-day (regression)", () => {
+      // Production asOf is `new Date()` with the wall-clock time
+      // component preserved (e.g. 06:17:55Z). lastDonationDay is a
+      // JST calendar day at UTC 00:00 (the SQL ::date cast in
+      // findMemberStats strips the time). Without truncating asOf
+      // to its JST date before subtracting days, a member who
+      // donated on the cutoff day has lastDonationDay = cutoff-day
+      // 00:00Z < cutoff-day HH:MM:SSZ → they'd be misclassified as
+      // dormant whenever asOf carried any nonzero time component.
+      // This test pins down the truncate-then-subtract contract.
+      const asOfWithTime = new Date("2026-04-26T06:17:55Z");
+      const members = [
+        member({
+          userId: "edge",
+          donationOutMonths: 1,
+          // 30 days before 2026-04-26 in JST is 2026-03-27 → at UTC 00:00
+          lastDonationDay: new Date("2026-03-27T00:00:00Z"),
+        }),
+      ];
+      expect(service.computeDormantCount(members, asOfWithTime, 30)).toBe(0);
+    });
+
+    it("respects the dormantCount <= totalMembers - latent invariant", () => {
+      // 3 latent + 2 active + 1 dormant. dormantCount = 1, latent = 3,
+      // total = 6, so dormantCount (1) <= total (6) - latent (3) = 3.
+      const members = [
+        member({ userId: "l1", donationOutMonths: 0, lastDonationDay: null }),
+        member({ userId: "l2", donationOutMonths: 0, lastDonationDay: null }),
+        member({ userId: "l3", donationOutMonths: 0, lastDonationDay: null }),
+        member({ userId: "a1", donationOutMonths: 2, lastDonationDay: dayBefore(5) }),
+        member({ userId: "a2", donationOutMonths: 2, lastDonationDay: dayBefore(10) }),
+        member({ userId: "d1", donationOutMonths: 2, lastDonationDay: dayBefore(60) }),
+      ];
+      const dormant = service.computeDormantCount(members, asOf, 30);
+      const latent = members.filter((m) => m.donationOutMonths === 0).length;
+      expect(dormant).toBe(1);
+      expect(dormant).toBeLessThanOrEqual(members.length - latent);
     });
   });
 

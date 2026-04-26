@@ -95,6 +95,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           total_points_out: bigint;
           user_send_rate: number;
           unique_donation_recipients: number;
+          last_donation_day: Date | null;
         }[]
       >`
         WITH asof_jst AS (
@@ -281,7 +282,14 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- BY) propagates that single value through the per-user
           -- grouping cleanly and matches the COALESCE/MAX pattern
           -- used elsewhere when joining a pre-aggregated CTE.
-          COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients
+          COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients,
+          -- MAX over the per-(user, jst_day) rows in donation_activity
+          -- gives the most recent JST day this user sent a DONATION.
+          -- NULL when the LEFT JOIN found no donation_activity rows
+          -- (= the member never donated, the latent case). The service
+          -- layer derives dormantCount from this without re-scanning
+          -- t_transactions.
+          MAX(da.jst_day) AS last_donation_day
         FROM members m
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
         LEFT JOIN donation_activity da ON da.user_id = m."user_id"
@@ -300,6 +308,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalPointsOut: r.total_points_out,
         userSendRate: r.user_send_rate,
         uniqueDonationRecipients: r.unique_donation_recipients,
+        lastDonationDay: r.last_donation_day,
       }));
     });
   }

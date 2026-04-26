@@ -56,6 +56,7 @@ describe("SysAdminPresenter", () => {
         uniqueDonationRecipients: 4,
         daysIn: 365,
         donationOutDays: 40,
+        lastDonationDay: new Date("2026-04-01"),
       };
       const out = SysAdminPresenter.memberRow(row);
       expect(out.totalPointsOut).toBe(5_000);
@@ -76,6 +77,7 @@ describe("SysAdminPresenter", () => {
         uniqueDonationRecipients: 0,
         daysIn: 1,
         donationOutDays: 0,
+        lastDonationDay: null,
       };
       expect(SysAdminPresenter.memberRow(row).name).toBeNull();
     });
@@ -239,6 +241,7 @@ describe("SysAdminPresenter", () => {
             uniqueDonationRecipients: 0,
             daysIn: 30,
             donationOutDays: 1,
+            lastDonationDay: new Date("2026-04-25"),
           },
         ],
         hasNextPage: true,
@@ -318,6 +321,7 @@ describe("SysAdminPresenter", () => {
           m3to12Months: 3,
           gte12Months: 4,
         },
+        dormantCount: 1,
       });
       expect(out.segmentCounts.tier1Count).toBe(2);
       expect(out.segmentCounts.tier2Count).toBe(5);
@@ -341,6 +345,7 @@ describe("SysAdminPresenter", () => {
         m3to12Months: 3,
         gte12Months: 4,
       });
+      expect(out.dormantCount).toBe(1);
     });
   });
 });

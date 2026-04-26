@@ -2065,6 +2065,17 @@ input SysAdminCommunityDetailInput {
   """
   cursor: String
 
+  """
+  Days since a member's most recent DONATION above which they are
+  classified as "dormant". Used to populate
+  `SysAdminCommunityDetailPayload.dormantCount`. See the same-named
+  field on SysAdminDashboardInput for the full semantic.
+  
+  Default 30 (≈ one month of silence). Effective range 1..365;
+  values outside are silently clamped on the server.
+  """
+  dormantThresholdDays: Int = 30
+
   """Member list page size (default 50, max 200)."""
   limit: Int = 50
 
@@ -2103,6 +2114,16 @@ type SysAdminCommunityDetailPayload {
 
   """Community display name."""
   communityName: String!
+
+  """
+  Members who donated at some point but whose most recent
+  DONATION is older than `dormantThresholdDays` (default 30). See
+  the same-named field on `SysAdminCommunityOverview` for the
+  full semantic. Exposed at L2 so the user-scope card can show
+  the dormancy ratio directly without re-aggregating from the
+  member list.
+  """
+  dormantCount: Int!
 
   """Paginated member list — see type doc."""
   memberList: SysAdminMemberList!
@@ -2149,6 +2170,29 @@ type SysAdminCommunityOverview {
 
   """Community display name (t_communities.name)."""
   communityName: String!
+
+  """
+  Members who donated at some point but whose most recent
+  DONATION is older than `dormantThresholdDays` (default 30).
+  Distinct from `segmentCounts.passiveCount` (= "latent", never
+  donated): operators care about the difference because the
+  intervention is different — re-engage the dormant, onboard the
+  latent.
+  
+  Computed as
+    COUNT(DISTINCT user_id)
+    WHERE the user has at least one historical DONATION in this
+      community AND `MAX(donation.created_at) < asOf -
+      dormantThresholdDays`
+      AND status='JOINED' at asOf
+  
+  Invariants the client may assert:
+    0 <= dormantCount <= totalMembers - segmentCounts.passiveCount
+  
+  The upper bound holds because dormant members are by
+  construction ever-donated, which `passiveCount` excludes.
+  """
+  dormantCount: Int!
 
   """
   Number of members classified as a "hub" within the parametric
@@ -2306,6 +2350,23 @@ input SysAdminDashboardInput {
   Defaults to now when omitted.
   """
   asOf: Datetime
+
+  """
+  Days since a member's most recent DONATION above which they are
+  classified as "dormant" — i.e. they donated at some point but
+  have gone quiet. Used to populate
+  `SysAdminCommunityOverview.dormantCount`.
+  
+  Distinct from `segmentCounts.passiveCount` (= "latent", never
+  donated): operators care about the difference because the
+  intervention is different (re-engage a sleeper vs onboard a
+  newcomer). A member with `MAX(donation.created_at) < asOf -
+  dormantThresholdDays` is dormant.
+  
+  Default 30 (≈ one month of silence). Effective range 1..365;
+  values outside are silently clamped on the server.
+  """
+  dormantThresholdDays: Int = 30
 
   """
   Minimum number of distinct DONATION recipients within the
