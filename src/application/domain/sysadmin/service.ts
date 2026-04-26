@@ -89,6 +89,41 @@ export type TenureDistribution = {
   gte12Months: number;
 };
 
+/**
+ * Single source of truth for "what stage is this member in", used by
+ * both `computeStageCounts` (cumulative semantics: tier1 ⊂ tier2) and
+ * `computeStageBreakdown` (disjoint buckets). Centralising the rules
+ * here prevents the two methods drifting when a new axis is added —
+ * the `minMonthsIn` floor was almost added to one and not the other
+ * during the issue #918 work.
+ *
+ * Classification:
+ *   latent      — never donated (donationOutMonths === 0)
+ *   habitual    — userSendRate >= tier1 AND monthsIn >= minMonthsIn
+ *   regular     — userSendRate >= tier2 AND monthsIn >= minMonthsIn
+ *                 (and not habitual, since we check tier1 first)
+ *   occasional  — donated, but either below tier2 OR below
+ *                 minMonthsIn (the latter is the short-tenure
+ *                 artifact guard: a brand-new member who donated
+ *                 once cannot be elevated above occasional)
+ */
+export type MemberClassification = "habitual" | "regular" | "occasional" | "latent";
+
+export function classifyMember(
+  m: SysAdminMemberStatsRow,
+  thresholds: SegmentThresholds,
+): MemberClassification {
+  if (m.donationOutMonths === 0) return "latent";
+  // tier1 / tier2 require BOTH the rate threshold AND the tenure
+  // floor. A donating-but-too-new member falls through to
+  // "occasional" — they've shown some activity, but we don't have
+  // enough tenure data to elevate their classification.
+  if (m.monthsIn < thresholds.minMonthsIn) return "occasional";
+  if (m.userSendRate >= thresholds.tier1) return "habitual";
+  if (m.userSendRate >= thresholds.tier2) return "regular";
+  return "occasional";
+}
+
 export type WeeklyRetentionPoint = {
   weekStart: Date;
   retainedSenders: number;
@@ -289,29 +324,30 @@ export default class SysAdminService {
     members: SysAdminMemberStatsRow[],
     thresholds: SegmentThresholds,
   ): StageCounts {
-    const total = members.length;
     let tier1Count = 0;
     let tier2Count = 0;
     let activeCount = 0;
     let passiveCount = 0;
+    // Rules live in classifyMember so they stay in lockstep with
+    // computeStageBreakdown. The translation from disjoint
+    // classifications to the cumulative tier counts (habitual is also
+    // tier1 AND tier2; regular is also tier2) happens here.
     for (const m of members) {
-      if (m.donationOutMonths === 0) {
+      const c = classifyMember(m, thresholds);
+      if (c === "latent") {
         passiveCount++;
         continue;
       }
       activeCount++;
-      // tier1 / tier2 require both the rate threshold AND a minimum
-      // tenure: a member with monthsIn < minMonthsIn cannot be
-      // habitual/regular regardless of their userSendRate. This is
-      // the short-tenure artifact guard — without it, a 1-month
-      // tenure member who donated once gets userSendRate = 1.0 and
-      // sails over tier1. activeCount / passiveCount are unaffected
-      // because they are tenure-independent by construction.
-      if (m.monthsIn < thresholds.minMonthsIn) continue;
-      if (m.userSendRate >= thresholds.tier1) tier1Count++;
-      if (m.userSendRate >= thresholds.tier2) tier2Count++;
+      if (c === "habitual") {
+        tier1Count++;
+        tier2Count++;
+      } else if (c === "regular") {
+        tier2Count++;
+      }
+      // "occasional" contributes only to activeCount.
     }
-    return { total, tier1Count, tier2Count, activeCount, passiveCount };
+    return { total: members.length, tier1Count, tier2Count, activeCount, passiveCount };
   }
 
   /**
@@ -327,33 +363,19 @@ export default class SysAdminService {
     const totalMembers = members.length;
     const totalPointsOut = members.reduce<bigint>((acc, m) => acc + m.totalPointsOut, BigInt(0));
 
-    const buckets = {
-      habitual: [] as SysAdminMemberStatsRow[],
-      regular: [] as SysAdminMemberStatsRow[],
-      occasional: [] as SysAdminMemberStatsRow[],
-      latent: [] as SysAdminMemberStatsRow[],
+    const buckets: Record<MemberClassification, SysAdminMemberStatsRow[]> = {
+      habitual: [],
+      regular: [],
+      occasional: [],
+      latent: [],
     };
+    // Bucket key === classification, so this collapses to a single
+    // dispatch per row. Disjoint semantics (a habitual member is NOT
+    // also in regular) come naturally from the classifyMember
+    // contract; the translation to cumulative counts lives in
+    // computeStageCounts.
     for (const m of members) {
-      if (m.donationOutMonths === 0) {
-        buckets.latent.push(m);
-      } else if (
-        // habitual / regular require minimum tenure in addition to
-        // the rate threshold (matches computeStageCounts). A donating
-        // member who hasn't been around long enough falls through to
-        // `occasional` — they've shown some activity, but we don't
-        // have enough tenure-data to elevate their classification.
-        m.monthsIn >= thresholds.minMonthsIn &&
-        m.userSendRate >= thresholds.tier1
-      ) {
-        buckets.habitual.push(m);
-      } else if (
-        m.monthsIn >= thresholds.minMonthsIn &&
-        m.userSendRate >= thresholds.tier2
-      ) {
-        buckets.regular.push(m);
-      } else {
-        buckets.occasional.push(m);
-      }
+      buckets[classifyMember(m, thresholds)].push(m);
     }
 
     const summarize = (rows: SysAdminMemberStatsRow[]): StageBucketStats => {
