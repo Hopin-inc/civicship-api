@@ -26,11 +26,18 @@ export type SegmentThresholds = {
   tier1: number;
   tier2: number;
   /**
-   * Minimum tenure (in JST calendar months) required for tier1 / tier2
-   * eligibility. Filters out the short-tenure artifact where a brand
-   * new member with one donation gets `userSendRate = 1/1 = 1.0` and
-   * is auto-classified as habitual. `activeCount` and `passiveCount`
-   * are unaffected (they're tenure-independent by construction).
+   * Minimum tenure required for tier1 / tier2 eligibility, expressed
+   * in calendar months for the operator-facing API but evaluated
+   * internally as `daysIn >= minMonthsIn × 30`. Filters out the
+   * short-tenure artifact where a brand new member with one donation
+   * gets `userSendRate = 1/1 = 1.0` and is auto-classified as habitual.
+   * `activeCount` and `passiveCount` are unaffected (they're tenure-
+   * independent by construction).
+   *
+   * The day-based check is intentional: monthsIn is calendar-month
+   * based and inflates a 2-day cross-month-boundary tenure to
+   * monthsIn = 2, which would silently pass `minMonthsIn = 2`. See
+   * `classifyMember` for the full reasoning.
    */
   minMonthsIn: number;
 };
@@ -90,6 +97,16 @@ export type TenureDistribution = {
 };
 
 /**
+ * Approximate days-per-month conversion used to translate the
+ * operator-facing `minMonthsIn` (calendar months) into the internal
+ * day-count check on `daysIn`. 30 is a deliberate approximation:
+ * matches the boundaries used by `tenureDistribution`'s daysIn
+ * buckets (lt1Month = daysIn < 30) so the stage classifier and the
+ * tenure-distribution chart agree on what "1 month" means.
+ */
+const DAYS_PER_MONTH_APPROX = 30;
+
+/**
  * Single source of truth for "what stage is this member in", used by
  * both `computeStageCounts` (cumulative semantics: tier1 ⊂ tier2) and
  * `computeStageBreakdown` (disjoint buckets). Centralising the rules
@@ -97,13 +114,22 @@ export type TenureDistribution = {
  * the `minMonthsIn` floor was almost added to one and not the other
  * during the issue #918 work.
  *
+ * The tenure floor is checked against `daysIn`, not `monthsIn`,
+ * because monthsIn is calendar-month-based: a member who joined on
+ * Jan 31 and is observed on Feb 1 has `monthsIn = 2` (2 calendar
+ * months touched) but only `daysIn = 2` (2 actual days). Using
+ * monthsIn here would let that 2-day member sail past a
+ * `minMonthsIn = 2` filter, defeating the artifact guard. daysIn
+ * with a 30 d/month approximation matches the `tenureDistribution`
+ * bucket semantics and treats both edges symmetrically.
+ *
  * Classification:
  *   latent      — never donated (donationOutMonths === 0)
- *   habitual    — userSendRate >= tier1 AND monthsIn >= minMonthsIn
- *   regular     — userSendRate >= tier2 AND monthsIn >= minMonthsIn
+ *   habitual    — userSendRate >= tier1 AND daysIn >= minMonthsIn × 30
+ *   regular     — userSendRate >= tier2 AND daysIn >= minMonthsIn × 30
  *                 (and not habitual, since we check tier1 first)
- *   occasional  — donated, but either below tier2 OR below
- *                 minMonthsIn (the latter is the short-tenure
+ *   occasional  — donated, but either below tier2 OR below the
+ *                 tenure floor (the latter is the short-tenure
  *                 artifact guard: a brand-new member who donated
  *                 once cannot be elevated above occasional)
  */
@@ -118,7 +144,7 @@ export function classifyMember(
   // floor. A donating-but-too-new member falls through to
   // "occasional" — they've shown some activity, but we don't have
   // enough tenure data to elevate their classification.
-  if (m.monthsIn < thresholds.minMonthsIn) return "occasional";
+  if (m.daysIn < thresholds.minMonthsIn * DAYS_PER_MONTH_APPROX) return "occasional";
   if (m.userSendRate >= thresholds.tier1) return "habitual";
   if (m.userSendRate >= thresholds.tier2) return "regular";
   return "occasional";

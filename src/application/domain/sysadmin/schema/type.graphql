@@ -40,23 +40,29 @@ input SysAdminSegmentThresholdsInput {
   tier2: Float = 0.4
 
   """
-  Minimum tenure (in JST calendar months) a member must have
-  before being eligible for tier1 / tier2 classification. Filters
-  out the short-tenure artifact where a 1-month-tenure member who
-  donated once gets `userSendRate = 1/1 = 1.0` and is auto-
-  classified as habitual despite no actual track record.
+  Minimum tenure a member must have before being eligible for
+  tier1 / tier2 classification. Expressed in calendar months for
+  ergonomic operator-facing semantics, but evaluated internally as
+  `daysIn >= minMonthsIn × 30` so a member who joined yesterday
+  but happens to straddle a calendar-month boundary cannot sneak
+  past the filter. Filters out the short-tenure artifact where a
+  brand-new member who donated once gets
+  `userSendRate = 1/1 = 1.0` and is auto-classified as habitual
+  despite no actual track record.
 
   Only affects `tier1Count` and `tier2Count`; `activeCount`
   ("ever donated") and `passiveCount` ("never donated") are
   semantically tenure-independent and remain unfiltered.
 
-  Default 1 (no filter, preserves the existing classification
-  behaviour). Set to 3 for "must have been around 3+ months" so
+  Default 1 → roughly "must have been around at least 30 days".
+  Set to 3 for "must have been around 3+ months (~90 days)" so
   the operator-facing reading of `tier1Count` matches the
   intuitive meaning of "habitual sender".
 
   Effective range 1..120; values outside are silently clamped on
-  the server.
+  the server. The 30-day-per-month conversion matches
+  `tenureDistribution`'s bucket boundaries so the stage classifier
+  and the tenure-distribution chart agree on what "1 month" means.
   """
   minMonthsIn: Int = 1
 }

@@ -15,15 +15,21 @@ import type {
  * non-interesting values.
  */
 function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStatsRow {
+  const monthsIn = overrides.monthsIn ?? 1;
   return {
     userId: overrides.userId ?? "u",
     name: overrides.name ?? null,
-    monthsIn: overrides.monthsIn ?? 1,
+    monthsIn,
     donationOutMonths: overrides.donationOutMonths ?? 0,
     totalPointsOut: overrides.totalPointsOut ?? BigInt(0),
     userSendRate: overrides.userSendRate ?? 0,
     uniqueDonationRecipients: overrides.uniqueDonationRecipients ?? 0,
-    daysIn: overrides.daysIn ?? 30,
+    // daysIn defaults to monthsIn × 30 so test cases that only
+    // care about the calendar-month tenure stay consistent with
+    // the daysIn-based check inside classifyMember. Override
+    // explicitly when testing the cross-month-boundary artifact
+    // (monthsIn high, daysIn low).
+    daysIn: overrides.daysIn ?? monthsIn * 30,
     donationOutDays: overrides.donationOutDays ?? 0,
   };
 }
@@ -88,17 +94,31 @@ describe("classifyMember", () => {
     ).toBe("occasional");
   });
 
-  it("returns occasional when monthsIn is below minMonthsIn even at rate=1.0", () => {
-    // The short-tenure artifact case. With minMonthsIn = 3, a
-    // 1-month-tenure member who donated once (rate = 1.0) cannot be
-    // habitual or regular, but they DID donate so they are not
-    // latent — they fall through to occasional.
+  it("returns occasional when daysIn is below the tenure floor even at rate=1.0", () => {
+    // The short-tenure artifact case. With minMonthsIn = 3 (= 90
+    // days), a member with 30 days tenure who donated once
+    // (rate = 1.0) cannot be habitual or regular, but they DID
+    // donate so they are not latent — they fall through to occasional.
     expect(
-      classifyMember(member({ donationOutMonths: 1, userSendRate: 1.0, monthsIn: 1 }), {
-        tier1: 0.7,
-        tier2: 0.4,
-        minMonthsIn: 3,
-      }),
+      classifyMember(
+        member({ donationOutMonths: 1, userSendRate: 1.0, monthsIn: 1, daysIn: 30 }),
+        { tier1: 0.7, tier2: 0.4, minMonthsIn: 3 },
+      ),
+    ).toBe("occasional");
+  });
+
+  it("uses daysIn (not monthsIn) for the tenure floor — cross-month-boundary case", () => {
+    // The reason classifyMember checks daysIn rather than monthsIn:
+    // a member who joined Jan 31 and is observed Feb 1 has
+    // monthsIn = 2 (calendar months touched: Jan + Feb) but only
+    // daysIn = 2. With minMonthsIn = 2, a monthsIn-based check
+    // would silently admit them; daysIn-based check correctly
+    // demotes (daysIn 2 < 2 × 30 = 60).
+    expect(
+      classifyMember(
+        member({ donationOutMonths: 1, userSendRate: 1.0, monthsIn: 2, daysIn: 2 }),
+        { tier1: 0.7, tier2: 0.4, minMonthsIn: 2 },
+      ),
     ).toBe("occasional");
   });
 
