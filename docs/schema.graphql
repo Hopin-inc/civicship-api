@@ -2065,6 +2065,17 @@ input SysAdminCommunityDetailInput {
   """
   cursor: String
 
+  """
+  Days since a member's most recent DONATION above which they are
+  classified as "dormant". Used to populate
+  `SysAdminCommunityDetailPayload.dormantCount`. See the same-named
+  field on SysAdminDashboardInput for the full semantic.
+  
+  Default 30 (≈ one month of silence). Effective range 1..365;
+  values outside are silently clamped on the server.
+  """
+  dormantThresholdDays: Int = 30
+
   """Member list page size (default 50, max 200)."""
   limit: Int = 50
 
@@ -2103,6 +2114,16 @@ type SysAdminCommunityDetailPayload {
 
   """Community display name."""
   communityName: String!
+
+  """
+  Members who donated at some point but whose most recent
+  DONATION is older than `dormantThresholdDays` (default 30). See
+  the same-named field on `SysAdminCommunityOverview` for the
+  full semantic. Exposed at L2 so the user-scope card can show
+  the dormancy ratio directly without re-aggregating from the
+  member list.
+  """
+  dormantCount: Int!
 
   """Paginated member list — see type doc."""
   memberList: SysAdminMemberList!
@@ -2151,6 +2172,29 @@ type SysAdminCommunityOverview {
   communityName: String!
 
   """
+  Members who donated at some point but whose most recent
+  DONATION is older than `dormantThresholdDays` (default 30).
+  Distinct from `segmentCounts.passiveCount` (= "latent", never
+  donated): operators care about the difference because the
+  intervention is different — re-engage the dormant, onboard the
+  latent.
+  
+  Computed as
+    COUNT(DISTINCT user_id)
+    WHERE the user has at least one historical DONATION in this
+      community AND `MAX(donation.created_at) < asOf -
+      dormantThresholdDays`
+      AND status='JOINED' at asOf
+  
+  Invariants the client may assert:
+    0 <= dormantCount <= totalMembers - segmentCounts.passiveCount
+  
+  The upper bound holds because dormant members are by
+  construction ever-donated, which `passiveCount` excludes.
+  """
+  dormantCount: Int!
+
+  """
   Number of members classified as a "hub" within the parametric
   window (`windowDays`):
   
@@ -2191,6 +2235,16 @@ type SysAdminCommunityOverview {
   per the type doc) classified against input.segmentThresholds.
   """
   segmentCounts: SysAdminSegmentCounts!
+
+  """
+  Tenure-bucket distribution of members at asOf. See
+  SysAdminTenureDistribution. Sum of buckets equals totalMembers.
+  
+  Lets the client surface community age structure at L1 without
+  drilling into the L2 member list (which would otherwise force
+  an N+1 round trip per community to compute distribution).
+  """
+  tenureDistribution: SysAdminTenureDistribution!
 
   """
   Total status='JOINED' members as of asOf. Members whose
@@ -2245,8 +2299,27 @@ type SysAdminCommunitySummaryCard {
   growthRateActivity: Float
 
   """
-  Maximum chain depth observed in any DONATION, all-time. null when
-  no chained transactions exist.
+  Maximum `chain_depth` observed in any DONATION, all-time, in
+  this community. null when no DONATION transactions exist.
+  
+  `chain_depth` semantics (set in transaction creation —
+  src/application/domain/transaction/service.ts:89, via
+  `findLatestReceivedTx`):
+    - chain_depth = 1: a "root" donation. Either the sender
+      had no prior received DONATION (= self-funded gift) or
+      this is treated as the start of a chain.
+    - chain_depth = N + 1: the sender's most recent received
+      DONATION (parentTx) had `chain_depth = N`; the new
+      donation propagates the chain by one step.
+  
+  Example trace: A donates to B → chain_depth 1.
+  B then donates to C, citing the receipt from A → chain_depth 2.
+  C donates to D similarly → chain_depth 3.
+  
+  `maxChainDepthAllTime = 1` therefore means "no propagation
+  ever happened" (every donation was a fresh root).
+  `maxChainDepthAllTime >= 2` means at least one
+  receive-then-pass-it-on event occurred.
   """
   maxChainDepthAllTime: Int
 
@@ -2277,6 +2350,23 @@ input SysAdminDashboardInput {
   Defaults to now when omitted.
   """
   asOf: Datetime
+
+  """
+  Days since a member's most recent DONATION above which they are
+  classified as "dormant" — i.e. they donated at some point but
+  have gone quiet. Used to populate
+  `SysAdminCommunityOverview.dormantCount`.
+  
+  Distinct from `segmentCounts.passiveCount` (= "latent", never
+  donated): operators care about the difference because the
+  intervention is different (re-engage a sleeper vs onboard a
+  newcomer). A member with `MAX(donation.created_at) < asOf -
+  dormantThresholdDays` is dormant.
+  
+  Default 30 (≈ one month of silence). Effective range 1..365;
+  values outside are silently clamped on the server.
+  """
+  dormantThresholdDays: Int = 30
 
   """
   Minimum number of distinct DONATION recipients within the
@@ -2377,6 +2467,23 @@ One row of the L2 member list. Raw values only — stage classification
 server-side thresholds can be tuned without a schema change.
 """
 type SysAdminMemberRow {
+  """
+  Tenure in JST calendar days (floor, minimum 1). Daily-grain
+  counterpart to `monthsIn`. Useful when the client wants a
+  finer-grained activity rate than the monthly `userSendRate`,
+  or when grouping members into tenure buckets that don't align
+  with calendar-month boundaries.
+  """
+  daysIn: Int!
+
+  """
+  Distinct JST days the member sent at least one DONATION.
+  Daily-grain counterpart to `donationOutMonths`. Combined with
+  `daysIn`, the client can compute `donationOutDays / daysIn` as
+  a daily-cadence rate, complementing the monthly `userSendRate`.
+  """
+  donationOutDays: Int!
+
   """Distinct months with at least one DONATION out."""
   donationOutMonths: Int!
 
@@ -2524,6 +2631,33 @@ Thresholds define WHERE the boundary between stages sits, but naming
 """
 input SysAdminSegmentThresholdsInput {
   """
+  Minimum tenure a member must have before being eligible for
+  tier1 / tier2 classification. Expressed in calendar months for
+  ergonomic operator-facing semantics, but evaluated internally as
+  `daysIn >= minMonthsIn × 30` so a member who joined yesterday
+  but happens to straddle a calendar-month boundary cannot sneak
+  past the filter. Filters out the short-tenure artifact where a
+  brand-new member who donated once gets
+  `userSendRate = 1/1 = 1.0` and is auto-classified as habitual
+  despite no actual track record.
+  
+  Only affects `tier1Count` and `tier2Count`; `activeCount`
+  ("ever donated") and `passiveCount` ("never donated") are
+  semantically tenure-independent and remain unfiltered.
+  
+  Default 1 → roughly "must have been around at least 30 days".
+  Set to 3 for "must have been around 3+ months (~90 days)" so
+  the operator-facing reading of `tier1Count` matches the
+  intuitive meaning of "habitual sender".
+  
+  Effective range 1..120; values outside are silently clamped on
+  the server. The 30-day-per-month conversion matches
+  `tenureDistribution`'s bucket boundaries so the stage classifier
+  and the tenure-distribution chart agree on what "1 month" means.
+  """
+  minMonthsIn: Int = 1
+
+  """
   Habitual stage threshold. A user with `userSendRate >= tier1` is
   counted as "habitual" (i.e. sends donations in at least tier1 share
   of their tenure). Default 0.7.
@@ -2597,6 +2731,40 @@ type SysAdminStageDistribution {
 
   """tier2 <= userSendRate < tier1."""
   regular: SysAdminStageBucket!
+}
+
+"""
+Tenure-bucket distribution of a community's members at asOf,
+classified on `daysIn` (JST calendar-day tenure). Lets the L1
+dashboard surface community age structure (e.g. "lots of brand
+new members, few established") without drilling into the L2
+member list.
+
+Buckets are mutually exclusive and exhaustive; the sum equals
+totalMembers. Boundaries are intentionally calendar-day rather
+than month so a 28-day-tenure member doesn't get double-counted
+into "1 month" purely because of `monthsIn`'s GREATEST(1, ...)
+floor.
+"""
+type SysAdminTenureDistribution {
+  """
+  Members with `daysIn >= 365` — long-time members. Combined
+  with `lt1Month`, signals the community's age structure.
+  """
+  gte12Months: Int!
+
+  """
+  Members with `daysIn < 30` — newly joined cohort. Useful for
+  spotting communities flooded with new members where downstream
+  metrics (userSendRate, retention) are not yet meaningful.
+  """
+  lt1Month: Int!
+
+  """Members with `30 <= daysIn < 90` — "still settling in" cohort."""
+  m1to3Months: Int!
+
+  """Members with `90 <= daysIn < 365` — established members."""
+  m3to12Months: Int!
 }
 
 """

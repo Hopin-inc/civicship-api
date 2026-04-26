@@ -89,10 +89,13 @@ export default class SysAdminRepository implements ISysAdminRepository {
           user_id: string;
           name: string | null;
           months_in: number;
+          days_in: number;
           donation_out_months: number;
+          donation_out_days: number;
           total_points_out: bigint;
           user_send_rate: number;
           unique_donation_recipients: number;
+          last_donation_day: Date | null;
         }[]
       >`
         WITH asof_jst AS (
@@ -130,14 +133,38 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND m."status" = 'JOINED'
             AND m."created_at" < ab.upper_ts
         ),
-        donation_months AS (
+        donation_activity AS (
+          -- Per-(user, JST calendar day) DONATION activity: emits one
+          -- row per day the user sent a DONATION, carrying both the
+          -- aggregated points for that day and the day's JST month
+          -- bucket. The final SELECT then derives:
+          --   donation_out_months = COUNT(DISTINCT jst_month)
+          --   donation_out_days   = COUNT(DISTINCT jst_day)
+          --   total_points_out    = SUM(day_points_out)
+          --
+          -- This consolidates what used to be two parallel CTEs
+          -- (donation_months + donation_days). Joining both into the
+          -- final SELECT on user_id created an N×M cross product —
+          -- COUNT(DISTINCT) was unaffected, but SUM(month_points_out)
+          -- got inflated by M (= number of donation days), corrupting
+          -- total_points_out and every downstream consumer
+          -- (pointsContributionPct, sort orderings, etc.). Pre-
+          -- aggregating per-day in a single CTE removes the cross
+          -- product entirely and is also one fewer t_transactions
+          -- scan since both old CTEs read the same rows.
+          --
+          -- JST date bucketing matches the rest of the query so
+          -- daysIn / donationOutDays line up with the member-tenure
+          -- boundary, and findActivitySnapshot / findPlatformTotals
+          -- agree on what "as of asOf" includes.
           SELECT
             fw."user_id" AS user_id,
+            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
             DATE_TRUNC(
               'month',
               (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
             ) AS jst_month,
-            SUM(t."from_point_change") AS month_points_out
+            SUM(t."from_point_change") AS day_points_out
           FROM "t_transactions" t
           INNER JOIN "t_wallets" fw
             ON fw."id" = t."from"
@@ -146,12 +173,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           CROSS JOIN asof_bound ab
           WHERE t."reason" = 'DONATION'
             AND t."created_at" < ab.upper_ts
-            -- JST-day-unit upper bound so donation activity lines up
-            -- with the member-tenure bound in the members CTE above.
-            -- findActivitySnapshot / findPlatformTotals also use this
-            -- unit, so stageCounts.total and the activity-rate
-            -- denominator agree on what "as of asOf" includes.
-          GROUP BY fw."user_id", jst_month
+          GROUP BY fw."user_id", jst_day, jst_month
         ),
         donation_recipients AS (
           -- Per-sender count of DISTINCT recipient user_ids over the
@@ -193,16 +215,24 @@ export default class SysAdminRepository implements ISysAdminRepository {
           GROUP BY fw."user_id"
         ),
         member_tenure AS (
-          -- Compute months_in ONCE per member so the final SELECT can
-          -- reuse it as both months_in and the denominator of
-          -- user_send_rate. The formula is "distinct JST calendar
-          -- months the member has been present in (join-month through
-          -- asOf-month inclusive)" — the +1 turns the month-number
-          -- diff into a span count, matching how
-          -- donation_out_months (COUNT DISTINCT jst_month) counts.
-          -- GREATEST(1, ...) defends against any future clock skew.
-          -- Pulling the asOf-side conversion from asof_jst.ts avoids
-          -- re-running the double AT TIME ZONE cast once per row.
+          -- Compute months_in / days_in ONCE per member so the
+          -- final SELECT can reuse them as both raw fields and as
+          -- the denominators of monthly / daily activity rates.
+          --
+          -- months_in: "distinct JST calendar months the member
+          -- has been present in (join-month through asOf-month
+          -- inclusive)" — the +1 turns the month-number diff into
+          -- a span count, matching how donation_out_months
+          -- (COUNT DISTINCT jst_month) counts.
+          --
+          -- days_in: "distinct JST calendar days the member has
+          -- been present in" — same +1 inclusivity, matching how
+          -- donation_out_days (COUNT DISTINCT jst_day) counts.
+          --
+          -- GREATEST(1, ...) defends against any future clock
+          -- skew on both. Pulling the asOf-side conversion from
+          -- asof_jst avoids re-running the double AT TIME ZONE
+          -- cast once per row.
           SELECT
             m."user_id",
             GREATEST(
@@ -218,19 +248,31 @@ export default class SysAdminRepository implements ISysAdminRepository {
                 )
                 + 1
               )
-            )::int AS months_in
+            )::int AS months_in,
+            GREATEST(
+              1,
+              (
+                (aj.ts::date - (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) + 1
+              )
+            )::int AS days_in
           FROM members m, asof_jst aj
         )
         SELECT
           m."user_id",
           u."name" AS "name",
           mt.months_in,
-          COALESCE(COUNT(DISTINCT dm.jst_month), 0)::int AS donation_out_months,
-          COALESCE(SUM(dm.month_points_out), 0)::bigint AS total_points_out,
+          mt.days_in,
+          COALESCE(COUNT(DISTINCT da.jst_month), 0)::int AS donation_out_months,
+          COALESCE(COUNT(DISTINCT da.jst_day), 0)::int AS donation_out_days,
+          -- SUM is over per-day rows (one row per user per donation
+          -- day in donation_activity). No cross product with another
+          -- per-user-multi-row CTE, so each day's points are summed
+          -- exactly once.
+          COALESCE(SUM(da.day_points_out), 0)::bigint AS total_points_out,
           -- GREATEST(1, ...) inside member_tenure guarantees the
           -- divisor is >= 1; no zero branch needed around ROUND.
           ROUND(
-            COALESCE(COUNT(DISTINCT dm.jst_month), 0)::numeric
+            COALESCE(COUNT(DISTINCT da.jst_month), 0)::numeric
               / mt.months_in::numeric,
             3
           )::double precision AS user_send_rate,
@@ -240,23 +282,33 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- BY) propagates that single value through the per-user
           -- grouping cleanly and matches the COALESCE/MAX pattern
           -- used elsewhere when joining a pre-aggregated CTE.
-          COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients
+          COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients,
+          -- MAX over the per-(user, jst_day) rows in donation_activity
+          -- gives the most recent JST day this user sent a DONATION.
+          -- NULL when the LEFT JOIN found no donation_activity rows
+          -- (= the member never donated, the latent case). The service
+          -- layer derives dormantCount from this without re-scanning
+          -- t_transactions.
+          MAX(da.jst_day) AS last_donation_day
         FROM members m
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
-        LEFT JOIN donation_months dm ON dm.user_id = m."user_id"
+        LEFT JOIN donation_activity da ON da.user_id = m."user_id"
         LEFT JOIN donation_recipients dr ON dr.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
-        GROUP BY m."user_id", mt.months_in, u."name"
+        GROUP BY m."user_id", mt.months_in, mt.days_in, u."name"
         ORDER BY m."user_id"
       `;
       return rows.map((r) => ({
         userId: r.user_id,
         name: r.name,
         monthsIn: r.months_in,
+        daysIn: r.days_in,
         donationOutMonths: r.donation_out_months,
+        donationOutDays: r.donation_out_days,
         totalPointsOut: r.total_points_out,
         userSendRate: r.user_send_rate,
         uniqueDonationRecipients: r.unique_donation_recipients,
+        lastDonationDay: r.last_donation_day,
       }));
     });
   }

@@ -15,6 +15,7 @@ import {
   GqlSysAdminSegmentCounts,
   GqlSysAdminStageBucket,
   GqlSysAdminStageDistribution,
+  GqlSysAdminTenureDistribution,
   GqlSysAdminWeeklyRetention,
   GqlSysAdminWindowActivity,
 } from "@/types/graphql";
@@ -32,6 +33,7 @@ import {
   StageBreakdown,
   StageBucketStats,
   StageCounts,
+  TenureDistribution,
   WeeklyRetentionCounts,
   WeeklyRetentionPoint,
   WindowActivityCounts,
@@ -95,6 +97,15 @@ export default class SysAdminPresenter {
     };
   }
 
+  static tenureDistribution(d: TenureDistribution): GqlSysAdminTenureDistribution {
+    return {
+      lt1Month: d.lt1Month,
+      m1to3Months: d.m1to3Months,
+      m3to12Months: d.m3to12Months,
+      gte12Months: d.gte12Months,
+    };
+  }
+
   static overviewRow(params: {
     communityId: string;
     communityName: string;
@@ -104,6 +115,8 @@ export default class SysAdminPresenter {
     weeklyRetention: WeeklyRetentionCounts;
     latestCohort: LatestCohortCounts;
     hubMemberCount: number;
+    tenureDistribution: TenureDistribution;
+    dormantCount: number;
   }): GqlSysAdminCommunityOverview {
     return {
       communityId: params.communityId,
@@ -114,6 +127,8 @@ export default class SysAdminPresenter {
       weeklyRetention: SysAdminPresenter.weeklyRetention(params.weeklyRetention),
       latestCohort: SysAdminPresenter.latestCohort(params.latestCohort),
       hubMemberCount: params.hubMemberCount,
+      tenureDistribution: SysAdminPresenter.tenureDistribution(params.tenureDistribution),
+      dormantCount: params.dormantCount,
     };
   }
 
@@ -231,6 +246,8 @@ export default class SysAdminPresenter {
       donationOutMonths: row.donationOutMonths,
       totalPointsOut: bigintToSafeNumber(row.totalPointsOut),
       uniqueDonationRecipients: row.uniqueDonationRecipients,
+      daysIn: row.daysIn,
+      donationOutDays: row.donationOutDays,
     };
   }
 
@@ -254,6 +271,7 @@ export default class SysAdminPresenter {
     cohortRetention: GqlSysAdminCohortRetentionPoint[];
     memberList: GqlSysAdminMemberList;
     alerts: GqlSysAdminCommunityAlerts;
+    dormantCount: number;
   }): GqlSysAdminCommunityDetailPayload {
     return {
       communityId: params.communityId,
@@ -267,6 +285,7 @@ export default class SysAdminPresenter {
       cohortRetention: params.cohortRetention,
       memberList: params.memberList,
       alerts: params.alerts,
+      dormantCount: params.dormantCount,
     };
   }
 }

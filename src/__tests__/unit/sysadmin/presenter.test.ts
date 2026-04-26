@@ -54,11 +54,16 @@ describe("SysAdminPresenter", () => {
         userSendRate: 0.833,
         totalPointsOut: BigInt(5_000),
         uniqueDonationRecipients: 4,
+        daysIn: 365,
+        donationOutDays: 40,
+        lastDonationDay: new Date("2026-04-01"),
       };
       const out = SysAdminPresenter.memberRow(row);
       expect(out.totalPointsOut).toBe(5_000);
       expect(typeof out.totalPointsOut).toBe("number");
       expect(out.uniqueDonationRecipients).toBe(4);
+      expect(out.daysIn).toBe(365);
+      expect(out.donationOutDays).toBe(40);
     });
 
     it("passes null name through untouched", () => {
@@ -70,6 +75,9 @@ describe("SysAdminPresenter", () => {
         userSendRate: 0,
         totalPointsOut: BigInt(0),
         uniqueDonationRecipients: 0,
+        daysIn: 1,
+        donationOutDays: 0,
+        lastDonationDay: null,
       };
       expect(SysAdminPresenter.memberRow(row).name).toBeNull();
     });
@@ -231,6 +239,9 @@ describe("SysAdminPresenter", () => {
             userSendRate: 1,
             totalPointsOut: BigInt(0),
             uniqueDonationRecipients: 0,
+            daysIn: 30,
+            donationOutDays: 1,
+            lastDonationDay: new Date("2026-04-25"),
           },
         ],
         hasNextPage: true,
@@ -304,6 +315,13 @@ describe("SysAdminPresenter", () => {
           activeAtM1: 4,
         },
         hubMemberCount: 2,
+        tenureDistribution: {
+          lt1Month: 1,
+          m1to3Months: 2,
+          m3to12Months: 3,
+          gte12Months: 4,
+        },
+        dormantCount: 1,
       });
       expect(out.segmentCounts.tier1Count).toBe(2);
       expect(out.segmentCounts.tier2Count).toBe(5);
@@ -321,6 +339,13 @@ describe("SysAdminPresenter", () => {
       });
       expect(out.latestCohort).toEqual({ size: 8, activeAtM1: 4 });
       expect(out.hubMemberCount).toBe(2);
+      expect(out.tenureDistribution).toEqual({
+        lt1Month: 1,
+        m1to3Months: 2,
+        m3to12Months: 3,
+        gte12Months: 4,
+      });
+      expect(out.dormantCount).toBe(1);
     });
   });
 });

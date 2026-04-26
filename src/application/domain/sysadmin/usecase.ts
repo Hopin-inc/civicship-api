@@ -9,15 +9,20 @@ import {
   GqlSysAdminDashboardPayload,
 } from "@/types/graphql";
 import SysAdminService, {
+  DEFAULT_DORMANT_THRESHOLD_DAYS,
   DEFAULT_HUB_BREADTH_THRESHOLD,
   DEFAULT_SEGMENT_THRESHOLDS,
   DEFAULT_WINDOW_DAYS,
   DEFAULT_WINDOW_MONTHS,
+  MAX_DORMANT_THRESHOLD_DAYS,
   MAX_HUB_BREADTH_THRESHOLD,
   MAX_LIMIT,
+  MAX_MIN_MONTHS_IN,
   MAX_WINDOW_DAYS,
   MAX_WINDOW_MONTHS,
+  MIN_DORMANT_THRESHOLD_DAYS,
   MIN_HUB_BREADTH_THRESHOLD,
+  MIN_MIN_MONTHS_IN,
   MIN_WINDOW_DAYS,
   SegmentThresholds,
 } from "@/application/domain/sysadmin/service";
@@ -47,6 +52,7 @@ export default class SysAdminUseCase {
     const thresholds = resolveThresholds(input?.segmentThresholds);
     const windowDays = clampWindowDays(input?.windowDays);
     const hubBreadthThreshold = clampHubBreadthThreshold(input?.hubBreadthThreshold);
+    const dormantThresholdDays = clampDormantThresholdDays(input?.dormantThresholdDays);
 
     const monthStart = jstMonthStart(asOf);
     // Clamp the platform-totals upper bound at asOf+1 JST day so a
@@ -78,6 +84,12 @@ export default class SysAdminUseCase {
             ),
           ]);
         const stageCounts = this.service.computeStageCounts(members, thresholds);
+        const tenureDistribution = this.service.computeTenureDistribution(members);
+        const dormantCount = this.service.computeDormantCount(
+          members,
+          asOf,
+          dormantThresholdDays,
+        );
         return SysAdminPresenter.overviewRow({
           communityId: c.communityId,
           communityName: c.communityName,
@@ -87,6 +99,8 @@ export default class SysAdminUseCase {
           weeklyRetention,
           latestCohort,
           hubMemberCount,
+          tenureDistribution,
+          dormantCount,
         });
       }),
     );
@@ -116,6 +130,7 @@ export default class SysAdminUseCase {
   ): Promise<GqlSysAdminCommunityDetailPayload> {
     const asOf = input.asOf ?? new Date();
     const thresholds = resolveThresholds(input.segmentThresholds);
+    const dormantThresholdDays = clampDormantThresholdDays(input.dormantThresholdDays);
     // Clamp to [1, MAX_WINDOW_MONTHS]. getCohortRetention and the
     // retention-trend fan-out both scale linearly with this value, so
     // a cap prevents a single request from exhausting the connection
@@ -151,6 +166,7 @@ export default class SysAdminUseCase {
 
     const stageCounts = this.service.computeStageCounts(members, thresholds);
     const stageBreakdown = this.service.computeStageBreakdown(members, thresholds);
+    const dormantCount = this.service.computeDormantCount(members, asOf, dormantThresholdDays);
 
     const alerts = await this.service.getAlerts(ctx, community.communityId, asOf);
 
@@ -188,6 +204,7 @@ export default class SysAdminUseCase {
       cohortRetention: cohortRetention.map(SysAdminPresenter.cohortPoint),
       memberList: SysAdminPresenter.memberList(memberList),
       alerts: SysAdminPresenter.alerts(alerts),
+      dormantCount,
     });
   }
 }
@@ -197,6 +214,7 @@ function resolveThresholds(
     | {
         tier1?: number | null;
         tier2?: number | null;
+        minMonthsIn?: number | null;
       }
     | null
     | undefined,
@@ -207,10 +225,21 @@ function resolveThresholds(
   // produce misleading stage counts.
   const tier1 = Math.max(input?.tier1 ?? DEFAULT_SEGMENT_THRESHOLDS.tier1, 0);
   const tier2 = Math.max(input?.tier2 ?? DEFAULT_SEGMENT_THRESHOLDS.tier2, 0);
+  // Clamp minMonthsIn to [MIN, MAX]. Default 1 preserves pre-issue-918
+  // behaviour (no tenure filter); portal opts in to a stricter
+  // classification by passing 3+. Hard ceiling 120 prevents an
+  // accidental "minMonthsIn = 9999" that classifies every member as
+  // ineligible.
+  const minMonthsIn = Math.min(
+    Math.max(input?.minMonthsIn ?? DEFAULT_SEGMENT_THRESHOLDS.minMonthsIn, MIN_MIN_MONTHS_IN),
+    MAX_MIN_MONTHS_IN,
+  );
   // If a caller flips them (tier2 > tier1), swap silently rather than
   // erroring — the "higher boundary" invariant is what the rest of the
   // service relies on, and a swap is a less confusing DX than a 400.
-  return tier1 >= tier2 ? { tier1, tier2 } : { tier1: tier2, tier2: tier1 };
+  return tier1 >= tier2
+    ? { tier1, tier2, minMonthsIn }
+    : { tier1: tier2, tier2: tier1, minMonthsIn };
 }
 
 function clampLimit(limit: number | null | undefined): number {
@@ -243,4 +272,18 @@ function clampWindowDays(input: number | null | undefined): number {
 function clampHubBreadthThreshold(input: number | null | undefined): number {
   const n = input ?? DEFAULT_HUB_BREADTH_THRESHOLD;
   return Math.min(Math.max(n, MIN_HUB_BREADTH_THRESHOLD), MAX_HUB_BREADTH_THRESHOLD);
+}
+
+/**
+ * Days-of-silence threshold for the dormant-vs-active distinction.
+ * Defaults to DEFAULT_DORMANT_THRESHOLD_DAYS when omitted, and
+ * clamped to [MIN_DORMANT_THRESHOLD_DAYS, MAX_DORMANT_THRESHOLD_DAYS]
+ * so a malformed/hostile input can't classify every member as
+ * dormant (negative threshold) or none of them (gigantic threshold).
+ * Documented in the SysAdminDashboardInput.dormantThresholdDays SDL
+ * description.
+ */
+function clampDormantThresholdDays(input: number | null | undefined): number {
+  const n = input ?? DEFAULT_DORMANT_THRESHOLD_DAYS;
+  return Math.min(Math.max(n, MIN_DORMANT_THRESHOLD_DAYS), MAX_DORMANT_THRESHOLD_DAYS);
 }

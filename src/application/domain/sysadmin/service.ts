@@ -14,6 +14,7 @@ import {
   jstMonthStartOffset,
   jstNextMonthStart,
   percentChange,
+  truncateToJstDate,
 } from "@/application/domain/report/util";
 import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 
@@ -25,12 +26,31 @@ import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 export type SegmentThresholds = {
   tier1: number;
   tier2: number;
+  /**
+   * Minimum tenure required for tier1 / tier2 eligibility, expressed
+   * in calendar months for the operator-facing API but evaluated
+   * internally as `daysIn >= minMonthsIn × 30`. Filters out the
+   * short-tenure artifact where a brand new member with one donation
+   * gets `userSendRate = 1/1 = 1.0` and is auto-classified as habitual.
+   * `activeCount` and `passiveCount` are unaffected (they're tenure-
+   * independent by construction).
+   *
+   * The day-based check is intentional: monthsIn is calendar-month
+   * based and inflates a 2-day cross-month-boundary tenure to
+   * monthsIn = 2, which would silently pass `minMonthsIn = 2`. See
+   * `classifyMember` for the full reasoning.
+   */
+  minMonthsIn: number;
 };
 
 export const DEFAULT_SEGMENT_THRESHOLDS: SegmentThresholds = {
   tier1: 0.7,
   tier2: 0.4,
+  minMonthsIn: 1,
 };
+
+export const MIN_MIN_MONTHS_IN = 1;
+export const MAX_MIN_MONTHS_IN = 120;
 
 /**
  * Result of classifying a community's members against the supplied
@@ -61,6 +81,105 @@ export type StageBreakdown = {
   occasional: StageBucketStats;
   latent: StageBucketStats;
 };
+
+/**
+ * Tenure-bucket distribution of a community's members at asOf,
+ * classified on `daysIn` (JST calendar-day tenure). Buckets are
+ * mutually exclusive and exhaustive; the four counts always sum to
+ * the input `members.length`. Boundaries are intentionally
+ * day-based (not month-based) to side-step the GREATEST(1, ...)
+ * floor that `monthsIn` carries.
+ */
+export type TenureDistribution = {
+  lt1Month: number;
+  m1to3Months: number;
+  m3to12Months: number;
+  gte12Months: number;
+};
+
+/**
+ * Approximate days-per-month conversion used to translate the
+ * operator-facing `minMonthsIn` (calendar months) into the internal
+ * day-count check on `daysIn`. 30 is a deliberate approximation:
+ * matches the boundaries used by `tenureDistribution`'s daysIn
+ * buckets (lt1Month = daysIn < 30) so the stage classifier and the
+ * tenure-distribution chart agree on what "1 month" means.
+ */
+const DAYS_PER_MONTH_APPROX = 30;
+
+/**
+ * Single source of truth for "what stage is this member in", used by
+ * both `computeStageCounts` (cumulative semantics: tier1 ⊂ tier2) and
+ * `computeStageBreakdown` (disjoint buckets). Centralising the rules
+ * here prevents the two methods drifting when a new axis is added —
+ * the `minMonthsIn` floor was almost added to one and not the other
+ * during the issue #918 work.
+ *
+ * The tenure floor is checked against `daysIn`, not `monthsIn`,
+ * because monthsIn is calendar-month-based: a member who joined on
+ * Jan 31 and is observed on Feb 1 has `monthsIn = 2` (2 calendar
+ * months touched) but only `daysIn = 2` (2 actual days). Using
+ * monthsIn here would let that 2-day member sail past a
+ * `minMonthsIn = 2` filter, defeating the artifact guard. daysIn
+ * with a 30 d/month approximation matches the `tenureDistribution`
+ * bucket semantics and treats both edges symmetrically.
+ *
+ * Classification:
+ *   latent      — never donated (donationOutMonths === 0)
+ *   habitual    — userSendRate >= tier1 AND daysIn >= minMonthsIn × 30
+ *   regular     — userSendRate >= tier2 AND daysIn >= minMonthsIn × 30
+ *                 (and not habitual, since we check tier1 first)
+ *   occasional  — donated, but either below tier2 OR below the
+ *                 tenure floor (the latter is the short-tenure
+ *                 artifact guard: a brand-new member who donated
+ *                 once cannot be elevated above occasional)
+ */
+export type MemberClassification = "habitual" | "regular" | "occasional" | "latent";
+
+export function classifyMember(
+  m: SysAdminMemberStatsRow,
+  thresholds: SegmentThresholds,
+): MemberClassification {
+  if (m.donationOutMonths === 0) return "latent";
+  // tier1 / tier2 require BOTH the rate threshold AND the tenure
+  // floor. A donating-but-too-new member falls through to
+  // "occasional" — they've shown some activity, but we don't have
+  // enough tenure data to elevate their classification.
+  if (m.daysIn < thresholds.minMonthsIn * DAYS_PER_MONTH_APPROX) return "occasional";
+  if (m.userSendRate >= thresholds.tier1) return "habitual";
+  if (m.userSendRate >= thresholds.tier2) return "regular";
+  return "occasional";
+}
+
+/**
+ * "Has this member donated before but gone quiet?" — the
+ * latent-vs-dormant distinction operators care about for choosing
+ * between onboarding and re-engagement interventions.
+ *
+ * False for never-donated members (latent / passive), regardless
+ * of how long ago they joined. True only when the member's most
+ * recent DONATION is strictly older than the threshold; equality
+ * is treated as "still active" so a member who donated exactly
+ * `dormantThresholdDays` days ago does NOT qualify.
+ *
+ * The cutoff is computed off the JST-truncated asOf so the
+ * comparison stays deterministic regardless of the request's
+ * wall-clock time. `lastDonationDay` is a JST calendar day at
+ * UTC 00:00 (PostgreSQL `::date` cast); truncating asOf the same
+ * way is the only way the strict-less-than has a stable boundary
+ * — without it, a member who donated on the cutoff day would be
+ * (incorrectly) dormant whenever `asOf` carried a nonzero
+ * time-of-day component (i.e. essentially always in production).
+ */
+export function isDormant(
+  m: SysAdminMemberStatsRow,
+  asOf: Date,
+  dormantThresholdDays: number,
+): boolean {
+  if (m.donationOutMonths === 0 || m.lastDonationDay === null) return false;
+  const cutoff = addDays(truncateToJstDate(asOf), -dormantThresholdDays);
+  return m.lastDonationDay < cutoff;
+}
 
 export type WeeklyRetentionPoint = {
   weekStart: Date;
@@ -195,6 +314,17 @@ export const MIN_HUB_BREADTH_THRESHOLD = 1;
 export const MAX_HUB_BREADTH_THRESHOLD = 1000;
 
 /**
+ * Days-of-silence threshold above which an ever-donated member is
+ * classified as "dormant" (= sender who went quiet, distinct from
+ * the never-donated "latent" cohort). Default 30 (≈ one month).
+ * Effective range 1..365 enforced at the usecase boundary the same
+ * way `windowDays` is.
+ */
+export const DEFAULT_DORMANT_THRESHOLD_DAYS = 30;
+export const MIN_DORMANT_THRESHOLD_DAYS = 1;
+export const MAX_DORMANT_THRESHOLD_DAYS = 365;
+
+/**
  * Cap on how many DB round-trips the retention-trend and cohort-
  * retention orchestrators will keep in flight at once. At the MAX
  * windowMonths (36) those loops otherwise fan out to ~310 concurrent
@@ -262,21 +392,30 @@ export default class SysAdminService {
     members: SysAdminMemberStatsRow[],
     thresholds: SegmentThresholds,
   ): StageCounts {
-    const total = members.length;
     let tier1Count = 0;
     let tier2Count = 0;
     let activeCount = 0;
     let passiveCount = 0;
+    // Rules live in classifyMember so they stay in lockstep with
+    // computeStageBreakdown. The translation from disjoint
+    // classifications to the cumulative tier counts (habitual is also
+    // tier1 AND tier2; regular is also tier2) happens here.
     for (const m of members) {
-      if (m.donationOutMonths === 0) {
+      const c = classifyMember(m, thresholds);
+      if (c === "latent") {
         passiveCount++;
         continue;
       }
       activeCount++;
-      if (m.userSendRate >= thresholds.tier1) tier1Count++;
-      if (m.userSendRate >= thresholds.tier2) tier2Count++;
+      if (c === "habitual") {
+        tier1Count++;
+        tier2Count++;
+      } else if (c === "regular") {
+        tier2Count++;
+      }
+      // "occasional" contributes only to activeCount.
     }
-    return { total, tier1Count, tier2Count, activeCount, passiveCount };
+    return { total: members.length, tier1Count, tier2Count, activeCount, passiveCount };
   }
 
   /**
@@ -292,22 +431,19 @@ export default class SysAdminService {
     const totalMembers = members.length;
     const totalPointsOut = members.reduce<bigint>((acc, m) => acc + m.totalPointsOut, BigInt(0));
 
-    const buckets = {
-      habitual: [] as SysAdminMemberStatsRow[],
-      regular: [] as SysAdminMemberStatsRow[],
-      occasional: [] as SysAdminMemberStatsRow[],
-      latent: [] as SysAdminMemberStatsRow[],
+    const buckets: Record<MemberClassification, SysAdminMemberStatsRow[]> = {
+      habitual: [],
+      regular: [],
+      occasional: [],
+      latent: [],
     };
+    // Bucket key === classification, so this collapses to a single
+    // dispatch per row. Disjoint semantics (a habitual member is NOT
+    // also in regular) come naturally from the classifyMember
+    // contract; the translation to cumulative counts lives in
+    // computeStageCounts.
     for (const m of members) {
-      if (m.donationOutMonths === 0) {
-        buckets.latent.push(m);
-      } else if (m.userSendRate >= thresholds.tier1) {
-        buckets.habitual.push(m);
-      } else if (m.userSendRate >= thresholds.tier2) {
-        buckets.regular.push(m);
-      } else {
-        buckets.occasional.push(m);
-      }
+      buckets[classifyMember(m, thresholds)].push(m);
     }
 
     const summarize = (rows: SysAdminMemberStatsRow[]): StageBucketStats => {
@@ -360,6 +496,58 @@ export default class SysAdminService {
       // naturally without a special case.
       latent: summarize(buckets.latent),
     };
+  }
+
+  /**
+   * Bucket members into 4 mutually exclusive tenure ranges by their
+   * `daysIn` (JST calendar-day tenure). Backs
+   * `SysAdminCommunityOverview.tenureDistribution` so the L1
+   * dashboard can render community age structure (new-heavy,
+   * established, etc.) without an L2 round-trip per community.
+   *
+   * Boundaries (left-inclusive, right-exclusive):
+   *   < 30 days       → lt1Month
+   *   [30, 90)        → m1to3Months
+   *   [90, 365)       → m3to12Months
+   *   >= 365          → gte12Months
+   *
+   * Day-based (not month-based) so a brand-new member never gets
+   * lifted into the "1 month" bucket purely because of `monthsIn`'s
+   * GREATEST(1, ...) floor.
+   */
+  computeTenureDistribution(members: SysAdminMemberStatsRow[]): TenureDistribution {
+    let lt1Month = 0;
+    let m1to3Months = 0;
+    let m3to12Months = 0;
+    let gte12Months = 0;
+    for (const m of members) {
+      if (m.daysIn < 30) lt1Month++;
+      else if (m.daysIn < 90) m1to3Months++;
+      else if (m.daysIn < 365) m3to12Months++;
+      else gte12Months++;
+    }
+    return { lt1Month, m1to3Months, m3to12Months, gte12Months };
+  }
+
+  /**
+   * Count of members who donated at some point in the past but
+   * whose most recent DONATION is older than `dormantThresholdDays`.
+   * Excludes never-donated members (they're "latent" / passiveCount,
+   * not dormant — different intervention surface).
+   *
+   * Pure function over the member rows already fetched for the
+   * dashboard; no extra SQL.
+   */
+  computeDormantCount(
+    members: SysAdminMemberStatsRow[],
+    asOf: Date,
+    dormantThresholdDays: number,
+  ): number {
+    let dormant = 0;
+    for (const m of members) {
+      if (isDormant(m, asOf, dormantThresholdDays)) dormant++;
+    }
+    return dormant;
   }
 
   /**
