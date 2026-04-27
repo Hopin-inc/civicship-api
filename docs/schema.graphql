@@ -7,6 +7,25 @@ type AccumulatedPointView {
   walletId: String
 }
 
+type AdminReportSummaryConnection {
+  edges: [AdminReportSummaryEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type AdminReportSummaryEdge implements Edge {
+  cursor: String!
+  node: AdminReportSummaryRow
+}
+
+type AdminReportSummaryRow {
+  community: Community!
+  daysSinceLastPublish: Int
+  lastPublishedAt: Datetime
+  lastPublishedReport: Report
+  publishedCountLast90Days: Int!
+}
+
 union ApproveReportPayload = ApproveReportSuccess
 
 type ApproveReportSuccess {
@@ -1600,6 +1619,8 @@ enum PublishStatus {
 }
 
 type Query {
+  adminBrowseReports(communityId: ID, cursor: String, first: Int, publishedAfter: Datetime, publishedBefore: Datetime, status: ReportStatus, variant: ReportVariant): ReportsConnection!
+  adminReportSummary(cursor: String, first: Int): AdminReportSummaryConnection!
   article(id: ID!, permission: CheckCommunityPermissionInput!): Article
   articles(cursor: String, filter: ArticleFilterInput, first: Int, sort: ArticleSortInput): ArticlesConnection!
   cities(cursor: String, filter: CitiesInput, first: Int, sort: CitiesSortInput): CitiesConnection!
@@ -1642,6 +1663,8 @@ type Query {
   report(id: ID!): Report
   reportTemplate(communityId: ID, variant: ReportVariant!): ReportTemplate
   reportTemplateStats(variant: ReportVariant!, version: Int): ReportTemplateStats!
+  reportTemplateStatsBreakdown(cursor: String, first: Int = 20, includeInactive: Boolean = false, kind: ReportTemplateKind = GENERATION, variant: ReportVariant!, version: Int): ReportTemplateStatsBreakdownConnection!
+  reportTemplates(communityId: ID, includeInactive: Boolean = false, kind: ReportTemplateKind = GENERATION, variant: ReportVariant!): [ReportTemplate!]!
   reports(communityId: ID!, cursor: String, first: Int, permission: CheckCommunityPermissionInput!, status: ReportStatus, variant: ReportVariant): ReportsConnection!
   reservation(id: ID!): Reservation
   reservationHistories(cursor: String, filter: ReservationHistoryFilterInput, first: Int, sort: ReservationHistorySortInput): ReservationHistoriesConnection!
@@ -1790,6 +1813,7 @@ type ReportTemplate {
   id: ID!
   isActive: Boolean!
   isEnabled: Boolean!
+  kind: ReportTemplateKind!
   maxTokens: Int!
   model: String!
   scope: ReportTemplateScope!
@@ -1802,6 +1826,11 @@ type ReportTemplate {
   userPromptTemplate: String!
   variant: ReportVariant!
   version: Int!
+}
+
+enum ReportTemplateKind {
+  GENERATION
+  JUDGE
 }
 
 enum ReportTemplateScope {
@@ -1817,6 +1846,33 @@ type ReportTemplateStats {
   judgeHumanCorrelation: Float
   variant: ReportVariant!
   version: Int
+}
+
+type ReportTemplateStatsBreakdownConnection {
+  edges: [ReportTemplateStatsBreakdownEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ReportTemplateStatsBreakdownEdge implements Edge {
+  cursor: String!
+  node: ReportTemplateStatsBreakdownRow
+}
+
+type ReportTemplateStatsBreakdownRow {
+  avgJudgeScore: Float
+  avgRating: Float
+  correlationWarning: Boolean!
+  experimentKey: String
+  feedbackCount: Int!
+  isActive: Boolean!
+  isEnabled: Boolean!
+  judgeHumanCorrelation: Float
+  kind: ReportTemplateKind!
+  scope: ReportTemplateScope!
+  templateId: ID!
+  trafficWeight: Int!
+  version: Int!
 }
 
 enum ReportVariant {
