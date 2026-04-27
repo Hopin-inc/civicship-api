@@ -446,6 +446,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     communityId: string,
     asOf: Date,
     windowMonths: number,
+    hubBreadthThreshold: number,
   ): Promise<SysAdminMonthlyActivityRow[]> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<
@@ -459,6 +460,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           donation_chain_tx_count: bigint;
           dormant_count_end_of_month: number;
           returned_members: number | null;
+          hub_member_count: number;
         }[]
       >`
         WITH month_starts AS (
@@ -657,6 +659,62 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND mv."donation_out_count" > 0
           GROUP BY mb.month_start
         ),
+        hub_per_month AS (
+          -- Per (month_start, sender) DISTINCT recipient count over
+          -- the trailing 28-day window ending at member_upper.
+          -- Mirrors the L1 findWindowHubMemberCount query exactly
+          -- (cross-community + burn-target guards via tw.user_id
+          -- presence, self-donation excluded by tw.user_id <>
+          -- fw.user_id, recipient-community guard via
+          -- tw.community_id) but cross-joined with month_bounds so
+          -- each transaction is evaluated against every month-end
+          -- window it falls into. The 28-day window length is
+          -- intentionally fixed (not request-driven) so monthly
+          -- hub counts stay comparable across requests — same
+          -- precedent as dormant_counts' fixed 30-day window.
+          --
+          -- Each transaction's created_at can satisfy at most two
+          -- consecutive months' windows because windowDays (28) is
+          -- shorter than any month-pair span (>= 59 days), so the
+          -- cross join's row volume is bounded by
+          -- ~2 × |DONATION tx in window| rather than N × |DONATION tx|.
+          --
+          -- Cannot reuse mv_user_transaction_daily here for the
+          -- same reason as the L1 path: the MV's per-day
+          -- unique_counterparties does not compose into a
+          -- window-wide DISTINCT under SUM (same recipient across
+          -- multiple days double-counts).
+          SELECT
+            mb.month_start,
+            fw."user_id" AS user_id,
+            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
+          FROM month_bounds mb
+          INNER JOIN "t_transactions" t
+            ON t."reason" = 'DONATION'
+            AND t."created_at" >= ((mb.member_upper - 28) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND t."created_at" <  (mb.member_upper          AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ${communityId}
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."user_id" IS NOT NULL
+            AND tw."user_id" <> fw."user_id"
+            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
+          GROUP BY mb.month_start, fw."user_id"
+        ),
+        hub_counts AS (
+          -- Apply the threshold filter and count distinct hub
+          -- members per month. Members not in hub_per_month
+          -- (= no DONATION-out at all in the window) are by
+          -- construction below threshold and correctly excluded.
+          SELECT
+            month_start,
+            COUNT(*)::int AS hub_member_count
+          FROM hub_per_month
+          WHERE unique_recipients >= ${hubBreadthThreshold}
+          GROUP BY month_start
+        ),
         first_month AS (
           -- Earliest month in the series. The CASE in the final
           -- SELECT uses this to force returned_members to NULL on
@@ -677,13 +735,15 @@ export default class SysAdminRepository implements ISysAdminRepository {
           CASE
             WHEN mb.month_start = fm.first_start THEN NULL
             ELSE COALESCE(rc.returned_count, 0)::int
-          END AS returned_members
+          END AS returned_members,
+          COALESCE(hub.hub_member_count, 0)::int AS hub_member_count
         FROM month_bounds mb
         LEFT JOIN senders s USING (month_start)
         LEFT JOIN tx_totals tt USING (month_start)
         LEFT JOIN member_counts mc USING (month_start)
         LEFT JOIN dormant_counts dc USING (month_start)
         LEFT JOIN returned_counts rc USING (month_start)
+        LEFT JOIN hub_counts hub USING (month_start)
         CROSS JOIN first_month fm
         ORDER BY mb.month_start ASC
       `;
@@ -697,6 +757,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
         donationChainTxCount: r.donation_chain_tx_count,
         dormantCountEndOfMonth: r.dormant_count_end_of_month,
         returnedMembers: r.returned_members,
+        hubMemberCount: r.hub_member_count,
       }));
     });
   }
