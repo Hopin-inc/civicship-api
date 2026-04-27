@@ -20,6 +20,10 @@ CREATE INDEX "idx_t_communities_last_published_report_at"
 
 -- Backfill: 各 community で status=PUBLISHED の最新レポートを引き、新規列に流し込む。
 -- DISTINCT ON で per-community に 1 行だけ抽出する Postgres 流の書き方。
+-- "id" DESC は per-community での ties (同 ms バッチ publish) に対する
+-- tie-breaker。recalculateCommunityLastPublished 側の SELECT と同じ
+-- 順序にすることで「migration 適用直後の state == 任意の publish 後の
+-- state」になり、追加の reconciliation を考えなくてよい。
 UPDATE "t_communities" c
 SET
   "last_published_report_at" = sub."max_published_at",
@@ -31,6 +35,6 @@ FROM (
     "published_at" AS "max_published_at"
   FROM "t_reports"
   WHERE "status" = 'PUBLISHED' AND "published_at" IS NOT NULL
-  ORDER BY "community_id", "published_at" DESC
+  ORDER BY "community_id", "published_at" DESC, "id" DESC
 ) sub
 WHERE c."id" = sub."community_id";

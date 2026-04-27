@@ -1318,7 +1318,11 @@ export default class ReportRepository implements IReportRepository {
         WHERE "community_id" = ${communityId}
           AND "status" = 'PUBLISHED'
           AND "published_at" IS NOT NULL
-        ORDER BY "published_at" DESC NULLS LAST
+        -- "id" DESC tie-breaks ties on published_at (e.g. batched
+        -- publishes inside the same millisecond) so two replays of
+        -- the recalc against the same DB state always pick the same
+        -- row, not whichever happens to scan first.
+        ORDER BY "published_at" DESC NULLS LAST, "id" DESC
         LIMIT 1
       ) sub
       WHERE c."id" = ${communityId}
