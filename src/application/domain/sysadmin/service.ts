@@ -89,13 +89,43 @@ export type StageBreakdown = {
  * the input `members.length`. Boundaries are intentionally
  * day-based (not month-based) to side-step the GREATEST(1, ...)
  * floor that `monthsIn` carries.
+ *
+ * `monthlyHistogram` carries the L3 deep-dive breakdown into 13
+ * monthly buckets (0..12, where 12 aggregates 12+ months). Same
+ * member set, finer granularity. The four coarse buckets remain
+ * authoritative for L1 / L2 display; the histogram is additional.
  */
+export type TenureHistogramBucket = {
+  monthsIn: number;
+  count: number;
+};
+
 export type TenureDistribution = {
   lt1Month: number;
   m1to3Months: number;
   m3to12Months: number;
   gte12Months: number;
+  monthlyHistogram: TenureHistogramBucket[];
 };
+
+/** Number of monthly histogram buckets for the L3 deep-dive
+ * (`monthsIn` 0..12; 12 aggregates 12+). Pinned as a constant so
+ * the service computation and the test fixtures agree on the array
+ * shape. */
+export const TENURE_MONTHLY_BUCKETS = 13;
+
+/** Maximum chain-depth bucket (inclusive). The L3
+ * chainDepthDistribution emits depth 1..N where N aggregates
+ * `chain_depth >= N`. 5 chosen as a starting point; revisit if
+ * real-data inspection of `maxChainDepthAllTime` shows meaningful
+ * population at the ceiling. */
+export const CHAIN_DEPTH_MAX_BUCKET = 5;
+
+/** Day-grain window for the cohort funnel's "activated within 30
+ * days" stage. Pinned as a constant so the value can't drift apart
+ * from the SDL contract on `SysAdminCohortFunnelPoint.activatedD30`
+ * via a bare magic number in the ms math. */
+export const COHORT_ACTIVATION_WINDOW_DAYS = 30;
 
 /**
  * Approximate days-per-month conversion used to translate the
@@ -196,6 +226,20 @@ export type MonthlyCohortPoint = {
   retentionM1: number | null;
   retentionM3: number | null;
   retentionM6: number | null;
+};
+
+/**
+ * One cohort's funnel progression. Backs
+ * `SysAdminCommunityDetailPayload.cohortFunnel`. Computed by
+ * `SysAdminService.computeCohortFunnel` over the already-fetched
+ * `members` set; no separate repository call.
+ */
+export type SysAdminCohortFunnelPoint = {
+  cohortMonth: Date;
+  acquired: number;
+  activatedD30: number;
+  repeated: number;
+  habitual: number;
 };
 
 export type SortField = "SEND_RATE" | "MONTHS_IN" | "DONATION_OUT_MONTHS" | "TOTAL_POINTS_OUT";
@@ -531,13 +575,42 @@ export default class SysAdminService {
     let m1to3Months = 0;
     let m3to12Months = 0;
     let gte12Months = 0;
+    // monthlyHistogram pre-allocates all 13 buckets (0..12) so the
+    // returned array always has a stable shape regardless of input.
+    // The 12 bucket aggregates daysIn >= 365 (= 12 calendar months
+    // by the same threshold the coarse `gte12Months` uses) so the
+    // two stay consistent: any member counted in `gte12Months` is
+    // also in histogram[12], and vice versa. Buckets 0..11 cover
+    // the [0, 365) range — bucket k = floor(daysIn / 30), clamped
+    // to 11 so 360..364 days do NOT silently land in the 12+
+    // aggregator (otherwise they'd be in histogram[12] but coarse
+    // `m3to12Months`, an asymmetry that would confuse downstream
+    // consumers stacking the histogram against the coarse bars).
+    const monthlyHistogram: TenureHistogramBucket[] = Array.from(
+      { length: TENURE_MONTHLY_BUCKETS },
+      (_, monthsIn) => ({ monthsIn, count: 0 }),
+    );
     for (const m of members) {
       if (m.daysIn < 30) lt1Month++;
       else if (m.daysIn < 90) m1to3Months++;
       else if (m.daysIn < 365) m3to12Months++;
       else gte12Months++;
+      // Members with daysIn < 0 (data anomaly — shouldn't occur
+      // because findMemberStats clamps daysIn to >= 1) are
+      // already counted in lt1Month above (daysIn < 0 < 30), so
+      // they also flow into histogram bucket 0 via the
+      // Math.max(0, ...) clamp below. Without that clamp,
+      // floor(negative / 30) would land in a negative array
+      // index and silently corrupt the histogram. Counting both
+      // representations keeps the documented derivation
+      // invariant (lt1Month == histogram[0]) intact.
+      const bucket =
+        m.daysIn >= 365
+          ? TENURE_MONTHLY_BUCKETS - 1
+          : Math.min(Math.max(Math.floor(m.daysIn / 30), 0), TENURE_MONTHLY_BUCKETS - 2);
+      monthlyHistogram[bucket].count++;
     }
-    return { lt1Month, m1to3Months, m3to12Months, gte12Months };
+    return { lt1Month, m1to3Months, m3to12Months, gte12Months, monthlyHistogram };
   }
 
   /**
@@ -645,6 +718,92 @@ export default class SysAdminService {
 
   async getMemberStats(ctx: IContext, communityId: string, asOf: Date) {
     return this.repository.findMemberStats(ctx, communityId, asOf);
+  }
+
+  async getChainDepthDistribution(ctx: IContext, communityId: string, asOf: Date) {
+    return this.repository.findChainDepthDistribution(
+      ctx,
+      communityId,
+      asOf,
+      CHAIN_DEPTH_MAX_BUCKET,
+    );
+  }
+
+  /**
+   * Per-cohort send-funnel progression for the L3 deep-dive. Pure
+   * function over `members` (already-fetched in the L2 usecase) +
+   * `asOf` + `windowMonths` + `thresholds` — no extra DB scan.
+   *
+   * Cohort = JST month start of the member's `joinedAt`. Members
+   * outside the trailing windowMonths range are dropped. Stage
+   * classification:
+   *
+   *   acquired      — every cohort member counts
+   *   activatedD30  — has firstDonationDay AND
+   *                   firstDonationDay - joinedAt < 30 days
+   *   repeated      — donationOutMonths >= 2
+   *   habitual      — classifyMember(...) === "habitual"
+   *
+   * activatedD30 / repeated / habitual are JOINED-at-asOf scoped
+   * because `members` is itself JOINED-at-asOf (findMemberStats
+   * applies the membership filter).
+   */
+  computeCohortFunnel(
+    members: SysAdminMemberStatsRow[],
+    asOf: Date,
+    windowMonths: number,
+    thresholds: SegmentThresholds,
+  ): SysAdminCohortFunnelPoint[] {
+    // Build the cohort-month axis: [asOf month - (windowMonths-1), ..., asOf month].
+    // Same orientation as `monthlyActivityTrend` (newest last) so the
+    // client can render a single x-axis across both series.
+    const cohortKeys: Date[] = [];
+    for (let i = windowMonths - 1; i >= 0; i--) {
+      cohortKeys.push(jstMonthStartOffset(asOf, -i));
+    }
+    const buckets = new Map<number, SysAdminCohortFunnelPoint>();
+    for (const m of cohortKeys) {
+      buckets.set(m.getTime(), {
+        cohortMonth: m,
+        acquired: 0,
+        activatedD30: 0,
+        repeated: 0,
+        habitual: 0,
+      });
+    }
+    const earliest = cohortKeys[0]?.getTime() ?? 0;
+    const latest = cohortKeys[cohortKeys.length - 1]?.getTime() ?? 0;
+    const activationCutoffMs = COHORT_ACTIVATION_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    for (const member of members) {
+      const cohort = jstMonthStart(member.joinedAt).getTime();
+      if (cohort < earliest || cohort > latest) continue;
+      const bucket = buckets.get(cohort);
+      if (!bucket) continue;
+      bucket.acquired++;
+      // Both sides are JST-day grain: firstDonationDay is already
+      // a JST date encoded at UTC midnight (see findMemberStats),
+      // and joinedAt is truncated to its JST date here so the
+      // "30 days within join" comparison is symmetric. Without
+      // truncation the joinedAt time-of-day component skewed the
+      // comparison by up to ±9h (JST offset), giving false
+      // positives / negatives at the 30-day boundary. The day-
+      // grain comparison matches the SDL "within 30 days of join"
+      // wording the operator UI exposes.
+      if (
+        member.firstDonationDay !== null &&
+        member.firstDonationDay.getTime() - truncateToJstDate(member.joinedAt).getTime() <
+          activationCutoffMs
+      ) {
+        bucket.activatedD30++;
+      }
+      if (member.donationOutMonths >= 2) {
+        bucket.repeated++;
+      }
+      if (classifyMember(member, thresholds) === "habitual") {
+        bucket.habitual++;
+      }
+    }
+    return cohortKeys.map((k) => buckets.get(k.getTime())!);
   }
 
   async getMonthlyActivity(

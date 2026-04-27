@@ -2,6 +2,7 @@ import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
   SysAdminAllTimeTotalsRow,
+  SysAdminChainDepthBucketRow,
   SysAdminCommunityRow,
   SysAdminMemberStatsRow,
   SysAdminActivitySnapshotRow,
@@ -100,6 +101,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
           total_points_in: bigint;
           unique_donation_senders: number;
           last_donation_day: Date | null;
+          first_donation_day: Date | null;
+          joined_at: Date;
         }[]
       >`
         WITH asof_jst AS (
@@ -400,7 +403,19 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- (= the member never donated, the latent case). The service
           -- layer derives dormantCount from this without re-scanning
           -- t_transactions.
-          MAX(da.jst_day) AS last_donation_day
+          MAX(da.jst_day) AS last_donation_day,
+          -- MIN over the same per-day rows is the FIRST DONATION day,
+          -- powering the cohort funnel's activatedD30 stage in the
+          -- service layer (member is "activated within 30 days" iff
+          -- first_donation_day - joined_at < 30 days). Same NULL
+          -- semantic as last_donation_day for never-donated members.
+          MIN(da.jst_day) AS first_donation_day,
+          -- t_memberships.created_at exposed verbatim so the cohort
+          -- funnel can bucket members by their join month
+          -- (DATE_TRUNC at the JST timezone in service-side TS).
+          -- GROUP BY m."created_at" added below so the aggregate
+          -- doesn't collapse it.
+          m."created_at" AS joined_at
         FROM members m
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
         LEFT JOIN donation_activity da ON da.user_id = m."user_id"
@@ -408,7 +423,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
         LEFT JOIN donation_in_aggregates dia ON dia.user_id = m."user_id"
         LEFT JOIN donation_senders ds ON ds.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
-        GROUP BY m."user_id", mt.months_in, mt.days_in, u."name"
+        GROUP BY m."user_id", m."created_at", mt.months_in, mt.days_in, u."name"
         ORDER BY m."user_id"
       `;
       return rows.map((r) => ({
@@ -426,6 +441,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalPointsIn: r.total_points_in,
         uniqueDonationSenders: r.unique_donation_senders,
         lastDonationDay: r.last_donation_day,
+        firstDonationDay: r.first_donation_day,
+        joinedAt: r.joined_at,
       }));
     });
   }
@@ -1111,6 +1128,76 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalMembers: r.total_members,
         latestMonthDonationPoints: r.latest_month_donation_points,
       };
+    });
+  }
+
+  async findChainDepthDistribution(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+    maxBucketDepth: number,
+  ): Promise<SysAdminChainDepthBucketRow[]> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      // generate_series produces depth 1..maxBucketDepth so the
+      // returned array always has a stable shape (every bucket
+      // emitted, count = 0 for empty depths) regardless of
+      // community size or chain-population. The LEFT JOIN against
+      // the per-tx aggregation collapses chain_depth >=
+      // maxBucketDepth into the final bucket via LEAST.
+      //
+      // Sender-side guards mirror findWindowHubMemberCount:
+      // sender wallet must be in this community, and we filter to
+      // reason='DONATION'. No recipient-side or membership filter
+      // is applied because chainDepthDistribution describes the
+      // structure of the donation graph itself (how deep do
+      // chains propagate?), not the current member roster — a
+      // chain-depth-3 transaction from a now-departed member is
+      // still a real chain-depth-3 event in the historic graph,
+      // and excluding it would distort the histogram's shape.
+      //
+      // The asof_bound CTE clamps t.created_at at the JST-day-end
+      // following asOf (= asOf JST day + 1 at JST midnight,
+      // expressed as naive UTC). Mirrors the upper-bound pattern
+      // used by findMemberStats / findAllTimeTotals so
+      // maxChainDepthAllTime (read from findAllTimeTotals) and
+      // chainDepthDistribution agree on which transactions are
+      // "all-time as of asOf" — without this clamp a transaction
+      // landing between asOf and JST-day-end would inflate
+      // maxChainDepthAllTime but be missed by the histogram, an
+      // off-by-one inconsistency within a single L2 payload.
+      const rows = await tx.$queryRaw<{ depth: number; count: number }[]>`
+        WITH asof_bound AS (
+          SELECT
+            (
+              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+            ) AS upper_ts
+        ),
+        bucket_keys AS (
+          SELECT generate_series(1, ${maxBucketDepth}::int) AS depth
+        ),
+        depth_counts AS (
+          SELECT
+            LEAST(t."chain_depth", ${maxBucketDepth}::int) AS depth,
+            COUNT(*)::int AS n
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ${communityId}
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."chain_depth" >= 1
+            AND t."created_at" < ab.upper_ts
+          GROUP BY LEAST(t."chain_depth", ${maxBucketDepth}::int)
+        )
+        SELECT
+          bk.depth AS depth,
+          COALESCE(dc.n, 0)::int AS count
+        FROM bucket_keys bk
+        LEFT JOIN depth_counts dc USING (depth)
+        ORDER BY bk.depth ASC
+      `;
+      return rows.map((r) => ({ depth: r.depth, count: r.count }));
     });
   }
 }

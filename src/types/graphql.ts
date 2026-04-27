@@ -2986,6 +2986,69 @@ export type GqlSubmitReportFeedbackSuccess = {
   feedback: GqlReportFeedback;
 };
 
+/**
+ * One bucket of the all-time DONATION chain-depth histogram. See
+ * `SysAdminCommunityDetailPayload.chainDepthDistribution`.
+ */
+export type GqlSysAdminChainDepthBucket = {
+  __typename?: 'SysAdminChainDepthBucket';
+  /**
+   * Number of all-time DONATION transactions whose `chain_depth`
+   * falls into this bucket. Always non-negative.
+   */
+  count: Scalars['Int']['output'];
+  /**
+   * Chain-depth bucket key. Range 1..5; the 5 bucket aggregates
+   * `chain_depth >= 5`. See `SysAdminCommunitySummaryCard
+   * .maxChainDepthAllTime` for the underlying semantic.
+   */
+  depth: Scalars['Int']['output'];
+};
+
+/**
+ * One cohort's funnel progression. See
+ * `SysAdminCommunityDetailPayload.cohortFunnel` for the stage
+ * semantics and the JOINED-at-asOf scoping rule.
+ */
+export type GqlSysAdminCohortFunnelPoint = {
+  __typename?: 'SysAdminCohortFunnelPoint';
+  /**
+   * Cohort size: number of JOINED memberships whose `created_at`
+   * falls within this cohort month. The funnel's entry stage —
+   * the denominator the client divides downstream stages by to
+   * derive percentages.
+   */
+  acquired: Scalars['Int']['output'];
+  /**
+   * Of the cohort, members who sent at least one DONATION within
+   * 30 days of their join (per-member, measured from each
+   * individual's `created_at` rather than a calendar-clamped
+   * window). The "first-30-day activation" funnel stage.
+   */
+  activatedD30: Scalars['Int']['output'];
+  /**
+   * JST first day of the cohort's entry month, e.g.
+   * 2025-10-01T00:00+09:00. UTC-encoded at JST midnight, same
+   * convention as `SysAdminMonthlyActivityPoint.month` and
+   * `SysAdminCohortRetentionPoint.cohortMonth`.
+   */
+  cohortMonth: Scalars['Datetime']['output'];
+  /**
+   * Of the cohort, members currently in the habitual segment
+   * (`userSendRate >= segmentThresholds.tier1` AND tenure floor).
+   * THRESHOLD-DEPENDENT — see the parent field's doc.
+   */
+  habitual: Scalars['Int']['output'];
+  /**
+   * Of the cohort, members who sent DONATION in >= 2 distinct JST
+   * months as of asOf. The "came back at least once" stage.
+   * Cumulative — once a member has 2+ donation months in their
+   * history they stay counted in this stage even if they later go
+   * quiet.
+   */
+  repeated: Scalars['Int']['output'];
+};
+
 /** One entry-month cohort's retention curve. */
 export type GqlSysAdminCohortRetentionPoint = {
   __typename?: 'SysAdminCohortRetentionPoint';
@@ -3085,6 +3148,60 @@ export type GqlSysAdminCommunityDetailPayload = {
   alerts: GqlSysAdminCommunityAlerts;
   /** As-of timestamp echoed back. */
   asOf: Scalars['Datetime']['output'];
+  /**
+   * Distribution of DONATION `chain_depth` values across all-time
+   * DONATION transactions in this community. Each bucket counts
+   * distinct DONATION transactions whose `chain_depth` falls into
+   * the bucket key (see `SysAdminCommunitySummaryCard.maxChainDepthAllTime`
+   * for the depth semantic — depth 1 is a root donation, depth N+1
+   * means the sender's most recent received DONATION had depth N).
+   *
+   * Buckets are `{depth: 1..5, count}`; the depth-5 bucket
+   * aggregates all transactions with `chain_depth >= 5`. Buckets
+   * are returned in ascending depth order, with every bucket
+   * emitted (count = 0 for depths with no transactions) so the
+   * client can render a contiguous histogram axis without
+   * zero-padding logic. Adjust the ceiling upward (e.g., to 10+)
+   * in a follow-up if real-data inspection of `maxChainDepthAllTime`
+   * shows meaningful population in the 5+ bucket.
+   *
+   * Powers the L3 "/network" chain-depth histogram: visualizes
+   * whether donations propagate deeply (multi-hop reciprocity, tail
+   * populated) or shallowly (one-shot direct gifts, mass at depth 1).
+   */
+  chainDepthDistribution: Array<GqlSysAdminChainDepthBucket>;
+  /**
+   * Per-cohort funnel progression for the L3 "/activity" deep-dive.
+   * One entry per JST entry-month within the trailing `windowMonths`
+   * range, returned in ascending order (newest cohort last). Stages
+   * match the L2 send-funnel structure:
+   *
+   *   acquisition  — cohort size at entry (JOINED memberships
+   *                  created during the cohort month)
+   *   activatedD30 — cohort members who sent >= 1 DONATION within
+   *                  30 days of their join (per-member, not
+   *                  calendar-clamped)
+   *   repeated     — cohort members who sent DONATION in >= 2
+   *                  distinct JST months (cumulative as of asOf)
+   *   habitual     — cohort members currently in the habitual
+   *                  segment (`userSendRate >= segmentThresholds
+   *                  .tier1` AND tenure floor)
+   *
+   * ⚠ The `habitual` stage is THRESHOLD-DEPENDENT: it is derived
+   * from the request's `segmentThresholds.tier1` (default 0.7),
+   * same behaviour as `stages.habitual` and the L2 habitual count
+   * card. Cross-request comparisons of the funnel's last stage
+   * require matching threshold inputs. The `acquisition`,
+   * `activatedD30`, and `repeated` stages are threshold-
+   * independent by construction.
+   *
+   * All counts are JOINED-at-asOf scoped — a cohort member who
+   * later left the community is excluded from `activatedD30` /
+   * `repeated` / `habitual` even if they donated during the
+   * measurement window. Same membership filter as `dormantCount`
+   * / L1 `senderCount` / L2 monthly `hubMemberCount`.
+   */
+  cohortFunnel: Array<GqlSysAdminCohortFunnelPoint>;
   /**
    * One entry per entry month (length <= windowMonths), newest last.
    * `retentionM*` fields are null when the cohort is empty or too recent.
@@ -3451,6 +3568,21 @@ export type GqlSysAdminMemberRow = {
   donationOutDays: Scalars['Int']['output'];
   /** Distinct months with at least one DONATION out. */
   donationOutMonths: Scalars['Int']['output'];
+  /**
+   * JST date (UTC-encoded at JST midnight) of this member's most
+   * recent DONATION out in this community. null when the member has
+   * never sent a DONATION (= latent on the sender axis).
+   *
+   * Powers the L3 "/members" dormancy list: clients sort dormant
+   * members by `lastDonationAt ASC` to surface the longest-quiet
+   * senders first, and compute days-since-last-donation as
+   * `(asOf - lastDonationAt) / 1 day` for the per-row badge. Same
+   * underlying signal as `dormantCount`'s threshold check
+   * (`MAX(donation.created_at) < asOf - dormantThresholdDays`),
+   * exposed as the raw timestamp so the client can derive multiple
+   * derived views without a server-side recomputation per request.
+   */
+  lastDonationAt?: Maybe<Scalars['Datetime']['output']>;
   /** Tenure in JST calendar months (floor, minimum 1). */
   monthsIn: Scalars['Int']['output'];
   /** User display name (users.name). null when the user has no name set. */
@@ -3799,6 +3931,45 @@ export type GqlSysAdminTenureDistribution = {
   m1to3Months: Scalars['Int']['output'];
   /** Members with `90 <= daysIn < 365` — established members. */
   m3to12Months: Scalars['Int']['output'];
+  /**
+   * Detailed monthly histogram for the L3 tenure deep-dive.
+   *
+   * Each entry counts currently-JOINED members whose tenure
+   * (`floor(daysIn / 30)`) falls into the bucket. The 12 bucket
+   * aggregates all members with tenure of 12 months or longer.
+   * Returned in ascending bucket order (`monthsIn` 0..12), with
+   * every bucket emitted (count = 0 for buckets with no members)
+   * so the client can render a contiguous histogram axis without
+   * zero-padding.
+   *
+   * Sum of `count` equals `totalMembers` minus members with a
+   * negative tenure (data anomaly — should be impossible because
+   * `daysIn` is floor-1-clamped at the SQL boundary, but the
+   * contract notes the exclusion explicitly so the invariant is
+   * documented).
+   *
+   * The existing 4 coarse buckets (`lt1Month` / `m1to3Months` /
+   * `m3to12Months` / `gte12Months`) remain for L1 / L2 callers; the
+   * monthly histogram is additional, not a replacement.
+   */
+  monthlyHistogram: Array<GqlSysAdminTenureHistogramBucket>;
+};
+
+/**
+ * One bucket of the L3 tenure histogram. See
+ * `SysAdminTenureDistribution.monthlyHistogram`.
+ */
+export type GqlSysAdminTenureHistogramBucket = {
+  __typename?: 'SysAdminTenureHistogramBucket';
+  /** Number of currently-JOINED members in this bucket. */
+  count: Scalars['Int']['output'];
+  /**
+   * Tenure in JST calendar months, computed as `floor(daysIn / 30)`.
+   * Range 0..12. The 12 bucket aggregates all members with tenure
+   * of 12 months or longer; values 0..11 represent exact monthly
+   * buckets.
+   */
+  monthsIn: Scalars['Int']['output'];
 };
 
 /**
@@ -5329,6 +5500,8 @@ export type GqlResolversTypes = ResolversObject<{
   SubmitReportFeedbackInput: GqlSubmitReportFeedbackInput;
   SubmitReportFeedbackPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['SubmitReportFeedbackPayload']>;
   SubmitReportFeedbackSuccess: ResolverTypeWrapper<Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: GqlResolversTypes['ReportFeedback'] }>;
+  SysAdminChainDepthBucket: ResolverTypeWrapper<GqlSysAdminChainDepthBucket>;
+  SysAdminCohortFunnelPoint: ResolverTypeWrapper<GqlSysAdminCohortFunnelPoint>;
   SysAdminCohortRetentionPoint: ResolverTypeWrapper<GqlSysAdminCohortRetentionPoint>;
   SysAdminCommunityAlerts: ResolverTypeWrapper<GqlSysAdminCommunityAlerts>;
   SysAdminCommunityDetailInput: GqlSysAdminCommunityDetailInput;
@@ -5349,6 +5522,7 @@ export type GqlResolversTypes = ResolversObject<{
   SysAdminStageBucket: ResolverTypeWrapper<GqlSysAdminStageBucket>;
   SysAdminStageDistribution: ResolverTypeWrapper<GqlSysAdminStageDistribution>;
   SysAdminTenureDistribution: ResolverTypeWrapper<GqlSysAdminTenureDistribution>;
+  SysAdminTenureHistogramBucket: ResolverTypeWrapper<GqlSysAdminTenureHistogramBucket>;
   SysAdminUserListFilter: GqlSysAdminUserListFilter;
   SysAdminUserListSort: GqlSysAdminUserListSort;
   SysAdminUserSortField: GqlSysAdminUserSortField;
@@ -5735,6 +5909,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   SubmitReportFeedbackInput: GqlSubmitReportFeedbackInput;
   SubmitReportFeedbackPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['SubmitReportFeedbackPayload'];
   SubmitReportFeedbackSuccess: Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: GqlResolversParentTypes['ReportFeedback'] };
+  SysAdminChainDepthBucket: GqlSysAdminChainDepthBucket;
+  SysAdminCohortFunnelPoint: GqlSysAdminCohortFunnelPoint;
   SysAdminCohortRetentionPoint: GqlSysAdminCohortRetentionPoint;
   SysAdminCommunityAlerts: GqlSysAdminCommunityAlerts;
   SysAdminCommunityDetailInput: GqlSysAdminCommunityDetailInput;
@@ -5754,6 +5930,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   SysAdminStageBucket: GqlSysAdminStageBucket;
   SysAdminStageDistribution: GqlSysAdminStageDistribution;
   SysAdminTenureDistribution: GqlSysAdminTenureDistribution;
+  SysAdminTenureHistogramBucket: GqlSysAdminTenureHistogramBucket;
   SysAdminUserListFilter: GqlSysAdminUserListFilter;
   SysAdminUserListSort: GqlSysAdminUserListSort;
   SysAdminWeeklyRetention: GqlSysAdminWeeklyRetention;
@@ -7139,6 +7316,21 @@ export type GqlSubmitReportFeedbackSuccessResolvers<ContextType = any, ParentTyp
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlSysAdminChainDepthBucketResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminChainDepthBucket'] = GqlResolversParentTypes['SysAdminChainDepthBucket']> = ResolversObject<{
+  count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  depth?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminCohortFunnelPointResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCohortFunnelPoint'] = GqlResolversParentTypes['SysAdminCohortFunnelPoint']> = ResolversObject<{
+  acquired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  activatedD30?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  cohortMonth?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  habitual?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  repeated?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlSysAdminCohortRetentionPointResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCohortRetentionPoint'] = GqlResolversParentTypes['SysAdminCohortRetentionPoint']> = ResolversObject<{
   cohortMonth?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   cohortSize?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
@@ -7158,6 +7350,8 @@ export type GqlSysAdminCommunityAlertsResolvers<ContextType = any, ParentType ex
 export type GqlSysAdminCommunityDetailPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCommunityDetailPayload'] = GqlResolversParentTypes['SysAdminCommunityDetailPayload']> = ResolversObject<{
   alerts?: Resolver<GqlResolversTypes['SysAdminCommunityAlerts'], ParentType, ContextType>;
   asOf?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  chainDepthDistribution?: Resolver<Array<GqlResolversTypes['SysAdminChainDepthBucket']>, ParentType, ContextType>;
+  cohortFunnel?: Resolver<Array<GqlResolversTypes['SysAdminCohortFunnelPoint']>, ParentType, ContextType>;
   cohortRetention?: Resolver<Array<GqlResolversTypes['SysAdminCohortRetentionPoint']>, ParentType, ContextType>;
   communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   communityName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -7227,6 +7421,7 @@ export type GqlSysAdminMemberRowResolvers<ContextType = any, ParentType extends 
   donationInMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   donationOutDays?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   donationOutMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  lastDonationAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   monthsIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   totalPointsIn?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
@@ -7299,6 +7494,13 @@ export type GqlSysAdminTenureDistributionResolvers<ContextType = any, ParentType
   lt1Month?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   m1to3Months?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   m3to12Months?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  monthlyHistogram?: Resolver<Array<GqlResolversTypes['SysAdminTenureHistogramBucket']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminTenureHistogramBucketResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminTenureHistogramBucket'] = GqlResolversParentTypes['SysAdminTenureHistogramBucket']> = ResolversObject<{
+  count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  monthsIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -8037,6 +8239,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   StorePhoneAuthTokenPayload?: GqlStorePhoneAuthTokenPayloadResolvers<ContextType>;
   SubmitReportFeedbackPayload?: GqlSubmitReportFeedbackPayloadResolvers<ContextType>;
   SubmitReportFeedbackSuccess?: GqlSubmitReportFeedbackSuccessResolvers<ContextType>;
+  SysAdminChainDepthBucket?: GqlSysAdminChainDepthBucketResolvers<ContextType>;
+  SysAdminCohortFunnelPoint?: GqlSysAdminCohortFunnelPointResolvers<ContextType>;
   SysAdminCohortRetentionPoint?: GqlSysAdminCohortRetentionPointResolvers<ContextType>;
   SysAdminCommunityAlerts?: GqlSysAdminCommunityAlertsResolvers<ContextType>;
   SysAdminCommunityDetailPayload?: GqlSysAdminCommunityDetailPayloadResolvers<ContextType>;
@@ -8053,6 +8257,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   SysAdminStageBucket?: GqlSysAdminStageBucketResolvers<ContextType>;
   SysAdminStageDistribution?: GqlSysAdminStageDistributionResolvers<ContextType>;
   SysAdminTenureDistribution?: GqlSysAdminTenureDistributionResolvers<ContextType>;
+  SysAdminTenureHistogramBucket?: GqlSysAdminTenureHistogramBucketResolvers<ContextType>;
   SysAdminWeeklyRetention?: GqlSysAdminWeeklyRetentionResolvers<ContextType>;
   SysAdminWindowActivity?: GqlSysAdminWindowActivityResolvers<ContextType>;
   Ticket?: GqlTicketResolvers<ContextType>;

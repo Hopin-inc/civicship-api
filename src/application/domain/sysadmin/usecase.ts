@@ -156,6 +156,7 @@ export default class SysAdminUseCase {
       currentMonthActivity,
       retentionTrend,
       cohortRetention,
+      chainDepthDistribution,
     ] = await Promise.all([
       this.service.getMemberStats(ctx, community.communityId, asOf),
       this.service.getMonthlyActivity(
@@ -169,11 +170,18 @@ export default class SysAdminUseCase {
       this.service.getMonthActivityWithPrev(ctx, community.communityId, asOf),
       this.service.getRetentionTrend(ctx, community.communityId, asOf, windowMonths),
       this.service.getCohortRetention(ctx, community.communityId, asOf, windowMonths),
+      this.service.getChainDepthDistribution(ctx, community.communityId, asOf),
     ]);
 
     const stageCounts = this.service.computeStageCounts(members, thresholds);
     const stageBreakdown = this.service.computeStageBreakdown(members, thresholds);
     const dormantCount = this.service.computeDormantCount(members, asOf, dormantThresholdDays);
+    const cohortFunnel = this.service.computeCohortFunnel(
+      members,
+      asOf,
+      windowMonths,
+      thresholds,
+    );
 
     const alerts = await this.service.getAlerts(ctx, community.communityId, asOf);
 
@@ -212,6 +220,8 @@ export default class SysAdminUseCase {
       memberList: SysAdminPresenter.memberList(memberList),
       alerts: SysAdminPresenter.alerts(alerts),
       dormantCount,
+      chainDepthDistribution,
+      cohortFunnel,
     });
   }
 }

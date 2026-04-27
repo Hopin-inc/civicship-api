@@ -22,6 +22,12 @@ function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStats
   // explicitly when testing isDormant / computeDormantCount.
   const lastDonationDay =
     overrides.lastDonationDay === undefined ? null : overrides.lastDonationDay;
+  const firstDonationDay =
+    overrides.firstDonationDay === undefined ? null : overrides.firstDonationDay;
+  // joinedAt defaults to a fixed date so cohort-funnel tests that
+  // don't care about the exact value get a stable bucket. Override
+  // when testing cohort-bucketing.
+  const joinedAt = overrides.joinedAt ?? new Date("2026-01-01T00:00:00Z");
   return {
     userId: overrides.userId ?? "u",
     name: overrides.name ?? null,
@@ -46,6 +52,8 @@ function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStats
     donationInDays: overrides.donationInDays ?? 0,
     uniqueDonationSenders: overrides.uniqueDonationSenders ?? 0,
     lastDonationDay,
+    firstDonationDay,
+    joinedAt,
   };
 }
 
@@ -65,6 +73,7 @@ class MockSysAdminRepository {
   findWindowHubMemberCount = jest.fn();
   findAllTimeTotals = jest.fn();
   findPlatformTotals = jest.fn();
+  findChainDepthDistribution = jest.fn();
 }
 
 /**
@@ -322,24 +331,49 @@ describe("SysAdminService", () => {
   // computeTenureDistribution: 4-bucket daysIn classification (issue #918, refinement 2)
   // ========================================================================
   describe("computeTenureDistribution", () => {
+    function emptyHistogram() {
+      return Array.from({ length: 13 }, (_, monthsIn) => ({ monthsIn, count: 0 }));
+    }
+
     it("buckets members by daysIn boundaries", () => {
       const members = [
-        member({ userId: "a", daysIn: 1 }), // lt1Month
-        member({ userId: "b", daysIn: 29 }), // lt1Month
-        member({ userId: "c", daysIn: 30 }), // m1to3Months (boundary, inclusive)
-        member({ userId: "d", daysIn: 89 }), // m1to3Months
-        member({ userId: "e", daysIn: 90 }), // m3to12Months (boundary)
-        member({ userId: "f", daysIn: 364 }), // m3to12Months
-        member({ userId: "g", daysIn: 365 }), // gte12Months (boundary)
-        member({ userId: "h", daysIn: 1500 }), // gte12Months
+        member({ userId: "a", daysIn: 1 }), // lt1Month / hist[0]
+        member({ userId: "b", daysIn: 29 }), // lt1Month / hist[0]
+        member({ userId: "c", daysIn: 30 }), // m1to3Months / hist[1]
+        member({ userId: "d", daysIn: 89 }), // m1to3Months / hist[2]
+        member({ userId: "e", daysIn: 90 }), // m3to12Months / hist[3]
+        member({ userId: "f", daysIn: 364 }), // m3to12Months / hist[11] (clamped, 365 boundary)
+        member({ userId: "g", daysIn: 365 }), // gte12Months / hist[12]
+        member({ userId: "h", daysIn: 1500 }), // gte12Months / hist[12]
       ];
       const dist = service.computeTenureDistribution(members);
-      expect(dist).toEqual({
-        lt1Month: 2,
-        m1to3Months: 2,
-        m3to12Months: 2,
-        gte12Months: 2,
-      });
+      expect(dist.lt1Month).toBe(2);
+      expect(dist.m1to3Months).toBe(2);
+      expect(dist.m3to12Months).toBe(2);
+      expect(dist.gte12Months).toBe(2);
+      // monthlyHistogram check. Boundary is aligned with the coarse
+      // gte12Months bucket: bucket 12 ≡ daysIn >= 365, NOT
+      // floor(daysIn/30) >= 12. Members at 360..364 days fall into
+      // bucket 11 (clamped) and coarse m3to12Months — both
+      // representations agree. So `gte12Months == histogram[12]`
+      // and the histogram buckets 0..11 sum to lt1Month +
+      // m1to3Months + m3to12Months.
+      const expectedCounts = new Map<number, number>([
+        [0, 2], // 1d, 29d
+        [1, 1], // 30d
+        [2, 1], // 89d
+        [3, 1], // 90d
+        [11, 1], // 364d (clamped to 11, NOT 12, since daysIn < 365)
+        [12, 2], // 365d, 1500d (daysIn >= 365)
+      ]);
+      for (const bucket of dist.monthlyHistogram) {
+        expect(bucket.count).toBe(expectedCounts.get(bucket.monthsIn) ?? 0);
+      }
+      expect(dist.monthlyHistogram).toHaveLength(13);
+      // Invariant: histogram[12] == gte12Months (boundaries
+      // aligned). Test pins this so a future tweak that drifts
+      // them apart breaks loudly.
+      expect(dist.monthlyHistogram[12].count).toBe(dist.gte12Months);
     });
 
     it("returns all-zero buckets for empty input", () => {
@@ -348,6 +382,7 @@ describe("SysAdminService", () => {
         m1to3Months: 0,
         m3to12Months: 0,
         gte12Months: 0,
+        monthlyHistogram: emptyHistogram(),
       });
     });
 
@@ -363,6 +398,110 @@ describe("SysAdminService", () => {
       expect(dist.lt1Month + dist.m1to3Months + dist.m3to12Months + dist.gte12Months).toBe(
         members.length,
       );
+    });
+  });
+
+  // ========================================================================
+  // computeCohortFunnel: per-cohort acquisition / activation / repeat /
+  // habitual progression for the L3 deep-dive
+  // ========================================================================
+  describe("computeCohortFunnel", () => {
+    const asOf = new Date("2026-04-15T00:00:00Z");
+    const thresholds = { tier1: 0.7, tier2: 0.4, minMonthsIn: 1 };
+
+    it("buckets members by their JST cohort month and counts each stage", () => {
+      const members = [
+        // Cohort 2026-02: one acquired, activated D30, repeated, habitual.
+        member({
+          userId: "a",
+          joinedAt: new Date("2026-02-05T00:00:00Z"),
+          firstDonationDay: new Date("2026-02-10T00:00:00Z"),
+          lastDonationDay: new Date("2026-04-10T00:00:00Z"),
+          donationOutMonths: 3,
+          monthsIn: 3,
+          daysIn: 70,
+          userSendRate: 1.0, // habitual
+        }),
+        // Cohort 2026-03: acquired only — no donation yet.
+        member({
+          userId: "b",
+          joinedAt: new Date("2026-03-20T00:00:00Z"),
+          firstDonationDay: null,
+          lastDonationDay: null,
+          donationOutMonths: 0,
+          monthsIn: 1,
+          daysIn: 26,
+          userSendRate: 0,
+        }),
+        // Cohort 2026-03: activated (D30) but only 1 donation month, not repeated, not habitual.
+        member({
+          userId: "c",
+          joinedAt: new Date("2026-03-01T00:00:00Z"),
+          firstDonationDay: new Date("2026-03-15T00:00:00Z"),
+          lastDonationDay: new Date("2026-03-15T00:00:00Z"),
+          donationOutMonths: 1,
+          monthsIn: 2,
+          daysIn: 45,
+          userSendRate: 0.5, // regular
+        }),
+        // Outside the window — should be excluded.
+        member({
+          userId: "d",
+          joinedAt: new Date("2025-01-01T00:00:00Z"),
+          firstDonationDay: null,
+          lastDonationDay: null,
+          donationOutMonths: 0,
+        }),
+      ];
+      const funnel = service.computeCohortFunnel(members, asOf, 3, thresholds);
+      expect(funnel).toHaveLength(3);
+      // Newest-last orientation: [Feb, Mar, Apr]. Cohort month is
+      // encoded as UTC midnight on the first of the JST month
+      // (matches `jstMonthStart` convention used by sibling trend
+      // arrays — the SDL "2025-10-01T00:00+09:00" wording is the
+      // displayed JST equivalent of this UTC instant).
+      expect(funnel[0].cohortMonth.toISOString()).toBe("2026-02-01T00:00:00.000Z");
+      expect(funnel[0]).toMatchObject({
+        acquired: 1,
+        activatedD30: 1,
+        repeated: 1,
+        habitual: 1,
+      });
+      expect(funnel[1].cohortMonth.toISOString()).toBe("2026-03-01T00:00:00.000Z");
+      expect(funnel[1]).toMatchObject({
+        acquired: 2,
+        activatedD30: 1,
+        repeated: 0,
+        habitual: 0,
+      });
+      // Apr cohort empty in this fixture.
+      expect(funnel[2].cohortMonth.toISOString()).toBe("2026-04-01T00:00:00.000Z");
+      expect(funnel[2]).toMatchObject({
+        acquired: 0,
+        activatedD30: 0,
+        repeated: 0,
+        habitual: 0,
+      });
+    });
+
+    it("does not count activatedD30 when first donation is on day 30 or later", () => {
+      // Cutoff is strict-less-than 30 × 86400000 ms. Day 30 ≡ exactly
+      // at the boundary → not counted (matches the SDL "within 30
+      // days" wording: 30 itself is excluded).
+      const members = [
+        member({
+          userId: "a",
+          joinedAt: new Date("2026-02-01T00:00:00Z"),
+          firstDonationDay: new Date(
+            new Date("2026-02-01T00:00:00Z").getTime() + 30 * 24 * 60 * 60 * 1000,
+          ),
+          donationOutMonths: 1,
+        }),
+      ];
+      const funnel = service.computeCohortFunnel(members, asOf, 3, thresholds);
+      const feb = funnel.find((f) => f.cohortMonth.getUTCMonth() === 1)!;
+      expect(feb.acquired).toBe(1);
+      expect(feb.activatedD30).toBe(0);
     });
   });
 
