@@ -31,6 +31,20 @@ export type SysAdminMemberStatsRow = {
   daysIn: number;
   donationOutDays: number;
   /**
+   * Receiver-side counterparts to the donation-out counters above.
+   * Backs `SysAdminMemberRow.totalPointsIn` /
+   * `donationInMonths` / `donationInDays` / `uniqueDonationSenders`
+   * — see those field docs for scope details (DONATION reason
+   * only, in-community sender wallets, sender wallets without a
+   * user_id excluded, self-donations excluded). All four are 0 for
+   * members who have never received a DONATION; this is the
+   * receiver-side analogue of "latent" on the sender axis.
+   */
+  totalPointsIn: bigint;
+  donationInMonths: number;
+  donationInDays: number;
+  uniqueDonationSenders: number;
+  /**
    * The most recent JST calendar day the member sent a DONATION
    * (UTC-encoded date at JST midnight, same convention as the rest
    * of the sysadmin domain). null when the member has never
@@ -57,6 +71,23 @@ export type SysAdminMonthlyActivityRow = {
   donationPointsSum: bigint;
   donationTxCount: bigint;
   donationChainTxCount: bigint;
+  /**
+   * Members who had no DONATION out in the trailing 30 days as of
+   * this month's END (the cutoff timestamp is `monthEnd` =
+   * the JST first-of-next-month at 00:00). Always returned as a
+   * non-negative count. Backs
+   * `SysAdminMonthlyActivityPoint.dormantCount`.
+   */
+  dormantCountEndOfMonth: number;
+  /**
+   * Members who were dormant at the END of the PREVIOUS calendar
+   * month (same 30-day-trailing definition as
+   * `dormantCountEndOfMonth`) but had at least one DONATION out
+   * during this month. null for the first month in the trend
+   * series — there is no prior month-end snapshot to reference.
+   * Backs `SysAdminMonthlyActivityPoint.returnedMembers`.
+   */
+  returnedMembers: number | null;
 };
 
 /** All-time totals for the summary card, keyed by community. */

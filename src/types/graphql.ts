@@ -3040,7 +3040,15 @@ export type GqlSysAdminCommunityDetailInput = {
    * values outside are silently clamped on the server.
    */
   dormantThresholdDays?: InputMaybe<Scalars['Int']['input']>;
-  /** Member list page size (default 50, max 200). */
+  /**
+   * Member list page size (default 50, max 1000). Raised from the
+   * previous max of 200 so client-side aggregations that need every
+   * member of a community (e.g. the "受領→送付 転換率" /
+   * recipient-to-sender conversion rate, hub-persistence cohorts,
+   * new-member retention breakdowns) can pull a single full page
+   * without N round-trips. Communities larger than 1000 members
+   * still need cursor pagination.
+   */
   limit?: InputMaybe<Scalars['Int']['input']>;
   /** Stage-count thresholds for the stage distribution and tier counts. */
   segmentThresholds?: InputMaybe<GqlSysAdminSegmentThresholdsInput>;
@@ -3403,6 +3411,19 @@ export type GqlSysAdminMemberRow = {
    */
   daysIn: Scalars['Int']['output'];
   /**
+   * Distinct JST days the member received at least one DONATION.
+   * Daily-grain counterpart to `donationInMonths`. Receiver-side
+   * counterpart to `donationOutDays`.
+   */
+  donationInDays: Scalars['Int']['output'];
+  /**
+   * Distinct months with at least one DONATION in. Receiver-side
+   * counterpart to `donationOutMonths`. Combined with
+   * `totalPointsIn`, identifies members who have been part of the
+   * receiving side of the gift economy and over how broad a span.
+   */
+  donationInMonths: Scalars['Int']['output'];
+  /**
    * Distinct JST days the member sent at least one DONATION.
    * Daily-grain counterpart to `donationOutMonths`. Combined with
    * `daysIn`, the client can compute `donationOutDays / daysIn` as
@@ -3415,6 +3436,16 @@ export type GqlSysAdminMemberRow = {
   monthsIn: Scalars['Int']['output'];
   /** User display name (users.name). null when the user has no name set. */
   name?: Maybe<Scalars['String']['output']>;
+  /**
+   * All-time DONATION points received by this user in this community.
+   * Receiver-side counterpart to `totalPointsOut`. Sums
+   * `to_point_change` across DONATION transactions whose receiver
+   * wallet belongs to this user in this community. Burn / system
+   * sources (sender wallets without a user_id) are excluded so a
+   * member who only received from a system grant scores 0 — same
+   * scope as `totalPointsOut`.
+   */
+  totalPointsIn: Scalars['Float']['output'];
   /** All-time DONATION points sent by this user in this community. */
   totalPointsOut: Scalars['Float']['output'];
   /**
@@ -3433,6 +3464,19 @@ export type GqlSysAdminMemberRow = {
    * user_id).
    */
   uniqueDonationRecipients: Scalars['Int']['output'];
+  /**
+   * All-time count of distinct OTHER users that have sent at least
+   * one DONATION to this member in this community. The receiver-side
+   * counterpart to `uniqueDonationRecipients`. Counts unique sender
+   * user_id, excludes burn / system sources (sender wallets without
+   * a user_id) and self-donations (a user who somehow sent to their
+   * own wallet does not increment the count). Used by the L2
+   * dashboard to compute the "受領→送付 転換率" (recipient-to-sender
+   * conversion rate) — share of DONATION recipients who have also
+   * sent at least one DONATION — distinguishing reciprocal
+   * participation networks from one-way distribution structures.
+   */
+  uniqueDonationSenders: Scalars['Int']['output'];
   /** User id. */
   userId: Scalars['ID']['output'];
   /**
@@ -3459,10 +3503,47 @@ export type GqlSysAdminMonthlyActivityPoint = {
   communityActivityRate: Scalars['Float']['output'];
   /** Sum of DONATION points transferred in the month. */
   donationPointsSum: Scalars['Float']['output'];
+  /**
+   * Members who had no DONATION out in the trailing 30 days as of
+   * the END of this month. Snapshot of the dormant base at
+   * month-end. Pair with the NEXT month's `returnedMembers` to
+   * compute the monthly recovery rate
+   * (`returnedMembers[N] / dormantCount[N-1]`).
+   *
+   * Aligns with `SysAdminCommunityOverview.dormantCount` /
+   * `SysAdminCommunityDetailPayload.dormantCount` semantics: an
+   * ever-donated member whose most recent DONATION is older than
+   * 30 days as of the month-end timestamp. The latest month's
+   * value should equal `SysAdminCommunityDetailPayload.dormantCount`
+   * when `asOf` falls at or near the JST month-end, modulo the
+   * difference between the request's `dormantThresholdDays` input
+   * (which the trend ignores in favor of a fixed 30-day window so
+   * monthly returnedMembers / dormantCount stay comparable across
+   * requests).
+   */
+  dormantCount: Scalars['Int']['output'];
   /** First day (JST) of the calendar month, e.g. 2025-10-01T00:00+09:00. */
   month: Scalars['Datetime']['output'];
   /** t_memberships.created_at (status='JOINED') rows falling in the month. */
   newMembers: Scalars['Int']['output'];
+  /**
+   * Members who were dormant at the END of the previous calendar
+   * month but had at least one DONATION out in this month. Monthly
+   * counterpart to `SysAdminRetentionTrendPoint.returnedSenders`.
+   * null for the first month in the series (no prior month to
+   * reference).
+   *
+   * "Dormant at the end of previous month" uses the same threshold
+   * semantic as `SysAdminCommunityOverview.dormantCount` /
+   * `SysAdminMonthlyActivityPoint.dormantCount` — no DONATION out in
+   * the trailing 30 days as of the previous month-end. This may
+   * diverge slightly from the sum of weekly `returnedSenders` over
+   * the month because the weekly metric uses a 12-week look-back at
+   * ISO-week granularity while this monthly metric uses the
+   * 30-day-trailing dormant snapshot at month-end. The discrepancy
+   * is week/month boundary alignment only.
+   */
+  returnedMembers?: Maybe<Scalars['Int']['output']>;
   /** Distinct DONATION senders in the month. */
   senderCount: Scalars['Int']['output'];
 };
@@ -7078,12 +7159,16 @@ export type GqlSysAdminMemberListResolvers<ContextType = any, ParentType extends
 
 export type GqlSysAdminMemberRowResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminMemberRow'] = GqlResolversParentTypes['SysAdminMemberRow']> = ResolversObject<{
   daysIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  donationInDays?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  donationInMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   donationOutDays?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   donationOutMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   monthsIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  totalPointsIn?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
   totalPointsOut?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
   uniqueDonationRecipients?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  uniqueDonationSenders?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   userId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   userSendRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -7093,8 +7178,10 @@ export type GqlSysAdminMonthlyActivityPointResolvers<ContextType = any, ParentTy
   chainPct?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
   communityActivityRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
   donationPointsSum?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
+  dormantCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   month?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   newMembers?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  returnedMembers?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   senderCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

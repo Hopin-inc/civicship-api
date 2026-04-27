@@ -213,6 +213,12 @@ export default class SysAdminPresenter {
       newMembers: row.newMembers,
       donationPointsSum: bigintToSafeNumber(row.donationPointsSum),
       chainPct,
+      // Pass-throughs from the repository row. `returnedMembers` is
+      // already nullable on the row (= null for the first month in
+      // the series); `dormantCountEndOfMonth` is always a
+      // non-negative count.
+      dormantCount: row.dormantCountEndOfMonth,
+      returnedMembers: row.returnedMembers,
     };
   }
 
@@ -248,6 +254,16 @@ export default class SysAdminPresenter {
       uniqueDonationRecipients: row.uniqueDonationRecipients,
       daysIn: row.daysIn,
       donationOutDays: row.donationOutDays,
+      // Receiver-side counterparts route through bigintToSafeNumber
+      // for the same reason as totalPointsOut: cumulative
+      // points-in for a community lifetime can exceed Int32 long
+      // before they touch Number.MAX_SAFE_INTEGER, but we still
+      // want loud overflow rather than silent precision loss in
+      // the externally-reported totals.
+      totalPointsIn: bigintToSafeNumber(row.totalPointsIn),
+      donationInMonths: row.donationInMonths,
+      donationInDays: row.donationInDays,
+      uniqueDonationSenders: row.uniqueDonationSenders,
     };
   }
 

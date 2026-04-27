@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import SysAdminService, {
   DEFAULT_SEGMENT_THRESHOLDS,
+  MAX_LIMIT,
   classifyMember,
 } from "@/application/domain/sysadmin/service";
 import type {
@@ -36,6 +37,14 @@ function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStats
     // (monthsIn high, daysIn low).
     daysIn: overrides.daysIn ?? monthsIn * 30,
     donationOutDays: overrides.donationOutDays ?? 0,
+    // Receiver-side counters default to 0 (= never received a
+    // DONATION) for the same "fixture stays minimal" reason as
+    // the sender-side defaults above. Override per-test only
+    // when exercising recipient-axis logic.
+    totalPointsIn: overrides.totalPointsIn ?? BigInt(0),
+    donationInMonths: overrides.donationInMonths ?? 0,
+    donationInDays: overrides.donationInDays ?? 0,
+    uniqueDonationSenders: overrides.uniqueDonationSenders ?? 0,
     lastDonationDay,
   };
 }
@@ -670,6 +679,35 @@ describe("SysAdminService", () => {
       expect(page.users.length).toBe(4); // all rows fit
       expect(page.hasNextPage).toBe(false);
     });
+
+    it("respects the raised MAX_LIMIT (1000) so client-side aggregations can pull a full page", () => {
+      // Pin the cap to its post-issue-#1 value so a future
+      // "tighten the limit" change has to update this test
+      // alongside the schema description on
+      // SysAdminCommunityDetailInput.limit, which advertises
+      // "default 50, max 1000" to clients computing all-member
+      // aggregates (e.g. recipient-to-sender conversion rate).
+      expect(MAX_LIMIT).toBe(1000);
+
+      // Build 1500 members so the cap actually bites — at 1500
+      // > 1000, requesting limit=2000 returns 1000 and signals
+      // hasNextPage. Without the raised cap this would have
+      // returned 200 and pretended there were no further pages
+      // when only 200 of 1500 had been emitted, which the issue
+      // discussion flagged as the L2 blocker.
+      const many: SysAdminMemberStatsRow[] = Array.from({ length: 1500 }, (_, i) =>
+        member({ userId: `u${String(i).padStart(4, "0")}` }),
+      );
+      const page = service.paginateMembers(many, {
+        minSendRate: 0,
+        sortField: "SEND_RATE",
+        sortOrder: "DESC",
+        limit: 2000,
+      });
+      expect(page.users.length).toBe(MAX_LIMIT);
+      expect(page.hasNextPage).toBe(true);
+      expect(page.nextCursor).not.toBeNull();
+    });
   });
 
   // ========================================================================
@@ -689,6 +727,12 @@ describe("SysAdminService", () => {
         donationPointsSum: BigInt(0),
         donationTxCount: BigInt(0),
         donationChainTxCount: BigInt(0),
+        // Default to "no dormant base / no returners" — the 3m
+        // avg test only exercises the rate calculation, so these
+        // counters are unused. Returning the right shape keeps the
+        // test compatible with the row contract.
+        dormantCountEndOfMonth: 0,
+        returnedMembers: null,
       };
     }
 
