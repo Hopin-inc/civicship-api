@@ -3190,8 +3190,12 @@ export type GqlSysAdminCommunityOverview = {
    *   hubMemberCount <= windowActivity.senderCount <= totalMembers
    *
    * The first holds because any hub member donated >= 3 times in
-   * the window and is therefore a window sender; the second because
-   * any window sender is a JOINED member at asOf.
+   * the window and is therefore a window sender; the second
+   * because both `hubMemberCount` and `windowActivity.senderCount`
+   * are computed from senders restricted to JOINED-at-asOf members
+   * (a former member who left the community before asOf is excluded
+   * even if they donated during the window) and totalMembers is
+   * also JOINED-at-asOf, so the chain stays consistent.
    */
   hubMemberCount: Scalars['Int']['output'];
   /**
@@ -3552,6 +3556,12 @@ export type GqlSysAdminMonthlyActivityPoint = {
    * `hubBreadthThreshold` follows
    * `SysAdminCommunityDetailInput.hubBreadthThreshold` (default 3).
    *
+   * Senders are restricted to users JOINED in the community at the
+   * month-end timestamp — same membership filter as
+   * `dormantCount` / L1 `senderCount` / L1 `hubMemberCount`. A
+   * member who left the community before this month-end is
+   * excluded even if they donated during the trailing window.
+   *
    * When the L1 dashboard is queried with the default
    * `windowDays = 28` and an `asOf` that falls at or near a JST
    * month-end, the latest entry of `monthlyActivityTrend.hubMemberCount`
@@ -3884,10 +3894,19 @@ export type GqlSysAdminWindowActivity = {
   /**
    * Unique users with at least one outgoing DONATION transaction
    * during the current window (donation_out_count > 0 in
-   * mv_user_transaction_daily).
+   * mv_user_transaction_daily). Restricted to users who are still
+   * JOINED in this community at asOf — a now-departed member who
+   * donated during the window is excluded, mirroring the
+   * membership filter on `totalMembers`.
    */
   senderCount: Scalars['Int']['output'];
-  /** Same metric for the previous window of equal length. */
+  /**
+   * Same metric for the previous window of equal length. Same
+   * JOINED-at-asOf membership restriction applies (so the
+   * `senderCount` / `senderCountPrev` comparison stays
+   * apples-to-apples even when membership churn happens between
+   * the two windows).
+   */
   senderCountPrev: Scalars['Int']['output'];
 };
 

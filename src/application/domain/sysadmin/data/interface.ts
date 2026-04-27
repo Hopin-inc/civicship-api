@@ -98,6 +98,13 @@ export interface ISysAdminRepository {
    * would double-count under SUM. Same reasoning as the
    * `donation_recipients` CTE in `findMemberStats`, restricted to
    * the parametric window instead of the full tenure.
+   *
+   * Senders are restricted to users still JOINED in this community
+   * at `upper` (membership filter mirrors `findActivitySnapshot`
+   * /`findMemberStats`), so a now-departed member who donated
+   * while a member is excluded. Without that filter, the L1
+   * invariant `hubMemberCount <= senderCount <= totalMembers`
+   * would not hold.
    */
   findWindowHubMemberCount(
     ctx: IContext,

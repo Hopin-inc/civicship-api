@@ -684,6 +684,16 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- unique_counterparties does not compose into a
           -- window-wide DISTINCT under SUM (same recipient across
           -- multiple days double-counts).
+          --
+          -- The t_memberships join restricts senders to users
+          -- still JOINED in the community at member_upper. Mirrors
+          -- the dormant_counts / returned_counts CTEs above and
+          -- the L1 findWindowHubMemberCount query so a now-
+          -- departed member who sent DONATIONs while a member
+          -- doesn't get counted as a "current hub" in their
+          -- former month — would otherwise contradict the
+          -- L1==latest-month invariant once L1 also enforces
+          -- this membership filter.
           SELECT
             mb.month_start,
             fw."user_id" AS user_id,
@@ -696,6 +706,11 @@ export default class SysAdminRepository implements ISysAdminRepository {
           INNER JOIN "t_wallets" fw
             ON fw."id" = t."from"
             AND fw."community_id" = ${communityId}
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."user_id" = fw."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  (mb.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           INNER JOIN "t_wallets" tw
             ON tw."id" = t."to"
             AND tw."user_id" IS NOT NULL
@@ -839,16 +854,34 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- previous window. The outer FILTER clauses then count
           -- senders, prev-senders, and the intersection (retained)
           -- without rescanning the MV.
+          --
+          -- The INNER JOIN against t_memberships restricts the
+          -- senders to users still JOINED in this community at
+          -- "upper" (asOf+1 JST). Without this, a user who had a
+          -- community wallet during the window but later left
+          -- (status != 'JOINED' at asOf) would still be counted —
+          -- the dashboard would surface a "former member" as a
+          -- live sender, which contradicts the L1 invariant
+          -- "senderCount <= totalMembers" (totalMembers already
+          -- enforces JOINED-at-asOf via findActivitySnapshot). The
+          -- t_memberships scan is cheap because the
+          -- (community_id, user_id, status) index narrows it to
+          -- the same row count as t_wallets for the community.
           SELECT
-            "user_id",
-            bool_or("date" >= ${currLower}::date AND "date" <  ${upper}::date) AS in_curr,
-            bool_or("date" >= ${prevLower}::date AND "date" <  ${currLower}::date) AS in_prev
-          FROM "mv_user_transaction_daily"
-          WHERE "community_id" = ${communityId}
-            AND "donation_out_count" > 0
-            AND "date" >= ${prevLower}::date
-            AND "date" <  ${upper}::date
-          GROUP BY "user_id"
+            mv."user_id",
+            bool_or(mv."date" >= ${currLower}::date AND mv."date" <  ${upper}::date) AS in_curr,
+            bool_or(mv."date" >= ${prevLower}::date AND mv."date" <  ${currLower}::date) AS in_prev
+          FROM "mv_user_transaction_daily" mv
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."user_id" = mv."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  (${upper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          WHERE mv."community_id" = ${communityId}
+            AND mv."donation_out_count" > 0
+            AND mv."date" >= ${prevLower}::date
+            AND mv."date" <  ${upper}::date
+          GROUP BY mv."user_id"
         ),
         sender_aggregates AS (
           SELECT
@@ -924,6 +957,14 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- SysAdminMemberRow.uniqueDonationRecipients) — the wallet
           -- validator does not block same-user transfers, so the
           -- guard has to live in this query.
+          --
+          -- The t_memberships join restricts senders to users
+          -- still JOINED in this community at "upper" (asOf+1
+          -- JST). Without it, a now-departed member who sent
+          -- DONATIONs while a member would still get counted as
+          -- a "current hub", contradicting the
+          -- "hubMemberCount <= senderCount <= totalMembers"
+          -- invariant documented on SysAdminCommunityOverview.
           SELECT
             fw."user_id" AS user_id,
             COUNT(DISTINCT tw."user_id")::int AS unique_recipients
@@ -931,6 +972,11 @@ export default class SysAdminRepository implements ISysAdminRepository {
           INNER JOIN "t_wallets" fw
             ON fw."id" = t."from"
             AND fw."community_id" = ${communityId}
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."user_id" = fw."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  (${upper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           INNER JOIN "t_wallets" tw
             ON tw."id" = t."to"
             AND tw."user_id" IS NOT NULL
