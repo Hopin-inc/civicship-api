@@ -422,12 +422,11 @@ describe("SysAdminPresenter", () => {
       });
       expect(out.latestCohort).toEqual({ size: 8, activeAtM1: 4 });
       expect(out.hubMemberCount).toBe(2);
-      expect(out.tenureDistribution).toEqual({
-        lt1Month: 1,
-        m1to3Months: 2,
-        m3to12Months: 3,
-        gte12Months: 4,
-      });
+      expect(out.tenureDistribution.lt1Month).toBe(1);
+      expect(out.tenureDistribution.m1to3Months).toBe(2);
+      expect(out.tenureDistribution.m3to12Months).toBe(3);
+      expect(out.tenureDistribution.gte12Months).toBe(4);
+      expect(out.tenureDistribution.monthlyHistogram).toHaveLength(13);
       expect(out.dormantCount).toBe(1);
     });
   });

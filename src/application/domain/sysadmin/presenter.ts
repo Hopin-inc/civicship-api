@@ -21,6 +21,7 @@ import {
 } from "@/types/graphql";
 import {
   SysAdminAllTimeTotalsRow,
+  SysAdminChainDepthBucketRow,
   SysAdminMemberStatsRow,
   SysAdminMonthlyActivityRow,
   SysAdminPlatformTotalsRow,
@@ -297,6 +298,7 @@ export default class SysAdminPresenter {
     memberList: GqlSysAdminMemberList;
     alerts: GqlSysAdminCommunityAlerts;
     dormantCount: number;
+    chainDepthDistribution: SysAdminChainDepthBucketRow[];
   }): GqlSysAdminCommunityDetailPayload {
     return {
       communityId: params.communityId,
@@ -311,6 +313,10 @@ export default class SysAdminPresenter {
       memberList: params.memberList,
       alerts: params.alerts,
       dormantCount: params.dormantCount,
+      // Chain-depth bucket shape (depth + count) matches the
+      // GraphQL type 1:1 so the array passes through without
+      // per-element transformation.
+      chainDepthDistribution: params.chainDepthDistribution,
     };
   }
 }

@@ -114,6 +114,13 @@ export type TenureDistribution = {
  * shape. */
 export const TENURE_MONTHLY_BUCKETS = 13;
 
+/** Maximum chain-depth bucket (inclusive). The L3
+ * chainDepthDistribution emits depth 1..N where N aggregates
+ * `chain_depth >= N`. 5 chosen as a starting point; revisit if
+ * real-data inspection of `maxChainDepthAllTime` shows meaningful
+ * population at the ceiling. */
+export const CHAIN_DEPTH_MAX_BUCKET = 5;
+
 /**
  * Approximate days-per-month conversion used to translate the
  * operator-facing `minMonthsIn` (calendar months) into the internal
@@ -683,6 +690,15 @@ export default class SysAdminService {
 
   async getMemberStats(ctx: IContext, communityId: string, asOf: Date) {
     return this.repository.findMemberStats(ctx, communityId, asOf);
+  }
+
+  async getChainDepthDistribution(ctx: IContext, communityId: string, asOf: Date) {
+    return this.repository.findChainDepthDistribution(
+      ctx,
+      communityId,
+      asOf,
+      CHAIN_DEPTH_MAX_BUCKET,
+    );
   }
 
   async getMonthlyActivity(

@@ -2986,6 +2986,25 @@ export type GqlSubmitReportFeedbackSuccess = {
   feedback: GqlReportFeedback;
 };
 
+/**
+ * One bucket of the all-time DONATION chain-depth histogram. See
+ * `SysAdminCommunityDetailPayload.chainDepthDistribution`.
+ */
+export type GqlSysAdminChainDepthBucket = {
+  __typename?: 'SysAdminChainDepthBucket';
+  /**
+   * Number of all-time DONATION transactions whose `chain_depth`
+   * falls into this bucket. Always non-negative.
+   */
+  count: Scalars['Int']['output'];
+  /**
+   * Chain-depth bucket key. Range 1..5; the 5 bucket aggregates
+   * `chain_depth >= 5`. See `SysAdminCommunitySummaryCard
+   * .maxChainDepthAllTime` for the underlying semantic.
+   */
+  depth: Scalars['Int']['output'];
+};
+
 /** One entry-month cohort's retention curve. */
 export type GqlSysAdminCohortRetentionPoint = {
   __typename?: 'SysAdminCohortRetentionPoint';
@@ -3070,6 +3089,28 @@ export type GqlSysAdminCommunityDetailPayload = {
   alerts: GqlSysAdminCommunityAlerts;
   /** As-of timestamp echoed back. */
   asOf: Scalars['Datetime']['output'];
+  /**
+   * Distribution of DONATION `chain_depth` values across all-time
+   * DONATION transactions in this community. Each bucket counts
+   * distinct DONATION transactions whose `chain_depth` falls into
+   * the bucket key (see `SysAdminCommunitySummaryCard.maxChainDepthAllTime`
+   * for the depth semantic — depth 1 is a root donation, depth N+1
+   * means the sender's most recent received DONATION had depth N).
+   *
+   * Buckets are `{depth: 1..5, count}`; the depth-5 bucket
+   * aggregates all transactions with `chain_depth >= 5`. Buckets
+   * are returned in ascending depth order, with every bucket
+   * emitted (count = 0 for depths with no transactions) so the
+   * client can render a contiguous histogram axis without
+   * zero-padding logic. Adjust the ceiling upward (e.g., to 10+)
+   * in a follow-up if real-data inspection of `maxChainDepthAllTime`
+   * shows meaningful population in the 5+ bucket.
+   *
+   * Powers the L3 "/network" chain-depth histogram: visualizes
+   * whether donations propagate deeply (multi-hop reciprocity, tail
+   * populated) or shallowly (one-shot direct gifts, mass at depth 1).
+   */
+  chainDepthDistribution: Array<GqlSysAdminChainDepthBucket>;
   /**
    * One entry per entry month (length <= windowMonths), newest last.
    * `retentionM*` fields are null when the cohort is empty or too recent.
@@ -5319,6 +5360,7 @@ export type GqlResolversTypes = ResolversObject<{
   SubmitReportFeedbackInput: GqlSubmitReportFeedbackInput;
   SubmitReportFeedbackPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['SubmitReportFeedbackPayload']>;
   SubmitReportFeedbackSuccess: ResolverTypeWrapper<Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: GqlResolversTypes['ReportFeedback'] }>;
+  SysAdminChainDepthBucket: ResolverTypeWrapper<GqlSysAdminChainDepthBucket>;
   SysAdminCohortRetentionPoint: ResolverTypeWrapper<GqlSysAdminCohortRetentionPoint>;
   SysAdminCommunityAlerts: ResolverTypeWrapper<GqlSysAdminCommunityAlerts>;
   SysAdminCommunityDetailInput: GqlSysAdminCommunityDetailInput;
@@ -5726,6 +5768,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   SubmitReportFeedbackInput: GqlSubmitReportFeedbackInput;
   SubmitReportFeedbackPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['SubmitReportFeedbackPayload'];
   SubmitReportFeedbackSuccess: Omit<GqlSubmitReportFeedbackSuccess, 'feedback'> & { feedback: GqlResolversParentTypes['ReportFeedback'] };
+  SysAdminChainDepthBucket: GqlSysAdminChainDepthBucket;
   SysAdminCohortRetentionPoint: GqlSysAdminCohortRetentionPoint;
   SysAdminCommunityAlerts: GqlSysAdminCommunityAlerts;
   SysAdminCommunityDetailInput: GqlSysAdminCommunityDetailInput;
@@ -7131,6 +7174,12 @@ export type GqlSubmitReportFeedbackSuccessResolvers<ContextType = any, ParentTyp
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlSysAdminChainDepthBucketResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminChainDepthBucket'] = GqlResolversParentTypes['SysAdminChainDepthBucket']> = ResolversObject<{
+  count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  depth?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlSysAdminCohortRetentionPointResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCohortRetentionPoint'] = GqlResolversParentTypes['SysAdminCohortRetentionPoint']> = ResolversObject<{
   cohortMonth?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   cohortSize?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
@@ -7150,6 +7199,7 @@ export type GqlSysAdminCommunityAlertsResolvers<ContextType = any, ParentType ex
 export type GqlSysAdminCommunityDetailPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminCommunityDetailPayload'] = GqlResolversParentTypes['SysAdminCommunityDetailPayload']> = ResolversObject<{
   alerts?: Resolver<GqlResolversTypes['SysAdminCommunityAlerts'], ParentType, ContextType>;
   asOf?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  chainDepthDistribution?: Resolver<Array<GqlResolversTypes['SysAdminChainDepthBucket']>, ParentType, ContextType>;
   cohortRetention?: Resolver<Array<GqlResolversTypes['SysAdminCohortRetentionPoint']>, ParentType, ContextType>;
   communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   communityName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -8036,6 +8086,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   StorePhoneAuthTokenPayload?: GqlStorePhoneAuthTokenPayloadResolvers<ContextType>;
   SubmitReportFeedbackPayload?: GqlSubmitReportFeedbackPayloadResolvers<ContextType>;
   SubmitReportFeedbackSuccess?: GqlSubmitReportFeedbackSuccessResolvers<ContextType>;
+  SysAdminChainDepthBucket?: GqlSysAdminChainDepthBucketResolvers<ContextType>;
   SysAdminCohortRetentionPoint?: GqlSysAdminCohortRetentionPointResolvers<ContextType>;
   SysAdminCommunityAlerts?: GqlSysAdminCommunityAlertsResolvers<ContextType>;
   SysAdminCommunityDetailPayload?: GqlSysAdminCommunityDetailPayloadResolvers<ContextType>;

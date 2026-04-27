@@ -65,6 +65,7 @@ class MockSysAdminRepository {
   findWindowHubMemberCount = jest.fn();
   findAllTimeTotals = jest.fn();
   findPlatformTotals = jest.fn();
+  findChainDepthDistribution = jest.fn();
 }
 
 /**
@@ -322,24 +323,45 @@ describe("SysAdminService", () => {
   // computeTenureDistribution: 4-bucket daysIn classification (issue #918, refinement 2)
   // ========================================================================
   describe("computeTenureDistribution", () => {
+    function emptyHistogram() {
+      return Array.from({ length: 13 }, (_, monthsIn) => ({ monthsIn, count: 0 }));
+    }
+
     it("buckets members by daysIn boundaries", () => {
       const members = [
-        member({ userId: "a", daysIn: 1 }), // lt1Month
-        member({ userId: "b", daysIn: 29 }), // lt1Month
-        member({ userId: "c", daysIn: 30 }), // m1to3Months (boundary, inclusive)
-        member({ userId: "d", daysIn: 89 }), // m1to3Months
-        member({ userId: "e", daysIn: 90 }), // m3to12Months (boundary)
-        member({ userId: "f", daysIn: 364 }), // m3to12Months
-        member({ userId: "g", daysIn: 365 }), // gte12Months (boundary)
-        member({ userId: "h", daysIn: 1500 }), // gte12Months
+        member({ userId: "a", daysIn: 1 }), // lt1Month / hist[0]
+        member({ userId: "b", daysIn: 29 }), // lt1Month / hist[0]
+        member({ userId: "c", daysIn: 30 }), // m1to3Months / hist[1]
+        member({ userId: "d", daysIn: 89 }), // m1to3Months / hist[2]
+        member({ userId: "e", daysIn: 90 }), // m3to12Months / hist[3]
+        member({ userId: "f", daysIn: 364 }), // m3to12Months / hist[12] (12+, capped)
+        member({ userId: "g", daysIn: 365 }), // gte12Months / hist[12]
+        member({ userId: "h", daysIn: 1500 }), // gte12Months / hist[12]
       ];
       const dist = service.computeTenureDistribution(members);
-      expect(dist).toEqual({
-        lt1Month: 2,
-        m1to3Months: 2,
-        m3to12Months: 2,
-        gte12Months: 2,
-      });
+      expect(dist.lt1Month).toBe(2);
+      expect(dist.m1to3Months).toBe(2);
+      expect(dist.m3to12Months).toBe(2);
+      expect(dist.gte12Months).toBe(2);
+      // monthlyHistogram check: bucket = min(floor(daysIn / 30), 12).
+      // Deliberate semantic mismatch with the coarse `m3to12Months`
+      // bucket: that uses calendar-day < 365, while the histogram
+      // 12 bucket aggregates floor(daysIn/30) >= 12 (= daysIn >= 360).
+      // Members in [360, 365) days land in coarse `m3to12Months` but
+      // histogram bucket 12 — both definitions are intentional and
+      // documented; the test pins both shapes so a future refactor
+      // doesn't silently merge them.
+      const expectedCounts = new Map<number, number>([
+        [0, 2], // 1d, 29d
+        [1, 1], // 30d
+        [2, 1], // 89d
+        [3, 1], // 90d
+        [12, 3], // 364d, 365d, 1500d (all daysIn >= 360)
+      ]);
+      for (const bucket of dist.monthlyHistogram) {
+        expect(bucket.count).toBe(expectedCounts.get(bucket.monthsIn) ?? 0);
+      }
+      expect(dist.monthlyHistogram).toHaveLength(13);
     });
 
     it("returns all-zero buckets for empty input", () => {
@@ -348,6 +370,7 @@ describe("SysAdminService", () => {
         m1to3Months: 0,
         m3to12Months: 0,
         gte12Months: 0,
+        monthlyHistogram: emptyHistogram(),
       });
     });
 

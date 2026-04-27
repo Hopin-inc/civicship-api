@@ -1,6 +1,7 @@
 import { IContext } from "@/types/server";
 import {
   SysAdminAllTimeTotalsRow,
+  SysAdminChainDepthBucketRow,
   SysAdminCommunityRow,
   SysAdminMemberStatsRow,
   SysAdminActivitySnapshotRow,
@@ -133,4 +134,19 @@ export interface ISysAdminRepository {
     jstMonthStart: Date,
     jstNextMonthStart: Date,
   ): Promise<SysAdminPlatformTotalsRow>;
+
+  /**
+   * All-time DONATION chain-depth histogram for one community,
+   * clamped at `asOf` for historic-asOf consistency. Returns
+   * exactly `maxBucketDepth` rows (depth 1..maxBucketDepth, with
+   * the last bucket aggregating chain_depth >= maxBucketDepth) so
+   * the service / presenter doesn't need to fill gaps. Backs
+   * `SysAdminCommunityDetailPayload.chainDepthDistribution`.
+   */
+  findChainDepthDistribution(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+    maxBucketDepth: number,
+  ): Promise<SysAdminChainDepthBucketRow[]>;
 }

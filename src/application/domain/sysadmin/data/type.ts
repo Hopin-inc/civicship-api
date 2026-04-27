@@ -149,3 +149,15 @@ export type SysAdminPlatformTotalsRow = {
   totalMembers: number;
   latestMonthDonationPoints: bigint;
 };
+
+/**
+ * One bucket of the all-time DONATION chain-depth histogram. Backs
+ * `SysAdminCommunityDetailPayload.chainDepthDistribution`. The
+ * repository emits a fixed-shape array (depth 1..N inclusive,
+ * with the last bucket aggregating depth >= N) so the service
+ * layer doesn't need to zero-pad.
+ */
+export type SysAdminChainDepthBucketRow = {
+  depth: number;
+  count: number;
+};

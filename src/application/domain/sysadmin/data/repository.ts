@@ -2,6 +2,7 @@ import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
   SysAdminAllTimeTotalsRow,
+  SysAdminChainDepthBucketRow,
   SysAdminCommunityRow,
   SysAdminMemberStatsRow,
   SysAdminActivitySnapshotRow,
@@ -1004,6 +1005,57 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalMembers: r.total_members,
         latestMonthDonationPoints: r.latest_month_donation_points,
       };
+    });
+  }
+
+  async findChainDepthDistribution(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+    maxBucketDepth: number,
+  ): Promise<SysAdminChainDepthBucketRow[]> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      // generate_series produces depth 1..maxBucketDepth so the
+      // returned array always has a stable shape (every bucket
+      // emitted, count = 0 for empty depths) regardless of
+      // community size or chain-population. The LEFT JOIN against
+      // the per-tx aggregation collapses chain_depth >=
+      // maxBucketDepth into the final bucket via LEAST.
+      //
+      // Sender-side guards mirror findWindowHubMemberCount:
+      // sender wallet must be in this community, and we filter to
+      // reason='DONATION'. No recipient-side or membership filter
+      // is applied because chainDepthDistribution describes the
+      // structure of the donation graph itself (how deep do
+      // chains propagate?), not the current member roster — a
+      // chain-depth-3 transaction from a now-departed member is
+      // still a real chain-depth-3 event in the historic graph,
+      // and excluding it would distort the histogram's shape.
+      const rows = await tx.$queryRaw<{ depth: number; count: number }[]>`
+        WITH bucket_keys AS (
+          SELECT generate_series(1, ${maxBucketDepth}::int) AS depth
+        ),
+        depth_counts AS (
+          SELECT
+            LEAST(t."chain_depth", ${maxBucketDepth}::int) AS depth,
+            COUNT(*)::int AS n
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ${communityId}
+          WHERE t."reason" = 'DONATION'
+            AND t."chain_depth" >= 1
+            AND t."created_at" <= ${asOf}::timestamp
+          GROUP BY LEAST(t."chain_depth", ${maxBucketDepth}::int)
+        )
+        SELECT
+          bk.depth AS depth,
+          COALESCE(dc.n, 0)::int AS count
+        FROM bucket_keys bk
+        LEFT JOIN depth_counts dc USING (depth)
+        ORDER BY bk.depth ASC
+      `;
+      return rows.map((r) => ({ depth: r.depth, count: r.count }));
     });
   }
 }

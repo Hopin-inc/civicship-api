@@ -1139,4 +1139,45 @@ type SysAdminCommunityDetailPayload {
   member list.
   """
   dormantCount: Int!
+
+  """
+  Distribution of DONATION `chain_depth` values across all-time
+  DONATION transactions in this community. Each bucket counts
+  distinct DONATION transactions whose `chain_depth` falls into
+  the bucket key (see `SysAdminCommunitySummaryCard.maxChainDepthAllTime`
+  for the depth semantic — depth 1 is a root donation, depth N+1
+  means the sender's most recent received DONATION had depth N).
+
+  Buckets are `{depth: 1..5, count}`; the depth-5 bucket
+  aggregates all transactions with `chain_depth >= 5`. Buckets
+  are returned in ascending depth order, with every bucket
+  emitted (count = 0 for depths with no transactions) so the
+  client can render a contiguous histogram axis without
+  zero-padding logic. Adjust the ceiling upward (e.g., to 10+)
+  in a follow-up if real-data inspection of `maxChainDepthAllTime`
+  shows meaningful population in the 5+ bucket.
+
+  Powers the L3 "/network" chain-depth histogram: visualizes
+  whether donations propagate deeply (multi-hop reciprocity, tail
+  populated) or shallowly (one-shot direct gifts, mass at depth 1).
+  """
+  chainDepthDistribution: [SysAdminChainDepthBucket!]!
+}
+
+"""
+One bucket of the all-time DONATION chain-depth histogram. See
+`SysAdminCommunityDetailPayload.chainDepthDistribution`.
+"""
+type SysAdminChainDepthBucket {
+  """
+  Chain-depth bucket key. Range 1..5; the 5 bucket aggregates
+  `chain_depth >= 5`. See `SysAdminCommunitySummaryCard
+  .maxChainDepthAllTime` for the underlying semantic.
+  """
+  depth: Int!
+  """
+  Number of all-time DONATION transactions whose `chain_depth`
+  falls into this bucket. Always non-negative.
+  """
+  count: Int!
 }
