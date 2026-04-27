@@ -3941,14 +3941,16 @@ export type GqlSysAdminTenureDistribution = {
    * `gte12Months` cutoff so the histogram and coarse buckets agree:
    *
    *   - bucket 0:  daysIn <  30
-   *   - bucket k (1..11):  k * 30 <= daysIn < min((k + 1) * 30, 365)
+   *   - bucket k (1..10):  k * 30 <= daysIn < (k + 1) * 30
+   *   - bucket 11: 330 <= daysIn < 365
    *   - bucket 12: daysIn >= 365
    *
    * The 12 bucket therefore matches `gte12Months` exactly; bucket 11
-   * covers `[330, 365)` so a member at 360..364 days lands in 11
-   * rather than 12 (`floor(daysIn / 30)` would otherwise have placed
-   * them in 12, creating an asymmetry with the coarse `m3to12Months`
-   * cutoff at 365).
+   * is widened from the bare `[330, 360)` slot to `[330, 365)` so a
+   * member at 360..364 days lands in 11 rather than 12
+   * (`floor(daysIn / 30)` would otherwise have placed them in 12,
+   * creating an asymmetry with the coarse `m3to12Months` cutoff at
+   * 365).
    *
    * Returned in ascending bucket order (`monthsIn` 0..12), with every
    * bucket emitted (count = 0 for buckets with no members) so the
@@ -3977,10 +3979,11 @@ export type GqlSysAdminTenureHistogramBucket = {
   count: Scalars['Int']['output'];
   /**
    * Tenure bucket index, range 0..12. The 0 bucket aggregates
-   * `daysIn < 30`; buckets 1..11 cover `k * 30 <= daysIn <
-   * min((k + 1) * 30, 365)`; the 12 bucket aggregates `daysIn >=
-   * 365` (matching the coarse `gte12Months` boundary). Members at
-   * 330..364 days land in bucket 11, not bucket 12.
+   * `daysIn < 30`; buckets 1..10 cover `k * 30 <= daysIn <
+   * (k + 1) * 30`; bucket 11 covers `330 <= daysIn < 365`; the 12
+   * bucket aggregates `daysIn >= 365` (matching the coarse
+   * `gte12Months` boundary). Members at 330..364 days land in
+   * bucket 11, not bucket 12.
    */
   monthsIn: Scalars['Int']['output'];
 };
