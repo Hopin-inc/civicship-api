@@ -3,11 +3,11 @@ import { container } from "tsyringe";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
 import { NotFoundError } from "@/errors/graphql";
 import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
-import { nftSyncRateLimit } from "@/presentation/middleware/rate-limit";
+import { nftInstanceSyncRateLimit } from "@/presentation/middleware/rate-limit";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
-import { isUpstreamTimeout } from "@/presentation/router/utils/error";
+import { isUpstreamHttpError, isUpstreamTimeout } from "@/presentation/router/utils/error";
 
 const router = express();
 
@@ -16,7 +16,7 @@ const INSTANCE_ID_PATTERN = /^[0-9]+$/;
 
 router.put(
   "/nft-instances/:tokenAddress/:instanceId",
-  nftSyncRateLimit,
+  nftInstanceSyncRateLimit,
   apiKeyAuthMiddleware,
   async (req, res) => {
     try {
@@ -50,8 +50,13 @@ router.put(
         return res.status(504).json({ error: "Upstream timeout" });
       }
 
+      if (isUpstreamHttpError(error)) {
+        logger.error("NFT instance sync upstream error:", error);
+        return res.status(502).json({ error: "Failed to sync NFT instance" });
+      }
+
       logger.error("NFT instance sync error:", error);
-      return res.status(502).json({ error: "Failed to sync NFT instance" });
+      return res.status(500).json({ error: "Internal server error" });
     }
   },
 );

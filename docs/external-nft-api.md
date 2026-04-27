@@ -148,6 +148,7 @@ X-API-Key: <key>
 | `400 Bad Request` | `address` の形式が不正 |
 | `502 Bad Gateway` | Blockscout への問い合わせに失敗 |
 | `504 Gateway Timeout` | Blockscout への問い合わせがタイムアウト |
+| `500 Internal Server Error` | サーバー側内部エラー (DB 等) |
 
 ### curl 例
 
@@ -212,6 +213,7 @@ X-API-Key: <key>
 | `404 Not Found` | `NftWallet` | 所有者ウォレットが Civicship に未登録 |
 | `502 Bad Gateway` | ― | Blockscout への問い合わせに失敗 |
 | `504 Gateway Timeout` | ― | Blockscout への問い合わせがタイムアウト |
+| `500 Internal Server Error` | ― | サーバー側内部エラー (DB 等) |
 
 `404` のレスポンスには未登録のエンティティを示す `entity` フィールドが含まれる:
 

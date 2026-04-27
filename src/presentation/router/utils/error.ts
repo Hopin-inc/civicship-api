@@ -8,3 +8,7 @@ export function isUpstreamTimeout(error: unknown): boolean {
   }
   return false;
 }
+
+export function isUpstreamHttpError(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith("HTTP error!");
+}

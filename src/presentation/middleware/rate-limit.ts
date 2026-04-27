@@ -31,11 +31,21 @@ export const walletRateLimit = rateLimit({
   skipSuccessfulRequests: false,
 });
 
-export const nftSyncRateLimit = rateLimit({
+export const nftTokenSyncRateLimit = rateLimit({
   windowMs: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.windowMs,
   max: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.max,
   message: {
-    error: 'Too many NFT sync requests from this IP, please try again later.',
+    error: 'Too many NFT token sync requests from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const nftInstanceSyncRateLimit = rateLimit({
+  windowMs: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.windowMs,
+  max: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.max,
+  message: {
+    error: 'Too many NFT instance sync requests from this IP, please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,
