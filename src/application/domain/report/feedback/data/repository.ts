@@ -212,7 +212,12 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
       first: number;
     },
   ): Promise<{ items: TemplateBreakdownRow[]; totalCount: number }> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    // Admin-only path (`reportTemplateStatsBreakdown` is `IsAdmin`-
+    // gated). Use the internal issuer to match the rest of the Phase 2
+    // admin reads — `public` would risk RLS-driven filtering on the
+    // template / report join when the SYS_ADMIN session lacks an
+    // implicit community membership.
+    return ctx.issuer.internal(async (tx) => {
       // Compose the where clause once and reuse for both the page query
       // and the totalCount query so the two stay in lock-step (a where
       // drift would let totalCount disagree with what edges expose).

@@ -836,7 +836,15 @@ export default class ReportRepository implements IReportRepository {
     kind: ReportTemplateKind,
     includeInactive: boolean,
   ): Promise<PrismaReportTemplate[]> {
-    return ctx.issuer.public(ctx, (tx) =>
+    // Admin-only path (the GraphQL query carries `IsAdmin`); use the
+    // internal issuer for consistency with the other Phase 2 admin
+    // reads (`findAllReports`, `findCommunityReportSummary`,
+    // `getTemplateBreakdown`). The legacy single-row `findTemplate` /
+    // selector hot path `findActiveTemplates` continue to use `public`
+    // because they're invoked from non-admin call sites
+    // (`reportTemplate(communityId, variant)` is admin-gated but the
+    // selector path runs during generate from any community member).
+    return ctx.issuer.internal((tx) =>
       tx.reportTemplate.findMany({
         where: {
           variant,
@@ -1172,6 +1180,12 @@ export default class ReportRepository implements IReportRepository {
           orderBy: [
             { publishedAt: { sort: "desc", nulls: "last" } },
             { createdAt: "desc" },
+            // id tie-breaker so `cursor: { id }` advances
+            // deterministically when publishedAt + createdAt collide
+            // (e.g. multiple reports created in the same millisecond
+            // by a batch run, or the SKIPPED rows at the bottom that
+            // share publishedAt=null).
+            { id: "desc" },
           ],
         }),
         tx.report.count({ where }),
@@ -1189,9 +1203,18 @@ export default class ReportRepository implements IReportRepository {
    *
    * Sort `last_published_report_at ASC NULLS FIRST, id ASC` floats
    * dormant / never-published communities to the top so the L1 view
-   * surfaces them first. Cursor pagination uses the community `id`
-   * for stability — when callers reach the dormant tier the visible
-   * order matches the cursor order.
+   * surfaces them first.
+   *
+   * Cursor pagination uses a *composite* cursor `{ at, id }` because
+   * the primary sort key (`last_published_report_at`) is non-unique:
+   * an `id`-only WHERE would skip rows whose at-value places them
+   * after the cursor when their id happens to sort earlier. The two
+   * branches below cover the NULLS-FIRST tier:
+   *   - cursor.at === null (we're inside the dormant tier): keep
+   *     paging through dormant rows by id, then spill over to the
+   *     entire non-NULL tier.
+   *   - cursor.at !== null (we're in the chronological tier): page
+   *     by (at, id) lexicographically.
    */
   async findCommunityReportSummary(
     ctx: IContext,
@@ -1206,9 +1229,23 @@ export default class ReportRepository implements IReportRepository {
     totalCount: number;
   }> {
     return ctx.issuer.internal(async (tx) => {
-      const cursorClause = params.cursor
-        ? Prisma.sql`AND c."id" > ${params.cursor}`
-        : Prisma.empty;
+      const cursor = params.cursor
+        ? decodeCommunitySummaryCursor(params.cursor)
+        : null;
+      const cursorClause = !cursor
+        ? Prisma.empty
+        : cursor.at === null
+          ? Prisma.sql`AND (
+              (c."last_published_report_at" IS NULL AND c."id" > ${cursor.id})
+              OR c."last_published_report_at" IS NOT NULL
+            )`
+          : Prisma.sql`AND (
+              c."last_published_report_at" > ${cursor.at}::timestamp
+              OR (
+                c."last_published_report_at" = ${cursor.at}::timestamp
+                AND c."id" > ${cursor.id}
+              )
+            )`;
       const [rows, totalRow] = await Promise.all([
         tx.$queryRaw<
           {
@@ -1319,5 +1356,42 @@ export default class ReportRepository implements IReportRepository {
         orderBy: { createdAt: "desc" },
       }),
     );
+  }
+}
+
+/**
+ * Cursor shape for `findCommunityReportSummary`. `at` mirrors the
+ * sort's primary key (NULL for the dormant tier, ISO timestamp
+ * otherwise); `id` is the tie-breaker. Encoded as base64url JSON so
+ * the cursor round-trips through the GraphQL Connection contract
+ * (string-typed `cursor: String!`) without leaking the schema.
+ */
+export interface CommunitySummaryCursor {
+  at: string | null;
+  id: string;
+}
+
+export function encodeCommunitySummaryCursor(c: CommunitySummaryCursor): string {
+  return Buffer.from(JSON.stringify(c), "utf8").toString("base64url");
+}
+
+/**
+ * Lenient decode: callers may receive an opaque user-supplied cursor
+ * that doesn't round-trip (truncation, manual edit, stale schema).
+ * Returns `null` rather than throwing so the repository falls back to
+ * a fresh first-page scan and the user sees a clean restart instead
+ * of a 500.
+ */
+export function decodeCommunitySummaryCursor(
+  s: string,
+): CommunitySummaryCursor | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(s, "base64url").toString("utf8"));
+    if (!parsed || typeof parsed !== "object") return null;
+    if (typeof parsed.id !== "string") return null;
+    if (parsed.at !== null && typeof parsed.at !== "string") return null;
+    return { at: parsed.at, id: parsed.id };
+  } catch {
+    return null;
   }
 }

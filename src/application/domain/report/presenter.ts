@@ -6,6 +6,7 @@ import {
   GqlAdminReportSummaryRow,
 } from "@/types/graphql";
 import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
+import { encodeCommunitySummaryCursor } from "@/application/domain/report/data/repository";
 import {
   CohortRetentionRow,
   CommunityContextRow,
@@ -359,9 +360,20 @@ export default class ReportPresenter {
     const page = hasNextPage ? items.slice(0, requestedFirst) : items;
     const now = Date.now();
     const millisPerDay = 24 * 60 * 60 * 1000;
+    // Composite cursor `{at, id}` matches the SQL sort
+    // (`last_published_report_at ASC NULLS FIRST, id ASC`). Encoding
+    // both halves is required for correctness: a row with `at=null`
+    // and a row with `at=2026-01-01` may share the same `id` ordering
+    // arbitrarily, but only one of them is the true successor of the
+    // cursor when paginating across the dormant / chronological tiers.
+    const buildCursor = (row: { communityId: string; lastPublishedAt: Date | null }) =>
+      encodeCommunitySummaryCursor({
+        at: row.lastPublishedAt?.toISOString() ?? null,
+        id: row.communityId,
+      });
     return {
       edges: page.map((row) => ({
-        cursor: row.communityId,
+        cursor: buildCursor(row),
         // Field resolvers (`community`, `lastPublishedReport`) on
         // AdminReportSummaryRow read `communityId` /
         // `lastPublishedReportId` off the parent and hydrate via
@@ -382,8 +394,8 @@ export default class ReportPresenter {
       pageInfo: {
         hasNextPage,
         hasPreviousPage: false,
-        startCursor: page[0]?.communityId ?? null,
-        endCursor: page[page.length - 1]?.communityId ?? null,
+        startCursor: page[0] ? buildCursor(page[0]) : null,
+        endCursor: page[page.length - 1] ? buildCursor(page[page.length - 1]) : null,
       },
       totalCount,
     };
