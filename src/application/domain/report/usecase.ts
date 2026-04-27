@@ -25,6 +25,7 @@ import {
   GqlApproveReportPayload,
   GqlPublishReportPayload,
   GqlRejectReportPayload,
+  GqlAdminReportSummaryConnection,
   GqlMutationGenerateReportArgs,
   GqlMutationUpdateReportTemplateArgs,
   GqlMutationApproveReportArgs,
@@ -33,6 +34,9 @@ import {
   GqlQueryReportsArgs,
   GqlQueryReportArgs,
   GqlQueryReportTemplateArgs,
+  GqlQueryReportTemplatesArgs,
+  GqlQueryAdminBrowseReportsArgs,
+  GqlQueryAdminReportSummaryArgs,
 } from "@/types/graphql";
 
 const LLM_TIMEOUT_MS = 180_000;
@@ -608,6 +612,14 @@ export default class ReportUseCase {
       throw new Error("Parent report must belong to the same community and variant");
     }
     if (parent.status !== ReportStatus.SUPERSEDED) {
+      // A-3: capture whether the parent was PUBLISHED *before* we
+      // transition it. The recalc only matters when the row being
+      // superseded was actually the (or a) PUBLISHED row pointed at
+      // by `t_communities.last_published_report_id`; for DRAFT /
+      // APPROVED / SKIPPED parents the pointer was never on this
+      // row and recompute would be a no-op, so we skip the extra
+      // query.
+      const wasPublished = parent.status === ReportStatus.PUBLISHED;
       this.service.assertStatusTransition(parent.status, ReportStatus.SUPERSEDED);
       await this.service.updateReportStatus(
         ctx,
@@ -616,6 +628,9 @@ export default class ReportUseCase {
         undefined,
         tx,
       );
+      if (wasPublished) {
+        await this.service.recalculateCommunityLastPublished(ctx, communityId, tx);
+      }
     }
     return parent.regenerateCount;
   }
@@ -651,6 +666,27 @@ export default class ReportUseCase {
   ): Promise<GqlReportTemplate | null> {
     const template = await this.service.getTemplate(ctx, variant, communityId ?? null);
     return template ? ReportPresenter.reportTemplate(template) : null;
+  }
+
+  /**
+   * Phase 1 admin: list multiple template revisions for the
+   * management UI. The schema default is `kind: GENERATION`, but
+   * GraphQL passes through `null` when the caller omitted the arg
+   * with no default applied (codegen treats every arg as nullable);
+   * coalesce here so the service layer always sees a concrete kind.
+   */
+  async listReportTemplates(
+    { variant, communityId, kind, includeInactive }: GqlQueryReportTemplatesArgs,
+    ctx: IContext,
+  ): Promise<GqlReportTemplate[]> {
+    const templates = await this.service.listTemplates(
+      ctx,
+      variant,
+      communityId ?? null,
+      kind ?? ReportTemplateKind.GENERATION,
+      includeInactive ?? false,
+    );
+    return templates.map(ReportPresenter.reportTemplate);
   }
 
   async updateReportTemplate(
@@ -712,7 +748,7 @@ export default class ReportUseCase {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
       this.service.assertStatusTransition(existing.status, ReportStatus.PUBLISHED);
-      return this.service.updateReportStatus(
+      const updated = await this.service.updateReportStatus(
         ctx,
         id,
         ReportStatus.PUBLISHED,
@@ -723,6 +759,14 @@ export default class ReportUseCase {
         },
         tx,
       );
+      // A-3: keep the per-community last-publish pointer
+      // (`t_communities.last_published_report_*`) in sync inside the
+      // same transaction. `adminReportSummary` reads from those
+      // columns, so a publish without recalc would surface a stale
+      // pointer until the next maintenance call. Always re-derives
+      // from `t_reports`, so re-running is a no-op.
+      await this.service.recalculateCommunityLastPublished(ctx, updated.communityId, tx);
+      return updated;
     });
     return { __typename: "PublishReportSuccess", report: ReportPresenter.report(report) };
   }
@@ -738,6 +782,56 @@ export default class ReportUseCase {
       return this.service.updateReportStatus(ctx, id, ReportStatus.REJECTED, undefined, tx);
     });
     return { __typename: "RejectReportSuccess", report: ReportPresenter.report(report) };
+  }
+
+  /**
+   * Phase 2 sysAdmin: cross-community report search. The IsAdmin
+   * directive on the GraphQL query is the only authz gate (no
+   * permission.communityId hand-off) — the usecase trusts the
+   * directive and does not re-check sysRole.
+   */
+  async adminBrowseReports(
+    args: GqlQueryAdminBrowseReportsArgs,
+    ctx: IContext,
+  ): Promise<GqlReportsConnection> {
+    const first = args.first
+      ? clampInt(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
+      : DEFAULT_REPORTS_PER_PAGE;
+    const result = await this.service.getAllReports(ctx, {
+      communityId: args.communityId ?? undefined,
+      status: args.status ?? undefined,
+      variant: args.variant ?? undefined,
+      publishedAfter: args.publishedAfter ? new Date(args.publishedAfter) : undefined,
+      publishedBefore: args.publishedBefore ? new Date(args.publishedBefore) : undefined,
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportPresenter.reportsConnection(result.items, result.totalCount, first);
+  }
+
+  /**
+   * Phase 2 sysAdmin: per-community last-publish summary for the L1
+   * dashboard. Returns an `AdminReportSummaryConnection` whose nodes
+   * carry the denormalized pointer + 90-day publish count; the
+   * resolver hydrates `community` / `lastPublishedReport` via the
+   * existing dataloaders.
+   */
+  async adminViewReportSummary(
+    args: GqlQueryAdminReportSummaryArgs,
+    ctx: IContext,
+  ): Promise<GqlAdminReportSummaryConnection> {
+    const first = args.first
+      ? clampInt(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
+      : DEFAULT_REPORTS_PER_PAGE;
+    const result = await this.service.getCommunityReportSummary(ctx, {
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportPresenter.adminReportSummaryConnection(
+      result.items,
+      result.totalCount,
+      first,
+    );
   }
 
   // =========================================================================

@@ -1,14 +1,15 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
   CreateReportFeedbackInput,
   IReportFeedbackRepository,
-  JudgeFeedbackPairRow,
 } from "@/application/domain/report/feedback/data/interface";
 import {
   PrismaReportFeedback,
   ReportTemplateStatsRow,
+  TemplateBreakdownRow,
+  JudgeFeedbackPairRow,
 } from "@/application/domain/report/feedback/data/type";
 
 /**
@@ -94,6 +95,43 @@ export default class ReportFeedbackService {
       avgJudgeScore: agg.avgJudgeScore,
       judgeHumanCorrelation: correlation,
       correlationWarning,
+    };
+  }
+
+  /**
+   * Per-template breakdown for the A/B comparison admin screen
+   * (`reportTemplateStatsBreakdown`). Wraps the repository's grouped
+   * fetch with the same Pearson + warning-threshold logic the
+   * single-row stats path uses, so both screens compute correlation
+   * the same way (3-pair minimum, 0.7 threshold) — admins get
+   * comparable signals across the aggregate KPI and the breakdown.
+   */
+  async getTemplateBreakdown(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      includeInactive: boolean;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{
+    items: Array<TemplateBreakdownRow & {
+      judgeHumanCorrelation: number | null;
+      correlationWarning: boolean;
+    }>;
+    totalCount: number;
+  }> {
+    const result = await this.repository.getTemplateBreakdown(ctx, params);
+    return {
+      items: result.items.map((row) => {
+        const correlation = pearsonCorrelation(row.pairs);
+        const correlationWarning =
+          correlation !== null && correlation < JUDGE_HUMAN_CORRELATION_WARNING_THRESHOLD;
+        return { ...row, judgeHumanCorrelation: correlation, correlationWarning };
+      }),
+      totalCount: result.totalCount,
     };
   }
 }

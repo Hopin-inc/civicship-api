@@ -1,4 +1,10 @@
-import { GqlReport, GqlReportTemplate, GqlReportsConnection } from "@/types/graphql";
+import {
+  GqlReport,
+  GqlReportTemplate,
+  GqlReportsConnection,
+  GqlAdminReportSummaryConnection,
+  GqlAdminReportSummaryRow,
+} from "@/types/graphql";
 import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
 import {
   CohortRetentionRow,
@@ -321,6 +327,63 @@ export default class ReportPresenter {
         hasPreviousPage: false,
         startCursor: page[0]?.id ?? null,
         endCursor: page[page.length - 1]?.id ?? null,
+      },
+      totalCount,
+    };
+  }
+
+  /**
+   * Phase 2 sysAdmin: AdminReportSummaryConnection presenter. Each
+   * row carries the denormalized last-publish pointer plus the rolling
+   * 90-day count from the repository; the resolver hydrates the
+   * `community` / `lastPublishedReport` field via dataloader, so the
+   * returned shape only needs the bare ids and scalars.
+   *
+   * `daysSinceLastPublish` is computed here from `lastPublishedAt`
+   * (anchored to the request time) rather than denormalized — it
+   * changes daily and the math is one line. Returns `null` for never-
+   * published communities so the UI can render "—" instead of "0
+   * days" (which would suggest a recent publish).
+   */
+  static adminReportSummaryConnection(
+    items: Array<{
+      communityId: string;
+      lastPublishedReportId: string | null;
+      lastPublishedAt: Date | null;
+      publishedCountLast90Days: number;
+    }>,
+    totalCount: number,
+    requestedFirst: number,
+  ): GqlAdminReportSummaryConnection {
+    const hasNextPage = items.length > requestedFirst;
+    const page = hasNextPage ? items.slice(0, requestedFirst) : items;
+    const now = Date.now();
+    const millisPerDay = 24 * 60 * 60 * 1000;
+    return {
+      edges: page.map((row) => ({
+        cursor: row.communityId,
+        // Field resolvers (`community`, `lastPublishedReport`) on
+        // AdminReportSummaryRow read `communityId` /
+        // `lastPublishedReportId` off the parent and hydrate via
+        // dataloader. Casting through `unknown` matches the
+        // `report` / `reportTemplate` presenters above — the parent
+        // shape carries the relation ids; the field resolvers fill
+        // in the relations themselves at GraphQL execution time.
+        node: {
+          communityId: row.communityId,
+          lastPublishedReportId: row.lastPublishedReportId,
+          lastPublishedAt: row.lastPublishedAt,
+          daysSinceLastPublish: row.lastPublishedAt
+            ? Math.floor((now - row.lastPublishedAt.getTime()) / millisPerDay)
+            : null,
+          publishedCountLast90Days: row.publishedCountLast90Days,
+        } as unknown as GqlAdminReportSummaryRow,
+      })),
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage: false,
+        startCursor: page[0]?.communityId ?? null,
+        endCursor: page[page.length - 1]?.communityId ?? null,
       },
       totalCount,
     };

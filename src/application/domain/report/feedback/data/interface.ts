@@ -1,6 +1,12 @@
-import { Prisma, FeedbackType } from "@prisma/client";
+import { Prisma, FeedbackType, ReportTemplateKind } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaReportFeedback } from "@/application/domain/report/feedback/data/type";
+import {
+  PrismaReportFeedback,
+  TemplateBreakdownRow,
+  JudgeFeedbackPairRow,
+} from "@/application/domain/report/feedback/data/type";
+
+export { JudgeFeedbackPairRow };
 
 export interface CreateReportFeedbackInput {
   reportId: string;
@@ -9,19 +15,6 @@ export interface CreateReportFeedbackInput {
   feedbackType?: FeedbackType | null;
   sectionKey?: string | null;
   comment?: string | null;
-}
-
-/**
- * Paired (judgeScore, avgFeedbackRating) rows used by the service to
- * compute Pearson's r between the two series. A report is eligible to
- * appear here only when both signals exist — reports with no feedback are
- * skipped upstream rather than contributing a 0 that would bias the
- * correlation.
- */
-export interface JudgeFeedbackPairRow {
-  reportId: string;
-  judgeScore: number;
-  avgRating: number;
 }
 
 export interface IReportFeedbackRepository {
@@ -69,4 +62,31 @@ export interface IReportFeedbackRepository {
     pairs: JudgeFeedbackPairRow[];
     version: number | null;
   }>;
+
+  /**
+   * Per-template breakdown for the A/B comparison screen
+   * (`reportTemplateStatsBreakdown`). Each row pairs a template's
+   * config snapshot (version / scope / kind / experimentKey / state)
+   * with feedbackCount / avgRating / avgJudgeScore aggregated over
+   * the Reports that used it, plus the per-template (judgeScore,
+   * avgRating) pair set the service runs Pearson's r over.
+   *
+   * Implementation must use a LEFT JOIN from `t_report_templates` so
+   * a template with zero feedback still surfaces (the UI displays
+   * `—` for the metrics rather than omitting the row). Pagination
+   * is `id ASC` based for cursor stability — the breakdown rows are
+   * O(versions × experimentKeys) per variant, which can reach the
+   * hundreds for variants with active experimentation.
+   */
+  getTemplateBreakdown(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      includeInactive: boolean;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: TemplateBreakdownRow[]; totalCount: number }>;
 }

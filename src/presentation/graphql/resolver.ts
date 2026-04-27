@@ -156,6 +156,7 @@ const resolvers = {
 
   Report: { ...report.Report, ...reportFeedback.Report },
   ReportTemplate: report.ReportTemplate,
+  AdminReportSummaryRow: report.AdminReportSummaryRow,
   ReportFeedback: reportFeedback.ReportFeedback,
   GenerateReportPayload: report.GenerateReportPayload,
   UpdateReportTemplatePayload: report.UpdateReportTemplatePayload,
