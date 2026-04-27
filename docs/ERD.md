@@ -387,6 +387,8 @@ OTHER OTHER
     DateTime established_at "❓"
     String website "❓"
     String image_id "❓"
+    DateTime last_published_report_at "❓"
+    String last_published_report_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }

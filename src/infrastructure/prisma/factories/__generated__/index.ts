@@ -1930,6 +1930,8 @@ type CommunityFactoryDefineInput = {
     bio?: string | null;
     establishedAt?: Date | null;
     website?: string | null;
+    lastPublishedReportAt?: Date | null;
+    lastPublishedReportId?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     image?: CommunityimageFactory | Prisma.ImageCreateNestedOneWithoutCommunitiesInput;
