@@ -11,12 +11,20 @@ ALTER TABLE "t_communities"
   ADD COLUMN "last_published_report_id" TEXT;
 
 -- CreateIndex
+-- NULLS LAST aligns the index ordering with adminBrowseReports'
+-- `publishedAt DESC NULLS LAST, createdAt DESC` so the planner can
+-- satisfy the sort directly from the index (PG default for DESC is
+-- NULLS FIRST, which would force a re-sort).
 CREATE INDEX "idx_t_reports_published_at_created_at"
-  ON "t_reports"("published_at" DESC, "created_at" DESC);
+  ON "t_reports"("published_at" DESC NULLS LAST, "created_at" DESC);
 
 -- CreateIndex
+-- NULLS FIRST aligns the index ordering with adminReportSummary's
+-- dormant-first sort `last_published_report_at ASC NULLS FIRST` —
+-- PG default for ASC is NULLS LAST, so an unqualified index would
+-- not be usable for the L1 dashboard's primary sort path.
 CREATE INDEX "idx_t_communities_last_published_report_at"
-  ON "t_communities"("last_published_report_at" ASC);
+  ON "t_communities"("last_published_report_at" ASC NULLS FIRST);
 
 -- Backfill: 各 community で status=PUBLISHED の最新レポートを引き、新規列に流し込む。
 -- DISTINCT ON で per-community に 1 行だけ抽出する Postgres 流の書き方。

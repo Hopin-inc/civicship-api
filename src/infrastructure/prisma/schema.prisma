@@ -215,7 +215,11 @@ model Community {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([lastPublishedReportAt(sort: Asc)], map: "idx_t_communities_last_published_report_at")
+  // `nulls: First` makes the index ordering match the
+  // `adminReportSummary` query's `last_published_report_at ASC NULLS
+  // FIRST` (dormant-first) so the sort is index-served — ASC defaults
+  // to NULLS LAST in PostgreSQL, which would force a re-sort.
+  @@index([lastPublishedReportAt(sort: Asc, nulls: First)], map: "idx_t_communities_last_published_report_at")
   @@map("t_communities")
 }
 
@@ -1848,7 +1852,12 @@ model Report {
   // publishedAt DESC NULLS LAST, createdAt DESC. The community-scoped
   // indexes above don't help when communityId is unfiltered, so this
   // dedicated index backs the sysAdmin sweep.
-  @@index([publishedAt(sort: Desc), createdAt(sort: Desc)], map: "idx_t_reports_published_at_created_at")
+  // `nulls: Last` makes the index ordering match the
+  // `adminBrowseReports` query's `publishedAt DESC NULLS LAST,
+  // createdAt DESC` so PostgreSQL can satisfy the sort directly from
+  // the index — without it the planner has to re-sort because DESC's
+  // default is NULLS FIRST.
+  @@index([publishedAt(sort: Desc, nulls: Last), createdAt(sort: Desc)], map: "idx_t_reports_published_at_created_at")
   @@map("t_reports")
 }
 

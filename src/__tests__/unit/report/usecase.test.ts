@@ -855,7 +855,7 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
 
     await expect(
       usecase.adminBrowseReports({ first: 500 }, fakeCtx),
-    ).rejects.toThrow(/first must be between 1 and 100/);
+    ).rejects.toThrow(/first must be an integer between 1 and 100/);
   });
 
   it("adminViewReportSummary clamps `first` and forwards cursor", async () => {

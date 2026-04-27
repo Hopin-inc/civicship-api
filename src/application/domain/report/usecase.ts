@@ -795,7 +795,7 @@ export default class ReportUseCase {
     ctx: IContext,
   ): Promise<GqlReportsConnection> {
     const first = args.first
-      ? clampInt(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
+      ? validateIntInRange(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
       : DEFAULT_REPORTS_PER_PAGE;
     const result = await this.service.getAllReports(ctx, {
       communityId: args.communityId ?? undefined,
@@ -821,7 +821,7 @@ export default class ReportUseCase {
     ctx: IContext,
   ): Promise<GqlAdminReportSummaryConnection> {
     const first = args.first
-      ? clampInt(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
+      ? validateIntInRange(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
       : DEFAULT_REPORTS_PER_PAGE;
     const result = await this.service.getCommunityReportSummary(ctx, {
       cursor: args.cursor ?? undefined,
@@ -850,6 +850,31 @@ function clampInt(value: number, min: number, max: number, name: string): number
   }
   if (value < min || value > max) {
     throw new RangeError(`${name} must be between ${min} and ${max}, got ${value}`);
+  }
+  return value;
+}
+
+/**
+ * Mirror of `feedback/usecase.ts`'s `validateInt` so the admin-query
+ * paths in this file (`adminBrowseReports`, `adminViewReportSummary`)
+ * surface a `ValidationError` instead of `clampInt`'s `RangeError` —
+ * `ValidationError` is what the GraphQL error mapper translates into a
+ * client-facing `ValidationError` extension. Existing `clampInt`
+ * call sites (buildReportPayload's window/topN/commentLimit and the
+ * legacy `browseReports`) keep their current behaviour to avoid
+ * widening this PR's scope into a domain-wide refactor.
+ */
+function validateIntInRange(
+  value: number,
+  min: number,
+  max: number,
+  name: string,
+): number {
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new ValidationError(
+      `${name} must be an integer between ${min} and ${max}, got ${value}`,
+      [name],
+    );
   }
   return value;
 }
