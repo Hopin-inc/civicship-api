@@ -285,7 +285,18 @@ export const DEFAULT_WINDOW_MONTHS = 10;
  * analytics need the spec references today.
  */
 export const MAX_WINDOW_MONTHS = 36;
-export const MAX_LIMIT = 200;
+/**
+ * Member-list page-size cap. Raised from the historical 200 to 1000
+ * so client-side aggregations that span the full membership (e.g.
+ * the L2 "受領→送付 転換率" / recipient-to-sender conversion rate
+ * derived from `SysAdminMemberRow.uniqueDonationSenders` +
+ * `totalPointsOut`) can pull a single page without N round-trips
+ * for typical communities. Communities larger than 1000 members
+ * still need cursor pagination — the cap exists to prevent a
+ * malformed/hostile request from materialising the full member set
+ * for an arbitrarily large community in one response.
+ */
+export const MAX_LIMIT = 1000;
 export const ACTIVE_DROP_THRESHOLD = -0.2; // month-over-month fraction
 export const NO_NEW_MEMBERS_WINDOW_DAYS = 14;
 

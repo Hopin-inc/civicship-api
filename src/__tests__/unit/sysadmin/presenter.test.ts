@@ -56,6 +56,10 @@ describe("SysAdminPresenter", () => {
         uniqueDonationRecipients: 4,
         daysIn: 365,
         donationOutDays: 40,
+        totalPointsIn: BigInt(2_500),
+        donationInMonths: 6,
+        donationInDays: 18,
+        uniqueDonationSenders: 3,
         lastDonationDay: new Date("2026-04-01"),
       };
       const out = SysAdminPresenter.memberRow(row);
@@ -64,6 +68,38 @@ describe("SysAdminPresenter", () => {
       expect(out.uniqueDonationRecipients).toBe(4);
       expect(out.daysIn).toBe(365);
       expect(out.donationOutDays).toBe(40);
+      // Receiver-side fields land alongside the sender-side ones.
+      // bigint goes through bigintToSafeNumber for the same loud-
+      // overflow contract as totalPointsOut.
+      expect(out.totalPointsIn).toBe(2_500);
+      expect(typeof out.totalPointsIn).toBe("number");
+      expect(out.donationInMonths).toBe(6);
+      expect(out.donationInDays).toBe(18);
+      expect(out.uniqueDonationSenders).toBe(3);
+    });
+
+    it("throws RangeError when totalPointsIn overflows safe integer", () => {
+      // Symmetric loud-overflow guarantee with totalPointsOut.
+      // A pure receiver who somehow accumulated a bigint past
+      // Number.MAX_SAFE_INTEGER must surface as a RangeError, not
+      // silently truncate in the externally-reported total.
+      const row: SysAdminMemberStatsRow = {
+        userId: "u1",
+        name: null,
+        monthsIn: 1,
+        donationOutMonths: 0,
+        userSendRate: 0,
+        totalPointsOut: BigInt(0),
+        uniqueDonationRecipients: 0,
+        daysIn: 1,
+        donationOutDays: 0,
+        totalPointsIn: BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1),
+        donationInMonths: 0,
+        donationInDays: 0,
+        uniqueDonationSenders: 0,
+        lastDonationDay: null,
+      };
+      expect(() => SysAdminPresenter.memberRow(row)).toThrow(RangeError);
     });
 
     it("passes null name through untouched", () => {
@@ -77,6 +113,10 @@ describe("SysAdminPresenter", () => {
         uniqueDonationRecipients: 0,
         daysIn: 1,
         donationOutDays: 0,
+        totalPointsIn: BigInt(0),
+        donationInMonths: 0,
+        donationInDays: 0,
+        uniqueDonationSenders: 0,
         lastDonationDay: null,
       };
       expect(SysAdminPresenter.memberRow(row).name).toBeNull();
@@ -151,6 +191,10 @@ describe("SysAdminPresenter", () => {
       donationPointsSum: BigInt(0),
       donationTxCount: BigInt(0),
       donationChainTxCount: BigInt(0),
+      // Default to "no dormant base / no returners" for the
+      // baseline fixture; specific tests override per-row.
+      dormantCountEndOfMonth: 0,
+      returnedMembers: null,
     };
 
     it("returns null chainPct when no DONATION tx occurred that month", () => {
@@ -183,6 +227,35 @@ describe("SysAdminPresenter", () => {
       expect(out.communityActivityRate).toBeCloseTo(0.2);
       expect(out.chainPct).toBeCloseTo(0.3);
       expect(out.donationPointsSum).toBe(5_000);
+    });
+
+    it("passes dormantCountEndOfMonth + returnedMembers through to dormantCount + returnedMembers", () => {
+      // The presenter is the only place dormantCountEndOfMonth ->
+      // dormantCount renaming happens; pinning it here keeps the
+      // "internal name has 'EndOfMonth' suffix, GraphQL field
+      // doesn't" contract from drifting silently. Returns from
+      // the row pass straight through (no derivation).
+      const out = SysAdminPresenter.monthlyActivityPoint({
+        ...baseRow,
+        dormantCountEndOfMonth: 7,
+        returnedMembers: 3,
+      });
+      expect(out.dormantCount).toBe(7);
+      expect(out.returnedMembers).toBe(3);
+    });
+
+    it("preserves null returnedMembers (= first month in series) without coercing to 0", () => {
+      // The repository emits null for the first month so the
+      // client can render "no prior month to compare" rather
+      // than misinterpret 0 as "zero returners". The presenter
+      // must propagate that null untouched.
+      const out = SysAdminPresenter.monthlyActivityPoint({
+        ...baseRow,
+        dormantCountEndOfMonth: 5,
+        returnedMembers: null,
+      });
+      expect(out.returnedMembers).toBeNull();
+      expect(out.dormantCount).toBe(5);
     });
 
     it("throws RangeError when donation tx count overflows safe integer", () => {
@@ -241,6 +314,10 @@ describe("SysAdminPresenter", () => {
             uniqueDonationRecipients: 0,
             daysIn: 30,
             donationOutDays: 1,
+            totalPointsIn: BigInt(0),
+            donationInMonths: 0,
+            donationInDays: 0,
+            uniqueDonationSenders: 0,
             lastDonationDay: new Date("2026-04-25"),
           },
         ],
