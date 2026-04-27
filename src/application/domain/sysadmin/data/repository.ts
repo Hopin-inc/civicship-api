@@ -1177,17 +1177,19 @@ export default class SysAdminRepository implements ISysAdminRepository {
           SELECT generate_series(1, ${maxBucketDepth}::int) AS depth
         ),
         depth_counts AS (
-          -- GROUP BY uses positional reference (1) rather than
-          -- repeating the LEAST(...) expression. Prisma assigns a
-          -- new bind parameter to every Prisma substitution slot,
+          -- GROUP BY references the SELECT alias (depth) instead
+          -- of repeating the LEAST(...) expression. Prisma assigns
+          -- a new bind parameter to every Prisma substitution slot,
           -- so writing the same LEAST(...) expression twice (once
           -- in SELECT, once in GROUP BY) yields two different
           -- parameter slots ($1, $3) at the wire level. PostgreSQL
           -- then refuses to recognise the GROUP BY expression as
           -- matching the SELECT one syntactically, raising
           -- "column t.chain_depth must appear in the GROUP BY
-          -- clause". Positional GROUP BY sidesteps the parameter
-          -- duplication entirely.
+          -- clause". Alias reference (PostgreSQL-supported since
+          -- 9.x) sidesteps the parameter duplication and stays
+          -- robust to future SELECT-column reorders, unlike
+          -- positional GROUP BY.
           SELECT
             LEAST(t."chain_depth", ${maxBucketDepth}::int) AS depth,
             COUNT(*)::int AS n
@@ -1199,7 +1201,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           WHERE t."reason" = 'DONATION'
             AND t."chain_depth" >= 1
             AND t."created_at" < ab.upper_ts
-          GROUP BY 1
+          GROUP BY depth
         )
         SELECT
           bk.depth AS depth,
