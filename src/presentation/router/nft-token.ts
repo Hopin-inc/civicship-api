@@ -6,6 +6,7 @@ import { nftSyncRateLimit } from "@/presentation/middleware/rate-limit";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
+import { isUpstreamTimeout } from "@/presentation/router/utils/error";
 
 const router = express();
 
@@ -31,8 +32,7 @@ router.put(
 
       return res.status(200).json({ success: true, ...result });
     } catch (error) {
-      const errorCode = (error as { code?: string })?.code;
-      if (errorCode === "ETIMEDOUT") {
+      if (isUpstreamTimeout(error)) {
         logger.warn("NFT token sync timeout:", error);
         return res.status(504).json({ error: "Upstream timeout" });
       }

@@ -129,6 +129,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         description: data.description,
         imageUrl: data.imageUrl,
         json: data.json,
+        nftWalletId: data.nftWalletId,
         communityId: data.communityId,
       },
       create: {

@@ -56,6 +56,11 @@ export default class NftInstanceService {
       throw new NotFoundError("NftWallet", { walletAddress: ownerAddress });
     }
 
+    const tokenWithCommunity = await tx.nftToken.findUnique({
+      where: { id: nftToken.id },
+      select: { communityId: true },
+    });
+
     const result = await this.repository.upsert(
       ctx,
       {
@@ -66,7 +71,7 @@ export default class NftInstanceService {
         json: instanceInfo as unknown as Record<string, unknown>,
         nftWalletId: nftWallet.id,
         nftTokenId: nftToken.id,
-        communityId: null,
+        communityId: tokenWithCommunity?.communityId ?? null,
       },
       nftToken.id,
       tx,
