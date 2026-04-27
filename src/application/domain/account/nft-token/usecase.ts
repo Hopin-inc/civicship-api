@@ -31,8 +31,9 @@ export default class NftTokenUseCase {
   }
 
   async syncByAddress(ctx: IContext, address: string): Promise<SyncNftTokenResult> {
+    const tokenInfo = await this.service.fetchTokenFromChain(address);
     const result = await this.issuer.internal((tx) =>
-      this.service.syncByAddress(ctx, address, tx),
+      this.service.persistTokenFromInfo(ctx, address, tokenInfo, tx),
     );
     return { id: result.id, address: result.address };
   }

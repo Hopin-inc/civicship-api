@@ -81,6 +81,7 @@ export default class NftTokenRepository implements INftTokenRepository {
           name: true,
           symbol: true,
           type: true,
+          communityId: true,
           updatedAt: true,
         },
       });
@@ -95,6 +96,7 @@ export default class NftTokenRepository implements INftTokenRepository {
           name: true,
           symbol: true,
           type: true,
+          communityId: true,
           updatedAt: true,
         },
       });

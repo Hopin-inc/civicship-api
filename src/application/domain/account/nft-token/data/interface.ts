@@ -25,6 +25,7 @@ export interface INftTokenRepository {
     name: string | null;
     symbol: string | null;
     type: string;
+    communityId: string | null;
     updatedAt: Date | null;
   } | null>;
 

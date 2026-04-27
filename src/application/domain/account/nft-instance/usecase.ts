@@ -3,6 +3,7 @@ import { GqlNftInstanceFilterInput, GqlNftInstanceSortInput } from "@/types/grap
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
+import { NotFoundError } from "@/errors/graphql";
 
 export type SyncNftInstanceResult = {
   id: string;
@@ -37,8 +38,22 @@ export default class NftInstanceUseCase {
     tokenAddress: string,
     instanceId: string,
   ): Promise<SyncNftInstanceResult> {
+    const nftToken = await this.service.findTokenForSync(ctx, tokenAddress);
+    const instanceInfo = await this.service.fetchInstanceFromChain(tokenAddress, instanceId);
+
+    const ownerAddress = instanceInfo.owner?.hash;
+    if (!ownerAddress) {
+      throw new NotFoundError("NftInstanceOwner", { tokenAddress, instanceId });
+    }
+
+    const nftWallet = await this.service.findOwnerWallet(ctx, ownerAddress);
+
     return this.issuer.internal((tx) =>
-      this.service.syncByTokenAddressAndInstanceId(ctx, tokenAddress, instanceId, tx),
+      this.service.persistInstanceFromInfo(
+        ctx,
+        { tokenAddress, instanceId, instanceInfo, nftToken, nftWallet },
+        tx,
+      ),
     );
   }
 }

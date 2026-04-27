@@ -26,40 +26,48 @@ export default class NftInstanceService {
     @inject("NFTWalletRepository") private readonly nftWalletRepository: NFTWalletRepository,
   ) {}
 
-  async syncByTokenAddressAndInstanceId(
-    ctx: IContext,
-    tokenAddress: string,
-    instanceId: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    const nftToken = await this.nftTokenRepository.findByAddress(ctx, tokenAddress, tx);
+  async findTokenForSync(ctx: IContext, tokenAddress: string) {
+    const nftToken = await this.nftTokenRepository.findByAddress(ctx, tokenAddress);
     if (!nftToken) {
       throw new NotFoundError("NftToken", { address: tokenAddress });
     }
+    return nftToken;
+  }
 
+  async fetchInstanceFromChain(
+    tokenAddress: string,
+    instanceId: string,
+  ): Promise<BaseSepoliaTokenInstanceResponse> {
     const baseApiUrl =
       process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
-    const instanceInfo = await fetchWithRetry<BaseSepoliaTokenInstanceResponse>(
+    return fetchWithRetry<BaseSepoliaTokenInstanceResponse>(
       `${baseApiUrl}/tokens/${tokenAddress}/instances/${instanceId}`,
       INSTANCE_SYNC_MAX_RETRIES,
       INSTANCE_SYNC_RETRY_DELAY,
       INSTANCE_SYNC_TIMEOUT,
     );
+  }
 
-    const ownerAddress = instanceInfo.owner?.hash;
-    if (!ownerAddress) {
-      throw new NotFoundError("NftInstanceOwner", { tokenAddress, instanceId });
-    }
-
+  async findOwnerWallet(ctx: IContext, ownerAddress: string) {
     const nftWallet = await this.nftWalletRepository.findByWalletAddress(ctx, ownerAddress);
     if (!nftWallet) {
       throw new NotFoundError("NftWallet", { walletAddress: ownerAddress });
     }
+    return nftWallet;
+  }
 
-    const tokenWithCommunity = await tx.nftToken.findUnique({
-      where: { id: nftToken.id },
-      select: { communityId: true },
-    });
+  async persistInstanceFromInfo(
+    ctx: IContext,
+    params: {
+      tokenAddress: string;
+      instanceId: string;
+      instanceInfo: BaseSepoliaTokenInstanceResponse;
+      nftToken: { id: string; communityId: string | null };
+      nftWallet: { id: string };
+    },
+    tx: Prisma.TransactionClient,
+  ) {
+    const { tokenAddress, instanceId, instanceInfo, nftToken, nftWallet } = params;
 
     const result = await this.repository.upsert(
       ctx,
@@ -71,7 +79,7 @@ export default class NftInstanceService {
         json: instanceInfo as unknown as Record<string, unknown>,
         nftWalletId: nftWallet.id,
         nftTokenId: nftToken.id,
-        communityId: tokenWithCommunity?.communityId ?? null,
+        communityId: nftToken.communityId,
       },
       nftToken.id,
       tx,
@@ -80,7 +88,7 @@ export default class NftInstanceService {
     logger.debug("✅ NFT instance synced", {
       tokenAddress,
       instanceId,
-      walletAddress: ownerAddress,
+      nftWalletId: nftWallet.id,
     });
 
     return { id: result.id, instanceId, tokenAddress, nftTokenId: nftToken.id };

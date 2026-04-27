@@ -21,16 +21,23 @@ export default class NftTokenService {
     @inject("NftTokenConverter") private readonly converter: NftTokenConverter,
   ) {}
 
-  async syncByAddress(ctx: IContext, address: string, tx: Prisma.TransactionClient) {
+  async fetchTokenFromChain(address: string): Promise<BaseSepoliaTokenResponse> {
     const baseApiUrl =
       process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
-    const tokenInfo = await fetchWithRetry<BaseSepoliaTokenResponse>(
+    return fetchWithRetry<BaseSepoliaTokenResponse>(
       `${baseApiUrl}/tokens/${address}`,
       TOKEN_SYNC_MAX_RETRIES,
       TOKEN_SYNC_RETRY_DELAY,
       TOKEN_SYNC_TIMEOUT,
     );
+  }
 
+  async persistTokenFromInfo(
+    ctx: IContext,
+    address: string,
+    tokenInfo: BaseSepoliaTokenResponse,
+    tx: Prisma.TransactionClient,
+  ) {
     return this.repository.upsert(
       ctx,
       {
