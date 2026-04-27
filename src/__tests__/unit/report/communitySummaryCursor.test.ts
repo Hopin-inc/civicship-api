@@ -27,4 +27,15 @@ describe("CommunitySummaryCursor encoding", () => {
     const badAt = Buffer.from(JSON.stringify({ at: 0, id: "x" })).toString("base64url");
     expect(decodeCommunitySummaryCursor(badAt)).toBeNull();
   });
+
+  it("rejects strings that aren't parseable as timestamps", () => {
+    // Without this guard the cursor would reach Postgres as
+    // `'not-a-date'::timestamp` and trigger a 500 — exactly what the
+    // lenient-decode contract is meant to prevent.
+    const cases = ["not-a-date", "", "2026-13-99T99:99:99Z"];
+    for (const at of cases) {
+      const cursor = Buffer.from(JSON.stringify({ at, id: "x" })).toString("base64url");
+      expect(decodeCommunitySummaryCursor(cursor)).toBeNull();
+    }
+  });
 });

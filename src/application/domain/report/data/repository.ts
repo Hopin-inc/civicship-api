@@ -1394,6 +1394,14 @@ export function decodeCommunitySummaryCursor(
     if (!parsed || typeof parsed !== "object") return null;
     if (typeof parsed.id !== "string") return null;
     if (parsed.at !== null && typeof parsed.at !== "string") return null;
+    // Tampered / corrupted cursor where `at` is a string but not a
+    // parseable timestamp (e.g. "", "not-a-date") would otherwise
+    // sail through here and explode in Postgres on `${at}::timestamp`,
+    // breaking the "stale cursor → first-page scan" contract this
+    // helper is supposed to enforce. Reject early.
+    if (parsed.at !== null && Number.isNaN(new Date(parsed.at).getTime())) {
+      return null;
+    }
     return { at: parsed.at, id: parsed.id };
   } catch {
     return null;
