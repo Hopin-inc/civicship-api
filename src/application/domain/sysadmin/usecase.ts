@@ -131,6 +131,7 @@ export default class SysAdminUseCase {
     const asOf = input.asOf ?? new Date();
     const thresholds = resolveThresholds(input.segmentThresholds);
     const dormantThresholdDays = clampDormantThresholdDays(input.dormantThresholdDays);
+    const hubBreadthThreshold = clampHubBreadthThreshold(input.hubBreadthThreshold);
     // Clamp to [1, MAX_WINDOW_MONTHS]. getCohortRetention and the
     // retention-trend fan-out both scale linearly with this value, so
     // a cap prevents a single request from exhausting the connection
@@ -158,7 +159,13 @@ export default class SysAdminUseCase {
       chainDepthDistribution,
     ] = await Promise.all([
       this.service.getMemberStats(ctx, community.communityId, asOf),
-      this.service.getMonthlyActivity(ctx, community.communityId, asOf, windowMonths),
+      this.service.getMonthlyActivity(
+        ctx,
+        community.communityId,
+        asOf,
+        windowMonths,
+        hubBreadthThreshold,
+      ),
       this.service.getAllTimeTotals(ctx, community.communityId, asOf),
       this.service.getMonthActivityWithPrev(ctx, community.communityId, asOf),
       this.service.getRetentionTrend(ctx, community.communityId, asOf, windowMonths),

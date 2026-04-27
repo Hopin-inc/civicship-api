@@ -49,12 +49,19 @@ export interface ISysAdminRepository {
    * ending at `asOf`. One row per month with data; months with zero
    * senders and zero new members are still emitted (with zero
    * counters) so the UI can render a contiguous x-axis.
+   *
+   * `hubBreadthThreshold` controls the per-month hub classification:
+   * a sender is counted as a hub for month N if they sent DONATION
+   * to >= hubBreadthThreshold distinct recipients during the trailing
+   * 28-day window ending at month N's end. Same threshold semantic
+   * as `findWindowHubMemberCount`, evaluated at each month-end.
    */
   findMonthlyActivity(
     ctx: IContext,
     communityId: string,
     asOf: Date,
     windowMonths: number,
+    hubBreadthThreshold: number,
   ): Promise<SysAdminMonthlyActivityRow[]>;
 
   /**
@@ -92,6 +99,13 @@ export interface ISysAdminRepository {
    * would double-count under SUM. Same reasoning as the
    * `donation_recipients` CTE in `findMemberStats`, restricted to
    * the parametric window instead of the full tenure.
+   *
+   * Senders are restricted to users still JOINED in this community
+   * at `upper` (membership filter mirrors `findActivitySnapshot`
+   * /`findMemberStats`), so a now-departed member who donated
+   * while a member is excluded. Without that filter, the L1
+   * invariant `hubMemberCount <= senderCount <= totalMembers`
+   * would not hold.
    */
   findWindowHubMemberCount(
     ctx: IContext,

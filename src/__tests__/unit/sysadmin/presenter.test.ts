@@ -197,10 +197,11 @@ describe("SysAdminPresenter", () => {
       donationPointsSum: BigInt(0),
       donationTxCount: BigInt(0),
       donationChainTxCount: BigInt(0),
-      // Default to "no dormant base / no returners" for the
-      // baseline fixture; specific tests override per-row.
+      // Default to "no dormant base / no returners / no hubs" for
+      // the baseline fixture; specific tests override per-row.
       dormantCountEndOfMonth: 0,
       returnedMembers: null,
+      hubMemberCount: 0,
     };
 
     it("returns null chainPct when no DONATION tx occurred that month", () => {
@@ -262,6 +263,28 @@ describe("SysAdminPresenter", () => {
       });
       expect(out.returnedMembers).toBeNull();
       expect(out.dormantCount).toBe(5);
+    });
+
+    it("passes hubMemberCount through verbatim from the repository row", () => {
+      // The presenter is a straight passthrough for hubMemberCount —
+      // the repository COALESCEs to a non-null integer and the
+      // GraphQL field is declared nullable for forward compatibility
+      // only. Pin the passthrough here so a future "convert 0 to
+      // null" tweak in the presenter would surface as a test failure
+      // rather than a silent contract change.
+      const out = SysAdminPresenter.monthlyActivityPoint({
+        ...baseRow,
+        hubMemberCount: 4,
+      });
+      expect(out.hubMemberCount).toBe(4);
+    });
+
+    it("hubMemberCount stays 0 (not null) when the repository row reports zero hubs", () => {
+      const out = SysAdminPresenter.monthlyActivityPoint({
+        ...baseRow,
+        hubMemberCount: 0,
+      });
+      expect(out.hubMemberCount).toBe(0);
     });
 
     it("throws RangeError when donation tx count overflows safe integer", () => {

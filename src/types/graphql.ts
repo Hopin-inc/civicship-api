@@ -3104,6 +3104,21 @@ export type GqlSysAdminCommunityDetailInput = {
    */
   dormantThresholdDays?: InputMaybe<Scalars['Int']['input']>;
   /**
+   * Minimum number of distinct DONATION recipients within the trailing
+   * 28-day window ending at each month-end for a member to be classified
+   * as a hub in that month. Used to populate
+   * `SysAdminMonthlyActivityPoint.hubMemberCount`. Same semantic as
+   * `SysAdminDashboardInput.hubBreadthThreshold`, applied at month-end
+   * rather than at request `asOf`.
+   *
+   * Default 3. Effective range 1..1000; values outside are silently
+   * clamped on the server. Pass the same value used on
+   * `SysAdminDashboardInput.hubBreadthThreshold` to keep the L1
+   * hubMemberCount and the latest entry of
+   * `monthlyActivityTrend.hubMemberCount` directly comparable.
+   */
+  hubBreadthThreshold?: InputMaybe<Scalars['Int']['input']>;
+  /**
    * Member list page size (default 50, max 1000). Raised from the
    * previous max of 200 so client-side aggregations that need every
    * member of a community (e.g. the "受領→送付 転換率" /
@@ -3292,8 +3307,12 @@ export type GqlSysAdminCommunityOverview = {
    *   hubMemberCount <= windowActivity.senderCount <= totalMembers
    *
    * The first holds because any hub member donated >= 3 times in
-   * the window and is therefore a window sender; the second because
-   * any window sender is a JOINED member at asOf.
+   * the window and is therefore a window sender; the second
+   * because both `hubMemberCount` and `windowActivity.senderCount`
+   * are computed from senders restricted to JOINED-at-asOf members
+   * (a former member who left the community before asOf is excluded
+   * even if they donated during the window) and totalMembers is
+   * also JOINED-at-asOf, so the chain stays consistent.
    */
   hubMemberCount: Scalars['Int']['output'];
   /**
@@ -3654,6 +3673,42 @@ export type GqlSysAdminMonthlyActivityPoint = {
    * requests).
    */
   dormantCount: Scalars['Int']['output'];
+  /**
+   * Distinct members who, AS OF the END of this month, had sent
+   * DONATIONs to >= `hubBreadthThreshold` distinct recipients within
+   * the trailing 28-day window ending at the month-end. Same
+   * window-scoped semantic as
+   * `SysAdminCommunityOverview.hubMemberCount`, evaluated at
+   * month-end rather than at request `asOf`.
+   *
+   * Window: `[monthEnd - 28 JST日, monthEnd)`. The 28-day window is
+   * fixed (independent of any request input) so monthly
+   * hubMemberCount values across the trend stay comparable to each
+   * other — same precedent as `dormantCount`'s fixed 30-day window.
+   * `hubBreadthThreshold` follows
+   * `SysAdminCommunityDetailInput.hubBreadthThreshold` (default 3).
+   *
+   * Senders are restricted to users JOINED in the community at the
+   * month-end timestamp — same membership filter as
+   * `dormantCount` / L1 `senderCount` / L1 `hubMemberCount`. A
+   * member who left the community before this month-end is
+   * excluded even if they donated during the trailing window.
+   *
+   * When the L1 dashboard is queried with the default
+   * `windowDays = 28` and an `asOf` that falls at or near a JST
+   * month-end, the latest entry of `monthlyActivityTrend.hubMemberCount`
+   * equals `SysAdminCommunityOverview.hubMemberCount` for the same
+   * community (provided both queries pass the same
+   * `hubBreadthThreshold`).
+   *
+   * Currently always returns a non-null integer (0 for months with
+   * no qualifying senders), matching the precedent set by sibling
+   * monthly counters (`senderCount`, `dormantCount`). The field is
+   * declared nullable to preserve forward compatibility for a future
+   * refinement that may suppress months entirely outside the
+   * community's MV data range — clients should still tolerate null.
+   */
+  hubMemberCount?: Maybe<Scalars['Int']['output']>;
   /** First day (JST) of the calendar month, e.g. 2025-10-01T00:00+09:00. */
   month: Scalars['Datetime']['output'];
   /** t_memberships.created_at (status='JOINED') rows falling in the month. */
@@ -4010,10 +4065,19 @@ export type GqlSysAdminWindowActivity = {
   /**
    * Unique users with at least one outgoing DONATION transaction
    * during the current window (donation_out_count > 0 in
-   * mv_user_transaction_daily).
+   * mv_user_transaction_daily). Restricted to users who are still
+   * JOINED in this community at asOf — a now-departed member who
+   * donated during the window is excluded, mirroring the
+   * membership filter on `totalMembers`.
    */
   senderCount: Scalars['Int']['output'];
-  /** Same metric for the previous window of equal length. */
+  /**
+   * Same metric for the previous window of equal length. Same
+   * JOINED-at-asOf membership restriction applies (so the
+   * `senderCount` / `senderCountPrev` comparison stays
+   * apples-to-apples even when membership churn happens between
+   * the two windows).
+   */
   senderCountPrev: Scalars['Int']['output'];
 };
 
@@ -7374,6 +7438,7 @@ export type GqlSysAdminMonthlyActivityPointResolvers<ContextType = any, ParentTy
   communityActivityRate?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
   donationPointsSum?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
   dormantCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  hubMemberCount?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   month?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   newMembers?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   returnedMembers?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;

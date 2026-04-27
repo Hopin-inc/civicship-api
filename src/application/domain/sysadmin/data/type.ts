@@ -107,6 +107,21 @@ export type SysAdminMonthlyActivityRow = {
    * Backs `SysAdminMonthlyActivityPoint.returnedMembers`.
    */
   returnedMembers: number | null;
+  /**
+   * Distinct members who, evaluated within the 28-day window ending
+   * at this month-end, sent DONATION to >= hubBreadthThreshold
+   * distinct counterparties. Same window-scoped semantic as the L1
+   * `SysAdminCommunityOverview.hubMemberCount`, applied at month-end
+   * rather than at request `asOf`. The 28-day window is fixed for
+   * cross-month comparability (matches the L1 default `windowDays`
+   * and the dormantCount-monthly precedent).
+   *
+   * Always non-negative in the current implementation (0 for months
+   * with no qualifying senders); the public field on
+   * `SysAdminMonthlyActivityPoint` is declared nullable for forward
+   * compatibility but the repository never emits null today.
+   */
+  hubMemberCount: number;
 };
 
 /** All-time totals for the summary card, keyed by community. */
