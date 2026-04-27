@@ -121,6 +121,12 @@ export const TENURE_MONTHLY_BUCKETS = 13;
  * population at the ceiling. */
 export const CHAIN_DEPTH_MAX_BUCKET = 5;
 
+/** Day-grain window for the cohort funnel's "activated within 30
+ * days" stage. Pinned as a constant so the value can't drift apart
+ * from the SDL contract on `SysAdminCohortFunnelPoint.activatedD30`
+ * via a bare magic number in the ms math. */
+export const COHORT_ACTIVATION_WINDOW_DAYS = 30;
+
 /**
  * Approximate days-per-month conversion used to translate the
  * operator-facing `minMonthsIn` (calendar months) into the internal
@@ -571,13 +577,15 @@ export default class SysAdminService {
     let gte12Months = 0;
     // monthlyHistogram pre-allocates all 13 buckets (0..12) so the
     // returned array always has a stable shape regardless of input.
-    // Bucket index = floor(daysIn / 30), capped at 12 so 12+ months
-    // collapse into the final aggregating bucket. The 30-day-per-
-    // month conversion matches the lt1Month / m1to3Months / etc.
-    // boundaries above so the coarse buckets stay derivable from
-    // the histogram (lt1Month = histogram[0], m1to3Months =
-    // histogram[1] + histogram[2], m3to12Months = sum(3..11),
-    // gte12Months = histogram[12]).
+    // The 12 bucket aggregates daysIn >= 365 (= 12 calendar months
+    // by the same threshold the coarse `gte12Months` uses) so the
+    // two stay consistent: any member counted in `gte12Months` is
+    // also in histogram[12], and vice versa. Buckets 0..11 cover
+    // the [0, 365) range — bucket k = floor(daysIn / 30), clamped
+    // to 11 so 360..364 days do NOT silently land in the 12+
+    // aggregator (otherwise they'd be in histogram[12] but coarse
+    // `m3to12Months`, an asymmetry that would confuse downstream
+    // consumers stacking the histogram against the coarse bars).
     const monthlyHistogram: TenureHistogramBucket[] = Array.from(
       { length: TENURE_MONTHLY_BUCKETS },
       (_, monthsIn) => ({ monthsIn, count: 0 }),
@@ -588,12 +596,18 @@ export default class SysAdminService {
       else if (m.daysIn < 365) m3to12Months++;
       else gte12Months++;
       // Members with daysIn < 0 (data anomaly — shouldn't occur
-      // because findMemberStats clamps daysIn to >= 1) are dropped
-      // from the histogram so the contract documented in the SDL
-      // ("sum equals totalMembers minus members with negative
-      // tenure") holds.
-      if (m.daysIn < 0) continue;
-      const bucket = Math.min(Math.floor(m.daysIn / 30), TENURE_MONTHLY_BUCKETS - 1);
+      // because findMemberStats clamps daysIn to >= 1) are
+      // already counted in lt1Month above (daysIn < 0 < 30), so
+      // they also flow into histogram bucket 0 via the
+      // Math.max(0, ...) clamp below. Without that clamp,
+      // floor(negative / 30) would land in a negative array
+      // index and silently corrupt the histogram. Counting both
+      // representations keeps the documented derivation
+      // invariant (lt1Month == histogram[0]) intact.
+      const bucket =
+        m.daysIn >= 365
+          ? TENURE_MONTHLY_BUCKETS - 1
+          : Math.min(Math.max(Math.floor(m.daysIn / 30), 0), TENURE_MONTHLY_BUCKETS - 2);
       monthlyHistogram[bucket].count++;
     }
     return { lt1Month, m1to3Months, m3to12Months, gte12Months, monthlyHistogram };
@@ -759,16 +773,26 @@ export default class SysAdminService {
     }
     const earliest = cohortKeys[0]?.getTime() ?? 0;
     const latest = cohortKeys[cohortKeys.length - 1]?.getTime() ?? 0;
+    const activationCutoffMs = COHORT_ACTIVATION_WINDOW_DAYS * 24 * 60 * 60 * 1000;
     for (const member of members) {
       const cohort = jstMonthStart(member.joinedAt).getTime();
       if (cohort < earliest || cohort > latest) continue;
       const bucket = buckets.get(cohort);
       if (!bucket) continue;
       bucket.acquired++;
+      // Both sides are JST-day grain: firstDonationDay is already
+      // a JST date encoded at UTC midnight (see findMemberStats),
+      // and joinedAt is truncated to its JST date here so the
+      // "30 days within join" comparison is symmetric. Without
+      // truncation the joinedAt time-of-day component skewed the
+      // comparison by up to ±9h (JST offset), giving false
+      // positives / negatives at the 30-day boundary. The day-
+      // grain comparison matches the SDL "within 30 days of join"
+      // wording the operator UI exposes.
       if (
         member.firstDonationDay !== null &&
-        member.firstDonationDay.getTime() - member.joinedAt.getTime() <
-          30 * 24 * 60 * 60 * 1000
+        member.firstDonationDay.getTime() - truncateToJstDate(member.joinedAt).getTime() <
+          activationCutoffMs
       ) {
         bucket.activatedD30++;
       }

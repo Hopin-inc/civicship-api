@@ -1047,8 +1047,26 @@ export default class SysAdminRepository implements ISysAdminRepository {
       // chain-depth-3 transaction from a now-departed member is
       // still a real chain-depth-3 event in the historic graph,
       // and excluding it would distort the histogram's shape.
+      //
+      // The asof_bound CTE clamps t.created_at at the JST-day-end
+      // following asOf (= asOf JST day + 1 at JST midnight,
+      // expressed as naive UTC). Mirrors the upper-bound pattern
+      // used by findMemberStats / findAllTimeTotals so
+      // maxChainDepthAllTime (read from findAllTimeTotals) and
+      // chainDepthDistribution agree on which transactions are
+      // "all-time as of asOf" — without this clamp a transaction
+      // landing between asOf and JST-day-end would inflate
+      // maxChainDepthAllTime but be missed by the histogram, an
+      // off-by-one inconsistency within a single L2 payload.
       const rows = await tx.$queryRaw<{ depth: number; count: number }[]>`
-        WITH bucket_keys AS (
+        WITH asof_bound AS (
+          SELECT
+            (
+              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+            ) AS upper_ts
+        ),
+        bucket_keys AS (
           SELECT generate_series(1, ${maxBucketDepth}::int) AS depth
         ),
         depth_counts AS (
@@ -1059,9 +1077,10 @@ export default class SysAdminRepository implements ISysAdminRepository {
           INNER JOIN "t_wallets" fw
             ON fw."id" = t."from"
             AND fw."community_id" = ${communityId}
+          CROSS JOIN asof_bound ab
           WHERE t."reason" = 'DONATION'
             AND t."chain_depth" >= 1
-            AND t."created_at" <= ${asOf}::timestamp
+            AND t."created_at" < ab.upper_ts
           GROUP BY LEAST(t."chain_depth", ${maxBucketDepth}::int)
         )
         SELECT

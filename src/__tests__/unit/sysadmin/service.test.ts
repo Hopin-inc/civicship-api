@@ -342,7 +342,7 @@ describe("SysAdminService", () => {
         member({ userId: "c", daysIn: 30 }), // m1to3Months / hist[1]
         member({ userId: "d", daysIn: 89 }), // m1to3Months / hist[2]
         member({ userId: "e", daysIn: 90 }), // m3to12Months / hist[3]
-        member({ userId: "f", daysIn: 364 }), // m3to12Months / hist[12] (12+, capped)
+        member({ userId: "f", daysIn: 364 }), // m3to12Months / hist[11] (clamped, 365 boundary)
         member({ userId: "g", daysIn: 365 }), // gte12Months / hist[12]
         member({ userId: "h", daysIn: 1500 }), // gte12Months / hist[12]
       ];
@@ -351,25 +351,29 @@ describe("SysAdminService", () => {
       expect(dist.m1to3Months).toBe(2);
       expect(dist.m3to12Months).toBe(2);
       expect(dist.gte12Months).toBe(2);
-      // monthlyHistogram check: bucket = min(floor(daysIn / 30), 12).
-      // Deliberate semantic mismatch with the coarse `m3to12Months`
-      // bucket: that uses calendar-day < 365, while the histogram
-      // 12 bucket aggregates floor(daysIn/30) >= 12 (= daysIn >= 360).
-      // Members in [360, 365) days land in coarse `m3to12Months` but
-      // histogram bucket 12 — both definitions are intentional and
-      // documented; the test pins both shapes so a future refactor
-      // doesn't silently merge them.
+      // monthlyHistogram check. Boundary is aligned with the coarse
+      // gte12Months bucket: bucket 12 ≡ daysIn >= 365, NOT
+      // floor(daysIn/30) >= 12. Members at 360..364 days fall into
+      // bucket 11 (clamped) and coarse m3to12Months — both
+      // representations agree. So `gte12Months == histogram[12]`
+      // and the histogram buckets 0..11 sum to lt1Month +
+      // m1to3Months + m3to12Months.
       const expectedCounts = new Map<number, number>([
         [0, 2], // 1d, 29d
         [1, 1], // 30d
         [2, 1], // 89d
         [3, 1], // 90d
-        [12, 3], // 364d, 365d, 1500d (all daysIn >= 360)
+        [11, 1], // 364d (clamped to 11, NOT 12, since daysIn < 365)
+        [12, 2], // 365d, 1500d (daysIn >= 365)
       ]);
       for (const bucket of dist.monthlyHistogram) {
         expect(bucket.count).toBe(expectedCounts.get(bucket.monthsIn) ?? 0);
       }
       expect(dist.monthlyHistogram).toHaveLength(13);
+      // Invariant: histogram[12] == gte12Months (boundaries
+      // aligned). Test pins this so a future tweak that drifts
+      // them apart breaks loudly.
+      expect(dist.monthlyHistogram[12].count).toBe(dist.gte12Months);
     });
 
     it("returns all-zero buckets for empty input", () => {
