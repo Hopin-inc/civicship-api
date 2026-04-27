@@ -397,6 +397,12 @@ describe("SysAdminPresenter", () => {
           m1to3Months: 2,
           m3to12Months: 3,
           gte12Months: 4,
+          // 13-bucket histogram: empty fixture is fine for this
+          // overviewRow test — it doesn't read monthlyHistogram.
+          monthlyHistogram: Array.from({ length: 13 }, (_, monthsIn) => ({
+            monthsIn,
+            count: 0,
+          })),
         },
         dormantCount: 1,
       });

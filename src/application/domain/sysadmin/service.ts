@@ -89,13 +89,30 @@ export type StageBreakdown = {
  * the input `members.length`. Boundaries are intentionally
  * day-based (not month-based) to side-step the GREATEST(1, ...)
  * floor that `monthsIn` carries.
+ *
+ * `monthlyHistogram` carries the L3 deep-dive breakdown into 13
+ * monthly buckets (0..12, where 12 aggregates 12+ months). Same
+ * member set, finer granularity. The four coarse buckets remain
+ * authoritative for L1 / L2 display; the histogram is additional.
  */
+export type TenureHistogramBucket = {
+  monthsIn: number;
+  count: number;
+};
+
 export type TenureDistribution = {
   lt1Month: number;
   m1to3Months: number;
   m3to12Months: number;
   gte12Months: number;
+  monthlyHistogram: TenureHistogramBucket[];
 };
+
+/** Number of monthly histogram buckets for the L3 deep-dive
+ * (`monthsIn` 0..12; 12 aggregates 12+). Pinned as a constant so
+ * the service computation and the test fixtures agree on the array
+ * shape. */
+export const TENURE_MONTHLY_BUCKETS = 13;
 
 /**
  * Approximate days-per-month conversion used to translate the
@@ -531,13 +548,34 @@ export default class SysAdminService {
     let m1to3Months = 0;
     let m3to12Months = 0;
     let gte12Months = 0;
+    // monthlyHistogram pre-allocates all 13 buckets (0..12) so the
+    // returned array always has a stable shape regardless of input.
+    // Bucket index = floor(daysIn / 30), capped at 12 so 12+ months
+    // collapse into the final aggregating bucket. The 30-day-per-
+    // month conversion matches the lt1Month / m1to3Months / etc.
+    // boundaries above so the coarse buckets stay derivable from
+    // the histogram (lt1Month = histogram[0], m1to3Months =
+    // histogram[1] + histogram[2], m3to12Months = sum(3..11),
+    // gte12Months = histogram[12]).
+    const monthlyHistogram: TenureHistogramBucket[] = Array.from(
+      { length: TENURE_MONTHLY_BUCKETS },
+      (_, monthsIn) => ({ monthsIn, count: 0 }),
+    );
     for (const m of members) {
       if (m.daysIn < 30) lt1Month++;
       else if (m.daysIn < 90) m1to3Months++;
       else if (m.daysIn < 365) m3to12Months++;
       else gte12Months++;
+      // Members with daysIn < 0 (data anomaly — shouldn't occur
+      // because findMemberStats clamps daysIn to >= 1) are dropped
+      // from the histogram so the contract documented in the SDL
+      // ("sum equals totalMembers minus members with negative
+      // tenure") holds.
+      if (m.daysIn < 0) continue;
+      const bucket = Math.min(Math.floor(m.daysIn / 30), TENURE_MONTHLY_BUCKETS - 1);
+      monthlyHistogram[bucket].count++;
     }
-    return { lt1Month, m1to3Months, m3to12Months, gte12Months };
+    return { lt1Month, m1to3Months, m3to12Months, gte12Months, monthlyHistogram };
   }
 
   /**

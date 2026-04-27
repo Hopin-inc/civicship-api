@@ -103,6 +103,10 @@ export default class SysAdminPresenter {
       m1to3Months: d.m1to3Months,
       m3to12Months: d.m3to12Months,
       gte12Months: d.gte12Months,
+      // Histogram bucket shape happens to match the GraphQL type
+      // 1:1 (monthsIn + count), so the array passes through
+      // without per-element transformation.
+      monthlyHistogram: d.monthlyHistogram,
     };
   }
 
@@ -264,6 +268,11 @@ export default class SysAdminPresenter {
       donationInMonths: row.donationInMonths,
       donationInDays: row.donationInDays,
       uniqueDonationSenders: row.uniqueDonationSenders,
+      // lastDonationDay is already a JST-midnight Date on the row
+      // (see findMemberStats); rename to the public-facing
+      // `lastDonationAt` here. null pass-through for never-donated
+      // members.
+      lastDonationAt: row.lastDonationDay,
     };
   }
 

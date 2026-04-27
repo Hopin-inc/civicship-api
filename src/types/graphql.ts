@@ -3432,6 +3432,21 @@ export type GqlSysAdminMemberRow = {
   donationOutDays: Scalars['Int']['output'];
   /** Distinct months with at least one DONATION out. */
   donationOutMonths: Scalars['Int']['output'];
+  /**
+   * JST date (UTC-encoded at JST midnight) of this member's most
+   * recent DONATION out in this community. null when the member has
+   * never sent a DONATION (= latent on the sender axis).
+   *
+   * Powers the L3 "/members" dormancy list: clients sort dormant
+   * members by `lastDonationAt ASC` to surface the longest-quiet
+   * senders first, and compute days-since-last-donation as
+   * `(asOf - lastDonationAt) / 1 day` for the per-row badge. Same
+   * underlying signal as `dormantCount`'s threshold check
+   * (`MAX(donation.created_at) < asOf - dormantThresholdDays`),
+   * exposed as the raw timestamp so the client can derive multiple
+   * derived views without a server-side recomputation per request.
+   */
+  lastDonationAt?: Maybe<Scalars['Datetime']['output']>;
   /** Tenure in JST calendar months (floor, minimum 1). */
   monthsIn: Scalars['Int']['output'];
   /** User display name (users.name). null when the user has no name set. */
@@ -3744,6 +3759,45 @@ export type GqlSysAdminTenureDistribution = {
   m1to3Months: Scalars['Int']['output'];
   /** Members with `90 <= daysIn < 365` — established members. */
   m3to12Months: Scalars['Int']['output'];
+  /**
+   * Detailed monthly histogram for the L3 tenure deep-dive.
+   *
+   * Each entry counts currently-JOINED members whose tenure
+   * (`floor(daysIn / 30)`) falls into the bucket. The 12 bucket
+   * aggregates all members with tenure of 12 months or longer.
+   * Returned in ascending bucket order (`monthsIn` 0..12), with
+   * every bucket emitted (count = 0 for buckets with no members)
+   * so the client can render a contiguous histogram axis without
+   * zero-padding.
+   *
+   * Sum of `count` equals `totalMembers` minus members with a
+   * negative tenure (data anomaly — should be impossible because
+   * `daysIn` is floor-1-clamped at the SQL boundary, but the
+   * contract notes the exclusion explicitly so the invariant is
+   * documented).
+   *
+   * The existing 4 coarse buckets (`lt1Month` / `m1to3Months` /
+   * `m3to12Months` / `gte12Months`) remain for L1 / L2 callers; the
+   * monthly histogram is additional, not a replacement.
+   */
+  monthlyHistogram: Array<GqlSysAdminTenureHistogramBucket>;
+};
+
+/**
+ * One bucket of the L3 tenure histogram. See
+ * `SysAdminTenureDistribution.monthlyHistogram`.
+ */
+export type GqlSysAdminTenureHistogramBucket = {
+  __typename?: 'SysAdminTenureHistogramBucket';
+  /** Number of currently-JOINED members in this bucket. */
+  count: Scalars['Int']['output'];
+  /**
+   * Tenure in JST calendar months, computed as `floor(daysIn / 30)`.
+   * Range 0..12. The 12 bucket aggregates all members with tenure
+   * of 12 months or longer; values 0..11 represent exact monthly
+   * buckets.
+   */
+  monthsIn: Scalars['Int']['output'];
 };
 
 /**
@@ -5285,6 +5339,7 @@ export type GqlResolversTypes = ResolversObject<{
   SysAdminStageBucket: ResolverTypeWrapper<GqlSysAdminStageBucket>;
   SysAdminStageDistribution: ResolverTypeWrapper<GqlSysAdminStageDistribution>;
   SysAdminTenureDistribution: ResolverTypeWrapper<GqlSysAdminTenureDistribution>;
+  SysAdminTenureHistogramBucket: ResolverTypeWrapper<GqlSysAdminTenureHistogramBucket>;
   SysAdminUserListFilter: GqlSysAdminUserListFilter;
   SysAdminUserListSort: GqlSysAdminUserListSort;
   SysAdminUserSortField: GqlSysAdminUserSortField;
@@ -5690,6 +5745,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   SysAdminStageBucket: GqlSysAdminStageBucket;
   SysAdminStageDistribution: GqlSysAdminStageDistribution;
   SysAdminTenureDistribution: GqlSysAdminTenureDistribution;
+  SysAdminTenureHistogramBucket: GqlSysAdminTenureHistogramBucket;
   SysAdminUserListFilter: GqlSysAdminUserListFilter;
   SysAdminUserListSort: GqlSysAdminUserListSort;
   SysAdminWeeklyRetention: GqlSysAdminWeeklyRetention;
@@ -7163,6 +7219,7 @@ export type GqlSysAdminMemberRowResolvers<ContextType = any, ParentType extends 
   donationInMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   donationOutDays?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   donationOutMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  lastDonationAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   monthsIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   totalPointsIn?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
@@ -7234,6 +7291,13 @@ export type GqlSysAdminTenureDistributionResolvers<ContextType = any, ParentType
   lt1Month?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   m1to3Months?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   m3to12Months?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  monthlyHistogram?: Resolver<Array<GqlResolversTypes['SysAdminTenureHistogramBucket']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSysAdminTenureHistogramBucketResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SysAdminTenureHistogramBucket'] = GqlResolversParentTypes['SysAdminTenureHistogramBucket']> = ResolversObject<{
+  count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  monthsIn?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -7988,6 +8052,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   SysAdminStageBucket?: GqlSysAdminStageBucketResolvers<ContextType>;
   SysAdminStageDistribution?: GqlSysAdminStageDistributionResolvers<ContextType>;
   SysAdminTenureDistribution?: GqlSysAdminTenureDistributionResolvers<ContextType>;
+  SysAdminTenureHistogramBucket?: GqlSysAdminTenureHistogramBucketResolvers<ContextType>;
   SysAdminWeeklyRetention?: GqlSysAdminWeeklyRetentionResolvers<ContextType>;
   SysAdminWindowActivity?: GqlSysAdminWindowActivityResolvers<ContextType>;
   Ticket?: GqlTicketResolvers<ContextType>;
