@@ -6,6 +6,10 @@ const RATE_LIMIT_CONFIG = {
     windowMs: 1000, // 1 second
     max: 1, // 1 request per second for wallet operations
   },
+  NFT_SYNC_OPERATIONS: {
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // 10 sync requests per minute per IP
+  },
   GENERAL_API: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // 100 requests per 15 minutes for general API operations
@@ -25,6 +29,16 @@ export const walletRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false,
+});
+
+export const nftSyncRateLimit = rateLimit({
+  windowMs: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.windowMs,
+  max: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.max,
+  message: {
+    error: 'Too many NFT sync requests from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 export function extractUidFromIdToken(idToken: string): string | null {

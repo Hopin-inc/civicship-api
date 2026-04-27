@@ -1,11 +1,18 @@
 import { NotFoundError } from "@/errors/graphql";
 import { GqlNftTokenFilterInput, GqlNftTokenSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { Prisma } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { INftTokenRepository } from "@/application/domain/account/nft-token/data/interface";
 import NftTokenConverter from "@/application/domain/account/nft-token/data/converter";
 import NftTokenPresenter from "@/application/domain/account/nft-token/presenter";
 import { clampFirst } from "@/application/domain/utils";
+import { fetchWithRetry } from "@/utils/retry";
+import { BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
+
+const TOKEN_SYNC_MAX_RETRIES = 3;
+const TOKEN_SYNC_RETRY_DELAY = 1000;
+const TOKEN_SYNC_TIMEOUT = 60000;
 
 @injectable()
 export default class NftTokenService {
@@ -13,6 +20,29 @@ export default class NftTokenService {
     @inject("NftTokenRepository") private readonly repository: INftTokenRepository,
     @inject("NftTokenConverter") private readonly converter: NftTokenConverter,
   ) {}
+
+  async syncByAddress(ctx: IContext, address: string, tx: Prisma.TransactionClient) {
+    const baseApiUrl =
+      process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
+    const tokenInfo = await fetchWithRetry<BaseSepoliaTokenResponse>(
+      `${baseApiUrl}/tokens/${address}`,
+      TOKEN_SYNC_MAX_RETRIES,
+      TOKEN_SYNC_RETRY_DELAY,
+      TOKEN_SYNC_TIMEOUT,
+    );
+
+    return this.repository.upsert(
+      ctx,
+      {
+        address,
+        name: tokenInfo.name ?? null,
+        symbol: tokenInfo.symbol ?? null,
+        type: tokenInfo.type || "UNKNOWN",
+        json: tokenInfo as unknown as Record<string, unknown>,
+      },
+      tx,
+    );
+  }
 
   async fetchNftTokens(
     filter: GqlNftTokenFilterInput | undefined,

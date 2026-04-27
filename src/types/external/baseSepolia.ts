@@ -32,3 +32,22 @@ export interface BaseSepoliaTokenResponse {
   circulating_market_cap?: string;
   icon_url?: string;
 }
+
+export interface BaseSepoliaTokenInstanceResponse {
+  id: string;
+  owner?: {
+    hash?: string;
+  } | null;
+  metadata?: {
+    name?: string;
+    description?: string;
+    image?: string;
+  } | null;
+  token?: {
+    address?: string;
+    address_hash?: string;
+    name?: string;
+    symbol?: string;
+    type?: string;
+  };
+}
