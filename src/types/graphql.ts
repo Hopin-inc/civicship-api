@@ -3306,9 +3306,11 @@ export type GqlSysAdminCommunityOverview = {
    * Invariants (the client may assert these):
    *   hubMemberCount <= windowActivity.senderCount <= totalMembers
    *
-   * The first holds because any hub member donated >= 3 times in
-   * the window and is therefore a window sender; the second
-   * because both `hubMemberCount` and `windowActivity.senderCount`
+   * The first holds because any hub member sent DONATION to
+   * `>= hubBreadthThreshold` distinct counterparties during the
+   * window — which requires at least that many DONATION
+   * transactions — so they are necessarily a window sender. The
+   * second because both `hubMemberCount` and `windowActivity.senderCount`
    * are computed from senders restricted to JOINED-at-asOf members
    * (a former member who left the community before asOf is excluded
    * even if they donated during the window) and totalMembers is
@@ -3681,7 +3683,7 @@ export type GqlSysAdminMonthlyActivityPoint = {
    * `SysAdminCommunityOverview.hubMemberCount`, evaluated at
    * month-end rather than at request `asOf`.
    *
-   * Window: `[monthEnd - 28 JST日, monthEnd)`. The 28-day window is
+   * Window: `[monthEnd - 28 JST days, monthEnd)`. The 28-day window is
    * fixed (independent of any request input) so monthly
    * hubMemberCount values across the trend stay comparable to each
    * other — same precedent as `dormantCount`'s fixed 30-day window.
@@ -3934,19 +3936,31 @@ export type GqlSysAdminTenureDistribution = {
   /**
    * Detailed monthly histogram for the L3 tenure deep-dive.
    *
-   * Each entry counts currently-JOINED members whose tenure
-   * (`floor(daysIn / 30)`) falls into the bucket. The 12 bucket
-   * aggregates all members with tenure of 12 months or longer.
-   * Returned in ascending bucket order (`monthsIn` 0..12), with
-   * every bucket emitted (count = 0 for buckets with no members)
-   * so the client can render a contiguous histogram axis without
+   * Each entry counts currently-JOINED members whose `daysIn` falls
+   * into the bucket. Bucket boundaries are aligned with the coarse
+   * `gte12Months` cutoff so the histogram and coarse buckets agree:
+   *
+   *   - bucket 0:  daysIn <  30
+   *   - bucket k (1..10):  k * 30 <= daysIn < (k + 1) * 30
+   *   - bucket 11: 330 <= daysIn < 365
+   *   - bucket 12: daysIn >= 365
+   *
+   * The 12 bucket therefore matches `gte12Months` exactly; bucket 11
+   * is widened from the bare `[330, 360)` slot to `[330, 365)` so a
+   * member at 360..364 days lands in 11 rather than 12
+   * (`floor(daysIn / 30)` would otherwise have placed them in 12,
+   * creating an asymmetry with the coarse `m3to12Months` cutoff at
+   * 365).
+   *
+   * Returned in ascending bucket order (`monthsIn` 0..12), with every
+   * bucket emitted (count = 0 for buckets with no members) so the
+   * client can render a contiguous histogram axis without
    * zero-padding.
    *
-   * Sum of `count` equals `totalMembers` minus members with a
-   * negative tenure (data anomaly — should be impossible because
-   * `daysIn` is floor-1-clamped at the SQL boundary, but the
-   * contract notes the exclusion explicitly so the invariant is
-   * documented).
+   * Sum of `count` equals `totalMembers`. A member with `daysIn < 0`
+   * (data anomaly — `daysIn` is floor-1-clamped at the SQL boundary
+   * so this should be impossible) is clamped into bucket 0 rather
+   * than excluded, matching the service implementation.
    *
    * The existing 4 coarse buckets (`lt1Month` / `m1to3Months` /
    * `m3to12Months` / `gte12Months`) remain for L1 / L2 callers; the
@@ -3964,10 +3978,12 @@ export type GqlSysAdminTenureHistogramBucket = {
   /** Number of currently-JOINED members in this bucket. */
   count: Scalars['Int']['output'];
   /**
-   * Tenure in JST calendar months, computed as `floor(daysIn / 30)`.
-   * Range 0..12. The 12 bucket aggregates all members with tenure
-   * of 12 months or longer; values 0..11 represent exact monthly
-   * buckets.
+   * Tenure bucket index, range 0..12. The 0 bucket aggregates
+   * `daysIn < 30`; buckets 1..10 cover `k * 30 <= daysIn <
+   * (k + 1) * 30`; bucket 11 covers `330 <= daysIn < 365`; the 12
+   * bucket aggregates `daysIn >= 365` (matching the coarse
+   * `gte12Months` boundary). Members at 330..364 days land in
+   * bucket 11, not bucket 12.
    */
   monthsIn: Scalars['Int']['output'];
 };
