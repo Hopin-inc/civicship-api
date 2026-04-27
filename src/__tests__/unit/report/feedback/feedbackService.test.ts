@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
+import { ReportTemplateKind, ReportTemplateScope } from "@prisma/client";
 import ReportFeedbackService, {
   pearsonCorrelation,
   JUDGE_HUMAN_CORRELATION_WARNING_THRESHOLD,
@@ -15,6 +16,7 @@ describe("ReportFeedbackService.getTemplateStats", () => {
     findFeedbacksByReport: jest.Mock;
     findFeedbacksByReportIds: jest.Mock;
     getTemplateFeedbackAggregates: jest.Mock;
+    getTemplateBreakdown: jest.Mock;
   };
   let service: ReportFeedbackService;
 
@@ -26,6 +28,7 @@ describe("ReportFeedbackService.getTemplateStats", () => {
       findFeedbacksByReport: jest.fn(),
       findFeedbacksByReportIds: jest.fn(),
       getTemplateFeedbackAggregates: jest.fn(),
+      getTemplateBreakdown: jest.fn(),
     };
     container.register("ReportFeedbackRepository", { useValue: repository });
     service = container.resolve(ReportFeedbackService);
@@ -90,6 +93,148 @@ describe("ReportFeedbackService.getTemplateStats", () => {
       JUDGE_HUMAN_CORRELATION_WARNING_THRESHOLD,
     );
     expect(result.correlationWarning).toBe(true);
+  });
+});
+
+describe("ReportFeedbackService.getTemplateBreakdown", () => {
+  const fakeCtx = {} as IContext;
+
+  let repository: {
+    createFeedback: jest.Mock;
+    findFeedbackByReportAndUser: jest.Mock;
+    findFeedbacksByReport: jest.Mock;
+    findFeedbacksByReportIds: jest.Mock;
+    getTemplateFeedbackAggregates: jest.Mock;
+    getTemplateBreakdown: jest.Mock;
+  };
+  let service: ReportFeedbackService;
+
+  // Compact factory keeps the test rows readable while satisfying the
+  // full TemplateBreakdownRow shape — the breakdown service runs
+  // Pearson over the embedded `pairs` array, so non-pair fields just
+  // need to round-trip unchanged.
+  const row = (overrides: {
+    templateId: string;
+    pairs?: Array<{ reportId: string; judgeScore: number; avgRating: number }>;
+    feedbackCount?: number;
+    version?: number;
+  }) => ({
+    templateId: overrides.templateId,
+    version: overrides.version ?? 1,
+    scope: ReportTemplateScope.SYSTEM,
+    kind: ReportTemplateKind.GENERATION,
+    experimentKey: null,
+    isActive: true,
+    isEnabled: true,
+    trafficWeight: 100,
+    feedbackCount: overrides.feedbackCount ?? overrides.pairs?.length ?? 0,
+    avgRating: null,
+    avgJudgeScore: null,
+    pairs: overrides.pairs ?? [],
+  });
+
+  beforeEach(() => {
+    container.reset();
+    repository = {
+      createFeedback: jest.fn(),
+      findFeedbackByReportAndUser: jest.fn(),
+      findFeedbacksByReport: jest.fn(),
+      findFeedbacksByReportIds: jest.fn(),
+      getTemplateFeedbackAggregates: jest.fn(),
+      getTemplateBreakdown: jest.fn(),
+    };
+    container.register("ReportFeedbackRepository", { useValue: repository });
+    service = container.resolve(ReportFeedbackService);
+  });
+
+  it("computes per-template Pearson independently across rows", async () => {
+    repository.getTemplateBreakdown.mockResolvedValue({
+      items: [
+        // Strong positive correlation → r ≈ 1, no warning.
+        row({
+          templateId: "tmpl-v1",
+          pairs: [
+            { reportId: "r1", judgeScore: 60, avgRating: 2 },
+            { reportId: "r2", judgeScore: 75, avgRating: 3.5 },
+            { reportId: "r3", judgeScore: 90, avgRating: 5 },
+          ],
+        }),
+        // Anti-correlation → r ≈ -1, warning ON.
+        row({
+          templateId: "tmpl-v2",
+          pairs: [
+            { reportId: "r4", judgeScore: 90, avgRating: 1 },
+            { reportId: "r5", judgeScore: 70, avgRating: 3 },
+            { reportId: "r6", judgeScore: 50, avgRating: 5 },
+          ],
+        }),
+      ],
+      totalCount: 2,
+    });
+
+    const result = await service.getTemplateBreakdown(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      kind: ReportTemplateKind.GENERATION,
+      includeInactive: false,
+      first: 20,
+    });
+
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0].templateId).toBe("tmpl-v1");
+    expect(result.items[0].judgeHumanCorrelation).not.toBeNull();
+    expect(result.items[0].judgeHumanCorrelation!).toBeGreaterThan(0.99);
+    expect(result.items[0].correlationWarning).toBe(false);
+
+    expect(result.items[1].templateId).toBe("tmpl-v2");
+    expect(result.items[1].judgeHumanCorrelation).not.toBeNull();
+    expect(result.items[1].correlationWarning).toBe(true);
+  });
+
+  it("returns null correlation when a row has fewer than 3 pairs", async () => {
+    repository.getTemplateBreakdown.mockResolvedValue({
+      items: [
+        row({
+          templateId: "tmpl-thin",
+          pairs: [
+            { reportId: "r1", judgeScore: 60, avgRating: 3 },
+            { reportId: "r2", judgeScore: 80, avgRating: 4 },
+          ],
+        }),
+      ],
+      totalCount: 1,
+    });
+
+    const result = await service.getTemplateBreakdown(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      kind: ReportTemplateKind.GENERATION,
+      includeInactive: false,
+      first: 20,
+    });
+
+    expect(result.items[0].judgeHumanCorrelation).toBeNull();
+    expect(result.items[0].correlationWarning).toBe(false);
+  });
+
+  it("forwards pagination params to the repository unchanged", async () => {
+    repository.getTemplateBreakdown.mockResolvedValue({ items: [], totalCount: 0 });
+
+    await service.getTemplateBreakdown(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 3,
+      kind: ReportTemplateKind.JUDGE,
+      includeInactive: true,
+      cursor: "tmpl-cursor",
+      first: 50,
+    });
+
+    expect(repository.getTemplateBreakdown).toHaveBeenCalledWith(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 3,
+      kind: ReportTemplateKind.JUDGE,
+      includeInactive: true,
+      cursor: "tmpl-cursor",
+      first: 50,
+    });
   });
 });
 
