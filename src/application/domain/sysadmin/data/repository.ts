@@ -95,6 +95,10 @@ export default class SysAdminRepository implements ISysAdminRepository {
           total_points_out: bigint;
           user_send_rate: number;
           unique_donation_recipients: number;
+          donation_in_months: number;
+          donation_in_days: number;
+          total_points_in: bigint;
+          unique_donation_senders: number;
           last_donation_day: Date | null;
         }[]
       >`
@@ -214,6 +218,102 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
           GROUP BY fw."user_id"
         ),
+        donation_received AS (
+          -- Receiver-side counterpart to donation_activity. Per-(user,
+          -- JST calendar day) DONATION-IN activity for each member of
+          -- this community, with the day's points-in and the JST
+          -- month bucket. Same single-CTE shape so the final SELECT
+          -- can derive donation_in_months / donation_in_days /
+          -- total_points_in without re-introducing the cross-product
+          -- bug that motivated the donation_activity consolidation.
+          --
+          -- Scoping mirrors donation_activity / donation_recipients:
+          --   - DONATION reason only (excludes burn / grant flows that
+          --     are not part of the gift-economy ledger)
+          --   - receiver wallet attached to this community so a member
+          --     who received cross-community grants does not get
+          --     incoming credit they cannot reciprocate
+          --   - sender wallet either in this community or unattached
+          --     (system / burn sources are excluded from the points
+          --     sum for symmetry with donation_activity's wallet
+          --     filter on the sending side)
+          --   - clamped at asOf via asof_bound so a historic asOf
+          --     does not leak future incoming points into the totals
+          SELECT
+            tw."user_id" AS user_id,
+            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
+            DATE_TRUNC(
+              'month',
+              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
+            ) AS jst_month,
+            SUM(t."to_point_change") AS day_points_in
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."community_id" = ${communityId}
+          INNER JOIN members m ON m."user_id" = tw."user_id"
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+          GROUP BY tw."user_id", jst_day, jst_month
+        ),
+        donation_in_aggregates AS (
+          -- Pre-aggregate donation_received to one row per user so the
+          -- final SELECT can LEFT JOIN both donation_activity and
+          -- this CTE without re-introducing the multi-row × multi-row
+          -- cross product that the donation_activity consolidation
+          -- comment warns about. donation_activity stays per-day
+          -- because the final SELECT still uses
+          -- COUNT(DISTINCT da.jst_month / da.jst_day) — those are
+          -- cheap and unaffected by row multiplicity. The incoming
+          -- side has no equivalent need; one row per user is all the
+          -- final SELECT consumes.
+          SELECT
+            user_id,
+            COUNT(DISTINCT jst_month)::int AS donation_in_months,
+            COUNT(DISTINCT jst_day)::int AS donation_in_days,
+            COALESCE(SUM(day_points_in), 0)::bigint AS total_points_in
+          FROM donation_received
+          GROUP BY user_id
+        ),
+        donation_senders AS (
+          -- Receiver-side counterpart to donation_recipients. Per-
+          -- recipient count of DISTINCT sender user_ids over the
+          -- whole tenure (clamped at asOf). Backs
+          -- SysAdminMemberRow.uniqueDonationSenders, which the L2
+          -- dashboard uses to compute "受領→送付 転換率"
+          -- (recipient-to-sender conversion rate).
+          --
+          -- Same defensive guards as donation_recipients in mirror:
+          --   - sender wallet must have a user_id (no burn / system
+          --     sources count toward sender breadth, otherwise an
+          --     admin-issued bulk grant would inflate the count)
+          --   - excludes self-donations (matches the "distinct OTHER
+          --     users" wording in
+          --     SysAdminMemberRow.uniqueDonationSenders)
+          --   - sender wallet either in this community or unattached
+          --     (no cross-community leakage)
+          SELECT
+            tw."user_id" AS user_id,
+            COUNT(DISTINCT fw."user_id")::int AS unique_senders
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."community_id" = ${communityId}
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."user_id" IS NOT NULL
+            AND fw."user_id" <> tw."user_id"
+          INNER JOIN members m ON m."user_id" = tw."user_id"
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+            AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
+          GROUP BY tw."user_id"
+        ),
         member_tenure AS (
           -- Compute months_in / days_in ONCE per member so the
           -- final SELECT can reuse them as both raw fields and as
@@ -283,6 +383,16 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- grouping cleanly and matches the COALESCE/MAX pattern
           -- used elsewhere when joining a pre-aggregated CTE.
           COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients,
+          -- donation_in_aggregates is pre-grouped by user_id (one row
+          -- per user), so each value comes through the per-user
+          -- GROUP BY unchanged. MAX is structurally a no-op here and
+          -- mirrors the COALESCE/MAX pattern used for donation_recipients
+          -- and donation_senders below. Default 0 when the receiver
+          -- has never received a DONATION (LEFT JOIN miss).
+          COALESCE(MAX(dia.donation_in_months), 0)::int AS donation_in_months,
+          COALESCE(MAX(dia.donation_in_days), 0)::int AS donation_in_days,
+          COALESCE(MAX(dia.total_points_in), 0)::bigint AS total_points_in,
+          COALESCE(MAX(ds.unique_senders), 0)::int AS unique_donation_senders,
           -- MAX over the per-(user, jst_day) rows in donation_activity
           -- gives the most recent JST day this user sent a DONATION.
           -- NULL when the LEFT JOIN found no donation_activity rows
@@ -294,6 +404,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
         LEFT JOIN donation_activity da ON da.user_id = m."user_id"
         LEFT JOIN donation_recipients dr ON dr.user_id = m."user_id"
+        LEFT JOIN donation_in_aggregates dia ON dia.user_id = m."user_id"
+        LEFT JOIN donation_senders ds ON ds.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
         GROUP BY m."user_id", mt.months_in, mt.days_in, u."name"
         ORDER BY m."user_id"
@@ -308,6 +420,10 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalPointsOut: r.total_points_out,
         userSendRate: r.user_send_rate,
         uniqueDonationRecipients: r.unique_donation_recipients,
+        donationInMonths: r.donation_in_months,
+        donationInDays: r.donation_in_days,
+        totalPointsIn: r.total_points_in,
+        uniqueDonationSenders: r.unique_donation_senders,
         lastDonationDay: r.last_donation_day,
       }));
     });
@@ -340,6 +456,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
           donation_points_sum: bigint;
           donation_tx_count: bigint;
           donation_chain_tx_count: bigint;
+          dormant_count_end_of_month: number;
+          returned_members: number | null;
         }[]
       >`
         WITH month_starts AS (
@@ -446,6 +564,105 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND m."status" = 'JOINED'
             AND m."created_at" <  (mb.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           GROUP BY mb.month_start
+        ),
+        user_month_donations AS (
+          -- Per (user, month_end) the user's latest DONATION-out
+          -- day strictly before that month_end. Used by both
+          -- dormant_counts (snapshot of who's gone quiet at
+          -- month_end) and returned_counts (who came back this
+          -- month vs prev month-end's dormant set).
+          --
+          -- Bounded scan over mv_user_transaction_daily cross-
+          -- joined with the N month boundaries. At MAX_WINDOW_MONTHS
+          -- (36) and a community with K donating members, this is
+          -- 36 x K rows -- typical communities have ~10^2 donating
+          -- users so the CTE stays well under 10^4 rows. The
+          -- (community_id, date) index on the MV keeps the inner
+          -- scan cheap.
+          SELECT
+            mb.month_start,
+            mb.member_upper,
+            mv."user_id",
+            MAX(mv."date") AS last_donation_day
+          FROM month_bounds mb
+          INNER JOIN "mv_user_transaction_daily" mv
+            ON mv."community_id" = ${communityId}
+            AND mv."date" < mb.member_upper
+            AND mv."donation_out_count" > 0
+          GROUP BY mb.month_start, mb.member_upper, mv."user_id"
+        ),
+        dormant_counts AS (
+          -- Snapshot of dormant members at each month-end. Mirrors
+          -- the SysAdminCommunityOverview.dormantCount semantic
+          -- (ever-donated AND last DONATION older than 30 days).
+          -- The 30-day window is fixed here independent of the
+          -- request's dormantThresholdDays so values across the
+          -- monthly trend stay comparable across requests with
+          -- different thresholds.
+          --
+          -- Membership filter mirrors member_counts so the
+          -- dormant set only includes members still in the
+          -- community at month-end (asOf-clamped via member_upper).
+          -- The 30-day cutoff uses date arithmetic
+          -- (member_upper - 30) so both sides of the inequality
+          -- are dates, matching the MV "date" storage type and
+          -- avoiding any timezone-cast cost in the comparison.
+          SELECT
+            umd.month_start,
+            COUNT(DISTINCT umd."user_id")::int AS dormant_count
+          FROM user_month_donations umd
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."user_id" = umd."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" < (umd.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          WHERE umd.last_donation_day < (umd.member_upper - 30)
+          GROUP BY umd.month_start
+        ),
+        returned_counts AS (
+          -- Members who were dormant at the END of the previous
+          -- month in the series AND had at least one DONATION out
+          -- this month. Backs
+          -- SysAdminMonthlyActivityPoint.returnedMembers.
+          --
+          -- The INNER JOIN on prev_mb (matched via
+          -- prev_mb.next_month_start = mb.month_start) means the
+          -- first month in the series emits no row -> the LEFT JOIN
+          -- in the final SELECT resolves it to NULL, matching the
+          -- "null for the first month" contract documented on the
+          -- field. Reuses user_month_donations for the prev
+          -- month's snapshot so the dormant predicate stays in one
+          -- place; an extra MV scan over [month_start, member_upper)
+          -- gates "this month had a DONATION out".
+          SELECT
+            mb.month_start,
+            COUNT(DISTINCT mv."user_id")::int AS returned_count
+          FROM month_bounds mb
+          INNER JOIN month_bounds prev_mb
+            ON prev_mb.next_month_start = mb.month_start
+          INNER JOIN user_month_donations umd
+            ON umd.month_start = prev_mb.month_start
+            AND umd.last_donation_day < (prev_mb.member_upper - 30)
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."user_id" = umd."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" < (prev_mb.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          INNER JOIN "mv_user_transaction_daily" mv
+            ON mv."community_id" = ${communityId}
+            AND mv."user_id" = umd."user_id"
+            AND mv."date" >= mb.month_start
+            AND mv."date" <  mb.member_upper
+            AND mv."donation_out_count" > 0
+          GROUP BY mb.month_start
+        ),
+        first_month AS (
+          -- Earliest month in the series. The CASE in the final
+          -- SELECT uses this to force returned_members to NULL on
+          -- the first row instead of returning a misleading 0
+          -- (would imply "no returners", but actually means "no
+          -- prior month to compare against").
+          SELECT MIN(month_start) AS first_start FROM month_bounds
         )
         SELECT
           mb.month_start,
@@ -454,11 +671,19 @@ export default class SysAdminRepository implements ISysAdminRepository {
           COALESCE(mc.new_members, 0)::int AS new_members,
           COALESCE(tt.donation_points_sum, 0)::bigint AS donation_points_sum,
           COALESCE(tt.donation_tx_count, 0)::bigint AS donation_tx_count,
-          COALESCE(tt.donation_chain_tx_count, 0)::bigint AS donation_chain_tx_count
+          COALESCE(tt.donation_chain_tx_count, 0)::bigint AS donation_chain_tx_count,
+          COALESCE(dc.dormant_count, 0)::int AS dormant_count_end_of_month,
+          CASE
+            WHEN mb.month_start = fm.first_start THEN NULL
+            ELSE COALESCE(rc.returned_count, 0)::int
+          END AS returned_members
         FROM month_bounds mb
         LEFT JOIN senders s USING (month_start)
         LEFT JOIN tx_totals tt USING (month_start)
         LEFT JOIN member_counts mc USING (month_start)
+        LEFT JOIN dormant_counts dc USING (month_start)
+        LEFT JOIN returned_counts rc USING (month_start)
+        CROSS JOIN first_month fm
         ORDER BY mb.month_start ASC
       `;
       return rows.map((r) => ({
@@ -469,6 +694,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
         donationPointsSum: r.donation_points_sum,
         donationTxCount: r.donation_tx_count,
         donationChainTxCount: r.donation_chain_tx_count,
+        dormantCountEndOfMonth: r.dormant_count_end_of_month,
+        returnedMembers: r.returned_members,
       }));
     });
   }
