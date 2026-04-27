@@ -254,6 +254,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           INNER JOIN members m ON m."user_id" = tw."user_id"
           INNER JOIN "t_wallets" fw
             ON fw."id" = t."from"
+            AND fw."user_id" IS NOT NULL
             AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
           CROSS JOIN asof_bound ab
           WHERE t."reason" = 'DONATION'
