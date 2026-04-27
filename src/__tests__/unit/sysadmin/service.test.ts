@@ -727,12 +727,13 @@ describe("SysAdminService", () => {
         donationPointsSum: BigInt(0),
         donationTxCount: BigInt(0),
         donationChainTxCount: BigInt(0),
-        // Default to "no dormant base / no returners" — the 3m
-        // avg test only exercises the rate calculation, so these
-        // counters are unused. Returning the right shape keeps the
-        // test compatible with the row contract.
+        // Default to "no dormant base / no returners / no hubs" —
+        // the 3m avg test only exercises the rate calculation, so
+        // these counters are unused. Returning the right shape keeps
+        // the test compatible with the row contract.
         dormantCountEndOfMonth: 0,
         returnedMembers: null,
+        hubMemberCount: 0,
       };
     }
 
@@ -777,6 +778,25 @@ describe("SysAdminService", () => {
         trendRow("2026-04-01", 3, 10),
       ]);
       expect(avg).toBeCloseTo((0 + 0.2 + 0.3) / 3);
+    });
+  });
+
+  // ========================================================================
+  // getMonthlyActivity: forwards hubBreadthThreshold to repository
+  // ========================================================================
+  describe("getMonthlyActivity threshold passthrough", () => {
+    it("passes hubBreadthThreshold through to findMonthlyActivity unchanged", async () => {
+      // The L1 invariant ("latest month hubMemberCount === L1
+      // hubMemberCount when both queries pass the same threshold")
+      // depends on the service forwarding the threshold verbatim.
+      // Pin the wiring here so a future refactor that drops or
+      // remaps the threshold breaks loudly at the unit level
+      // before it can desync the L1/L2 contract.
+      repo.findMonthlyActivity.mockResolvedValueOnce([]);
+      const ctx = {} as never;
+      const asOf = new Date("2026-04-30T15:00:00Z");
+      await service.getMonthlyActivity(ctx, "community-1", asOf, 10, 5);
+      expect(repo.findMonthlyActivity).toHaveBeenCalledWith(ctx, "community-1", asOf, 10, 5);
     });
   });
 

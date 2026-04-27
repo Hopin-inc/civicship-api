@@ -652,8 +652,15 @@ export default class SysAdminService {
     communityId: string,
     asOf: Date,
     windowMonths: number,
+    hubBreadthThreshold: number,
   ) {
-    return this.repository.findMonthlyActivity(ctx, communityId, asOf, windowMonths);
+    return this.repository.findMonthlyActivity(
+      ctx,
+      communityId,
+      asOf,
+      windowMonths,
+      hubBreadthThreshold,
+    );
   }
 
   async getAllTimeTotals(ctx: IContext, communityId: string, asOf: Date) {

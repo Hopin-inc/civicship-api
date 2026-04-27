@@ -216,9 +216,13 @@ export default class SysAdminPresenter {
       // Pass-throughs from the repository row. `returnedMembers` is
       // already nullable on the row (= null for the first month in
       // the series); `dormantCountEndOfMonth` is always a
-      // non-negative count.
+      // non-negative count. `hubMemberCount` is non-null on the row
+      // (repository COALESCEs to 0); the GraphQL field is declared
+      // nullable for forward compatibility but the presenter passes
+      // the integer through verbatim.
       dormantCount: row.dormantCountEndOfMonth,
       returnedMembers: row.returnedMembers,
+      hubMemberCount: row.hubMemberCount,
     };
   }
 
