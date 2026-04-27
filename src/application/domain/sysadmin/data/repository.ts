@@ -2,6 +2,7 @@ import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
   SysAdminAllTimeTotalsRow,
+  SysAdminChainDepthBucketRow,
   SysAdminCommunityRow,
   SysAdminMemberStatsRow,
   SysAdminActivitySnapshotRow,
@@ -100,6 +101,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
           total_points_in: bigint;
           unique_donation_senders: number;
           last_donation_day: Date | null;
+          first_donation_day: Date | null;
+          joined_at: Date;
         }[]
       >`
         WITH asof_jst AS (
@@ -400,7 +403,19 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- (= the member never donated, the latent case). The service
           -- layer derives dormantCount from this without re-scanning
           -- t_transactions.
-          MAX(da.jst_day) AS last_donation_day
+          MAX(da.jst_day) AS last_donation_day,
+          -- MIN over the same per-day rows is the FIRST DONATION day,
+          -- powering the cohort funnel's activatedD30 stage in the
+          -- service layer (member is "activated within 30 days" iff
+          -- first_donation_day - joined_at < 30 days). Same NULL
+          -- semantic as last_donation_day for never-donated members.
+          MIN(da.jst_day) AS first_donation_day,
+          -- t_memberships.created_at exposed verbatim so the cohort
+          -- funnel can bucket members by their join month
+          -- (DATE_TRUNC at the JST timezone in service-side TS).
+          -- GROUP BY m."created_at" added below so the aggregate
+          -- doesn't collapse it.
+          m."created_at" AS joined_at
         FROM members m
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
         LEFT JOIN donation_activity da ON da.user_id = m."user_id"
@@ -408,7 +423,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
         LEFT JOIN donation_in_aggregates dia ON dia.user_id = m."user_id"
         LEFT JOIN donation_senders ds ON ds.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
-        GROUP BY m."user_id", mt.months_in, mt.days_in, u."name"
+        GROUP BY m."user_id", m."created_at", mt.months_in, mt.days_in, u."name"
         ORDER BY m."user_id"
       `;
       return rows.map((r) => ({
@@ -426,6 +441,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalPointsIn: r.total_points_in,
         uniqueDonationSenders: r.unique_donation_senders,
         lastDonationDay: r.last_donation_day,
+        firstDonationDay: r.first_donation_day,
+        joinedAt: r.joined_at,
       }));
     });
   }
@@ -446,6 +463,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     communityId: string,
     asOf: Date,
     windowMonths: number,
+    hubBreadthThreshold: number,
   ): Promise<SysAdminMonthlyActivityRow[]> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<
@@ -459,6 +477,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           donation_chain_tx_count: bigint;
           dormant_count_end_of_month: number;
           returned_members: number | null;
+          hub_member_count: number;
         }[]
       >`
         WITH month_starts AS (
@@ -657,6 +676,77 @@ export default class SysAdminRepository implements ISysAdminRepository {
             AND mv."donation_out_count" > 0
           GROUP BY mb.month_start
         ),
+        hub_per_month AS (
+          -- Per (month_start, sender) DISTINCT recipient count over
+          -- the trailing 28-day window ending at member_upper.
+          -- Mirrors the L1 findWindowHubMemberCount query exactly
+          -- (cross-community + burn-target guards via tw.user_id
+          -- presence, self-donation excluded by tw.user_id <>
+          -- fw.user_id, recipient-community guard via
+          -- tw.community_id) but cross-joined with month_bounds so
+          -- each transaction is evaluated against every month-end
+          -- window it falls into. The 28-day window length is
+          -- intentionally fixed (not request-driven) so monthly
+          -- hub counts stay comparable across requests — same
+          -- precedent as dormant_counts' fixed 30-day window.
+          --
+          -- Each transaction's created_at can satisfy at most two
+          -- consecutive months' windows because windowDays (28) is
+          -- shorter than any month-pair span (>= 59 days), so the
+          -- cross join's row volume is bounded by
+          -- ~2 × |DONATION tx in window| rather than N × |DONATION tx|.
+          --
+          -- Cannot reuse mv_user_transaction_daily here for the
+          -- same reason as the L1 path: the MV's per-day
+          -- unique_counterparties does not compose into a
+          -- window-wide DISTINCT under SUM (same recipient across
+          -- multiple days double-counts).
+          --
+          -- The t_memberships join restricts senders to users
+          -- still JOINED in the community at member_upper. Mirrors
+          -- the dormant_counts / returned_counts CTEs above and
+          -- the L1 findWindowHubMemberCount query so a now-
+          -- departed member who sent DONATIONs while a member
+          -- doesn't get counted as a "current hub" in their
+          -- former month — would otherwise contradict the
+          -- L1==latest-month invariant once L1 also enforces
+          -- this membership filter.
+          SELECT
+            mb.month_start,
+            fw."user_id" AS user_id,
+            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
+          FROM month_bounds mb
+          INNER JOIN "t_transactions" t
+            ON t."reason" = 'DONATION'
+            AND t."created_at" >= ((mb.member_upper - 28) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND t."created_at" <  (mb.member_upper          AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ${communityId}
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."user_id" = fw."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  (mb.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."user_id" IS NOT NULL
+            AND tw."user_id" <> fw."user_id"
+            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
+          GROUP BY mb.month_start, fw."user_id"
+        ),
+        hub_counts AS (
+          -- Apply the threshold filter and count distinct hub
+          -- members per month. Members not in hub_per_month
+          -- (= no DONATION-out at all in the window) are by
+          -- construction below threshold and correctly excluded.
+          SELECT
+            month_start,
+            COUNT(*)::int AS hub_member_count
+          FROM hub_per_month
+          WHERE unique_recipients >= ${hubBreadthThreshold}
+          GROUP BY month_start
+        ),
         first_month AS (
           -- Earliest month in the series. The CASE in the final
           -- SELECT uses this to force returned_members to NULL on
@@ -677,13 +767,15 @@ export default class SysAdminRepository implements ISysAdminRepository {
           CASE
             WHEN mb.month_start = fm.first_start THEN NULL
             ELSE COALESCE(rc.returned_count, 0)::int
-          END AS returned_members
+          END AS returned_members,
+          COALESCE(hub.hub_member_count, 0)::int AS hub_member_count
         FROM month_bounds mb
         LEFT JOIN senders s USING (month_start)
         LEFT JOIN tx_totals tt USING (month_start)
         LEFT JOIN member_counts mc USING (month_start)
         LEFT JOIN dormant_counts dc USING (month_start)
         LEFT JOIN returned_counts rc USING (month_start)
+        LEFT JOIN hub_counts hub USING (month_start)
         CROSS JOIN first_month fm
         ORDER BY mb.month_start ASC
       `;
@@ -697,6 +789,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
         donationChainTxCount: r.donation_chain_tx_count,
         dormantCountEndOfMonth: r.dormant_count_end_of_month,
         returnedMembers: r.returned_members,
+        hubMemberCount: r.hub_member_count,
       }));
     });
   }
@@ -778,16 +871,34 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- previous window. The outer FILTER clauses then count
           -- senders, prev-senders, and the intersection (retained)
           -- without rescanning the MV.
+          --
+          -- The INNER JOIN against t_memberships restricts the
+          -- senders to users still JOINED in this community at
+          -- "upper" (asOf+1 JST). Without this, a user who had a
+          -- community wallet during the window but later left
+          -- (status != 'JOINED' at asOf) would still be counted —
+          -- the dashboard would surface a "former member" as a
+          -- live sender, which contradicts the L1 invariant
+          -- "senderCount <= totalMembers" (totalMembers already
+          -- enforces JOINED-at-asOf via findActivitySnapshot). The
+          -- t_memberships scan is cheap because the
+          -- (community_id, user_id, status) index narrows it to
+          -- the same row count as t_wallets for the community.
           SELECT
-            "user_id",
-            bool_or("date" >= ${currLower}::date AND "date" <  ${upper}::date) AS in_curr,
-            bool_or("date" >= ${prevLower}::date AND "date" <  ${currLower}::date) AS in_prev
-          FROM "mv_user_transaction_daily"
-          WHERE "community_id" = ${communityId}
-            AND "donation_out_count" > 0
-            AND "date" >= ${prevLower}::date
-            AND "date" <  ${upper}::date
-          GROUP BY "user_id"
+            mv."user_id",
+            bool_or(mv."date" >= ${currLower}::date AND mv."date" <  ${upper}::date) AS in_curr,
+            bool_or(mv."date" >= ${prevLower}::date AND mv."date" <  ${currLower}::date) AS in_prev
+          FROM "mv_user_transaction_daily" mv
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."user_id" = mv."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  (${upper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          WHERE mv."community_id" = ${communityId}
+            AND mv."donation_out_count" > 0
+            AND mv."date" >= ${prevLower}::date
+            AND mv."date" <  ${upper}::date
+          GROUP BY mv."user_id"
         ),
         sender_aggregates AS (
           SELECT
@@ -863,6 +974,14 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- SysAdminMemberRow.uniqueDonationRecipients) — the wallet
           -- validator does not block same-user transfers, so the
           -- guard has to live in this query.
+          --
+          -- The t_memberships join restricts senders to users
+          -- still JOINED in this community at "upper" (asOf+1
+          -- JST). Without it, a now-departed member who sent
+          -- DONATIONs while a member would still get counted as
+          -- a "current hub", contradicting the
+          -- "hubMemberCount <= senderCount <= totalMembers"
+          -- invariant documented on SysAdminCommunityOverview.
           SELECT
             fw."user_id" AS user_id,
             COUNT(DISTINCT tw."user_id")::int AS unique_recipients
@@ -870,6 +989,11 @@ export default class SysAdminRepository implements ISysAdminRepository {
           INNER JOIN "t_wallets" fw
             ON fw."id" = t."from"
             AND fw."community_id" = ${communityId}
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = ${communityId}
+            AND m."user_id" = fw."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  (${upper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
           INNER JOIN "t_wallets" tw
             ON tw."id" = t."to"
             AND tw."user_id" IS NOT NULL
@@ -1004,6 +1128,89 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalMembers: r.total_members,
         latestMonthDonationPoints: r.latest_month_donation_points,
       };
+    });
+  }
+
+  async findChainDepthDistribution(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+    maxBucketDepth: number,
+  ): Promise<SysAdminChainDepthBucketRow[]> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      // generate_series produces depth 1..maxBucketDepth so the
+      // returned array always has a stable shape (every bucket
+      // emitted, count = 0 for empty depths) regardless of
+      // community size or chain-population. The LEFT JOIN against
+      // the per-tx aggregation collapses chain_depth >=
+      // maxBucketDepth into the final bucket via LEAST.
+      //
+      // Sender-side guards mirror findWindowHubMemberCount:
+      // sender wallet must be in this community, and we filter to
+      // reason='DONATION'. No recipient-side or membership filter
+      // is applied because chainDepthDistribution describes the
+      // structure of the donation graph itself (how deep do
+      // chains propagate?), not the current member roster — a
+      // chain-depth-3 transaction from a now-departed member is
+      // still a real chain-depth-3 event in the historic graph,
+      // and excluding it would distort the histogram's shape.
+      //
+      // The asof_bound CTE clamps t.created_at at the JST-day-end
+      // following asOf (= asOf JST day + 1 at JST midnight,
+      // expressed as naive UTC). Mirrors the upper-bound pattern
+      // used by findMemberStats / findAllTimeTotals so
+      // maxChainDepthAllTime (read from findAllTimeTotals) and
+      // chainDepthDistribution agree on which transactions are
+      // "all-time as of asOf" — without this clamp a transaction
+      // landing between asOf and JST-day-end would inflate
+      // maxChainDepthAllTime but be missed by the histogram, an
+      // off-by-one inconsistency within a single L2 payload.
+      const rows = await tx.$queryRaw<{ depth: number; count: number }[]>`
+        WITH asof_bound AS (
+          SELECT
+            (
+              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
+            ) AS upper_ts
+        ),
+        bucket_keys AS (
+          SELECT generate_series(1, ${maxBucketDepth}::int) AS depth
+        ),
+        depth_counts AS (
+          -- GROUP BY references the SELECT alias (depth) instead
+          -- of repeating the LEAST(...) expression. Prisma assigns
+          -- a new bind parameter to every Prisma substitution slot,
+          -- so writing the same LEAST(...) expression twice (once
+          -- in SELECT, once in GROUP BY) yields two different
+          -- parameter slots ($1, $3) at the wire level. PostgreSQL
+          -- then refuses to recognise the GROUP BY expression as
+          -- matching the SELECT one syntactically, raising
+          -- "column t.chain_depth must appear in the GROUP BY
+          -- clause". Alias reference (PostgreSQL-supported since
+          -- 9.x) sidesteps the parameter duplication and stays
+          -- robust to future SELECT-column reorders, unlike
+          -- positional GROUP BY.
+          SELECT
+            LEAST(t."chain_depth", ${maxBucketDepth}::int) AS depth,
+            COUNT(*)::int AS n
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ${communityId}
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."chain_depth" >= 1
+            AND t."created_at" < ab.upper_ts
+          GROUP BY depth
+        )
+        SELECT
+          bk.depth AS depth,
+          COALESCE(dc.n, 0)::int AS count
+        FROM bucket_keys bk
+        LEFT JOIN depth_counts dc USING (depth)
+        ORDER BY bk.depth ASC
+      `;
+      return rows.map((r) => ({ depth: r.depth, count: r.count }));
     });
   }
 }

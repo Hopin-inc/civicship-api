@@ -52,6 +52,25 @@ export type SysAdminMemberStatsRow = {
    * `dormantCount` is derived from it in the service layer.
    */
   lastDonationDay: Date | null;
+
+  /**
+   * The first JST calendar day the member sent a DONATION (same
+   * UTC-encoded JST-midnight convention as `lastDonationDay`).
+   * null when the member has never donated. Powers the cohort
+   * funnel's `activatedD30` stage — a member is "activated within
+   * 30 days" iff `firstDonationDay - joinedAt < 30 days`.
+   */
+  firstDonationDay: Date | null;
+
+  /**
+   * The member's `t_memberships.created_at` (UTC-encoded
+   * timestamp WITHOUT time zone — same storage as the column).
+   * Powers cohort bucketing in the service layer (the cohort
+   * month is `DATE_TRUNC('month', joinedAt AT TIME ZONE 'UTC' AT
+   * TIME ZONE 'Asia/Tokyo')`). Internal raw signal; not exposed
+   * directly in GraphQL.
+   */
+  joinedAt: Date;
 };
 
 /** Monthly activity counters, sourced from `mv_*` + `t_memberships`.
@@ -88,6 +107,21 @@ export type SysAdminMonthlyActivityRow = {
    * Backs `SysAdminMonthlyActivityPoint.returnedMembers`.
    */
   returnedMembers: number | null;
+  /**
+   * Distinct members who, evaluated within the 28-day window ending
+   * at this month-end, sent DONATION to >= hubBreadthThreshold
+   * distinct counterparties. Same window-scoped semantic as the L1
+   * `SysAdminCommunityOverview.hubMemberCount`, applied at month-end
+   * rather than at request `asOf`. The 28-day window is fixed for
+   * cross-month comparability (matches the L1 default `windowDays`
+   * and the dormantCount-monthly precedent).
+   *
+   * Always non-negative in the current implementation (0 for months
+   * with no qualifying senders); the public field on
+   * `SysAdminMonthlyActivityPoint` is declared nullable for forward
+   * compatibility but the repository never emits null today.
+   */
+  hubMemberCount: number;
 };
 
 /** All-time totals for the summary card, keyed by community. */
@@ -148,4 +182,16 @@ export type SysAdminPlatformTotalsRow = {
   communitiesCount: number;
   totalMembers: number;
   latestMonthDonationPoints: bigint;
+};
+
+/**
+ * One bucket of the all-time DONATION chain-depth histogram. Backs
+ * `SysAdminCommunityDetailPayload.chainDepthDistribution`. The
+ * repository emits a fixed-shape array (depth 1..N inclusive,
+ * with the last bucket aggregating depth >= N) so the service
+ * layer doesn't need to zero-pad.
+ */
+export type SysAdminChainDepthBucketRow = {
+  depth: number;
+  count: number;
 };

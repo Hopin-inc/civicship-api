@@ -61,6 +61,8 @@ describe("SysAdminPresenter", () => {
         donationInDays: 18,
         uniqueDonationSenders: 3,
         lastDonationDay: new Date("2026-04-01"),
+        firstDonationDay: new Date("2025-09-01"),
+        joinedAt: new Date("2025-09-01T00:00:00Z"),
       };
       const out = SysAdminPresenter.memberRow(row);
       expect(out.totalPointsOut).toBe(5_000);
@@ -98,6 +100,8 @@ describe("SysAdminPresenter", () => {
         donationInDays: 0,
         uniqueDonationSenders: 0,
         lastDonationDay: null,
+        firstDonationDay: null,
+        joinedAt: new Date("2026-01-01T00:00:00Z"),
       };
       expect(() => SysAdminPresenter.memberRow(row)).toThrow(RangeError);
     });
@@ -118,6 +122,8 @@ describe("SysAdminPresenter", () => {
         donationInDays: 0,
         uniqueDonationSenders: 0,
         lastDonationDay: null,
+        firstDonationDay: null,
+        joinedAt: new Date("2026-01-01T00:00:00Z"),
       };
       expect(SysAdminPresenter.memberRow(row).name).toBeNull();
     });
@@ -191,10 +197,11 @@ describe("SysAdminPresenter", () => {
       donationPointsSum: BigInt(0),
       donationTxCount: BigInt(0),
       donationChainTxCount: BigInt(0),
-      // Default to "no dormant base / no returners" for the
-      // baseline fixture; specific tests override per-row.
+      // Default to "no dormant base / no returners / no hubs" for
+      // the baseline fixture; specific tests override per-row.
       dormantCountEndOfMonth: 0,
       returnedMembers: null,
+      hubMemberCount: 0,
     };
 
     it("returns null chainPct when no DONATION tx occurred that month", () => {
@@ -258,6 +265,28 @@ describe("SysAdminPresenter", () => {
       expect(out.dormantCount).toBe(5);
     });
 
+    it("passes hubMemberCount through verbatim from the repository row", () => {
+      // The presenter is a straight passthrough for hubMemberCount —
+      // the repository COALESCEs to a non-null integer and the
+      // GraphQL field is declared nullable for forward compatibility
+      // only. Pin the passthrough here so a future "convert 0 to
+      // null" tweak in the presenter would surface as a test failure
+      // rather than a silent contract change.
+      const out = SysAdminPresenter.monthlyActivityPoint({
+        ...baseRow,
+        hubMemberCount: 4,
+      });
+      expect(out.hubMemberCount).toBe(4);
+    });
+
+    it("hubMemberCount stays 0 (not null) when the repository row reports zero hubs", () => {
+      const out = SysAdminPresenter.monthlyActivityPoint({
+        ...baseRow,
+        hubMemberCount: 0,
+      });
+      expect(out.hubMemberCount).toBe(0);
+    });
+
     it("throws RangeError when donation tx count overflows safe integer", () => {
       // ::bigint on the SUM keeps the SQL side safe; the presenter
       // should fail loud (not silently truncate) if cumulative tx
@@ -319,6 +348,8 @@ describe("SysAdminPresenter", () => {
             donationInDays: 0,
             uniqueDonationSenders: 0,
             lastDonationDay: new Date("2026-04-25"),
+            firstDonationDay: new Date("2025-04-01"),
+            joinedAt: new Date("2025-04-01T00:00:00Z"),
           },
         ],
         hasNextPage: true,
@@ -397,6 +428,12 @@ describe("SysAdminPresenter", () => {
           m1to3Months: 2,
           m3to12Months: 3,
           gte12Months: 4,
+          // 13-bucket histogram: empty fixture is fine for this
+          // overviewRow test — it doesn't read monthlyHistogram.
+          monthlyHistogram: Array.from({ length: 13 }, (_, monthsIn) => ({
+            monthsIn,
+            count: 0,
+          })),
         },
         dormantCount: 1,
       });
@@ -416,12 +453,11 @@ describe("SysAdminPresenter", () => {
       });
       expect(out.latestCohort).toEqual({ size: 8, activeAtM1: 4 });
       expect(out.hubMemberCount).toBe(2);
-      expect(out.tenureDistribution).toEqual({
-        lt1Month: 1,
-        m1to3Months: 2,
-        m3to12Months: 3,
-        gte12Months: 4,
-      });
+      expect(out.tenureDistribution.lt1Month).toBe(1);
+      expect(out.tenureDistribution.m1to3Months).toBe(2);
+      expect(out.tenureDistribution.m3to12Months).toBe(3);
+      expect(out.tenureDistribution.gte12Months).toBe(4);
+      expect(out.tenureDistribution.monthlyHistogram).toHaveLength(13);
       expect(out.dormantCount).toBe(1);
     });
   });

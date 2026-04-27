@@ -131,6 +131,7 @@ export default class SysAdminUseCase {
     const asOf = input.asOf ?? new Date();
     const thresholds = resolveThresholds(input.segmentThresholds);
     const dormantThresholdDays = clampDormantThresholdDays(input.dormantThresholdDays);
+    const hubBreadthThreshold = clampHubBreadthThreshold(input.hubBreadthThreshold);
     // Clamp to [1, MAX_WINDOW_MONTHS]. getCohortRetention and the
     // retention-trend fan-out both scale linearly with this value, so
     // a cap prevents a single request from exhausting the connection
@@ -155,18 +156,32 @@ export default class SysAdminUseCase {
       currentMonthActivity,
       retentionTrend,
       cohortRetention,
+      chainDepthDistribution,
     ] = await Promise.all([
       this.service.getMemberStats(ctx, community.communityId, asOf),
-      this.service.getMonthlyActivity(ctx, community.communityId, asOf, windowMonths),
+      this.service.getMonthlyActivity(
+        ctx,
+        community.communityId,
+        asOf,
+        windowMonths,
+        hubBreadthThreshold,
+      ),
       this.service.getAllTimeTotals(ctx, community.communityId, asOf),
       this.service.getMonthActivityWithPrev(ctx, community.communityId, asOf),
       this.service.getRetentionTrend(ctx, community.communityId, asOf, windowMonths),
       this.service.getCohortRetention(ctx, community.communityId, asOf, windowMonths),
+      this.service.getChainDepthDistribution(ctx, community.communityId, asOf),
     ]);
 
     const stageCounts = this.service.computeStageCounts(members, thresholds);
     const stageBreakdown = this.service.computeStageBreakdown(members, thresholds);
     const dormantCount = this.service.computeDormantCount(members, asOf, dormantThresholdDays);
+    const cohortFunnel = this.service.computeCohortFunnel(
+      members,
+      asOf,
+      windowMonths,
+      thresholds,
+    );
 
     const alerts = await this.service.getAlerts(ctx, community.communityId, asOf);
 
@@ -205,6 +220,8 @@ export default class SysAdminUseCase {
       memberList: SysAdminPresenter.memberList(memberList),
       alerts: SysAdminPresenter.alerts(alerts),
       dormantCount,
+      chainDepthDistribution,
+      cohortFunnel,
     });
   }
 }
