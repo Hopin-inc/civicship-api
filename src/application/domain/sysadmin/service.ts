@@ -222,6 +222,20 @@ export type MonthlyCohortPoint = {
   retentionM6: number | null;
 };
 
+/**
+ * One cohort's funnel progression. Backs
+ * `SysAdminCommunityDetailPayload.cohortFunnel`. Computed by
+ * `SysAdminService.computeCohortFunnel` over the already-fetched
+ * `members` set; no separate repository call.
+ */
+export type SysAdminCohortFunnelPoint = {
+  cohortMonth: Date;
+  acquired: number;
+  activatedD30: number;
+  repeated: number;
+  habitual: number;
+};
+
 export type SortField = "SEND_RATE" | "MONTHS_IN" | "DONATION_OUT_MONTHS" | "TOTAL_POINTS_OUT";
 export type SortOrder = "ASC" | "DESC";
 
@@ -699,6 +713,73 @@ export default class SysAdminService {
       asOf,
       CHAIN_DEPTH_MAX_BUCKET,
     );
+  }
+
+  /**
+   * Per-cohort send-funnel progression for the L3 deep-dive. Pure
+   * function over `members` (already-fetched in the L2 usecase) +
+   * `asOf` + `windowMonths` + `thresholds` — no extra DB scan.
+   *
+   * Cohort = JST month start of the member's `joinedAt`. Members
+   * outside the trailing windowMonths range are dropped. Stage
+   * classification:
+   *
+   *   acquired      — every cohort member counts
+   *   activatedD30  — has firstDonationDay AND
+   *                   firstDonationDay - joinedAt < 30 days
+   *   repeated      — donationOutMonths >= 2
+   *   habitual      — classifyMember(...) === "habitual"
+   *
+   * activatedD30 / repeated / habitual are JOINED-at-asOf scoped
+   * because `members` is itself JOINED-at-asOf (findMemberStats
+   * applies the membership filter).
+   */
+  computeCohortFunnel(
+    members: SysAdminMemberStatsRow[],
+    asOf: Date,
+    windowMonths: number,
+    thresholds: SegmentThresholds,
+  ): SysAdminCohortFunnelPoint[] {
+    // Build the cohort-month axis: [asOf month - (windowMonths-1), ..., asOf month].
+    // Same orientation as `monthlyActivityTrend` (newest last) so the
+    // client can render a single x-axis across both series.
+    const cohortKeys: Date[] = [];
+    for (let i = windowMonths - 1; i >= 0; i--) {
+      cohortKeys.push(jstMonthStartOffset(asOf, -i));
+    }
+    const buckets = new Map<number, SysAdminCohortFunnelPoint>();
+    for (const m of cohortKeys) {
+      buckets.set(m.getTime(), {
+        cohortMonth: m,
+        acquired: 0,
+        activatedD30: 0,
+        repeated: 0,
+        habitual: 0,
+      });
+    }
+    const earliest = cohortKeys[0]?.getTime() ?? 0;
+    const latest = cohortKeys[cohortKeys.length - 1]?.getTime() ?? 0;
+    for (const member of members) {
+      const cohort = jstMonthStart(member.joinedAt).getTime();
+      if (cohort < earliest || cohort > latest) continue;
+      const bucket = buckets.get(cohort);
+      if (!bucket) continue;
+      bucket.acquired++;
+      if (
+        member.firstDonationDay !== null &&
+        member.firstDonationDay.getTime() - member.joinedAt.getTime() <
+          30 * 24 * 60 * 60 * 1000
+      ) {
+        bucket.activatedD30++;
+      }
+      if (member.donationOutMonths >= 2) {
+        bucket.repeated++;
+      }
+      if (classifyMember(member, thresholds) === "habitual") {
+        bucket.habitual++;
+      }
+    }
+    return cohortKeys.map((k) => buckets.get(k.getTime())!);
   }
 
   async getMonthlyActivity(

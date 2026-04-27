@@ -52,6 +52,25 @@ export type SysAdminMemberStatsRow = {
    * `dormantCount` is derived from it in the service layer.
    */
   lastDonationDay: Date | null;
+
+  /**
+   * The first JST calendar day the member sent a DONATION (same
+   * UTC-encoded JST-midnight convention as `lastDonationDay`).
+   * null when the member has never donated. Powers the cohort
+   * funnel's `activatedD30` stage — a member is "activated within
+   * 30 days" iff `firstDonationDay - joinedAt < 30 days`.
+   */
+  firstDonationDay: Date | null;
+
+  /**
+   * The member's `t_memberships.created_at` (UTC-encoded
+   * timestamp WITHOUT time zone — same storage as the column).
+   * Powers cohort bucketing in the service layer (the cohort
+   * month is `DATE_TRUNC('month', joinedAt AT TIME ZONE 'UTC' AT
+   * TIME ZONE 'Asia/Tokyo')`). Internal raw signal; not exposed
+   * directly in GraphQL.
+   */
+  joinedAt: Date;
 };
 
 /** Monthly activity counters, sourced from `mv_*` + `t_memberships`.

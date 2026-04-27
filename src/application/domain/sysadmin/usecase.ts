@@ -169,6 +169,12 @@ export default class SysAdminUseCase {
     const stageCounts = this.service.computeStageCounts(members, thresholds);
     const stageBreakdown = this.service.computeStageBreakdown(members, thresholds);
     const dormantCount = this.service.computeDormantCount(members, asOf, dormantThresholdDays);
+    const cohortFunnel = this.service.computeCohortFunnel(
+      members,
+      asOf,
+      windowMonths,
+      thresholds,
+    );
 
     const alerts = await this.service.getAlerts(ctx, community.communityId, asOf);
 
@@ -208,6 +214,7 @@ export default class SysAdminUseCase {
       alerts: SysAdminPresenter.alerts(alerts),
       dormantCount,
       chainDepthDistribution,
+      cohortFunnel,
     });
   }
 }

@@ -61,6 +61,8 @@ describe("SysAdminPresenter", () => {
         donationInDays: 18,
         uniqueDonationSenders: 3,
         lastDonationDay: new Date("2026-04-01"),
+        firstDonationDay: new Date("2025-09-01"),
+        joinedAt: new Date("2025-09-01T00:00:00Z"),
       };
       const out = SysAdminPresenter.memberRow(row);
       expect(out.totalPointsOut).toBe(5_000);
@@ -98,6 +100,8 @@ describe("SysAdminPresenter", () => {
         donationInDays: 0,
         uniqueDonationSenders: 0,
         lastDonationDay: null,
+        firstDonationDay: null,
+        joinedAt: new Date("2026-01-01T00:00:00Z"),
       };
       expect(() => SysAdminPresenter.memberRow(row)).toThrow(RangeError);
     });
@@ -118,6 +122,8 @@ describe("SysAdminPresenter", () => {
         donationInDays: 0,
         uniqueDonationSenders: 0,
         lastDonationDay: null,
+        firstDonationDay: null,
+        joinedAt: new Date("2026-01-01T00:00:00Z"),
       };
       expect(SysAdminPresenter.memberRow(row).name).toBeNull();
     });
@@ -319,6 +325,8 @@ describe("SysAdminPresenter", () => {
             donationInDays: 0,
             uniqueDonationSenders: 0,
             lastDonationDay: new Date("2026-04-25"),
+            firstDonationDay: new Date("2025-04-01"),
+            joinedAt: new Date("2025-04-01T00:00:00Z"),
           },
         ],
         hasNextPage: true,

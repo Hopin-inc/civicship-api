@@ -34,6 +34,7 @@ import {
   StageBreakdown,
   StageBucketStats,
   StageCounts,
+  SysAdminCohortFunnelPoint,
   TenureDistribution,
   WeeklyRetentionCounts,
   WeeklyRetentionPoint,
@@ -299,6 +300,7 @@ export default class SysAdminPresenter {
     alerts: GqlSysAdminCommunityAlerts;
     dormantCount: number;
     chainDepthDistribution: SysAdminChainDepthBucketRow[];
+    cohortFunnel: SysAdminCohortFunnelPoint[];
   }): GqlSysAdminCommunityDetailPayload {
     return {
       communityId: params.communityId,
@@ -317,6 +319,10 @@ export default class SysAdminPresenter {
       // GraphQL type 1:1 so the array passes through without
       // per-element transformation.
       chainDepthDistribution: params.chainDepthDistribution,
+      // Same passthrough pattern: the cohort funnel point shape
+      // (cohortMonth + 4 stage counts) matches the GraphQL type
+      // 1:1.
+      cohortFunnel: params.cohortFunnel,
     };
   }
 }

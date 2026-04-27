@@ -101,6 +101,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
           total_points_in: bigint;
           unique_donation_senders: number;
           last_donation_day: Date | null;
+          first_donation_day: Date | null;
+          joined_at: Date;
         }[]
       >`
         WITH asof_jst AS (
@@ -401,7 +403,19 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- (= the member never donated, the latent case). The service
           -- layer derives dormantCount from this without re-scanning
           -- t_transactions.
-          MAX(da.jst_day) AS last_donation_day
+          MAX(da.jst_day) AS last_donation_day,
+          -- MIN over the same per-day rows is the FIRST DONATION day,
+          -- powering the cohort funnel's activatedD30 stage in the
+          -- service layer (member is "activated within 30 days" iff
+          -- first_donation_day - joined_at < 30 days). Same NULL
+          -- semantic as last_donation_day for never-donated members.
+          MIN(da.jst_day) AS first_donation_day,
+          -- t_memberships.created_at exposed verbatim so the cohort
+          -- funnel can bucket members by their join month
+          -- (DATE_TRUNC at the JST timezone in service-side TS).
+          -- GROUP BY m."created_at" added below so the aggregate
+          -- doesn't collapse it.
+          m."created_at" AS joined_at
         FROM members m
         INNER JOIN member_tenure mt ON mt."user_id" = m."user_id"
         LEFT JOIN donation_activity da ON da.user_id = m."user_id"
@@ -409,7 +423,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
         LEFT JOIN donation_in_aggregates dia ON dia.user_id = m."user_id"
         LEFT JOIN donation_senders ds ON ds.user_id = m."user_id"
         LEFT JOIN "t_users" u ON u."id" = m."user_id"
-        GROUP BY m."user_id", mt.months_in, mt.days_in, u."name"
+        GROUP BY m."user_id", m."created_at", mt.months_in, mt.days_in, u."name"
         ORDER BY m."user_id"
       `;
       return rows.map((r) => ({
@@ -427,6 +441,8 @@ export default class SysAdminRepository implements ISysAdminRepository {
         totalPointsIn: r.total_points_in,
         uniqueDonationSenders: r.unique_donation_senders,
         lastDonationDay: r.last_donation_day,
+        firstDonationDay: r.first_donation_day,
+        joinedAt: r.joined_at,
       }));
     });
   }
