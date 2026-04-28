@@ -200,9 +200,26 @@ model Community {
   reportTemplates ReportTemplate[]
   reports         Report[]
 
+  // Denormalized pointer to the community's most recent PUBLISHED report.
+  // Powers `adminReportSummary` cursor pagination + sort order ("dormant
+  // communities float to the top" via NULLS FIRST). Maintained by the
+  // `recalculateCommunityLastPublished` helper, which is invoked from both
+  // `publishReport` (after a PUBLISHED transition) and
+  // `supersedeParentIfRegenerating` (after a PUBLISHED → SUPERSEDED
+  // transition). The `Report` relation is intentionally NOT declared here
+  // — these columns are admin-internal and exposing them on the GraphQL
+  // `Community` type would push a join cost onto every community read.
+  lastPublishedReportAt DateTime? @map("last_published_report_at")
+  lastPublishedReportId String?   @map("last_published_report_id")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  // `nulls: First` makes the index ordering match the
+  // `adminReportSummary` query's `last_published_report_at ASC NULLS
+  // FIRST` (dormant-first) so the sort is index-served — ASC defaults
+  // to NULLS LAST in PostgreSQL, which would force a re-sort.
+  @@index([lastPublishedReportAt(sort: Asc, nulls: First)], map: "idx_t_communities_last_published_report_at")
   @@map("t_communities")
 }
 
@@ -1831,6 +1848,26 @@ model Report {
   @@index([communityId, variant, periodFrom(sort: Desc)])
   @@index([communityId, status])
   @@index([parentRunId])
+  // Cross-community admin browse (`adminBrowseReports`) sorts by
+  // publishedAt DESC NULLS LAST, createdAt DESC. The community-scoped
+  // indexes above don't help when communityId is unfiltered, so this
+  // dedicated index backs the sysAdmin sweep.
+  // `nulls: Last` makes the index ordering match the
+  // `adminBrowseReports` query's `publishedAt DESC NULLS LAST,
+  // createdAt DESC` so PostgreSQL can satisfy the sort directly from
+  // the index — without it the planner has to re-sort because DESC's
+  // default is NULLS FIRST.
+  @@index([publishedAt(sort: Desc, nulls: Last), createdAt(sort: Desc)], map: "idx_t_reports_published_at_created_at")
+  // Backs both `recalculateCommunityLastPublished` (per-community
+  // newest PUBLISHED row) and `findCommunityReportSummary`'s 90-day
+  // count subquery. Existing `[communityId, status]` finds the
+  // PUBLISHED rows but loses the published_at range filter / sort to
+  // a heap pass; this index folds published_at into the leading
+  // portion so both the LIMIT 1 lookup and the 90-day range scan are
+  // index-served. Default ASC ordering is fine — Postgres can scan
+  // backwards to satisfy `ORDER BY published_at DESC` without an
+  // explicit `sort: Desc`.
+  @@index([communityId, status, publishedAt], map: "idx_t_reports_community_status_published_at")
   @@map("t_reports")
 }
 

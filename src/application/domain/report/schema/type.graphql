@@ -24,6 +24,16 @@ enum ReportTemplateScope {
   COMMUNITY
 }
 
+# Phase 1 admin UI exposure (A-1). `kind` distinguishes generation prompts
+# (the body the LLM produces) from judge prompts (the LLM-as-Judge scoring
+# pass). The admin UI keeps GENERATION on the main tab and routes JUDGE
+# through a separate "system" screen, so the enum surfaces here even
+# though prod selection logic continues to filter on it internally.
+enum ReportTemplateKind {
+  GENERATION
+  JUDGE
+}
+
 type Report {
   id: ID!
   community: Community!
@@ -72,6 +82,11 @@ type ReportTemplate {
   id: ID!
   variant: ReportVariant!
   scope: ReportTemplateScope!
+  # GENERATION = body-producing prompt. JUDGE = LLM-as-Judge scoring
+  # prompt. Exposed so the admin UI can mark / route the two kinds
+  # without an extra round trip; Prisma treats `kind` as part of the
+  # uniqueness tuple alongside (variant, communityId, version).
+  kind: ReportTemplateKind!
   community: Community
   systemPrompt: String!
   userPromptTemplate: String!
@@ -198,4 +213,65 @@ type ReportTemplateStats {
   avgJudgeScore: Float
   judgeHumanCorrelation: Float
   correlationWarning: Boolean!
+}
+
+# Per-template quality row for the A/B comparison screen. `templateId`
+# is the row identity (= one prompt revision); fields below describe
+# both the template config (version / scope / kind / experimentKey /
+# isActive / trafficWeight) and the aggregated quality signals over the
+# Reports that used that template. `judgeHumanCorrelation` is null when
+# fewer than 3 paired (judge, rating) observations exist; in that
+# case `correlationWarning` is false. `correlationWarning=true`
+# indicates correlation < 0.7 — judge prompt likely needs re-tuning
+# against the human ratings.
+type ReportTemplateStatsBreakdownRow {
+  templateId: ID!
+  version: Int!
+  scope: ReportTemplateScope!
+  kind: ReportTemplateKind!
+  experimentKey: String
+  isActive: Boolean!
+  isEnabled: Boolean!
+  trafficWeight: Int!
+  feedbackCount: Int!
+  avgRating: Float
+  avgJudgeScore: Float
+  judgeHumanCorrelation: Float
+  correlationWarning: Boolean!
+}
+
+type ReportTemplateStatsBreakdownEdge implements Edge {
+  cursor: String!
+  node: ReportTemplateStatsBreakdownRow
+}
+
+type ReportTemplateStatsBreakdownConnection {
+  edges: [ReportTemplateStatsBreakdownEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+# Phase 2 sysAdmin L1: per-community last-publish summary. `community`
+# / `lastPublishedReport` are resolved via the existing dataloaders,
+# so a 50-row page issues at most two batched lookups regardless of
+# how many communities show up. `daysSinceLastPublish` is computed in
+# the presenter from `lastPublishedAt` so dormant communities surface
+# the gap directly without the caller doing date math.
+type AdminReportSummaryRow {
+  community: Community!
+  lastPublishedReport: Report
+  lastPublishedAt: Datetime
+  daysSinceLastPublish: Int
+  publishedCountLast90Days: Int!
+}
+
+type AdminReportSummaryEdge implements Edge {
+  cursor: String!
+  node: AdminReportSummaryRow
+}
+
+type AdminReportSummaryConnection {
+  edges: [AdminReportSummaryEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
 }

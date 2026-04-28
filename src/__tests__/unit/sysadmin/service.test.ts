@@ -768,18 +768,18 @@ describe("SysAdminService", () => {
       });
       expect(page1.users.map((u) => u.userId)).toEqual(["a", "b"]);
       expect(page1.hasNextPage).toBe(true);
-      expect(page1.nextCursor).not.toBeNull();
+      expect(page1.nextOffset).not.toBeNull();
 
       const page2 = service.paginateMembers(baseMembers, {
         minSendRate: 0,
         sortField: "SEND_RATE",
         sortOrder: "DESC",
         limit: 2,
-        cursor: page1.nextCursor!,
+        cursor: page1.nextOffset!,
       });
       expect(page2.users.map((u) => u.userId)).toEqual(["c", "d"]);
       expect(page2.hasNextPage).toBe(false);
-      expect(page2.nextCursor).toBeNull();
+      expect(page2.nextOffset).toBeNull();
     });
 
     it("sorts by MONTHS_IN ASC", () => {
@@ -845,7 +845,7 @@ describe("SysAdminService", () => {
       });
       expect(page.users.length).toBe(MAX_LIMIT);
       expect(page.hasNextPage).toBe(true);
-      expect(page.nextCursor).not.toBeNull();
+      expect(page.nextOffset).not.toBeNull();
     });
   });
 

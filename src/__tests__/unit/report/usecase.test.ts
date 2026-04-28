@@ -543,3 +543,329 @@ describe("ReportUseCase.updateReportTemplate trafficWeight validation (PR-F3)", 
     expect(service.upsertTemplate).toHaveBeenCalled();
   });
 });
+
+/**
+ * A-3 maintenance contract: when `supersedeParentIfRegenerating`
+ * transitions a parent to SUPERSEDED, the community's denormalized
+ * last-publish pointer (`t_communities.last_published_report_*`) only
+ * needs to be re-derived when the parent was actually PUBLISHED. For
+ * DRAFT / APPROVED / SKIPPED parents the pointer was never on this
+ * row, so the extra UPDATE would be wasted. publishReport itself
+ * always recalcs because it just produced a new PUBLISHED row.
+ */
+describe("ReportUseCase A-3 community last-publish pointer maintenance", () => {
+  const communityId = "kibotcha";
+  const fakeTx = {} as never;
+  const fakeCtx = {
+    issuer: {
+      onlyBelongingCommunity: (
+        _ctx: IContext,
+        fn: (tx: unknown) => Promise<unknown>,
+      ): Promise<unknown> => fn(fakeTx),
+      admin: (
+        _ctx: IContext,
+        fn: (tx: unknown) => Promise<unknown>,
+      ): Promise<unknown> => fn(fakeTx),
+    },
+    currentUser: { id: "admin-user" },
+  } as unknown as IContext;
+
+  const stubTemplate = {
+    id: "tpl-1",
+    variant: "WEEKLY_SUMMARY",
+    scope: "SYSTEM",
+    communityId: null,
+    systemPrompt: "sys",
+    userPromptTemplate: "user ${payload_json}",
+    communityContext: null,
+    model: "claude-sonnet-4-6",
+    temperature: 0.5,
+    maxTokens: 8192,
+    stopSequences: [],
+    isEnabled: true,
+    version: 1,
+    isActive: true,
+    kind: "GENERATION",
+  };
+
+  let service: jest.Mocked<Pick<
+    ReportService,
+    | "getTemplate"
+    | "evaluateSkipReason"
+    | "createReport"
+    | "getReportById"
+    | "assertStatusTransition"
+    | "updateReportStatus"
+    | "saveJudgeResult"
+    | "recalculateCommunityLastPublished"
+  >>;
+  let usecase: ReportUseCase;
+  let llmClient: { complete: jest.Mock };
+  let judgeService: { selectJudgeTemplate: jest.Mock; executeJudge: jest.Mock };
+
+  beforeEach(() => {
+    container.reset();
+    service = {
+      getTemplate: jest.fn().mockResolvedValue(stubTemplate),
+      evaluateSkipReason: jest.fn().mockReturnValue("No activity in period: skip"),
+      createReport: jest.fn().mockImplementation(async (_ctx, data) => ({
+        id: "new-report-id",
+        communityId: data.communityId,
+        variant: data.variant,
+        status: data.status ?? ReportStatus.DRAFT,
+        regenerateCount: data.regenerateCount ?? 0,
+        parentRunId: data.parentRunId ?? null,
+        publishedAt: null,
+      })),
+      getReportById: jest.fn(),
+      assertStatusTransition: jest.fn(),
+      updateReportStatus: jest.fn().mockImplementation(async (_ctx, id, status) => ({
+        id,
+        communityId,
+        status,
+        publishedAt: status === ReportStatus.PUBLISHED ? new Date() : null,
+      })),
+      saveJudgeResult: jest.fn(),
+      recalculateCommunityLastPublished: jest.fn().mockResolvedValue(undefined),
+    } as never;
+
+    llmClient = { complete: jest.fn() };
+    judgeService = {
+      selectJudgeTemplate: jest.fn().mockResolvedValue(null),
+      executeJudge: jest.fn(),
+    };
+    const templateSelector = {
+      selectTemplate: jest.fn().mockResolvedValue(stubTemplate),
+    };
+
+    container.register("ReportService", { useValue: service });
+    container.register("LlmClient", { useValue: llmClient });
+    container.register("ReportJudgeService", { useValue: judgeService });
+    container.register("ReportTemplateSelector", { useValue: templateSelector });
+
+    usecase = container.resolve(ReportUseCase);
+
+    // Stub buildReportPayload so tests don't reach into the
+    // repository layer — the SUPERSEDED → recalc behaviour is
+    // independent of the payload contents, and the skip evaluator is
+    // already forced to return "skip" so no LLM call happens.
+    jest.spyOn(usecase, "buildReportPayload").mockResolvedValue({
+      period: { from: "2026-04-11", to: "2026-04-17" },
+      community_id: communityId,
+      community_context: null,
+      deepest_chain: null,
+      daily_summaries: [],
+      daily_active_users: [],
+      top_users: [],
+      highlight_comments: [],
+      previous_period: null,
+      retention: null,
+    });
+  });
+
+  it("publishReport always re-derives the community pointer in the same transaction", async () => {
+    service.getReportById.mockResolvedValue({
+      id: "report-1",
+      communityId,
+      status: ReportStatus.APPROVED,
+    } as never);
+
+    await usecase.publishReport(
+      { id: "report-1", finalContent: "# Final" },
+      fakeCtx,
+    );
+
+    expect(service.recalculateCommunityLastPublished).toHaveBeenCalledTimes(1);
+    expect(service.recalculateCommunityLastPublished).toHaveBeenCalledWith(
+      expect.anything(),
+      communityId,
+      fakeTx,
+    );
+  });
+
+  it("regenerate from PUBLISHED parent triggers recalc (parent's pointer must move on)", async () => {
+    service.evaluateSkipReason.mockReturnValue("skip");
+    service.getReportById.mockResolvedValue({
+      id: "parent-pub",
+      communityId,
+      variant: "WEEKLY_SUMMARY",
+      status: ReportStatus.PUBLISHED,
+      regenerateCount: 0,
+    } as never);
+
+    await usecase.generateReport(
+      {
+        input: {
+          communityId,
+          variant: GqlReportVariant.WeeklySummary,
+          periodFrom: new Date("2026-04-11"),
+          periodTo: new Date("2026-04-17"),
+          parentRunId: "parent-pub",
+        },
+        permission: { communityId },
+      },
+      fakeCtx,
+    );
+
+    expect(service.recalculateCommunityLastPublished).toHaveBeenCalledTimes(1);
+    expect(service.recalculateCommunityLastPublished).toHaveBeenCalledWith(
+      expect.anything(),
+      communityId,
+      fakeTx,
+    );
+  });
+
+  it.each([
+    ["DRAFT", ReportStatus.DRAFT],
+    ["APPROVED", ReportStatus.APPROVED],
+    ["SKIPPED", ReportStatus.SKIPPED],
+  ])(
+    "regenerate from %s parent does NOT trigger recalc (pointer was never on this row)",
+    async (_label, parentStatus) => {
+      service.evaluateSkipReason.mockReturnValue("skip");
+      service.getReportById.mockResolvedValue({
+        id: "parent-x",
+        communityId,
+        variant: "WEEKLY_SUMMARY",
+        status: parentStatus,
+        regenerateCount: 0,
+      } as never);
+
+      await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+            parentRunId: "parent-x",
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      expect(service.recalculateCommunityLastPublished).not.toHaveBeenCalled();
+    },
+  );
+});
+
+/**
+ * Phase 1 + Phase 2 admin query orchestration. These tests don't
+ * exercise the SQL paths (those need integration tests with a live
+ * Postgres) — they verify the usecase forwards args correctly and
+ * coalesces nullable codegen args (the GraphQL schema declares
+ * defaults but codegen still emits each arg as `Maybe<T>`, so the
+ * usecase must apply the default itself).
+ */
+describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
+  const communityId = "kibotcha";
+  const fakeCtx = {} as IContext;
+
+  let service: jest.Mocked<Pick<
+    ReportService,
+    "listTemplates" | "getAllReports" | "getCommunityReportSummary"
+  >>;
+  let usecase: ReportUseCase;
+
+  beforeEach(() => {
+    container.reset();
+    service = {
+      listTemplates: jest.fn().mockResolvedValue([]),
+      getAllReports: jest.fn().mockResolvedValue({ items: [], totalCount: 0 }),
+      getCommunityReportSummary: jest.fn().mockResolvedValue({ items: [], totalCount: 0 }),
+    } as never;
+    container.register("ReportService", { useValue: service });
+    container.register("LlmClient", { useValue: { complete: jest.fn() } });
+    container.register("ReportJudgeService", {
+      useValue: { selectJudgeTemplate: jest.fn(), executeJudge: jest.fn() },
+    });
+    container.register("ReportTemplateSelector", {
+      useValue: { selectTemplate: jest.fn() },
+    });
+    usecase = container.resolve(ReportUseCase);
+  });
+
+  it("listReportTemplates defaults kind to GENERATION when caller omits it", async () => {
+    await usecase.listReportTemplates(
+      {
+        variant: GqlReportVariant.WeeklySummary,
+      },
+      fakeCtx,
+    );
+    // Concrete enum value, not undefined / null — repository contract
+    // requires a non-null kind on the where clause.
+    expect(service.listTemplates).toHaveBeenCalledWith(
+      fakeCtx,
+      GqlReportVariant.WeeklySummary,
+      null,
+      "GENERATION",
+      false,
+    );
+  });
+
+  it("listReportTemplates threads explicit JUDGE kind through", async () => {
+    await usecase.listReportTemplates(
+      {
+        variant: GqlReportVariant.WeeklySummary,
+        kind: "JUDGE" as never,
+        includeInactive: true,
+      },
+      fakeCtx,
+    );
+    expect(service.listTemplates).toHaveBeenCalledWith(
+      fakeCtx,
+      GqlReportVariant.WeeklySummary,
+      null,
+      "JUDGE",
+      true,
+    );
+  });
+
+  it("adminBrowseReports forwards filters and converts ISO strings to Date", async () => {
+    await usecase.adminBrowseReports(
+      {
+        communityId,
+        status: ReportStatus.PUBLISHED,
+        variant: GqlReportVariant.WeeklySummary,
+        publishedAfter: "2026-01-01T00:00:00Z" as never,
+        publishedBefore: "2026-04-01T00:00:00Z" as never,
+        cursor: "cursor-x",
+        first: 30,
+      },
+      fakeCtx,
+    );
+    expect(service.getAllReports).toHaveBeenCalledWith(
+      fakeCtx,
+      expect.objectContaining({
+        communityId,
+        status: ReportStatus.PUBLISHED,
+        variant: GqlReportVariant.WeeklySummary,
+        publishedAfter: expect.any(Date),
+        publishedBefore: expect.any(Date),
+        cursor: "cursor-x",
+        first: 30,
+      }),
+    );
+  });
+
+  it("adminBrowseReports clamps `first` to defaults when omitted and rejects out-of-range values", async () => {
+    await usecase.adminBrowseReports({}, fakeCtx);
+    expect(service.getAllReports.mock.calls[0][1].first).toBe(20);
+
+    await expect(
+      usecase.adminBrowseReports({ first: 500 }, fakeCtx),
+    ).rejects.toThrow(/first must be an integer between 1 and 100/);
+  });
+
+  it("adminViewReportSummary clamps `first` and forwards cursor", async () => {
+    await usecase.adminViewReportSummary(
+      { cursor: "comm-cursor", first: 50 },
+      fakeCtx,
+    );
+    expect(service.getCommunityReportSummary).toHaveBeenCalledWith(
+      fakeCtx,
+      { cursor: "comm-cursor", first: 50 },
+    );
+  });
+});

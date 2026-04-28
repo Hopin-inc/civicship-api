@@ -4,6 +4,7 @@ import ReportFeedbackUseCase from "@/application/domain/report/feedback/usecase"
 import {
   GqlMutationSubmitReportFeedbackArgs,
   GqlQueryReportTemplateStatsArgs,
+  GqlQueryReportTemplateStatsBreakdownArgs,
 } from "@/types/graphql";
 import { PrismaReport } from "@/application/domain/report/data/type";
 import { PrismaReportFeedback } from "@/application/domain/report/feedback/data/type";
@@ -15,6 +16,13 @@ export default class ReportFeedbackResolver {
   Query = {
     reportTemplateStats: (_: unknown, args: GqlQueryReportTemplateStatsArgs, ctx: IContext) => {
       return this.useCase.viewReportTemplateStats(args, ctx);
+    },
+    reportTemplateStatsBreakdown: (
+      _: unknown,
+      args: GqlQueryReportTemplateStatsBreakdownArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.viewReportTemplateStatsBreakdown(args, ctx);
     },
   };
 

@@ -1,5 +1,5 @@
 import { inject, injectable } from "tsyringe";
-import { Prisma, FeedbackType } from "@prisma/client";
+import { Prisma, FeedbackType, ReportTemplateKind } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { AuthenticationError, NotFoundError, ValidationError } from "@/errors/graphql";
 import ReportService from "@/application/domain/report/service";
@@ -10,12 +10,21 @@ import {
   GqlSubmitReportFeedbackPayload,
   GqlQueryReportTemplateStatsArgs,
   GqlReportTemplateStats,
+  GqlQueryReportTemplateStatsBreakdownArgs,
+  GqlReportTemplateStatsBreakdownConnection,
 } from "@/types/graphql";
 
 const MAX_FEEDBACKS_PER_PAGE = 100;
 const DEFAULT_FEEDBACKS_PER_PAGE = 20;
 const MAX_COMMENT_LENGTH = 2000;
 const MAX_SECTION_KEY_LENGTH = 128;
+
+// Breakdown rows mirror per-template revisions; communities with active
+// experimentation can reach the hundreds across history. Cap at 100 to
+// keep the per-page Pearson computation bounded and prompt the UI to
+// paginate rather than fetch everything at once.
+const MAX_BREAKDOWN_ROWS_PER_PAGE = 100;
+const DEFAULT_BREAKDOWN_ROWS_PER_PAGE = 20;
 
 @injectable()
 export default class ReportFeedbackUseCase {
@@ -173,6 +182,36 @@ export default class ReportFeedbackUseCase {
       version ?? undefined,
     );
     return ReportFeedbackPresenter.templateStats(row);
+  }
+
+  /**
+   * Phase 1 admin: per-template quality breakdown for the A/B
+   * comparison screen. Pagination defaults align with the rest of the
+   * report domain — same `clampInt` helper, same DEFAULT/MAX bounds —
+   * so the screen and the existing `reports` browse share an
+   * intuitive page-size feel. Authorization is enforced upstream by
+   * the `@authz IsAdmin` rule on the GraphQL query.
+   */
+  async viewReportTemplateStatsBreakdown(
+    args: GqlQueryReportTemplateStatsBreakdownArgs,
+    ctx: IContext,
+  ): Promise<GqlReportTemplateStatsBreakdownConnection> {
+    const first = args.first
+      ? validateInt(args.first, 1, MAX_BREAKDOWN_ROWS_PER_PAGE, "first")
+      : DEFAULT_BREAKDOWN_ROWS_PER_PAGE;
+    const result = await this.feedbackService.getTemplateBreakdown(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+      includeInactive: args.includeInactive ?? false,
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportFeedbackPresenter.templateBreakdownConnection(
+      result.items,
+      result.totalCount,
+      first,
+    );
   }
 
   // Field-resolver helper used by `Report.feedbacks`. `Report.myFeedback`

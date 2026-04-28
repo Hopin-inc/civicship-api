@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
+  CommunitySummaryCursor,
   PrismaReport,
   PrismaReportGoldenCase,
   PrismaReportTemplate,
@@ -360,6 +361,34 @@ export interface IReportRepository {
   ): Promise<PrismaReportTemplate[]>;
 
   /**
+   * Admin-facing template list for the Phase 1 management UI. Returns
+   * every (variant, kind) row sorted version-DESC so the screen can show
+   * v3 → v2 → v1 side by side, including the SYSTEM fallback when a
+   * `communityId` is provided. Behaviour vs. the existing methods:
+   *
+   *   - `findActiveTemplates` (selector hot path): scoped strictly to
+   *     `communityId` and forces `isEnabled=true AND isActive=true`.
+   *     Used at generation time, not by admin UI.
+   *   - `findTemplate` (single live row): admin's previous single-row
+   *     accessor; returns the newest active row only.
+   *   - `findTemplates` (this method): returns multiple rows, optionally
+   *     including disabled / inactive ones, with SYSTEM ∪ COMMUNITY
+   *     union when `communityId` is provided.
+   *
+   * `kind` is a parameter (not hardcoded) so the same query can power
+   * both the GENERATION main tab and the JUDGE settings screen. The
+   * usecase surface defaults `kind` to GENERATION; callers asking for
+   * JUDGE rows are routed through the same path.
+   */
+  findTemplates(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+    kind: ReportTemplateKind,
+    includeInactive: boolean,
+  ): Promise<PrismaReportTemplate[]>;
+
+  /**
    * Resolve the active SYSTEM-scope JUDGE template for a variant. Returns
    * null when no such template exists — callers must treat that as a
    * "skip the judge step" signal rather than failing the generation.
@@ -404,6 +433,79 @@ export interface IReportRepository {
     },
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportGoldenCase>;
+
+  /**
+   * Phase 2 sysAdmin: cross-community report search backing
+   * `adminBrowseReports`. `findReports` is community-scoped and
+   * permission-gated; this variant accepts an optional communityId
+   * and goes through `ctx.issuer.internal` so the IsAdmin GraphQL
+   * directive is the sole gatekeeper. Sort is `publishedAt DESC NULLS
+   * LAST, createdAt DESC` so DRAFT / SKIPPED rows (no publishedAt)
+   * never lead the page.
+   */
+  findAllReports(
+    ctx: IContext,
+    params: {
+      communityId?: string;
+      status?: ReportStatus;
+      variant?: string;
+      publishedAfter?: Date;
+      publishedBefore?: Date;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReport[]; totalCount: number }>;
+
+  /**
+   * Phase 2 sysAdmin: per-community last-publish summary for the L1
+   * dashboard. Reads the denormalized `last_published_report_at` /
+   * `last_published_report_id` columns on `t_communities` (maintained
+   * by `recalculateCommunityLastPublished` below), so the sort and
+   * cursor stay stable without a per-community subquery on every page.
+   *
+   * `publishedCountLast90Days` is computed inline (no denormalize) —
+   * it changes too often for a stored column and the count over
+   * `(community_id, status, published_at)` is index-friendly.
+   *
+   * Returned rows carry the `lastPublishedReportId` / `lastPublishedAt`
+   * pair plus the count; the resolver hydrates `community` /
+   * `lastPublishedReport` via dataloaders so a 50-row page costs at
+   * most two batched lookups.
+   */
+  findCommunityReportSummary(
+    ctx: IContext,
+    params: { cursor: CommunitySummaryCursor | null; first: number },
+  ): Promise<{
+    items: Array<{
+      communityId: string;
+      lastPublishedReportId: string | null;
+      lastPublishedAt: Date | null;
+      publishedCountLast90Days: number;
+    }>;
+    totalCount: number;
+  }>;
+
+  /**
+   * Re-compute and persist the `t_communities.last_published_report_*`
+   * pointer for a community. Picks the newest `status=PUBLISHED` report
+   * (or NULL if none remain). Called from two places, both inside the
+   * same transaction as the report-side update:
+   *
+   *   1. `publishReport` after a transition into PUBLISHED so the
+   *      pointer always reflects the freshly-published report.
+   *   2. `supersedeParentIfRegenerating` after a PUBLISHED → SUPERSEDED
+   *      transition so a regenerated run does not leave the pointer
+   *      stranded on a no-longer-published row.
+   *
+   * Always re-derives from `t_reports`; no need for callers to thread
+   * a publishedAt comparison ("don't overwrite if older") because the
+   * SELECT itself picks the newest remaining PUBLISHED row.
+   */
+  recalculateCommunityLastPublished(
+    ctx: IContext,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void>;
 
   upsertTemplate(
     ctx: IContext,

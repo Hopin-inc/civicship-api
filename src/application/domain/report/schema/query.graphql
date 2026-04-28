@@ -21,4 +21,64 @@ extend type Query {
   # needs re-calibration (correlation < 0.7 → flagged).
   reportTemplateStats(variant: ReportVariant!, version: Int): ReportTemplateStats!
     @authz(rules: [IsAdmin])
+
+  # Phase 1 admin UI: same-variant template list (A/B candidates / past
+  # versions). Single-row `reportTemplate` cannot expose the multiple
+  # `isActive` rows that the trafficWeight selector samples between.
+  # `communityId=null` returns SYSTEM only; `communityId=X` returns the
+  # union of the SYSTEM row(s) and any COMMUNITY-X overrides so the
+  # admin UI can show "what actually runs for this community" in one list.
+  reportTemplates(
+    variant: ReportVariant!
+    communityId: ID
+    kind: ReportTemplateKind = GENERATION
+    includeInactive: Boolean = false
+  ): [ReportTemplate!]! @authz(rules: [IsAdmin])
+
+  # Phase 1 admin UI: per-template quality breakdown for the A/B
+  # comparison screen — rows are templates (one per `prompt version`
+  # within a variant). Each row carries feedbackCount / avgRating /
+  # avgJudgeScore plus per-row Pearson correlation, so v1 and v2 can
+  # be evaluated side by side. Default returns active rows only with
+  # cursor pagination so the response stays bounded even when an
+  # experimentKey set explodes (variants with hundreds of historical
+  # candidates lean on `includeInactive: true` paginated browsing).
+  reportTemplateStatsBreakdown(
+    variant: ReportVariant!
+    version: Int
+    kind: ReportTemplateKind = GENERATION
+    includeInactive: Boolean = false
+    cursor: String
+    first: Int = 20
+  ): ReportTemplateStatsBreakdownConnection! @authz(rules: [IsAdmin])
+
+  # Phase 2 sysAdmin: cross-community report search. Same shape as
+  # `reports` but `permission` is dropped — IsAdmin alone gates access.
+  # Order is `publishedAt DESC NULLS LAST, createdAt DESC` so DRAFT /
+  # SKIPPED rows that have no publishedAt sink to the bottom rather
+  # than leading the page. Filters are all optional so the same query
+  # backs both "show all PUBLISHED across communities" and "drill into
+  # one community + variant" use cases.
+  adminBrowseReports(
+    communityId: ID
+    status: ReportStatus
+    variant: ReportVariant
+    publishedAfter: Datetime
+    publishedBefore: Datetime
+    cursor: String
+    first: Int
+  ): ReportsConnection! @authz(rules: [IsAdmin])
+
+  # Phase 2 sysAdmin: per-community last-publish summary for the L1
+  # dashboard. Sort order `lastPublishedAt ASC NULLS FIRST` floats
+  # dormant / never-published communities to the top so they are the
+  # first things an operator sees. The `lastPublishedReportAt` column
+  # on `t_communities` is a denormalized pointer maintained by
+  # `publishReport` and `supersedeParentIfRegenerating` (A-3); it is
+  # NOT exposed on the `Community` type to keep general community
+  # reads cheap.
+  adminReportSummary(
+    cursor: String
+    first: Int
+  ): AdminReportSummaryConnection! @authz(rules: [IsAdmin])
 }

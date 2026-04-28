@@ -286,7 +286,14 @@ export default class SysAdminPresenter {
     return {
       users: result.users.map(SysAdminPresenter.memberRow),
       hasNextPage: result.hasNextPage,
-      nextCursor: result.nextCursor,
+      // Internal `nextOffset: number | null` → GraphQL
+      // `nextCursor: String | null`. The encode lives here so the
+      // service stays free of wire-format concerns; the matching
+      // decode is in `SysAdminConverter.parseMemberListCursor`.
+      nextCursor:
+        result.nextOffset !== null
+          ? encodeMemberListCursor(result.nextOffset)
+          : null,
     };
   }
 
@@ -329,4 +336,15 @@ export default class SysAdminPresenter {
       cohortFunnel: params.cohortFunnel,
     };
   }
+}
+
+/**
+ * Internal offset → GraphQL `nextCursor` wire format. Base64 of the
+ * offset's stringified form, matching the prior in-service helper.
+ * Exported so the round-trip unit test can assert encode/decode
+ * symmetry against `SysAdminConverter.parseMemberListCursor` without
+ * exercising the full member-list presenter.
+ */
+export function encodeMemberListCursor(offset: number): string {
+  return Buffer.from(String(offset), "utf8").toString("base64");
 }
