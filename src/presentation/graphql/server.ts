@@ -7,6 +7,7 @@ import schema from "@/presentation/graphql/schema";
 import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
 import { rules } from "@/presentation/graphql/rules";
 import { armorProtection } from "@/presentation/graphql/plugins/armor";
+import { processAuthzError } from "@/presentation/graphql/processAuthzError";
 
 const isProduction = process.env.NODE_ENV === "production";
 // LOCAL_DEV is injected by `pnpm dev*` scripts so that running locally against
@@ -21,12 +22,7 @@ export async function createApolloServer(httpServer: http.Server) {
     ...armorProtection.plugins,
     authZApolloPlugin({
       rules,
-      processError: (error: unknown): never => {
-        if (!isProduction) {
-          throw error;
-        }
-        throw new Error("Internal Server Error");
-      },
+      processError: (error: unknown): never => processAuthzError(error),
     }),
   ];
 

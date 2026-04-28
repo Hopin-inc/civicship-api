@@ -18,7 +18,7 @@ const IsUser = preExecRule({
   const isAuthenticated = !!context.currentUser;
 
   if (!isAuthenticated) {
-    logger.error("IsUser authorization FAILED", {
+    logger.warn("IsUser authorization FAILED", {
       rule: "IsUser",
       hasContextUser: false,
       communityId: context.communityId ?? null,
@@ -39,7 +39,7 @@ const IsAdmin = preExecRule({
   const isAdmin = !!user && user.sysRole === "SYS_ADMIN";
 
   if (!isAdmin) {
-    logger.error("IsAdmin authorization FAILED", {
+    logger.warn("IsAdmin authorization FAILED", {
       rule: "IsAdmin",
       hasContextUser: !!user,
       contextUserId: user?.id ?? null,
@@ -61,7 +61,7 @@ const IsSelf = preExecRule({
   const isMatch = !!user && user.id === permission?.userId;
 
   if (!isMatch) {
-    logger.error("IsSelf authorization FAILED", {
+    logger.warn("IsSelf authorization FAILED", {
       rule: "IsSelf",
       hasContextUser: !!user,
       contextUserId: user?.id ?? null,
@@ -83,7 +83,7 @@ const IsCommunityOwner = preExecRule({
 
   const communityId = args.permission?.communityId ?? args.communityPermission?.communityId;
   if (!communityId) {
-    logger.error("IsCommunityOwner authorization FAILED", {
+    logger.warn("IsCommunityOwner authorization FAILED", {
       rule: "IsCommunityOwner",
       reason: "no_community_id_in_args",
     });
@@ -93,7 +93,7 @@ const IsCommunityOwner = preExecRule({
   const allowed = isCommunityOwner(context, communityId);
 
   if (!allowed) {
-    logger.error("IsCommunityOwner authorization FAILED", {
+    logger.warn("IsCommunityOwner authorization FAILED", {
       rule: "IsCommunityOwner",
       userId: context.currentUser?.id ?? null,
       communityId,
@@ -112,7 +112,7 @@ const IsCommunityManager = preExecRule({
 
   const communityId = args.permission?.communityId;
   if (!communityId) {
-    logger.error("IsCommunityManager authorization FAILED", {
+    logger.warn("IsCommunityManager authorization FAILED", {
       rule: "IsCommunityManager",
       reason: "no_community_id_in_permission",
     });
@@ -122,7 +122,7 @@ const IsCommunityManager = preExecRule({
   const allowed = isCommunityManager(context, communityId);
 
   if (!allowed) {
-    logger.error("IsCommunityManager authorization FAILED", {
+    logger.warn("IsCommunityManager authorization FAILED", {
       rule: "IsCommunityManager",
       userId: context.currentUser?.id ?? null,
       communityId,
@@ -141,7 +141,7 @@ const IsCommunityMember = preExecRule({
 
   const communityId = args.permission?.communityId;
   if (!communityId) {
-    logger.error("IsCommunityMember authorization FAILED", {
+    logger.warn("IsCommunityMember authorization FAILED", {
       rule: "IsCommunityMember",
       reason: "no_community_id_in_permission",
     });
@@ -151,7 +151,7 @@ const IsCommunityMember = preExecRule({
   const allowed = isCommunityMember(context, communityId);
 
   if (!allowed) {
-    logger.error("IsCommunityMember authorization FAILED", {
+    logger.warn("IsCommunityMember authorization FAILED", {
       rule: "IsCommunityMember",
       userId: context.currentUser?.id ?? null,
       communityId,
@@ -170,7 +170,7 @@ const CanManageOpportunity = preExecRule({
 
   const opportunityId = args.permission?.opportunityId;
   if (!opportunityId) {
-    logger.error("CanManageOpportunity authorization FAILED", {
+    logger.warn("CanManageOpportunity authorization FAILED", {
       rule: "CanManageOpportunity",
       reason: "no_opportunity_id_in_permission",
     });
@@ -180,7 +180,7 @@ const CanManageOpportunity = preExecRule({
   const result = await canManageOpportunityHelper(context, opportunityId);
 
   if (!result.allowed) {
-    logger.error("CanManageOpportunity authorization FAILED", {
+    logger.warn("CanManageOpportunity authorization FAILED", {
       rule: "CanManageOpportunity",
       userId: context.currentUser?.id ?? null,
       opportunityId,
