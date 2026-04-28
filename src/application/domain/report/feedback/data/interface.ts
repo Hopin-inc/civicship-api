@@ -4,6 +4,7 @@ import {
   PrismaReportFeedback,
   TemplateBreakdownRow,
   JudgeFeedbackPairRow,
+  AdminTemplateFeedbackStatsRow,
 } from "@/application/domain/report/feedback/data/type";
 
 export { JudgeFeedbackPairRow };
@@ -89,4 +90,49 @@ export interface IReportFeedbackRepository {
       first: number;
     },
   ): Promise<{ items: TemplateBreakdownRow[]; totalCount: number }>;
+
+  /**
+   * Phase 1.5 admin: review-style list of individual feedbacks scoped
+   * to a template (variant + optional version, plus `kind` so JUDGE
+   * and GENERATION prompts have separate review streams). The
+   * `feedbackType` / `maxRating` filters drive the "drill into low
+   * ratings on a specific quality axis" workflow.
+   *
+   * Ordering is `(createdAt DESC, id DESC)` so newest reviews lead
+   * the page and cursor pagination is total-ordered (without `id` as
+   * tiebreaker, two rows sharing a `createdAt` — possible under bulk
+   * seed inserts or high-concurrency writes — could reshuffle between
+   * pages and either duplicate or skip across cursor boundaries). The
+   * cursor is a feedback `id`.
+   */
+  findAdminTemplateFeedbacks(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      feedbackType?: FeedbackType;
+      maxRating?: number;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }>;
+
+  /**
+   * Phase 1.5 admin: aggregate stats over the same template scope as
+   * `findAdminTemplateFeedbacks` but without the row-level
+   * `feedbackType` / `maxRating` filters — the population stats power
+   * a "Customer Reviews"-style summary that must reflect the full
+   * 1..5 spread. Returns total count, mean rating (null when no
+   * observations), and a sparse bucket list (zero-count ratings
+   * omitted; the presenter densifies to 1..5).
+   */
+  getAdminTemplateFeedbackStats(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+    },
+  ): Promise<AdminTemplateFeedbackStatsRow>;
 }

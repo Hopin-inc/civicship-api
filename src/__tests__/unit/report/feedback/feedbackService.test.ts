@@ -238,6 +238,78 @@ describe("ReportFeedbackService.getTemplateBreakdown", () => {
   });
 });
 
+describe("ReportFeedbackService.listAdminTemplateFeedbacks", () => {
+  const fakeCtx = {} as IContext;
+
+  let repository: {
+    createFeedback: jest.Mock;
+    findFeedbackByReportAndUser: jest.Mock;
+    findFeedbacksByReport: jest.Mock;
+    findFeedbacksByReportIds: jest.Mock;
+    getTemplateFeedbackAggregates: jest.Mock;
+    getTemplateBreakdown: jest.Mock;
+    findAdminTemplateFeedbacks: jest.Mock;
+  };
+  let service: ReportFeedbackService;
+
+  beforeEach(() => {
+    container.reset();
+    repository = {
+      createFeedback: jest.fn(),
+      findFeedbackByReportAndUser: jest.fn(),
+      findFeedbacksByReport: jest.fn(),
+      findFeedbacksByReportIds: jest.fn(),
+      getTemplateFeedbackAggregates: jest.fn(),
+      getTemplateBreakdown: jest.fn(),
+      findAdminTemplateFeedbacks: jest
+        .fn()
+        .mockResolvedValue({ items: [], totalCount: 0 }),
+    };
+    container.register("ReportFeedbackRepository", { useValue: repository });
+    service = container.resolve(ReportFeedbackService);
+  });
+
+  it("forwards every filter to the repository unchanged", async () => {
+    // The service is a pure pass-through on this path — no Pearson, no
+    // threshold math. The test pins the contract so a future refactor
+    // cannot silently drop a filter the UI depends on.
+    await service.listAdminTemplateFeedbacks(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 3,
+      kind: ReportTemplateKind.JUDGE,
+      feedbackType: "ACCURACY" as never,
+      maxRating: 2,
+      cursor: "feedback-cursor",
+      first: 25,
+    });
+
+    expect(repository.findAdminTemplateFeedbacks).toHaveBeenCalledWith(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 3,
+      kind: ReportTemplateKind.JUDGE,
+      feedbackType: "ACCURACY",
+      maxRating: 2,
+      cursor: "feedback-cursor",
+      first: 25,
+    });
+  });
+
+  it("returns the repository's items + totalCount unchanged", async () => {
+    repository.findAdminTemplateFeedbacks.mockResolvedValue({
+      items: [{ id: "feedback-1" }, { id: "feedback-2" }],
+      totalCount: 2,
+    });
+
+    const result = await service.listAdminTemplateFeedbacks(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      kind: ReportTemplateKind.GENERATION,
+      first: 20,
+    });
+    expect(result.items).toHaveLength(2);
+    expect(result.totalCount).toBe(2);
+  });
+});
+
 describe("pearsonCorrelation", () => {
   it("returns null when the pair count is below the minimum", () => {
     expect(pearsonCorrelation([])).toBeNull();
@@ -269,5 +341,76 @@ describe("pearsonCorrelation", () => {
     expect(r).not.toBeNull();
     expect(r!).toBeGreaterThanOrEqual(-1);
     expect(r!).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("ReportFeedbackService.getAdminTemplateFeedbackStats", () => {
+  const fakeCtx = {} as IContext;
+
+  let repository: {
+    createFeedback: jest.Mock;
+    findFeedbackByReportAndUser: jest.Mock;
+    findFeedbacksByReport: jest.Mock;
+    findFeedbacksByReportIds: jest.Mock;
+    getTemplateFeedbackAggregates: jest.Mock;
+    getTemplateBreakdown: jest.Mock;
+    findAdminTemplateFeedbacks: jest.Mock;
+    getAdminTemplateFeedbackStats: jest.Mock;
+  };
+  let service: ReportFeedbackService;
+
+  beforeEach(() => {
+    container.reset();
+    repository = {
+      createFeedback: jest.fn(),
+      findFeedbackByReportAndUser: jest.fn(),
+      findFeedbacksByReport: jest.fn(),
+      findFeedbacksByReportIds: jest.fn(),
+      getTemplateFeedbackAggregates: jest.fn(),
+      getTemplateBreakdown: jest.fn(),
+      findAdminTemplateFeedbacks: jest.fn(),
+      getAdminTemplateFeedbackStats: jest
+        .fn()
+        .mockResolvedValue({ totalCount: 0, avgRating: null, buckets: [] }),
+    };
+    container.register("ReportFeedbackRepository", { useValue: repository });
+    service = container.resolve(ReportFeedbackService);
+  });
+
+  it("forwards variant / version / kind to the repository unchanged", async () => {
+    // Pure pass-through path — the densification / Pearson math
+    // happens in the presenter, not here. Pin the contract so a
+    // future refactor cannot silently drop one of the three filter
+    // dimensions.
+    await service.getAdminTemplateFeedbackStats(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 4,
+      kind: ReportTemplateKind.JUDGE,
+    });
+
+    expect(repository.getAdminTemplateFeedbackStats).toHaveBeenCalledWith(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 4,
+      kind: ReportTemplateKind.JUDGE,
+    });
+  });
+
+  it("returns the repository row unchanged (no derived math at this layer)", async () => {
+    repository.getAdminTemplateFeedbackStats.mockResolvedValue({
+      totalCount: 3,
+      avgRating: 4.0,
+      buckets: [
+        { rating: 3, count: 1 },
+        { rating: 5, count: 2 },
+      ],
+    });
+
+    const result = await service.getAdminTemplateFeedbackStats(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      kind: ReportTemplateKind.GENERATION,
+    });
+    expect(result.totalCount).toBe(3);
+    expect(result.avgRating).toBe(4.0);
+    expect(result.buckets).toHaveLength(2);
   });
 });

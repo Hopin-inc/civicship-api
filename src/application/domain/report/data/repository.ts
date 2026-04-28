@@ -1199,8 +1199,10 @@ export default class ReportRepository implements IReportRepository {
    * Per-community summary for `adminReportSummary`. Reads the
    * denormalized last-publish columns on `t_communities` directly so
    * the sort + cursor stay stable, then computes the rolling
-   * 90-day publish count inline via a correlated subquery — that
-   * count moves daily and is not worth denormalizing.
+   * 90-day publish count for the page's communityIds in a single
+   * `GROUP BY` follow-up query — that count moves daily and is not
+   * worth denormalizing, but the per-row correlated subquery shape
+   * was needlessly O(first) under load.
    *
    * Sort `last_published_report_at ASC NULLS FIRST, id ASC` floats
    * dormant / never-published communities to the top so the L1 view
@@ -1248,27 +1250,24 @@ export default class ReportRepository implements IReportRepository {
                 AND c."id" > ${cursor.id}
               )
             )`;
+      // Two-query strategy: first page through communities by the
+      // denormalized last-publish columns (one index range scan),
+      // then aggregate the rolling 90-day publish count for just
+      // that page's communityIds in a single GROUP BY. This keeps
+      // DB round-trips and scan count constant in `first` rather
+      // than O(first) correlated subqueries on the L1 hot path.
       const [rows, totalRow] = await Promise.all([
         tx.$queryRaw<
           {
             id: string;
             last_published_report_id: string | null;
             last_published_report_at: Date | null;
-            published_count_last_90_days: bigint;
           }[]
         >`
           SELECT
             c."id",
             c."last_published_report_id",
-            c."last_published_report_at",
-            COALESCE((
-              SELECT COUNT(*)::bigint
-              FROM "t_reports" r
-              WHERE r."community_id" = c."id"
-                AND r."status" = 'PUBLISHED'
-                AND r."published_at" IS NOT NULL
-                AND r."published_at" >= NOW() - INTERVAL '90 days'
-            ), 0) AS "published_count_last_90_days"
+            c."last_published_report_at"
           FROM "t_communities" c
           WHERE TRUE
             ${cursorClause}
@@ -1279,12 +1278,32 @@ export default class ReportRepository implements IReportRepository {
         `,
         tx.community.count(),
       ]);
+      const communityIds = rows.map((r) => r.id);
+      const counts =
+        communityIds.length === 0
+          ? []
+          : await tx.$queryRaw<
+              { community_id: string; count: bigint }[]
+            >`
+              SELECT
+                r."community_id",
+                COUNT(*)::bigint AS "count"
+              FROM "t_reports" r
+              WHERE r."community_id" = ANY(${communityIds}::text[])
+                AND r."status" = 'PUBLISHED'
+                AND r."published_at" IS NOT NULL
+                AND r."published_at" >= NOW() - INTERVAL '90 days'
+              GROUP BY r."community_id"
+            `;
+      const countByCommunity = new Map(
+        counts.map((c) => [c.community_id, Number(c.count)]),
+      );
       return {
         items: rows.map((r) => ({
           communityId: r.id,
           lastPublishedReportId: r.last_published_report_id,
           lastPublishedAt: r.last_published_report_at,
-          publishedCountLast90Days: Number(r.published_count_last_90_days),
+          publishedCountLast90Days: countByCommunity.get(r.id) ?? 0,
         })),
         totalCount: totalRow,
       };

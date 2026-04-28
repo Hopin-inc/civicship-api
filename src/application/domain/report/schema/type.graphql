@@ -168,6 +168,13 @@ enum ReportFeedbackType {
 type ReportFeedback {
   id: ID!
   reportId: ID!
+  # Resolved via the per-request `report` DataLoader so the Phase 1.5
+  # `adminTemplateFeedbacks` review list collapses to one batched lookup
+  # regardless of how many feedbacks share a Report. The Report type
+  # already exposes `template` (admin-only), so consumers needing the
+  # template version / experimentKey traverse `feedback.report.template`
+  # rather than denormalising those fields onto the feedback itself.
+  report: Report!
   user: User!
   rating: Int!
   feedbackType: ReportFeedbackType
@@ -249,6 +256,23 @@ type ReportTemplateStatsBreakdownConnection {
   edges: [ReportTemplateStatsBreakdownEdge]
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+# Phase 1.5 sysAdmin: "Customer Reviews"-style summary of a template's
+# feedback population (paired with `adminTemplateFeedbacks`).
+# `avgRating` is null when `totalCount = 0` (no observations to average).
+# `ratingDistribution` is always emitted **dense** with five entries
+# (rating 1..5), filling absent ratings with `count: 0` so the UI can
+# render the distribution bar without padding the array client-side.
+type AdminTemplateFeedbackStats {
+  totalCount: Int!
+  avgRating: Float
+  ratingDistribution: [ReportFeedbackRatingBucket!]!
+}
+
+type ReportFeedbackRatingBucket {
+  rating: Int!
+  count: Int!
 }
 
 # Phase 2 sysAdmin L1: per-community last-publish summary. `community`
