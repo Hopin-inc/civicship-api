@@ -1868,6 +1868,19 @@ model Report {
   // backwards to satisfy `ORDER BY published_at DESC` without an
   // explicit `sort: Desc`.
   @@index([communityId, status, publishedAt], map: "idx_t_reports_community_status_published_at")
+  // Backs the template-scoped admin paths that walk
+  // `t_report_templates → t_reports (template_id) → t_report_feedbacks`:
+  // `adminTemplateFeedbacks` (Phase 1.5), `reportTemplateStatsBreakdown`,
+  // and `reportTemplateStats`. Without this index the join from
+  // template_id requires a sequential scan of t_reports — fine at
+  // current volume, but the cost grows linearly with report count and
+  // these are the queries the sysAdmin prompt-tuning loop hits most
+  // often. Adding the index up-front sidesteps a planner regression
+  // once the table grows past a few thousand rows. SetNull FK already
+  // creates a btree on the column for the constraint, but PG does not
+  // automatically expose that to the planner for non-FK predicates,
+  // so an explicit index is still required.
+  @@index([templateId], map: "idx_t_reports_template_id")
   @@map("t_reports")
 }
 
