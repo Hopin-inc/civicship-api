@@ -13,7 +13,7 @@ import type {
   PeriodAggregateRow,
   RetentionAggregateRow,
   TransactionSummaryDailyRow,
-} from "@/application/domain/report/data/interface";
+} from "@/application/domain/report/data/rows";
 
 /**
  * Unit-level tests for the pure functions extracted out of

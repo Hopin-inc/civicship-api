@@ -3,7 +3,7 @@ import {
   PeriodAggregateRow,
   RetentionAggregateRow,
   TransactionSummaryDailyRow,
-} from "@/application/domain/report/data/interface";
+} from "@/application/domain/report/data/rows";
 import {
   PreviousPeriodSummary,
   RetentionSummary,

@@ -21,7 +21,7 @@ import {
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
   UserTransactionAggregateRow,
-} from "@/application/domain/report/data/interface";
+} from "@/application/domain/report/data/rows";
 import {
   CommunityContext,
   DeepestChainItem,

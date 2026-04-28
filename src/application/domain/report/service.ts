@@ -1,12 +1,12 @@
 import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
+import { IReportRepository } from "@/application/domain/report/data/interface";
 import {
   CohortRetentionRow,
   CommunityContextRow,
   DateRange,
   DeepestChainRow,
-  IReportRepository,
   PeriodAggregateRow,
   RetentionAggregateRow,
   TransactionActiveUsersDailyRow,
@@ -14,7 +14,7 @@ import {
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
   UserTransactionAggregateRow,
-} from "@/application/domain/report/data/interface";
+} from "@/application/domain/report/data/rows";
 import {
   PrismaReport,
   PrismaReportGoldenCase,
