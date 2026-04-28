@@ -28,7 +28,7 @@ describe("ReportJudgeService", () => {
     repository = { findJudgeTemplate: jest.fn() };
     llmClient = { complete: jest.fn() };
 
-    container.register("ReportRepository", { useValue: repository });
+    container.register("ReportTemplateRepository", { useValue: repository });
     container.register("LlmClient", { useValue: llmClient });
     service = container.resolve(ReportJudgeService);
   });
