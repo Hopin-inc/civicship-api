@@ -3,8 +3,8 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
 import { NotFoundError } from "@/errors/graphql";
-import { IReportTemplateRepository } from "@/application/domain/report/data/repository/template";
-import { PrismaReportTemplate } from "@/application/domain/report/data/type";
+import { IReportTemplateRepository } from "@/application/domain/report/template/data/interface";
+import { PrismaReportTemplate } from "@/application/domain/report/template/data/type";
 import { truncateToJstDate } from "@/application/domain/report/util";
 
 /**

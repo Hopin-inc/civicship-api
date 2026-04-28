@@ -6,70 +6,13 @@ import {
 } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
+import { IReportTemplateRepository } from "@/application/domain/report/template/data/interface";
 import {
   PrismaReportGoldenCase,
   PrismaReportTemplate,
   reportGoldenCaseSelect,
   reportTemplateSelect,
-} from "@/application/domain/report/data/type";
-
-export interface IReportTemplateRepository {
-  findTemplate(
-    ctx: IContext,
-    variant: string,
-    communityId: string | null,
-  ): Promise<PrismaReportTemplate | null>;
-  findTemplateByVersion(
-    ctx: IContext,
-    variant: string,
-    kind: ReportTemplateKind,
-    version: number,
-    communityId: string | null,
-  ): Promise<PrismaReportTemplate | null>;
-  findActiveTemplates(
-    ctx: IContext,
-    variant: string,
-    kind: ReportTemplateKind,
-    communityId: string | null,
-  ): Promise<PrismaReportTemplate[]>;
-  findTemplates(
-    ctx: IContext,
-    variant: string,
-    communityId: string | null,
-    kind: ReportTemplateKind,
-    includeInactive: boolean,
-  ): Promise<PrismaReportTemplate[]>;
-  findJudgeTemplate(
-    ctx: IContext,
-    variant: string,
-  ): Promise<PrismaReportTemplate | null>;
-  upsertTemplate(
-    ctx: IContext,
-    variant: string,
-    communityId: string | null,
-    data: Omit<Prisma.ReportTemplateCreateInput, "variant" | "scope" | "community">,
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaReportTemplate>;
-  findGoldenCases(
-    ctx: IContext,
-    options?: { variant?: string; pinnedVersion?: number | null },
-  ): Promise<PrismaReportGoldenCase[]>;
-  upsertGoldenCase(
-    ctx: IContext,
-    data: {
-      variant: string;
-      label: string;
-      payloadFixture: Prisma.InputJsonValue;
-      judgeCriteria: Prisma.InputJsonValue;
-      minJudgeScore: number;
-      forbiddenKeys: string[];
-      notes?: string | null;
-      expectedStatus?: ReportStatus | null;
-      templateVersion?: number | null;
-    },
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaReportGoldenCase>;
-}
+} from "@/application/domain/report/template/data/type";
 
 @injectable()
 export default class ReportTemplateRepository implements IReportTemplateRepository {

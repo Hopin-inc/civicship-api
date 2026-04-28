@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
-import ReportJudgeService from "@/application/domain/report/judgeService";
+import ReportJudgeService from "@/application/domain/report/template/judgeService";
 import type { LlmCompleteResult } from "@/infrastructure/libs/llm/types";
 import type { IContext } from "@/types/server";
 

@@ -8,8 +8,8 @@ import {
 import {
   CommunitySummaryCursor,
   PrismaReport,
-  PrismaReportTemplate,
 } from "@/application/domain/report/data/type";
+import { PrismaReportTemplate } from "@/application/domain/report/template/data/type";
 import {
   CohortRetentionRow,
   CommunityContextRow,

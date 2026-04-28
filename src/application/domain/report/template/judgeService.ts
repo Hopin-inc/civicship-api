@@ -2,8 +2,8 @@ import { ReportTemplateScope } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
-import { IReportTemplateRepository } from "@/application/domain/report/data/repository/template";
-import { PrismaReportTemplate } from "@/application/domain/report/data/type";
+import { IReportTemplateRepository } from "@/application/domain/report/template/data/interface";
+import { PrismaReportTemplate } from "@/application/domain/report/template/data/type";
 import { renderPromptTemplate } from "@/application/domain/report/util/promptRenderer";
 import { LlmClient } from "@/infrastructure/libs/llm";
 

@@ -3,7 +3,7 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { IReportTransactionStatsRepository } from "@/application/domain/report/transactionStats/data/interface";
 import { IReportEntityRepository } from "@/application/domain/report/data/repository/reportEntity";
-import { IReportTemplateRepository } from "@/application/domain/report/data/repository/template";
+import { IReportTemplateRepository } from "@/application/domain/report/template/data/interface";
 import {
   CohortRetentionRow,
   CommunityContextRow,
@@ -17,11 +17,11 @@ import {
   UserProfileForReportRow,
   UserTransactionAggregateRow,
 } from "@/application/domain/report/transactionStats/data/rows";
+import { PrismaReport } from "@/application/domain/report/data/type";
 import {
-  PrismaReport,
   PrismaReportGoldenCase,
   PrismaReportTemplate,
-} from "@/application/domain/report/data/type";
+} from "@/application/domain/report/template/data/type";
 import { GqlUpdateReportTemplateInput } from "@/types/graphql";
 import ReportConverter from "@/application/domain/report/data/converter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";

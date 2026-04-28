@@ -5,11 +5,11 @@ import TransactionRepository from "@/application/domain/transaction/data/reposit
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import ReportTransactionStatsRepository from "@/application/domain/report/transactionStats/data/repository";
 import ReportEntityRepository from "@/application/domain/report/data/repository/reportEntity";
-import ReportTemplateRepository from "@/application/domain/report/data/repository/template";
+import ReportTemplateRepository from "@/application/domain/report/template/data/repository";
 import ReportService from "@/application/domain/report/service";
 import ReportUseCase from "@/application/domain/report/usecase";
-import ReportJudgeService from "@/application/domain/report/judgeService";
-import ReportTemplateSelector from "@/application/domain/report/templateSelector";
+import ReportJudgeService from "@/application/domain/report/template/judgeService";
+import ReportTemplateSelector from "@/application/domain/report/template/selector";
 import ReportFeedbackRepository from "@/application/domain/report/feedback/data/repository";
 import ReportFeedbackService from "@/application/domain/report/feedback/service";
 import ReportFeedbackUseCase from "@/application/domain/report/feedback/usecase";

@@ -37,53 +37,6 @@ export type PrismaReport = Prisma.ReportGetPayload<{
   select: typeof reportSelect;
 }>;
 
-export const reportTemplateSelect = Prisma.validator<Prisma.ReportTemplateSelect>()({
-  id: true,
-  variant: true,
-  scope: true,
-  kind: true,
-  communityId: true,
-  systemPrompt: true,
-  userPromptTemplate: true,
-  communityContext: true,
-  model: true,
-  temperature: true,
-  maxTokens: true,
-  stopSequences: true,
-  isEnabled: true,
-  version: true,
-  isActive: true,
-  experimentKey: true,
-  trafficWeight: true,
-  notes: true,
-  updatedBy: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const reportGoldenCaseSelect = Prisma.validator<Prisma.ReportGoldenCaseSelect>()({
-  id: true,
-  variant: true,
-  label: true,
-  payloadFixture: true,
-  judgeCriteria: true,
-  minJudgeScore: true,
-  forbiddenKeys: true,
-  notes: true,
-  expectedStatus: true,
-  templateVersion: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export type PrismaReportGoldenCase = Prisma.ReportGoldenCaseGetPayload<{
-  select: typeof reportGoldenCaseSelect;
-}>;
-
-export type PrismaReportTemplate = Prisma.ReportTemplateGetPayload<{
-  select: typeof reportTemplateSelect;
-}>;
-
 /**
  * Composite cursor for `findCommunityReportSummary`. The query sorts
  * by `(last_published_report_at ASC NULLS FIRST, id ASC)`, so a

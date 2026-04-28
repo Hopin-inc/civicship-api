@@ -3,8 +3,8 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
 import ReportService from "@/application/domain/report/service";
-import ReportJudgeService, { JudgeParseError } from "@/application/domain/report/judgeService";
-import ReportTemplateSelector from "@/application/domain/report/templateSelector";
+import ReportJudgeService, { JudgeParseError } from "@/application/domain/report/template/judgeService";
+import ReportTemplateSelector from "@/application/domain/report/template/selector";
 import ReportPresenter from "@/application/domain/report/presenter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
 import {

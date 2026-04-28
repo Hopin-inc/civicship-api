@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import ReportEntityRepository from "@/application/domain/report/data/repository/reportEntity";
-import ReportTemplateRepository from "@/application/domain/report/data/repository/template";
+import ReportTemplateRepository from "@/application/domain/report/template/data/repository";
 
 /**
  * Smoke test for the Phase B repository split. Each new disjoint
