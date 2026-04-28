@@ -477,11 +477,21 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
         rating: Number(r.rating),
         count: Number(r.count),
       }));
-      const totalCount = buckets.reduce((sum, b) => sum + b.count, 0);
-      const avgRating =
-        totalCount === 0
-          ? null
-          : buckets.reduce((sum, b) => sum + b.rating * b.count, 0) / totalCount;
+      // Single-pass accumulation of `totalCount` + `weightedSum`. The
+      // bucket array is at most five rows (rating 1..5), so the
+      // single-pass form is functionally equivalent to two separate
+      // reduces — kept here mainly because the combined reducer reads
+      // as one "compute both totals" intent rather than two
+      // independent passes.
+      const { totalCount, weightedSum } = buckets.reduce(
+        (acc, b) => {
+          acc.totalCount += b.count;
+          acc.weightedSum += b.rating * b.count;
+          return acc;
+        },
+        { totalCount: 0, weightedSum: 0 },
+      );
+      const avgRating = totalCount === 0 ? null : weightedSum / totalCount;
 
       return { totalCount, avgRating, buckets };
     });
