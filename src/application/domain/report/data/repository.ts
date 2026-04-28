@@ -22,6 +22,7 @@ import {
   UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
 import {
+  CommunitySummaryCursor,
   PrismaReport,
   PrismaReportGoldenCase,
   PrismaReportTemplate,
@@ -1218,7 +1219,7 @@ export default class ReportRepository implements IReportRepository {
    */
   async findCommunityReportSummary(
     ctx: IContext,
-    params: { cursor?: string; first: number },
+    params: { cursor: CommunitySummaryCursor | null; first: number },
   ): Promise<{
     items: Array<{
       communityId: string;
@@ -1229,9 +1230,10 @@ export default class ReportRepository implements IReportRepository {
     totalCount: number;
   }> {
     return ctx.issuer.internal(async (tx) => {
-      const cursor = params.cursor
-        ? decodeCommunitySummaryCursor(params.cursor)
-        : null;
+      // Wire-format decoding is the converter layer's job; this
+      // method takes the already-decoded structured cursor (or null)
+      // so the SQL composition stays pure data-layer.
+      const { cursor } = params;
       const cursorClause = !cursor
         ? Prisma.empty
         : cursor.at === null
@@ -1360,50 +1362,5 @@ export default class ReportRepository implements IReportRepository {
         orderBy: { createdAt: "desc" },
       }),
     );
-  }
-}
-
-/**
- * Cursor shape for `findCommunityReportSummary`. `at` mirrors the
- * sort's primary key (NULL for the dormant tier, ISO timestamp
- * otherwise); `id` is the tie-breaker. Encoded as base64url JSON so
- * the cursor round-trips through the GraphQL Connection contract
- * (string-typed `cursor: String!`) without leaking the schema.
- */
-export interface CommunitySummaryCursor {
-  at: string | null;
-  id: string;
-}
-
-export function encodeCommunitySummaryCursor(c: CommunitySummaryCursor): string {
-  return Buffer.from(JSON.stringify(c), "utf8").toString("base64url");
-}
-
-/**
- * Lenient decode: callers may receive an opaque user-supplied cursor
- * that doesn't round-trip (truncation, manual edit, stale schema).
- * Returns `null` rather than throwing so the repository falls back to
- * a fresh first-page scan and the user sees a clean restart instead
- * of a 500.
- */
-export function decodeCommunitySummaryCursor(
-  s: string,
-): CommunitySummaryCursor | null {
-  try {
-    const parsed = JSON.parse(Buffer.from(s, "base64url").toString("utf8"));
-    if (!parsed || typeof parsed !== "object") return null;
-    if (typeof parsed.id !== "string") return null;
-    if (parsed.at !== null && typeof parsed.at !== "string") return null;
-    // Tampered / corrupted cursor where `at` is a string but not a
-    // parseable timestamp (e.g. "", "not-a-date") would otherwise
-    // sail through here and explode in Postgres on `${at}::timestamp`,
-    // breaking the "stale cursor → first-page scan" contract this
-    // helper is supposed to enforce. Reject early.
-    if (parsed.at !== null && Number.isNaN(new Date(parsed.at).getTime())) {
-      return null;
-    }
-    return { at: parsed.at, id: parsed.id };
-  } catch {
-    return null;
   }
 }

@@ -5,8 +5,25 @@ import {
   GqlAdminReportSummaryConnection,
   GqlAdminReportSummaryRow,
 } from "@/types/graphql";
-import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
-import { encodeCommunitySummaryCursor } from "@/application/domain/report/data/repository";
+import {
+  CommunitySummaryCursor,
+  PrismaReport,
+  PrismaReportTemplate,
+} from "@/application/domain/report/data/type";
+
+/**
+ * Internal → GraphQL `edge.cursor` (base64url JSON of `{at, id}`).
+ * Mirror of `ReportConverter.decodeCommunitySummaryCursor`; kept on
+ * the presenter side because `edge.cursor` is a GraphQL output
+ * concern and the rest of the report presenters already own the
+ * internal-to-Gql wire-format direction. Exported only so the
+ * round-trip unit test can assert encode/decode symmetry across the
+ * converter / presenter pair without exercising the full
+ * connection presenter.
+ */
+export function encodeCommunitySummaryCursor(c: CommunitySummaryCursor): string {
+  return Buffer.from(JSON.stringify(c), "utf8").toString("base64url");
+}
 import {
   CohortRetentionRow,
   CommunityContextRow,

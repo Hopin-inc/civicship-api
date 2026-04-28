@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
+  CommunitySummaryCursor,
   PrismaReport,
   PrismaReportGoldenCase,
   PrismaReportTemplate,
@@ -473,7 +474,7 @@ export interface IReportRepository {
    */
   findCommunityReportSummary(
     ctx: IContext,
-    params: { cursor?: string; first: number },
+    params: { cursor: CommunitySummaryCursor | null; first: number },
   ): Promise<{
     items: Array<{
       communityId: string;

@@ -278,7 +278,17 @@ export default class ReportService {
     }>;
     totalCount: number;
   }> {
-    return this.repository.findCommunityReportSummary(ctx, params);
+    // Wire-format → structured at the converter boundary so the
+    // repository never sees the GraphQL cursor string. A null result
+    // (garbage / stale cursor) collapses to "no cursor"; the repo
+    // falls back to a clean first-page scan.
+    const cursor = params.cursor
+      ? ReportConverter.decodeCommunitySummaryCursor(params.cursor)
+      : null;
+    return this.repository.findCommunityReportSummary(ctx, {
+      cursor,
+      first: params.first,
+    });
   }
 
   /**

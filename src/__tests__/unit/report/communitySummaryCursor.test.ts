@@ -1,8 +1,8 @@
-import {
-  CommunitySummaryCursor,
-  encodeCommunitySummaryCursor,
-  decodeCommunitySummaryCursor,
-} from "@/application/domain/report/data/repository";
+import { CommunitySummaryCursor } from "@/application/domain/report/data/type";
+import ReportConverter from "@/application/domain/report/data/converter";
+import { encodeCommunitySummaryCursor } from "@/application/domain/report/presenter";
+
+const decodeCommunitySummaryCursor = ReportConverter.decodeCommunitySummaryCursor;
 
 describe("CommunitySummaryCursor encoding", () => {
   it("round-trips both NULL-tier and chronological-tier cursors", () => {
