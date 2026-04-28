@@ -58,7 +58,7 @@ describe("ReportTemplateSelector", () => {
   beforeEach(() => {
     container.reset();
     repository = { findActiveTemplates: jest.fn() };
-    container.register("ReportRepository", { useValue: repository });
+    container.register("ReportTemplateRepository", { useValue: repository });
     selector = container.resolve(ReportTemplateSelector);
   });
 

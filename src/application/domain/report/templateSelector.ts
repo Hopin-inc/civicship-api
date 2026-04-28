@@ -3,7 +3,7 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
 import { NotFoundError } from "@/errors/graphql";
-import { IReportRepository } from "@/application/domain/report/data/interface";
+import { IReportTemplateRepository } from "@/application/domain/report/data/repository/template";
 import { PrismaReportTemplate } from "@/application/domain/report/data/type";
 import { truncateToJstDate } from "@/application/domain/report/util";
 
@@ -26,7 +26,7 @@ import { truncateToJstDate } from "@/application/domain/report/util";
 @injectable()
 export default class ReportTemplateSelector {
   constructor(
-    @inject("ReportRepository") private readonly repository: IReportRepository,
+    @inject("ReportTemplateRepository") private readonly repository: IReportTemplateRepository,
   ) {}
 
   async selectTemplate(
