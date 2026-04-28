@@ -3,10 +3,6 @@ import { IContext } from "@/types/server";
 import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
 import ReportService from "@/application/domain/report/service";
 import {
-  SysAdminMemberStatsRow,
-  SysAdminMonthlyActivityRow,
-} from "@/application/domain/sysadmin/data/type";
-import {
   addDays,
   isoWeekStartJst,
   jstMonthStart,
@@ -15,62 +11,11 @@ import {
   percentChange,
 } from "@/application/domain/report/util";
 import { asOfBounds } from "@/application/domain/sysadmin/bounds";
-import { SegmentThresholds } from "@/application/domain/sysadmin/classifiers";
+import { CHAIN_DEPTH_MAX_BUCKET, rateOf } from "@/application/domain/sysadmin/aggregations";
 import {
-  computeActivityRate3mAvg as computeActivityRate3mAvgImpl,
-  computeCohortFunnel as computeCohortFunnelImpl,
-  computeDormantCount as computeDormantCountImpl,
-  computeStageBreakdown as computeStageBreakdownImpl,
-  computeStageCounts as computeStageCountsImpl,
-  computeTenureDistribution as computeTenureDistributionImpl,
-  rateOf,
-  StageBreakdown,
-  StageCounts,
-  SysAdminCohortFunnelPoint,
-  TenureDistribution,
   WeeklyRetentionPoint,
   MonthlyCohortPoint,
-  CHAIN_DEPTH_MAX_BUCKET,
 } from "@/application/domain/sysadmin/aggregations";
-import {
-  MemberListParams,
-  MemberListResult,
-  paginateMembers as paginateMembersImpl,
-} from "@/application/domain/sysadmin/pagination";
-
-// Re-export moved symbols so existing importers via
-// `@/application/domain/sysadmin/service` continue to resolve.
-// Direct imports from classifiers/aggregations/pagination are
-// migrated in the next commit; the re-exports get pruned then.
-export {
-  classifyMember,
-  isDormant,
-  type MemberClassification,
-  type SegmentThresholds,
-  DEFAULT_SEGMENT_THRESHOLDS,
-  MIN_MIN_MONTHS_IN,
-  MAX_MIN_MONTHS_IN,
-} from "@/application/domain/sysadmin/classifiers";
-export {
-  type StageCounts,
-  type StageBucketStats,
-  type StageBreakdown,
-  type TenureHistogramBucket,
-  type TenureDistribution,
-  type SysAdminCohortFunnelPoint,
-  type WeeklyRetentionPoint,
-  type MonthlyCohortPoint,
-  TENURE_MONTHLY_BUCKETS,
-  CHAIN_DEPTH_MAX_BUCKET,
-  COHORT_ACTIVATION_WINDOW_DAYS,
-} from "@/application/domain/sysadmin/aggregations";
-export {
-  type SortField,
-  type SortOrder,
-  type MemberListParams,
-  type MemberListResult,
-  MAX_LIMIT,
-} from "@/application/domain/sysadmin/pagination";
 
 export type AlertFlags = {
   churnSpike: boolean;
@@ -222,42 +167,6 @@ export default class SysAdminService {
   ) {}
 
   // ==========================================================================
-  // Pure classification / aggregation helpers — temporary delegations
-  // to the new module functions. Removed in the test-split commit;
-  // callers migrate to the module-level imports between then and now.
-  // ==========================================================================
-
-  computeStageCounts(
-    members: SysAdminMemberStatsRow[],
-    thresholds: SegmentThresholds,
-  ): StageCounts {
-    return computeStageCountsImpl(members, thresholds);
-  }
-
-  computeStageBreakdown(
-    members: SysAdminMemberStatsRow[],
-    thresholds: SegmentThresholds,
-  ): StageBreakdown {
-    return computeStageBreakdownImpl(members, thresholds);
-  }
-
-  computeTenureDistribution(members: SysAdminMemberStatsRow[]): TenureDistribution {
-    return computeTenureDistributionImpl(members);
-  }
-
-  computeDormantCount(
-    members: SysAdminMemberStatsRow[],
-    asOf: Date,
-    dormantThresholdDays: number,
-  ): number {
-    return computeDormantCountImpl(members, asOf, dormantThresholdDays);
-  }
-
-  paginateMembers(members: SysAdminMemberStatsRow[], params: MemberListParams): MemberListResult {
-    return paginateMembersImpl(members, params);
-  }
-
-  // ==========================================================================
   // Orchestrators — the methods the usecase actually calls
   // ==========================================================================
 
@@ -290,15 +199,6 @@ export default class SysAdminService {
       asOf,
       CHAIN_DEPTH_MAX_BUCKET,
     );
-  }
-
-  computeCohortFunnel(
-    members: SysAdminMemberStatsRow[],
-    asOf: Date,
-    windowMonths: number,
-    thresholds: SegmentThresholds,
-  ): SysAdminCohortFunnelPoint[] {
-    return computeCohortFunnelImpl(members, asOf, windowMonths, thresholds);
   }
 
   async getMonthlyActivity(
@@ -546,10 +446,6 @@ export default class SysAdminService {
       // up with the requirement-doc spelling and the schema docstring.
       growthRateActivity: growth == null ? null : growth / 100,
     };
-  }
-
-  computeActivityRate3mAvg(trend: SysAdminMonthlyActivityRow[]): number | null {
-    return computeActivityRate3mAvgImpl(trend);
   }
 
   /**
