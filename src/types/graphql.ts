@@ -2160,6 +2160,7 @@ export type GqlQuery = {
   __typename?: 'Query';
   adminBrowseReports: GqlReportsConnection;
   adminReportSummary: GqlAdminReportSummaryConnection;
+  adminTemplateFeedbacks: GqlReportFeedbacksConnection;
   article?: Maybe<GqlArticle>;
   articles: GqlArticlesConnection;
   cities: GqlCitiesConnection;
@@ -2275,6 +2276,17 @@ export type GqlQueryAdminBrowseReportsArgs = {
 export type GqlQueryAdminReportSummaryArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type GqlQueryAdminTemplateFeedbacksArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  feedbackType?: InputMaybe<GqlReportFeedbackType>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  kind?: InputMaybe<GqlReportTemplateKind>;
+  maxRating?: InputMaybe<Scalars['Int']['input']>;
+  variant: GqlReportVariant;
+  version?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -2757,6 +2769,7 @@ export type GqlReportFeedback = {
   feedbackType?: Maybe<GqlReportFeedbackType>;
   id: Scalars['ID']['output'];
   rating: Scalars['Int']['output'];
+  report: GqlReport;
   reportId: Scalars['ID']['output'];
   sectionKey?: Maybe<Scalars['String']['output']>;
   user: GqlUser;
@@ -5575,7 +5588,7 @@ export type GqlResolversTypes = ResolversObject<{
   RejectReportSuccess: ResolverTypeWrapper<Omit<GqlRejectReportSuccess, 'report'> & { report: GqlResolversTypes['Report'] }>;
   Report: ResolverTypeWrapper<Omit<GqlReport, 'community' | 'feedbacks' | 'generatedByUser' | 'myFeedback' | 'parentRun' | 'publishedByUser' | 'regenerations' | 'targetUser' | 'template'> & { community: GqlResolversTypes['Community'], feedbacks: GqlResolversTypes['ReportFeedbacksConnection'], generatedByUser?: Maybe<GqlResolversTypes['User']>, myFeedback?: Maybe<GqlResolversTypes['ReportFeedback']>, parentRun?: Maybe<GqlResolversTypes['Report']>, publishedByUser?: Maybe<GqlResolversTypes['User']>, regenerations: Array<GqlResolversTypes['Report']>, targetUser?: Maybe<GqlResolversTypes['User']>, template?: Maybe<GqlResolversTypes['ReportTemplate']> }>;
   ReportEdge: ResolverTypeWrapper<Omit<GqlReportEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Report']> }>;
-  ReportFeedback: ResolverTypeWrapper<Omit<GqlReportFeedback, 'user'> & { user: GqlResolversTypes['User'] }>;
+  ReportFeedback: ResolverTypeWrapper<Omit<GqlReportFeedback, 'report' | 'user'> & { report: GqlResolversTypes['Report'], user: GqlResolversTypes['User'] }>;
   ReportFeedbackEdge: ResolverTypeWrapper<Omit<GqlReportFeedbackEdge, 'node'> & { node?: Maybe<GqlResolversTypes['ReportFeedback']> }>;
   ReportFeedbackType: GqlReportFeedbackType;
   ReportFeedbacksConnection: ResolverTypeWrapper<Omit<GqlReportFeedbacksConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ReportFeedbackEdge']>>> }>;
@@ -6000,7 +6013,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   RejectReportSuccess: Omit<GqlRejectReportSuccess, 'report'> & { report: GqlResolversParentTypes['Report'] };
   Report: Omit<GqlReport, 'community' | 'feedbacks' | 'generatedByUser' | 'myFeedback' | 'parentRun' | 'publishedByUser' | 'regenerations' | 'targetUser' | 'template'> & { community: GqlResolversParentTypes['Community'], feedbacks: GqlResolversParentTypes['ReportFeedbacksConnection'], generatedByUser?: Maybe<GqlResolversParentTypes['User']>, myFeedback?: Maybe<GqlResolversParentTypes['ReportFeedback']>, parentRun?: Maybe<GqlResolversParentTypes['Report']>, publishedByUser?: Maybe<GqlResolversParentTypes['User']>, regenerations: Array<GqlResolversParentTypes['Report']>, targetUser?: Maybe<GqlResolversParentTypes['User']>, template?: Maybe<GqlResolversParentTypes['ReportTemplate']> };
   ReportEdge: Omit<GqlReportEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Report']> };
-  ReportFeedback: Omit<GqlReportFeedback, 'user'> & { user: GqlResolversParentTypes['User'] };
+  ReportFeedback: Omit<GqlReportFeedback, 'report' | 'user'> & { report: GqlResolversParentTypes['Report'], user: GqlResolversParentTypes['User'] };
   ReportFeedbackEdge: Omit<GqlReportFeedbackEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['ReportFeedback']> };
   ReportFeedbacksConnection: Omit<GqlReportFeedbacksConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ReportFeedbackEdge']>>> };
   ReportTemplate: Omit<GqlReportTemplate, 'community' | 'updatedByUser'> & { community?: Maybe<GqlResolversParentTypes['Community']>, updatedByUser?: Maybe<GqlResolversParentTypes['User']> };
@@ -7187,6 +7200,7 @@ export type GqlPublishReportSuccessResolvers<ContextType = any, ParentType exten
 export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Query'] = GqlResolversParentTypes['Query']> = ResolversObject<{
   adminBrowseReports?: Resolver<GqlResolversTypes['ReportsConnection'], ParentType, ContextType, Partial<GqlQueryAdminBrowseReportsArgs>>;
   adminReportSummary?: Resolver<GqlResolversTypes['AdminReportSummaryConnection'], ParentType, ContextType, Partial<GqlQueryAdminReportSummaryArgs>>;
+  adminTemplateFeedbacks?: Resolver<GqlResolversTypes['ReportFeedbacksConnection'], ParentType, ContextType, RequireFields<GqlQueryAdminTemplateFeedbacksArgs, 'first' | 'kind' | 'variant'>>;
   article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id' | 'permission'>>;
   articles?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesArgs>>;
   cities?: Resolver<GqlResolversTypes['CitiesConnection'], ParentType, ContextType, Partial<GqlQueryCitiesArgs>>;
@@ -7307,6 +7321,7 @@ export type GqlReportFeedbackResolvers<ContextType = any, ParentType extends Gql
   feedbackType?: Resolver<Maybe<GqlResolversTypes['ReportFeedbackType']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   rating?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  report?: Resolver<GqlResolversTypes['Report'], ParentType, ContextType>;
   reportId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   sectionKey?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;

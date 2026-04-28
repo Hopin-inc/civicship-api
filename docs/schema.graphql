@@ -1621,6 +1621,7 @@ enum PublishStatus {
 type Query {
   adminBrowseReports(communityId: ID, cursor: String, first: Int, publishedAfter: Datetime, publishedBefore: Datetime, status: ReportStatus, variant: ReportVariant): ReportsConnection!
   adminReportSummary(cursor: String, first: Int): AdminReportSummaryConnection!
+  adminTemplateFeedbacks(cursor: String, feedbackType: ReportFeedbackType, first: Int = 20, kind: ReportTemplateKind = GENERATION, maxRating: Int, variant: ReportVariant!, version: Int): ReportFeedbacksConnection!
   article(id: ID!, permission: CheckCommunityPermissionInput!): Article
   articles(cursor: String, filter: ArticleFilterInput, first: Int, sort: ArticleSortInput): ArticlesConnection!
   cities(cursor: String, filter: CitiesInput, first: Int, sort: CitiesSortInput): CitiesConnection!
@@ -1772,6 +1773,7 @@ type ReportFeedback {
   feedbackType: ReportFeedbackType
   id: ID!
   rating: Int!
+  report: Report!
   reportId: ID!
   sectionKey: String
   user: User!

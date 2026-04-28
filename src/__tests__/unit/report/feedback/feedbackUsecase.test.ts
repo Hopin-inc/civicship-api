@@ -1,9 +1,9 @@
 import "reflect-metadata";
-import { Prisma } from "@prisma/client";
+import { Prisma, ReportTemplateKind } from "@prisma/client";
 import { container } from "tsyringe";
 import ReportFeedbackUseCase from "@/application/domain/report/feedback/usecase";
 import type { IContext } from "@/types/server";
-import { GqlReportFeedbackType } from "@/types/graphql";
+import { GqlReportFeedbackType, GqlReportVariant } from "@/types/graphql";
 
 /**
  * `submitReportFeedback` sits at the top of a short pipeline:
@@ -168,5 +168,136 @@ describe("ReportFeedbackUseCase.submitReportFeedback", () => {
     await expect(usecase.submitReportFeedback(defaultInput(), fakeCtx)).rejects.toThrow(
       /already submitted/,
     );
+  });
+});
+
+/**
+ * Phase 1.5 admin: review-style individual feedback list. The usecase
+ * is the input-validation seam (page bounds, rating bounds, version
+ * sanity) and a thin service pass-through; these tests pin the
+ * validation contract and the argument shape that flows into the
+ * service so a future repository refactor cannot silently drop a
+ * filter (variant / version / kind / feedbackType / maxRating). The
+ * service layer is stubbed — no Prisma is involved.
+ */
+describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
+  const fakeCtx = {} as IContext;
+
+  let feedbackService: { listAdminTemplateFeedbacks: jest.Mock };
+  let reportService: { getReportById: jest.Mock };
+  let usecase: ReportFeedbackUseCase;
+
+  beforeEach(() => {
+    container.reset();
+    feedbackService = {
+      listAdminTemplateFeedbacks: jest
+        .fn()
+        .mockResolvedValue({ items: [], totalCount: 0 }),
+    };
+    reportService = { getReportById: jest.fn() };
+    container.register("ReportFeedbackService", { useValue: feedbackService });
+    container.register("ReportService", { useValue: reportService });
+    usecase = container.resolve(ReportFeedbackUseCase);
+  });
+
+  // The codegen `InputMaybe<T>` type is `T | undefined` (no `null`), so
+  // the default fixture omits optional fields rather than zeroing them.
+  // Variant is required.
+  function defaultArgs(): Parameters<ReportFeedbackUseCase["viewAdminTemplateFeedbacks"]>[0] {
+    return { variant: GqlReportVariant.WeeklySummary };
+  }
+
+  it("forwards every filter through to the service unchanged (happy path)", async () => {
+    await usecase.viewAdminTemplateFeedbacks(
+      {
+        variant: GqlReportVariant.WeeklySummary,
+        version: 2,
+        kind: ReportTemplateKind.GENERATION,
+        feedbackType: GqlReportFeedbackType.Quality,
+        maxRating: 3,
+        cursor: "feedback-cursor",
+        first: 50,
+      },
+      fakeCtx,
+    );
+
+    expect(feedbackService.listAdminTemplateFeedbacks).toHaveBeenCalledWith(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 2,
+      kind: ReportTemplateKind.GENERATION,
+      feedbackType: "QUALITY",
+      maxRating: 3,
+      cursor: "feedback-cursor",
+      first: 50,
+    });
+  });
+
+  it("defaults kind to GENERATION when the caller omits it", async () => {
+    // Codegen treats every argument as nullable so a no-default GraphQL
+    // call surfaces here as `kind: null`. Mirror the equivalent
+    // behaviour in `viewReportTemplateStatsBreakdown` — coerce to
+    // GENERATION at the usecase boundary.
+    await usecase.viewAdminTemplateFeedbacks(defaultArgs(), fakeCtx);
+    expect(feedbackService.listAdminTemplateFeedbacks).toHaveBeenCalledWith(
+      fakeCtx,
+      expect.objectContaining({ kind: ReportTemplateKind.GENERATION }),
+    );
+  });
+
+  it.each([0, 6, 3.5])(
+    "rejects maxRating=%s with ValidationError (not in 1..5 or non-integer)",
+    async (maxRating) => {
+      await expect(
+        usecase.viewAdminTemplateFeedbacks(
+          { ...defaultArgs(), maxRating: maxRating as number },
+          fakeCtx,
+        ),
+      ).rejects.toThrow(/maxRating/);
+      expect(feedbackService.listAdminTemplateFeedbacks).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([0, -1, 1.5])(
+    "rejects version=%s with ValidationError (not a positive integer)",
+    async (version) => {
+      await expect(
+        usecase.viewAdminTemplateFeedbacks(
+          { ...defaultArgs(), version: version as number },
+          fakeCtx,
+        ),
+      ).rejects.toThrow(/version/);
+      expect(feedbackService.listAdminTemplateFeedbacks).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects out-of-range first with ValidationError", async () => {
+    await expect(
+      usecase.viewAdminTemplateFeedbacks({ ...defaultArgs(), first: 1000 }, fakeCtx),
+    ).rejects.toThrow(/first/);
+    expect(feedbackService.listAdminTemplateFeedbacks).not.toHaveBeenCalled();
+  });
+
+  it("returns a connection shape with edges / pageInfo / totalCount", async () => {
+    feedbackService.listAdminTemplateFeedbacks.mockResolvedValue({
+      items: [
+        {
+          id: "feedback-1",
+          reportId: "report-1",
+          userId: "user-1",
+          rating: 2,
+          feedbackType: "QUALITY",
+          sectionKey: null,
+          comment: "missing recent activity",
+          createdAt: new Date(),
+        },
+      ],
+      totalCount: 1,
+    });
+
+    const result = await usecase.viewAdminTemplateFeedbacks(defaultArgs(), fakeCtx);
+    expect(result.totalCount).toBe(1);
+    expect(result.edges).toHaveLength(1);
+    expect(result.edges?.[0]?.cursor).toBe("feedback-1");
+    expect(result.pageInfo.hasNextPage).toBe(false);
   });
 });

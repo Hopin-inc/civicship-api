@@ -1,4 +1,4 @@
-import { Prisma, ReportTemplateKind, ReportTemplateScope } from "@prisma/client";
+import { FeedbackType, Prisma, ReportTemplateKind, ReportTemplateScope } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
@@ -354,6 +354,72 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
           pairs: pairsByTemplate.get(t.id) ?? [],
         };
       });
+
+      return { items, totalCount };
+    });
+  }
+
+  /**
+   * Phase 1.5 admin: review-style feedback list for a template
+   * (variant + optional version, scoped by `kind`). The query
+   * filters down through the Report → ReportTemplate join then
+   * orders feedback rows by `(createdAt DESC, id DESC)` for stable
+   * cursor pagination. The companion partial filters
+   * (`feedbackType`, `maxRating`) drive the "drill into a quality
+   * axis at low ratings" workflow without forcing a second query.
+   *
+   * Authorization: this path is admin-only (`adminTemplateFeedbacks`
+   * is `IsAdmin`-gated upstream). Use `ctx.issuer.internal` so the
+   * cross-community sweep is not filtered to a SYS_ADMIN session's
+   * implicit memberships.
+   */
+  async findAdminTemplateFeedbacks(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      feedbackType?: FeedbackType;
+      maxRating?: number;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }> {
+    return ctx.issuer.internal(async (tx) => {
+      // Single source-of-truth where clause shared by the page query
+      // and the totalCount query so the two cannot drift. The
+      // template join carries `kind` (and `version` when pinned) so
+      // GENERATION feedback never bleeds into a JUDGE-template review
+      // and vice versa.
+      const where: Prisma.ReportFeedbackWhereInput = {
+        report: {
+          template: {
+            variant: params.variant,
+            kind: params.kind,
+            ...(params.version !== undefined ? { version: params.version } : {}),
+          },
+        },
+        ...(params.feedbackType !== undefined ? { feedbackType: params.feedbackType } : {}),
+        ...(params.maxRating !== undefined ? { rating: { lte: params.maxRating } } : {}),
+      };
+
+      const [items, totalCount] = await Promise.all([
+        tx.reportFeedback.findMany({
+          where,
+          select: reportFeedbackSelect,
+          // `(createdAt DESC, id DESC)` mirrors the index added in
+          // `idx_t_report_feedbacks_created_at_id` so PostgreSQL can
+          // serve the sort directly from the index. The `id`
+          // tiebreaker also makes the ordering total — without it,
+          // rows sharing a `createdAt` (bulk seeds, high concurrency)
+          // could reshuffle across cursor pages and either skip or
+          // duplicate.
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          take: params.first + 1,
+          ...(params.cursor ? { skip: 1, cursor: { id: params.cursor } } : {}),
+        }),
+        tx.reportFeedback.count({ where }),
+      ]);
 
       return { items, totalCount };
     });
