@@ -30,12 +30,16 @@ import {
   TopUserItem,
   WeeklyReportPayload,
 } from "@/application/domain/report/types";
+import { bigintToSafeNumber, daysBetweenJst, toJstIsoDate } from "@/application/domain/report/util";
 import {
-  bigintToSafeNumber,
-  daysBetweenJst,
-  percentChange,
-  toJstIsoDate,
-} from "@/application/domain/report/util";
+  aggregateTransactionTotals,
+  computeActiveRate,
+  computeAvgChainDepth,
+  computeDaysSinceLastPublish,
+  computeGrowthRates,
+  computePageInfo,
+  computeRetentionSummary,
+} from "@/application/domain/report/presenter/weeklyAggregator";
 
 /**
  * Internal → GraphQL `edge.cursor` (base64url JSON of `{at, id}`).
@@ -129,10 +133,10 @@ export default class ReportPresenter {
           website: input.communityContext.website,
           total_members: input.communityContext.totalMembers,
           active_users_in_window: input.communityContext.activeUsersInWindow,
-          active_rate:
-            input.communityContext.totalMembers > 0
-              ? input.communityContext.activeUsersInWindow / input.communityContext.totalMembers
-              : null,
+          active_rate: computeActiveRate(
+            input.communityContext.activeUsersInWindow,
+            input.communityContext.totalMembers,
+          ),
           custom_context: input.customContext ?? null,
         }
       : null;
@@ -178,17 +182,8 @@ export default class ReportPresenter {
       };
     });
 
-    const currentTxCount = input.summaries.reduce((acc, s) => acc + s.txCount, 0);
-    // Accumulate the BigInt sums before narrowing so the safe-integer guard
-    // runs against the TOTAL rather than each reason row. Narrowing per row
-    // and then summing as Number would let a total that exceeds
-    // Number.MAX_SAFE_INTEGER slip through silently even when each individual
-    // row is safe.
-    const currentPointsSumBigInt = input.summaries.reduce(
-      (acc, s) => acc + s.pointsSum,
-      0n,
-    );
-    const currentPointsSum = bigintToSafeNumber(currentPointsSumBigInt);
+    const { txCount: currentTxCount, pointsSum: currentPointsSum } =
+      aggregateTransactionTotals(input.summaries);
     // Sourced from `findCommunityContext`, which scopes the count to
     // peer-to-peer DONATION activity — matching the equivalent scoping in
     // `findPeriodAggregate` so the `growth_rate.active_users` math below
@@ -200,32 +195,7 @@ export default class ReportPresenter {
     const currentActiveUsers = input.communityContext?.activeUsersInWindow ?? 0;
 
     const retention: RetentionSummary | null = input.retention
-      ? {
-          new_members: input.retention.aggregate.newMembers,
-          retained_senders: input.retention.aggregate.retainedSenders,
-          returned_senders: input.retention.aggregate.returnedSenders,
-          churned_senders: input.retention.aggregate.churnedSenders,
-          active_rate_sender:
-            input.retention.totalMembers !== null && input.retention.totalMembers > 0
-              ? input.retention.aggregate.currentSendersCount / input.retention.totalMembers
-              : null,
-          active_rate_any:
-            input.retention.totalMembers !== null && input.retention.totalMembers > 0
-              ? input.retention.aggregate.currentActiveCount / input.retention.totalMembers
-              : null,
-          // Week-N rows with cohortSize=0 collapse to null here (rather
-          // than 0%) so the LLM doesn't report "0% retention" for a
-          // cohort that never existed — e.g. a community too young to
-          // have a 4-weeks-ago cohort yet.
-          week1_retention:
-            input.retention.week1 && input.retention.week1.cohortSize > 0
-              ? input.retention.week1.activeNextWeek / input.retention.week1.cohortSize
-              : null,
-          week4_retention:
-            input.retention.week4 && input.retention.week4.cohortSize > 0
-              ? input.retention.week4.activeNextWeek / input.retention.week4.cohortSize
-              : null,
-        }
+      ? computeRetentionSummary(input.retention)
       : null;
 
     const previousPeriod: PreviousPeriodSummary | null = input.previousPeriod
@@ -238,29 +208,13 @@ export default class ReportPresenter {
           total_tx_count: input.previousPeriod.aggregate.totalTxCount,
           total_points_sum: bigintToSafeNumber(input.previousPeriod.aggregate.totalPointsSum),
           new_members: input.previousPeriod.aggregate.newMembers,
-          growth_rate: {
-            // `active_users` is `null` when `communityContext` was not
-            // returned (missing / soft-deleted community): without a
-            // current-window denominator that uses the same DONATION-scope
-            // frame as the previous-window `activeUsersInWindow`, any
-            // percent-change we could compute here would be a
-            // scale-mismatched comparison (e.g. retention-derived narrow
-            // vs period-aggregate broad) and would mis-report the trend.
-            // `tx_count` / `points_sum` are safe because the current-window
-            // numerators derive from the already-passed daily summaries —
-            // no dependency on the community context row.
-            active_users: input.communityContext
-              ? percentChange(
-                  currentActiveUsers,
-                  input.previousPeriod.aggregate.activeUsersInWindow,
-                )
-              : null,
-            tx_count: percentChange(currentTxCount, input.previousPeriod.aggregate.totalTxCount),
-            points_sum: percentChange(
-              currentPointsSum,
-              bigintToSafeNumber(input.previousPeriod.aggregate.totalPointsSum),
-            ),
-          },
+          growth_rate: computeGrowthRates({
+            currentTxCount,
+            currentPointsSum,
+            currentActiveUsers,
+            hasCommunityContext: input.communityContext !== null,
+            previousAggregate: input.previousPeriod.aggregate,
+          }),
         }
       : null;
 
@@ -282,15 +236,7 @@ export default class ReportPresenter {
         chain_root_count: s.chainRootCount,
         chain_descendant_count: s.chainDescendantCount,
         max_chain_depth: s.maxChainDepth,
-        // chain_depth is NULL for non-chain reasons (POINT_ISSUED / TICKET_* /
-        // OPPORTUNITY_*) and can also be NULL on chain-eligible reasons when
-        // no parent tx was found upstream. Divide by the count of rows that
-        // actually carry a chain_depth (root + descendant), not by the full
-        // tx_count, since SUM(chain_depth) in SQL skips NULL rows.
-        avg_chain_depth:
-          s.maxChainDepth !== null && s.chainRootCount + s.chainDescendantCount > 0
-            ? s.sumChainDepth / (s.chainRootCount + s.chainDescendantCount)
-            : null,
+        avg_chain_depth: computeAvgChainDepth(s),
         issuance_count: s.issuanceCount,
         burn_count: s.burnCount,
       })),
@@ -333,8 +279,7 @@ export default class ReportPresenter {
     totalCount: number,
     requestedFirst: number,
   ): GqlReportsConnection {
-    const hasNextPage = items.length > requestedFirst;
-    const page = hasNextPage ? items.slice(0, requestedFirst) : items;
+    const { hasNextPage, page } = computePageInfo(items, requestedFirst);
     return {
       edges: page.map((r) => ({
         cursor: r.id,
@@ -373,10 +318,8 @@ export default class ReportPresenter {
     totalCount: number,
     requestedFirst: number,
   ): GqlAdminReportSummaryConnection {
-    const hasNextPage = items.length > requestedFirst;
-    const page = hasNextPage ? items.slice(0, requestedFirst) : items;
+    const { hasNextPage, page } = computePageInfo(items, requestedFirst);
     const now = Date.now();
-    const millisPerDay = 24 * 60 * 60 * 1000;
     // Composite cursor `{at, id}` matches the SQL sort
     // (`last_published_report_at ASC NULLS FIRST, id ASC`). Encoding
     // both halves is required for correctness: a row with `at=null`
@@ -402,9 +345,7 @@ export default class ReportPresenter {
           communityId: row.communityId,
           lastPublishedReportId: row.lastPublishedReportId,
           lastPublishedAt: row.lastPublishedAt,
-          daysSinceLastPublish: row.lastPublishedAt
-            ? Math.floor((now - row.lastPublishedAt.getTime()) / millisPerDay)
-            : null,
+          daysSinceLastPublish: computeDaysSinceLastPublish(row.lastPublishedAt, now),
           publishedCountLast90Days: row.publishedCountLast90Days,
         } as unknown as GqlAdminReportSummaryRow,
       })),
