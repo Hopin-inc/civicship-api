@@ -1,4 +1,5 @@
 import { GraphQLError } from "graphql";
+import { UnauthorizedError } from "@graphql-authz/core";
 import { processAuthzError } from "@/presentation/graphql/processAuthzError";
 import {
   AuthorizationError,
@@ -49,6 +50,21 @@ describe("processAuthzError (production)", () => {
     }
   });
 
+  it("converts UnauthorizedError (graphql-authz wrapper) to GraphQLError with FORBIDDEN", () => {
+    // graphql-authz の preExecRule は `{ error: new AuthorizationError(...) }`
+    // を渡しても prepareError() で UnauthorizedError にラップしてしまうので、
+    // ルール失敗時は実質ここに着地する。デフォルト processError と同じ挙動を
+    // 保つことで __tests__/auth/ の "FORBIDDEN" 期待が満たされる。
+    const wrapped = new UnauthorizedError("User must be admin");
+    try {
+      processAuthzError(wrapped, true);
+    } catch (e) {
+      expect(e).toBeInstanceOf(GraphQLError);
+      expect((e as GraphQLError).message).toBe("User must be admin");
+      expect((e as GraphQLError).extensions.code).toBe("FORBIDDEN");
+    }
+  });
+
   it("passes through plain GraphQLError unchanged", () => {
     const original = new GraphQLError("boom", {
       extensions: { code: "CUSTOM_CODE" },
@@ -73,11 +89,25 @@ describe("processAuthzError (production)", () => {
 });
 
 describe("processAuthzError (non-production)", () => {
-  it("re-throws the original error verbatim for any error type", () => {
+  it("re-throws GraphQLError派生 verbatim", () => {
     const apolloErr = new AuthorizationError("nope");
-    const rawErr = new TypeError("unexpected");
-
     expect(() => processAuthzError(apolloErr, /* isProd */ false)).toThrow(apolloErr);
+  });
+
+  it("still converts UnauthorizedError to FORBIDDEN (matches default plugin behavior)", () => {
+    // 非本番でも UnauthorizedError は authz テストで FORBIDDEN を期待される
+    // ので、isProd 分岐の前に処理する。
+    const wrapped = new UnauthorizedError("denied");
+    try {
+      processAuthzError(wrapped, false);
+    } catch (e) {
+      expect(e).toBeInstanceOf(GraphQLError);
+      expect((e as GraphQLError).extensions.code).toBe("FORBIDDEN");
+    }
+  });
+
+  it("re-throws raw non-GraphQL errors verbatim (no Internal Server Error wrap)", () => {
+    const rawErr = new TypeError("unexpected");
     expect(() => processAuthzError(rawErr, false)).toThrow(rawErr);
   });
 });
