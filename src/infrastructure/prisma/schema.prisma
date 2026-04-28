@@ -1858,6 +1858,16 @@ model Report {
   // the index — without it the planner has to re-sort because DESC's
   // default is NULLS FIRST.
   @@index([publishedAt(sort: Desc, nulls: Last), createdAt(sort: Desc)], map: "idx_t_reports_published_at_created_at")
+  // Backs both `recalculateCommunityLastPublished` (per-community
+  // newest PUBLISHED row) and `findCommunityReportSummary`'s 90-day
+  // count subquery. Existing `[communityId, status]` finds the
+  // PUBLISHED rows but loses the published_at range filter / sort to
+  // a heap pass; this index folds published_at into the leading
+  // portion so both the LIMIT 1 lookup and the 90-day range scan are
+  // index-served. Default ASC ordering is fine — Postgres can scan
+  // backwards to satisfy `ORDER BY published_at DESC` without an
+  // explicit `sort: Desc`.
+  @@index([communityId, status, publishedAt], map: "idx_t_reports_community_status_published_at")
   @@map("t_reports")
 }
 

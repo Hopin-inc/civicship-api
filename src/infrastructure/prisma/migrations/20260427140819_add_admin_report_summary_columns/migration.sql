@@ -26,6 +26,19 @@ CREATE INDEX "idx_t_reports_published_at_created_at"
 CREATE INDEX "idx_t_communities_last_published_report_at"
   ON "t_communities"("last_published_report_at" ASC NULLS FIRST);
 
+-- CreateIndex
+-- Backs `recalculateCommunityLastPublished` (per-community newest
+-- PUBLISHED row) and `findCommunityReportSummary`'s 90-day count
+-- subquery. Existing `(community_id, status)` finds the PUBLISHED
+-- rows but spills the published_at range filter / sort to a heap
+-- pass; this index folds published_at into the leading portion so
+-- the LIMIT 1 lookup and the 90-day range scan are both
+-- index-served. Default ASC ordering — Postgres scans backwards to
+-- satisfy `ORDER BY published_at DESC` without an explicit DESC
+-- declaration.
+CREATE INDEX "idx_t_reports_community_status_published_at"
+  ON "t_reports"("community_id", "status", "published_at");
+
 -- Backfill: 各 community で status=PUBLISHED の最新レポートを引き、新規列に流し込む。
 -- DISTINCT ON で per-community に 1 行だけ抽出する Postgres 流の書き方。
 -- "id" DESC は per-community での ties (同 ms バッチ publish) に対する
