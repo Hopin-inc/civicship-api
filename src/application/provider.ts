@@ -4,6 +4,9 @@ import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import ReportRepository from "@/application/domain/report/data/repository";
+import ReportTransactionStatsRepository from "@/application/domain/report/data/repository/transactionStats";
+import ReportEntityRepository from "@/application/domain/report/data/repository/reportEntity";
+import ReportTemplateRepository from "@/application/domain/report/data/repository/template";
 import ReportService from "@/application/domain/report/service";
 import ReportUseCase from "@/application/domain/report/usecase";
 import ReportJudgeService from "@/application/domain/report/judgeService";
@@ -357,6 +360,11 @@ export function registerProductionDependencies() {
   // 📊 Report
   // ------------------------------
   container.register("ReportRepository", { useClass: ReportRepository });
+  container.register("ReportTransactionStatsRepository", {
+    useClass: ReportTransactionStatsRepository,
+  });
+  container.register("ReportEntityRepository", { useClass: ReportEntityRepository });
+  container.register("ReportTemplateRepository", { useClass: ReportTemplateRepository });
   container.register("ReportService", { useClass: ReportService });
   container.register("ReportUseCase", { useClass: ReportUseCase });
   container.register("ReportJudgeService", { useClass: ReportJudgeService });
