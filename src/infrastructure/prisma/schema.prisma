@@ -1896,6 +1896,16 @@ model ReportFeedback {
   @@unique([reportId, userId])
   @@index([reportId])
   @@index([userId])
+  // Backs `adminTemplateFeedbacks` (Phase 1.5 sysAdmin review list).
+  // The query joins Reports → ReportTemplate to filter by
+  // (variant, version, kind), then orders the resulting feedback rows
+  // by `(createdAt DESC, id DESC)` — without this index PostgreSQL
+  // would have to materialise + sort the entire post-join set even
+  // when the page bound is 20. `id` is included after `createdAt` so
+  // cursor pagination's tie-breaker (`createdAt DESC, id DESC`) can
+  // be served directly from the index ordering rather than re-sorting
+  // matched rows in memory.
+  @@index([createdAt(sort: Desc), id(sort: Desc)], map: "idx_t_report_feedbacks_created_at_id")
   @@map("t_report_feedbacks")
 }
 

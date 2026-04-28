@@ -168,6 +168,13 @@ enum ReportFeedbackType {
 type ReportFeedback {
   id: ID!
   reportId: ID!
+  # Resolved via the per-request `report` DataLoader so the Phase 1.5
+  # `adminTemplateFeedbacks` review list collapses to one batched lookup
+  # regardless of how many feedbacks share a Report. The Report type
+  # already exposes `template` (admin-only), so consumers needing the
+  # template version / experimentKey traverse `feedback.report.template`
+  # rather than denormalising those fields onto the feedback itself.
+  report: Report!
   user: User!
   rating: Int!
   feedbackType: ReportFeedbackType

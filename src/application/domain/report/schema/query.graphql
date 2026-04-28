@@ -52,6 +52,38 @@ extend type Query {
     first: Int = 20
   ): ReportTemplateStatsBreakdownConnection! @authz(rules: [IsAdmin])
 
+  # Phase 1.5 sysAdmin: review-style list of individual feedbacks for a
+  # template (variant + optional version). The `reportTemplateStatsBreakdown`
+  # query above only exposes per-row aggregates (avgRating / avgJudgeScore),
+  # which hides the *why* behind a low score — sysAdmins iterating on
+  # prompts need to read the actual comments to spot recurring failure
+  # modes (tone drift, fabricated numbers, structural issues, etc.).
+  #
+  # Filters are oriented at the "drill into low ratings" workflow:
+  #   - `version: null` rolls up across every revision of the variant.
+  #   - `feedbackType` narrows to one of QUALITY / ACCURACY / TONE /
+  #     STRUCTURE / OTHER so each prompt-improvement axis can be read
+  #     independently.
+  #   - `maxRating` keeps only feedbacks at-or-below the value (e.g.
+  #     `maxRating: 3` returns 1..3) — the inverse of "minimum rating"
+  #     because the prompt-improvement use case is always low-rating
+  #     drill-down. A `minRating` companion can be added later if a
+  #     "celebrate the wins" view emerges; for now keeping the surface
+  #     small avoids ambiguous "min/max combined" semantics.
+  #
+  # Order is `(createdAt DESC, id DESC)` — newest review first, with `id`
+  # as a tiebreaker so cursor pagination is stable when a seed script or
+  # batch insert produces rows sharing a `createdAt`.
+  adminTemplateFeedbacks(
+    variant: ReportVariant!
+    version: Int
+    kind: ReportTemplateKind = GENERATION
+    feedbackType: ReportFeedbackType
+    maxRating: Int
+    cursor: String
+    first: Int = 20
+  ): ReportFeedbacksConnection! @authz(rules: [IsAdmin])
+
   # Phase 2 sysAdmin: cross-community report search. Same shape as
   # `reports` but `permission` is dropped — IsAdmin alone gates access.
   # Order is `publishedAt DESC NULLS LAST, createdAt DESC` so DRAFT /

@@ -12,6 +12,8 @@ import {
   GqlReportTemplateStats,
   GqlQueryReportTemplateStatsBreakdownArgs,
   GqlReportTemplateStatsBreakdownConnection,
+  GqlQueryAdminTemplateFeedbacksArgs,
+  GqlReportFeedbacksConnection,
 } from "@/types/graphql";
 
 const MAX_FEEDBACKS_PER_PAGE = 100;
@@ -212,6 +214,53 @@ export default class ReportFeedbackUseCase {
       result.totalCount,
       first,
     );
+  }
+
+  /**
+   * Phase 1.5 admin: review-style list of individual feedbacks for a
+   * template. Authorization is enforced upstream by `@authz IsAdmin`
+   * on the GraphQL query; the usecase trusts the directive and does
+   * not re-check sysRole.
+   *
+   * Validation here mirrors the existing breakdown / stats paths:
+   *   - `first` is bounded with the same `validateInt` / DEFAULT /
+   *     MAX constants the per-Report `feedbacks` field uses, so the
+   *     two screens share an intuitive page-size feel.
+   *   - `maxRating` is bounded 1..5 (mirroring the rating CHECK on
+   *     submit) so a misbehaving client can't pass `maxRating: 0` and
+   *     read an empty page that hides a real bug, or `maxRating: 99`
+   *     that quietly drops the filter.
+   *   - `version` (when present) must be a positive integer; the DB
+   *     would reject negative version lookups silently as "no row",
+   *     producing an empty-page response that masks the input error.
+   */
+  async viewAdminTemplateFeedbacks(
+    args: GqlQueryAdminTemplateFeedbacksArgs,
+    ctx: IContext,
+  ): Promise<GqlReportFeedbacksConnection> {
+    const first = args.first
+      ? validateInt(args.first, 1, MAX_FEEDBACKS_PER_PAGE, "first")
+      : DEFAULT_FEEDBACKS_PER_PAGE;
+    if (args.maxRating !== undefined && args.maxRating !== null) {
+      validateInt(args.maxRating, 1, 5, "maxRating");
+    }
+    if (args.version !== undefined && args.version !== null) {
+      validateInt(args.version, 1, Number.MAX_SAFE_INTEGER, "version");
+    }
+    const result = await this.feedbackService.listAdminTemplateFeedbacks(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+      // The GraphQL `ReportFeedbackType` enum and the Prisma `FeedbackType`
+      // enum share identical member names by contract (Prisma is the
+      // source of truth and the GraphQL schema mirrors it), so a plain
+      // assertion is enough here — same pattern as `submitReportFeedback`.
+      feedbackType: args.feedbackType ? (args.feedbackType as FeedbackType) : undefined,
+      maxRating: args.maxRating ?? undefined,
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportFeedbackPresenter.connection(result.items, result.totalCount, first);
   }
 
   // Field-resolver helper used by `Report.feedbacks`. `Report.myFeedback`

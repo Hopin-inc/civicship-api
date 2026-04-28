@@ -1,4 +1,4 @@
-import { Prisma, ReportTemplateKind } from "@prisma/client";
+import { FeedbackType, Prisma, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
@@ -106,6 +106,27 @@ export default class ReportFeedbackService {
    * the same way (3-pair minimum, 0.7 threshold) — admins get
    * comparable signals across the aggregate KPI and the breakdown.
    */
+  /**
+   * Phase 1.5 admin: review-style individual feedback list scoped to
+   * a template. Pure pass-through to the repository — no Pearson /
+   * threshold math on this path because the screen renders raw
+   * comments, not derived correlations.
+   */
+  async listAdminTemplateFeedbacks(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      feedbackType?: FeedbackType;
+      maxRating?: number;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }> {
+    return this.repository.findAdminTemplateFeedbacks(ctx, params);
+  }
+
   async getTemplateBreakdown(
     ctx: IContext,
     params: {

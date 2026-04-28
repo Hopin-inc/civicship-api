@@ -238,6 +238,78 @@ describe("ReportFeedbackService.getTemplateBreakdown", () => {
   });
 });
 
+describe("ReportFeedbackService.listAdminTemplateFeedbacks", () => {
+  const fakeCtx = {} as IContext;
+
+  let repository: {
+    createFeedback: jest.Mock;
+    findFeedbackByReportAndUser: jest.Mock;
+    findFeedbacksByReport: jest.Mock;
+    findFeedbacksByReportIds: jest.Mock;
+    getTemplateFeedbackAggregates: jest.Mock;
+    getTemplateBreakdown: jest.Mock;
+    findAdminTemplateFeedbacks: jest.Mock;
+  };
+  let service: ReportFeedbackService;
+
+  beforeEach(() => {
+    container.reset();
+    repository = {
+      createFeedback: jest.fn(),
+      findFeedbackByReportAndUser: jest.fn(),
+      findFeedbacksByReport: jest.fn(),
+      findFeedbacksByReportIds: jest.fn(),
+      getTemplateFeedbackAggregates: jest.fn(),
+      getTemplateBreakdown: jest.fn(),
+      findAdminTemplateFeedbacks: jest
+        .fn()
+        .mockResolvedValue({ items: [], totalCount: 0 }),
+    };
+    container.register("ReportFeedbackRepository", { useValue: repository });
+    service = container.resolve(ReportFeedbackService);
+  });
+
+  it("forwards every filter to the repository unchanged", async () => {
+    // The service is a pure pass-through on this path — no Pearson, no
+    // threshold math. The test pins the contract so a future refactor
+    // cannot silently drop a filter the UI depends on.
+    await service.listAdminTemplateFeedbacks(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 3,
+      kind: ReportTemplateKind.JUDGE,
+      feedbackType: "ACCURACY" as never,
+      maxRating: 2,
+      cursor: "feedback-cursor",
+      first: 25,
+    });
+
+    expect(repository.findAdminTemplateFeedbacks).toHaveBeenCalledWith(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 3,
+      kind: ReportTemplateKind.JUDGE,
+      feedbackType: "ACCURACY",
+      maxRating: 2,
+      cursor: "feedback-cursor",
+      first: 25,
+    });
+  });
+
+  it("returns the repository's items + totalCount unchanged", async () => {
+    repository.findAdminTemplateFeedbacks.mockResolvedValue({
+      items: [{ id: "feedback-1" }, { id: "feedback-2" }],
+      totalCount: 2,
+    });
+
+    const result = await service.listAdminTemplateFeedbacks(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      kind: ReportTemplateKind.GENERATION,
+      first: 20,
+    });
+    expect(result.items).toHaveLength(2);
+    expect(result.totalCount).toBe(2);
+  });
+});
+
 describe("pearsonCorrelation", () => {
   it("returns null when the pair count is below the minimum", () => {
     expect(pearsonCorrelation([])).toBeNull();
