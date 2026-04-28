@@ -1,14 +1,16 @@
-import { Prisma } from "@prisma/client";
+import { FeedbackType, Prisma, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
   CreateReportFeedbackInput,
   IReportFeedbackRepository,
-  JudgeFeedbackPairRow,
 } from "@/application/domain/report/feedback/data/interface";
 import {
   PrismaReportFeedback,
   ReportTemplateStatsRow,
+  TemplateBreakdownRow,
+  JudgeFeedbackPairRow,
+  AdminTemplateFeedbackStatsRow,
 } from "@/application/domain/report/feedback/data/type";
 
 /**
@@ -95,6 +97,77 @@ export default class ReportFeedbackService {
       judgeHumanCorrelation: correlation,
       correlationWarning,
     };
+  }
+
+  /**
+   * Per-template breakdown for the A/B comparison admin screen
+   * (`reportTemplateStatsBreakdown`). Wraps the repository's grouped
+   * fetch with the same Pearson + warning-threshold logic the
+   * single-row stats path uses, so both screens compute correlation
+   * the same way (3-pair minimum, 0.7 threshold) — admins get
+   * comparable signals across the aggregate KPI and the breakdown.
+   */
+  async getTemplateBreakdown(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      includeInactive: boolean;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{
+    items: Array<TemplateBreakdownRow & {
+      judgeHumanCorrelation: number | null;
+      correlationWarning: boolean;
+    }>;
+    totalCount: number;
+  }> {
+    const result = await this.repository.getTemplateBreakdown(ctx, params);
+    return {
+      items: result.items.map((row) => {
+        const correlation = pearsonCorrelation(row.pairs);
+        const correlationWarning =
+          correlation !== null && correlation < JUDGE_HUMAN_CORRELATION_WARNING_THRESHOLD;
+        return { ...row, judgeHumanCorrelation: correlation, correlationWarning };
+      }),
+      totalCount: result.totalCount,
+    };
+  }
+
+  /**
+   * Phase 1.5 admin: review-style individual feedback list scoped to
+   * a template. Pure pass-through to the repository — no Pearson /
+   * threshold math on this path because the screen renders raw
+   * comments, not derived correlations.
+   */
+  async listAdminTemplateFeedbacks(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      feedbackType?: FeedbackType;
+      maxRating?: number;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }> {
+    return this.repository.findAdminTemplateFeedbacks(ctx, params);
+  }
+
+  /**
+   * Phase 1.5 admin: population stats for a template's feedback set.
+   * Pure pass-through to the repository — no derived math at this
+   * layer (the SQL already returns total / mean / buckets in one
+   * pass). The presenter handles the dense 1..5 bucket fill.
+   */
+  async getAdminTemplateFeedbackStats(
+    ctx: IContext,
+    params: { variant: string; version?: number; kind: ReportTemplateKind },
+  ): Promise<AdminTemplateFeedbackStatsRow> {
+    return this.repository.getAdminTemplateFeedbackStats(ctx, params);
   }
 }
 

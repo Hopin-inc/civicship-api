@@ -67,7 +67,7 @@ jobs:
     - name: Set up gcloud SDK
       uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
 
-    - name: pnpm db:generate
+    - name: pnpm db:generate and db:deploy
       env:
         DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
       run: |
@@ -85,6 +85,9 @@ jobs:
 
         echo "--- Running prisma generate ---"
         pnpm db:generate
+
+        echo "--- Running prisma migrate deploy ---"
+        pnpm db:deploy
 
         echo "Killing SSH tunnel"
         kill $SSH_PID

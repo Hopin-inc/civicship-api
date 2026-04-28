@@ -157,6 +157,23 @@ export default class ReportService {
   }
 
   /**
+   * Phase 1 admin: list multiple template revisions for the management
+   * UI. Pass-through to the repository — the repository handles the
+   * SYSTEM ∪ COMMUNITY semantics and the includeInactive toggle, the
+   * service is here purely so resolver/usecase tests can substitute a
+   * mock without reaching into the repository.
+   */
+  async listTemplates(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+    kind: ReportTemplateKind,
+    includeInactive: boolean,
+  ): Promise<PrismaReportTemplate[]> {
+    return this.repository.findTemplates(ctx, variant, communityId, kind, includeInactive);
+  }
+
+  /**
    * CI-only direct lookup by (variant, kind, version, communityId).
    * Wraps `IReportRepository.findTemplateByVersion` so the Golden Case
    * harness has the same service-shaped seam as the rest of the report
@@ -219,6 +236,78 @@ export default class ReportService {
     },
   ): Promise<{ items: PrismaReport[]; totalCount: number }> {
     return this.repository.findReports(ctx, params);
+  }
+
+  /**
+   * Phase 2 sysAdmin: cross-community report search backing
+   * `adminBrowseReports`. Pass-through to the repository so the usecase
+   * shape stays mock-friendly; the repo enforces the IsAdmin-only
+   * scope via `ctx.issuer.internal` plus the `publishedAt DESC NULLS
+   * LAST` ordering.
+   */
+  async getAllReports(
+    ctx: IContext,
+    params: {
+      communityId?: string;
+      status?: ReportStatus;
+      variant?: string;
+      publishedAfter?: Date;
+      publishedBefore?: Date;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReport[]; totalCount: number }> {
+    return this.repository.findAllReports(ctx, params);
+  }
+
+  /**
+   * Phase 2 sysAdmin: per-community last-publish summary backing
+   * `adminReportSummary`. Returns the denormalized last-publish
+   * pointer plus the rolling 90-day count; the resolver hydrates the
+   * full Community / Report objects through dataloaders.
+   */
+  async getCommunityReportSummary(
+    ctx: IContext,
+    params: { cursor?: string; first: number },
+  ): Promise<{
+    items: Array<{
+      communityId: string;
+      lastPublishedReportId: string | null;
+      lastPublishedAt: Date | null;
+      publishedCountLast90Days: number;
+    }>;
+    totalCount: number;
+  }> {
+    // Wire-format → structured at the converter boundary so the
+    // repository never sees the GraphQL cursor string. A null result
+    // (garbage / stale cursor) collapses to "no cursor"; the repo
+    // falls back to a clean first-page scan.
+    const cursor = params.cursor
+      ? ReportConverter.decodeCommunitySummaryCursor(params.cursor)
+      : null;
+    return this.repository.findCommunityReportSummary(ctx, {
+      cursor,
+      first: params.first,
+    });
+  }
+
+  /**
+   * A-3 maintenance helper. Re-derives the community's
+   * `last_published_report_*` pointer from `t_reports`. Must be called
+   * inside the same transaction as the report-side update (publish or
+   * supersede) so the pointer cannot be observed mid-flight by a
+   * concurrent `adminReportSummary` reader.
+   *
+   * Idempotent: invoking it twice in a row is a no-op the second time.
+   * No "don't overwrite if older" semantics — the SELECT inside the
+   * repository always picks the current newest PUBLISHED row.
+   */
+  async recalculateCommunityLastPublished(
+    ctx: IContext,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    return this.repository.recalculateCommunityLastPublished(ctx, communityId, tx);
   }
 
   async updateReportStatus(

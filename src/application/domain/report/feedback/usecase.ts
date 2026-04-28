@@ -1,5 +1,5 @@
 import { inject, injectable } from "tsyringe";
-import { Prisma, FeedbackType } from "@prisma/client";
+import { Prisma, FeedbackType, ReportTemplateKind } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { AuthenticationError, NotFoundError, ValidationError } from "@/errors/graphql";
 import ReportService from "@/application/domain/report/service";
@@ -10,12 +10,25 @@ import {
   GqlSubmitReportFeedbackPayload,
   GqlQueryReportTemplateStatsArgs,
   GqlReportTemplateStats,
+  GqlQueryReportTemplateStatsBreakdownArgs,
+  GqlReportTemplateStatsBreakdownConnection,
+  GqlQueryAdminTemplateFeedbacksArgs,
+  GqlReportFeedbacksConnection,
+  GqlQueryAdminTemplateFeedbackStatsArgs,
+  GqlAdminTemplateFeedbackStats,
 } from "@/types/graphql";
 
 const MAX_FEEDBACKS_PER_PAGE = 100;
 const DEFAULT_FEEDBACKS_PER_PAGE = 20;
 const MAX_COMMENT_LENGTH = 2000;
 const MAX_SECTION_KEY_LENGTH = 128;
+
+// Breakdown rows mirror per-template revisions; communities with active
+// experimentation can reach the hundreds across history. Cap at 100 to
+// keep the per-page Pearson computation bounded and prompt the UI to
+// paginate rather than fetch everything at once.
+const MAX_BREAKDOWN_ROWS_PER_PAGE = 100;
+const DEFAULT_BREAKDOWN_ROWS_PER_PAGE = 20;
 
 @injectable()
 export default class ReportFeedbackUseCase {
@@ -173,6 +186,112 @@ export default class ReportFeedbackUseCase {
       version ?? undefined,
     );
     return ReportFeedbackPresenter.templateStats(row);
+  }
+
+  /**
+   * Phase 1 admin: per-template quality breakdown for the A/B
+   * comparison screen. Pagination defaults align with the rest of the
+   * report domain — same `clampInt` helper, same DEFAULT/MAX bounds —
+   * so the screen and the existing `reports` browse share an
+   * intuitive page-size feel. Authorization is enforced upstream by
+   * the `@authz IsAdmin` rule on the GraphQL query.
+   */
+  async viewReportTemplateStatsBreakdown(
+    args: GqlQueryReportTemplateStatsBreakdownArgs,
+    ctx: IContext,
+  ): Promise<GqlReportTemplateStatsBreakdownConnection> {
+    const first = args.first
+      ? validateInt(args.first, 1, MAX_BREAKDOWN_ROWS_PER_PAGE, "first")
+      : DEFAULT_BREAKDOWN_ROWS_PER_PAGE;
+    const result = await this.feedbackService.getTemplateBreakdown(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+      includeInactive: args.includeInactive ?? false,
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportFeedbackPresenter.templateBreakdownConnection(
+      result.items,
+      result.totalCount,
+      first,
+    );
+  }
+
+  /**
+   * Phase 1.5 admin: review-style list of individual feedbacks for a
+   * template. Authorization is enforced upstream by `@authz IsAdmin`
+   * on the GraphQL query; the usecase trusts the directive and does
+   * not re-check sysRole.
+   *
+   * Validation here mirrors the existing breakdown / stats paths:
+   *   - `first` is bounded with the same `validateInt` / DEFAULT /
+   *     MAX constants the per-Report `feedbacks` field uses, so the
+   *     two screens share an intuitive page-size feel.
+   *   - `maxRating` is bounded 1..5 (mirroring the rating CHECK on
+   *     submit) so a misbehaving client can't pass `maxRating: 0` and
+   *     read an empty page that hides a real bug, or `maxRating: 99`
+   *     that quietly drops the filter.
+   *   - `version` (when present) must be a positive integer; the DB
+   *     would reject negative version lookups silently as "no row",
+   *     producing an empty-page response that masks the input error.
+   */
+  async viewAdminTemplateFeedbacks(
+    args: GqlQueryAdminTemplateFeedbacksArgs,
+    ctx: IContext,
+  ): Promise<GqlReportFeedbacksConnection> {
+    const first = args.first
+      ? validateInt(args.first, 1, MAX_FEEDBACKS_PER_PAGE, "first")
+      : DEFAULT_FEEDBACKS_PER_PAGE;
+    if (args.maxRating !== undefined && args.maxRating !== null) {
+      validateInt(args.maxRating, 1, 5, "maxRating");
+    }
+    if (args.version !== undefined && args.version !== null) {
+      validateInt(args.version, 1, Number.MAX_SAFE_INTEGER, "version");
+    }
+    const result = await this.feedbackService.listAdminTemplateFeedbacks(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+      // The GraphQL `ReportFeedbackType` enum and the Prisma `FeedbackType`
+      // enum share identical member names by contract (Prisma is the
+      // source of truth and the GraphQL schema mirrors it), so a plain
+      // assertion is enough here — same pattern as `submitReportFeedback`.
+      feedbackType: args.feedbackType ? (args.feedbackType as FeedbackType) : undefined,
+      maxRating: args.maxRating ?? undefined,
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportFeedbackPresenter.connection(result.items, result.totalCount, first);
+  }
+
+  /**
+   * Phase 1.5 admin: population stats paired with
+   * `adminTemplateFeedbacks` for the template detail page summary
+   * card. Argument scope is intentionally narrower than the list
+   * query — `feedbackType` / `maxRating` are not accepted because a
+   * filtered distribution defeats the bar's purpose. Authorization
+   * is enforced upstream by `@authz IsAdmin` on the GraphQL query;
+   * the usecase trusts the directive.
+   *
+   * Validation mirrors the list path's `version` check: `version`
+   * (when present) must be a positive integer. The DB would return
+   * an empty stats object for a negative version silently, masking
+   * the input bug.
+   */
+  async viewAdminTemplateFeedbackStats(
+    args: GqlQueryAdminTemplateFeedbackStatsArgs,
+    ctx: IContext,
+  ): Promise<GqlAdminTemplateFeedbackStats> {
+    if (args.version !== undefined && args.version !== null) {
+      validateInt(args.version, 1, Number.MAX_SAFE_INTEGER, "version");
+    }
+    const row = await this.feedbackService.getAdminTemplateFeedbackStats(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+    });
+    return ReportFeedbackPresenter.adminTemplateFeedbackStats(row);
   }
 
   // Field-resolver helper used by `Report.feedbacks`. `Report.myFeedback`

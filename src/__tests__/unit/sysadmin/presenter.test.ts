@@ -330,7 +330,7 @@ describe("SysAdminPresenter", () => {
   });
 
   describe("memberList / stages — passthrough structure", () => {
-    it("passes hasNextPage + nextCursor untouched", () => {
+    it("encodes nextOffset to base64 nextCursor when there is a next page", () => {
       const result: MemberListResult = {
         users: [
           {
@@ -353,10 +353,12 @@ describe("SysAdminPresenter", () => {
           },
         ],
         hasNextPage: true,
-        nextCursor: "MQ==",
+        nextOffset: 1,
       };
       const out = SysAdminPresenter.memberList(result);
       expect(out.hasNextPage).toBe(true);
+      // base64("1") === "MQ==" — keeps the same wire format the
+      // pre-refactor in-service helper produced.
       expect(out.nextCursor).toBe("MQ==");
       expect(out.users).toHaveLength(1);
     });
@@ -365,7 +367,7 @@ describe("SysAdminPresenter", () => {
       const out = SysAdminPresenter.memberList({
         users: [],
         hasNextPage: false,
-        nextCursor: null,
+        nextOffset: null,
       });
       expect(out.nextCursor).toBeNull();
     });

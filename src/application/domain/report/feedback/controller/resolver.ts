@@ -4,6 +4,9 @@ import ReportFeedbackUseCase from "@/application/domain/report/feedback/usecase"
 import {
   GqlMutationSubmitReportFeedbackArgs,
   GqlQueryReportTemplateStatsArgs,
+  GqlQueryReportTemplateStatsBreakdownArgs,
+  GqlQueryAdminTemplateFeedbacksArgs,
+  GqlQueryAdminTemplateFeedbackStatsArgs,
 } from "@/types/graphql";
 import { PrismaReport } from "@/application/domain/report/data/type";
 import { PrismaReportFeedback } from "@/application/domain/report/feedback/data/type";
@@ -15,6 +18,27 @@ export default class ReportFeedbackResolver {
   Query = {
     reportTemplateStats: (_: unknown, args: GqlQueryReportTemplateStatsArgs, ctx: IContext) => {
       return this.useCase.viewReportTemplateStats(args, ctx);
+    },
+    reportTemplateStatsBreakdown: (
+      _: unknown,
+      args: GqlQueryReportTemplateStatsBreakdownArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.viewReportTemplateStatsBreakdown(args, ctx);
+    },
+    adminTemplateFeedbacks: (
+      _: unknown,
+      args: GqlQueryAdminTemplateFeedbacksArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.viewAdminTemplateFeedbacks(args, ctx);
+    },
+    adminTemplateFeedbackStats: (
+      _: unknown,
+      args: GqlQueryAdminTemplateFeedbackStatsArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.viewAdminTemplateFeedbackStats(args, ctx);
     },
   };
 
@@ -57,6 +81,14 @@ export default class ReportFeedbackResolver {
   ReportFeedback = {
     user: (parent: PrismaReportFeedback, _: unknown, ctx: IContext) =>
       ctx.loaders.user.load(parent.userId),
+    // `report` is resolved through the existing per-request `report`
+    // DataLoader so the Phase 1.5 `adminTemplateFeedbacks` review list
+    // collapses to a single batched lookup regardless of how many
+    // feedbacks share a Report. The Report type's own `template`
+    // resolver re-checks admin scope, so non-admin callers traversing
+    // `feedback.report.template` get null without an extra guard here.
+    report: (parent: PrismaReportFeedback, _: unknown, ctx: IContext) =>
+      ctx.loaders.report.load(parent.reportId),
   };
 
   SubmitReportFeedbackPayload = { __resolveType: (obj: { __typename: string }) => obj.__typename };

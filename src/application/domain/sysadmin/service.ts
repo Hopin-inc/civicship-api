@@ -253,13 +253,18 @@ export type MemberListParams = {
   sortField: SortField;
   sortOrder: SortOrder;
   limit: number;
-  cursor?: string | null;
+  // Pre-decoded offset; the GraphQL → number wire-format step lives
+  // in `SysAdminConverter.parseMemberListCursor` so the service
+  // operates on internal form only.
+  cursor?: number;
 };
 
 export type MemberListResult = {
   users: SysAdminMemberStatsRow[];
   hasNextPage: boolean;
-  nextCursor: string | null;
+  // Internal form. The GraphQL `nextCursor: String | null` is built
+  // by the presenter, which owns the internal → wire-format step.
+  nextOffset: number | null;
 };
 
 export type AlertFlags = {
@@ -683,14 +688,14 @@ export default class SysAdminService {
       return a.userId.localeCompare(b.userId);
     });
 
-    const start = params.cursor ? parseCursor(params.cursor) : 0;
+    const start = params.cursor ?? 0;
     const limit = Math.min(Math.max(params.limit, 1), MAX_LIMIT);
     const page = sorted.slice(start, start + limit);
     const hasNextPage = start + limit < sorted.length;
     return {
       users: page,
       hasNextPage,
-      nextCursor: hasNextPage ? encodeCursor(start + limit) : null,
+      nextOffset: hasNextPage ? start + limit : null,
     };
   }
 
@@ -1274,18 +1279,3 @@ export default class SysAdminService {
   }
 }
 
-function encodeCursor(offset: number): string {
-  // Simple numeric offset. Base64 to discourage clients from poking
-  // into the value and to match the "opaque cursor" contract.
-  return Buffer.from(String(offset), "utf8").toString("base64");
-}
-
-function parseCursor(cursor: string): number {
-  try {
-    const decoded = Buffer.from(cursor, "base64").toString("utf8");
-    const n = Number.parseInt(decoded, 10);
-    return Number.isFinite(n) && n >= 0 ? n : 0;
-  } catch {
-    return 0;
-  }
-}

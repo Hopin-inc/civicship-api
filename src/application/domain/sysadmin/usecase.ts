@@ -27,6 +27,7 @@ import SysAdminService, {
   SegmentThresholds,
 } from "@/application/domain/sysadmin/service";
 import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
+import SysAdminConverter from "@/application/domain/sysadmin/data/converter";
 import { jstMonthStart, jstNextMonthStart } from "@/application/domain/report/util";
 import { asOfBounds } from "@/application/domain/sysadmin/bounds";
 
@@ -193,7 +194,9 @@ export default class SysAdminUseCase {
       sortField: input.userSort?.field ?? "SEND_RATE",
       sortOrder: input.userSort?.order ?? "DESC",
       limit: clampLimit(input.limit),
-      cursor: input.cursor ?? null,
+      // Decode at the converter boundary so service operates on a
+      // numeric offset only — no wire-format leakage.
+      cursor: SysAdminConverter.parseMemberListCursor(input.cursor),
     });
 
     const summary = SysAdminPresenter.summaryCard({

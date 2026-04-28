@@ -1,5 +1,15 @@
-import { GqlReport, GqlReportTemplate, GqlReportsConnection } from "@/types/graphql";
-import { PrismaReport, PrismaReportTemplate } from "@/application/domain/report/data/type";
+import {
+  GqlReport,
+  GqlReportTemplate,
+  GqlReportsConnection,
+  GqlAdminReportSummaryConnection,
+  GqlAdminReportSummaryRow,
+} from "@/types/graphql";
+import {
+  CommunitySummaryCursor,
+  PrismaReport,
+  PrismaReportTemplate,
+} from "@/application/domain/report/data/type";
 import {
   CohortRetentionRow,
   CommunityContextRow,
@@ -26,6 +36,20 @@ import {
   percentChange,
   toJstIsoDate,
 } from "@/application/domain/report/util";
+
+/**
+ * Internal → GraphQL `edge.cursor` (base64url JSON of `{at, id}`).
+ * Mirror of `ReportConverter.decodeCommunitySummaryCursor`; kept on
+ * the presenter side because `edge.cursor` is a GraphQL output
+ * concern and the rest of the report presenters already own the
+ * internal-to-Gql wire-format direction. Exported only so the
+ * round-trip unit test can assert encode/decode symmetry across the
+ * converter / presenter pair without exercising the full
+ * connection presenter.
+ */
+export function encodeCommunitySummaryCursor(c: CommunitySummaryCursor): string {
+  return Buffer.from(JSON.stringify(c), "utf8").toString("base64url");
+}
 
 export default class ReportPresenter {
   static weeklyPayload(input: {
@@ -321,6 +345,74 @@ export default class ReportPresenter {
         hasPreviousPage: false,
         startCursor: page[0]?.id ?? null,
         endCursor: page[page.length - 1]?.id ?? null,
+      },
+      totalCount,
+    };
+  }
+
+  /**
+   * Phase 2 sysAdmin: AdminReportSummaryConnection presenter. Each
+   * row carries the denormalized last-publish pointer plus the rolling
+   * 90-day count from the repository; the resolver hydrates the
+   * `community` / `lastPublishedReport` field via dataloader, so the
+   * returned shape only needs the bare ids and scalars.
+   *
+   * `daysSinceLastPublish` is computed here from `lastPublishedAt`
+   * (anchored to the request time) rather than denormalized — it
+   * changes daily and the math is one line. Returns `null` for never-
+   * published communities so the UI can render "—" instead of "0
+   * days" (which would suggest a recent publish).
+   */
+  static adminReportSummaryConnection(
+    items: Array<{
+      communityId: string;
+      lastPublishedReportId: string | null;
+      lastPublishedAt: Date | null;
+      publishedCountLast90Days: number;
+    }>,
+    totalCount: number,
+    requestedFirst: number,
+  ): GqlAdminReportSummaryConnection {
+    const hasNextPage = items.length > requestedFirst;
+    const page = hasNextPage ? items.slice(0, requestedFirst) : items;
+    const now = Date.now();
+    const millisPerDay = 24 * 60 * 60 * 1000;
+    // Composite cursor `{at, id}` matches the SQL sort
+    // (`last_published_report_at ASC NULLS FIRST, id ASC`). Encoding
+    // both halves is required for correctness: a row with `at=null`
+    // and a row with `at=2026-01-01` may share the same `id` ordering
+    // arbitrarily, but only one of them is the true successor of the
+    // cursor when paginating across the dormant / chronological tiers.
+    const buildCursor = (row: { communityId: string; lastPublishedAt: Date | null }) =>
+      encodeCommunitySummaryCursor({
+        at: row.lastPublishedAt?.toISOString() ?? null,
+        id: row.communityId,
+      });
+    return {
+      edges: page.map((row) => ({
+        cursor: buildCursor(row),
+        // Field resolvers (`community`, `lastPublishedReport`) on
+        // AdminReportSummaryRow read `communityId` /
+        // `lastPublishedReportId` off the parent and hydrate via
+        // dataloader. Casting through `unknown` matches the
+        // `report` / `reportTemplate` presenters above — the parent
+        // shape carries the relation ids; the field resolvers fill
+        // in the relations themselves at GraphQL execution time.
+        node: {
+          communityId: row.communityId,
+          lastPublishedReportId: row.lastPublishedReportId,
+          lastPublishedAt: row.lastPublishedAt,
+          daysSinceLastPublish: row.lastPublishedAt
+            ? Math.floor((now - row.lastPublishedAt.getTime()) / millisPerDay)
+            : null,
+          publishedCountLast90Days: row.publishedCountLast90Days,
+        } as unknown as GqlAdminReportSummaryRow,
+      })),
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage: false,
+        startCursor: page[0] ? buildCursor(page[0]) : null,
+        endCursor: page[page.length - 1] ? buildCursor(page[page.length - 1]) : null,
       },
       totalCount,
     };

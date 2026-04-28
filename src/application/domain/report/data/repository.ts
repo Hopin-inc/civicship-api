@@ -22,6 +22,7 @@ import {
   UserTransactionAggregateRow,
 } from "@/application/domain/report/data/interface";
 import {
+  CommunitySummaryCursor,
   PrismaReport,
   PrismaReportGoldenCase,
   PrismaReportTemplate,
@@ -809,6 +810,58 @@ export default class ReportRepository implements IReportRepository {
   }
 
   /**
+   * Admin-list backing for `reportTemplates`. Distinct from
+   * `findActiveTemplates` (selector hot path, isActive+isEnabled fixed
+   * to true and scoped strictly to `communityId`):
+   *
+   *   - `communityId === null` returns SYSTEM-only.
+   *   - `communityId === X` returns SYSTEM ∪ COMMUNITY(X) so the admin
+   *     screen can show "what actually runs for this community" — both
+   *     the override row and the SYSTEM fallback the override would
+   *     replace — in a single sweep.
+   *   - `includeInactive=false` (default) keeps the live filter
+   *     `isActive=true AND isEnabled=true` so the screen does not surface
+   *     rolled-back / disabled rows by default.
+   *   - `includeInactive=true` returns every row regardless of state so
+   *     the admin can audit history.
+   *
+   * Sort is `version DESC, createdAt DESC` so the newest revision lands
+   * at the top and same-version rows order by recency. The selector
+   * does NOT call this — production runs go through
+   * `findActiveTemplates`.
+   */
+  async findTemplates(
+    ctx: IContext,
+    variant: string,
+    communityId: string | null,
+    kind: ReportTemplateKind,
+    includeInactive: boolean,
+  ): Promise<PrismaReportTemplate[]> {
+    // Admin-only path (the GraphQL query carries `IsAdmin`); use the
+    // internal issuer for consistency with the other Phase 2 admin
+    // reads (`findAllReports`, `findCommunityReportSummary`,
+    // `getTemplateBreakdown`). The legacy single-row `findTemplate` /
+    // selector hot path `findActiveTemplates` continue to use `public`
+    // because they're invoked from non-admin call sites
+    // (`reportTemplate(communityId, variant)` is admin-gated but the
+    // selector path runs during generate from any community member).
+    return ctx.issuer.internal((tx) =>
+      tx.reportTemplate.findMany({
+        where: {
+          variant,
+          kind,
+          ...(communityId === null
+            ? { communityId: null }
+            : { OR: [{ communityId }, { communityId: null }] }),
+          ...(includeInactive ? {} : { isActive: true, isEnabled: true }),
+        },
+        orderBy: [{ version: "desc" }, { createdAt: "desc" }],
+        select: reportTemplateSelect,
+      }),
+    );
+  }
+
+  /**
    * Resolve the active SYSTEM-scope JUDGE template for a variant.
    * Filters on `isEnabled` AND `isActive` so the F1 versioning bookkeeping
    * also gates judge selection — a JUDGE row marked inactive (e.g. a
@@ -1080,6 +1133,221 @@ export default class ReportRepository implements IReportRepository {
       ]);
       return { items, totalCount };
     });
+  }
+
+  /**
+   * sysAdmin cross-community report search. Distinct from `findReports`
+   * (community-scoped, RLS-public): runs through `ctx.issuer.internal`
+   * because the IsAdmin GraphQL directive is the only gatekeeper here,
+   * and orders by publishedAt DESC NULLS LAST so DRAFT / SKIPPED rows
+   * (publishedAt is null) sink rather than leading the page.
+   *
+   * Filters are all optional. The matching index
+   * `idx_t_reports_published_at_created_at` (added in the
+   * `add_admin_report_summary_columns` migration) backs the unfiltered
+   * sweep; community / variant / status filters narrow before the
+   * index sort completes.
+   */
+  async findAllReports(
+    ctx: IContext,
+    params: {
+      communityId?: string;
+      status?: ReportStatus;
+      variant?: string;
+      publishedAfter?: Date;
+      publishedBefore?: Date;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReport[]; totalCount: number }> {
+    const where: Prisma.ReportWhereInput = {
+      ...(params.communityId && { communityId: params.communityId }),
+      ...(params.status && { status: params.status }),
+      ...(params.variant && { variant: params.variant }),
+      ...((params.publishedAfter || params.publishedBefore) && {
+        publishedAt: {
+          ...(params.publishedAfter && { gte: params.publishedAfter }),
+          ...(params.publishedBefore && { lte: params.publishedBefore }),
+        },
+      }),
+    };
+    return ctx.issuer.internal(async (tx) => {
+      const [items, totalCount] = await Promise.all([
+        tx.report.findMany({
+          where,
+          select: reportSelect,
+          take: params.first + 1,
+          ...(params.cursor && { skip: 1, cursor: { id: params.cursor } }),
+          orderBy: [
+            { publishedAt: { sort: "desc", nulls: "last" } },
+            { createdAt: "desc" },
+            // id tie-breaker so `cursor: { id }` advances
+            // deterministically when publishedAt + createdAt collide
+            // (e.g. multiple reports created in the same millisecond
+            // by a batch run, or the SKIPPED rows at the bottom that
+            // share publishedAt=null).
+            { id: "desc" },
+          ],
+        }),
+        tx.report.count({ where }),
+      ]);
+      return { items, totalCount };
+    });
+  }
+
+  /**
+   * Per-community summary for `adminReportSummary`. Reads the
+   * denormalized last-publish columns on `t_communities` directly so
+   * the sort + cursor stay stable, then computes the rolling
+   * 90-day publish count for the page's communityIds in a single
+   * `GROUP BY` follow-up query — that count moves daily and is not
+   * worth denormalizing, but the per-row correlated subquery shape
+   * was needlessly O(first) under load.
+   *
+   * Sort `last_published_report_at ASC NULLS FIRST, id ASC` floats
+   * dormant / never-published communities to the top so the L1 view
+   * surfaces them first.
+   *
+   * Cursor pagination uses a *composite* cursor `{ at, id }` because
+   * the primary sort key (`last_published_report_at`) is non-unique:
+   * an `id`-only WHERE would skip rows whose at-value places them
+   * after the cursor when their id happens to sort earlier. The two
+   * branches below cover the NULLS-FIRST tier:
+   *   - cursor.at === null (we're inside the dormant tier): keep
+   *     paging through dormant rows by id, then spill over to the
+   *     entire non-NULL tier.
+   *   - cursor.at !== null (we're in the chronological tier): page
+   *     by (at, id) lexicographically.
+   */
+  async findCommunityReportSummary(
+    ctx: IContext,
+    params: { cursor: CommunitySummaryCursor | null; first: number },
+  ): Promise<{
+    items: Array<{
+      communityId: string;
+      lastPublishedReportId: string | null;
+      lastPublishedAt: Date | null;
+      publishedCountLast90Days: number;
+    }>;
+    totalCount: number;
+  }> {
+    return ctx.issuer.internal(async (tx) => {
+      // Wire-format decoding is the converter layer's job; this
+      // method takes the already-decoded structured cursor (or null)
+      // so the SQL composition stays pure data-layer.
+      const { cursor } = params;
+      const cursorClause = !cursor
+        ? Prisma.empty
+        : cursor.at === null
+          ? Prisma.sql`AND (
+              (c."last_published_report_at" IS NULL AND c."id" > ${cursor.id})
+              OR c."last_published_report_at" IS NOT NULL
+            )`
+          : Prisma.sql`AND (
+              c."last_published_report_at" > ${cursor.at}::timestamp
+              OR (
+                c."last_published_report_at" = ${cursor.at}::timestamp
+                AND c."id" > ${cursor.id}
+              )
+            )`;
+      // Two-query strategy: first page through communities by the
+      // denormalized last-publish columns (one index range scan),
+      // then aggregate the rolling 90-day publish count for just
+      // that page's communityIds in a single GROUP BY. This keeps
+      // DB round-trips and scan count constant in `first` rather
+      // than O(first) correlated subqueries on the L1 hot path.
+      const [rows, totalRow] = await Promise.all([
+        tx.$queryRaw<
+          {
+            id: string;
+            last_published_report_id: string | null;
+            last_published_report_at: Date | null;
+          }[]
+        >`
+          SELECT
+            c."id",
+            c."last_published_report_id",
+            c."last_published_report_at"
+          FROM "t_communities" c
+          WHERE TRUE
+            ${cursorClause}
+          ORDER BY
+            c."last_published_report_at" ASC NULLS FIRST,
+            c."id" ASC
+          LIMIT ${params.first + 1}
+        `,
+        tx.community.count(),
+      ]);
+      const communityIds = rows.map((r) => r.id);
+      const counts =
+        communityIds.length === 0
+          ? []
+          : await tx.$queryRaw<
+              { community_id: string; count: bigint }[]
+            >`
+              SELECT
+                r."community_id",
+                COUNT(*)::bigint AS "count"
+              FROM "t_reports" r
+              WHERE r."community_id" = ANY(${communityIds}::text[])
+                AND r."status" = 'PUBLISHED'
+                AND r."published_at" IS NOT NULL
+                AND r."published_at" >= NOW() - INTERVAL '90 days'
+              GROUP BY r."community_id"
+            `;
+      const countByCommunity = new Map(
+        counts.map((c) => [c.community_id, Number(c.count)]),
+      );
+      return {
+        items: rows.map((r) => ({
+          communityId: r.id,
+          lastPublishedReportId: r.last_published_report_id,
+          lastPublishedAt: r.last_published_report_at,
+          publishedCountLast90Days: countByCommunity.get(r.id) ?? 0,
+        })),
+        totalCount: totalRow,
+      };
+    });
+  }
+
+  /**
+   * Re-derive a community's last-publish pointer from `t_reports`.
+   * Idempotent: callers can invoke it after either a publish (new
+   * PUBLISHED row) or a supersede of a PUBLISHED row, and the column
+   * pair will reflect the current state.
+   *
+   * One UPDATE always runs. When no PUBLISHED row remains, the
+   * `LEFT JOIN ... ON FALSE` collapses `sub` to a single null row so
+   * the SET expressions evaluate to NULL — keeping the operation in
+   * a single statement instead of a conditional second UPDATE.
+   */
+  async recalculateCommunityLastPublished(
+    ctx: IContext,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await tx.$executeRaw`
+      UPDATE "t_communities" c
+      SET
+        "last_published_report_id" = sub."id",
+        "last_published_report_at" = sub."published_at"
+      FROM (
+        SELECT NULL::text AS "id", NULL::timestamp AS "published_at"
+        UNION ALL
+        SELECT "id", "published_at"
+        FROM "t_reports"
+        WHERE "community_id" = ${communityId}
+          AND "status" = 'PUBLISHED'
+          AND "published_at" IS NOT NULL
+        -- "id" DESC tie-breaks ties on published_at (e.g. batched
+        -- publishes inside the same millisecond) so two replays of
+        -- the recalc against the same DB state always pick the same
+        -- row, not whichever happens to scan first.
+        ORDER BY "published_at" DESC NULLS LAST, "id" DESC
+        LIMIT 1
+      ) sub
+      WHERE c."id" = ${communityId}
+    `;
   }
 
   async updateReportStatus(

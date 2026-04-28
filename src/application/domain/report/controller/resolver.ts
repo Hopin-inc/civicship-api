@@ -10,6 +10,9 @@ import {
   GqlQueryReportsArgs,
   GqlQueryReportArgs,
   GqlQueryReportTemplateArgs,
+  GqlQueryReportTemplatesArgs,
+  GqlQueryAdminBrowseReportsArgs,
+  GqlQueryAdminReportSummaryArgs,
 } from "@/types/graphql";
 import { PrismaReport } from "@/application/domain/report/data/type";
 
@@ -26,6 +29,15 @@ export default class ReportResolver {
     },
     reportTemplate: (_: unknown, args: GqlQueryReportTemplateArgs, ctx: IContext) => {
       return this.useCase.viewReportTemplate(args, ctx);
+    },
+    reportTemplates: (_: unknown, args: GqlQueryReportTemplatesArgs, ctx: IContext) => {
+      return this.useCase.listReportTemplates(args, ctx);
+    },
+    adminBrowseReports: (_: unknown, args: GqlQueryAdminBrowseReportsArgs, ctx: IContext) => {
+      return this.useCase.adminBrowseReports(args, ctx);
+    },
+    adminReportSummary: (_: unknown, args: GqlQueryAdminReportSummaryArgs, ctx: IContext) => {
+      return this.useCase.adminViewReportSummary(args, ctx);
     },
   };
 
@@ -75,6 +87,27 @@ export default class ReportResolver {
       parent.communityId ? ctx.loaders.community.load(parent.communityId) : null,
     updatedByUser: (parent: { updatedBy: string | null }, _: unknown, ctx: IContext) =>
       parent.updatedBy ? ctx.loaders.user.load(parent.updatedBy) : null,
+  };
+
+  /**
+   * Field resolvers for `AdminReportSummaryRow`. The presenter only
+   * threads the relation ids (`communityId` / `lastPublishedReportId`)
+   * onto the parent — these resolvers hydrate the actual Community /
+   * Report objects via existing dataloaders so a 50-row page issues
+   * at most two batched lookups regardless of how many distinct
+   * communities show up.
+   */
+  AdminReportSummaryRow = {
+    community: (parent: { communityId: string }, _: unknown, ctx: IContext) =>
+      ctx.loaders.community.load(parent.communityId),
+    lastPublishedReport: (
+      parent: { lastPublishedReportId: string | null },
+      _: unknown,
+      ctx: IContext,
+    ) =>
+      parent.lastPublishedReportId
+        ? ctx.loaders.report.load(parent.lastPublishedReportId)
+        : null,
   };
 
   GenerateReportPayload = { __resolveType: (obj: { __typename: string }) => obj.__typename };

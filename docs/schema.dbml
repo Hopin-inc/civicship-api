@@ -97,6 +97,8 @@ Table t_communities {
   voteTopics t_vote_topics [not null]
   reportTemplates t_report_templates [not null]
   reports t_reports [not null]
+  lastPublishedReportAt DateTime
+  lastPublishedReportId String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }

@@ -1,14 +1,16 @@
-import { Prisma } from "@prisma/client";
+import { FeedbackType, Prisma, ReportTemplateKind, ReportTemplateScope } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
   CreateReportFeedbackInput,
   IReportFeedbackRepository,
-  JudgeFeedbackPairRow,
 } from "@/application/domain/report/feedback/data/interface";
 import {
   PrismaReportFeedback,
   reportFeedbackSelect,
+  JudgeFeedbackPairRow,
+  TemplateBreakdownRow,
+  AdminTemplateFeedbackStatsRow,
 } from "@/application/domain/report/feedback/data/type";
 
 @injectable()
@@ -181,6 +183,317 @@ export default class ReportFeedbackRepository implements IReportFeedbackReposito
         // relying on a magic sentinel.
         version: version ?? null,
       };
+    });
+  }
+
+  /**
+   * Per-template breakdown for the A/B comparison admin screen. Each
+   * row is a single template revision (one `t_report_templates` row),
+   * plus aggregated feedback stats over the Reports that used it and
+   * the per-Report (judgeScore, avgRating) pair set the service runs
+   * Pearson's r over.
+   *
+   * `t_report_templates` is the LEFT side so a template with zero
+   * Reports / zero feedbacks still appears with `feedbackCount: 0`;
+   * the UI displays `—` for the metrics rather than dropping the row.
+   *
+   * Pagination is `id ASC` for cursor stability — the admin UI sorts
+   * the page client-side by version / metrics. With ~20 rows per page
+   * the cost of resorting in JS is negligible compared with the SQL
+   * complexity of stable cursor pagination over a derived field.
+   */
+  async getTemplateBreakdown(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      includeInactive: boolean;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: TemplateBreakdownRow[]; totalCount: number }> {
+    // Admin-only path (`reportTemplateStatsBreakdown` is `IsAdmin`-
+    // gated). Use the internal issuer to match the rest of the Phase 2
+    // admin reads — `public` would risk RLS-driven filtering on the
+    // template / report join when the SYS_ADMIN session lacks an
+    // implicit community membership.
+    return ctx.issuer.internal(async (tx) => {
+      // Compose the where clause once and reuse for both the page query
+      // and the totalCount query so the two stay in lock-step (a where
+      // drift would let totalCount disagree with what edges expose).
+      const where: Prisma.ReportTemplateWhereInput = {
+        variant: params.variant,
+        kind: params.kind,
+        ...(params.version !== undefined ? { version: params.version } : {}),
+        ...(params.includeInactive ? {} : { isActive: true, isEnabled: true }),
+      };
+
+      const [templates, totalCount] = await Promise.all([
+        tx.reportTemplate.findMany({
+          where,
+          select: {
+            id: true,
+            version: true,
+            scope: true,
+            kind: true,
+            experimentKey: true,
+            isActive: true,
+            isEnabled: true,
+            trafficWeight: true,
+          },
+          orderBy: { id: "asc" },
+          take: params.first + 1,
+          ...(params.cursor && { skip: 1, cursor: { id: params.cursor } }),
+        }),
+        tx.reportTemplate.count({ where }),
+      ]);
+
+      if (templates.length === 0) {
+        return { items: [], totalCount };
+      }
+
+      const templateIds = templates.map((t) => t.id);
+
+      // Aggregate feedback (count + avg rating) per template, plus
+      // avg judge score, in two grouped queries. Doing two grouped
+      // aggregates is cheaper than a single join because the ratings
+      // table can have many rows per Report whereas judgeScore is a
+      // per-Report scalar — joining naively would multiply the
+      // Report-level judgeScore by the number of feedback rows.
+      const [feedbackByTemplate, judgeByTemplate, pairRows] = await Promise.all([
+        tx.$queryRaw<
+          { template_id: string; feedback_count: bigint; avg_rating: number | null }[]
+        >`
+          SELECT
+            r."template_id"::text AS "template_id",
+            COUNT(f."id")::bigint AS "feedback_count",
+            AVG(f."rating")::float AS "avg_rating"
+          FROM "t_report_feedbacks" f
+          INNER JOIN "t_reports" r ON r."id" = f."report_id"
+          WHERE r."template_id" = ANY(${templateIds}::text[])
+          GROUP BY r."template_id"
+        `,
+        tx.$queryRaw<
+          { template_id: string; avg_judge_score: number | null }[]
+        >`
+          SELECT
+            "template_id"::text AS "template_id",
+            AVG("judge_score")::float AS "avg_judge_score"
+          FROM "t_reports"
+          WHERE "template_id" = ANY(${templateIds}::text[])
+            AND "judge_score" IS NOT NULL
+          GROUP BY "template_id"
+        `,
+        // Pearson pairs: one (judgeScore, avgRating) per Report that
+        // has both signals. Requires the inner join on feedbacks so
+        // Reports with judgeScore but no feedback are excluded — they
+        // would otherwise need to be coerced to null and bias the
+        // correlation downstream.
+        tx.$queryRaw<
+          {
+            template_id: string;
+            report_id: string;
+            judge_score: number;
+            avg_rating: number;
+          }[]
+        >`
+          SELECT
+            r."template_id"::text AS "template_id",
+            r."id" AS "report_id",
+            r."judge_score"::float AS "judge_score",
+            AVG(f."rating")::float AS "avg_rating"
+          FROM "t_reports" r
+          INNER JOIN "t_report_feedbacks" f ON f."report_id" = r."id"
+          WHERE r."template_id" = ANY(${templateIds}::text[])
+            AND r."judge_score" IS NOT NULL
+          GROUP BY r."template_id", r."id", r."judge_score"
+        `,
+      ]);
+
+      const feedbackMap = new Map(
+        feedbackByTemplate.map((row) => [
+          row.template_id,
+          {
+            feedbackCount: Number(row.feedback_count),
+            avgRating: row.avg_rating,
+          },
+        ]),
+      );
+      const judgeMap = new Map(
+        judgeByTemplate.map((row) => [row.template_id, row.avg_judge_score]),
+      );
+      const pairsByTemplate = new Map<string, JudgeFeedbackPairRow[]>();
+      for (const p of pairRows) {
+        const list = pairsByTemplate.get(p.template_id) ?? [];
+        list.push({
+          reportId: p.report_id,
+          judgeScore: Number(p.judge_score),
+          avgRating: Number(p.avg_rating),
+        });
+        pairsByTemplate.set(p.template_id, list);
+      }
+
+      // `take: first + 1` pagination convention; the presenter trims
+      // the extra row to derive `hasNextPage`. Keep all the templates
+      // here so the trim happens after Pearson math, with consistent
+      // payload shape across the layer.
+      const items: TemplateBreakdownRow[] = templates.map((t) => {
+        const feedback = feedbackMap.get(t.id);
+        return {
+          templateId: t.id,
+          version: t.version,
+          scope: t.scope as ReportTemplateScope,
+          kind: t.kind as ReportTemplateKind,
+          experimentKey: t.experimentKey,
+          isActive: t.isActive,
+          isEnabled: t.isEnabled,
+          trafficWeight: t.trafficWeight,
+          feedbackCount: feedback?.feedbackCount ?? 0,
+          avgRating: feedback?.avgRating ?? null,
+          avgJudgeScore: judgeMap.get(t.id) ?? null,
+          pairs: pairsByTemplate.get(t.id) ?? [],
+        };
+      });
+
+      return { items, totalCount };
+    });
+  }
+
+  /**
+   * Phase 1.5 admin: review-style feedback list for a template
+   * (variant + optional version, scoped by `kind`). The query
+   * filters down through the Report → ReportTemplate join then
+   * orders feedback rows by `(createdAt DESC, id DESC)` for stable
+   * cursor pagination. The companion partial filters
+   * (`feedbackType`, `maxRating`) drive the "drill into a quality
+   * axis at low ratings" workflow without forcing a second query.
+   *
+   * Authorization: this path is admin-only (`adminTemplateFeedbacks`
+   * is `IsAdmin`-gated upstream). Use `ctx.issuer.internal` so the
+   * cross-community sweep is not filtered to a SYS_ADMIN session's
+   * implicit memberships.
+   */
+  async findAdminTemplateFeedbacks(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      feedbackType?: FeedbackType;
+      maxRating?: number;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }> {
+    return ctx.issuer.internal(async (tx) => {
+      // Single source-of-truth where clause shared by the page query
+      // and the totalCount query so the two cannot drift. The
+      // template join carries `kind` (and `version` when pinned) so
+      // GENERATION feedback never bleeds into a JUDGE-template review
+      // and vice versa.
+      const where: Prisma.ReportFeedbackWhereInput = {
+        report: {
+          template: {
+            variant: params.variant,
+            kind: params.kind,
+            ...(params.version !== undefined ? { version: params.version } : {}),
+          },
+        },
+        ...(params.feedbackType !== undefined ? { feedbackType: params.feedbackType } : {}),
+        ...(params.maxRating !== undefined ? { rating: { lte: params.maxRating } } : {}),
+      };
+
+      const [items, totalCount] = await Promise.all([
+        tx.reportFeedback.findMany({
+          where,
+          select: reportFeedbackSelect,
+          // `(createdAt DESC, id DESC)` mirrors the index added in
+          // `idx_t_report_feedbacks_created_at_id` so PostgreSQL can
+          // serve the sort directly from the index. The `id`
+          // tiebreaker also makes the ordering total — without it,
+          // rows sharing a `createdAt` (bulk seeds, high concurrency)
+          // could reshuffle across cursor pages and either skip or
+          // duplicate.
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          take: params.first + 1,
+          ...(params.cursor ? { skip: 1, cursor: { id: params.cursor } } : {}),
+        }),
+        tx.reportFeedback.count({ where }),
+      ]);
+
+      return { items, totalCount };
+    });
+  }
+
+  /**
+   * Phase 1.5 admin: population stats for a template's feedback —
+   * total count, mean rating, and a per-rating bucket list. The
+   * rating distribution is the headline output: a single SQL pass
+   * computes both the AVG and the GROUP BY rating histogram so the
+   * caller does not pay the join cost twice.
+   *
+   * `t_reports.template_id` is index-served (`idx_t_reports_template_id`),
+   * so the join from `t_report_templates` resolves to a small
+   * `template_id IN (...)` set without a t_reports seq scan.
+   *
+   * Authorization: `internal` issuer mirrors the rest of the
+   * `IsAdmin`-gated admin paths (`findAdminTemplateFeedbacks`,
+   * `getTemplateBreakdown`) so SYS_ADMIN sessions are not implicitly
+   * filtered to their own community memberships.
+   */
+  async getAdminTemplateFeedbackStats(
+    ctx: IContext,
+    params: { variant: string; version?: number; kind: ReportTemplateKind },
+  ): Promise<AdminTemplateFeedbackStatsRow> {
+    return ctx.issuer.internal(async (tx) => {
+      // INNER JOIN on the templates table is intentional — feedback
+      // rows whose Report has no `template_id` (legacy rows from
+      // before PR-F3) are excluded. The query is admin-scope only,
+      // and its purpose is "stats for a *specific* template", so a
+      // null-template row carries no signal here.
+      const rows = await tx.$queryRaw<
+        { rating: number; count: bigint }[]
+      >`
+        SELECT
+          f."rating"::int AS "rating",
+          COUNT(*)::bigint AS "count"
+        FROM "t_report_feedbacks" f
+        INNER JOIN "t_reports" r ON r."id" = f."report_id"
+        INNER JOIN "t_report_templates" t ON t."id" = r."template_id"
+        WHERE t."variant" = ${params.variant}
+          AND t."kind"::text = ${params.kind}
+          ${params.version !== undefined ? Prisma.sql`AND t."version" = ${params.version}` : Prisma.empty}
+        GROUP BY f."rating"
+      `;
+
+      // Derive total count + weighted average from the bucket rows
+      // rather than issuing a second SELECT — the buckets already
+      // carry every observation. `avgRating` is null when there are
+      // no observations, mirroring the GraphQL schema's nullable
+      // `avgRating: Float` (a 0 average would falsely imply "every
+      // reviewer scored 0", which is not even a legal value).
+      const buckets = rows.map((r) => ({
+        rating: Number(r.rating),
+        count: Number(r.count),
+      }));
+      // Single-pass accumulation of `totalCount` + `weightedSum`. The
+      // bucket array is at most five rows (rating 1..5), so the
+      // single-pass form is functionally equivalent to two separate
+      // reduces — kept here mainly because the combined reducer reads
+      // as one "compute both totals" intent rather than two
+      // independent passes.
+      const { totalCount, weightedSum } = buckets.reduce(
+        (acc, b) => {
+          acc.totalCount += b.count;
+          acc.weightedSum += b.rating * b.count;
+          return acc;
+        },
+        { totalCount: 0, weightedSum: 0 },
+      );
+      const avgRating = totalCount === 0 ? null : weightedSum / totalCount;
+
+      return { totalCount, avgRating, buckets };
     });
   }
 }
