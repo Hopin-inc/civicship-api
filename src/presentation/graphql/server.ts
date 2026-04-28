@@ -2,12 +2,12 @@ import { ApolloServer } from "@apollo/server";
 import logger from "@/infrastructure/logging";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { ApolloServerPluginUsageReporting } from "@apollo/server/plugin/usageReporting";
-import { GraphQLError } from "graphql";
 import http from "http";
 import schema from "@/presentation/graphql/schema";
 import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
 import { rules } from "@/presentation/graphql/rules";
 import { armorProtection } from "@/presentation/graphql/plugins/armor";
+import { processAuthzError } from "@/presentation/graphql/processAuthzError";
 
 const isProduction = process.env.NODE_ENV === "production";
 // LOCAL_DEV is injected by `pnpm dev*` scripts so that running locally against
@@ -22,20 +22,7 @@ export async function createApolloServer(httpServer: http.Server) {
     ...armorProtection.plugins,
     authZApolloPlugin({
       rules,
-      processError: (error: unknown): never => {
-        // ApolloError 派生（FORBIDDEN / UNAUTHENTICATED / NOT_FOUND / VALIDATION_ERROR
-        // ...）はクライアント向けの構造化エラーなので、本番でも握り潰さずに通す。
-        // ここで Error("Internal Server Error") に置き換えると authz ルール失敗が
-        // HTTP 500 + INTERNAL_SERVER_ERROR で返り、フロントが認可拒否と本物の障害
-        // を区別できなくなる。
-        if (error instanceof GraphQLError) {
-          throw error;
-        }
-        if (!isProduction) {
-          throw error;
-        }
-        throw new Error("Internal Server Error");
-      },
+      processError: (error: unknown): never => processAuthzError(error),
     }),
   ];
 

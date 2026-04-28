@@ -3,9 +3,9 @@ import { ApolloServer } from "@apollo/server";
 import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
 import { rules } from "@/presentation/graphql/rules";
 import express, { json } from "express";
-import { GraphQLError } from "graphql";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { processAuthzError } from "@/presentation/graphql/processAuthzError";
 
 export async function createApolloTestServer(mockContext: Record<string, unknown>) {
   const app = express();
@@ -16,15 +16,10 @@ export async function createApolloTestServer(mockContext: Record<string, unknown
     plugins: [
       authZApolloPlugin({
         rules,
-        // 本番（presentation/graphql/server.ts）と同じ shape の processError を
-        // 通す。ここを揃えないと authz 経路の構造化エラー（FORBIDDEN 等）が
-        // 本番で INTERNAL_SERVER_ERROR に潰される退行を CI で検知できない。
-        processError: (error: unknown): never => {
-          if (error instanceof GraphQLError) {
-            throw error;
-          }
-          throw error;
-        },
+        // 本番（presentation/graphql/server.ts）と同じ processAuthzError を
+        // 共有することで、authz 経路の構造化エラー（FORBIDDEN 等）が本番で
+        // INTERNAL_SERVER_ERROR に潰される退行を CI で検知できる。
+        processError: (error: unknown): never => processAuthzError(error),
       }),
     ],
     formatError: (err) => {
