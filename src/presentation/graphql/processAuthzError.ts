@@ -1,5 +1,6 @@
 import { GraphQLError } from "graphql";
 import { UnauthorizedError } from "@graphql-authz/core";
+import logger from "@/infrastructure/logging";
 
 const isProductionDefault = process.env.NODE_ENV === "production";
 
@@ -19,8 +20,11 @@ const isProductionDefault = process.env.NODE_ENV === "production";
  *    プラグインのデフォルト `processError` と同じ挙動なので、authz テスト
  *    (`__tests__/auth/`) の "FORBIDDEN" 期待をそのまま満たす。
  *
- * 3. それ以外 (Prisma 素エラー, TypeError, ...) → 本番では
- *    `Error("Internal Server Error")` に包んで内部情報を漏らさない。
+ * 3. それ以外 (Prisma 素エラー, TypeError, ...) → 本番では原型を
+ *    `logger.error` で記録した上で `INTERNAL_SERVER_ERROR` の GraphQLError
+ *    に包んで内部情報を漏らさない (errorMiddleware の "Unhandled resolver
+ *    error" と同じ作法)。formatError 経由で `code` ベースに包むより、ここで
+ *    GraphQLError として throw した方が `extensions.code` が確実に乗る。
  *    非本番では原因切り分けのため原型のまま throw。
  *
  * 元実装が本番で全エラーを `Error("Internal Server Error")` に置き換え、
@@ -45,5 +49,13 @@ export function processAuthzError(
   if (!isProd) {
     throw error;
   }
-  throw new Error("Internal Server Error");
+
+  // 本番で予期せぬ非 GraphQLError が来た場合、formatError 側に到達するまでの
+  // 間に原型 (Prisma 例外 / TypeError 等) を失わないよう、ここで原型を ERROR
+  // severity に積んでから INTERNAL_SERVER_ERROR の GraphQLError に包み直す。
+  logger.error("Unhandled authz plugin error", error);
+
+  throw new GraphQLError("Internal Server Error", {
+    extensions: { code: "INTERNAL_SERVER_ERROR" },
+  });
 }
