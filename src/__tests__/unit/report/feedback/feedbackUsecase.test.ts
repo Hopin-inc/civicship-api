@@ -301,3 +301,110 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
     expect(result.pageInfo.hasNextPage).toBe(false);
   });
 });
+
+/**
+ * Phase 1.5 admin: population stats summary endpoint. The usecase is
+ * the input-validation seam (positive `version`) and a thin
+ * service+presenter pass-through. These tests pin the validation
+ * contract, the argument shape that flows into the service (no
+ * `feedbackType` / `maxRating`), and the dense 1..5 distribution
+ * shape on the way out.
+ */
+describe("ReportFeedbackUseCase.viewAdminTemplateFeedbackStats", () => {
+  const fakeCtx = {} as IContext;
+
+  let feedbackService: { getAdminTemplateFeedbackStats: jest.Mock };
+  let reportService: { getReportById: jest.Mock };
+  let usecase: ReportFeedbackUseCase;
+
+  beforeEach(() => {
+    container.reset();
+    feedbackService = {
+      getAdminTemplateFeedbackStats: jest.fn().mockResolvedValue({
+        totalCount: 0,
+        avgRating: null,
+        buckets: [],
+      }),
+    };
+    reportService = { getReportById: jest.fn() };
+    container.register("ReportFeedbackService", { useValue: feedbackService });
+    container.register("ReportService", { useValue: reportService });
+    usecase = container.resolve(ReportFeedbackUseCase);
+  });
+
+  function defaultArgs(): Parameters<
+    ReportFeedbackUseCase["viewAdminTemplateFeedbackStats"]
+  >[0] {
+    return { variant: GqlReportVariant.WeeklySummary };
+  }
+
+  it("forwards variant / version / kind to the service unchanged", async () => {
+    await usecase.viewAdminTemplateFeedbackStats(
+      {
+        variant: GqlReportVariant.WeeklySummary,
+        version: 2,
+        kind: ReportTemplateKind.GENERATION,
+      },
+      fakeCtx,
+    );
+    expect(feedbackService.getAdminTemplateFeedbackStats).toHaveBeenCalledWith(fakeCtx, {
+      variant: "WEEKLY_SUMMARY",
+      version: 2,
+      kind: ReportTemplateKind.GENERATION,
+    });
+  });
+
+  it("defaults kind to GENERATION when the caller omits it", async () => {
+    await usecase.viewAdminTemplateFeedbackStats(defaultArgs(), fakeCtx);
+    expect(feedbackService.getAdminTemplateFeedbackStats).toHaveBeenCalledWith(
+      fakeCtx,
+      expect.objectContaining({ kind: ReportTemplateKind.GENERATION }),
+    );
+  });
+
+  it.each([0, -1, 1.5])(
+    "rejects version=%s with ValidationError (not a positive integer)",
+    async (version) => {
+      await expect(
+        usecase.viewAdminTemplateFeedbackStats(
+          { ...defaultArgs(), version: version as number },
+          fakeCtx,
+        ),
+      ).rejects.toThrow(/version/);
+      expect(feedbackService.getAdminTemplateFeedbackStats).not.toHaveBeenCalled();
+    },
+  );
+
+  it("returns dense 1..5 distribution with totalCount + avgRating", async () => {
+    // Sparse repository result: ratings 1, 3, 5 only. Presenter must
+    // pad to dense five-row 1..5 with count: 0 for missing buckets.
+    feedbackService.getAdminTemplateFeedbackStats.mockResolvedValue({
+      totalCount: 6,
+      avgRating: 3.0,
+      buckets: [
+        { rating: 1, count: 1 },
+        { rating: 3, count: 4 },
+        { rating: 5, count: 1 },
+      ],
+    });
+
+    const result = await usecase.viewAdminTemplateFeedbackStats(defaultArgs(), fakeCtx);
+
+    expect(result.totalCount).toBe(6);
+    expect(result.avgRating).toBe(3.0);
+    expect(result.ratingDistribution).toHaveLength(5);
+    expect(result.ratingDistribution.map((b) => b.rating)).toEqual([1, 2, 3, 4, 5]);
+    expect(result.ratingDistribution.map((b) => b.count)).toEqual([1, 0, 4, 0, 1]);
+  });
+
+  it("returns avgRating: null and a 5-row zero-count distribution when no feedback exists", async () => {
+    // Empty population — schema contract: avgRating null, but the
+    // distribution is still a dense five-row array (the bar
+    // renders five empty bars rather than vanishing).
+    const result = await usecase.viewAdminTemplateFeedbackStats(defaultArgs(), fakeCtx);
+    expect(result.totalCount).toBe(0);
+    expect(result.avgRating).toBeNull();
+    expect(result.ratingDistribution).toHaveLength(5);
+    expect(result.ratingDistribution.every((b) => b.count === 0)).toBe(true);
+  });
+});

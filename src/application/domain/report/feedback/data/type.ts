@@ -63,6 +63,21 @@ export interface JudgeFeedbackPairRow {
  * `judgeHumanCorrelation`. Templates with no Reports / no feedback
  * still appear here (LEFT JOIN-driven) with `feedbackCount: 0`.
  */
+/**
+ * Repository-level row for `adminTemplateFeedbackStats`. `buckets` is
+ * sparse (zero-count ratings omitted) — the presenter pads it to a
+ * dense 1..5 shape before crossing the GraphQL boundary so the wire
+ * format matches the documented "always five entries" contract. Keeping
+ * the dense fill in the presenter rather than the SQL keeps the raw
+ * aggregate cheap (`COUNT(*) GROUP BY rating` returns at most five
+ * rows; padding with the schema-driven enum at the edge is trivial).
+ */
+export interface AdminTemplateFeedbackStatsRow {
+  totalCount: number;
+  avgRating: number | null;
+  buckets: Array<{ rating: number; count: number }>;
+}
+
 export interface TemplateBreakdownRow {
   templateId: string;
   version: number;

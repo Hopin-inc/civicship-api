@@ -10,6 +10,7 @@ import {
   ReportTemplateStatsRow,
   TemplateBreakdownRow,
   JudgeFeedbackPairRow,
+  AdminTemplateFeedbackStatsRow,
 } from "@/application/domain/report/feedback/data/type";
 
 /**
@@ -106,6 +107,19 @@ export default class ReportFeedbackService {
    * the same way (3-pair minimum, 0.7 threshold) — admins get
    * comparable signals across the aggregate KPI and the breakdown.
    */
+  /**
+   * Phase 1.5 admin: population stats for a template's feedback set.
+   * Pure pass-through to the repository — no derived math at this
+   * layer (the SQL already returns total / mean / buckets in one
+   * pass). The presenter handles the dense 1..5 bucket fill.
+   */
+  async getAdminTemplateFeedbackStats(
+    ctx: IContext,
+    params: { variant: string; version?: number; kind: ReportTemplateKind },
+  ): Promise<AdminTemplateFeedbackStatsRow> {
+    return this.repository.getAdminTemplateFeedbackStats(ctx, params);
+  }
+
   /**
    * Phase 1.5 admin: review-style individual feedback list scoped to
    * a template. Pure pass-through to the repository — no Pearson /

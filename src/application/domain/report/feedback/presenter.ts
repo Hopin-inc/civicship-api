@@ -7,12 +7,22 @@ import {
   GqlReportTemplateKind,
   GqlReportTemplateStatsBreakdownRow,
   GqlReportTemplateStatsBreakdownConnection,
+  GqlAdminTemplateFeedbackStats,
 } from "@/types/graphql";
 import {
   PrismaReportFeedback,
   ReportTemplateStatsRow,
   TemplateBreakdownRow,
+  AdminTemplateFeedbackStatsRow,
 } from "@/application/domain/report/feedback/data/type";
+
+/**
+ * Rating axis for `adminTemplateFeedbackStats`. Hard-coded rather than
+ * derived from a runtime collection because the rating CHECK
+ * constraint pins the legal range to integers 1..5; widening this
+ * would require a coordinated DB migration anyway.
+ */
+const FEEDBACK_RATING_VALUES: ReadonlyArray<number> = [1, 2, 3, 4, 5];
 
 export default class ReportFeedbackPresenter {
   // `user` is resolved by a field resolver via the existing user
@@ -122,6 +132,32 @@ export default class ReportFeedbackPresenter {
         endCursor: page[page.length - 1]?.templateId ?? null,
       },
       totalCount,
+    };
+  }
+
+  /**
+   * Densify the repository's sparse bucket list into the documented
+   * 1..5 wire format. The SQL `GROUP BY rating` only emits ratings
+   * that actually have observations, so we walk the canonical
+   * rating axis and fill missing entries with `count: 0`. The
+   * frontend can then render the distribution bar without padding
+   * the array client-side.
+   *
+   * Ordering is `rating` ASC so consumers can render the bar from
+   * 1★ → 5★ (or reverse it deterministically) without a sort step.
+   */
+  static adminTemplateFeedbackStats(
+    row: AdminTemplateFeedbackStatsRow,
+  ): GqlAdminTemplateFeedbackStats {
+    const countByRating = new Map(row.buckets.map((b) => [b.rating, b.count]));
+    const ratingDistribution = FEEDBACK_RATING_VALUES.map((rating) => ({
+      rating,
+      count: countByRating.get(rating) ?? 0,
+    }));
+    return {
+      totalCount: row.totalCount,
+      avgRating: row.avgRating,
+      ratingDistribution,
     };
   }
 }
