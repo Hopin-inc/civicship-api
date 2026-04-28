@@ -1,89 +1,15 @@
 import { Prisma, ReportStatus } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
+import { IReportRepository } from "@/application/domain/report/data/interface";
 import {
   CommunitySummaryCursor,
   PrismaReport,
   reportSelect,
 } from "@/application/domain/report/data/type";
 
-export interface IReportEntityRepository {
-  createReport(
-    ctx: IContext,
-    data: Prisma.ReportUncheckedCreateInput,
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaReport>;
-  findReportById(
-    ctx: IContext,
-    id: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaReport | null>;
-  findReports(
-    ctx: IContext,
-    params: {
-      communityId: string;
-      variant?: string;
-      status?: ReportStatus;
-      cursor?: string;
-      first?: number;
-    },
-  ): Promise<{ items: PrismaReport[]; totalCount: number }>;
-  findAllReports(
-    ctx: IContext,
-    params: {
-      communityId?: string;
-      status?: ReportStatus;
-      variant?: string;
-      publishedAfter?: Date;
-      publishedBefore?: Date;
-      cursor?: string;
-      first: number;
-    },
-  ): Promise<{ items: PrismaReport[]; totalCount: number }>;
-  findCommunityReportSummary(
-    ctx: IContext,
-    params: { cursor: CommunitySummaryCursor | null; first: number },
-  ): Promise<{
-    items: Array<{
-      communityId: string;
-      lastPublishedReportId: string | null;
-      lastPublishedAt: Date | null;
-      publishedCountLast90Days: number;
-    }>;
-    totalCount: number;
-  }>;
-  recalculateCommunityLastPublished(
-    ctx: IContext,
-    communityId: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<void>;
-  updateReportStatus(
-    ctx: IContext,
-    id: string,
-    status: ReportStatus,
-    extra?: {
-      publishedAt?: Date;
-      publishedBy?: string;
-      finalContent?: string;
-    },
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaReport>;
-  findReportsByParentRunId(ctx: IContext, parentRunIds: string[]): Promise<PrismaReport[]>;
-  updateReportJudgeResult(
-    ctx: IContext,
-    id: string,
-    data: {
-      judgeScore: number | null;
-      judgeBreakdown: Prisma.InputJsonValue | null;
-      judgeTemplateId: string | null;
-      coverageJson: Prisma.InputJsonValue | null;
-    },
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaReport>;
-}
-
 @injectable()
-export default class ReportEntityRepository implements IReportEntityRepository {
+export default class ReportRepository implements IReportRepository {
   async updateReportJudgeResult(
     ctx: IContext,
     id: string,

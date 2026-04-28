@@ -4,7 +4,7 @@ import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import ReportTransactionStatsRepository from "@/application/domain/report/transactionStats/data/repository";
-import ReportEntityRepository from "@/application/domain/report/data/repository/reportEntity";
+import ReportRepository from "@/application/domain/report/data/repository";
 import ReportTemplateRepository from "@/application/domain/report/template/data/repository";
 import ReportService from "@/application/domain/report/service";
 import ReportUseCase from "@/application/domain/report/usecase";
@@ -361,7 +361,7 @@ export function registerProductionDependencies() {
   container.register("ReportTransactionStatsRepository", {
     useClass: ReportTransactionStatsRepository,
   });
-  container.register("ReportEntityRepository", { useClass: ReportEntityRepository });
+  container.register("ReportRepository", { useClass: ReportRepository });
   container.register("ReportTemplateRepository", { useClass: ReportTemplateRepository });
   container.register("ReportService", { useClass: ReportService });
   container.register("ReportUseCase", { useClass: ReportUseCase });

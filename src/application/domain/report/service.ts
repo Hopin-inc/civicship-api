@@ -2,7 +2,7 @@ import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { IReportTransactionStatsRepository } from "@/application/domain/report/transactionStats/data/interface";
-import { IReportEntityRepository } from "@/application/domain/report/data/repository/reportEntity";
+import { IReportRepository } from "@/application/domain/report/data/interface";
 import { IReportTemplateRepository } from "@/application/domain/report/template/data/interface";
 import {
   CohortRetentionRow,
@@ -42,8 +42,8 @@ export default class ReportService {
   constructor(
     @inject("ReportTransactionStatsRepository")
     private readonly statsRepo: IReportTransactionStatsRepository,
-    @inject("ReportEntityRepository")
-    private readonly entityRepo: IReportEntityRepository,
+    @inject("ReportRepository")
+    private readonly entityRepo: IReportRepository,
     @inject("ReportTemplateRepository")
     private readonly templateRepo: IReportTemplateRepository,
   ) {}

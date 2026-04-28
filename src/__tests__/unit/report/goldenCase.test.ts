@@ -154,7 +154,7 @@ describe("ReportGoldenCases seed", () => {
         upsertGoldenCase: jest.fn(),
       };
       container.register("ReportTransactionStatsRepository", { useValue: statsRepo });
-      container.register("ReportEntityRepository", { useValue: entityRepo });
+      container.register("ReportRepository", { useValue: entityRepo });
       container.register("ReportTemplateRepository", { useValue: templateRepo });
       const service = container.resolve(ReportService);
 
@@ -216,7 +216,7 @@ describe("ReportGoldenCases seed", () => {
           upsertGoldenCase: jest.fn(),
         };
         container.register("ReportTransactionStatsRepository", { useValue: statsRepo });
-        container.register("ReportEntityRepository", { useValue: entityRepo });
+        container.register("ReportRepository", { useValue: entityRepo });
         container.register("ReportTemplateRepository", { useValue: templateRepo });
         const service = container.resolve(ReportService);
 

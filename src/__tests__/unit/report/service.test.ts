@@ -53,7 +53,7 @@ describe("ReportService", () => {
     container.register("ReportTransactionStatsRepository", {
       useValue: new MockTransactionStatsRepository(),
     });
-    container.register("ReportEntityRepository", { useValue: new MockEntityRepository() });
+    container.register("ReportRepository", { useValue: new MockEntityRepository() });
     container.register("ReportTemplateRepository", { useValue: new MockTemplateRepository() });
     service = container.resolve(ReportService);
   });

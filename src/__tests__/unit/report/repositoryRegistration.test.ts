@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
-import ReportEntityRepository from "@/application/domain/report/data/repository/reportEntity";
+import ReportRepository from "@/application/domain/report/data/repository";
 import ReportTemplateRepository from "@/application/domain/report/template/data/repository";
 
 /**
@@ -22,9 +22,9 @@ describe("report repository DI registrations", () => {
     container.clearInstances();
   });
 
-  it("resolves ReportEntityRepository", () => {
-    container.register("ReportEntityRepository", { useClass: ReportEntityRepository });
-    expect(container.resolve("ReportEntityRepository")).toBeInstanceOf(ReportEntityRepository);
+  it("resolves ReportRepository", () => {
+    container.register("ReportRepository", { useClass: ReportRepository });
+    expect(container.resolve("ReportRepository")).toBeInstanceOf(ReportRepository);
   });
 
   it("resolves ReportTemplateRepository", () => {
