@@ -11,21 +11,31 @@ import {
 import SysAdminService, {
   DEFAULT_DORMANT_THRESHOLD_DAYS,
   DEFAULT_HUB_BREADTH_THRESHOLD,
-  DEFAULT_SEGMENT_THRESHOLDS,
   DEFAULT_WINDOW_DAYS,
   DEFAULT_WINDOW_MONTHS,
   MAX_DORMANT_THRESHOLD_DAYS,
   MAX_HUB_BREADTH_THRESHOLD,
-  MAX_LIMIT,
-  MAX_MIN_MONTHS_IN,
   MAX_WINDOW_DAYS,
   MAX_WINDOW_MONTHS,
   MIN_DORMANT_THRESHOLD_DAYS,
   MIN_HUB_BREADTH_THRESHOLD,
-  MIN_MIN_MONTHS_IN,
   MIN_WINDOW_DAYS,
-  SegmentThresholds,
 } from "@/application/domain/sysadmin/service";
+import {
+  DEFAULT_SEGMENT_THRESHOLDS,
+  MAX_MIN_MONTHS_IN,
+  MIN_MIN_MONTHS_IN,
+  SegmentThresholds,
+} from "@/application/domain/sysadmin/classifiers";
+import {
+  computeActivityRate3mAvg,
+  computeCohortFunnel,
+  computeDormantCount,
+  computeStageBreakdown,
+  computeStageCounts,
+  computeTenureDistribution,
+} from "@/application/domain/sysadmin/aggregations";
+import { MAX_LIMIT, paginateMembers } from "@/application/domain/sysadmin/pagination";
 import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
 import SysAdminConverter from "@/application/domain/sysadmin/data/converter";
 import { jstMonthStart, jstNextMonthStart } from "@/application/domain/report/util";
@@ -84,13 +94,9 @@ export default class SysAdminUseCase {
               hubBreadthThreshold,
             ),
           ]);
-        const stageCounts = this.service.computeStageCounts(members, thresholds);
-        const tenureDistribution = this.service.computeTenureDistribution(members);
-        const dormantCount = this.service.computeDormantCount(
-          members,
-          asOf,
-          dormantThresholdDays,
-        );
+        const stageCounts = computeStageCounts(members, thresholds);
+        const tenureDistribution = computeTenureDistribution(members);
+        const dormantCount = computeDormantCount(members, asOf, dormantThresholdDays);
         return SysAdminPresenter.overviewRow({
           communityId: c.communityId,
           communityName: c.communityName,
@@ -174,19 +180,14 @@ export default class SysAdminUseCase {
       this.service.getChainDepthDistribution(ctx, community.communityId, asOf),
     ]);
 
-    const stageCounts = this.service.computeStageCounts(members, thresholds);
-    const stageBreakdown = this.service.computeStageBreakdown(members, thresholds);
-    const dormantCount = this.service.computeDormantCount(members, asOf, dormantThresholdDays);
-    const cohortFunnel = this.service.computeCohortFunnel(
-      members,
-      asOf,
-      windowMonths,
-      thresholds,
-    );
+    const stageCounts = computeStageCounts(members, thresholds);
+    const stageBreakdown = computeStageBreakdown(members, thresholds);
+    const dormantCount = computeDormantCount(members, asOf, dormantThresholdDays);
+    const cohortFunnel = computeCohortFunnel(members, asOf, windowMonths, thresholds);
 
     const alerts = await this.service.getAlerts(ctx, community.communityId, asOf);
 
-    const memberList = this.service.paginateMembers(members, {
+    const memberList = paginateMembers(members, {
       minSendRate: input.userFilter?.minSendRate ?? 0.7,
       maxSendRate: input.userFilter?.maxSendRate ?? null,
       minMonthsIn: input.userFilter?.minMonthsIn ?? null,
@@ -204,7 +205,7 @@ export default class SysAdminUseCase {
       communityName: community.communityName,
       totalMembers: stageCounts.total,
       communityActivityRate: currentMonthActivity.currentRate,
-      communityActivityRate3mAvg: this.service.computeActivityRate3mAvg(monthlyActivity),
+      communityActivityRate3mAvg: computeActivityRate3mAvg(monthlyActivity),
       growthRateActivity: currentMonthActivity.growthRateActivity,
       tier2Count: stageCounts.tier2Count,
       allTimeTotals,

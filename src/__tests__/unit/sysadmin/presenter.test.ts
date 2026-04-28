@@ -7,12 +7,12 @@ import type {
   SysAdminPlatformTotalsRow,
 } from "@/application/domain/sysadmin/data/type";
 import type {
-  MemberListResult,
   MonthlyCohortPoint,
   StageBreakdown,
   StageCounts,
   WeeklyRetentionPoint,
-} from "@/application/domain/sysadmin/service";
+} from "@/application/domain/sysadmin/aggregations";
+import type { MemberListResult } from "@/application/domain/sysadmin/pagination";
 
 /**
  * Presenter is a pure shape-mapper. These tests lock in the contract
