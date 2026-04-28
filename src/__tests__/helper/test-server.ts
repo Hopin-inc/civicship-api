@@ -5,6 +5,7 @@ import { rules } from "@/presentation/graphql/rules";
 import express, { json } from "express";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { processAuthzError } from "@/presentation/graphql/processAuthzError";
 
 export async function createApolloTestServer(mockContext: Record<string, unknown>) {
   const app = express();
@@ -12,7 +13,15 @@ export async function createApolloTestServer(mockContext: Record<string, unknown
   const { default: schema } = await import("@/presentation/graphql/schema");
   const server = new ApolloServer<Record<string, unknown>>({
     schema,
-    plugins: [authZApolloPlugin({ rules })],
+    plugins: [
+      authZApolloPlugin({
+        rules,
+        // 本番（presentation/graphql/server.ts）と同じ processAuthzError を
+        // 共有することで、authz 経路の構造化エラー（FORBIDDEN 等）が本番で
+        // INTERNAL_SERVER_ERROR に潰される退行を CI で検知できる。
+        processError: (error: unknown): never => processAuthzError(error),
+      }),
+    ],
     formatError: (err) => {
       const { message, locations, path } = err;
       const code = err.extensions?.code ?? "INTERNAL_SERVER_ERROR";
