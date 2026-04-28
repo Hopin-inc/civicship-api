@@ -107,40 +107,6 @@ export default class ReportFeedbackService {
    * the same way (3-pair minimum, 0.7 threshold) — admins get
    * comparable signals across the aggregate KPI and the breakdown.
    */
-  /**
-   * Phase 1.5 admin: population stats for a template's feedback set.
-   * Pure pass-through to the repository — no derived math at this
-   * layer (the SQL already returns total / mean / buckets in one
-   * pass). The presenter handles the dense 1..5 bucket fill.
-   */
-  async getAdminTemplateFeedbackStats(
-    ctx: IContext,
-    params: { variant: string; version?: number; kind: ReportTemplateKind },
-  ): Promise<AdminTemplateFeedbackStatsRow> {
-    return this.repository.getAdminTemplateFeedbackStats(ctx, params);
-  }
-
-  /**
-   * Phase 1.5 admin: review-style individual feedback list scoped to
-   * a template. Pure pass-through to the repository — no Pearson /
-   * threshold math on this path because the screen renders raw
-   * comments, not derived correlations.
-   */
-  async listAdminTemplateFeedbacks(
-    ctx: IContext,
-    params: {
-      variant: string;
-      version?: number;
-      kind: ReportTemplateKind;
-      feedbackType?: FeedbackType;
-      maxRating?: number;
-      cursor?: string;
-      first: number;
-    },
-  ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }> {
-    return this.repository.findAdminTemplateFeedbacks(ctx, params);
-  }
-
   async getTemplateBreakdown(
     ctx: IContext,
     params: {
@@ -168,6 +134,40 @@ export default class ReportFeedbackService {
       }),
       totalCount: result.totalCount,
     };
+  }
+
+  /**
+   * Phase 1.5 admin: review-style individual feedback list scoped to
+   * a template. Pure pass-through to the repository — no Pearson /
+   * threshold math on this path because the screen renders raw
+   * comments, not derived correlations.
+   */
+  async listAdminTemplateFeedbacks(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      feedbackType?: FeedbackType;
+      maxRating?: number;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }> {
+    return this.repository.findAdminTemplateFeedbacks(ctx, params);
+  }
+
+  /**
+   * Phase 1.5 admin: population stats for a template's feedback set.
+   * Pure pass-through to the repository — no derived math at this
+   * layer (the SQL already returns total / mean / buckets in one
+   * pass). The presenter handles the dense 1..5 bucket fill.
+   */
+  async getAdminTemplateFeedbackStats(
+    ctx: IContext,
+    params: { variant: string; version?: number; kind: ReportTemplateKind },
+  ): Promise<AdminTemplateFeedbackStatsRow> {
+    return this.repository.getAdminTemplateFeedbackStats(ctx, params);
   }
 }
 
