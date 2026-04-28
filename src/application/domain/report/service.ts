@@ -184,7 +184,7 @@ export default class ReportService {
 
   /**
    * CI-only direct lookup by (variant, kind, version, communityId).
-   * Wraps `IReportRepository.findTemplateByVersion` so the Golden Case
+   * Wraps `IReportTemplateRepository.findTemplateByVersion` so the Golden Case
    * harness has the same service-shaped seam as the rest of the report
    * domain. Production resolvers must not use this — it bypasses the
    * `isActive` / `isEnabled` gates.

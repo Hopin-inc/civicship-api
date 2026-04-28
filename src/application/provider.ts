@@ -3,7 +3,6 @@ import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
-import ReportRepository from "@/application/domain/report/data/repository";
 import ReportTransactionStatsRepository from "@/application/domain/report/data/repository/transactionStats";
 import ReportEntityRepository from "@/application/domain/report/data/repository/reportEntity";
 import ReportTemplateRepository from "@/application/domain/report/data/repository/template";
@@ -359,7 +358,6 @@ export function registerProductionDependencies() {
   // ------------------------------
   // 📊 Report
   // ------------------------------
-  container.register("ReportRepository", { useClass: ReportRepository });
   container.register("ReportTransactionStatsRepository", {
     useClass: ReportTransactionStatsRepository,
   });

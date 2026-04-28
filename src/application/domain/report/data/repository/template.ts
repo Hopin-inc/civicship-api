@@ -111,7 +111,7 @@ export default class ReportTemplateRepository implements IReportTemplateReposito
   }
 
   /**
-   * CI-only direct lookup. See `IReportRepository.findTemplateByVersion`
+   * CI-only direct lookup. See `IReportTemplateRepository.findTemplateByVersion`
    * for the contract — ignores `isEnabled` / `isActive` so the Golden
    * Case harness can grade an inactive candidate during the v2
    * shakeout window (PR-F5 §7). Not for production use.

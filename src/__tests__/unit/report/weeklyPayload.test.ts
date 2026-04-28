@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { Role, TransactionReason } from "@prisma/client";
 import ReportPresenter from "@/application/domain/report/presenter";
-import { CommunityContextRow, DeepestChainRow } from "@/application/domain/report/data/interface";
+import { CommunityContextRow, DeepestChainRow } from "@/application/domain/report/data/rows";
 
 /**
  * Pure-function tests for the Phase-1 additions on ReportPresenter:
