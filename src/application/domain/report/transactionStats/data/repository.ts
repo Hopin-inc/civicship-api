@@ -1,6 +1,7 @@
 import { Prisma, TransactionReason } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
+import { IReportTransactionStatsRepository } from "@/application/domain/report/transactionStats/data/interface";
 import {
   CohortRetentionRow,
   CommunityContextRow,
@@ -13,82 +14,13 @@ import {
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
   UserTransactionAggregateRow,
-} from "@/application/domain/report/data/rows";
+} from "@/application/domain/report/transactionStats/data/rows";
 import {
   refreshMaterializedViewTransactionSummaryDaily,
   refreshMaterializedViewUserTransactionDaily,
 } from "@prisma/client/sql";
 
 const DEFAULT_COMMENT_LIMIT = 200;
-
-export interface IReportTransactionStatsRepository {
-  findDailySummaries(
-    ctx: IContext,
-    communityId: string,
-    range: DateRange,
-  ): Promise<TransactionSummaryDailyRow[]>;
-  findDailyActiveUsers(
-    ctx: IContext,
-    communityId: string,
-    range: DateRange,
-  ): Promise<TransactionActiveUsersDailyRow[]>;
-  findTopUsersByTotalPoints(
-    ctx: IContext,
-    communityId: string,
-    range: DateRange,
-    topN: number,
-  ): Promise<UserTransactionAggregateRow[]>;
-  findTrueUniqueCounterpartiesForUsers(
-    ctx: IContext,
-    communityId: string,
-    range: DateRange,
-    userIds: string[],
-  ): Promise<Map<string, number>>;
-  findCommentsByDateRange(
-    ctx: IContext,
-    communityId: string,
-    range: DateRange,
-    limit?: number,
-  ): Promise<TransactionCommentRow[]>;
-  findUserProfiles(
-    ctx: IContext,
-    communityId: string,
-    userIds: string[],
-  ): Promise<UserProfileForReportRow[]>;
-  findCommunityContext(
-    ctx: IContext,
-    communityId: string,
-    range: DateRange,
-  ): Promise<CommunityContextRow | null>;
-  findDeepestChain(
-    ctx: IContext,
-    communityId: string,
-    range: DateRange,
-  ): Promise<DeepestChainRow | null>;
-  findPeriodAggregate(
-    ctx: IContext,
-    communityId: string,
-    range: DateRange,
-  ): Promise<PeriodAggregateRow>;
-  findRetentionAggregate(
-    ctx: IContext,
-    communityId: string,
-    range: {
-      currentWeekStart: Date;
-      nextWeekStart: Date;
-      prevWeekStart: Date;
-      twelveWeeksAgo: Date;
-    },
-  ): Promise<RetentionAggregateRow>;
-  findCohortRetention(
-    ctx: IContext,
-    communityId: string,
-    cohort: { cohortStart: Date; cohortEnd: Date },
-    active: { activeStart: Date; activeEnd: Date },
-  ): Promise<CohortRetentionRow>;
-  refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
-  refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
-}
 
 @injectable()
 export default class ReportTransactionStatsRepository

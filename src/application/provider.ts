@@ -3,7 +3,7 @@ import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
-import ReportTransactionStatsRepository from "@/application/domain/report/data/repository/transactionStats";
+import ReportTransactionStatsRepository from "@/application/domain/report/transactionStats/data/repository";
 import ReportEntityRepository from "@/application/domain/report/data/repository/reportEntity";
 import ReportTemplateRepository from "@/application/domain/report/data/repository/template";
 import ReportService from "@/application/domain/report/service";

@@ -7,13 +7,13 @@ import {
   computeGrowthRates,
   computePageInfo,
   computeRetentionSummary,
-} from "@/application/domain/report/presenter/weeklyAggregator";
+} from "@/application/domain/report/transactionStats/weeklyAggregator";
 import type {
   CohortRetentionRow,
   PeriodAggregateRow,
   RetentionAggregateRow,
   TransactionSummaryDailyRow,
-} from "@/application/domain/report/data/rows";
+} from "@/application/domain/report/transactionStats/data/rows";
 
 /**
  * Unit-level tests for the pure functions extracted out of

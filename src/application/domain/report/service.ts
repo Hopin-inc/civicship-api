@@ -1,7 +1,7 @@
 import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { IReportTransactionStatsRepository } from "@/application/domain/report/data/repository/transactionStats";
+import { IReportTransactionStatsRepository } from "@/application/domain/report/transactionStats/data/interface";
 import { IReportEntityRepository } from "@/application/domain/report/data/repository/reportEntity";
 import { IReportTemplateRepository } from "@/application/domain/report/data/repository/template";
 import {
@@ -16,7 +16,7 @@ import {
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
   UserTransactionAggregateRow,
-} from "@/application/domain/report/data/rows";
+} from "@/application/domain/report/transactionStats/data/rows";
 import {
   PrismaReport,
   PrismaReportGoldenCase,

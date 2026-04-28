@@ -21,7 +21,7 @@ import {
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
   UserTransactionAggregateRow,
-} from "@/application/domain/report/data/rows";
+} from "@/application/domain/report/transactionStats/data/rows";
 import {
   CommunityContext,
   DeepestChainItem,
@@ -39,7 +39,7 @@ import {
   computeGrowthRates,
   computePageInfo,
   computeRetentionSummary,
-} from "@/application/domain/report/presenter/weeklyAggregator";
+} from "@/application/domain/report/transactionStats/weeklyAggregator";
 
 /**
  * Internal → GraphQL `edge.cursor` (base64url JSON of `{at, id}`).
