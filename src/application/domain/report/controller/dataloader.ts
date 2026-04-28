@@ -4,12 +4,11 @@ import {
   createLoaderByCompositeKey,
   createHasManyLoaderByKey,
 } from "@/presentation/graphql/dataloader/utils";
+import { reportSelect, PrismaReport } from "@/application/domain/report/data/type";
 import {
-  reportSelect,
   reportTemplateSelect,
-  PrismaReport,
   PrismaReportTemplate,
-} from "@/application/domain/report/data/type";
+} from "@/application/domain/report/template/data/type";
 import {
   reportFeedbackSelect,
   PrismaReportFeedback,

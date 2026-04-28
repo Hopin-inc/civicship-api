@@ -1,10 +1,11 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import { ReportTemplateKind, ReportTemplateScope } from "@prisma/client";
-import ReportFeedbackService, {
+import ReportFeedbackService from "@/application/domain/report/feedback/service";
+import {
   pearsonCorrelation,
   JUDGE_HUMAN_CORRELATION_WARNING_THRESHOLD,
-} from "@/application/domain/report/feedback/service";
+} from "@/application/domain/report/feedback/correlation";
 import type { IContext } from "@/types/server";
 
 describe("ReportFeedbackService.getTemplateStats", () => {
