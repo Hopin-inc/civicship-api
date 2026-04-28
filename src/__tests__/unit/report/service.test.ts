@@ -6,28 +6,43 @@ import ReportService, {
 } from "@/application/domain/report/service";
 import type { WeeklyReportPayload } from "@/application/domain/report/types";
 
-class MockReportRepository {
+class MockTransactionStatsRepository {
   findDailySummaries = jest.fn();
   findDailyActiveUsers = jest.fn();
   findTopUsersByTotalPoints = jest.fn();
+  findTrueUniqueCounterpartiesForUsers = jest.fn();
   findCommentsByDateRange = jest.fn();
   findUserProfiles = jest.fn();
   findCommunityContext = jest.fn();
   findDeepestChain = jest.fn();
+  findPeriodAggregate = jest.fn();
+  findRetentionAggregate = jest.fn();
+  findCohortRetention = jest.fn();
   refreshTransactionSummaryDaily = jest.fn();
   refreshUserTransactionDaily = jest.fn();
-  findTemplate = jest.fn();
-  findActiveTemplates = jest.fn();
-  findJudgeTemplate = jest.fn();
-  updateReportJudgeResult = jest.fn();
-  findGoldenCases = jest.fn();
-  upsertGoldenCase = jest.fn();
-  upsertTemplate = jest.fn();
+}
+
+class MockEntityRepository {
   createReport = jest.fn();
   findReportById = jest.fn();
   findReports = jest.fn();
+  findAllReports = jest.fn();
+  findCommunityReportSummary = jest.fn();
+  recalculateCommunityLastPublished = jest.fn();
   updateReportStatus = jest.fn();
   findReportsByParentRunId = jest.fn();
+  updateReportJudgeResult = jest.fn();
+}
+
+class MockTemplateRepository {
+  findTemplate = jest.fn();
+  findTemplateByVersion = jest.fn();
+  findActiveTemplates = jest.fn();
+  findTemplates = jest.fn();
+  findJudgeTemplate = jest.fn();
+  upsertTemplate = jest.fn();
+  findGoldenCases = jest.fn();
+  upsertGoldenCase = jest.fn();
 }
 
 describe("ReportService", () => {
@@ -35,7 +50,11 @@ describe("ReportService", () => {
 
   beforeEach(() => {
     container.reset();
-    container.register("ReportRepository", { useValue: new MockReportRepository() });
+    container.register("ReportTransactionStatsRepository", {
+      useValue: new MockTransactionStatsRepository(),
+    });
+    container.register("ReportEntityRepository", { useValue: new MockEntityRepository() });
+    container.register("ReportTemplateRepository", { useValue: new MockTemplateRepository() });
     service = container.resolve(ReportService);
   });
 
