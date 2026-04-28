@@ -670,10 +670,12 @@ export default class ReportUseCase {
 
   /**
    * Phase 1 admin: list multiple template revisions for the
-   * management UI. The schema default is `kind: GENERATION`, but
-   * GraphQL passes through `null` when the caller omitted the arg
-   * with no default applied (codegen treats every arg as nullable);
-   * coalesce here so the service layer always sees a concrete kind.
+   * management UI. The schema default is `kind: GENERATION`, which
+   * GraphQL applies when the arg is omitted; `null` only reaches us
+   * when the caller sends it explicitly or the usecase is invoked
+   * directly (e.g. from tests) without going through the schema
+   * default. Codegen also types every arg as nullable, so coalesce
+   * here to guarantee the service layer sees a concrete kind.
    */
   async listReportTemplates(
     { variant, communityId, kind, includeInactive }: GqlQueryReportTemplatesArgs,
