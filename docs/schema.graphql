@@ -26,6 +26,12 @@ type AdminReportSummaryRow {
   publishedCountLast90Days: Int!
 }
 
+type AdminTemplateFeedbackStats {
+  avgRating: Float
+  ratingDistribution: [ReportFeedbackRatingBucket!]!
+  totalCount: Int!
+}
+
 union ApproveReportPayload = ApproveReportSuccess
 
 type ApproveReportSuccess {
@@ -1621,6 +1627,7 @@ enum PublishStatus {
 type Query {
   adminBrowseReports(communityId: ID, cursor: String, first: Int, publishedAfter: Datetime, publishedBefore: Datetime, status: ReportStatus, variant: ReportVariant): ReportsConnection!
   adminReportSummary(cursor: String, first: Int): AdminReportSummaryConnection!
+  adminTemplateFeedbackStats(kind: ReportTemplateKind = GENERATION, variant: ReportVariant!, version: Int): AdminTemplateFeedbackStats!
   adminTemplateFeedbacks(cursor: String, feedbackType: ReportFeedbackType, first: Int = 20, kind: ReportTemplateKind = GENERATION, maxRating: Int, variant: ReportVariant!, version: Int): ReportFeedbacksConnection!
   article(id: ID!, permission: CheckCommunityPermissionInput!): Article
   articles(cursor: String, filter: ArticleFilterInput, first: Int, sort: ArticleSortInput): ArticlesConnection!
@@ -1782,6 +1789,11 @@ type ReportFeedback {
 type ReportFeedbackEdge implements Edge {
   cursor: String!
   node: ReportFeedback
+}
+
+type ReportFeedbackRatingBucket {
+  count: Int!
+  rating: Int!
 }
 
 enum ReportFeedbackType {

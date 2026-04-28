@@ -84,6 +84,27 @@ extend type Query {
     first: Int = 20
   ): ReportFeedbacksConnection! @authz(rules: [IsAdmin])
 
+  # Phase 1.5 sysAdmin: aggregate stats for a template's feedback set,
+  # rendered as a "Customer Reviews"-style summary (avg rating + total
+  # count + 1..5 distribution bar) on the template detail page.
+  # `adminTemplateFeedbacks` returns the paginated list; this query
+  # returns the **population** stats so the summary stays meaningful
+  # regardless of the page the caller is on.
+  #
+  # Argument scope is intentionally narrower than the list query:
+  # `feedbackType` and `maxRating` are NOT accepted here. Reflecting
+  # them would collapse the distribution into a sliver of the rating
+  # axis (e.g. `maxRating: 3` would always show the bar empty above
+  # 3★), which defeats the bar's purpose of showing where reviews
+  # actually fall across the full 1..5 spectrum. The frontend pairs
+  # this query with the list query in parallel from a single filter
+  # object so `variant` / `version` / `kind` stay in lock-step.
+  adminTemplateFeedbackStats(
+    variant: ReportVariant!
+    version: Int
+    kind: ReportTemplateKind = GENERATION
+  ): AdminTemplateFeedbackStats! @authz(rules: [IsAdmin])
+
   # Phase 2 sysAdmin: cross-community report search. Same shape as
   # `reports` but `permission` is dropped — IsAdmin alone gates access.
   # Order is `publishedAt DESC NULLS LAST, createdAt DESC` so DRAFT /

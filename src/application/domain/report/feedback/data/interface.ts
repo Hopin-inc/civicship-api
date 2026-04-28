@@ -4,6 +4,7 @@ import {
   PrismaReportFeedback,
   TemplateBreakdownRow,
   JudgeFeedbackPairRow,
+  AdminTemplateFeedbackStatsRow,
 } from "@/application/domain/report/feedback/data/type";
 
 export { JudgeFeedbackPairRow };
@@ -116,4 +117,22 @@ export interface IReportFeedbackRepository {
       first: number;
     },
   ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }>;
+
+  /**
+   * Phase 1.5 admin: aggregate stats over the same template scope as
+   * `findAdminTemplateFeedbacks` but without the row-level
+   * `feedbackType` / `maxRating` filters — the population stats power
+   * a "Customer Reviews"-style summary that must reflect the full
+   * 1..5 spread. Returns total count, mean rating (null when no
+   * observations), and a sparse bucket list (zero-count ratings
+   * omitted; the presenter densifies to 1..5).
+   */
+  getAdminTemplateFeedbackStats(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+    },
+  ): Promise<AdminTemplateFeedbackStatsRow>;
 }

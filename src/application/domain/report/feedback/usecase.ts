@@ -14,6 +14,8 @@ import {
   GqlReportTemplateStatsBreakdownConnection,
   GqlQueryAdminTemplateFeedbacksArgs,
   GqlReportFeedbacksConnection,
+  GqlQueryAdminTemplateFeedbackStatsArgs,
+  GqlAdminTemplateFeedbackStats,
 } from "@/types/graphql";
 
 const MAX_FEEDBACKS_PER_PAGE = 100;
@@ -261,6 +263,35 @@ export default class ReportFeedbackUseCase {
       first,
     });
     return ReportFeedbackPresenter.connection(result.items, result.totalCount, first);
+  }
+
+  /**
+   * Phase 1.5 admin: population stats paired with
+   * `adminTemplateFeedbacks` for the template detail page summary
+   * card. Argument scope is intentionally narrower than the list
+   * query — `feedbackType` / `maxRating` are not accepted because a
+   * filtered distribution defeats the bar's purpose. Authorization
+   * is enforced upstream by `@authz IsAdmin` on the GraphQL query;
+   * the usecase trusts the directive.
+   *
+   * Validation mirrors the list path's `version` check: `version`
+   * (when present) must be a positive integer. The DB would return
+   * an empty stats object for a negative version silently, masking
+   * the input bug.
+   */
+  async viewAdminTemplateFeedbackStats(
+    args: GqlQueryAdminTemplateFeedbackStatsArgs,
+    ctx: IContext,
+  ): Promise<GqlAdminTemplateFeedbackStats> {
+    if (args.version !== undefined && args.version !== null) {
+      validateInt(args.version, 1, Number.MAX_SAFE_INTEGER, "version");
+    }
+    const row = await this.feedbackService.getAdminTemplateFeedbackStats(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+    });
+    return ReportFeedbackPresenter.adminTemplateFeedbackStats(row);
   }
 
   // Field-resolver helper used by `Report.feedbacks`. `Report.myFeedback`

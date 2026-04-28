@@ -51,6 +51,13 @@ export type GqlAdminReportSummaryRow = {
   publishedCountLast90Days: Scalars['Int']['output'];
 };
 
+export type GqlAdminTemplateFeedbackStats = {
+  __typename?: 'AdminTemplateFeedbackStats';
+  avgRating?: Maybe<Scalars['Float']['output']>;
+  ratingDistribution: Array<GqlReportFeedbackRatingBucket>;
+  totalCount: Scalars['Int']['output'];
+};
+
 export type GqlApproveReportPayload = GqlApproveReportSuccess;
 
 export type GqlApproveReportSuccess = {
@@ -2160,6 +2167,7 @@ export type GqlQuery = {
   __typename?: 'Query';
   adminBrowseReports: GqlReportsConnection;
   adminReportSummary: GqlAdminReportSummaryConnection;
+  adminTemplateFeedbackStats: GqlAdminTemplateFeedbackStats;
   adminTemplateFeedbacks: GqlReportFeedbacksConnection;
   article?: Maybe<GqlArticle>;
   articles: GqlArticlesConnection;
@@ -2276,6 +2284,13 @@ export type GqlQueryAdminBrowseReportsArgs = {
 export type GqlQueryAdminReportSummaryArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type GqlQueryAdminTemplateFeedbackStatsArgs = {
+  kind?: InputMaybe<GqlReportTemplateKind>;
+  variant: GqlReportVariant;
+  version?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -2779,6 +2794,12 @@ export type GqlReportFeedbackEdge = GqlEdge & {
   __typename?: 'ReportFeedbackEdge';
   cursor: Scalars['String']['output'];
   node?: Maybe<GqlReportFeedback>;
+};
+
+export type GqlReportFeedbackRatingBucket = {
+  __typename?: 'ReportFeedbackRatingBucket';
+  count: Scalars['Int']['output'];
+  rating: Scalars['Int']['output'];
 };
 
 export const GqlReportFeedbackType = {
@@ -5351,6 +5372,7 @@ export type GqlResolversTypes = ResolversObject<{
   AdminReportSummaryConnection: ResolverTypeWrapper<Omit<GqlAdminReportSummaryConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['AdminReportSummaryEdge']>>> }>;
   AdminReportSummaryEdge: ResolverTypeWrapper<Omit<GqlAdminReportSummaryEdge, 'node'> & { node?: Maybe<GqlResolversTypes['AdminReportSummaryRow']> }>;
   AdminReportSummaryRow: ResolverTypeWrapper<Omit<GqlAdminReportSummaryRow, 'community' | 'lastPublishedReport'> & { community: GqlResolversTypes['Community'], lastPublishedReport?: Maybe<GqlResolversTypes['Report']> }>;
+  AdminTemplateFeedbackStats: ResolverTypeWrapper<GqlAdminTemplateFeedbackStats>;
   ApproveReportPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ApproveReportPayload']>;
   ApproveReportSuccess: ResolverTypeWrapper<Omit<GqlApproveReportSuccess, 'report'> & { report: GqlResolversTypes['Report'] }>;
   Article: ResolverTypeWrapper<Article>;
@@ -5590,6 +5612,7 @@ export type GqlResolversTypes = ResolversObject<{
   ReportEdge: ResolverTypeWrapper<Omit<GqlReportEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Report']> }>;
   ReportFeedback: ResolverTypeWrapper<Omit<GqlReportFeedback, 'report' | 'user'> & { report: GqlResolversTypes['Report'], user: GqlResolversTypes['User'] }>;
   ReportFeedbackEdge: ResolverTypeWrapper<Omit<GqlReportFeedbackEdge, 'node'> & { node?: Maybe<GqlResolversTypes['ReportFeedback']> }>;
+  ReportFeedbackRatingBucket: ResolverTypeWrapper<GqlReportFeedbackRatingBucket>;
   ReportFeedbackType: GqlReportFeedbackType;
   ReportFeedbacksConnection: ResolverTypeWrapper<Omit<GqlReportFeedbacksConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ReportFeedbackEdge']>>> }>;
   ReportStatus: GqlReportStatus;
@@ -5800,6 +5823,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   AdminReportSummaryConnection: Omit<GqlAdminReportSummaryConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['AdminReportSummaryEdge']>>> };
   AdminReportSummaryEdge: Omit<GqlAdminReportSummaryEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['AdminReportSummaryRow']> };
   AdminReportSummaryRow: Omit<GqlAdminReportSummaryRow, 'community' | 'lastPublishedReport'> & { community: GqlResolversParentTypes['Community'], lastPublishedReport?: Maybe<GqlResolversParentTypes['Report']> };
+  AdminTemplateFeedbackStats: GqlAdminTemplateFeedbackStats;
   ApproveReportPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ApproveReportPayload'];
   ApproveReportSuccess: Omit<GqlApproveReportSuccess, 'report'> & { report: GqlResolversParentTypes['Report'] };
   Article: Article;
@@ -6015,6 +6039,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReportEdge: Omit<GqlReportEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Report']> };
   ReportFeedback: Omit<GqlReportFeedback, 'report' | 'user'> & { report: GqlResolversParentTypes['Report'], user: GqlResolversParentTypes['User'] };
   ReportFeedbackEdge: Omit<GqlReportFeedbackEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['ReportFeedback']> };
+  ReportFeedbackRatingBucket: GqlReportFeedbackRatingBucket;
   ReportFeedbacksConnection: Omit<GqlReportFeedbacksConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ReportFeedbackEdge']>>> };
   ReportTemplate: Omit<GqlReportTemplate, 'community' | 'updatedByUser'> & { community?: Maybe<GqlResolversParentTypes['Community']>, updatedByUser?: Maybe<GqlResolversParentTypes['User']> };
   ReportTemplateStats: GqlReportTemplateStats;
@@ -6235,6 +6260,13 @@ export type GqlAdminReportSummaryRowResolvers<ContextType = any, ParentType exte
   lastPublishedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   lastPublishedReport?: Resolver<Maybe<GqlResolversTypes['Report']>, ParentType, ContextType>;
   publishedCountLast90Days?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlAdminTemplateFeedbackStatsResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['AdminTemplateFeedbackStats'] = GqlResolversParentTypes['AdminTemplateFeedbackStats']> = ResolversObject<{
+  avgRating?: Resolver<Maybe<GqlResolversTypes['Float']>, ParentType, ContextType>;
+  ratingDistribution?: Resolver<Array<GqlResolversTypes['ReportFeedbackRatingBucket']>, ParentType, ContextType>;
+  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -7200,6 +7232,7 @@ export type GqlPublishReportSuccessResolvers<ContextType = any, ParentType exten
 export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Query'] = GqlResolversParentTypes['Query']> = ResolversObject<{
   adminBrowseReports?: Resolver<GqlResolversTypes['ReportsConnection'], ParentType, ContextType, Partial<GqlQueryAdminBrowseReportsArgs>>;
   adminReportSummary?: Resolver<GqlResolversTypes['AdminReportSummaryConnection'], ParentType, ContextType, Partial<GqlQueryAdminReportSummaryArgs>>;
+  adminTemplateFeedbackStats?: Resolver<GqlResolversTypes['AdminTemplateFeedbackStats'], ParentType, ContextType, RequireFields<GqlQueryAdminTemplateFeedbackStatsArgs, 'kind' | 'variant'>>;
   adminTemplateFeedbacks?: Resolver<GqlResolversTypes['ReportFeedbacksConnection'], ParentType, ContextType, RequireFields<GqlQueryAdminTemplateFeedbacksArgs, 'first' | 'kind' | 'variant'>>;
   article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id' | 'permission'>>;
   articles?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesArgs>>;
@@ -7331,6 +7364,12 @@ export type GqlReportFeedbackResolvers<ContextType = any, ParentType extends Gql
 export type GqlReportFeedbackEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReportFeedbackEdge'] = GqlResolversParentTypes['ReportFeedbackEdge']> = ResolversObject<{
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<Maybe<GqlResolversTypes['ReportFeedback']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlReportFeedbackRatingBucketResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReportFeedbackRatingBucket'] = GqlResolversParentTypes['ReportFeedbackRatingBucket']> = ResolversObject<{
+  count?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  rating?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -8285,6 +8324,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   AdminReportSummaryConnection?: GqlAdminReportSummaryConnectionResolvers<ContextType>;
   AdminReportSummaryEdge?: GqlAdminReportSummaryEdgeResolvers<ContextType>;
   AdminReportSummaryRow?: GqlAdminReportSummaryRowResolvers<ContextType>;
+  AdminTemplateFeedbackStats?: GqlAdminTemplateFeedbackStatsResolvers<ContextType>;
   ApproveReportPayload?: GqlApproveReportPayloadResolvers<ContextType>;
   ApproveReportSuccess?: GqlApproveReportSuccessResolvers<ContextType>;
   Article?: GqlArticleResolvers<ContextType>;
@@ -8421,6 +8461,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   ReportEdge?: GqlReportEdgeResolvers<ContextType>;
   ReportFeedback?: GqlReportFeedbackResolvers<ContextType>;
   ReportFeedbackEdge?: GqlReportFeedbackEdgeResolvers<ContextType>;
+  ReportFeedbackRatingBucket?: GqlReportFeedbackRatingBucketResolvers<ContextType>;
   ReportFeedbacksConnection?: GqlReportFeedbacksConnectionResolvers<ContextType>;
   ReportTemplate?: GqlReportTemplateResolvers<ContextType>;
   ReportTemplateStats?: GqlReportTemplateStatsResolvers<ContextType>;
