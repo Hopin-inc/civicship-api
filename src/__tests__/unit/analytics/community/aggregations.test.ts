@@ -409,7 +409,7 @@ describe("computeDormantCount", () => {
     // Production asOf is `new Date()` with the wall-clock time
     // component preserved (e.g. 06:17:55Z). lastDonationDay is a
     // JST calendar day at UTC 00:00 (the SQL ::date cast in
-    // findMemberStats strips the time). Without truncating asOf
+    // findMemberStatsBulk strips the time). Without truncating asOf
     // to its JST date before subtracting days, a member who
     // donated on the cutoff day has lastDonationDay = cutoff-day
     // 00:00Z < cutoff-day HH:MM:SSZ → they'd be misclassified as

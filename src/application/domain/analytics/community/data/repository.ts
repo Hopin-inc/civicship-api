@@ -109,14 +109,35 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
         }[]
       >`
         WITH asof_jst AS (
+          -- The asOf instant expressed in JST, computed once so every
+          -- downstream CTE can reuse the same naive JST timestamp
+          -- (for year/month extraction and day-boundary derivation).
           SELECT (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo') AS ts
         ),
         asof_bound AS (
+          -- Derive the "asOf JST day + 1, at JST midnight, expressed
+          -- as a naive UTC timestamp" once and reuse everywhere the
+          -- query wants an exclusive upper bound on t_*.created_at.
+          -- The expression is the same JST-day clamp findActivitySnapshot
+          -- / findMonthlyActivity receive pre-computed from the
+          -- service layer; inlining it into a single CTE here keeps
+          -- the signature unchanged without duplicating the double
+          -- AT TIME ZONE dance across three WHERE clauses.
           SELECT
             ((ts::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC') AS upper_ts
           FROM asof_jst
         ),
         members AS (
+          -- Filter to members whose membership existed at asOf, in any
+          -- of the requested communities. Without this, a historic
+          -- asOf would include members who joined after that point,
+          -- inflating stageCounts.total, polluting stage classification,
+          -- and leaking future members into the paginated list.
+          -- findActivitySnapshot already scopes total_members this way;
+          -- mirroring it keeps the activity rate denominator consistent
+          -- with stageCounts.total. community_id is carried through
+          -- so the per-user JOIN keys downstream stay correctly bucketed
+          -- when a single user is a member of multiple communities.
           SELECT
             m."community_id",
             m."user_id",
@@ -127,6 +148,30 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
             AND m."created_at" < ab.upper_ts
         ),
         donation_activity AS (
+          -- Per-(community, user, JST calendar day) DONATION activity:
+          -- emits one row per day the user sent a DONATION from their
+          -- wallet in that community, carrying both the aggregated
+          -- points for that day and the day's JST month bucket. The
+          -- final SELECT then derives:
+          --   donation_out_months = COUNT(DISTINCT jst_month)
+          --   donation_out_days   = COUNT(DISTINCT jst_day)
+          --   total_points_out    = SUM(day_points_out)
+          --
+          -- This consolidates what used to be two parallel CTEs
+          -- (donation_months + donation_days). Joining both into the
+          -- final SELECT on user_id created an N×M cross product —
+          -- COUNT(DISTINCT) was unaffected, but SUM(month_points_out)
+          -- got inflated by M (= number of donation days), corrupting
+          -- total_points_out and every downstream consumer
+          -- (pointsContributionPct, sort orderings, etc.). Pre-
+          -- aggregating per-day in a single CTE removes the cross
+          -- product entirely and is also one fewer t_transactions
+          -- scan since both old CTEs read the same rows.
+          --
+          -- JST date bucketing matches the rest of the query so
+          -- daysIn / donationOutDays line up with the member-tenure
+          -- boundary, and findActivitySnapshot / findPlatformTotals
+          -- agree on what "as of asOf" includes.
           SELECT
             fw."community_id" AS community_id,
             fw."user_id" AS user_id,
@@ -149,6 +194,27 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           GROUP BY fw."community_id", fw."user_id", jst_day, jst_month
         ),
         donation_recipients AS (
+          -- Per-sender count of DISTINCT recipient user_ids over the
+          -- whole tenure (clamped at asOf). This is the "network
+          -- breadth" half of the donor profile and cannot be derived
+          -- from mv_user_transaction_daily — that MV's
+          -- unique_counterparties column is per-day and does not
+          -- compose into an all-time DISTINCT (the same recipient
+          -- across multiple days would double-count under SUM).
+          --
+          -- Scoped to (a) DONATION transactions only, (b) sender wallet
+          -- in one of the requested communities, and (c) recipient
+          -- wallet either in the SAME community as the sender or
+          -- unattached — same "no cross-community leakage" guard that
+          -- mv_user_transaction_daily and v_transaction_comments apply
+          -- at the view layer. Wallets without a user_id (burn /
+          -- system targets) are excluded so a member who only donated
+          -- into a burn target scores 0. Self-donations
+          -- (fw.user_id = tw.user_id) are excluded so the count
+          -- matches the "distinct OTHER users" wording in
+          -- AnalyticsMemberRow.uniqueDonationRecipients — the wallet
+          -- validator does not block same-user transfers, so the
+          -- guard has to live here.
           SELECT
             fw."community_id" AS community_id,
             fw."user_id" AS user_id,
@@ -171,6 +237,28 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           GROUP BY fw."community_id", fw."user_id"
         ),
         donation_received AS (
+          -- Receiver-side counterpart to donation_activity. Per-
+          -- (community, user, JST calendar day) DONATION-IN activity
+          -- for each member of the requested communities, with the
+          -- day's points-in and the JST month bucket. Same single-CTE
+          -- shape so the final SELECT can derive donation_in_months /
+          -- donation_in_days / total_points_in without re-introducing
+          -- the cross-product bug that motivated the donation_activity
+          -- consolidation.
+          --
+          -- Scoping mirrors donation_activity / donation_recipients:
+          --   - DONATION reason only (excludes burn / grant flows that
+          --     are not part of the gift-economy ledger)
+          --   - receiver wallet attached to one of the requested
+          --     communities so a member who received cross-community
+          --     grants does not get incoming credit they cannot
+          --     reciprocate
+          --   - sender wallet either in the same community or
+          --     unattached (system / burn sources are excluded from
+          --     the points sum for symmetry with donation_activity's
+          --     wallet filter on the sending side)
+          --   - clamped at asOf via asof_bound so a historic asOf
+          --     does not leak future incoming points into the totals
           SELECT
             tw."community_id" AS community_id,
             tw."user_id" AS user_id,
@@ -197,6 +285,16 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           GROUP BY tw."community_id", tw."user_id", jst_day, jst_month
         ),
         donation_in_aggregates AS (
+          -- Pre-aggregate donation_received to one row per
+          -- (community, user) so the final SELECT can LEFT JOIN both
+          -- donation_activity and this CTE without re-introducing the
+          -- multi-row × multi-row cross product that the
+          -- donation_activity consolidation comment warns about.
+          -- donation_activity stays per-day because the final SELECT
+          -- still uses COUNT(DISTINCT da.jst_month / da.jst_day) —
+          -- those are cheap and unaffected by row multiplicity. The
+          -- incoming side has no equivalent need; one row per
+          -- (community, user) is all the final SELECT consumes.
           SELECT
             community_id,
             user_id,
@@ -207,6 +305,22 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           GROUP BY community_id, user_id
         ),
         donation_senders AS (
+          -- Receiver-side counterpart to donation_recipients. Per-
+          -- recipient count of DISTINCT sender user_ids over the
+          -- whole tenure (clamped at asOf). Backs
+          -- AnalyticsMemberRow.uniqueDonationSenders, which the L2
+          -- dashboard uses to compute "受領→送付 転換率"
+          -- (recipient-to-sender conversion rate).
+          --
+          -- Same defensive guards as donation_recipients in mirror:
+          --   - sender wallet must have a user_id (no burn / system
+          --     sources count toward sender breadth, otherwise an
+          --     admin-issued bulk grant would inflate the count)
+          --   - excludes self-donations (matches the "distinct OTHER
+          --     users" wording in
+          --     AnalyticsMemberRow.uniqueDonationSenders)
+          --   - sender wallet either in the same community or
+          --     unattached (no cross-community leakage)
           SELECT
             tw."community_id" AS community_id,
             tw."user_id" AS user_id,
@@ -229,6 +343,24 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           GROUP BY tw."community_id", tw."user_id"
         ),
         member_tenure AS (
+          -- Compute months_in / days_in ONCE per (community, member)
+          -- so the final SELECT can reuse them as both raw fields and
+          -- as the denominators of monthly / daily activity rates.
+          --
+          -- months_in: "distinct JST calendar months the member has
+          -- been present in (join-month through asOf-month
+          -- inclusive)" — the +1 turns the month-number diff into a
+          -- span count, matching how donation_out_months
+          -- (COUNT DISTINCT jst_month) counts.
+          --
+          -- days_in: "distinct JST calendar days the member has been
+          -- present in" — same +1 inclusivity, matching how
+          -- donation_out_days (COUNT DISTINCT jst_day) counts.
+          --
+          -- GREATEST(1, ...) defends against any future clock skew on
+          -- both. Pulling the asOf-side conversion from asof_jst
+          -- avoids re-running the double AT TIME ZONE cast once per
+          -- row.
           SELECT
             m."community_id",
             m."user_id",
@@ -262,19 +394,54 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           mt.days_in,
           COALESCE(COUNT(DISTINCT da.jst_month), 0)::int AS donation_out_months,
           COALESCE(COUNT(DISTINCT da.jst_day), 0)::int AS donation_out_days,
+          -- SUM is over per-day rows (one row per (community, user)
+          -- per donation day in donation_activity). No cross product
+          -- with another per-user-multi-row CTE, so each day's points
+          -- are summed exactly once.
           COALESCE(SUM(da.day_points_out), 0)::bigint AS total_points_out,
+          -- GREATEST(1, ...) inside member_tenure guarantees the
+          -- divisor is >= 1; no zero branch needed around ROUND.
           ROUND(
             COALESCE(COUNT(DISTINCT da.jst_month), 0)::numeric
               / mt.months_in::numeric,
             3
           )::double precision AS user_send_rate,
+          -- donation_recipients is pre-grouped by (community, user),
+          -- so each sender appears at most once on the right side of
+          -- the LEFT JOIN. MAX() (rather than adding the column to
+          -- GROUP BY) propagates that single value through the
+          -- per-user grouping cleanly and matches the COALESCE/MAX
+          -- pattern used elsewhere when joining a pre-aggregated CTE.
           COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients,
+          -- donation_in_aggregates is pre-grouped by (community,
+          -- user) (one row per pair), so each value comes through
+          -- the per-user GROUP BY unchanged. MAX is structurally a
+          -- no-op here and mirrors the COALESCE/MAX pattern used for
+          -- donation_recipients and donation_senders below. Default
+          -- 0 when the receiver has never received a DONATION (LEFT
+          -- JOIN miss).
           COALESCE(MAX(dia.donation_in_months), 0)::int AS donation_in_months,
           COALESCE(MAX(dia.donation_in_days), 0)::int AS donation_in_days,
           COALESCE(MAX(dia.total_points_in), 0)::bigint AS total_points_in,
           COALESCE(MAX(ds.unique_senders), 0)::int AS unique_donation_senders,
+          -- MAX over the per-(community, user, jst_day) rows in
+          -- donation_activity gives the most recent JST day this user
+          -- sent a DONATION. NULL when the LEFT JOIN found no
+          -- donation_activity rows (= the member never donated, the
+          -- latent case). The service layer derives dormantCount
+          -- from this without re-scanning t_transactions.
           MAX(da.jst_day) AS last_donation_day,
+          -- MIN over the same per-day rows is the FIRST DONATION day,
+          -- powering the cohort funnel's activatedD30 stage in the
+          -- service layer (member is "activated within 30 days" iff
+          -- first_donation_day - joined_at < 30 days). Same NULL
+          -- semantic as last_donation_day for never-donated members.
           MIN(da.jst_day) AS first_donation_day,
+          -- t_memberships.created_at exposed verbatim so the cohort
+          -- funnel can bucket members by their join month
+          -- (DATE_TRUNC at the JST timezone in service-side TS).
+          -- GROUP BY m."created_at" added below so the aggregate
+          -- doesn't collapse it.
           m."created_at" AS joined_at
         FROM members m
         INNER JOIN member_tenure mt
@@ -763,6 +930,25 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
         }[]
       >`
         WITH window_senders AS (
+          -- One MV scan over [prevLower, upper). Per-(community, user)
+          -- aggregation collapses each user's daily rows into two
+          -- booleans recording whether they sent a DONATION in the
+          -- current / previous window. The outer FILTER clauses then
+          -- count senders, prev-senders, and the intersection
+          -- (retained) without rescanning the MV.
+          --
+          -- The INNER JOIN against t_memberships restricts the
+          -- senders to users still JOINED in their respective
+          -- communities at "upper" (asOf+1 JST). Without this, a user
+          -- who had a community wallet during the window but later
+          -- left (status != 'JOINED' at asOf) would still be counted —
+          -- the dashboard would surface a "former member" as a live
+          -- sender, which contradicts the L1 invariant
+          -- "senderCount <= totalMembers" (totalMembers already
+          -- enforces JOINED-at-asOf via findActivitySnapshot). The
+          -- t_memberships scan is cheap because the
+          -- (community_id, user_id, status) index narrows it to the
+          -- same row count as t_wallets for each community.
           SELECT
             mv."community_id",
             mv."user_id",
@@ -790,6 +976,9 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           GROUP BY "community_id"
         ),
         new_members AS (
+          -- One t_memberships scan over [prevLower, upper). Same
+          -- FILTER pattern: split current vs previous in one pass,
+          -- grouped by community.
           SELECT
             "community_id",
             COUNT(*) FILTER (
@@ -808,6 +997,10 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           GROUP BY "community_id"
         ),
         community_keys AS (
+          -- Materialise the input id list so the final LEFT JOIN
+          -- emits one row per requested community, even those with no
+          -- senders / no new members in the window. Without this, the
+          -- caller would have to null-check every Map.get(id) lookup.
           SELECT unnest(${communityIds}::text[]) AS community_id
         )
         SELECT
@@ -862,6 +1055,33 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<{ community_id: string; n: number }[]>`
         WITH window_recipients AS (
+          -- Per-(community, sender) DISTINCT recipient count over the
+          -- parametric window. Same shape as the donation_recipients
+          -- CTE in findMemberStatsBulk but window-clamped on both
+          -- sides instead of tenure-clamped (upper only). Cannot
+          -- reuse mv_user_transaction_daily because its per-day
+          -- unique_counterparties does not compose into a window-wide
+          -- DISTINCT (same recipient across multiple days would
+          -- double-count under SUM).
+          --
+          -- Cross-community + burn-target guards mirror the defenses
+          -- on mv_user_transaction_daily / v_transaction_comments so
+          -- a system-target wallet (no user_id) does not silently
+          -- inflate the recipient count. Self-donations are excluded
+          -- (matches the "different people" wording in
+          -- AnalyticsCommunityOverview.hubMemberCount and the
+          -- "distinct OTHER users" definition in
+          -- AnalyticsMemberRow.uniqueDonationRecipients) — the wallet
+          -- validator does not block same-user transfers, so the
+          -- guard has to live in this query.
+          --
+          -- The t_memberships join restricts senders to users still
+          -- JOINED in their respective communities at "upper" (asOf+1
+          -- JST). Without it, a now-departed member who sent
+          -- DONATIONs while a member would still get counted as a
+          -- "current hub", contradicting the
+          -- "hubMemberCount <= senderCount <= totalMembers" invariant
+          -- documented on AnalyticsCommunityOverview.
           SELECT
             fw."community_id" AS community_id,
             fw."user_id" AS user_id,
