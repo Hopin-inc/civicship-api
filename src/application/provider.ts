@@ -134,6 +134,8 @@ import AnalyticsCommunityRepository from "@/application/domain/analytics/communi
 import SysAdminRepository from "@/application/domain/sysadmin/data/repository";
 import SysAdminService from "@/application/domain/sysadmin/service";
 import SysAdminUseCase from "@/application/domain/sysadmin/usecase";
+import AnalyticsCommunityService from "@/application/domain/analytics/community/service";
+import AnalyticsCommunityUseCase from "@/application/domain/analytics/community/usecase";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -390,6 +392,8 @@ export function registerProductionDependencies() {
   container.register("SysAdminRepository", { useClass: SysAdminRepository });
   container.register("SysAdminService", { useClass: SysAdminService });
   container.register("SysAdminUseCase", { useClass: SysAdminUseCase });
+  container.register("AnalyticsCommunityService", { useClass: AnalyticsCommunityService });
+  container.register("AnalyticsCommunityUseCase", { useClass: AnalyticsCommunityUseCase });
 
   // ------------------------------
   // 👓 View
