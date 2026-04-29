@@ -34,10 +34,10 @@ export default class ReportResolver {
       return this.useCase.listReportTemplates(args, ctx);
     },
     reportsAll: (_: unknown, args: GqlQueryReportsAllArgs, ctx: IContext) => {
-      return this.useCase.adminBrowseReports(args, ctx);
+      return this.useCase.browseAllReports(args, ctx);
     },
     reportSummaries: (_: unknown, args: GqlQueryReportSummariesArgs, ctx: IContext) => {
-      return this.useCase.adminViewReportSummary(args, ctx);
+      return this.useCase.viewReportSummaries(args, ctx);
     },
   };
 

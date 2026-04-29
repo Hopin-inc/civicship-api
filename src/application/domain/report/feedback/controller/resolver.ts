@@ -31,14 +31,14 @@ export default class ReportFeedbackResolver {
       args: GqlQueryReportTemplateFeedbacksArgs,
       ctx: IContext,
     ) => {
-      return this.useCase.viewAdminTemplateFeedbacks(args, ctx);
+      return this.useCase.viewReportTemplateFeedbacks(args, ctx);
     },
     reportTemplateFeedbackStats: (
       _: unknown,
       args: GqlQueryReportTemplateFeedbackStatsArgs,
       ctx: IContext,
     ) => {
-      return this.useCase.viewAdminTemplateFeedbackStats(args, ctx);
+      return this.useCase.viewReportTemplateFeedbackStats(args, ctx);
     },
   };
 

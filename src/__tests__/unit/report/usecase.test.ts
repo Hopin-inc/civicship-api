@@ -822,8 +822,8 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
     );
   });
 
-  it("adminBrowseReports forwards filters and converts ISO strings to Date", async () => {
-    await usecase.adminBrowseReports(
+  it("browseAllReports forwards filters and converts ISO strings to Date", async () => {
+    await usecase.browseAllReports(
       {
         communityId,
         status: ReportStatus.PUBLISHED,
@@ -849,17 +849,17 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
     );
   });
 
-  it("adminBrowseReports clamps `first` to defaults when omitted and rejects out-of-range values", async () => {
-    await usecase.adminBrowseReports({}, fakeCtx);
+  it("browseAllReports clamps `first` to defaults when omitted and rejects out-of-range values", async () => {
+    await usecase.browseAllReports({}, fakeCtx);
     expect(service.getAllReports.mock.calls[0][1].first).toBe(20);
 
     await expect(
-      usecase.adminBrowseReports({ first: 500 }, fakeCtx),
+      usecase.browseAllReports({ first: 500 }, fakeCtx),
     ).rejects.toThrow(/first must be an integer between 1 and 100/);
   });
 
-  it("adminViewReportSummary clamps `first` and forwards cursor", async () => {
-    await usecase.adminViewReportSummary(
+  it("viewReportSummaries clamps `first` and forwards cursor", async () => {
+    await usecase.viewReportSummaries(
       { cursor: "comm-cursor", first: 50 },
       fakeCtx,
     );

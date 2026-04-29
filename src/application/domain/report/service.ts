@@ -282,7 +282,7 @@ export default class ReportService {
 
   /**
    * Phase 2 sysAdmin: cross-community report search backing
-   * `adminBrowseReports`. Pass-through to the repository so the usecase
+   * `reportsAll`. Pass-through to the repository so the usecase
    * shape stays mock-friendly; the repo enforces the IsAdmin-only
    * scope via `ctx.issuer.internal` plus the `publishedAt DESC NULLS
    * LAST` ordering.

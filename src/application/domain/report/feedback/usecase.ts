@@ -236,7 +236,7 @@ export default class ReportFeedbackUseCase {
    *     would reject negative version lookups silently as "no row",
    *     producing an empty-page response that masks the input error.
    */
-  async viewAdminTemplateFeedbacks(
+  async viewReportTemplateFeedbacks(
     args: GqlQueryReportTemplateFeedbacksArgs,
     ctx: IContext,
   ): Promise<GqlReportFeedbacksConnection> {
@@ -279,7 +279,7 @@ export default class ReportFeedbackUseCase {
    * an empty stats object for a negative version silently, masking
    * the input bug.
    */
-  async viewAdminTemplateFeedbackStats(
+  async viewReportTemplateFeedbackStats(
     args: GqlQueryReportTemplateFeedbackStatsArgs,
     ctx: IContext,
   ): Promise<GqlAdminTemplateFeedbackStats> {
