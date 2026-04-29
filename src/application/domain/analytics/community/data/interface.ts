@@ -115,6 +115,20 @@ export interface IAnalyticsCommunityRepository {
   ): Promise<AnalyticsHubMemberCountRow>;
 
   /**
+   * Bulk variant of `findWindowHubMemberCount`. Computes the hub-member
+   * count for every community in `communityIds` in a single SQL pass.
+   * Returns one entry per requested community (count=0 for communities
+   * with no hub members in the window).
+   */
+  findWindowHubMemberCountBulk(
+    ctx: IContext,
+    communityIds: string[],
+    currLower: Date,
+    upper: Date,
+    hubBreadthThreshold: number,
+  ): Promise<Map<string, AnalyticsHubMemberCountRow>>;
+
+  /**
    * All five raw counts the L1 `AnalyticsWindowActivity` payload needs
    * for the parametric window pair driven by `windowDays`. Issues a
    * single SQL with two scans (one over `mv_user_transaction_daily`
@@ -131,6 +145,21 @@ export interface IAnalyticsCommunityRepository {
     currLower: Date,
     upper: Date,
   ): Promise<AnalyticsWindowActivityCountsRow>;
+
+  /**
+   * Bulk variant of `findWindowActivityCounts`. Aggregates the same five
+   * counts for every community in `communityIds` in a single SQL pass.
+   * Returns one entry per requested community (zero-row defaults for
+   * communities with no activity in the window). Used by the L1
+   * dashboard fan-out to collapse N roundtrips to one.
+   */
+  findWindowActivityCountsBulk(
+    ctx: IContext,
+    communityIds: string[],
+    prevLower: Date,
+    currLower: Date,
+    upper: Date,
+  ): Promise<Map<string, AnalyticsWindowActivityCountsRow>>;
 
   /** All-time DONATION totals + MV data window for the summary card,
    * clamped at `asOf` for historic-asOf consistency with the rest of

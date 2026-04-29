@@ -846,6 +846,114 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
     });
   }
 
+  /**
+   * Bulk version of `findWindowActivityCounts` for the L1 dashboard
+   * fan-out. One SQL roundtrip covers every community in `communityIds`;
+   * the returned Map yields a zero-row entry for any community that has
+   * no activity in the window, so the caller can iterate `communityIds`
+   * without null-checking. Same date-window contract as the
+   * single-community method.
+   */
+  async findWindowActivityCountsBulk(
+    ctx: IContext,
+    communityIds: string[],
+    prevLower: Date,
+    currLower: Date,
+    upper: Date,
+  ): Promise<Map<string, AnalyticsWindowActivityCountsRow>> {
+    const empty = (): AnalyticsWindowActivityCountsRow => ({
+      senderCount: 0,
+      senderCountPrev: 0,
+      retainedSenders: 0,
+      newMemberCount: 0,
+      newMemberCountPrev: 0,
+    });
+    const out = new Map<string, AnalyticsWindowActivityCountsRow>();
+    for (const id of communityIds) out.set(id, empty());
+    if (communityIds.length === 0) return out;
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          community_id: string;
+          curr_sender_count: number;
+          prev_sender_count: number;
+          retained_count: number;
+          curr_new_member_count: number;
+          prev_new_member_count: number;
+        }[]
+      >`
+        WITH window_senders AS (
+          SELECT
+            mv."community_id",
+            mv."user_id",
+            bool_or(mv."date" >= ${currLower}::date AND mv."date" <  ${upper}::date) AS in_curr,
+            bool_or(mv."date" >= ${prevLower}::date AND mv."date" <  ${currLower}::date) AS in_prev
+          FROM "mv_user_transaction_daily" mv
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = mv."community_id"
+            AND m."user_id" = mv."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  (${upper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          WHERE mv."community_id" = ANY(${communityIds}::text[])
+            AND mv."donation_out_count" > 0
+            AND mv."date" >= ${prevLower}::date
+            AND mv."date" <  ${upper}::date
+          GROUP BY mv."community_id", mv."user_id"
+        ),
+        sender_aggregates AS (
+          SELECT
+            "community_id",
+            COUNT(*) FILTER (WHERE in_curr)::int                AS curr_sender_count,
+            COUNT(*) FILTER (WHERE in_prev)::int                AS prev_sender_count,
+            COUNT(*) FILTER (WHERE in_curr AND in_prev)::int    AS retained_count
+          FROM window_senders
+          GROUP BY "community_id"
+        ),
+        new_members AS (
+          SELECT
+            "community_id",
+            COUNT(*) FILTER (
+              WHERE "created_at" >= (${currLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+                AND "created_at" <  (${upper}::date     AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            )::int AS curr_new_member_count,
+            COUNT(*) FILTER (
+              WHERE "created_at" >= (${prevLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+                AND "created_at" <  (${currLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            )::int AS prev_new_member_count
+          FROM "t_memberships"
+          WHERE "community_id" = ANY(${communityIds}::text[])
+            AND "status" = 'JOINED'
+            AND "created_at" >= (${prevLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  (${upper}::date     AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          GROUP BY "community_id"
+        ),
+        community_keys AS (
+          SELECT unnest(${communityIds}::text[]) AS community_id
+        )
+        SELECT
+          ck."community_id"                       AS community_id,
+          COALESCE(s.curr_sender_count, 0)        AS curr_sender_count,
+          COALESCE(s.prev_sender_count, 0)        AS prev_sender_count,
+          COALESCE(s.retained_count, 0)           AS retained_count,
+          COALESCE(n.curr_new_member_count, 0)    AS curr_new_member_count,
+          COALESCE(n.prev_new_member_count, 0)    AS prev_new_member_count
+        FROM community_keys ck
+        LEFT JOIN sender_aggregates s ON s."community_id" = ck."community_id"
+        LEFT JOIN new_members n      ON n."community_id" = ck."community_id"
+      `;
+      for (const r of rows) {
+        out.set(r.community_id, {
+          senderCount: r.curr_sender_count ?? 0,
+          senderCountPrev: r.prev_sender_count ?? 0,
+          retainedSenders: r.retained_count ?? 0,
+          newMemberCount: r.curr_new_member_count ?? 0,
+          newMemberCountPrev: r.prev_new_member_count ?? 0,
+        });
+      }
+      return out;
+    });
+  }
+
   async findWindowActivityCounts(
     ctx: IContext,
     communityId: string,
@@ -941,6 +1049,61 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
         newMemberCount: r?.curr_new_member_count ?? 0,
         newMemberCountPrev: r?.prev_new_member_count ?? 0,
       };
+    });
+  }
+
+  /**
+   * Bulk variant of `findWindowHubMemberCount`. Computes the hub-member
+   * count for every community in `communityIds` in a single SQL pass,
+   * keeping the same DISTINCT-recipient semantics. Communities with no
+   * hub members are returned with count=0 so the caller can iterate
+   * `communityIds` without null-checking.
+   */
+  async findWindowHubMemberCountBulk(
+    ctx: IContext,
+    communityIds: string[],
+    currLower: Date,
+    upper: Date,
+    hubBreadthThreshold: number,
+  ): Promise<Map<string, AnalyticsHubMemberCountRow>> {
+    const out = new Map<string, AnalyticsHubMemberCountRow>();
+    for (const id of communityIds) out.set(id, { count: 0 });
+    if (communityIds.length === 0) return out;
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<{ community_id: string; n: number }[]>`
+        WITH window_recipients AS (
+          SELECT
+            fw."community_id" AS community_id,
+            fw."user_id" AS user_id,
+            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ANY(${communityIds}::text[])
+          INNER JOIN "t_memberships" m
+            ON m."community_id" = fw."community_id"
+            AND m."user_id" = fw."user_id"
+            AND m."status" = 'JOINED'
+            AND m."created_at" <  (${upper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."user_id" IS NOT NULL
+            AND tw."user_id" <> fw."user_id"
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" >= (${currLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND t."created_at" <  (${upper}::date     AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
+          GROUP BY fw."community_id", fw."user_id"
+        )
+        SELECT community_id, COUNT(*)::int AS n
+        FROM window_recipients
+        WHERE unique_recipients >= ${hubBreadthThreshold}
+        GROUP BY community_id
+      `;
+      for (const r of rows) {
+        out.set(r.community_id, { count: r.n ?? 0 });
+      }
+      return out;
     });
   }
 
