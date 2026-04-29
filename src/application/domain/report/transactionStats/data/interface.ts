@@ -114,4 +114,5 @@ export interface IReportTransactionStatsRepository {
   ): Promise<Map<string, CohortRetentionRow>>;
   refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
   refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
+  refreshDonationTxEdges(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
 }

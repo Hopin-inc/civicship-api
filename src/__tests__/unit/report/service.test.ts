@@ -20,6 +20,7 @@ class MockTransactionStatsRepository {
   findCohortRetention = jest.fn();
   refreshTransactionSummaryDaily = jest.fn();
   refreshUserTransactionDaily = jest.fn();
+  refreshDonationTxEdges = jest.fn();
 }
 
 class MockEntityRepository {

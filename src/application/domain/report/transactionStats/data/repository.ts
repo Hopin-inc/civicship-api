@@ -16,6 +16,7 @@ import {
   UserTransactionAggregateRow,
 } from "@/application/domain/report/transactionStats/data/rows";
 import {
+  refreshMaterializedViewDonationTxEdges,
   refreshMaterializedViewTransactionSummaryDaily,
   refreshMaterializedViewUserTransactionDaily,
 } from "@prisma/client/sql";
@@ -171,29 +172,26 @@ export default class ReportTransactionStatsRepository
    * did this user give to across the whole week", not "sum of new-per-day
    * counterparties".
    *
-   * Scoped with `userIds` so the scan fans out only to the top-N ids already
-   * selected by the upstream query. `t_wallets.user_id` has an index
-   * (`t_wallets_user_id_idx`) so the lookup joining the sender-side is cheap
-   * even without a dedicated MV.
+   * Sources from `mv_donation_tx_edges`. The previous version filtered
+   * t_transactions only by sender-/recipient-wallet user_id (no explicit
+   * reason filter), but in civicship the only TransactionReason where both
+   * sides are user wallets is DONATION — every other reason has a
+   * community/system wallet on at least one side, which the wallet
+   * predicates already excluded. Routing through the DONATION-only MV
+   * therefore preserves semantics while eliminating the per-request
+   * t_transactions scan + double t_wallets join. The MV also bakes in the
+   * self-donation exclusion that the previous code expressed via a FILTER
+   * clause.
    *
-   * Excludes transactions where the counterparty wallet has no `user_id`
-   * (e.g. community wallets) so the count is strictly "people this user sent
-   * points to", and excludes self-transfers (`tw.user_id = fw.user_id`) from
-   * the DISTINCT via a FILTER clause — the metric is "how many different
-   * *other* people did this user give to", which is what the breadth-of-
-   * activity signal downstream in the prompt is trying to describe.
+   * Scoped with `userIds` so the scan fans out only to the top-N ids
+   * already selected by the upstream query. The MV's
+   * `(sender_community_id, date DESC)` index keeps the range scan cheap
+   * over the JST reporting window.
    *
-   * Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)` window to match
-   * the MV bucketing elsewhere in this file. `t_transactions.created_at` is
-   * Prisma `DateTime` → `timestamp WITHOUT time zone` holding naive UTC,
-   * so we convert the JST date boundaries to naive UTC on the constant side
-   * (`::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'`): first cast the
-   * date to a timestamptz at JST midnight, then render that instant as a
-   * naive UTC wall-clock — the same value the column holds. Keeping the
-   * transform off the column preserves index usage (SARGable) while still
-   * being independent of the DB session timezone, unlike the prior
-   * `timestamp >= timestamptz` form which implicitly cast via the
-   * session's timezone.
+   * Uses a half-open `[from 00:00 JST, (to + 1) 00:00 JST)` window — the
+   * MV's `date` column is JST-bucketed (@db.Date), so the boundaries are
+   * compared as bare dates without the timezone-cast dance the
+   * t_transactions version needed.
    */
   async findTrueUniqueCounterpartiesForUsers(
     ctx: IContext,
@@ -207,22 +205,14 @@ export default class ReportTransactionStatsRepository
         { user_id: string; true_unique_counterparties: number }[]
       >`
         SELECT
-          fw."user_id" AS "user_id",
-          COUNT(DISTINCT tw."user_id") FILTER (
-            WHERE tw."user_id" <> fw."user_id"
-          )::int AS "true_unique_counterparties"
-        FROM "t_transactions" t
-        INNER JOIN "t_wallets" fw
-          ON fw."id" = t."from"
-          AND fw."user_id" = ANY(${userIds}::text[])
-          AND fw."community_id" = ${communityId}
-        INNER JOIN "t_wallets" tw
-          ON tw."id" = t."to"
-          AND tw."user_id" IS NOT NULL
-        WHERE t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-          AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
-        GROUP BY fw."user_id"
+          e."sender_user_id" AS "user_id",
+          COUNT(DISTINCT e."recipient_user_id")::int AS "true_unique_counterparties"
+        FROM "mv_donation_tx_edges" e
+        WHERE e."sender_community_id" = ${communityId}
+          AND e."sender_user_id" = ANY(${userIds}::text[])
+          AND e."date" >= ${range.from}::date
+          AND e."date" <  (${range.to}::date + 1)
+        GROUP BY e."sender_user_id"
       `;
       return new Map(rows.map((r) => [r.user_id, r.true_unique_counterparties]));
     });
@@ -343,16 +333,21 @@ export default class ReportTransactionStatsRepository
   }
 
   /**
-   * The single transaction with the largest `chain_depth` within the JST
-   * reporting window. Mirrors the community-scoping predicate used by
-   * `mv_transaction_summary_daily` / `v_transaction_comments`:
-   * `COALESCE(fw.community_id, tw.community_id) = $1` plus the
-   * defensive-consistency check that rejects cross-community pairs.
+   * The single DONATION transaction with the largest `chain_depth` within
+   * the JST reporting window. Backs the weekly report's `deepest_chain`
+   * field, which the prompt templates explicitly frame as the "感謝の連鎖"
+   * / "相互扶助の連鎖" / "ポイントの旅" — i.e. the deepest gift cascade,
+   * not "the deepest transaction of any reason". The pre-MV
+   * implementation filtered only on `chain_depth IS NOT NULL` (no reason
+   * filter) so a POINT_REWARD chain could in principle out-rank the
+   * deepest DONATION chain and reach the prompt as a "感謝の連鎖" — a
+   * latent inconsistency. Routing through `mv_donation_tx_edges` makes
+   * the DONATION scope explicit and matches the template intent.
    *
    * ORDER BY depth DESC, created_at ASC so that ties resolve to the
-   * *earliest* deep chain in the window — intuitively "the one that started
-   * the cascade" rather than whichever the planner picked first. Returns
-   * null when no chained transaction exists for the window.
+   * *earliest* deep chain in the window — intuitively "the one that
+   * started the cascade" rather than whichever the planner picked first.
+   * Returns null when no DONATION chain exists for the window.
    */
   async findDeepestChain(
     ctx: IContext,
@@ -374,42 +369,32 @@ export default class ReportTransactionStatsRepository
         }[]
       >`
         SELECT
-          t."id",
-          t."chain_depth"::int AS "chain_depth",
+          e."transaction_id" AS "id",
+          e."chain_depth"::int AS "chain_depth",
           t."reason",
           t."comment",
-          -- Double AT TIME ZONE to convert the naive-UTC timestamp
-          -- column to a JST calendar day. A single AT TIME ZONE
-          -- 'Asia/Tokyo' would treat the value AS JST and shift it by
-          -- -9h, mis-bucketing transactions between 00:00-08:59 JST --
-          -- the same bug the 20260416000001_fix_report_views_jst_bucketing
-          -- migration fixed in the MV side.
-          ((t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) AS "date",
-          fw."user_id" AS "from_user_id",
-          tw."user_id" AS "to_user_id",
+          e."date",
+          e."sender_user_id" AS "from_user_id",
+          e."recipient_user_id" AS "to_user_id",
           t."created_by" AS "created_by_user_id",
-          t."parent_tx_id"
-        FROM "t_transactions" t
-        LEFT JOIN "t_wallets" fw ON fw."id" = t."from"
-        LEFT JOIN "t_wallets" tw ON tw."id" = t."to"
-        WHERE COALESCE(fw."community_id", tw."community_id") = ${communityId}
-          AND (fw."community_id" IS NULL
-               OR tw."community_id" IS NULL
-               OR fw."community_id" = tw."community_id")
-          AND t."chain_depth" IS NOT NULL
-          -- Half-open window [from JST 00:00, (to + 1 day) JST 00:00)
-          -- covers exactly the JST calendar days from..to inclusive,
-          -- matching the bucketing used by the report MVs. created_at
-          -- is timestamp WITHOUT time zone (Prisma DateTime default)
-          -- holding naive UTC, so we convert the JST date boundaries to
-          -- naive UTC on the constant side (::date AT TIME ZONE
-          -- 'Asia/Tokyo' AT TIME ZONE 'UTC') to match the column's
-          -- storage format -- independent of DB session timezone, and
-          -- the column stays untouched so the B-tree index on
-          -- "created_at" can still be used.
-          AND t."created_at" >= (${range.from}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-          AND t."created_at" <  ((${range.to}::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-        ORDER BY t."chain_depth" DESC, t."created_at" ASC
+          e."parent_tx_id"
+        FROM "mv_donation_tx_edges" e
+        -- t_transactions join only for the columns the MV doesn't
+        -- carry (reason, comment, created_by). The join key is
+        -- transaction_id which is the MV's primary key and the source
+        -- table's id, so this stays a pkey lookup on the small set of
+        -- rows that survive the WHERE filter (typically <= 1 because
+        -- of LIMIT 1 in the planner's reach via ORDER BY+LIMIT).
+        INNER JOIN "t_transactions" t ON t."id" = e."transaction_id"
+        WHERE COALESCE(e."sender_community_id", e."recipient_community_id") = ${communityId}
+          AND e."chain_depth" IS NOT NULL
+          -- Half-open window [from JST 00:00, (to + 1 day) JST 00:00).
+          -- The MV's "date" column is already JST-bucketed (@db.Date),
+          -- so the boundaries compare as bare dates without the
+          -- timezone-cast dance the t_transactions form needed.
+          AND e."date" >= ${range.from}::date
+          AND e."date" <  (${range.to}::date + 1)
+        ORDER BY e."chain_depth" DESC, e."created_at" ASC
         LIMIT 1
       `;
       if (rows.length === 0) return null;
@@ -959,5 +944,9 @@ export default class ReportTransactionStatsRepository
 
   async refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
     await tx.$queryRawTyped(refreshMaterializedViewUserTransactionDaily());
+  }
+
+  async refreshDonationTxEdges(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
+    await tx.$queryRawTyped(refreshMaterializedViewDonationTxEdges());
   }
 }

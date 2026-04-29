@@ -843,6 +843,7 @@ export default class ReportUseCase {
   async refreshAllReportViews(ctx: IContext): Promise<void> {
     await ctx.issuer.internal((tx) => this.service.refreshTransactionSummaryDaily(ctx, tx));
     await ctx.issuer.internal((tx) => this.service.refreshUserTransactionDaily(ctx, tx));
+    await ctx.issuer.internal((tx) => this.service.refreshDonationTxEdges(ctx, tx));
   }
 }
 

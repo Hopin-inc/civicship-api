@@ -115,16 +115,20 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           SELECT (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo') AS ts
         ),
         asof_bound AS (
-          -- Derive the "asOf JST day + 1, at JST midnight, expressed
-          -- as a naive UTC timestamp" once and reuse everywhere the
-          -- query wants an exclusive upper bound on t_*.created_at.
-          -- The expression is the same JST-day clamp findActivitySnapshot
+          -- Derive the "asOf JST day + 1" once and reuse everywhere
+          -- the query wants an exclusive upper bound. upper_ts is
+          -- the naive-UTC encoding for comparisons against
+          -- t_*.created_at columns; upper_jst_date is the bare
+          -- JST date for comparisons against mv_donation_tx_edges.date
+          -- (and any other JST-bucketed @db.Date column). The
+          -- expression is the same JST-day clamp findActivitySnapshot
           -- / findMonthlyActivity receive pre-computed from the
           -- service layer; inlining it into a single CTE here keeps
           -- the signature unchanged without duplicating the double
-          -- AT TIME ZONE dance across three WHERE clauses.
+          -- AT TIME ZONE dance across multiple WHERE clauses.
           SELECT
-            ((ts::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC') AS upper_ts
+            ((ts::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC') AS upper_ts,
+            (ts::date + 1)                                                AS upper_jst_date
           FROM asof_jst
         ),
         members AS (
@@ -157,41 +161,47 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           --   donation_out_days   = COUNT(DISTINCT jst_day)
           --   total_points_out    = SUM(day_points_out)
           --
-          -- This consolidates what used to be two parallel CTEs
-          -- (donation_months + donation_days). Joining both into the
-          -- final SELECT on user_id created an N×M cross product —
-          -- COUNT(DISTINCT) was unaffected, but SUM(month_points_out)
-          -- got inflated by M (= number of donation days), corrupting
-          -- total_points_out and every downstream consumer
-          -- (pointsContributionPct, sort orderings, etc.). Pre-
-          -- aggregating per-day in a single CTE removes the cross
-          -- product entirely and is also one fewer t_transactions
-          -- scan since both old CTEs read the same rows.
+          -- Sources from mv_donation_tx_edges. The MV bakes in three
+          -- guards that match civicship's gift-economy DONATION
+          -- definition and so are correct for every analytics caller,
+          -- including this one:
+          --   - tw.user_id IS NOT NULL — DONATIONs to burn / system
+          --     wallets are not peer-to-peer gifts
+          --   - tw.user_id <> fw.user_id — self-donations are not
+          --     gifts
+          --   - cross-community guard — DONATION rows where both sides
+          --     have non-NULL communities and they differ are
+          --     cross-community leakage and shouldn't be credited to
+          --     either community's totals
+          -- The pre-PR donation_activity CTE happened not to apply
+          -- these because it never JOINed the recipient wallet, but
+          -- that was an implicit reliance on the data not containing
+          -- such rows. Making the contract explicit at the MV layer
+          -- removes the ambiguity for every consumer.
           --
           -- JST date bucketing matches the rest of the query so
           -- daysIn / donationOutDays line up with the member-tenure
           -- boundary, and findActivitySnapshot / findPlatformTotals
           -- agree on what "as of asOf" includes.
           SELECT
-            fw."community_id" AS community_id,
-            fw."user_id" AS user_id,
-            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
-            DATE_TRUNC(
-              'month',
-              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
-            ) AS jst_month,
-            SUM(t."from_point_change") AS day_points_out
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ANY(${communityIds}::text[])
+            e."sender_community_id" AS community_id,
+            e."sender_user_id" AS user_id,
+            e."date" AS jst_day,
+            DATE_TRUNC('month', e."date") AS jst_month,
+            SUM(e."from_point_change") AS day_points_out
+          FROM "mv_donation_tx_edges" e
           INNER JOIN members m
-            ON m."user_id" = fw."user_id"
-            AND m."community_id" = fw."community_id"
+            ON m."user_id" = e."sender_user_id"
+            AND m."community_id" = e."sender_community_id"
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
-          GROUP BY fw."community_id", fw."user_id", jst_day, jst_month
+          WHERE e."sender_community_id" = ANY(${communityIds}::text[])
+            AND e."date" < ab.upper_jst_date
+          -- jst_month is functionally dependent on e."date" (DATE_TRUNC
+          -- output) and Postgres allows it in SELECT without an
+          -- explicit GROUP BY entry, but listing it keeps the GROUP BY
+          -- shape parallel to the pre-PR inline CTE and removes the
+          -- reliance on functional-dependency analysis.
+          GROUP BY e."sender_community_id", e."sender_user_id", e."date", jst_month
         ),
         donation_recipients AS (
           -- Per-sender count of DISTINCT recipient user_ids over the
@@ -199,42 +209,31 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           -- breadth" half of the donor profile and cannot be derived
           -- from mv_user_transaction_daily — that MV's
           -- unique_counterparties column is per-day and does not
-          -- compose into an all-time DISTINCT (the same recipient
-          -- across multiple days would double-count under SUM).
+          -- compose into an all-time DISTINCT under SUM (same recipient
+          -- across multiple days would double-count).
           --
-          -- Scoped to (a) DONATION transactions only, (b) sender wallet
-          -- in one of the requested communities, and (c) recipient
-          -- wallet either in the SAME community as the sender or
-          -- unattached — same "no cross-community leakage" guard that
-          -- mv_user_transaction_daily and v_transaction_comments apply
-          -- at the view layer. Wallets without a user_id (burn /
-          -- system targets) are excluded so a member who only donated
-          -- into a burn target scores 0. Self-donations
-          -- (fw.user_id = tw.user_id) are excluded so the count
-          -- matches the "distinct OTHER users" wording in
-          -- AnalyticsMemberRow.uniqueDonationRecipients — the wallet
-          -- validator does not block same-user transfers, so the
-          -- guard has to live here.
+          -- Sources from mv_donation_tx_edges. The MV bakes in:
+          --   - DONATION reason
+          --   - cross-community guard (recipient in same community or
+          --     unattached)
+          --   - burn-target / system-target exclusion (tw.user_id NOT
+          --     NULL)
+          --   - self-donation exclusion (sender_user_id <>
+          --     recipient_user_id)
+          -- so this CTE just keys by sender_community_id and
+          -- clamps at asOf.
           SELECT
-            fw."community_id" AS community_id,
-            fw."user_id" AS user_id,
-            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ANY(${communityIds}::text[])
-          INNER JOIN "t_wallets" tw
-            ON tw."id" = t."to"
-            AND tw."user_id" IS NOT NULL
-            AND tw."user_id" <> fw."user_id"
+            e."sender_community_id" AS community_id,
+            e."sender_user_id" AS user_id,
+            COUNT(DISTINCT e."recipient_user_id")::int AS unique_recipients
+          FROM "mv_donation_tx_edges" e
           INNER JOIN members m
-            ON m."user_id" = fw."user_id"
-            AND m."community_id" = fw."community_id"
+            ON m."user_id" = e."sender_user_id"
+            AND m."community_id" = e."sender_community_id"
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
-            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
-          GROUP BY fw."community_id", fw."user_id"
+          WHERE e."sender_community_id" = ANY(${communityIds}::text[])
+            AND e."date" < ab.upper_jst_date
+          GROUP BY e."sender_community_id", e."sender_user_id"
         ),
         donation_received AS (
           -- Receiver-side counterpart to donation_activity. Per-
@@ -246,43 +245,30 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           -- the cross-product bug that motivated the donation_activity
           -- consolidation.
           --
-          -- Scoping mirrors donation_activity / donation_recipients:
-          --   - DONATION reason only (excludes burn / grant flows that
-          --     are not part of the gift-economy ledger)
-          --   - receiver wallet attached to one of the requested
-          --     communities so a member who received cross-community
-          --     grants does not get incoming credit they cannot
-          --     reciprocate
-          --   - sender wallet either in the same community or
-          --     unattached (system / burn sources are excluded from
-          --     the points sum for symmetry with donation_activity's
-          --     wallet filter on the sending side)
-          --   - clamped at asOf via asof_bound so a historic asOf
-          --     does not leak future incoming points into the totals
+          -- Sources from mv_donation_tx_edges, keyed by
+          -- recipient_community_id. Same "the MV's three guards
+          -- match civicship's DONATION definition" reasoning as
+          -- donation_activity above — burn-target / self-donation /
+          -- cross-community-leakage rows are not real peer-to-peer
+          -- gifts and so should not contribute to a member's
+          -- incoming totals either.
           SELECT
-            tw."community_id" AS community_id,
-            tw."user_id" AS user_id,
-            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
-            DATE_TRUNC(
-              'month',
-              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
-            ) AS jst_month,
-            SUM(t."to_point_change") AS day_points_in
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" tw
-            ON tw."id" = t."to"
-            AND tw."community_id" = ANY(${communityIds}::text[])
+            e."recipient_community_id" AS community_id,
+            e."recipient_user_id" AS user_id,
+            e."date" AS jst_day,
+            DATE_TRUNC('month', e."date") AS jst_month,
+            SUM(e."to_point_change") AS day_points_in
+          FROM "mv_donation_tx_edges" e
           INNER JOIN members m
-            ON m."user_id" = tw."user_id"
-            AND m."community_id" = tw."community_id"
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."user_id" IS NOT NULL
-            AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
+            ON m."user_id" = e."recipient_user_id"
+            AND m."community_id" = e."recipient_community_id"
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
-          GROUP BY tw."community_id", tw."user_id", jst_day, jst_month
+          WHERE e."recipient_community_id" = ANY(${communityIds}::text[])
+            AND e."date" < ab.upper_jst_date
+          -- See donation_activity above: jst_month listed explicitly
+          -- in GROUP BY for SELECT-list parity rather than relying on
+          -- functional-dependency analysis.
+          GROUP BY e."recipient_community_id", e."recipient_user_id", e."date", jst_month
         ),
         donation_in_aggregates AS (
           -- Pre-aggregate donation_received to one row per
@@ -312,35 +298,29 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           -- dashboard uses to compute "受領→送付 転換率"
           -- (recipient-to-sender conversion rate).
           --
-          -- Same defensive guards as donation_recipients in mirror:
-          --   - sender wallet must have a user_id (no burn / system
-          --     sources count toward sender breadth, otherwise an
-          --     admin-issued bulk grant would inflate the count)
-          --   - excludes self-donations (matches the "distinct OTHER
-          --     users" wording in
-          --     AnalyticsMemberRow.uniqueDonationSenders)
-          --   - sender wallet either in the same community or
-          --     unattached (no cross-community leakage)
+          -- Sources from mv_donation_tx_edges, keyed by
+          -- recipient_community_id. The MV bakes in the same defensive
+          -- guards as the previous inline CTE:
+          --   - DONATION reason
+          --   - sender wallet has a user_id (burn / system sources
+          --     excluded so a bulk admin grant doesn't inflate sender
+          --     breadth)
+          --   - self-donation exclusion (sender_user_id <>
+          --     recipient_user_id)
+          --   - cross-community guard (sender community NULL or
+          --     matches recipient)
           SELECT
-            tw."community_id" AS community_id,
-            tw."user_id" AS user_id,
-            COUNT(DISTINCT fw."user_id")::int AS unique_senders
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" tw
-            ON tw."id" = t."to"
-            AND tw."community_id" = ANY(${communityIds}::text[])
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."user_id" IS NOT NULL
-            AND fw."user_id" <> tw."user_id"
+            e."recipient_community_id" AS community_id,
+            e."recipient_user_id" AS user_id,
+            COUNT(DISTINCT e."sender_user_id")::int AS unique_senders
+          FROM "mv_donation_tx_edges" e
           INNER JOIN members m
-            ON m."user_id" = tw."user_id"
-            AND m."community_id" = tw."community_id"
+            ON m."user_id" = e."recipient_user_id"
+            AND m."community_id" = e."recipient_community_id"
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
-            AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
-          GROUP BY tw."community_id", tw."user_id"
+          WHERE e."recipient_community_id" = ANY(${communityIds}::text[])
+            AND e."date" < ab.upper_jst_date
+          GROUP BY e."recipient_community_id", e."recipient_user_id"
         ),
         member_tenure AS (
           -- Compute months_in / days_in ONCE per (community, member)
@@ -721,61 +701,50 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
         hub_per_month AS (
           -- Per (month_start, sender) DISTINCT recipient count over
           -- the trailing 28-day window ending at member_upper.
-          -- Mirrors the L1 findWindowHubMemberCountBulk query exactly
-          -- (cross-community + burn-target guards via tw.user_id
-          -- presence, self-donation excluded by tw.user_id <>
-          -- fw.user_id, recipient-community guard via
-          -- tw.community_id) but cross-joined with month_bounds so
-          -- each transaction is evaluated against every month-end
-          -- window it falls into. The 28-day window length is
-          -- intentionally fixed (not request-driven) so monthly
-          -- hub counts stay comparable across requests — same
-          -- precedent as dormant_counts' fixed 30-day window.
+          -- Cross-joined with month_bounds so each DONATION edge is
+          -- evaluated against every month-end window it falls into.
+          -- The 28-day window length is intentionally fixed (not
+          -- request-driven) so monthly hub counts stay comparable
+          -- across requests — same precedent as dormant_counts' fixed
+          -- 30-day window.
           --
-          -- Each transaction's created_at can satisfy at most two
-          -- consecutive months' windows because windowDays (28) is
-          -- shorter than any month-pair span (>= 59 days), so the
-          -- cross join's row volume is bounded by
-          -- ~2 × |DONATION tx in window| rather than N × |DONATION tx|.
+          -- Each edge's date can satisfy at most two consecutive
+          -- months' windows because windowDays (28) is shorter than
+          -- any month-pair span (>= 59 days), so the cross join's
+          -- row volume is bounded by ~2 × |DONATION edges in window|.
           --
-          -- Cannot reuse mv_user_transaction_daily here for the
-          -- same reason as the L1 path: the MV's per-day
+          -- Sources from mv_donation_tx_edges (the tx-level normalized
+          -- DONATION fact view). The MV bakes in the cross-community
+          -- guard, the burn-target / self-donation exclusions, and
+          -- the wallet -> user/community resolution — replacing the
+          -- per-request t_transactions scan + double t_wallets JOIN
+          -- the previous version of this CTE issued. Cannot reuse
+          -- mv_user_transaction_daily here because its per-day
           -- unique_counterparties does not compose into a
-          -- window-wide DISTINCT under SUM (same recipient across
-          -- multiple days double-counts).
+          -- window-wide DISTINCT under SUM.
           --
-          -- The t_memberships join restricts senders to users
-          -- still JOINED in the community at member_upper. Mirrors
-          -- the dormant_counts / returned_counts CTEs above and
-          -- the L1 findWindowHubMemberCountBulk query so a now-
-          -- departed member who sent DONATIONs while a member
-          -- doesn't get counted as a "current hub" in their
-          -- former month — would otherwise contradict the
-          -- L1==latest-month invariant once L1 also enforces
-          -- this membership filter.
+          -- The t_memberships join restricts senders to users still
+          -- JOINED in the community at member_upper. Mirrors
+          -- dormant_counts / returned_counts CTEs above and the L1
+          -- findWindowHubMemberCountBulk query so a now-departed
+          -- member who sent DONATIONs while a member doesn't get
+          -- counted as a "current hub" in their former month — would
+          -- otherwise contradict the L1==latest-month invariant.
           SELECT
             mb.month_start,
-            fw."user_id" AS user_id,
-            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
+            e."sender_user_id" AS user_id,
+            COUNT(DISTINCT e."recipient_user_id")::int AS unique_recipients
           FROM month_bounds mb
-          INNER JOIN "t_transactions" t
-            ON t."reason" = 'DONATION'
-            AND t."created_at" >= ((mb.member_upper - 28) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-            AND t."created_at" <  (mb.member_upper          AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ${communityId}
+          INNER JOIN "mv_donation_tx_edges" e
+            ON e."sender_community_id" = ${communityId}
+            AND e."date" >= (mb.member_upper - 28)
+            AND e."date" <  mb.member_upper
           INNER JOIN "t_memberships" m
             ON m."community_id" = ${communityId}
-            AND m."user_id" = fw."user_id"
+            AND m."user_id" = e."sender_user_id"
             AND m."status" = 'JOINED'
             AND m."created_at" <  (mb.member_upper AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-          INNER JOIN "t_wallets" tw
-            ON tw."id" = t."to"
-            AND tw."user_id" IS NOT NULL
-            AND tw."user_id" <> fw."user_id"
-            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
-          GROUP BY mb.month_start, fw."user_id"
+          GROUP BY mb.month_start, e."sender_user_id"
         ),
         hub_counts AS (
           -- Apply the threshold filter and count distinct hub
@@ -1056,24 +1025,15 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
       const rows = await tx.$queryRaw<{ community_id: string; n: number }[]>`
         WITH window_recipients AS (
           -- Per-(community, sender) DISTINCT recipient count over the
-          -- parametric window. Same shape as the donation_recipients
-          -- CTE in findMemberStatsBulk but window-clamped on both
-          -- sides instead of tenure-clamped (upper only). Cannot
-          -- reuse mv_user_transaction_daily because its per-day
-          -- unique_counterparties does not compose into a window-wide
-          -- DISTINCT (same recipient across multiple days would
-          -- double-count under SUM).
-          --
-          -- Cross-community + burn-target guards mirror the defenses
-          -- on mv_user_transaction_daily / v_transaction_comments so
-          -- a system-target wallet (no user_id) does not silently
-          -- inflate the recipient count. Self-donations are excluded
-          -- (matches the "different people" wording in
-          -- AnalyticsCommunityOverview.hubMemberCount and the
-          -- "distinct OTHER users" definition in
-          -- AnalyticsMemberRow.uniqueDonationRecipients) — the wallet
-          -- validator does not block same-user transfers, so the
-          -- guard has to live in this query.
+          -- parametric window. Sources from mv_donation_tx_edges (the
+          -- tx-level normalized DONATION fact view), which bakes in
+          -- the wallet -> user/community resolution, the cross-
+          -- community guard, the burn-target exclusion, and the
+          -- self-donation exclusion. That replaces the per-request
+          -- t_transactions scan + double t_wallets JOIN this query
+          -- previously issued. Cannot reuse mv_user_transaction_daily
+          -- because its per-day unique_counterparties does not compose
+          -- into a window-wide DISTINCT under SUM.
           --
           -- The t_memberships join restricts senders to users still
           -- JOINED in their respective communities at "upper" (asOf+1
@@ -1083,27 +1043,19 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           -- "hubMemberCount <= senderCount <= totalMembers" invariant
           -- documented on AnalyticsCommunityOverview.
           SELECT
-            fw."community_id" AS community_id,
-            fw."user_id" AS user_id,
-            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ANY(${communityIds}::text[])
+            e."sender_community_id" AS community_id,
+            e."sender_user_id" AS user_id,
+            COUNT(DISTINCT e."recipient_user_id")::int AS unique_recipients
+          FROM "mv_donation_tx_edges" e
           INNER JOIN "t_memberships" m
-            ON m."community_id" = fw."community_id"
-            AND m."user_id" = fw."user_id"
+            ON m."community_id" = e."sender_community_id"
+            AND m."user_id" = e."sender_user_id"
             AND m."status" = 'JOINED'
             AND m."created_at" <  (${upper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-          INNER JOIN "t_wallets" tw
-            ON tw."id" = t."to"
-            AND tw."user_id" IS NOT NULL
-            AND tw."user_id" <> fw."user_id"
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" >= (${currLower}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-            AND t."created_at" <  (${upper}::date     AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
-            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
-          GROUP BY fw."community_id", fw."user_id"
+          WHERE e."sender_community_id" = ANY(${communityIds}::text[])
+            AND e."date" >= ${currLower}::date
+            AND e."date" <  ${upper}::date
+          GROUP BY e."sender_community_id", e."sender_user_id"
         )
         SELECT community_id, COUNT(*)::int AS n
         FROM window_recipients
@@ -1139,41 +1091,41 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
         }[]
       >`
         WITH asof_bound AS (
-          -- Same (asOf JST day + 1) clamp the other analytics queries
-          -- use. Historic asOf must not count DONATION transactions
-          -- or chain depths from dates past asOf; otherwise the
-          -- summary card would mix the past-point view with whatever
-          -- landed after, contradicting stageCounts.total /
+          -- (asOf JST day + 1) used as an exclusive upper bound on
+          -- both DONATION rows and the MV-coverage range. Historic
+          -- asOf must not count DONATION transactions or chain
+          -- depths from dates past asOf; otherwise the summary card
+          -- would mix the past-point view with whatever landed
+          -- after, contradicting stageCounts.total /
           -- communityActivityRate which ARE clamped.
-          SELECT (
+          SELECT
             ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
-            AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
-          ) AS upper_ts
+            AS upper_jst_date
         ),
         donation_totals AS (
+          -- Sources from mv_donation_tx_edges. The MV's burn-target
+          -- / self-donation / cross-community-leakage exclusions
+          -- match civicship's gift-economy DONATION definition and
+          -- so are correct for the all-time totals too — same
+          -- reasoning as the donation_* CTEs in findMemberStatsBulk.
           SELECT
-            COALESCE(SUM(t."from_point_change"), 0)::bigint AS total_donation_points,
-            MAX(t."chain_depth")::int AS max_chain_depth
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ${communityId}
+            COALESCE(SUM(e."from_point_change"), 0)::bigint AS total_donation_points,
+            MAX(e."chain_depth")::int AS max_chain_depth
+          FROM "mv_donation_tx_edges" e
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
+          WHERE e."sender_community_id" = ${communityId}
+            AND e."date" < ab.upper_jst_date
         ),
         data_range AS (
           -- MV "date" column is a JST-encoded date; compare against
-          -- the JST calendar date of asOf (ab.upper_ts is JST-midnight
-          -- in naive UTC, so dropping back to ::date gives the JST
-          -- day after asOf; exclusive less-than keeps the last
-          -- included day as asOf).
+          -- the same upper_jst_date as donation_totals so a historic
+          -- asOf doesn't extend dataTo past the requested instant.
           SELECT
             MIN("date") AS data_from,
             MAX("date") AS data_to
-          FROM "mv_transaction_summary_daily", asof_bound
+          FROM "mv_transaction_summary_daily", asof_bound ab
           WHERE "community_id" = ${communityId}
-            AND "date" < ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+            AND "date" < ab.upper_jst_date
         )
         SELECT
           dt.total_donation_points,
@@ -1229,10 +1181,8 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
       const rows = await tx.$queryRaw<{ depth: number; count: number }[]>`
         WITH asof_bound AS (
           SELECT
-            (
-              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
-              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
-            ) AS upper_ts
+            ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+            AS upper_jst_date
         ),
         bucket_keys AS (
           SELECT generate_series(1, ${maxBucketDepth}::int) AS depth
@@ -1246,22 +1196,26 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           -- parameter slots ($1, $3) at the wire level. PostgreSQL
           -- then refuses to recognise the GROUP BY expression as
           -- matching the SELECT one syntactically, raising
-          -- "column t.chain_depth must appear in the GROUP BY
+          -- "column e.chain_depth must appear in the GROUP BY
           -- clause". Alias reference (PostgreSQL-supported since
           -- 9.x) sidesteps the parameter duplication and stays
           -- robust to future SELECT-column reorders, unlike
           -- positional GROUP BY.
+          --
+          -- Sources from mv_donation_tx_edges. The MV's filters
+          -- (burn-target / self-donation / cross-community-leakage
+          -- exclusion) are correct for the donation graph too:
+          -- self-donations don't form chains, burn targets don't
+          -- forward, and cross-community DONATIONs are leakage
+          -- that shouldn't shape this community's chain histogram.
           SELECT
-            LEAST(t."chain_depth", ${maxBucketDepth}::int) AS depth,
+            LEAST(e."chain_depth", ${maxBucketDepth}::int) AS depth,
             COUNT(*)::int AS n
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ${communityId}
+          FROM "mv_donation_tx_edges" e
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."chain_depth" >= 1
-            AND t."created_at" < ab.upper_ts
+          WHERE e."sender_community_id" = ${communityId}
+            AND e."chain_depth" >= 1
+            AND e."date" < ab.upper_jst_date
           GROUP BY depth
         )
         SELECT

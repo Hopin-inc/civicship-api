@@ -131,6 +131,7 @@ describe("ReportGoldenCases seed", () => {
         findCohortRetention: jest.fn(),
         refreshTransactionSummaryDaily: jest.fn(),
         refreshUserTransactionDaily: jest.fn(),
+        refreshDonationTxEdges: jest.fn(),
       };
       const entityRepo = {
         createReport: jest.fn(),
@@ -193,6 +194,7 @@ describe("ReportGoldenCases seed", () => {
           findCohortRetention: jest.fn(),
           refreshTransactionSummaryDaily: jest.fn(),
           refreshUserTransactionDaily: jest.fn(),
+          refreshDonationTxEdges: jest.fn(),
         };
         const entityRepo = {
           createReport: jest.fn(),
