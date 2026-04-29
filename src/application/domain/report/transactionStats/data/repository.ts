@@ -16,6 +16,7 @@ import {
   UserTransactionAggregateRow,
 } from "@/application/domain/report/transactionStats/data/rows";
 import {
+  refreshMaterializedViewDonationTxEdges,
   refreshMaterializedViewTransactionSummaryDaily,
   refreshMaterializedViewUserTransactionDaily,
 } from "@prisma/client/sql";
@@ -959,5 +960,9 @@ export default class ReportTransactionStatsRepository
 
   async refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
     await tx.$queryRawTyped(refreshMaterializedViewUserTransactionDaily());
+  }
+
+  async refreshDonationTxEdges(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
+    await tx.$queryRawTyped(refreshMaterializedViewDonationTxEdges());
   }
 }
