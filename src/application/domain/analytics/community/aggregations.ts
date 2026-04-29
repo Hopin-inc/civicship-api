@@ -7,7 +7,7 @@ import {
 import {
   AnalyticsMemberStatsRow,
   AnalyticsMonthlyActivityRow,
-} from "@/application/domain/sysadmin/data/type";
+} from "@/application/domain/analytics/community/data/type";
 import {
   classifyMember,
   isDormant,

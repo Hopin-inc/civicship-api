@@ -8,7 +8,7 @@ import {
   computeTenureDistribution,
 } from "@/application/domain/analytics/community/aggregations";
 import { DEFAULT_SEGMENT_THRESHOLDS } from "@/application/domain/analytics/community/classifiers";
-import type { AnalyticsMonthlyActivityRow } from "@/application/domain/sysadmin/data/type";
+import type { AnalyticsMonthlyActivityRow } from "@/application/domain/analytics/community/data/type";
 import { member } from "@/__tests__/unit/sysadmin/fixtures";
 
 // ========================================================================

@@ -1,4 +1,4 @@
-import { AnalyticsMemberStatsRow } from "@/application/domain/sysadmin/data/type";
+import { AnalyticsMemberStatsRow } from "@/application/domain/analytics/community/data/type";
 
 export type SortField = "SEND_RATE" | "MONTHS_IN" | "DONATION_OUT_MONTHS" | "TOTAL_POINTS_OUT";
 export type SortOrder = "ASC" | "DESC";
@@ -12,7 +12,7 @@ export type MemberListParams = {
   sortOrder: SortOrder;
   limit: number;
   // Pre-decoded offset; the GraphQL → number wire-format step lives
-  // in `SysAdminConverter.parseMemberListCursor` so the service
+  // in `AnalyticsCommunityConverter.parseMemberListCursor` so the service
   // operates on internal form only.
   cursor?: number;
 };

@@ -1,4 +1,4 @@
-import type { AnalyticsMemberStatsRow } from "@/application/domain/sysadmin/data/type";
+import type { AnalyticsMemberStatsRow } from "@/application/domain/analytics/community/data/type";
 
 /**
  * Member factory keeps the tests readable — every test below really

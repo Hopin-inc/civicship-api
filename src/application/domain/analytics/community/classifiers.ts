@@ -1,5 +1,5 @@
 import { addDays, truncateToJstDate } from "@/application/domain/report/util";
-import { AnalyticsMemberStatsRow } from "@/application/domain/sysadmin/data/type";
+import { AnalyticsMemberStatsRow } from "@/application/domain/analytics/community/data/type";
 
 /**
  * Stage-count thresholds come from the client. tier1 >= tier2 >= 0 is

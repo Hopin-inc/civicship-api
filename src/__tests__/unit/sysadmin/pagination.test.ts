@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { MAX_LIMIT, paginateMembers } from "@/application/domain/analytics/community/pagination";
-import type { AnalyticsMemberStatsRow } from "@/application/domain/sysadmin/data/type";
+import type { AnalyticsMemberStatsRow } from "@/application/domain/analytics/community/data/type";
 import { member } from "@/__tests__/unit/sysadmin/fixtures";
 
 // ========================================================================

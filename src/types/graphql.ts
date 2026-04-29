@@ -3346,18 +3346,15 @@ export type GqlQuery = {
   signupBonusConfig?: Maybe<GqlCommunitySignupBonusConfig>;
   states: GqlStatesConnection;
   /**
-   * L2 detail for a single community: summary card, stage distribution,
-   * trailing-window trends, cohort retention, and a paginated member list.
-   * Intended for answering "what are kibotcha's numbers?" in an external
-   * report conversation.
+   * L2 detail for a single community.
+   * Use `analyticsCommunity` instead.
+   * @deprecated Use `analyticsCommunity` instead.
    */
   sysAdminCommunityDetail: GqlSysAdminCommunityDetailPayload;
   /**
-   * L1 overview: platform totals plus one row per community. Intended for
-   * the "is any community stalling?" scan. Community fan-out is served
-   * with N in-process calls (acceptable at today's community count —
-   * switch to a GROUP BY implementation once the platform exceeds ~20
-   * communities).
+   * L1 overview: platform totals plus one row per community.
+   * Use `analyticsDashboard` instead.
+   * @deprecated Use `analyticsDashboard` instead.
    */
   sysAdminDashboard: GqlSysAdminDashboardPayload;
   ticket?: Maybe<GqlTicket>;
