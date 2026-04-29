@@ -3,20 +3,15 @@ name: CI
 on:
   pull_request:
     branches: [master, develop]
-    # docs-only / dependabot 設定 / *.md のみの変更は CI を skip する。
-    # ※ docs/schema.graphql (生成物) は src の schema 変更とセットで commit される
-    # ため、src 変更に CI が走るカバレッジは維持される。docs/handbook/ は
-    # .dockerignore:49 で image にも入らない。
-    paths-ignore:
-      - '**.md'
-      - 'docs/handbook/**'
-      - '.github/dependabot.yml'
   push:
     branches: [master]
-    paths-ignore:
-      - '**.md'
-      - 'docs/handbook/**'
-      - '.github/dependabot.yml'
+  # NOTE: workflow-level の `paths-ignore` は使えない。`ci` aggregator job が
+  # branch protection の required status check として登録されているため、
+  # paths-ignore で workflow ごと skip すると status が報告されず、docs-only
+  # PR が永久に merge 不能になる (admin override が必要になる)。
+  # 軽量化が必要になったら job 側で changed-files filter (dorny/paths-filter
+  # 等) を使って expensive job (build / test) を条件付き skip し、aggregator は
+  # 必ず走る形にする。
 
 permissions:
   contents: read

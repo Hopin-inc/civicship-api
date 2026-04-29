@@ -85,8 +85,8 @@ CMD ["node", "dist/external-api.js"]
 
 The batch image is the same `Dockerfile`-built image as the Internal API.
 The Cloud Run Job overrides the entrypoint with `--command=node --args=dist/index.js`
-in the deploy workflow (`_deploy-cloud-run.yml`), and `src/index.ts:118-128`
-dispatches to `batchProcess()` when `process.env.PROCESS_TYPE === "batch"`.
+in the deploy workflow (`_deploy-cloud-run.yml`), and the `main()` function in
+`src/index.ts` dispatches to `batchProcess()` when `process.env.PROCESS_TYPE === "batch"`.
 
 ## Google Cloud Run Settings
 

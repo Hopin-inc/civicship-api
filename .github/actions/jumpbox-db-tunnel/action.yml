@@ -47,5 +47,7 @@ runs:
           sleep 2
         done
         echo "::error::SSH tunnel never became ready after ~90s"
-        kill "$(cat /tmp/jumpbox-ssh.pid)" 2>/dev/null || true
+        if [ -f /tmp/jumpbox-ssh.pid ]; then
+          kill "$(cat /tmp/jumpbox-ssh.pid)" 2>/dev/null || true
+        fi
         exit 1

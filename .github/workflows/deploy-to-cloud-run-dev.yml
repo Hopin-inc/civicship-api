@@ -9,6 +9,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+# Caller permissions must be a superset of the reusable workflow's permissions
+# (`_deploy-cloud-run.yml`: id-token:write + contents:write). Setting them
+# explicitly here also silences CodeQL's missing-permissions warning.
+permissions:
+  id-token: write
+  contents: write
+
 jobs:
   deploy:
     uses: ./.github/workflows/_deploy-cloud-run.yml
