@@ -97,9 +97,16 @@ jobs:
       - name: Install dependencies (lockfile integrity check)
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Audit (non-blocking)
-        run: pnpm audit --audit-level=high
-        continue-on-error: true
+      # Surface high/critical findings as a `::warning::` annotation visible
+      # in the PR check summary, but do not fail the job (audit results can
+      # change independently of code changes; gating CI on transitive
+      # vulnerabilities yields a flaky required check). The full audit output
+      # is preserved in the step log for triage.
+      - name: Audit (non-blocking, surfaces findings as warnings)
+        run: |
+          if ! pnpm audit --audit-level=high; then
+            echo "::warning::pnpm audit found high-severity vulnerabilities (non-blocking — see step log for details)"
+          fi
 
       - name: Apply Prisma migrations to CI database
         # TypedSQL (`--sql`) は DB 接続を必要とするため、db:generate の前に
