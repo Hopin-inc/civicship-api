@@ -70,6 +70,7 @@ export default class AnalyticsCommunityUseCase {
       retentionTrend,
       cohortRetention,
       chainDepthDistribution,
+      alerts,
     ] = await Promise.all([
       this.service.getMemberStats(ctx, community.communityId, asOf),
       this.service.getMonthlyActivity(
@@ -84,14 +85,13 @@ export default class AnalyticsCommunityUseCase {
       this.service.getRetentionTrend(ctx, community.communityId, asOf, windowMonths),
       this.service.getCohortRetention(ctx, community.communityId, asOf, windowMonths),
       this.service.getChainDepthDistribution(ctx, community.communityId, asOf),
+      this.service.getAlerts(ctx, community.communityId, asOf),
     ]);
 
     const stageCounts = computeStageCounts(members, thresholds);
     const stageBreakdown = computeStageBreakdown(members, thresholds);
     const dormantCount = computeDormantCount(members, asOf, dormantThresholdDays);
     const cohortFunnel = computeCohortFunnel(members, asOf, windowMonths, thresholds);
-
-    const alerts = await this.service.getAlerts(ctx, community.communityId, asOf);
 
     const memberList = paginateMembers(members, {
       minSendRate: input.userFilter?.minSendRate ?? 0.7,
