@@ -4,7 +4,7 @@
  * output direction (e.g. encoding the next-page cursor) lives in
  * the presenter to keep each layer's transform direction clean.
  */
-export default class SysAdminConverter {
+export default class AnalyticsCommunityConverter {
   /**
    * Decode the opaque base64 cursor a `paginateMembers` caller hands
    * back from a previous page. The wire format is the offset

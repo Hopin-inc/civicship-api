@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import { classifyMember } from "@/application/domain/sysadmin/classifiers";
-import { member } from "@/__tests__/unit/sysadmin/fixtures";
+import { classifyMember } from "@/application/domain/analytics/community/classifiers";
+import { member } from "@/__tests__/unit/analytics/community/fixtures";
 
 // ============================================================================
 // classifyMember: shared classifier feeding both computeStageCounts and
@@ -74,7 +74,7 @@ describe("classifyMember", () => {
     // monthsIn = 0 fails the tenure floor, but donationOutMonths = 0
     // is checked first → latent, not occasional. This matches the
     // "passive is tenure-independent" promise on
-    // SysAdminSegmentThresholdsInput.minMonthsIn.
+    // AnalyticsSegmentThresholdsInput.minMonthsIn.
     expect(
       classifyMember(member({ donationOutMonths: 0, userSendRate: 0, monthsIn: 0 }), {
         tier1: 0.7,

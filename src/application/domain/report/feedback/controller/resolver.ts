@@ -7,6 +7,8 @@ import {
   GqlQueryReportTemplateStatsBreakdownArgs,
   GqlQueryAdminTemplateFeedbacksArgs,
   GqlQueryAdminTemplateFeedbackStatsArgs,
+  GqlQueryReportTemplateFeedbacksArgs,
+  GqlQueryReportTemplateFeedbackStatsArgs,
 } from "@/types/graphql";
 import { PrismaReport } from "@/application/domain/report/data/type";
 import { PrismaReportFeedback } from "@/application/domain/report/feedback/data/type";
@@ -36,6 +38,20 @@ export default class ReportFeedbackResolver {
     adminTemplateFeedbackStats: (
       _: unknown,
       args: GqlQueryAdminTemplateFeedbackStatsArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.viewAdminTemplateFeedbackStats(args, ctx);
+    },
+    reportTemplateFeedbacks: (
+      _: unknown,
+      args: GqlQueryReportTemplateFeedbacksArgs,
+      ctx: IContext,
+    ) => {
+      return this.useCase.viewAdminTemplateFeedbacks(args, ctx);
+    },
+    reportTemplateFeedbackStats: (
+      _: unknown,
+      args: GqlQueryReportTemplateFeedbackStatsArgs,
       ctx: IContext,
     ) => {
       return this.useCase.viewAdminTemplateFeedbackStats(args, ctx);

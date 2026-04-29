@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
+import { IAnalyticsCommunityRepository } from "@/application/domain/analytics/community/data/interface";
 import ReportService from "@/application/domain/report/service";
 import {
   addDays,
@@ -10,12 +10,12 @@ import {
   jstNextMonthStart,
   percentChange,
 } from "@/application/domain/report/util";
-import { asOfBounds } from "@/application/domain/sysadmin/bounds";
-import { CHAIN_DEPTH_MAX_BUCKET, rateOf } from "@/application/domain/sysadmin/aggregations";
+import { asOfBounds } from "@/application/domain/analytics/community/bounds";
+import { CHAIN_DEPTH_MAX_BUCKET, rateOf } from "@/application/domain/analytics/community/aggregations";
 import {
   WeeklyRetentionPoint,
   MonthlyCohortPoint,
-} from "@/application/domain/sysadmin/aggregations";
+} from "@/application/domain/analytics/community/aggregations";
 
 export type AlertFlags = {
   churnSpike: boolean;
@@ -41,7 +41,7 @@ export type MonthActivityWithPrev = {
  * Raw activity counts for the parametric window driven by
  * `windowDays`. The L1 overview returns these as-is so the client
  * derives rates / growth rates / threshold alerts on its own (see
- * SysAdminWindowActivity in schema/type.graphql).
+ * AnalyticsWindowActivity in schema/type.graphql).
  */
 export type WindowActivityCounts = {
   senderCount: number;
@@ -102,7 +102,7 @@ export const MAX_WINDOW_DAYS = 90;
  * decides how many DISTINCT DONATION recipients within the window
  * a member needs to qualify as a hub. Default is intentionally low
  * (3) because civicship's per-member donation cadence is sparse;
- * portal can tune via SysAdminDashboardInput.hubBreadthThreshold
+ * portal can tune via AnalyticsDashboardInput.hubBreadthThreshold
  * once real-data hub distribution is observed. Effective range
  * 1..1000 — values outside are clamped at the usecase boundary the
  * same way `windowDays` is.
@@ -155,9 +155,9 @@ async function runBatched<T, R>(
 }
 
 @injectable()
-export default class SysAdminService {
+export default class AnalyticsCommunityService {
   constructor(
-    @inject("SysAdminRepository") private readonly repository: ISysAdminRepository,
+    @inject("AnalyticsCommunityRepository") private readonly repository: IAnalyticsCommunityRepository,
     // Cross-domain reads route through ReportService (the report
     // domain's service-layer entry point), not the report repository.
     // CLAUDE.md restricts services to "Call other domain services
@@ -220,15 +220,6 @@ export default class SysAdminService {
   async getAllTimeTotals(ctx: IContext, communityId: string, asOf: Date) {
     return this.repository.findAllTimeTotals(ctx, communityId, asOf);
   }
-
-  async getPlatformTotals(
-    ctx: IContext,
-    jstMonthStart: Date,
-    jstNextMonthStart: Date,
-  ) {
-    return this.repository.findPlatformTotals(ctx, jstMonthStart, jstNextMonthStart);
-  }
-
   /**
    * Week-by-week retention series across `windowMonths`.
    *

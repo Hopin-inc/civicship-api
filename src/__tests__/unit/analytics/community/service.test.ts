@@ -1,13 +1,13 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
-import SysAdminService from "@/application/domain/sysadmin/service";
+import AnalyticsCommunityService from "@/application/domain/analytics/community/service";
 
 /**
  * Minimal mock repositories. `jest.fn()` everywhere so tests can
  * assert call shape AND return canned rows. The orchestrator-level
  * alert test below installs return values explicitly.
  */
-class MockSysAdminRepository {
+class MockAnalyticsCommunityRepository {
   findAllCommunities = jest.fn();
   findCommunityById = jest.fn();
   findMemberStats = jest.fn();
@@ -22,7 +22,7 @@ class MockSysAdminRepository {
 }
 
 /**
- * Stub the few ReportService wrappers SysAdminService leans on.
+ * Stub the few ReportService wrappers AnalyticsCommunityService leans on.
  * Per CLAUDE.md the cross-domain boundary is the service, not the
  * repository, so the test follows the same boundary.
  */
@@ -31,18 +31,18 @@ class MockReportService {
   getCohortRetention = jest.fn();
 }
 
-describe("SysAdminService", () => {
-  let service: SysAdminService;
-  let repo: MockSysAdminRepository;
+describe("AnalyticsCommunityService", () => {
+  let service: AnalyticsCommunityService;
+  let repo: MockAnalyticsCommunityRepository;
   let reportService: MockReportService;
 
   beforeEach(() => {
     container.reset();
-    repo = new MockSysAdminRepository();
+    repo = new MockAnalyticsCommunityRepository();
     reportService = new MockReportService();
-    container.register("SysAdminRepository", { useValue: repo });
+    container.register("AnalyticsCommunityRepository", { useValue: repo });
     container.register("ReportService", { useValue: reportService });
-    service = container.resolve(SysAdminService);
+    service = container.resolve(AnalyticsCommunityService);
   });
 
   // ========================================================================

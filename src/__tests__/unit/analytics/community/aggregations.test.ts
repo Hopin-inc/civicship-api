@@ -6,10 +6,10 @@ import {
   computeStageBreakdown,
   computeStageCounts,
   computeTenureDistribution,
-} from "@/application/domain/sysadmin/aggregations";
-import { DEFAULT_SEGMENT_THRESHOLDS } from "@/application/domain/sysadmin/classifiers";
-import type { SysAdminMonthlyActivityRow } from "@/application/domain/sysadmin/data/type";
-import { member } from "@/__tests__/unit/sysadmin/fixtures";
+} from "@/application/domain/analytics/community/aggregations";
+import { DEFAULT_SEGMENT_THRESHOLDS } from "@/application/domain/analytics/community/classifiers";
+import type { AnalyticsMonthlyActivityRow } from "@/application/domain/analytics/community/data/type";
+import { member } from "@/__tests__/unit/analytics/community/fixtures";
 
 // ========================================================================
 // computeStageCounts: cumulative (tier2 includes tier1)
@@ -549,7 +549,7 @@ describe("computeActivityRate3mAvg", () => {
     month: string,
     senderCount: number,
     totalMembers: number,
-  ): SysAdminMonthlyActivityRow {
+  ): AnalyticsMonthlyActivityRow {
     return {
       monthStart: new Date(month),
       senderCount,

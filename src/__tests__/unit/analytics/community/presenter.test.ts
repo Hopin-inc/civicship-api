@@ -1,18 +1,24 @@
 import "reflect-metadata";
-import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
+import AnalyticsCommunityPresenter from "@/application/domain/analytics/community/presenter";
+import AnalyticsPlatformPresenter from "@/application/domain/analytics/platform/presenter";
+import AnalyticsPresenter from "@/application/domain/analytics/presenter";
 import type {
-  SysAdminAllTimeTotalsRow,
-  SysAdminMemberStatsRow,
-  SysAdminMonthlyActivityRow,
-  SysAdminPlatformTotalsRow,
-} from "@/application/domain/sysadmin/data/type";
+  AnalyticsAllTimeTotalsRow,
+  AnalyticsMemberStatsRow,
+  AnalyticsMonthlyActivityRow,
+} from "@/application/domain/analytics/community/data/type";
+import type {
+  AnalyticsPlatformTotalsRow,
+} from "@/application/domain/analytics/platform/data/type";
+import type {
+} from "@/application/domain/analytics/community/data/type";
 import type {
   MonthlyCohortPoint,
   StageBreakdown,
   StageCounts,
   WeeklyRetentionPoint,
-} from "@/application/domain/sysadmin/aggregations";
-import type { MemberListResult } from "@/application/domain/sysadmin/pagination";
+} from "@/application/domain/analytics/community/aggregations";
+import type { MemberListResult } from "@/application/domain/analytics/community/pagination";
 
 /**
  * Presenter is a pure shape-mapper. These tests lock in the contract
@@ -20,15 +26,15 @@ import type { MemberListResult } from "@/application/domain/sysadmin/pagination"
  * (blowing up on overflow) and that null propagation is preserved
  * through to the GraphQL payload.
  */
-describe("SysAdminPresenter", () => {
+describe("AnalyticsCommunityPresenter", () => {
   describe("platform / summaryCard / memberRow — bigint handling", () => {
     it("converts latestMonthDonationPoints bigint to a plain number", () => {
-      const row: SysAdminPlatformTotalsRow = {
+      const row: AnalyticsPlatformTotalsRow = {
         communitiesCount: 6,
         totalMembers: 500,
         latestMonthDonationPoints: BigInt(1_234_567),
       };
-      const out = SysAdminPresenter.platform(row);
+      const out = AnalyticsPlatformPresenter.platform(row);
       expect(out.latestMonthDonationPoints).toBe(1_234_567);
       expect(typeof out.latestMonthDonationPoints).toBe("number");
     });
@@ -37,16 +43,16 @@ describe("SysAdminPresenter", () => {
       // bigintToSafeNumber is the safety net for external-reporting
       // totals. Silent precision loss would corrupt "累計流通ポイント"
       // downstream, so failing loud is intentional.
-      const overflow: SysAdminPlatformTotalsRow = {
+      const overflow: AnalyticsPlatformTotalsRow = {
         communitiesCount: 1,
         totalMembers: 1,
         latestMonthDonationPoints: BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1),
       };
-      expect(() => SysAdminPresenter.platform(overflow)).toThrow(RangeError);
+      expect(() => AnalyticsPlatformPresenter.platform(overflow)).toThrow(RangeError);
     });
 
     it("converts totalPointsOut on member rows", () => {
-      const row: SysAdminMemberStatsRow = {
+      const row: AnalyticsMemberStatsRow = {
         userId: "u1",
         name: "Alice",
         monthsIn: 12,
@@ -64,7 +70,7 @@ describe("SysAdminPresenter", () => {
         firstDonationDay: new Date("2025-09-01"),
         joinedAt: new Date("2025-09-01T00:00:00Z"),
       };
-      const out = SysAdminPresenter.memberRow(row);
+      const out = AnalyticsCommunityPresenter.memberRow(row);
       expect(out.totalPointsOut).toBe(5_000);
       expect(typeof out.totalPointsOut).toBe("number");
       expect(out.uniqueDonationRecipients).toBe(4);
@@ -85,7 +91,7 @@ describe("SysAdminPresenter", () => {
       // A pure receiver who somehow accumulated a bigint past
       // Number.MAX_SAFE_INTEGER must surface as a RangeError, not
       // silently truncate in the externally-reported total.
-      const row: SysAdminMemberStatsRow = {
+      const row: AnalyticsMemberStatsRow = {
         userId: "u1",
         name: null,
         monthsIn: 1,
@@ -103,11 +109,11 @@ describe("SysAdminPresenter", () => {
         firstDonationDay: null,
         joinedAt: new Date("2026-01-01T00:00:00Z"),
       };
-      expect(() => SysAdminPresenter.memberRow(row)).toThrow(RangeError);
+      expect(() => AnalyticsCommunityPresenter.memberRow(row)).toThrow(RangeError);
     });
 
     it("passes null name through untouched", () => {
-      const row: SysAdminMemberStatsRow = {
+      const row: AnalyticsMemberStatsRow = {
         userId: "u1",
         name: null,
         monthsIn: 1,
@@ -125,14 +131,14 @@ describe("SysAdminPresenter", () => {
         firstDonationDay: null,
         joinedAt: new Date("2026-01-01T00:00:00Z"),
       };
-      expect(SysAdminPresenter.memberRow(row).name).toBeNull();
+      expect(AnalyticsCommunityPresenter.memberRow(row).name).toBeNull();
     });
   });
 
   describe("summaryCard — null propagation & tier2Pct", () => {
     function allTimeTotals(
-      overrides: Partial<SysAdminAllTimeTotalsRow> = {},
-    ): SysAdminAllTimeTotalsRow {
+      overrides: Partial<AnalyticsAllTimeTotalsRow> = {},
+    ): AnalyticsAllTimeTotalsRow {
       return {
         totalDonationPoints: overrides.totalDonationPoints ?? BigInt(0),
         maxChainDepth: overrides.maxChainDepth ?? null,
@@ -142,7 +148,7 @@ describe("SysAdminPresenter", () => {
     }
 
     it("keeps null values null (growthRateActivity, maxChainDepth, dataFrom/To, 3m avg)", () => {
-      const out = SysAdminPresenter.summaryCard({
+      const out = AnalyticsCommunityPresenter.summaryCard({
         communityId: "c1",
         communityName: "C",
         totalMembers: 10,
@@ -160,7 +166,7 @@ describe("SysAdminPresenter", () => {
     });
 
     it("computes tier2Pct = tier2Count / totalMembers", () => {
-      const out = SysAdminPresenter.summaryCard({
+      const out = AnalyticsCommunityPresenter.summaryCard({
         communityId: "c1",
         communityName: "C",
         totalMembers: 10,
@@ -174,7 +180,7 @@ describe("SysAdminPresenter", () => {
     });
 
     it("returns tier2Pct=0 when totalMembers is 0 (no divide-by-zero)", () => {
-      const out = SysAdminPresenter.summaryCard({
+      const out = AnalyticsCommunityPresenter.summaryCard({
         communityId: "c1",
         communityName: "C",
         totalMembers: 0,
@@ -189,7 +195,7 @@ describe("SysAdminPresenter", () => {
   });
 
   describe("monthlyActivityPoint — chainPct & divide-by-zero guards", () => {
-    const baseRow: SysAdminMonthlyActivityRow = {
+    const baseRow: AnalyticsMonthlyActivityRow = {
       monthStart: new Date(Date.UTC(2026, 3, 1)),
       senderCount: 0,
       totalMembersEndOfMonth: 0,
@@ -205,7 +211,7 @@ describe("SysAdminPresenter", () => {
     };
 
     it("returns null chainPct when no DONATION tx occurred that month", () => {
-      const out = SysAdminPresenter.monthlyActivityPoint({
+      const out = AnalyticsCommunityPresenter.monthlyActivityPoint({
         ...baseRow,
         donationTxCount: BigInt(0),
         donationChainTxCount: BigInt(0),
@@ -214,7 +220,7 @@ describe("SysAdminPresenter", () => {
     });
 
     it("returns rate 0 when total_members is 0 (no divide-by-zero)", () => {
-      const out = SysAdminPresenter.monthlyActivityPoint({
+      const out = AnalyticsCommunityPresenter.monthlyActivityPoint({
         ...baseRow,
         senderCount: 0,
         totalMembersEndOfMonth: 0,
@@ -223,7 +229,7 @@ describe("SysAdminPresenter", () => {
     });
 
     it("computes rate & chainPct as fractions", () => {
-      const out = SysAdminPresenter.monthlyActivityPoint({
+      const out = AnalyticsCommunityPresenter.monthlyActivityPoint({
         ...baseRow,
         senderCount: 4,
         totalMembersEndOfMonth: 20,
@@ -242,7 +248,7 @@ describe("SysAdminPresenter", () => {
       // "internal name has 'EndOfMonth' suffix, GraphQL field
       // doesn't" contract from drifting silently. Returns from
       // the row pass straight through (no derivation).
-      const out = SysAdminPresenter.monthlyActivityPoint({
+      const out = AnalyticsCommunityPresenter.monthlyActivityPoint({
         ...baseRow,
         dormantCountEndOfMonth: 7,
         returnedMembers: 3,
@@ -256,7 +262,7 @@ describe("SysAdminPresenter", () => {
       // client can render "no prior month to compare" rather
       // than misinterpret 0 as "zero returners". The presenter
       // must propagate that null untouched.
-      const out = SysAdminPresenter.monthlyActivityPoint({
+      const out = AnalyticsCommunityPresenter.monthlyActivityPoint({
         ...baseRow,
         dormantCountEndOfMonth: 5,
         returnedMembers: null,
@@ -272,7 +278,7 @@ describe("SysAdminPresenter", () => {
       // only. Pin the passthrough here so a future "convert 0 to
       // null" tweak in the presenter would surface as a test failure
       // rather than a silent contract change.
-      const out = SysAdminPresenter.monthlyActivityPoint({
+      const out = AnalyticsCommunityPresenter.monthlyActivityPoint({
         ...baseRow,
         hubMemberCount: 4,
       });
@@ -280,7 +286,7 @@ describe("SysAdminPresenter", () => {
     });
 
     it("hubMemberCount stays 0 (not null) when the repository row reports zero hubs", () => {
-      const out = SysAdminPresenter.monthlyActivityPoint({
+      const out = AnalyticsCommunityPresenter.monthlyActivityPoint({
         ...baseRow,
         hubMemberCount: 0,
       });
@@ -292,7 +298,7 @@ describe("SysAdminPresenter", () => {
       // should fail loud (not silently truncate) if cumulative tx
       // counts somehow exceed Number.MAX_SAFE_INTEGER.
       expect(() =>
-        SysAdminPresenter.monthlyActivityPoint({
+        AnalyticsCommunityPresenter.monthlyActivityPoint({
           ...baseRow,
           donationTxCount: BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1),
           donationChainTxCount: BigInt(0),
@@ -311,7 +317,7 @@ describe("SysAdminPresenter", () => {
         newMembers: 0,
         communityActivityRate: null,
       };
-      expect(SysAdminPresenter.retentionTrendPoint(point).communityActivityRate).toBeNull();
+      expect(AnalyticsCommunityPresenter.retentionTrendPoint(point).communityActivityRate).toBeNull();
     });
 
     it("cohortPoint keeps individual retentionMN null fields (too-recent cohort)", () => {
@@ -322,7 +328,7 @@ describe("SysAdminPresenter", () => {
         retentionM3: null,
         retentionM6: null,
       };
-      const out = SysAdminPresenter.cohortPoint(point);
+      const out = AnalyticsCommunityPresenter.cohortPoint(point);
       expect(out.retentionM1).toBeCloseTo(0.3);
       expect(out.retentionM3).toBeNull();
       expect(out.retentionM6).toBeNull();
@@ -355,7 +361,7 @@ describe("SysAdminPresenter", () => {
         hasNextPage: true,
         nextOffset: 1,
       };
-      const out = SysAdminPresenter.memberList(result);
+      const out = AnalyticsCommunityPresenter.memberList(result);
       expect(out.hasNextPage).toBe(true);
       // base64("1") === "MQ==" — keeps the same wire format the
       // pre-refactor in-service helper produced.
@@ -364,7 +370,7 @@ describe("SysAdminPresenter", () => {
     });
 
     it("nextCursor stays null when there is no next page", () => {
-      const out = SysAdminPresenter.memberList({
+      const out = AnalyticsCommunityPresenter.memberList({
         users: [],
         hasNextPage: false,
         nextOffset: null,
@@ -386,7 +392,7 @@ describe("SysAdminPresenter", () => {
         occasional: { ...zeroBucket, count: 1, pct: 0.1 },
         latent: { ...zeroBucket, count: 4, pct: 0.4 },
       };
-      const out = SysAdminPresenter.stages(bd);
+      const out = AnalyticsCommunityPresenter.stages(bd);
       expect(out.habitual.count).toBe(2);
       expect(out.regular.count).toBe(3);
       expect(out.occasional.count).toBe(1);
@@ -404,7 +410,7 @@ describe("SysAdminPresenter", () => {
         activeCount: 7,
         passiveCount: 3,
       };
-      const out = SysAdminPresenter.overviewRow({
+      const out = AnalyticsPresenter.overviewRow({
         communityId: "c1",
         communityName: "C",
         totalMembers: 10,
