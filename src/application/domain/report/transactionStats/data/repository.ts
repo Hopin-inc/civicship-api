@@ -386,7 +386,8 @@ export default class ReportTransactionStatsRepository
         -- rows that survive the WHERE filter (typically <= 1 because
         -- of LIMIT 1 in the planner's reach via ORDER BY+LIMIT).
         INNER JOIN "t_transactions" t ON t."id" = e."transaction_id"
-        WHERE COALESCE(e."sender_community_id", e."recipient_community_id") = ${communityId}
+        WHERE (e."sender_community_id" = ${communityId}
+               OR e."recipient_community_id" = ${communityId})
           AND e."chain_depth" IS NOT NULL
           -- Half-open window [from JST 00:00, (to + 1 day) JST 00:00).
           -- The MV's "date" column is already JST-bucketed (@db.Date),
