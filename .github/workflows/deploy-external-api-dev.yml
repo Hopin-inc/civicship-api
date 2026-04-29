@@ -35,8 +35,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - name: Install pnpm
-      run: npm install -g pnpm
+    - name: Setup pnpm
+      uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
     - name: Set up Node.js
       uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
@@ -59,6 +59,7 @@ jobs:
     - name: pnpm db:generate
       env:
         DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+      # SSH トンネル確立を active wait で確認 (旧 sleep 60 + 60s×5 retry → 通常 5〜15s で抜ける)
       run: |
         echo "--- Connecting to DB via jumpbox ---"
         gcloud compute ssh ${{ env.JUMPBOX_INSTANCE_NAME }} \
@@ -66,17 +67,23 @@ jobs:
           --zone=${{ env.JUMPBOX_ZONE }} \
           --quiet -- -N -L 5432:localhost:5432 &
         SSH_PID=$!
-        sleep 60
-        for _ in {1..5}; do
-          pg_isready -h localhost -p 5432 -d ${{ env.DB_NAME }} && break
-          sleep 60
+        for _ in {1..45}; do
+          if pg_isready -h localhost -p 5432 -d "${{ env.DB_NAME }}" -q; then
+            break
+          fi
+          sleep 2
         done
+        if ! pg_isready -h localhost -p 5432 -d "${{ env.DB_NAME }}" -q; then
+          echo "::error::SSH tunnel never became ready"
+          kill "$SSH_PID" || true
+          exit 1
+        fi
 
         echo "--- Running prisma generate ---"
         pnpm db:generate
 
         echo "Killing SSH tunnel"
-        kill $SSH_PID
+        kill "$SSH_PID" || true
 
     - name: pnpm build
       run: pnpm build
@@ -86,13 +93,20 @@ jobs:
         gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
         gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
-    - name: Build External API Docker image
-      run: |
-        docker build --no-cache -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest -f Dockerfile.external .
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
 
-    - name: Push External API Docker image to Artifact Registry
+    - name: Build and push External API Docker image
+      env:
+        EXTERNAL_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
       run: |
-        docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
+        docker buildx build \
+          --file Dockerfile.external \
+          --tag "$EXTERNAL_IMAGE" \
+          --cache-from type=gha,scope=external-dev \
+          --cache-to type=gha,mode=max,scope=external-dev \
+          --push \
+          .
 
     - name: Deploy External API to Cloud Run
       id: 'deploy'
