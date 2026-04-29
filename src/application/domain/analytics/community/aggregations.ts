@@ -13,7 +13,7 @@ import {
   isDormant,
   MemberClassification,
   SegmentThresholds,
-} from "@/application/domain/sysadmin/classifiers";
+} from "@/application/domain/analytics/community/classifiers";
 
 /**
  * Result of classifying a community's members against the supplied

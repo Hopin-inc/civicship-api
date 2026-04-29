@@ -10,12 +10,12 @@ import {
   jstNextMonthStart,
   percentChange,
 } from "@/application/domain/report/util";
-import { asOfBounds } from "@/application/domain/sysadmin/bounds";
-import { CHAIN_DEPTH_MAX_BUCKET, rateOf } from "@/application/domain/sysadmin/aggregations";
+import { asOfBounds } from "@/application/domain/analytics/community/bounds";
+import { CHAIN_DEPTH_MAX_BUCKET, rateOf } from "@/application/domain/analytics/community/aggregations";
 import {
   WeeklyRetentionPoint,
   MonthlyCohortPoint,
-} from "@/application/domain/sysadmin/aggregations";
+} from "@/application/domain/analytics/community/aggregations";
 
 export type AlertFlags = {
   churnSpike: boolean;

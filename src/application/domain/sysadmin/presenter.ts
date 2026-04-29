@@ -40,8 +40,8 @@ import {
   SysAdminCohortFunnelPoint,
   TenureDistribution,
   WeeklyRetentionPoint,
-} from "@/application/domain/sysadmin/aggregations";
-import { MemberListResult } from "@/application/domain/sysadmin/pagination";
+} from "@/application/domain/analytics/community/aggregations";
+import { MemberListResult } from "@/application/domain/analytics/community/pagination";
 
 /**
  * Prisma / service rows → GraphQL payload shapes. Pure functions.

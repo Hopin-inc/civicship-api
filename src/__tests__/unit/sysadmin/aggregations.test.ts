@@ -6,8 +6,8 @@ import {
   computeStageBreakdown,
   computeStageCounts,
   computeTenureDistribution,
-} from "@/application/domain/sysadmin/aggregations";
-import { DEFAULT_SEGMENT_THRESHOLDS } from "@/application/domain/sysadmin/classifiers";
+} from "@/application/domain/analytics/community/aggregations";
+import { DEFAULT_SEGMENT_THRESHOLDS } from "@/application/domain/analytics/community/classifiers";
 import type { SysAdminMonthlyActivityRow } from "@/application/domain/sysadmin/data/type";
 import { member } from "@/__tests__/unit/sysadmin/fixtures";
 

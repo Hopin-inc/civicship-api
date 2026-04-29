@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { classifyMember } from "@/application/domain/sysadmin/classifiers";
+import { classifyMember } from "@/application/domain/analytics/community/classifiers";
 import { member } from "@/__tests__/unit/sysadmin/fixtures";
 
 // ============================================================================

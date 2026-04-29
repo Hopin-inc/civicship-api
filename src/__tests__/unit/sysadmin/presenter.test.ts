@@ -11,8 +11,8 @@ import type {
   StageBreakdown,
   StageCounts,
   WeeklyRetentionPoint,
-} from "@/application/domain/sysadmin/aggregations";
-import type { MemberListResult } from "@/application/domain/sysadmin/pagination";
+} from "@/application/domain/analytics/community/aggregations";
+import type { MemberListResult } from "@/application/domain/analytics/community/pagination";
 
 /**
  * Presenter is a pure shape-mapper. These tests lock in the contract

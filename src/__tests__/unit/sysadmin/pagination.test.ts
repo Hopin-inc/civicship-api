@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { MAX_LIMIT, paginateMembers } from "@/application/domain/sysadmin/pagination";
+import { MAX_LIMIT, paginateMembers } from "@/application/domain/analytics/community/pagination";
 import type { SysAdminMemberStatsRow } from "@/application/domain/sysadmin/data/type";
 import { member } from "@/__tests__/unit/sysadmin/fixtures";
 

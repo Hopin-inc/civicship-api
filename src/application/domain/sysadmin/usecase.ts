@@ -26,7 +26,7 @@ import {
   MAX_MIN_MONTHS_IN,
   MIN_MIN_MONTHS_IN,
   SegmentThresholds,
-} from "@/application/domain/sysadmin/classifiers";
+} from "@/application/domain/analytics/community/classifiers";
 import {
   computeActivityRate3mAvg,
   computeCohortFunnel,
@@ -34,12 +34,12 @@ import {
   computeStageBreakdown,
   computeStageCounts,
   computeTenureDistribution,
-} from "@/application/domain/sysadmin/aggregations";
-import { MAX_LIMIT, paginateMembers } from "@/application/domain/sysadmin/pagination";
+} from "@/application/domain/analytics/community/aggregations";
+import { MAX_LIMIT, paginateMembers } from "@/application/domain/analytics/community/pagination";
 import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
 import SysAdminConverter from "@/application/domain/sysadmin/data/converter";
 import { jstMonthStart, jstNextMonthStart } from "@/application/domain/report/util";
-import { asOfBounds } from "@/application/domain/sysadmin/bounds";
+import { asOfBounds } from "@/application/domain/analytics/community/bounds";
 
 @injectable()
 export default class SysAdminUseCase {
