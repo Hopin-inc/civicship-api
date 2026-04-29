@@ -1,0 +1,53 @@
+name: 'Open jumpbox SSH tunnel and wait for DB'
+description: >
+  Opens an IAP-tunneled SSH session to the GCE jumpbox and forwards localhost:5432
+  to the Cloud SQL endpoint. Active-waits with `pg_isready` (旧実装の sleep 60 +
+  60s × 5 retry を 2 秒間隔 × 45 で置換) so the caller can run `prisma generate`
+  / `prisma migrate deploy` immediately. Tunnel process is left running until
+  job end (GitHub Actions runner cleans it up automatically).
+
+inputs:
+  jumpbox-instance-name:
+    description: GCE instance name of the jumpbox.
+    required: true
+  jumpbox-zone:
+    description: GCE zone of the jumpbox.
+    required: true
+  db-name:
+    description: Database name to verify readiness against.
+    required: true
+  local-port:
+    description: Local port to forward (defaults to 5432).
+    required: false
+    default: '5432'
+
+runs:
+  using: composite
+  steps:
+    - name: Open SSH tunnel and wait for DB
+      shell: bash
+      env:
+        JUMPBOX_INSTANCE_NAME: ${{ inputs.jumpbox-instance-name }}
+        JUMPBOX_ZONE: ${{ inputs.jumpbox-zone }}
+        DB_NAME: ${{ inputs.db-name }}
+        LOCAL_PORT: ${{ inputs.local-port }}
+      run: |
+        echo "--- Connecting to DB via jumpbox ---"
+        gcloud compute ssh "$JUMPBOX_INSTANCE_NAME" \
+          --tunnel-through-iap \
+          --zone="$JUMPBOX_ZONE" \
+          --quiet -- -N -L "$LOCAL_PORT:localhost:5432" &
+        echo $! > /tmp/jumpbox-ssh.pid
+
+        for _ in {1..45}; do
+          if pg_isready -h localhost -p "$LOCAL_PORT" -d "$DB_NAME" -q; then
+            echo "--- Tunnel ready ---"
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "::error::SSH tunnel never became ready after ~90s"
+        if [ -f /tmp/jumpbox-ssh.pid ]; then
+          kill "$(cat /tmp/jumpbox-ssh.pid)" 2>/dev/null || true
+        fi
+        exit 1

@@ -1,8 +1,4 @@
 FROM node:20
-WORKDIR /tmp
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN npm install -g pnpm@10.33.0
-RUN pnpm install --frozen-lockfile
+WORKDIR /app
 COPY . ./
-RUN pnpm build
-CMD ["node", "dist/external-api.js"]
+CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/external-api.js"]
