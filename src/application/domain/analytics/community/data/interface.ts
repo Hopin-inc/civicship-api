@@ -44,6 +44,20 @@ export interface IAnalyticsCommunityRepository {
   ): Promise<AnalyticsMemberStatsRow[]>;
 
   /**
+   * Bulk variant of `findMemberStats`. Computes per-member counters for
+   * every community in `communityIds` in a single SQL roundtrip,
+   * returning a `Map<communityId, rows[]>` pre-seeded with empty arrays.
+   * Cross-community leakage guards and same-user JOIN keys are tightened
+   * to `(user_id, community_id)` so a user who is a member of multiple
+   * communities is correctly bucketed.
+   */
+  findMemberStatsBulk(
+    ctx: IContext,
+    communityIds: string[],
+    asOf: Date,
+  ): Promise<Map<string, AnalyticsMemberStatsRow[]>>;
+
+  /**
    * Monthly activity series for `windowMonths` trailing JST months
    * ending at `asOf`. One row per month with data; months with zero
    * senders and zero new members are still emitted (with zero

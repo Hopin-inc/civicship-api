@@ -78,6 +78,266 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
    * compare — both sides hold the same storage format, no timezone
    * dance required.
    */
+  /**
+   * Bulk variant of `findMemberStats`. Computes the same per-member
+   * counters for every community in `communityIds` in one SQL roundtrip
+   * by widening every CTE's community filter to `= ANY(...)` and
+   * carrying `community_id` through the JOIN keys / final GROUP BY.
+   *
+   * Every CTE that previously joined on `user_id` alone now joins on
+   * `(user_id, community_id)` so a user who is a member of multiple
+   * communities is bucketed into the right community. Cross-community
+   * leakage guards (`tw.community_id IS NULL OR tw.community_id =
+   * fw.community_id`) are unchanged because they reference the sender
+   * wallet's community, which is already correctly scoped per row.
+   *
+   * Returns a `Map<communityId, rows[]>` pre-seeded with empty arrays
+   * so the caller can iterate `communityIds` without null-checking.
+   */
+  async findMemberStatsBulk(
+    ctx: IContext,
+    communityIds: string[],
+    asOf: Date,
+  ): Promise<Map<string, AnalyticsMemberStatsRow[]>> {
+    const out = new Map<string, AnalyticsMemberStatsRow[]>();
+    for (const id of communityIds) out.set(id, []);
+    if (communityIds.length === 0) return out;
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          community_id: string;
+          user_id: string;
+          name: string | null;
+          months_in: number;
+          days_in: number;
+          donation_out_months: number;
+          donation_out_days: number;
+          total_points_out: bigint;
+          user_send_rate: number;
+          unique_donation_recipients: number;
+          donation_in_months: number;
+          donation_in_days: number;
+          total_points_in: bigint;
+          unique_donation_senders: number;
+          last_donation_day: Date | null;
+          first_donation_day: Date | null;
+          joined_at: Date;
+        }[]
+      >`
+        WITH asof_jst AS (
+          SELECT (${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo') AS ts
+        ),
+        asof_bound AS (
+          SELECT
+            ((ts::date + 1) AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC') AS upper_ts
+          FROM asof_jst
+        ),
+        members AS (
+          SELECT
+            m."community_id",
+            m."user_id",
+            m."created_at"
+          FROM "t_memberships" m, asof_bound ab
+          WHERE m."community_id" = ANY(${communityIds}::text[])
+            AND m."status" = 'JOINED'
+            AND m."created_at" < ab.upper_ts
+        ),
+        donation_activity AS (
+          SELECT
+            fw."community_id" AS community_id,
+            fw."user_id" AS user_id,
+            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
+            DATE_TRUNC(
+              'month',
+              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
+            ) AS jst_month,
+            SUM(t."from_point_change") AS day_points_out
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ANY(${communityIds}::text[])
+          INNER JOIN members m
+            ON m."user_id" = fw."user_id"
+            AND m."community_id" = fw."community_id"
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+          GROUP BY fw."community_id", fw."user_id", jst_day, jst_month
+        ),
+        donation_recipients AS (
+          SELECT
+            fw."community_id" AS community_id,
+            fw."user_id" AS user_id,
+            COUNT(DISTINCT tw."user_id")::int AS unique_recipients
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ANY(${communityIds}::text[])
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."user_id" IS NOT NULL
+            AND tw."user_id" <> fw."user_id"
+          INNER JOIN members m
+            ON m."user_id" = fw."user_id"
+            AND m."community_id" = fw."community_id"
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+            AND (tw."community_id" IS NULL OR tw."community_id" = fw."community_id")
+          GROUP BY fw."community_id", fw."user_id"
+        ),
+        donation_received AS (
+          SELECT
+            tw."community_id" AS community_id,
+            tw."user_id" AS user_id,
+            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
+            DATE_TRUNC(
+              'month',
+              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
+            ) AS jst_month,
+            SUM(t."to_point_change") AS day_points_in
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."community_id" = ANY(${communityIds}::text[])
+          INNER JOIN members m
+            ON m."user_id" = tw."user_id"
+            AND m."community_id" = tw."community_id"
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."user_id" IS NOT NULL
+            AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+          GROUP BY tw."community_id", tw."user_id", jst_day, jst_month
+        ),
+        donation_in_aggregates AS (
+          SELECT
+            community_id,
+            user_id,
+            COUNT(DISTINCT jst_month)::int AS donation_in_months,
+            COUNT(DISTINCT jst_day)::int AS donation_in_days,
+            COALESCE(SUM(day_points_in), 0)::bigint AS total_points_in
+          FROM donation_received
+          GROUP BY community_id, user_id
+        ),
+        donation_senders AS (
+          SELECT
+            tw."community_id" AS community_id,
+            tw."user_id" AS user_id,
+            COUNT(DISTINCT fw."user_id")::int AS unique_senders
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."community_id" = ANY(${communityIds}::text[])
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."user_id" IS NOT NULL
+            AND fw."user_id" <> tw."user_id"
+          INNER JOIN members m
+            ON m."user_id" = tw."user_id"
+            AND m."community_id" = tw."community_id"
+          CROSS JOIN asof_bound ab
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+            AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
+          GROUP BY tw."community_id", tw."user_id"
+        ),
+        member_tenure AS (
+          SELECT
+            m."community_id",
+            m."user_id",
+            GREATEST(
+              1,
+              (
+                (
+                  EXTRACT(YEAR FROM aj.ts)::int
+                  - EXTRACT(YEAR FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                ) * 12
+                + (
+                  EXTRACT(MONTH FROM aj.ts)::int
+                  - EXTRACT(MONTH FROM (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo'))::int
+                )
+                + 1
+              )
+            )::int AS months_in,
+            GREATEST(
+              1,
+              (
+                (aj.ts::date - (m."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) + 1
+              )
+            )::int AS days_in
+          FROM members m, asof_jst aj
+        )
+        SELECT
+          m."community_id" AS community_id,
+          m."user_id",
+          u."name" AS "name",
+          mt.months_in,
+          mt.days_in,
+          COALESCE(COUNT(DISTINCT da.jst_month), 0)::int AS donation_out_months,
+          COALESCE(COUNT(DISTINCT da.jst_day), 0)::int AS donation_out_days,
+          COALESCE(SUM(da.day_points_out), 0)::bigint AS total_points_out,
+          ROUND(
+            COALESCE(COUNT(DISTINCT da.jst_month), 0)::numeric
+              / mt.months_in::numeric,
+            3
+          )::double precision AS user_send_rate,
+          COALESCE(MAX(dr.unique_recipients), 0)::int AS unique_donation_recipients,
+          COALESCE(MAX(dia.donation_in_months), 0)::int AS donation_in_months,
+          COALESCE(MAX(dia.donation_in_days), 0)::int AS donation_in_days,
+          COALESCE(MAX(dia.total_points_in), 0)::bigint AS total_points_in,
+          COALESCE(MAX(ds.unique_senders), 0)::int AS unique_donation_senders,
+          MAX(da.jst_day) AS last_donation_day,
+          MIN(da.jst_day) AS first_donation_day,
+          m."created_at" AS joined_at
+        FROM members m
+        INNER JOIN member_tenure mt
+          ON mt."user_id" = m."user_id"
+          AND mt."community_id" = m."community_id"
+        LEFT JOIN donation_activity da
+          ON da.user_id = m."user_id"
+          AND da.community_id = m."community_id"
+        LEFT JOIN donation_recipients dr
+          ON dr.user_id = m."user_id"
+          AND dr.community_id = m."community_id"
+        LEFT JOIN donation_in_aggregates dia
+          ON dia.user_id = m."user_id"
+          AND dia.community_id = m."community_id"
+        LEFT JOIN donation_senders ds
+          ON ds.user_id = m."user_id"
+          AND ds.community_id = m."community_id"
+        LEFT JOIN "t_users" u ON u."id" = m."user_id"
+        GROUP BY m."community_id", m."user_id", m."created_at", mt.months_in, mt.days_in, u."name"
+        ORDER BY m."community_id", m."user_id"
+      `;
+      for (const r of rows) {
+        const bucket = out.get(r.community_id);
+        if (!bucket) continue;
+        bucket.push({
+          userId: r.user_id,
+          name: r.name,
+          monthsIn: r.months_in,
+          daysIn: r.days_in,
+          donationOutMonths: r.donation_out_months,
+          donationOutDays: r.donation_out_days,
+          totalPointsOut: r.total_points_out,
+          userSendRate: r.user_send_rate,
+          uniqueDonationRecipients: r.unique_donation_recipients,
+          donationInMonths: r.donation_in_months,
+          donationInDays: r.donation_in_days,
+          totalPointsIn: r.total_points_in,
+          uniqueDonationSenders: r.unique_donation_senders,
+          lastDonationDay: r.last_donation_day,
+          firstDonationDay: r.first_donation_day,
+          joinedAt: r.joined_at,
+        });
+      }
+      return out;
+    });
+  }
+
   async findMemberStats(
     ctx: IContext,
     communityId: string,
