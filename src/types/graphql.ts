@@ -3276,9 +3276,13 @@ export const GqlPublishStatus = {
 export type GqlPublishStatus = typeof GqlPublishStatus[keyof typeof GqlPublishStatus];
 export type GqlQuery = {
   __typename?: 'Query';
+  /** @deprecated Use `reportsAll` instead. */
   adminBrowseReports: GqlReportsConnection;
+  /** @deprecated Use `reportSummaries` instead. */
   adminReportSummary: GqlAdminReportSummaryConnection;
+  /** @deprecated Use `reportTemplateFeedbackStats` instead. */
   adminTemplateFeedbackStats: GqlAdminTemplateFeedbackStats;
+  /** @deprecated Use `reportTemplateFeedbacks` instead. */
   adminTemplateFeedbacks: GqlReportFeedbacksConnection;
   /**
    * Single-community analytics detail: summary card, stage distribution,
@@ -3334,11 +3338,15 @@ export type GqlQuery = {
   places: GqlPlacesConnection;
   portfolios?: Maybe<Array<GqlPortfolio>>;
   report?: Maybe<GqlReport>;
+  reportSummaries: GqlAdminReportSummaryConnection;
   reportTemplate?: Maybe<GqlReportTemplate>;
+  reportTemplateFeedbackStats: GqlAdminTemplateFeedbackStats;
+  reportTemplateFeedbacks: GqlReportFeedbacksConnection;
   reportTemplateStats: GqlReportTemplateStats;
   reportTemplateStatsBreakdown: GqlReportTemplateStatsBreakdownConnection;
   reportTemplates: Array<GqlReportTemplate>;
   reports: GqlReportsConnection;
+  reportsAll: GqlReportsConnection;
   reservation?: Maybe<GqlReservation>;
   reservationHistories: GqlReservationHistoriesConnection;
   reservationHistory?: Maybe<GqlReservationHistory>;
@@ -3640,9 +3648,33 @@ export type GqlQueryReportArgs = {
 };
 
 
+export type GqlQueryReportSummariesArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
 export type GqlQueryReportTemplateArgs = {
   communityId?: InputMaybe<Scalars['ID']['input']>;
   variant: GqlReportVariant;
+};
+
+
+export type GqlQueryReportTemplateFeedbackStatsArgs = {
+  kind?: InputMaybe<GqlReportTemplateKind>;
+  variant: GqlReportVariant;
+  version?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type GqlQueryReportTemplateFeedbacksArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  feedbackType?: InputMaybe<GqlReportFeedbackType>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  kind?: InputMaybe<GqlReportTemplateKind>;
+  maxRating?: InputMaybe<Scalars['Int']['input']>;
+  variant: GqlReportVariant;
+  version?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -3675,6 +3707,17 @@ export type GqlQueryReportsArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   permission: GqlCheckCommunityPermissionInput;
+  status?: InputMaybe<GqlReportStatus>;
+  variant?: InputMaybe<GqlReportVariant>;
+};
+
+
+export type GqlQueryReportsAllArgs = {
+  communityId?: InputMaybe<Scalars['ID']['input']>;
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  publishedAfter?: InputMaybe<Scalars['Datetime']['input']>;
+  publishedBefore?: InputMaybe<Scalars['Datetime']['input']>;
   status?: InputMaybe<GqlReportStatus>;
   variant?: InputMaybe<GqlReportVariant>;
 };
@@ -8660,11 +8703,15 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   places?: Resolver<GqlResolversTypes['PlacesConnection'], ParentType, ContextType, Partial<GqlQueryPlacesArgs>>;
   portfolios?: Resolver<Maybe<Array<GqlResolversTypes['Portfolio']>>, ParentType, ContextType, Partial<GqlQueryPortfoliosArgs>>;
   report?: Resolver<Maybe<GqlResolversTypes['Report']>, ParentType, ContextType, RequireFields<GqlQueryReportArgs, 'id'>>;
+  reportSummaries?: Resolver<GqlResolversTypes['AdminReportSummaryConnection'], ParentType, ContextType, Partial<GqlQueryReportSummariesArgs>>;
   reportTemplate?: Resolver<Maybe<GqlResolversTypes['ReportTemplate']>, ParentType, ContextType, RequireFields<GqlQueryReportTemplateArgs, 'variant'>>;
+  reportTemplateFeedbackStats?: Resolver<GqlResolversTypes['AdminTemplateFeedbackStats'], ParentType, ContextType, RequireFields<GqlQueryReportTemplateFeedbackStatsArgs, 'kind' | 'variant'>>;
+  reportTemplateFeedbacks?: Resolver<GqlResolversTypes['ReportFeedbacksConnection'], ParentType, ContextType, RequireFields<GqlQueryReportTemplateFeedbacksArgs, 'first' | 'kind' | 'variant'>>;
   reportTemplateStats?: Resolver<GqlResolversTypes['ReportTemplateStats'], ParentType, ContextType, RequireFields<GqlQueryReportTemplateStatsArgs, 'variant'>>;
   reportTemplateStatsBreakdown?: Resolver<GqlResolversTypes['ReportTemplateStatsBreakdownConnection'], ParentType, ContextType, RequireFields<GqlQueryReportTemplateStatsBreakdownArgs, 'first' | 'includeInactive' | 'kind' | 'variant'>>;
   reportTemplates?: Resolver<Array<GqlResolversTypes['ReportTemplate']>, ParentType, ContextType, RequireFields<GqlQueryReportTemplatesArgs, 'includeInactive' | 'kind' | 'variant'>>;
   reports?: Resolver<GqlResolversTypes['ReportsConnection'], ParentType, ContextType, RequireFields<GqlQueryReportsArgs, 'communityId' | 'permission'>>;
+  reportsAll?: Resolver<GqlResolversTypes['ReportsConnection'], ParentType, ContextType, Partial<GqlQueryReportsAllArgs>>;
   reservation?: Resolver<Maybe<GqlResolversTypes['Reservation']>, ParentType, ContextType, RequireFields<GqlQueryReservationArgs, 'id'>>;
   reservationHistories?: Resolver<GqlResolversTypes['ReservationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryReservationHistoriesArgs>>;
   reservationHistory?: Resolver<Maybe<GqlResolversTypes['ReservationHistory']>, ParentType, ContextType, RequireFields<GqlQueryReservationHistoryArgs, 'id'>>;

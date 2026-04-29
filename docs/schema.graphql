@@ -2836,10 +2836,10 @@ enum PublishStatus {
 }
 
 type Query {
-  adminBrowseReports(communityId: ID, cursor: String, first: Int, publishedAfter: Datetime, publishedBefore: Datetime, status: ReportStatus, variant: ReportVariant): ReportsConnection!
-  adminReportSummary(cursor: String, first: Int): AdminReportSummaryConnection!
-  adminTemplateFeedbackStats(kind: ReportTemplateKind = GENERATION, variant: ReportVariant!, version: Int): AdminTemplateFeedbackStats!
-  adminTemplateFeedbacks(cursor: String, feedbackType: ReportFeedbackType, first: Int = 20, kind: ReportTemplateKind = GENERATION, maxRating: Int, variant: ReportVariant!, version: Int): ReportFeedbacksConnection!
+  adminBrowseReports(communityId: ID, cursor: String, first: Int, publishedAfter: Datetime, publishedBefore: Datetime, status: ReportStatus, variant: ReportVariant): ReportsConnection! @deprecated(reason: "Use `reportsAll` instead.")
+  adminReportSummary(cursor: String, first: Int): AdminReportSummaryConnection! @deprecated(reason: "Use `reportSummaries` instead.")
+  adminTemplateFeedbackStats(kind: ReportTemplateKind = GENERATION, variant: ReportVariant!, version: Int): AdminTemplateFeedbackStats! @deprecated(reason: "Use `reportTemplateFeedbackStats` instead.")
+  adminTemplateFeedbacks(cursor: String, feedbackType: ReportFeedbackType, first: Int = 20, kind: ReportTemplateKind = GENERATION, maxRating: Int, variant: ReportVariant!, version: Int): ReportFeedbacksConnection! @deprecated(reason: "Use `reportTemplateFeedbacks` instead.")
 
   """
   Single-community analytics detail: summary card, stage distribution,
@@ -2897,11 +2897,15 @@ type Query {
   places(cursor: String, filter: PlaceFilterInput, first: Int, sort: PlaceSortInput): PlacesConnection!
   portfolios(filter: PortfolioFilterInput, first: Int, sort: PortfolioSortInput): [Portfolio!]
   report(id: ID!): Report
+  reportSummaries(cursor: String, first: Int): AdminReportSummaryConnection!
   reportTemplate(communityId: ID, variant: ReportVariant!): ReportTemplate
+  reportTemplateFeedbackStats(kind: ReportTemplateKind = GENERATION, variant: ReportVariant!, version: Int): AdminTemplateFeedbackStats!
+  reportTemplateFeedbacks(cursor: String, feedbackType: ReportFeedbackType, first: Int = 20, kind: ReportTemplateKind = GENERATION, maxRating: Int, variant: ReportVariant!, version: Int): ReportFeedbacksConnection!
   reportTemplateStats(variant: ReportVariant!, version: Int): ReportTemplateStats!
   reportTemplateStatsBreakdown(cursor: String, first: Int = 20, includeInactive: Boolean = false, kind: ReportTemplateKind = GENERATION, variant: ReportVariant!, version: Int): ReportTemplateStatsBreakdownConnection!
   reportTemplates(communityId: ID, includeInactive: Boolean = false, kind: ReportTemplateKind = GENERATION, variant: ReportVariant!): [ReportTemplate!]!
   reports(communityId: ID!, cursor: String, first: Int, permission: CheckCommunityPermissionInput!, status: ReportStatus, variant: ReportVariant): ReportsConnection!
+  reportsAll(communityId: ID, cursor: String, first: Int, publishedAfter: Datetime, publishedBefore: Datetime, status: ReportStatus, variant: ReportVariant): ReportsConnection!
   reservation(id: ID!): Reservation
   reservationHistories(cursor: String, filter: ReservationHistoryFilterInput, first: Int, sort: ReservationHistorySortInput): ReservationHistoriesConnection!
   reservationHistory(id: ID!): ReservationHistory

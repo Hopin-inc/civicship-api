@@ -13,6 +13,8 @@ import {
   GqlQueryReportTemplatesArgs,
   GqlQueryAdminBrowseReportsArgs,
   GqlQueryAdminReportSummaryArgs,
+  GqlQueryReportsAllArgs,
+  GqlQueryReportSummariesArgs,
 } from "@/types/graphql";
 import { PrismaReport } from "@/application/domain/report/data/type";
 
@@ -37,6 +39,12 @@ export default class ReportResolver {
       return this.useCase.adminBrowseReports(args, ctx);
     },
     adminReportSummary: (_: unknown, args: GqlQueryAdminReportSummaryArgs, ctx: IContext) => {
+      return this.useCase.adminViewReportSummary(args, ctx);
+    },
+    reportsAll: (_: unknown, args: GqlQueryReportsAllArgs, ctx: IContext) => {
+      return this.useCase.adminBrowseReports(args, ctx);
+    },
+    reportSummaries: (_: unknown, args: GqlQueryReportSummariesArgs, ctx: IContext) => {
       return this.useCase.adminViewReportSummary(args, ctx);
     },
   };
