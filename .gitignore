@@ -49,6 +49,9 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
+# Jest cache (cacheDirectory in jest.config.cjs)
+.jest-cache/
+
 # Optional npm cache directory
 .npm
 
