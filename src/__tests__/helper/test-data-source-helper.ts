@@ -261,6 +261,10 @@ export default class TestDataSourceHelper {
     return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
+  static async refreshDonationTxEdges() {
+    return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_donation_tx_edges"`;
+  }
+
   static async getCurrentPoints(walletId: string): Promise<number | null> {
     const result = await this.db.currentPointView.findUnique({
       where: { walletId },

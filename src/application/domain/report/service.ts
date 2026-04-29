@@ -182,6 +182,10 @@ export default class ReportService {
     return this.statsRepo.refreshUserTransactionDaily(ctx, tx);
   }
 
+  async refreshDonationTxEdges(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
+    return this.statsRepo.refreshDonationTxEdges(ctx, tx);
+  }
+
   // =========================================================================
   // Report AI entities
   // =========================================================================
