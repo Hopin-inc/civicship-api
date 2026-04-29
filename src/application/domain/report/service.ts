@@ -1,12 +1,14 @@
 import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
+import { IReportTransactionStatsRepository } from "@/application/domain/report/transactionStats/data/interface";
+import { IReportRepository } from "@/application/domain/report/data/interface";
+import { IReportTemplateRepository } from "@/application/domain/report/template/data/interface";
 import {
   CohortRetentionRow,
   CommunityContextRow,
   DateRange,
   DeepestChainRow,
-  IReportRepository,
   PeriodAggregateRow,
   RetentionAggregateRow,
   TransactionActiveUsersDailyRow,
@@ -14,12 +16,12 @@ import {
   TransactionSummaryDailyRow,
   UserProfileForReportRow,
   UserTransactionAggregateRow,
-} from "@/application/domain/report/data/interface";
+} from "@/application/domain/report/transactionStats/data/rows";
+import { PrismaReport } from "@/application/domain/report/data/type";
 import {
-  PrismaReport,
   PrismaReportGoldenCase,
   PrismaReportTemplate,
-} from "@/application/domain/report/data/type";
+} from "@/application/domain/report/template/data/type";
 import { GqlUpdateReportTemplateInput } from "@/types/graphql";
 import ReportConverter from "@/application/domain/report/data/converter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
@@ -37,14 +39,21 @@ export const SKIP_REASON_NO_ACTIVITY_PREFIX = "No activity in period";
 
 @injectable()
 export default class ReportService {
-  constructor(@inject("ReportRepository") private readonly repository: IReportRepository) {}
+  constructor(
+    @inject("ReportTransactionStatsRepository")
+    private readonly statsRepo: IReportTransactionStatsRepository,
+    @inject("ReportRepository")
+    private readonly entityRepo: IReportRepository,
+    @inject("ReportTemplateRepository")
+    private readonly templateRepo: IReportTemplateRepository,
+  ) {}
 
   async getDailySummaries(
     ctx: IContext,
     communityId: string,
     range: DateRange,
   ): Promise<TransactionSummaryDailyRow[]> {
-    return this.repository.findDailySummaries(ctx, communityId, range);
+    return this.statsRepo.findDailySummaries(ctx, communityId, range);
   }
 
   async getDailyActiveUsers(
@@ -52,7 +61,7 @@ export default class ReportService {
     communityId: string,
     range: DateRange,
   ): Promise<TransactionActiveUsersDailyRow[]> {
-    return this.repository.findDailyActiveUsers(ctx, communityId, range);
+    return this.statsRepo.findDailyActiveUsers(ctx, communityId, range);
   }
 
   async getTopUsersByTotalPoints(
@@ -61,7 +70,7 @@ export default class ReportService {
     range: DateRange,
     topN: number,
   ): Promise<UserTransactionAggregateRow[]> {
-    return this.repository.findTopUsersByTotalPoints(ctx, communityId, range, topN);
+    return this.statsRepo.findTopUsersByTotalPoints(ctx, communityId, range, topN);
   }
 
   async getTrueUniqueCounterpartiesForUsers(
@@ -70,7 +79,7 @@ export default class ReportService {
     range: DateRange,
     userIds: string[],
   ): Promise<Map<string, number>> {
-    return this.repository.findTrueUniqueCounterpartiesForUsers(ctx, communityId, range, userIds);
+    return this.statsRepo.findTrueUniqueCounterpartiesForUsers(ctx, communityId, range, userIds);
   }
 
   async getComments(
@@ -79,7 +88,7 @@ export default class ReportService {
     range: DateRange,
     limit?: number,
   ): Promise<TransactionCommentRow[]> {
-    return this.repository.findCommentsByDateRange(ctx, communityId, range, limit);
+    return this.statsRepo.findCommentsByDateRange(ctx, communityId, range, limit);
   }
 
   async getUserProfiles(
@@ -87,7 +96,7 @@ export default class ReportService {
     communityId: string,
     userIds: string[],
   ): Promise<UserProfileForReportRow[]> {
-    return this.repository.findUserProfiles(ctx, communityId, userIds);
+    return this.statsRepo.findUserProfiles(ctx, communityId, userIds);
   }
 
   async getCommunityContext(
@@ -95,7 +104,7 @@ export default class ReportService {
     communityId: string,
     range: DateRange,
   ): Promise<CommunityContextRow | null> {
-    return this.repository.findCommunityContext(ctx, communityId, range);
+    return this.statsRepo.findCommunityContext(ctx, communityId, range);
   }
 
   async getDeepestChain(
@@ -103,7 +112,7 @@ export default class ReportService {
     communityId: string,
     range: DateRange,
   ): Promise<DeepestChainRow | null> {
-    return this.repository.findDeepestChain(ctx, communityId, range);
+    return this.statsRepo.findDeepestChain(ctx, communityId, range);
   }
 
   async getPeriodAggregate(
@@ -111,7 +120,7 @@ export default class ReportService {
     communityId: string,
     range: DateRange,
   ): Promise<PeriodAggregateRow> {
-    return this.repository.findPeriodAggregate(ctx, communityId, range);
+    return this.statsRepo.findPeriodAggregate(ctx, communityId, range);
   }
 
   async getRetentionAggregate(
@@ -124,7 +133,7 @@ export default class ReportService {
       twelveWeeksAgo: Date;
     },
   ): Promise<RetentionAggregateRow> {
-    return this.repository.findRetentionAggregate(ctx, communityId, range);
+    return this.statsRepo.findRetentionAggregate(ctx, communityId, range);
   }
 
   async getCohortRetention(
@@ -133,15 +142,15 @@ export default class ReportService {
     cohort: { cohortStart: Date; cohortEnd: Date },
     active: { activeStart: Date; activeEnd: Date },
   ): Promise<CohortRetentionRow> {
-    return this.repository.findCohortRetention(ctx, communityId, cohort, active);
+    return this.statsRepo.findCohortRetention(ctx, communityId, cohort, active);
   }
 
   async refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
-    return this.repository.refreshTransactionSummaryDaily(ctx, tx);
+    return this.statsRepo.refreshTransactionSummaryDaily(ctx, tx);
   }
 
   async refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {
-    return this.repository.refreshUserTransactionDaily(ctx, tx);
+    return this.statsRepo.refreshUserTransactionDaily(ctx, tx);
   }
 
   // =========================================================================
@@ -153,7 +162,7 @@ export default class ReportService {
     variant: string,
     communityId: string | null,
   ): Promise<PrismaReportTemplate | null> {
-    return this.repository.findTemplate(ctx, variant, communityId);
+    return this.templateRepo.findTemplate(ctx, variant, communityId);
   }
 
   /**
@@ -170,12 +179,12 @@ export default class ReportService {
     kind: ReportTemplateKind,
     includeInactive: boolean,
   ): Promise<PrismaReportTemplate[]> {
-    return this.repository.findTemplates(ctx, variant, communityId, kind, includeInactive);
+    return this.templateRepo.findTemplates(ctx, variant, communityId, kind, includeInactive);
   }
 
   /**
    * CI-only direct lookup by (variant, kind, version, communityId).
-   * Wraps `IReportRepository.findTemplateByVersion` so the Golden Case
+   * Wraps `IReportTemplateRepository.findTemplateByVersion` so the Golden Case
    * harness has the same service-shaped seam as the rest of the report
    * domain. Production resolvers must not use this — it bypasses the
    * `isActive` / `isEnabled` gates.
@@ -194,7 +203,7 @@ export default class ReportService {
     version: number,
     communityId: string | null = null,
   ): Promise<PrismaReportTemplate | null> {
-    return this.repository.findTemplateByVersion(ctx, variant, kind, version, communityId);
+    return this.templateRepo.findTemplateByVersion(ctx, variant, kind, version, communityId);
   }
 
   async upsertTemplate(
@@ -206,7 +215,7 @@ export default class ReportService {
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReportTemplate> {
     const data = { ...ReportConverter.toReportTemplateUpsertData(input), updatedBy };
-    return this.repository.upsertTemplate(ctx, variant, communityId, data, tx);
+    return this.templateRepo.upsertTemplate(ctx, variant, communityId, data, tx);
   }
 
   async createReport(
@@ -214,7 +223,7 @@ export default class ReportService {
     data: Prisma.ReportUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReport> {
-    return this.repository.createReport(ctx, data, tx);
+    return this.entityRepo.createReport(ctx, data, tx);
   }
 
   async getReportById(
@@ -222,7 +231,7 @@ export default class ReportService {
     id: string,
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReport | null> {
-    return this.repository.findReportById(ctx, id, tx);
+    return this.entityRepo.findReportById(ctx, id, tx);
   }
 
   async getReports(
@@ -235,7 +244,7 @@ export default class ReportService {
       first?: number;
     },
   ): Promise<{ items: PrismaReport[]; totalCount: number }> {
-    return this.repository.findReports(ctx, params);
+    return this.entityRepo.findReports(ctx, params);
   }
 
   /**
@@ -257,7 +266,7 @@ export default class ReportService {
       first: number;
     },
   ): Promise<{ items: PrismaReport[]; totalCount: number }> {
-    return this.repository.findAllReports(ctx, params);
+    return this.entityRepo.findAllReports(ctx, params);
   }
 
   /**
@@ -285,7 +294,7 @@ export default class ReportService {
     const cursor = params.cursor
       ? ReportConverter.decodeCommunitySummaryCursor(params.cursor)
       : null;
-    return this.repository.findCommunityReportSummary(ctx, {
+    return this.entityRepo.findCommunityReportSummary(ctx, {
       cursor,
       first: params.first,
     });
@@ -307,7 +316,7 @@ export default class ReportService {
     communityId: string,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-    return this.repository.recalculateCommunityLastPublished(ctx, communityId, tx);
+    return this.entityRepo.recalculateCommunityLastPublished(ctx, communityId, tx);
   }
 
   async updateReportStatus(
@@ -317,7 +326,7 @@ export default class ReportService {
     extra?: { publishedAt?: Date; publishedBy?: string; finalContent?: string },
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReport> {
-    return this.repository.updateReportStatus(ctx, id, status, extra, tx);
+    return this.entityRepo.updateReportStatus(ctx, id, status, extra, tx);
   }
 
   /**
@@ -337,14 +346,14 @@ export default class ReportService {
     },
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaReport> {
-    return this.repository.updateReportJudgeResult(ctx, id, data, tx);
+    return this.entityRepo.updateReportJudgeResult(ctx, id, data, tx);
   }
 
   async getGoldenCases(
     ctx: IContext,
     options: { variant?: string; pinnedVersion?: number | null } = {},
   ): Promise<PrismaReportGoldenCase[]> {
-    return this.repository.findGoldenCases(ctx, options);
+    return this.templateRepo.findGoldenCases(ctx, options);
   }
 
   /**

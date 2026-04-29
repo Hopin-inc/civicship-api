@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
-import ReportJudgeService from "@/application/domain/report/judgeService";
+import ReportJudgeService from "@/application/domain/report/template/judgeService";
 import type { LlmCompleteResult } from "@/infrastructure/libs/llm/types";
 import type { IContext } from "@/types/server";
 
@@ -28,7 +28,7 @@ describe("ReportJudgeService", () => {
     repository = { findJudgeTemplate: jest.fn() };
     llmClient = { complete: jest.fn() };
 
-    container.register("ReportRepository", { useValue: repository });
+    container.register("ReportTemplateRepository", { useValue: repository });
     container.register("LlmClient", { useValue: llmClient });
     service = container.resolve(ReportJudgeService);
   });

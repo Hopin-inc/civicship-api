@@ -3,9 +3,9 @@ import { ReportTemplateKind } from "@prisma/client";
 import { container } from "tsyringe";
 import ReportTemplateSelector, {
   cyrb53,
-} from "@/application/domain/report/templateSelector";
+} from "@/application/domain/report/template/selector";
 import type { IContext } from "@/types/server";
-import type { PrismaReportTemplate } from "@/application/domain/report/data/type";
+import type { PrismaReportTemplate } from "@/application/domain/report/template/data/type";
 
 /**
  * `ReportTemplateSelector` covers three behaviour invariants:
@@ -58,7 +58,7 @@ describe("ReportTemplateSelector", () => {
   beforeEach(() => {
     container.reset();
     repository = { findActiveTemplates: jest.fn() };
-    container.register("ReportRepository", { useValue: repository });
+    container.register("ReportTemplateRepository", { useValue: repository });
     selector = container.resolve(ReportTemplateSelector);
   });
 

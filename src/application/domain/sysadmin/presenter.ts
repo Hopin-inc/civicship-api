@@ -29,17 +29,19 @@ import {
 import {
   AlertFlags,
   LatestCohortCounts,
-  MemberListResult,
+  WeeklyRetentionCounts,
+  WindowActivityCounts,
+} from "@/application/domain/sysadmin/service";
+import {
   MonthlyCohortPoint,
   StageBreakdown,
   StageBucketStats,
   StageCounts,
   SysAdminCohortFunnelPoint,
   TenureDistribution,
-  WeeklyRetentionCounts,
   WeeklyRetentionPoint,
-  WindowActivityCounts,
-} from "@/application/domain/sysadmin/service";
+} from "@/application/domain/sysadmin/aggregations";
+import { MemberListResult } from "@/application/domain/sysadmin/pagination";
 
 /**
  * Prisma / service rows → GraphQL payload shapes. Pure functions.

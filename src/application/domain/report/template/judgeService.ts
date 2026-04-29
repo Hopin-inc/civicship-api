@@ -2,8 +2,8 @@ import { ReportTemplateScope } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
-import { IReportRepository } from "@/application/domain/report/data/interface";
-import { PrismaReportTemplate } from "@/application/domain/report/data/type";
+import { IReportTemplateRepository } from "@/application/domain/report/template/data/interface";
+import { PrismaReportTemplate } from "@/application/domain/report/template/data/type";
 import { renderPromptTemplate } from "@/application/domain/report/util/promptRenderer";
 import { LlmClient } from "@/infrastructure/libs/llm";
 
@@ -92,7 +92,7 @@ export class JudgeParseError extends Error {
 @injectable()
 export default class ReportJudgeService {
   constructor(
-    @inject("ReportRepository") private readonly repository: IReportRepository,
+    @inject("ReportTemplateRepository") private readonly repository: IReportTemplateRepository,
     @inject("LlmClient") private readonly llmClient: LlmClient,
   ) {}
 
