@@ -1,4 +1,4 @@
-name: Deploy to Cloud Run
+name: Deploy to Cloud Run (dev)
 
 on:
   push:
@@ -11,161 +11,13 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    environment: dev
-    timeout-minutes: 30
-
-    permissions:
-      id-token: write
-      contents: read
-
-    env:
-      # stage
-      STAGE: dev
-      # GCP settings
-      GCP_REGION: ${{ secrets.GCP_REGION }}
-      # DB credentials
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
-      # application settings
-      ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
-      APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
-      # batch settings
-      BATCH_ARTIFACT_REGISTRY: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}
-      BATCH_NAME: ${{ secrets.BATCH_NAME }}
-      # Jumpbox settings
-      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
-      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
-      # Apollo studio
-      APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-    - name: Set up Node.js
-      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-      with:
-        node-version: '20'
-        cache: 'pnpm'
-
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-
-    - name: Authenticate to Google Cloud (Workload Identity Federation)
-      uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
-      with:
-        workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-
-    - name: Set up gcloud SDK
-      uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
-
-    - name: pnpm db:generate and db:deploy
-      env:
-        DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
-      # SSH トンネル確立を active wait で確認 (旧 sleep 60 + 60s×5 retry → 通常 5〜15s で抜ける)
-      run: |
-        echo "--- Connecting to DB via jumpbox ---"
-        gcloud compute ssh ${{ env.JUMPBOX_INSTANCE_NAME }} \
-          --tunnel-through-iap \
-          --zone=${{ env.JUMPBOX_ZONE }} \
-          --quiet -- -N -L 5432:localhost:5432 &
-        SSH_PID=$!
-        for _ in {1..45}; do
-          if pg_isready -h localhost -p 5432 -d "${{ env.DB_NAME }}" -q; then
-            break
-          fi
-          sleep 2
-        done
-        if ! pg_isready -h localhost -p 5432 -d "${{ env.DB_NAME }}" -q; then
-          echo "::error::SSH tunnel never became ready"
-          kill "$SSH_PID" || true
-          exit 1
-        fi
-
-        echo "--- Running prisma generate ---"
-        pnpm db:generate
-
-        echo "--- Running prisma migrate deploy ---"
-        pnpm db:deploy
-
-        echo "Killing SSH tunnel"
-        kill "$SSH_PID" || true
-
-    - name: pnpm gql:generate
-      run: pnpm gql:generate
-
-    - name: Install and Publish via Rover CLI
-      env:
-        APOLLO_KEY: ${{ env.APOLLO_KEY }}
-      run: |
-        curl -sSL https://rover.apollo.dev/nix/latest | sh
-        export PATH="$HOME/.rover/bin:$PATH"
-        rover graph publish civicship-api-jq1988@dev --schema ./docs/schema.graphql
-
-    - name: pnpm build
-      run: pnpm build
-
-    - name: Configure Docker for GCP Artifact Registry
-      run: |
-        gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
-        gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
-
-    # main image と batch image を同一 source から並列ビルド + push (GHA cache 共有)
-    - name: Build and push main + batch images in parallel
-      env:
-        MAIN_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
-        BATCH_IMAGE: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
-      run: |
-        set -e
-        docker buildx build \
-          --file Dockerfile \
-          --tag "$MAIN_IMAGE" \
-          --cache-from type=gha,scope=main-dev \
-          --cache-to type=gha,mode=max,scope=main-dev \
-          --push \
-          . &
-        MAIN_PID=$!
-        docker buildx build \
-          --file Dockerfile.batch \
-          --tag "$BATCH_IMAGE" \
-          --cache-from type=gha,scope=batch-dev \
-          --cache-to type=gha,mode=max,scope=batch-dev \
-          --push \
-          . &
-        BATCH_PID=$!
-        wait "$MAIN_PID"
-        wait "$BATCH_PID"
-
-    - name: Deploy Internal API to Cloud Run
-      id: 'deploy'
-      uses: 'google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522' # v2.7.6
-      with:
-        service: ${{ env.APPLICATION_NAME }}
-        image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
-        region: ${{ env.GCP_REGION }}
-        env_vars: |
-          NODE_ENV=development
-          ENV=dev
-
-    - name: Update Cloud Run Job (batch) to new image
-      # docker push :latest alone does not roll the Cloud Run Job to the new
-      # image — Cloud Run Jobs pin the image digest at deploy time, so we
-      # need an explicit `run jobs update` to create a new revision.
-      run: |
-        gcloud run jobs update ${{ env.BATCH_NAME }} \
-          --region=${{ env.GCP_REGION }} \
-          --image=${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
-
-    - name: Cleanup SSH Key
-      if: always()
-      run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub
+    uses: ./.github/workflows/_deploy-cloud-run.yml
+    with:
+      stage: dev
+      environment: dev
+      apollo-variant: dev
+      node-env: development
+      extra-env-vars: |
+        ENV=dev
+      create-git-tag: false
+    secrets: inherit

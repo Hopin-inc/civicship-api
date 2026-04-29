@@ -71,9 +71,9 @@ CMD ["node", "dist/external-api.js"]
 #### 3. Batch Processing (Background Jobs)
 
 **Configuration:**
-- **Entry Point:** `src/batch.ts`
+- **Entry Point:** `src/index.ts` (with `PROCESS_TYPE=batch` env)
 - **Purpose:** Background job processing
-- **Dockerfile:** `Dockerfile.batch`
+- **Dockerfile:** `Dockerfile` (unified — same image as Internal API)
 - **Deployment:** Google Cloud Run Jobs
 - **Execution:** Scheduled execution
 
@@ -83,19 +83,10 @@ CMD ["node", "dist/external-api.js"]
 - Periodic cleanup
 - Notification sending
 
-```dockerfile
-# Dockerfile.batch
-FROM node:20-alpine
-
-WORKDIR /app
-COPY package*.json ./
-RUN pnpm install --frozen-lockfile --prod
-
-COPY . .
-RUN pnpm build
-
-CMD ["node", "dist/batch.js"]
-```
+The batch image is the same `Dockerfile`-built image as the Internal API.
+The Cloud Run Job overrides the entrypoint with `--command=node --args=dist/index.js`
+in the deploy workflow (`_deploy-cloud-run.yml`), and `src/index.ts:118-128`
+dispatches to `batchProcess()` when `process.env.PROCESS_TYPE === "batch"`.
 
 ## Google Cloud Run Settings
 
