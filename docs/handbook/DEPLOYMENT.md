@@ -25,18 +25,16 @@ civicship-api supports multiple deployment configurations, separating different 
 
 ```dockerfile
 # Dockerfile
-FROM node:20-alpine
-
+FROM node:20
 WORKDIR /app
-COPY package*.json ./
-RUN pnpm install --frozen-lockfile --prod
-
-COPY .. .
-RUN pnpm build
-
-EXPOSE 3000
-CMD ["pnpm", "start"]
+COPY . ./
+CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/index.js"]
 ```
+
+The runner builds `dist/` via `pnpm build` before the Docker build, and
+`node_modules/` is intentionally included in the build context (see
+`.dockerignore`). The image therefore ships pre-built JS and pre-installed
+dependencies — no `pnpm install` / `pnpm build` runs inside the container.
 
 #### 2. External API (Public Wallet Operations)
 
@@ -55,18 +53,14 @@ CMD ["pnpm", "start"]
 
 ```dockerfile
 # Dockerfile.external
-FROM node:20-alpine
-
+FROM node:20
 WORKDIR /app
-COPY package*.json ./
-RUN pnpm install --frozen-lockfile --prod
-
-COPY . .
-RUN pnpm build
-
-EXPOSE 8080
-CMD ["node", "dist/external-api.js"]
+COPY . ./
+CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/external-api.js"]
 ```
+
+Same pattern as Internal API: `dist/` and `node_modules/` come from the
+runner-side build, so the container starts directly from the pre-built output.
 
 #### 3. Batch Processing (Background Jobs)
 
