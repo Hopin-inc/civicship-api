@@ -54,9 +54,9 @@ dependencies — no `pnpm install` / `pnpm build` runs inside the container.
 ```dockerfile
 # Dockerfile.external
 FROM node:20
-WORKDIR /tmp
+WORKDIR /app
 COPY . ./
-CMD ["node", "-r", "tsconfig-paths/register", "dist/external-api.js"]
+CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/external-api.js"]
 ```
 
 Same pattern as Internal API: `dist/` and `node_modules/` come from the
