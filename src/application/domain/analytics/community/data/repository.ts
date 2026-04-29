@@ -241,30 +241,52 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           -- the cross-product bug that motivated the donation_activity
           -- consolidation.
           --
-          -- Sources from mv_donation_tx_edges, keyed by
-          -- recipient_community_id. The MV's WHERE clause guarantees
-          -- that fw.user_id IS NOT NULL and that the cross-community
-          -- guard holds in the same direction (sender community NULL
-          -- or matches recipient), so the asymmetric "incoming
-          -- accepts NULL sender community" semantic from the previous
-          -- CTE is preserved.
+          -- Reads t_transactions directly for the same reason
+          -- donation_activity does: this CTE measures TOTAL incoming
+          -- DONATION points (not DISTINCT counterparties), so the
+          -- MV's tw.user_id <> fw.user_id self-donation guard would
+          -- silently drop self-donation rows from total_points_in /
+          -- donation_in_months / donation_in_days. Keeping the
+          -- pre-PR t_transactions + double t_wallets join preserves
+          -- exact semantic equivalence.
+          --
+          -- Scoping mirrors donation_activity / donation_recipients:
+          --   - DONATION reason only (excludes burn / grant flows that
+          --     are not part of the gift-economy ledger)
+          --   - receiver wallet attached to one of the requested
+          --     communities so a member who received cross-community
+          --     grants does not get incoming credit they cannot
+          --     reciprocate
+          --   - sender wallet either in the same community or
+          --     unattached (system / burn sources are excluded from
+          --     the points sum for symmetry with donation_activity's
+          --     wallet filter on the sending side)
+          --   - clamped at asOf via asof_bound so a historic asOf
+          --     does not leak future incoming points into the totals
           SELECT
-            e."recipient_community_id" AS community_id,
-            e."recipient_user_id" AS user_id,
-            e."date" AS jst_day,
-            DATE_TRUNC('month', e."date") AS jst_month,
-            SUM(e."to_point_change") AS day_points_in
-          FROM "mv_donation_tx_edges" e
+            tw."community_id" AS community_id,
+            tw."user_id" AS user_id,
+            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
+            DATE_TRUNC(
+              'month',
+              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
+            ) AS jst_month,
+            SUM(t."to_point_change") AS day_points_in
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" tw
+            ON tw."id" = t."to"
+            AND tw."community_id" = ANY(${communityIds}::text[])
           INNER JOIN members m
-            ON m."user_id" = e."recipient_user_id"
-            AND m."community_id" = e."recipient_community_id"
+            ON m."user_id" = tw."user_id"
+            AND m."community_id" = tw."community_id"
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."user_id" IS NOT NULL
+            AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
           CROSS JOIN asof_bound ab
-          WHERE e."recipient_community_id" = ANY(${communityIds}::text[])
-            AND e."date" < ab.upper_jst_date
-          -- See donation_activity above: jst_month included in the
-          -- GROUP BY for SELECT-list parity with the previous inline
-          -- CTE rather than relying on functional-dependency analysis.
-          GROUP BY e."recipient_community_id", e."recipient_user_id", e."date", jst_month
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+          GROUP BY tw."community_id", tw."user_id", jst_day, jst_month
         ),
         donation_in_aggregates AS (
           -- Pre-aggregate donation_received to one row per
