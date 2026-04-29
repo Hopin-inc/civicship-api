@@ -3287,6 +3287,14 @@ export type GqlQuery = {
    * report conversation.
    */
   analyticsCommunity: GqlAnalyticsCommunityPayload;
+  /**
+   * L1 dashboard: platform totals plus one row per community. Intended
+   * for the "is any community stalling?" scan. Community fan-out is
+   * served with N in-process calls (acceptable at today's community
+   * count — switch to a GROUP BY implementation once the platform
+   * exceeds ~20 communities).
+   */
+  analyticsDashboard: GqlAnalyticsDashboardPayload;
   article?: Maybe<GqlArticle>;
   articles: GqlArticlesConnection;
   cities: GqlCitiesConnection;
@@ -3425,6 +3433,11 @@ export type GqlQueryAdminTemplateFeedbacksArgs = {
 
 export type GqlQueryAnalyticsCommunityArgs = {
   input: GqlAnalyticsCommunityInput;
+};
+
+
+export type GqlQueryAnalyticsDashboardArgs = {
+  input?: InputMaybe<GqlAnalyticsDashboardInput>;
 };
 
 
@@ -8615,6 +8628,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   adminTemplateFeedbackStats?: Resolver<GqlResolversTypes['AdminTemplateFeedbackStats'], ParentType, ContextType, RequireFields<GqlQueryAdminTemplateFeedbackStatsArgs, 'kind' | 'variant'>>;
   adminTemplateFeedbacks?: Resolver<GqlResolversTypes['ReportFeedbacksConnection'], ParentType, ContextType, RequireFields<GqlQueryAdminTemplateFeedbacksArgs, 'first' | 'kind' | 'variant'>>;
   analyticsCommunity?: Resolver<GqlResolversTypes['AnalyticsCommunityPayload'], ParentType, ContextType, RequireFields<GqlQueryAnalyticsCommunityArgs, 'input'>>;
+  analyticsDashboard?: Resolver<GqlResolversTypes['AnalyticsDashboardPayload'], ParentType, ContextType, Partial<GqlQueryAnalyticsDashboardArgs>>;
   article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id' | 'permission'>>;
   articles?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesArgs>>;
   cities?: Resolver<GqlResolversTypes['CitiesConnection'], ParentType, ContextType, Partial<GqlQueryCitiesArgs>>;

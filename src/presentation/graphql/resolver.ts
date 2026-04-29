@@ -31,6 +31,7 @@ import ReportResolver from "@/application/domain/report/controller/resolver";
 import ReportFeedbackResolver from "@/application/domain/report/feedback/controller/resolver";
 import SysAdminResolver from "@/application/domain/sysadmin/controller/resolver";
 import AnalyticsCommunityResolver from "@/application/domain/analytics/community/controller/resolver";
+import AnalyticsResolver from "@/application/domain/analytics/controller/resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
 
 const identity = container.resolve(IdentityResolver);
@@ -69,6 +70,7 @@ const report = container.resolve(ReportResolver);
 const reportFeedback = container.resolve(ReportFeedbackResolver);
 const sysAdmin = container.resolve(SysAdminResolver);
 const analyticsCommunity = container.resolve(AnalyticsCommunityResolver);
+const analytics = container.resolve(AnalyticsResolver);
 
 const resolvers = {
   Query: {
@@ -102,6 +104,7 @@ const resolvers = {
     ...reportFeedback.Query,
     ...sysAdmin.Query,
     ...analyticsCommunity.Query,
+    ...analytics.Query,
   },
   Mutation: {
     ...identity.Mutation,
