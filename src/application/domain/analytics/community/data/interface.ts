@@ -12,7 +12,7 @@ import {
 } from "@/application/domain/analytics/community/data/type";
 
 /**
- * Repository contract for the sysadmin analytics surface.
+ * Repository contract for the analytics community surface.
  *
  * All queries read through `ctx.issuer.public` (MVs bypass RLS anyway,
  * and the t_memberships / t_transactions reads here are gated at the

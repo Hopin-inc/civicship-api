@@ -14,7 +14,7 @@ import {
 import { IAnalyticsCommunityRepository } from "@/application/domain/analytics/community/data/interface";
 
 /**
- * SQL helpers for the sysadmin analytics surface.
+ * SQL helpers for the analytics community surface.
  *
  * Conventions inherited from the report repository:
  *   - Every read goes through `ctx.issuer.public`; MVs are RLS-less and
@@ -1139,7 +1139,7 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
         }[]
       >`
         WITH asof_bound AS (
-          -- Same (asOf JST day + 1) clamp the other sysadmin queries
+          -- Same (asOf JST day + 1) clamp the other analytics queries
           -- use. Historic asOf must not count DONATION transactions
           -- or chain depths from dates past asOf; otherwise the
           -- summary card would mix the past-point view with whatever

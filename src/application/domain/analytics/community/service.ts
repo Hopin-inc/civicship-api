@@ -162,7 +162,7 @@ export default class AnalyticsCommunityService {
     // domain's service-layer entry point), not the report repository.
     // CLAUDE.md restricts services to "Call other domain services
     // (read operations only)" — going straight to the repository
-    // would couple sysadmin to the report domain's data layer.
+    // would couple analytics to the report domain's data layer.
     @inject("ReportService") private readonly reportService: ReportService,
   ) {}
 

@@ -17,7 +17,7 @@ import {
 /**
  * Transaction-statistics repository contract for the report domain.
  * Aggregations + materialized-view refreshes are scoped here so callers
- * (ReportService.weeklyPayload, sysadmin retention/cohort orchestrators)
+ * (ReportService.weeklyPayload, analytics retention/cohort orchestrators)
  * can ask for a single concern without dragging the entity / template
  * surface around.
  */

@@ -111,10 +111,11 @@ export function percentChange(current: number, previous: number): number | null 
 // start" is a Date whose UTC components encode the first day of the JST
 // calendar month at UTC 00:00. Round-trips through Prisma `@db.Date`
 // filters and the `::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'`
-// SQL pattern the report / sysadmin repositories use.
+// SQL pattern the report / analytics repositories use.
 //
-// Lived under sysadmin/util.ts originally; moved here so every analytics
-// domain imports from the same place as the day/week helpers above.
+// Lived under sysadmin/util.ts originally (pre-rename); moved to
+// report/util.ts so every analytics domain imports from the same place
+// as the day/week helpers above.
 // ============================================================================
 
 /**

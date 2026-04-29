@@ -1,7 +1,7 @@
 # ------------------------------
 # Analytics Dashboard Query
 #
-# L1 overview surface for sysadmin operators: platform totals plus
+# L1 overview surface for admin operators: platform totals plus
 # one row per community. Bypasses per-community RLS under the hood
 # (ctx.issuer.public) because admins legitimately need to see across
 # every community at once.
