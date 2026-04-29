@@ -1,13 +1,13 @@
 import "reflect-metadata";
 import { MAX_LIMIT, paginateMembers } from "@/application/domain/analytics/community/pagination";
-import type { SysAdminMemberStatsRow } from "@/application/domain/sysadmin/data/type";
+import type { AnalyticsMemberStatsRow } from "@/application/domain/sysadmin/data/type";
 import { member } from "@/__tests__/unit/sysadmin/fixtures";
 
 // ========================================================================
 // paginateMembers: in-memory filter + sort + slice
 // ========================================================================
 describe("paginateMembers", () => {
-  const baseMembers: SysAdminMemberStatsRow[] = [
+  const baseMembers: AnalyticsMemberStatsRow[] = [
     member({ userId: "a", userSendRate: 0.9, monthsIn: 10, donationOutMonths: 9 }),
     member({ userId: "b", userSendRate: 0.5, monthsIn: 8, donationOutMonths: 4 }),
     member({ userId: "c", userSendRate: 0.2, monthsIn: 5, donationOutMonths: 1 }),
@@ -115,7 +115,7 @@ describe("paginateMembers", () => {
     // Pin the cap to its post-issue-#1 value so a future
     // "tighten the limit" change has to update this test
     // alongside the schema description on
-    // SysAdminCommunityDetailInput.limit, which advertises
+    // AnalyticsCommunityDetailInput.limit, which advertises
     // "default 50, max 1000" to clients computing all-member
     // aggregates (e.g. recipient-to-sender conversion rate).
     expect(MAX_LIMIT).toBe(1000);
@@ -126,7 +126,7 @@ describe("paginateMembers", () => {
     // returned 200 and pretended there were no further pages
     // when only 200 of 1500 had been emitted, which the issue
     // discussion flagged as the L2 blocker.
-    const many: SysAdminMemberStatsRow[] = Array.from({ length: 1500 }, (_, i) =>
+    const many: AnalyticsMemberStatsRow[] = Array.from({ length: 1500 }, (_, i) =>
       member({ userId: `u${String(i).padStart(4, "0")}` }),
     );
     const page = paginateMembers(many, {

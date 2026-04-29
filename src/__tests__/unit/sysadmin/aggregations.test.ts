@@ -8,7 +8,7 @@ import {
   computeTenureDistribution,
 } from "@/application/domain/analytics/community/aggregations";
 import { DEFAULT_SEGMENT_THRESHOLDS } from "@/application/domain/analytics/community/classifiers";
-import type { SysAdminMonthlyActivityRow } from "@/application/domain/sysadmin/data/type";
+import type { AnalyticsMonthlyActivityRow } from "@/application/domain/sysadmin/data/type";
 import { member } from "@/__tests__/unit/sysadmin/fixtures";
 
 // ========================================================================
@@ -549,7 +549,7 @@ describe("computeActivityRate3mAvg", () => {
     month: string,
     senderCount: number,
     totalMembers: number,
-  ): SysAdminMonthlyActivityRow {
+  ): AnalyticsMonthlyActivityRow {
     return {
       monthStart: new Date(month),
       senderCount,

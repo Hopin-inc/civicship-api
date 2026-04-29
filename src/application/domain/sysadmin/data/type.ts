@@ -7,7 +7,7 @@
  * layer is responsible for running them through `bigintToSafeNumber`.
  */
 
-export type SysAdminCommunityRow = {
+export type AnalyticsCommunityRow = {
   communityId: string;
   communityName: string;
 };
@@ -20,7 +20,7 @@ export type SysAdminCommunityRow = {
  * `name` is nullable to handle race conditions (member row without a
  * user row shouldn't normally happen but keeps the type honest).
  */
-export type SysAdminMemberStatsRow = {
+export type AnalyticsMemberStatsRow = {
   userId: string;
   name: string | null;
   monthsIn: number;
@@ -32,7 +32,7 @@ export type SysAdminMemberStatsRow = {
   donationOutDays: number;
   /**
    * Receiver-side counterparts to the donation-out counters above.
-   * Backs `SysAdminMemberRow.totalPointsIn` /
+   * Backs `AnalyticsMemberRow.totalPointsIn` /
    * `donationInMonths` / `donationInDays` / `uniqueDonationSenders`
    * — see those field docs for scope details (DONATION reason
    * only, in-community sender wallets, sender wallets without a
@@ -81,7 +81,7 @@ export type SysAdminMemberStatsRow = {
  * could legitimately hit 2B+). The presenter layer converts through
  * `bigintToSafeNumber` before the value leaves the domain.
  */
-export type SysAdminMonthlyActivityRow = {
+export type AnalyticsMonthlyActivityRow = {
   /** JST month start (UTC-encoded, first day of the month at 00:00). */
   monthStart: Date;
   senderCount: number;
@@ -95,7 +95,7 @@ export type SysAdminMonthlyActivityRow = {
    * this month's END (the cutoff timestamp is `monthEnd` =
    * the JST first-of-next-month at 00:00). Always returned as a
    * non-negative count. Backs
-   * `SysAdminMonthlyActivityPoint.dormantCount`.
+   * `AnalyticsMonthlyActivityPoint.dormantCount`.
    */
   dormantCountEndOfMonth: number;
   /**
@@ -104,28 +104,28 @@ export type SysAdminMonthlyActivityRow = {
    * `dormantCountEndOfMonth`) but had at least one DONATION out
    * during this month. null for the first month in the trend
    * series — there is no prior month-end snapshot to reference.
-   * Backs `SysAdminMonthlyActivityPoint.returnedMembers`.
+   * Backs `AnalyticsMonthlyActivityPoint.returnedMembers`.
    */
   returnedMembers: number | null;
   /**
    * Distinct members who, evaluated within the 28-day window ending
    * at this month-end, sent DONATION to >= hubBreadthThreshold
    * distinct counterparties. Same window-scoped semantic as the L1
-   * `SysAdminCommunityOverview.hubMemberCount`, applied at month-end
+   * `AnalyticsCommunityOverview.hubMemberCount`, applied at month-end
    * rather than at request `asOf`. The 28-day window is fixed for
    * cross-month comparability (matches the L1 default `windowDays`
    * and the dormantCount-monthly precedent).
    *
    * Always non-negative in the current implementation (0 for months
    * with no qualifying senders); the public field on
-   * `SysAdminMonthlyActivityPoint` is declared nullable for forward
+   * `AnalyticsMonthlyActivityPoint` is declared nullable for forward
    * compatibility but the repository never emits null today.
    */
   hubMemberCount: number;
 };
 
 /** All-time totals for the summary card, keyed by community. */
-export type SysAdminAllTimeTotalsRow = {
+export type AnalyticsAllTimeTotalsRow = {
   totalDonationPoints: bigint;
   maxChainDepth: number | null;
   dataFrom: Date | null;
@@ -133,13 +133,13 @@ export type SysAdminAllTimeTotalsRow = {
 };
 
 /** Latest-month activity snapshot used by the L1 dashboard + summary card. */
-export type SysAdminActivitySnapshotRow = {
+export type AnalyticsActivitySnapshotRow = {
   senderCount: number;
   totalMembers: number;
 };
 
 /** New-member count within an arbitrary window (used for `no_new_members`). */
-export type SysAdminNewMemberCountRow = {
+export type AnalyticsNewMemberCountRow = {
   count: number;
 };
 
@@ -147,14 +147,14 @@ export type SysAdminNewMemberCountRow = {
  * Window-scoped count of members classified as hubs. A member is a
  * hub if they sent DONATION to at least `hubBreadthThreshold` DISTINCT
  * counterparties during `[currLower, upper)` JST. Powers
- * `SysAdminCommunityOverview.hubMemberCount`.
+ * `AnalyticsCommunityOverview.hubMemberCount`.
  */
-export type SysAdminHubMemberCountRow = {
+export type AnalyticsHubMemberCountRow = {
   count: number;
 };
 
 /**
- * All five raw counts the L1 `SysAdminWindowActivity` payload needs,
+ * All five raw counts the L1 `AnalyticsWindowActivity` payload needs,
  * derived from a single MV scan + a single membership scan over
  * `[prevLower, upper)`. Consolidates what used to be 3 overlapping
  * mv_user_transaction_daily reads (curr senders, prev senders,
@@ -165,7 +165,7 @@ export type SysAdminHubMemberCountRow = {
  * Field shape mirrors `WindowActivityCounts` so the service can
  * pass the row through without re-mapping.
  */
-export type SysAdminWindowActivityCountsRow = {
+export type AnalyticsWindowActivityCountsRow = {
   senderCount: number;
   senderCountPrev: number;
   retainedSenders: number;
@@ -178,7 +178,7 @@ export type SysAdminWindowActivityCountsRow = {
  * query rather than summing per-community payloads in memory so the
  * answer stays atomic with a single asOf timestamp.
  */
-export type SysAdminPlatformTotalsRow = {
+export type AnalyticsPlatformTotalsRow = {
   communitiesCount: number;
   totalMembers: number;
   latestMonthDonationPoints: bigint;
@@ -186,12 +186,12 @@ export type SysAdminPlatformTotalsRow = {
 
 /**
  * One bucket of the all-time DONATION chain-depth histogram. Backs
- * `SysAdminCommunityDetailPayload.chainDepthDistribution`. The
+ * `AnalyticsCommunityDetailPayload.chainDepthDistribution`. The
  * repository emits a fixed-shape array (depth 1..N inclusive,
  * with the last bucket aggregating depth >= N) so the service
  * layer doesn't need to zero-pad.
  */
-export type SysAdminChainDepthBucketRow = {
+export type AnalyticsChainDepthBucketRow = {
   depth: number;
   count: number;
 };

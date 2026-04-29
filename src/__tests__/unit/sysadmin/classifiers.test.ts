@@ -74,7 +74,7 @@ describe("classifyMember", () => {
     // monthsIn = 0 fails the tenure floor, but donationOutMonths = 0
     // is checked first → latent, not occasional. This matches the
     // "passive is tenure-independent" promise on
-    // SysAdminSegmentThresholdsInput.minMonthsIn.
+    // AnalyticsSegmentThresholdsInput.minMonthsIn.
     expect(
       classifyMember(member({ donationOutMonths: 0, userSendRate: 0, monthsIn: 0 }), {
         tier1: 0.7,

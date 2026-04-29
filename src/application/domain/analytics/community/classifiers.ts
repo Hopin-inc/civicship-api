@@ -1,5 +1,5 @@
 import { addDays, truncateToJstDate } from "@/application/domain/report/util";
-import { SysAdminMemberStatsRow } from "@/application/domain/sysadmin/data/type";
+import { AnalyticsMemberStatsRow } from "@/application/domain/sysadmin/data/type";
 
 /**
  * Stage-count thresholds come from the client. tier1 >= tier2 >= 0 is
@@ -75,7 +75,7 @@ const DAYS_PER_MONTH_APPROX = 30;
 export type MemberClassification = "habitual" | "regular" | "occasional" | "latent";
 
 export function classifyMember(
-  m: SysAdminMemberStatsRow,
+  m: AnalyticsMemberStatsRow,
   thresholds: SegmentThresholds,
 ): MemberClassification {
   if (m.donationOutMonths === 0) return "latent";
@@ -110,7 +110,7 @@ export function classifyMember(
  * time-of-day component (i.e. essentially always in production).
  */
 export function isDormant(
-  m: SysAdminMemberStatsRow,
+  m: AnalyticsMemberStatsRow,
   asOf: Date,
   dormantThresholdDays: number,
 ): boolean {

@@ -1,16 +1,16 @@
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import {
-  SysAdminAllTimeTotalsRow,
-  SysAdminChainDepthBucketRow,
-  SysAdminCommunityRow,
-  SysAdminMemberStatsRow,
-  SysAdminActivitySnapshotRow,
-  SysAdminMonthlyActivityRow,
-  SysAdminHubMemberCountRow,
-  SysAdminNewMemberCountRow,
-  SysAdminPlatformTotalsRow,
-  SysAdminWindowActivityCountsRow,
+  AnalyticsAllTimeTotalsRow,
+  AnalyticsChainDepthBucketRow,
+  AnalyticsCommunityRow,
+  AnalyticsMemberStatsRow,
+  AnalyticsActivitySnapshotRow,
+  AnalyticsMonthlyActivityRow,
+  AnalyticsHubMemberCountRow,
+  AnalyticsNewMemberCountRow,
+  AnalyticsPlatformTotalsRow,
+  AnalyticsWindowActivityCountsRow,
 } from "@/application/domain/sysadmin/data/type";
 import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interface";
 
@@ -31,7 +31,7 @@ import { ISysAdminRepository } from "@/application/domain/sysadmin/data/interfac
  */
 @injectable()
 export default class SysAdminRepository implements ISysAdminRepository {
-  async findAllCommunities(ctx: IContext): Promise<SysAdminCommunityRow[]> {
+  async findAllCommunities(ctx: IContext): Promise<AnalyticsCommunityRow[]> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<{ id: string; name: string }[]>`
         SELECT c."id", c."name"
@@ -45,7 +45,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
   async findCommunityById(
     ctx: IContext,
     communityId: string,
-  ): Promise<SysAdminCommunityRow | null> {
+  ): Promise<AnalyticsCommunityRow | null> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<{ id: string; name: string }[]>`
         SELECT c."id", c."name"
@@ -83,7 +83,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     ctx: IContext,
     communityId: string,
     asOf: Date,
-  ): Promise<SysAdminMemberStatsRow[]> {
+  ): Promise<AnalyticsMemberStatsRow[]> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<
         {
@@ -200,7 +200,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- a member who only donated into a burn target scores 0.
           -- Self-donations (fw.user_id = tw.user_id) are excluded so
           -- the count matches the "distinct OTHER users" wording in
-          -- SysAdminMemberRow.uniqueDonationRecipients — the wallet
+          -- AnalyticsMemberRow.uniqueDonationRecipients — the wallet
           -- validator does not block same-user transfers, so the
           -- guard has to live here.
           SELECT
@@ -287,7 +287,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- Receiver-side counterpart to donation_recipients. Per-
           -- recipient count of DISTINCT sender user_ids over the
           -- whole tenure (clamped at asOf). Backs
-          -- SysAdminMemberRow.uniqueDonationSenders, which the L2
+          -- AnalyticsMemberRow.uniqueDonationSenders, which the L2
           -- dashboard uses to compute "受領→送付 転換率"
           -- (recipient-to-sender conversion rate).
           --
@@ -297,7 +297,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           --     admin-issued bulk grant would inflate the count)
           --   - excludes self-donations (matches the "distinct OTHER
           --     users" wording in
-          --     SysAdminMemberRow.uniqueDonationSenders)
+          --     AnalyticsMemberRow.uniqueDonationSenders)
           --   - sender wallet either in this community or unattached
           --     (no cross-community leakage)
           SELECT
@@ -464,7 +464,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     asOf: Date,
     windowMonths: number,
     hubBreadthThreshold: number,
-  ): Promise<SysAdminMonthlyActivityRow[]> {
+  ): Promise<AnalyticsMonthlyActivityRow[]> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<
         {
@@ -613,7 +613,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
         ),
         dormant_counts AS (
           -- Snapshot of dormant members at each month-end. Mirrors
-          -- the SysAdminCommunityOverview.dormantCount semantic
+          -- the AnalyticsCommunityOverview.dormantCount semantic
           -- (ever-donated AND last DONATION older than 30 days).
           -- The 30-day window is fixed here independent of the
           -- request's dormantThresholdDays so values across the
@@ -643,7 +643,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- Members who were dormant at the END of the previous
           -- month in the series AND had at least one DONATION out
           -- this month. Backs
-          -- SysAdminMonthlyActivityPoint.returnedMembers.
+          -- AnalyticsMonthlyActivityPoint.returnedMembers.
           --
           -- The INNER JOIN on prev_mb (matched via
           -- prev_mb.next_month_start = mb.month_start) means the
@@ -799,7 +799,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     communityId: string,
     jstMonthStart: Date,
     jstNextMonthStart: Date,
-  ): Promise<SysAdminActivitySnapshotRow> {
+  ): Promise<AnalyticsActivitySnapshotRow> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<{ sender_count: number; total_members: number }[]>`
         WITH senders AS (
@@ -833,7 +833,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     communityId: string,
     from: Date,
     to: Date,
-  ): Promise<SysAdminNewMemberCountRow> {
+  ): Promise<AnalyticsNewMemberCountRow> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<{ n: number }[]>`
         SELECT COUNT(*)::int AS n
@@ -853,7 +853,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     prevLower: Date,
     currLower: Date,
     upper: Date,
-  ): Promise<SysAdminWindowActivityCountsRow> {
+  ): Promise<AnalyticsWindowActivityCountsRow> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<
         {
@@ -951,7 +951,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     currLower: Date,
     upper: Date,
     hubBreadthThreshold: number,
-  ): Promise<SysAdminHubMemberCountRow> {
+  ): Promise<AnalyticsHubMemberCountRow> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<{ n: number }[]>`
         WITH window_recipients AS (
@@ -969,9 +969,9 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- a system-target wallet (no user_id) does not silently
           -- inflate the recipient count. Self-donations are excluded
           -- (matches the "different people" wording in
-          -- SysAdminCommunityOverview.hubMemberCount and the
+          -- AnalyticsCommunityOverview.hubMemberCount and the
           -- "distinct OTHER users" definition in
-          -- SysAdminMemberRow.uniqueDonationRecipients) — the wallet
+          -- AnalyticsMemberRow.uniqueDonationRecipients) — the wallet
           -- validator does not block same-user transfers, so the
           -- guard has to live in this query.
           --
@@ -981,7 +981,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
           -- DONATIONs while a member would still get counted as
           -- a "current hub", contradicting the
           -- "hubMemberCount <= senderCount <= totalMembers"
-          -- invariant documented on SysAdminCommunityOverview.
+          -- invariant documented on AnalyticsCommunityOverview.
           SELECT
             fw."user_id" AS user_id,
             COUNT(DISTINCT tw."user_id")::int AS unique_recipients
@@ -1023,7 +1023,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     ctx: IContext,
     communityId: string,
     asOf: Date,
-  ): Promise<SysAdminAllTimeTotalsRow> {
+  ): Promise<AnalyticsAllTimeTotalsRow> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<
         {
@@ -1091,7 +1091,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     ctx: IContext,
     jstMonthStart: Date,
     jstNextMonthStart: Date,
-  ): Promise<SysAdminPlatformTotalsRow> {
+  ): Promise<AnalyticsPlatformTotalsRow> {
     return ctx.issuer.public(ctx, async (tx) => {
       const rows = await tx.$queryRaw<
         {
@@ -1136,7 +1136,7 @@ export default class SysAdminRepository implements ISysAdminRepository {
     communityId: string,
     asOf: Date,
     maxBucketDepth: number,
-  ): Promise<SysAdminChainDepthBucketRow[]> {
+  ): Promise<AnalyticsChainDepthBucketRow[]> {
     return ctx.issuer.public(ctx, async (tx) => {
       // generate_series produces depth 1..maxBucketDepth so the
       // returned array always has a stable shape (every bucket

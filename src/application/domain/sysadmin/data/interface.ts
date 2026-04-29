@@ -1,15 +1,15 @@
 import { IContext } from "@/types/server";
 import {
-  SysAdminAllTimeTotalsRow,
-  SysAdminChainDepthBucketRow,
-  SysAdminCommunityRow,
-  SysAdminMemberStatsRow,
-  SysAdminActivitySnapshotRow,
-  SysAdminHubMemberCountRow,
-  SysAdminMonthlyActivityRow,
-  SysAdminNewMemberCountRow,
-  SysAdminPlatformTotalsRow,
-  SysAdminWindowActivityCountsRow,
+  AnalyticsAllTimeTotalsRow,
+  AnalyticsChainDepthBucketRow,
+  AnalyticsCommunityRow,
+  AnalyticsMemberStatsRow,
+  AnalyticsActivitySnapshotRow,
+  AnalyticsHubMemberCountRow,
+  AnalyticsMonthlyActivityRow,
+  AnalyticsNewMemberCountRow,
+  AnalyticsPlatformTotalsRow,
+  AnalyticsWindowActivityCountsRow,
 } from "@/application/domain/sysadmin/data/type";
 
 /**
@@ -21,7 +21,7 @@ import {
  */
 export interface ISysAdminRepository {
   /** Every community id + display name, ordered by name. */
-  findAllCommunities(ctx: IContext): Promise<SysAdminCommunityRow[]>;
+  findAllCommunities(ctx: IContext): Promise<AnalyticsCommunityRow[]>;
 
   /**
    * Resolve one community by id, returning the same projection shape
@@ -31,7 +31,7 @@ export interface ISysAdminRepository {
   findCommunityById(
     ctx: IContext,
     communityId: string,
-  ): Promise<SysAdminCommunityRow | null>;
+  ): Promise<AnalyticsCommunityRow | null>;
 
   /**
    * Per-member LTV-variable counters at `asOf` for one community.
@@ -42,7 +42,7 @@ export interface ISysAdminRepository {
     ctx: IContext,
     communityId: string,
     asOf: Date,
-  ): Promise<SysAdminMemberStatsRow[]>;
+  ): Promise<AnalyticsMemberStatsRow[]>;
 
   /**
    * Monthly activity series for `windowMonths` trailing JST months
@@ -62,7 +62,7 @@ export interface ISysAdminRepository {
     asOf: Date,
     windowMonths: number,
     hubBreadthThreshold: number,
-  ): Promise<SysAdminMonthlyActivityRow[]>;
+  ): Promise<AnalyticsMonthlyActivityRow[]>;
 
   /**
    * Latest-month unique sender count + total_members snapshot used to
@@ -73,7 +73,7 @@ export interface ISysAdminRepository {
     communityId: string,
     jstMonthStart: Date,
     jstNextMonthStart: Date,
-  ): Promise<SysAdminActivitySnapshotRow>;
+  ): Promise<AnalyticsActivitySnapshotRow>;
 
   /**
    * Count of `t_memberships.status='JOINED'` rows whose `created_at`
@@ -84,13 +84,13 @@ export interface ISysAdminRepository {
     communityId: string,
     from: Date,
     to: Date,
-  ): Promise<SysAdminNewMemberCountRow>;
+  ): Promise<AnalyticsNewMemberCountRow>;
 
   /**
    * Per-community count of members whose distinct DONATION
    * recipient count within `[currLower, upper)` reaches
    * `hubBreadthThreshold`. Backs
-   * `SysAdminCommunityOverview.hubMemberCount`.
+   * `AnalyticsCommunityOverview.hubMemberCount`.
    *
    * The recipient count is computed against `t_transactions`
    * directly (not `mv_user_transaction_daily`) because the MV's
@@ -113,10 +113,10 @@ export interface ISysAdminRepository {
     currLower: Date,
     upper: Date,
     hubBreadthThreshold: number,
-  ): Promise<SysAdminHubMemberCountRow>;
+  ): Promise<AnalyticsHubMemberCountRow>;
 
   /**
-   * All five raw counts the L1 `SysAdminWindowActivity` payload needs
+   * All five raw counts the L1 `AnalyticsWindowActivity` payload needs
    * for the parametric window pair driven by `windowDays`. Issues a
    * single SQL with two scans (one over `mv_user_transaction_daily`
    * and one over `t_memberships`), each spanning `[prevLower, upper)`.
@@ -131,7 +131,7 @@ export interface ISysAdminRepository {
     prevLower: Date,
     currLower: Date,
     upper: Date,
-  ): Promise<SysAdminWindowActivityCountsRow>;
+  ): Promise<AnalyticsWindowActivityCountsRow>;
 
   /** All-time DONATION totals + MV data window for the summary card,
    * clamped at `asOf` for historic-asOf consistency with the rest of
@@ -140,14 +140,14 @@ export interface ISysAdminRepository {
     ctx: IContext,
     communityId: string,
     asOf: Date,
-  ): Promise<SysAdminAllTimeTotalsRow>;
+  ): Promise<AnalyticsAllTimeTotalsRow>;
 
   /** Platform-wide headline row for the L1 dashboard. */
   findPlatformTotals(
     ctx: IContext,
     jstMonthStart: Date,
     jstNextMonthStart: Date,
-  ): Promise<SysAdminPlatformTotalsRow>;
+  ): Promise<AnalyticsPlatformTotalsRow>;
 
   /**
    * All-time DONATION chain-depth histogram for one community,
@@ -155,12 +155,12 @@ export interface ISysAdminRepository {
    * exactly `maxBucketDepth` rows (depth 1..maxBucketDepth, with
    * the last bucket aggregating chain_depth >= maxBucketDepth) so
    * the service / presenter doesn't need to fill gaps. Backs
-   * `SysAdminCommunityDetailPayload.chainDepthDistribution`.
+   * `AnalyticsCommunityDetailPayload.chainDepthDistribution`.
    */
   findChainDepthDistribution(
     ctx: IContext,
     communityId: string,
     asOf: Date,
     maxBucketDepth: number,
-  ): Promise<SysAdminChainDepthBucketRow[]>;
+  ): Promise<AnalyticsChainDepthBucketRow[]>;
 }

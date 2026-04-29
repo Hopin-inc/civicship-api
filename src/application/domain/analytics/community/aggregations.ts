@@ -5,8 +5,8 @@ import {
   truncateToJstDate,
 } from "@/application/domain/report/util";
 import {
-  SysAdminMemberStatsRow,
-  SysAdminMonthlyActivityRow,
+  AnalyticsMemberStatsRow,
+  AnalyticsMonthlyActivityRow,
 } from "@/application/domain/sysadmin/data/type";
 import {
   classifyMember,
@@ -86,7 +86,7 @@ export const CHAIN_DEPTH_MAX_BUCKET = 5;
 
 /** Day-grain window for the cohort funnel's "activated within 30
  * days" stage. Pinned as a constant so the value can't drift apart
- * from the SDL contract on `SysAdminCohortFunnelPoint.activatedD30`
+ * from the SDL contract on `AnalyticsCohortFunnelPoint.activatedD30`
  * via a bare magic number in the ms math. */
 export const COHORT_ACTIVATION_WINDOW_DAYS = 30;
 
@@ -109,11 +109,11 @@ export type MonthlyCohortPoint = {
 
 /**
  * One cohort's funnel progression. Backs
- * `SysAdminCommunityDetailPayload.cohortFunnel`. Computed by
+ * `AnalyticsCommunityDetailPayload.cohortFunnel`. Computed by
  * `computeCohortFunnel` over the already-fetched `members` set;
  * no separate repository call.
  */
-export type SysAdminCohortFunnelPoint = {
+export type AnalyticsCohortFunnelPoint = {
   cohortMonth: Date;
   acquired: number;
   activatedD30: number;
@@ -133,7 +133,7 @@ export function rateOf(senderCount: number, totalMembers: number): number {
 }
 
 export function computeStageCounts(
-  members: SysAdminMemberStatsRow[],
+  members: AnalyticsMemberStatsRow[],
   thresholds: SegmentThresholds,
 ): StageCounts {
   let tier1Count = 0;
@@ -169,13 +169,13 @@ export function computeStageCounts(
  * community's total DONATION points-out attributed to each bucket.
  */
 export function computeStageBreakdown(
-  members: SysAdminMemberStatsRow[],
+  members: AnalyticsMemberStatsRow[],
   thresholds: SegmentThresholds,
 ): StageBreakdown {
   const totalMembers = members.length;
   const totalPointsOut = members.reduce<bigint>((acc, m) => acc + m.totalPointsOut, BigInt(0));
 
-  const buckets: Record<MemberClassification, SysAdminMemberStatsRow[]> = {
+  const buckets: Record<MemberClassification, AnalyticsMemberStatsRow[]> = {
     habitual: [],
     regular: [],
     occasional: [],
@@ -190,7 +190,7 @@ export function computeStageBreakdown(
     buckets[classifyMember(m, thresholds)].push(m);
   }
 
-  const summarize = (rows: SysAdminMemberStatsRow[]): StageBucketStats => {
+  const summarize = (rows: AnalyticsMemberStatsRow[]): StageBucketStats => {
     const count = rows.length;
     if (count === 0) {
       return {
@@ -245,7 +245,7 @@ export function computeStageBreakdown(
 /**
  * Bucket members into 4 mutually exclusive tenure ranges by their
  * `daysIn` (JST calendar-day tenure). Backs
- * `SysAdminCommunityOverview.tenureDistribution` so the L1
+ * `AnalyticsCommunityOverview.tenureDistribution` so the L1
  * dashboard can render community age structure (new-heavy,
  * established, etc.) without an L2 round-trip per community.
  *
@@ -260,7 +260,7 @@ export function computeStageBreakdown(
  * GREATEST(1, ...) floor.
  */
 export function computeTenureDistribution(
-  members: SysAdminMemberStatsRow[],
+  members: AnalyticsMemberStatsRow[],
 ): TenureDistribution {
   let lt1Month = 0;
   let m1to3Months = 0;
@@ -314,7 +314,7 @@ export function computeTenureDistribution(
  * dashboard; no extra SQL.
  */
 export function computeDormantCount(
-  members: SysAdminMemberStatsRow[],
+  members: AnalyticsMemberStatsRow[],
   asOf: Date,
   dormantThresholdDays: number,
 ): number {
@@ -345,11 +345,11 @@ export function computeDormantCount(
  * applies the membership filter).
  */
 export function computeCohortFunnel(
-  members: SysAdminMemberStatsRow[],
+  members: AnalyticsMemberStatsRow[],
   asOf: Date,
   windowMonths: number,
   thresholds: SegmentThresholds,
-): SysAdminCohortFunnelPoint[] {
+): AnalyticsCohortFunnelPoint[] {
   // Build the cohort-month axis: [asOf month - (windowMonths-1), ..., asOf month].
   // Same orientation as `monthlyActivityTrend` (newest last) so the
   // client can render a single x-axis across both series.
@@ -357,7 +357,7 @@ export function computeCohortFunnel(
   for (let i = windowMonths - 1; i >= 0; i--) {
     cohortKeys.push(jstMonthStartOffset(asOf, -i));
   }
-  const buckets = new Map<number, SysAdminCohortFunnelPoint>();
+  const buckets = new Map<number, AnalyticsCohortFunnelPoint>();
   for (const m of cohortKeys) {
     buckets.set(m.getTime(), {
       cohortMonth: m,
@@ -404,7 +404,7 @@ export function computeCohortFunnel(
 
 /** 3-month trailing average of communityActivityRate, ending at
  * asOf's month (inclusive). null when <3 months of trend data exist. */
-export function computeActivityRate3mAvg(trend: SysAdminMonthlyActivityRow[]): number | null {
+export function computeActivityRate3mAvg(trend: AnalyticsMonthlyActivityRow[]): number | null {
   if (trend.length < 3) return null;
   const last3 = trend.slice(-3);
   const sumRates = last3.reduce(

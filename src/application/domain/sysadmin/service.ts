@@ -41,7 +41,7 @@ export type MonthActivityWithPrev = {
  * Raw activity counts for the parametric window driven by
  * `windowDays`. The L1 overview returns these as-is so the client
  * derives rates / growth rates / threshold alerts on its own (see
- * SysAdminWindowActivity in schema/type.graphql).
+ * AnalyticsWindowActivity in schema/type.graphql).
  */
 export type WindowActivityCounts = {
   senderCount: number;
@@ -102,7 +102,7 @@ export const MAX_WINDOW_DAYS = 90;
  * decides how many DISTINCT DONATION recipients within the window
  * a member needs to qualify as a hub. Default is intentionally low
  * (3) because civicship's per-member donation cadence is sparse;
- * portal can tune via SysAdminDashboardInput.hubBreadthThreshold
+ * portal can tune via AnalyticsDashboardInput.hubBreadthThreshold
  * once real-data hub distribution is observed. Effective range
  * 1..1000 — values outside are clamped at the usecase boundary the
  * same way `windowDays` is.

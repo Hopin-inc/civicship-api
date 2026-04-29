@@ -273,7 +273,7 @@ function clampLimit(limit: number | null | undefined): number {
  * (= 4 weeks) when omitted, and is silently clamped to
  * [MIN_WINDOW_DAYS, MAX_WINDOW_DAYS] so a malformed/hostile input can't
  * fan the per-community DB scan out to year-long ranges. Documented in
- * the SysAdminDashboardInput.windowDays SDL description.
+ * the AnalyticsDashboardInput.windowDays SDL description.
  */
 function clampWindowDays(input: number | null | undefined): number {
   const n = input ?? DEFAULT_WINDOW_DAYS;
@@ -287,7 +287,7 @@ function clampWindowDays(input: number | null | undefined): number {
  * [MIN_HUB_BREADTH_THRESHOLD, MAX_HUB_BREADTH_THRESHOLD] so a
  * malformed/hostile input can't disable hub classification entirely
  * (negative threshold) or scan-stall the comparison (gigantic
- * threshold). Documented in the SysAdminDashboardInput
+ * threshold). Documented in the AnalyticsDashboardInput
  * .hubBreadthThreshold SDL description.
  */
 function clampHubBreadthThreshold(input: number | null | undefined): number {
@@ -301,7 +301,7 @@ function clampHubBreadthThreshold(input: number | null | undefined): number {
  * clamped to [MIN_DORMANT_THRESHOLD_DAYS, MAX_DORMANT_THRESHOLD_DAYS]
  * so a malformed/hostile input can't classify every member as
  * dormant (negative threshold) or none of them (gigantic threshold).
- * Documented in the SysAdminDashboardInput.dormantThresholdDays SDL
+ * Documented in the AnalyticsDashboardInput.dormantThresholdDays SDL
  * description.
  */
 function clampDormantThresholdDays(input: number | null | undefined): number {

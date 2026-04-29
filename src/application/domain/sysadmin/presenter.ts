@@ -20,11 +20,11 @@ import {
   GqlSysAdminWindowActivity,
 } from "@/types/graphql";
 import {
-  SysAdminAllTimeTotalsRow,
-  SysAdminChainDepthBucketRow,
-  SysAdminMemberStatsRow,
-  SysAdminMonthlyActivityRow,
-  SysAdminPlatformTotalsRow,
+  AnalyticsAllTimeTotalsRow,
+  AnalyticsChainDepthBucketRow,
+  AnalyticsMemberStatsRow,
+  AnalyticsMonthlyActivityRow,
+  AnalyticsPlatformTotalsRow,
 } from "@/application/domain/sysadmin/data/type";
 import {
   AlertFlags,
@@ -37,7 +37,7 @@ import {
   StageBreakdown,
   StageBucketStats,
   StageCounts,
-  SysAdminCohortFunnelPoint,
+  AnalyticsCohortFunnelPoint,
   TenureDistribution,
   WeeklyRetentionPoint,
 } from "@/application/domain/analytics/community/aggregations";
@@ -51,7 +51,7 @@ import { MemberListResult } from "@/application/domain/analytics/community/pagin
  * losing precision in the externally-reported totals.
  */
 export default class SysAdminPresenter {
-  static platform(row: SysAdminPlatformTotalsRow): GqlSysAdminPlatformSummary {
+  static platform(row: AnalyticsPlatformTotalsRow): GqlSysAdminPlatformSummary {
     return {
       communitiesCount: row.communitiesCount,
       totalMembers: row.totalMembers,
@@ -142,7 +142,7 @@ export default class SysAdminPresenter {
 
   static dashboard(params: {
     asOf: Date;
-    platform: SysAdminPlatformTotalsRow;
+    platform: AnalyticsPlatformTotalsRow;
     communities: GqlSysAdminCommunityOverview[];
   }): GqlSysAdminDashboardPayload {
     return {
@@ -162,7 +162,7 @@ export default class SysAdminPresenter {
     communityActivityRate3mAvg: number | null;
     growthRateActivity: number | null;
     tier2Count: number;
-    allTimeTotals: SysAdminAllTimeTotalsRow;
+    allTimeTotals: AnalyticsAllTimeTotalsRow;
   }): GqlSysAdminCommunitySummaryCard {
     const tier2Pct = params.totalMembers === 0 ? 0 : params.tier2Count / params.totalMembers;
     return {
@@ -203,7 +203,7 @@ export default class SysAdminPresenter {
     };
   }
 
-  static monthlyActivityPoint(row: SysAdminMonthlyActivityRow): GqlSysAdminMonthlyActivityPoint {
+  static monthlyActivityPoint(row: AnalyticsMonthlyActivityRow): GqlSysAdminMonthlyActivityPoint {
     const rate =
       row.totalMembersEndOfMonth === 0 ? 0 : row.senderCount / row.totalMembersEndOfMonth;
     // Route both sides of chainPct through bigintToSafeNumber so an
@@ -255,7 +255,7 @@ export default class SysAdminPresenter {
     };
   }
 
-  static memberRow(row: SysAdminMemberStatsRow): GqlSysAdminMemberRow {
+  static memberRow(row: AnalyticsMemberStatsRow): GqlSysAdminMemberRow {
     return {
       userId: row.userId,
       name: row.name,
@@ -312,8 +312,8 @@ export default class SysAdminPresenter {
     memberList: GqlSysAdminMemberList;
     alerts: GqlSysAdminCommunityAlerts;
     dormantCount: number;
-    chainDepthDistribution: SysAdminChainDepthBucketRow[];
-    cohortFunnel: SysAdminCohortFunnelPoint[];
+    chainDepthDistribution: AnalyticsChainDepthBucketRow[];
+    cohortFunnel: AnalyticsCohortFunnelPoint[];
   }): GqlSysAdminCommunityDetailPayload {
     return {
       communityId: params.communityId,

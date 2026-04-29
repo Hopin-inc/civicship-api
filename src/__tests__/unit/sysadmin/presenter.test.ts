@@ -1,10 +1,10 @@
 import "reflect-metadata";
 import SysAdminPresenter from "@/application/domain/sysadmin/presenter";
 import type {
-  SysAdminAllTimeTotalsRow,
-  SysAdminMemberStatsRow,
-  SysAdminMonthlyActivityRow,
-  SysAdminPlatformTotalsRow,
+  AnalyticsAllTimeTotalsRow,
+  AnalyticsMemberStatsRow,
+  AnalyticsMonthlyActivityRow,
+  AnalyticsPlatformTotalsRow,
 } from "@/application/domain/sysadmin/data/type";
 import type {
   MonthlyCohortPoint,
@@ -23,7 +23,7 @@ import type { MemberListResult } from "@/application/domain/analytics/community/
 describe("SysAdminPresenter", () => {
   describe("platform / summaryCard / memberRow — bigint handling", () => {
     it("converts latestMonthDonationPoints bigint to a plain number", () => {
-      const row: SysAdminPlatformTotalsRow = {
+      const row: AnalyticsPlatformTotalsRow = {
         communitiesCount: 6,
         totalMembers: 500,
         latestMonthDonationPoints: BigInt(1_234_567),
@@ -37,7 +37,7 @@ describe("SysAdminPresenter", () => {
       // bigintToSafeNumber is the safety net for external-reporting
       // totals. Silent precision loss would corrupt "累計流通ポイント"
       // downstream, so failing loud is intentional.
-      const overflow: SysAdminPlatformTotalsRow = {
+      const overflow: AnalyticsPlatformTotalsRow = {
         communitiesCount: 1,
         totalMembers: 1,
         latestMonthDonationPoints: BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1),
@@ -46,7 +46,7 @@ describe("SysAdminPresenter", () => {
     });
 
     it("converts totalPointsOut on member rows", () => {
-      const row: SysAdminMemberStatsRow = {
+      const row: AnalyticsMemberStatsRow = {
         userId: "u1",
         name: "Alice",
         monthsIn: 12,
@@ -85,7 +85,7 @@ describe("SysAdminPresenter", () => {
       // A pure receiver who somehow accumulated a bigint past
       // Number.MAX_SAFE_INTEGER must surface as a RangeError, not
       // silently truncate in the externally-reported total.
-      const row: SysAdminMemberStatsRow = {
+      const row: AnalyticsMemberStatsRow = {
         userId: "u1",
         name: null,
         monthsIn: 1,
@@ -107,7 +107,7 @@ describe("SysAdminPresenter", () => {
     });
 
     it("passes null name through untouched", () => {
-      const row: SysAdminMemberStatsRow = {
+      const row: AnalyticsMemberStatsRow = {
         userId: "u1",
         name: null,
         monthsIn: 1,
@@ -131,8 +131,8 @@ describe("SysAdminPresenter", () => {
 
   describe("summaryCard — null propagation & tier2Pct", () => {
     function allTimeTotals(
-      overrides: Partial<SysAdminAllTimeTotalsRow> = {},
-    ): SysAdminAllTimeTotalsRow {
+      overrides: Partial<AnalyticsAllTimeTotalsRow> = {},
+    ): AnalyticsAllTimeTotalsRow {
       return {
         totalDonationPoints: overrides.totalDonationPoints ?? BigInt(0),
         maxChainDepth: overrides.maxChainDepth ?? null,
@@ -189,7 +189,7 @@ describe("SysAdminPresenter", () => {
   });
 
   describe("monthlyActivityPoint — chainPct & divide-by-zero guards", () => {
-    const baseRow: SysAdminMonthlyActivityRow = {
+    const baseRow: AnalyticsMonthlyActivityRow = {
       monthStart: new Date(Date.UTC(2026, 3, 1)),
       senderCount: 0,
       totalMembersEndOfMonth: 0,
