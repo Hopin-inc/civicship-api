@@ -182,7 +182,12 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           CROSS JOIN asof_bound ab
           WHERE e."sender_community_id" = ANY(${communityIds}::text[])
             AND e."date" < ab.upper_jst_date
-          GROUP BY e."sender_community_id", e."sender_user_id", e."date"
+          -- jst_month is functionally dependent on e."date" (DATE_TRUNC
+          -- output), but listing it explicitly matches the previous
+          -- inline CTE's GROUP BY shape and removes any reliance on
+          -- Postgres' functional-dependency analysis for the SELECT-
+          -- list expression.
+          GROUP BY e."sender_community_id", e."sender_user_id", e."date", jst_month
         ),
         donation_recipients AS (
           -- Per-sender count of DISTINCT recipient user_ids over the
@@ -246,7 +251,10 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           CROSS JOIN asof_bound ab
           WHERE e."recipient_community_id" = ANY(${communityIds}::text[])
             AND e."date" < ab.upper_jst_date
-          GROUP BY e."recipient_community_id", e."recipient_user_id", e."date"
+          -- See donation_activity above: jst_month included in the
+          -- GROUP BY for SELECT-list parity with the previous inline
+          -- CTE rather than relying on functional-dependency analysis.
+          GROUP BY e."recipient_community_id", e."recipient_user_id", e."date", jst_month
         ),
         donation_in_aggregates AS (
           -- Pre-aggregate donation_received to one row per
