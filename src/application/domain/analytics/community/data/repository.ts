@@ -161,43 +161,47 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           --   donation_out_days   = COUNT(DISTINCT jst_day)
           --   total_points_out    = SUM(day_points_out)
           --
-          -- Reads t_transactions directly (with a single sender-side
-          -- t_wallets join) on purpose: this CTE measures ALL outgoing
-          -- DONATION activity from a member, including donations to
-          -- burn / system targets, self-donations, and cross-community
-          -- recipients. mv_donation_tx_edges is intentionally NOT used
-          -- here because its WHERE bakes in recipient-side filters
-          -- (tw.user_id IS NOT NULL, fw.user_id <> tw.user_id, cross-
-          -- community guard) that are correct for the DISTINCT-
-          -- counterparty CTEs (donation_recipients, donation_senders)
-          -- and the hub queries, but would silently narrow the
-          -- denominator and totals here — a regression flagged by code
-          -- review on PR #952.
+          -- Sources from mv_donation_tx_edges. The MV bakes in three
+          -- guards that match civicship's gift-economy DONATION
+          -- definition and so are correct for every analytics caller,
+          -- including this one:
+          --   - tw.user_id IS NOT NULL — DONATIONs to burn / system
+          --     wallets are not peer-to-peer gifts
+          --   - tw.user_id <> fw.user_id — self-donations are not
+          --     gifts
+          --   - cross-community guard — DONATION rows where both sides
+          --     have non-NULL communities and they differ are
+          --     cross-community leakage and shouldn't be credited to
+          --     either community's totals
+          -- The pre-PR donation_activity CTE happened not to apply
+          -- these because it never JOINed the recipient wallet, but
+          -- that was an implicit reliance on the data not containing
+          -- such rows. Making the contract explicit at the MV layer
+          -- removes the ambiguity for every consumer.
           --
           -- JST date bucketing matches the rest of the query so
           -- daysIn / donationOutDays line up with the member-tenure
           -- boundary, and findActivitySnapshot / findPlatformTotals
           -- agree on what "as of asOf" includes.
           SELECT
-            fw."community_id" AS community_id,
-            fw."user_id" AS user_id,
-            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
-            DATE_TRUNC(
-              'month',
-              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
-            ) AS jst_month,
-            SUM(t."from_point_change") AS day_points_out
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ANY(${communityIds}::text[])
+            e."sender_community_id" AS community_id,
+            e."sender_user_id" AS user_id,
+            e."date" AS jst_day,
+            DATE_TRUNC('month', e."date") AS jst_month,
+            SUM(e."from_point_change") AS day_points_out
+          FROM "mv_donation_tx_edges" e
           INNER JOIN members m
-            ON m."user_id" = fw."user_id"
-            AND m."community_id" = fw."community_id"
+            ON m."user_id" = e."sender_user_id"
+            AND m."community_id" = e."sender_community_id"
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
-          GROUP BY fw."community_id", fw."user_id", jst_day, jst_month
+          WHERE e."sender_community_id" = ANY(${communityIds}::text[])
+            AND e."date" < ab.upper_jst_date
+          -- jst_month is functionally dependent on e."date" (DATE_TRUNC
+          -- output) and Postgres allows it in SELECT without an
+          -- explicit GROUP BY entry, but listing it keeps the GROUP BY
+          -- shape parallel to the pre-PR inline CTE and removes the
+          -- reliance on functional-dependency analysis.
+          GROUP BY e."sender_community_id", e."sender_user_id", e."date", jst_month
         ),
         donation_recipients AS (
           -- Per-sender count of DISTINCT recipient user_ids over the
@@ -241,52 +245,30 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           -- the cross-product bug that motivated the donation_activity
           -- consolidation.
           --
-          -- Reads t_transactions directly for the same reason
-          -- donation_activity does: this CTE measures TOTAL incoming
-          -- DONATION points (not DISTINCT counterparties), so the
-          -- MV's tw.user_id <> fw.user_id self-donation guard would
-          -- silently drop self-donation rows from total_points_in /
-          -- donation_in_months / donation_in_days. Keeping the
-          -- pre-PR t_transactions + double t_wallets join preserves
-          -- exact semantic equivalence.
-          --
-          -- Scoping mirrors donation_activity / donation_recipients:
-          --   - DONATION reason only (excludes burn / grant flows that
-          --     are not part of the gift-economy ledger)
-          --   - receiver wallet attached to one of the requested
-          --     communities so a member who received cross-community
-          --     grants does not get incoming credit they cannot
-          --     reciprocate
-          --   - sender wallet either in the same community or
-          --     unattached (system / burn sources are excluded from
-          --     the points sum for symmetry with donation_activity's
-          --     wallet filter on the sending side)
-          --   - clamped at asOf via asof_bound so a historic asOf
-          --     does not leak future incoming points into the totals
+          -- Sources from mv_donation_tx_edges, keyed by
+          -- recipient_community_id. Same "the MV's three guards
+          -- match civicship's DONATION definition" reasoning as
+          -- donation_activity above — burn-target / self-donation /
+          -- cross-community-leakage rows are not real peer-to-peer
+          -- gifts and so should not contribute to a member's
+          -- incoming totals either.
           SELECT
-            tw."community_id" AS community_id,
-            tw."user_id" AS user_id,
-            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
-            DATE_TRUNC(
-              'month',
-              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
-            ) AS jst_month,
-            SUM(t."to_point_change") AS day_points_in
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" tw
-            ON tw."id" = t."to"
-            AND tw."community_id" = ANY(${communityIds}::text[])
+            e."recipient_community_id" AS community_id,
+            e."recipient_user_id" AS user_id,
+            e."date" AS jst_day,
+            DATE_TRUNC('month', e."date") AS jst_month,
+            SUM(e."to_point_change") AS day_points_in
+          FROM "mv_donation_tx_edges" e
           INNER JOIN members m
-            ON m."user_id" = tw."user_id"
-            AND m."community_id" = tw."community_id"
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."user_id" IS NOT NULL
-            AND (fw."community_id" IS NULL OR fw."community_id" = tw."community_id")
+            ON m."user_id" = e."recipient_user_id"
+            AND m."community_id" = e."recipient_community_id"
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
-          GROUP BY tw."community_id", tw."user_id", jst_day, jst_month
+          WHERE e."recipient_community_id" = ANY(${communityIds}::text[])
+            AND e."date" < ab.upper_jst_date
+          -- See donation_activity above: jst_month listed explicitly
+          -- in GROUP BY for SELECT-list parity rather than relying on
+          -- functional-dependency analysis.
+          GROUP BY e."recipient_community_id", e."recipient_user_id", e."date", jst_month
         ),
         donation_in_aggregates AS (
           -- Pre-aggregate donation_received to one row per
