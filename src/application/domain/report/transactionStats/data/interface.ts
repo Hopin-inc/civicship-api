@@ -80,12 +80,38 @@ export interface IReportTransactionStatsRepository {
       twelveWeeksAgo: Date;
     },
   ): Promise<RetentionAggregateRow>;
+  /**
+   * Bulk variant of `findRetentionAggregate`. Computes the same six
+   * counters for every community in `communityIds` in a single SQL
+   * roundtrip; returns one entry per requested community
+   * (zero-row defaults for communities with no rows in the window).
+   */
+  findRetentionAggregateBulk(
+    ctx: IContext,
+    communityIds: string[],
+    range: {
+      currentWeekStart: Date;
+      nextWeekStart: Date;
+      prevWeekStart: Date;
+      twelveWeeksAgo: Date;
+    },
+  ): Promise<Map<string, RetentionAggregateRow>>;
   findCohortRetention(
     ctx: IContext,
     communityId: string,
     cohort: { cohortStart: Date; cohortEnd: Date },
     active: { activeStart: Date; activeEnd: Date },
   ): Promise<CohortRetentionRow>;
+  /**
+   * Bulk variant of `findCohortRetention`. Computes cohort-size and
+   * active-next-week per community in a single SQL roundtrip.
+   */
+  findCohortRetentionBulk(
+    ctx: IContext,
+    communityIds: string[],
+    cohort: { cohortStart: Date; cohortEnd: Date },
+    active: { activeStart: Date; activeEnd: Date },
+  ): Promise<Map<string, CohortRetentionRow>>;
   refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
   refreshUserTransactionDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void>;
 }
