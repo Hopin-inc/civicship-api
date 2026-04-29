@@ -1,0 +1,201 @@
+name: Deploy to Cloud Run (reusable)
+
+# Reusable workflow called by deploy-to-cloud-run-{dev,prd}.yml.
+# dev/prd 共通の deploy ロジックを 1 ファイルに集約し、差分は inputs として受け取る。
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        description: '"dev" or "prd" — used for cache scope and STAGE env.'
+        type: string
+        required: true
+      environment:
+        description: GitHub Actions environment name (e.g., "dev", "co-creation-dao-prod").
+        type: string
+        required: true
+      apollo-variant:
+        description: Apollo Studio graph variant (e.g., "dev", "prod").
+        type: string
+        required: true
+      node-env:
+        description: Value to set NODE_ENV in the Cloud Run service.
+        type: string
+        required: true
+      extra-env-vars:
+        description: Additional env vars (newline-separated KEY=VAL) for the Cloud Run service.
+        type: string
+        required: false
+        default: ''
+      create-git-tag:
+        description: Whether to create + push a timestamp git tag (prd only).
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+
+    permissions:
+      id-token: write
+      # contents:write は git tag push に必要 (prd only)。GHA の `permissions:` は
+      # 式で動的に切り替えできないため、両 stage で write を付与する
+      # (dev でも実質 read しか使わないので影響なし)。
+      contents: write
+
+    env:
+      STAGE: ${{ inputs.stage }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+      ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
+      APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+      BATCH_ARTIFACT_REGISTRY: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}
+      BATCH_NAME: ${{ secrets.BATCH_NAME }}
+      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
+      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+      APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
+
+    steps:
+      # `audit` mode: log egress (GCP / npm registry / GitHub) without blocking.
+      # `block` mode would require maintaining an allowlist for every gcloud
+      # endpoint and is fragile across SDK updates. `disable-sudo` is left
+      # enabled (default) because the "Create Git tag" step installs tzdata
+      # via apt-get on prd. Audit logs surface in the job summary and let us
+      # detect unexpected egress (e.g. credential exfiltration) post-hoc.
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || '' }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
+
+      - name: Open jumpbox tunnel
+        uses: ./.github/actions/jumpbox-db-tunnel
+        with:
+          jumpbox-instance-name: ${{ env.JUMPBOX_INSTANCE_NAME }}
+          jumpbox-zone: ${{ env.JUMPBOX_ZONE }}
+          db-name: ${{ env.DB_NAME }}
+
+      - name: Run prisma generate and migrate deploy
+        env:
+          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+        run: |
+          pnpm db:generate
+          pnpm db:deploy
+
+      - name: Generate GraphQL types
+        run: pnpm gql:generate
+
+      - name: Install and Publish via Rover CLI
+        env:
+          APOLLO_KEY: ${{ env.APOLLO_KEY }}
+        run: |
+          curl -sSL https://rover.apollo.dev/nix/latest | sh
+          export PATH="$HOME/.rover/bin:$PATH"
+          rover graph publish "civicship-api-jq1988@${{ inputs.apollo-variant }}" --schema ./docs/schema.graphql
+
+      - name: Build TypeScript output (consumed by Docker COPY)
+        run: pnpm build
+
+      - name: Configure Docker for GCP Artifact Registry
+        run: |
+          gcloud auth configure-docker "${{ env.ARTIFACT_REGISTRY }}"
+          gcloud auth configure-docker "${{ env.GCP_REGION }}-docker.pkg.dev"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
+      # Dockerfile を統一 (旧 Dockerfile.batch を廃止) し、1 度のビルドで
+      # main / batch の両 registry に同じ image を multi-tag push する。
+      # batch (Cloud Run Job) 側は entrypoint を `--command/--args` で
+      # `node dist/index.js` に上書きする (旧 Dockerfile.batch CMD と等価)。
+      - name: Build unified image and push to main + batch registries
+        env:
+          MAIN_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+          BATCH_IMAGE: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
+        run: |
+          docker buildx build \
+            --file Dockerfile \
+            --tag "$MAIN_IMAGE" \
+            --tag "$BATCH_IMAGE" \
+            --cache-from "type=gha,scope=cloud-run-${{ inputs.stage }}" \
+            --cache-to "type=gha,mode=max,scope=cloud-run-${{ inputs.stage }}" \
+            --push \
+            .
+
+      - name: Deploy Internal API to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522 # v2.7.6
+        with:
+          service: ${{ env.APPLICATION_NAME }}
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+          region: ${{ env.GCP_REGION }}
+          env_vars: |
+            NODE_ENV=${{ inputs.node-env }}
+            ${{ inputs.extra-env-vars }}
+
+      - name: Update Cloud Run Job (batch) to new image
+        # docker push :latest alone does not roll the Cloud Run Job to the new
+        # image — Cloud Run Jobs pin the image digest at deploy time, so we
+        # need an explicit `run jobs update` to create a new revision.
+        # `dist/bootstrap/batch.js` 経由で起動することで OpenTelemetry tracing 初期化
+        # (`tracingReady` await) を batch ジョブでも有効にする。`@/` パスエイリアスが
+        # bootstrap 層で使われるため `-r tsconfig-paths/register` も必須。
+        # PROCESS_TYPE=batch は Cloud Run Job 側の env で別途設定されている前提
+        # (bootstrap/batch.ts は ../index に dispatch するだけで、batch 分岐自体は
+        # src/index.ts:main() が PROCESS_TYPE で判定する)。
+        run: |
+          gcloud run jobs update "${{ env.BATCH_NAME }}" \
+            --region="${{ env.GCP_REGION }}" \
+            --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest" \
+            --command=node \
+            --args=-r,tsconfig-paths/register,dist/bootstrap/batch.js
+
+      - name: Create Git tag
+        if: ${{ inputs.create-git-tag }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y tzdata
+          sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+          sudo dpkg-reconfigure -f noninteractive tzdata
+
+          TAG_NAME=$(date +"%Y%m%d%H%M%S")
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+
+      - name: Cleanup SSH Key
+        if: always()
+        run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub
