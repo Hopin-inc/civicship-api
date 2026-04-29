@@ -1091,41 +1091,41 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
         }[]
       >`
         WITH asof_bound AS (
-          -- Same (asOf JST day + 1) clamp the other analytics queries
-          -- use. Historic asOf must not count DONATION transactions
-          -- or chain depths from dates past asOf; otherwise the
-          -- summary card would mix the past-point view with whatever
-          -- landed after, contradicting stageCounts.total /
+          -- (asOf JST day + 1) used as an exclusive upper bound on
+          -- both DONATION rows and the MV-coverage range. Historic
+          -- asOf must not count DONATION transactions or chain
+          -- depths from dates past asOf; otherwise the summary card
+          -- would mix the past-point view with whatever landed
+          -- after, contradicting stageCounts.total /
           -- communityActivityRate which ARE clamped.
-          SELECT (
+          SELECT
             ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
-            AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
-          ) AS upper_ts
+            AS upper_jst_date
         ),
         donation_totals AS (
+          -- Sources from mv_donation_tx_edges. The MV's burn-target
+          -- / self-donation / cross-community-leakage exclusions
+          -- match civicship's gift-economy DONATION definition and
+          -- so are correct for the all-time totals too — same
+          -- reasoning as the donation_* CTEs in findMemberStatsBulk.
           SELECT
-            COALESCE(SUM(t."from_point_change"), 0)::bigint AS total_donation_points,
-            MAX(t."chain_depth")::int AS max_chain_depth
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ${communityId}
+            COALESCE(SUM(e."from_point_change"), 0)::bigint AS total_donation_points,
+            MAX(e."chain_depth")::int AS max_chain_depth
+          FROM "mv_donation_tx_edges" e
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."created_at" < ab.upper_ts
+          WHERE e."sender_community_id" = ${communityId}
+            AND e."date" < ab.upper_jst_date
         ),
         data_range AS (
           -- MV "date" column is a JST-encoded date; compare against
-          -- the JST calendar date of asOf (ab.upper_ts is JST-midnight
-          -- in naive UTC, so dropping back to ::date gives the JST
-          -- day after asOf; exclusive less-than keeps the last
-          -- included day as asOf).
+          -- the same upper_jst_date as donation_totals so a historic
+          -- asOf doesn't extend dataTo past the requested instant.
           SELECT
             MIN("date") AS data_from,
             MAX("date") AS data_to
-          FROM "mv_transaction_summary_daily", asof_bound
+          FROM "mv_transaction_summary_daily", asof_bound ab
           WHERE "community_id" = ${communityId}
-            AND "date" < ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+            AND "date" < ab.upper_jst_date
         )
         SELECT
           dt.total_donation_points,
@@ -1181,10 +1181,8 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
       const rows = await tx.$queryRaw<{ depth: number; count: number }[]>`
         WITH asof_bound AS (
           SELECT
-            (
-              ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
-              AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC'
-            ) AS upper_ts
+            ((${asOf}::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date + 1)
+            AS upper_jst_date
         ),
         bucket_keys AS (
           SELECT generate_series(1, ${maxBucketDepth}::int) AS depth
@@ -1198,22 +1196,26 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
           -- parameter slots ($1, $3) at the wire level. PostgreSQL
           -- then refuses to recognise the GROUP BY expression as
           -- matching the SELECT one syntactically, raising
-          -- "column t.chain_depth must appear in the GROUP BY
+          -- "column e.chain_depth must appear in the GROUP BY
           -- clause". Alias reference (PostgreSQL-supported since
           -- 9.x) sidesteps the parameter duplication and stays
           -- robust to future SELECT-column reorders, unlike
           -- positional GROUP BY.
+          --
+          -- Sources from mv_donation_tx_edges. The MV's filters
+          -- (burn-target / self-donation / cross-community-leakage
+          -- exclusion) are correct for the donation graph too:
+          -- self-donations don't form chains, burn targets don't
+          -- forward, and cross-community DONATIONs are leakage
+          -- that shouldn't shape this community's chain histogram.
           SELECT
-            LEAST(t."chain_depth", ${maxBucketDepth}::int) AS depth,
+            LEAST(e."chain_depth", ${maxBucketDepth}::int) AS depth,
             COUNT(*)::int AS n
-          FROM "t_transactions" t
-          INNER JOIN "t_wallets" fw
-            ON fw."id" = t."from"
-            AND fw."community_id" = ${communityId}
+          FROM "mv_donation_tx_edges" e
           CROSS JOIN asof_bound ab
-          WHERE t."reason" = 'DONATION'
-            AND t."chain_depth" >= 1
-            AND t."created_at" < ab.upper_ts
+          WHERE e."sender_community_id" = ${communityId}
+            AND e."chain_depth" >= 1
+            AND e."date" < ab.upper_jst_date
           GROUP BY depth
         )
         SELECT
