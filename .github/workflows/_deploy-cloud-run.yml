@@ -62,6 +62,17 @@ jobs:
       APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
 
     steps:
+      # `audit` mode: log egress (GCP / npm registry / GitHub) without blocking.
+      # `block` mode would require maintaining an allowlist for every gcloud
+      # endpoint and is fragile across SDK updates. `disable-sudo` is left
+      # enabled (default) because the "Create Git tag" step installs tzdata
+      # via apt-get on prd. Audit logs surface in the job summary and let us
+      # detect unexpected egress (e.g. credential exfiltration) post-hoc.
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -157,13 +168,18 @@ jobs:
         # docker push :latest alone does not roll the Cloud Run Job to the new
         # image — Cloud Run Jobs pin the image digest at deploy time, so we
         # need an explicit `run jobs update` to create a new revision.
-        # `--command=node --args=dist/index.js` で旧 Dockerfile.batch の CMD を再現。
+        # `dist/bootstrap/batch.js` 経由で起動することで OpenTelemetry tracing 初期化
+        # (`tracingReady` await) を batch ジョブでも有効にする。`@/` パスエイリアスが
+        # bootstrap 層で使われるため `-r tsconfig-paths/register` も必須。
+        # PROCESS_TYPE=batch は Cloud Run Job 側の env で別途設定されている前提
+        # (bootstrap/batch.ts は ../index に dispatch するだけで、batch 分岐自体は
+        # src/index.ts:main() が PROCESS_TYPE で判定する)。
         run: |
           gcloud run jobs update "${{ env.BATCH_NAME }}" \
             --region="${{ env.GCP_REGION }}" \
             --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest" \
             --command=node \
-            --args=dist/index.js
+            --args=-r,tsconfig-paths/register,dist/bootstrap/batch.js
 
       - name: Create Git tag
         if: ${{ inputs.create-git-tag }}
