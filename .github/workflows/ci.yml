@@ -3,8 +3,20 @@ name: CI
 on:
   pull_request:
     branches: [master, develop]
+    # docs-only / dependabot 設定 / *.md のみの変更は CI を skip する。
+    # ※ docs/schema.graphql (生成物) は src の schema 変更とセットで commit される
+    # ため、src 変更に CI が走るカバレッジは維持される。docs/handbook/ は
+    # .dockerignore:49 で image にも入らない。
+    paths-ignore:
+      - '**.md'
+      - 'docs/handbook/**'
+      - '.github/dependabot.yml'
   push:
     branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'docs/handbook/**'
+      - '.github/dependabot.yml'
 
 permissions:
   contents: read
@@ -87,7 +99,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Audit (non-blocking)
         run: pnpm audit --audit-level=high
@@ -156,12 +168,24 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Download generated artifacts from setup
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: ci-generated
+
+      # tsc incremental の `.tsbuildinfo` を branch ごとに cache。
+      # 完全一致 hit は稀でも、restore-keys 経由で前回 build の info を
+      # 復元すれば未変更ファイルの typecheck を skip できる。
+      - name: Cache TypeScript build info
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: .tsbuildinfo
+          key: tsbuildinfo-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            tsbuildinfo-${{ runner.os }}-${{ github.ref_name }}-
+            tsbuildinfo-${{ runner.os }}-
 
       - name: Build (typecheck + emit)
         run: pnpm build
@@ -243,7 +267,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Download generated artifacts from setup
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
@@ -259,6 +283,18 @@ jobs:
         # (Postgres service は job ごとに独立しているため、setup job の DB 状態は
         # 共有できず各 test job で再 deploy が必要)
         run: pnpm db:deploy
+
+      # ts-jest の transform 結果 cache を matrix 単位で永続化。
+      # restore-keys で同一 matrix の最近の cache に fallback し、
+      # 変更されていない test file の transform を skip できる。
+      - name: Cache Jest transform cache
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: .jest-cache
+          key: jest-${{ runner.os }}-${{ matrix.name }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            jest-${{ runner.os }}-${{ matrix.name }}-${{ github.ref_name }}-
+            jest-${{ runner.os }}-${{ matrix.name }}-
 
       - name: Generate test JWT RSA key
         # firebase-admin の内部 JWT 署名 (RS256) 用に、test 専用の使い捨て RSA 2048

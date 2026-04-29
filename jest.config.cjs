@@ -6,6 +6,9 @@ module.exports = {
     verboseQuery: true,
   },
   testTimeout: 50000,
+  // ts-jest の transform 結果をプロジェクト内 .jest-cache に保存し、CI で
+  // actions/cache 経由で永続化することで test job の transform overhead を削減。
+  cacheDirectory: "<rootDir>/.jest-cache",
   setupFiles: ["<rootDir>/jest.setup.ts"],
   setupFilesAfterEnv: ["@quramy/prisma-fabbrica/scripts/jest-prisma"],
   transform: {
