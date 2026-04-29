@@ -1,0 +1,19 @@
+# ------------------------------
+# Analytics Community Query Definitions
+#
+# Per-community analytics view (member stats, stage distribution,
+# trailing-window trends, cohort retention, alerts) for admin
+# operators. Bypasses per-community RLS under the hood
+# (ctx.issuer.public) because admins legitimately need to see across
+# every community at once.
+# ------------------------------
+extend type Query {
+  """
+  Single-community analytics detail: summary card, stage distribution,
+  trailing-window trends, cohort retention, and a paginated member list.
+  Intended for answering "what are kibotcha's numbers?" in an external
+  report conversation.
+  """
+  analyticsCommunity(input: AnalyticsCommunityInput!): AnalyticsCommunityPayload!
+    @authz(rules: [IsAdmin])
+}

@@ -1,47 +1,43 @@
 import { bigintToSafeNumber } from "@/application/domain/report/util";
 import {
-  GqlSysAdminCohortRetentionPoint,
-  GqlSysAdminCommunityAlerts,
-  GqlSysAdminCommunityDetailPayload,
-  GqlSysAdminCommunityOverview,
-  GqlSysAdminCommunitySummaryCard,
-  GqlSysAdminDashboardPayload,
-  GqlSysAdminLatestCohort,
-  GqlSysAdminMemberList,
-  GqlSysAdminMemberRow,
-  GqlSysAdminMonthlyActivityPoint,
-  GqlSysAdminPlatformSummary,
-  GqlSysAdminRetentionTrendPoint,
-  GqlSysAdminSegmentCounts,
-  GqlSysAdminStageBucket,
-  GqlSysAdminStageDistribution,
-  GqlSysAdminTenureDistribution,
-  GqlSysAdminWeeklyRetention,
-  GqlSysAdminWindowActivity,
+  GqlAnalyticsCohortRetentionPoint,
+  GqlAnalyticsCommunityAlerts,
+  GqlAnalyticsCommunityPayload,
+  GqlAnalyticsCommunitySummaryCard,
+  GqlAnalyticsLatestCohort,
+  GqlAnalyticsMemberList,
+  GqlAnalyticsMemberRow,
+  GqlAnalyticsMonthlyActivityPoint,
+  GqlAnalyticsRetentionTrendPoint,
+  GqlAnalyticsSegmentCounts,
+  GqlAnalyticsStageBucket,
+  GqlAnalyticsStageDistribution,
+  GqlAnalyticsTenureDistribution,
+  GqlAnalyticsWeeklyRetention,
+  GqlAnalyticsWindowActivity,
 } from "@/types/graphql";
 import {
-  SysAdminAllTimeTotalsRow,
-  SysAdminChainDepthBucketRow,
-  SysAdminMemberStatsRow,
-  SysAdminMonthlyActivityRow,
-  SysAdminPlatformTotalsRow,
-} from "@/application/domain/sysadmin/data/type";
+  AnalyticsAllTimeTotalsRow,
+  AnalyticsChainDepthBucketRow,
+  AnalyticsMemberStatsRow,
+  AnalyticsMonthlyActivityRow,
+} from "@/application/domain/analytics/community/data/type";
 import {
   AlertFlags,
   LatestCohortCounts,
   WeeklyRetentionCounts,
   WindowActivityCounts,
-} from "@/application/domain/sysadmin/service";
+} from "@/application/domain/analytics/community/service";
 import {
   MonthlyCohortPoint,
   StageBreakdown,
   StageBucketStats,
   StageCounts,
-  SysAdminCohortFunnelPoint,
+  AnalyticsCohortFunnelPoint,
   TenureDistribution,
   WeeklyRetentionPoint,
-} from "@/application/domain/sysadmin/aggregations";
-import { MemberListResult } from "@/application/domain/sysadmin/pagination";
+} from "@/application/domain/analytics/community/aggregations";
+import { MemberListResult } from "@/application/domain/analytics/community/pagination";
 
 /**
  * Prisma / service rows → GraphQL payload shapes. Pure functions.
@@ -50,16 +46,8 @@ import { MemberListResult } from "@/application/domain/sysadmin/pagination";
  * beyond `Number.MAX_SAFE_INTEGER` throw loudly rather than silently
  * losing precision in the externally-reported totals.
  */
-export default class SysAdminPresenter {
-  static platform(row: SysAdminPlatformTotalsRow): GqlSysAdminPlatformSummary {
-    return {
-      communitiesCount: row.communitiesCount,
-      totalMembers: row.totalMembers,
-      latestMonthDonationPoints: bigintToSafeNumber(row.latestMonthDonationPoints),
-    };
-  }
-
-  static segmentCounts(counts: StageCounts): GqlSysAdminSegmentCounts {
+export default class AnalyticsCommunityPresenter {
+  static segmentCounts(counts: StageCounts): GqlAnalyticsSegmentCounts {
     return {
       total: counts.total,
       tier1Count: counts.tier1Count,
@@ -69,7 +57,7 @@ export default class SysAdminPresenter {
     };
   }
 
-  static alerts(flags: AlertFlags): GqlSysAdminCommunityAlerts {
+  static alerts(flags: AlertFlags): GqlAnalyticsCommunityAlerts {
     return {
       churnSpike: flags.churnSpike,
       activeDrop: flags.activeDrop,
@@ -77,7 +65,7 @@ export default class SysAdminPresenter {
     };
   }
 
-  static windowActivity(counts: WindowActivityCounts): GqlSysAdminWindowActivity {
+  static windowActivity(counts: WindowActivityCounts): GqlAnalyticsWindowActivity {
     return {
       senderCount: counts.senderCount,
       senderCountPrev: counts.senderCountPrev,
@@ -87,21 +75,21 @@ export default class SysAdminPresenter {
     };
   }
 
-  static weeklyRetention(counts: WeeklyRetentionCounts): GqlSysAdminWeeklyRetention {
+  static weeklyRetention(counts: WeeklyRetentionCounts): GqlAnalyticsWeeklyRetention {
     return {
       retainedSenders: counts.retainedSenders,
       churnedSenders: counts.churnedSenders,
     };
   }
 
-  static latestCohort(counts: LatestCohortCounts): GqlSysAdminLatestCohort {
+  static latestCohort(counts: LatestCohortCounts): GqlAnalyticsLatestCohort {
     return {
       size: counts.size,
       activeAtM1: counts.activeAtM1,
     };
   }
 
-  static tenureDistribution(d: TenureDistribution): GqlSysAdminTenureDistribution {
+  static tenureDistribution(d: TenureDistribution): GqlAnalyticsTenureDistribution {
     return {
       lt1Month: d.lt1Month,
       m1to3Months: d.m1to3Months,
@@ -111,44 +99,6 @@ export default class SysAdminPresenter {
       // 1:1 (monthsIn + count), so the array passes through
       // without per-element transformation.
       monthlyHistogram: d.monthlyHistogram,
-    };
-  }
-
-  static overviewRow(params: {
-    communityId: string;
-    communityName: string;
-    totalMembers: number;
-    stageCounts: StageCounts;
-    windowActivity: WindowActivityCounts;
-    weeklyRetention: WeeklyRetentionCounts;
-    latestCohort: LatestCohortCounts;
-    hubMemberCount: number;
-    tenureDistribution: TenureDistribution;
-    dormantCount: number;
-  }): GqlSysAdminCommunityOverview {
-    return {
-      communityId: params.communityId,
-      communityName: params.communityName,
-      totalMembers: params.totalMembers,
-      segmentCounts: SysAdminPresenter.segmentCounts(params.stageCounts),
-      windowActivity: SysAdminPresenter.windowActivity(params.windowActivity),
-      weeklyRetention: SysAdminPresenter.weeklyRetention(params.weeklyRetention),
-      latestCohort: SysAdminPresenter.latestCohort(params.latestCohort),
-      hubMemberCount: params.hubMemberCount,
-      tenureDistribution: SysAdminPresenter.tenureDistribution(params.tenureDistribution),
-      dormantCount: params.dormantCount,
-    };
-  }
-
-  static dashboard(params: {
-    asOf: Date;
-    platform: SysAdminPlatformTotalsRow;
-    communities: GqlSysAdminCommunityOverview[];
-  }): GqlSysAdminDashboardPayload {
-    return {
-      asOf: params.asOf,
-      platform: SysAdminPresenter.platform(params.platform),
-      communities: params.communities,
     };
   }
 
@@ -162,8 +112,8 @@ export default class SysAdminPresenter {
     communityActivityRate3mAvg: number | null;
     growthRateActivity: number | null;
     tier2Count: number;
-    allTimeTotals: SysAdminAllTimeTotalsRow;
-  }): GqlSysAdminCommunitySummaryCard {
+    allTimeTotals: AnalyticsAllTimeTotalsRow;
+  }): GqlAnalyticsCommunitySummaryCard {
     const tier2Pct = params.totalMembers === 0 ? 0 : params.tier2Count / params.totalMembers;
     return {
       communityId: params.communityId,
@@ -181,7 +131,7 @@ export default class SysAdminPresenter {
     };
   }
 
-  private static stageBucket(b: StageBucketStats): GqlSysAdminStageBucket {
+  private static stageBucket(b: StageBucketStats): GqlAnalyticsStageBucket {
     return {
       count: b.count,
       pct: b.pct,
@@ -191,19 +141,19 @@ export default class SysAdminPresenter {
     };
   }
 
-  static stages(breakdown: StageBreakdown): GqlSysAdminStageDistribution {
+  static stages(breakdown: StageBreakdown): GqlAnalyticsStageDistribution {
     return {
-      habitual: SysAdminPresenter.stageBucket(breakdown.habitual),
-      regular: SysAdminPresenter.stageBucket(breakdown.regular),
-      occasional: SysAdminPresenter.stageBucket(breakdown.occasional),
+      habitual: AnalyticsCommunityPresenter.stageBucket(breakdown.habitual),
+      regular: AnalyticsCommunityPresenter.stageBucket(breakdown.regular),
+      occasional: AnalyticsCommunityPresenter.stageBucket(breakdown.occasional),
       // The latent bucket's pointsContributionPct is always 0 by
       // definition (latent ≡ never-donated). summarize() already
       // computes 0 because `sumPointsOut` is 0 for latent rows.
-      latent: SysAdminPresenter.stageBucket(breakdown.latent),
+      latent: AnalyticsCommunityPresenter.stageBucket(breakdown.latent),
     };
   }
 
-  static monthlyActivityPoint(row: SysAdminMonthlyActivityRow): GqlSysAdminMonthlyActivityPoint {
+  static monthlyActivityPoint(row: AnalyticsMonthlyActivityRow): GqlAnalyticsMonthlyActivityPoint {
     const rate =
       row.totalMembersEndOfMonth === 0 ? 0 : row.senderCount / row.totalMembersEndOfMonth;
     // Route both sides of chainPct through bigintToSafeNumber so an
@@ -234,7 +184,7 @@ export default class SysAdminPresenter {
     };
   }
 
-  static retentionTrendPoint(point: WeeklyRetentionPoint): GqlSysAdminRetentionTrendPoint {
+  static retentionTrendPoint(point: WeeklyRetentionPoint): GqlAnalyticsRetentionTrendPoint {
     return {
       week: point.weekStart,
       retainedSenders: point.retainedSenders,
@@ -245,7 +195,7 @@ export default class SysAdminPresenter {
     };
   }
 
-  static cohortPoint(point: MonthlyCohortPoint): GqlSysAdminCohortRetentionPoint {
+  static cohortPoint(point: MonthlyCohortPoint): GqlAnalyticsCohortRetentionPoint {
     return {
       cohortMonth: point.cohortMonthStart,
       cohortSize: point.cohortSize,
@@ -255,7 +205,7 @@ export default class SysAdminPresenter {
     };
   }
 
-  static memberRow(row: SysAdminMemberStatsRow): GqlSysAdminMemberRow {
+  static memberRow(row: AnalyticsMemberStatsRow): GqlAnalyticsMemberRow {
     return {
       userId: row.userId,
       name: row.name,
@@ -277,21 +227,21 @@ export default class SysAdminPresenter {
       donationInDays: row.donationInDays,
       uniqueDonationSenders: row.uniqueDonationSenders,
       // lastDonationDay is already a JST-midnight Date on the row
-      // (see findMemberStats); rename to the public-facing
+      // (see findMemberStatsBulk); rename to the public-facing
       // `lastDonationAt` here. null pass-through for never-donated
       // members.
       lastDonationAt: row.lastDonationDay,
     };
   }
 
-  static memberList(result: MemberListResult): GqlSysAdminMemberList {
+  static memberList(result: MemberListResult): GqlAnalyticsMemberList {
     return {
-      users: result.users.map(SysAdminPresenter.memberRow),
+      users: result.users.map(AnalyticsCommunityPresenter.memberRow),
       hasNextPage: result.hasNextPage,
       // Internal `nextOffset: number | null` → GraphQL
       // `nextCursor: String | null`. The encode lives here so the
       // service stays free of wire-format concerns; the matching
-      // decode is in `SysAdminConverter.parseMemberListCursor`.
+      // decode is in `AnalyticsCommunityConverter.parseMemberListCursor`.
       nextCursor:
         result.nextOffset !== null
           ? encodeMemberListCursor(result.nextOffset)
@@ -304,17 +254,17 @@ export default class SysAdminPresenter {
     communityName: string;
     asOf: Date;
     windowMonths: number;
-    summary: GqlSysAdminCommunitySummaryCard;
-    stages: GqlSysAdminStageDistribution;
-    monthlyActivityTrend: GqlSysAdminMonthlyActivityPoint[];
-    retentionTrend: GqlSysAdminRetentionTrendPoint[];
-    cohortRetention: GqlSysAdminCohortRetentionPoint[];
-    memberList: GqlSysAdminMemberList;
-    alerts: GqlSysAdminCommunityAlerts;
+    summary: GqlAnalyticsCommunitySummaryCard;
+    stages: GqlAnalyticsStageDistribution;
+    monthlyActivityTrend: GqlAnalyticsMonthlyActivityPoint[];
+    retentionTrend: GqlAnalyticsRetentionTrendPoint[];
+    cohortRetention: GqlAnalyticsCohortRetentionPoint[];
+    memberList: GqlAnalyticsMemberList;
+    alerts: GqlAnalyticsCommunityAlerts;
     dormantCount: number;
-    chainDepthDistribution: SysAdminChainDepthBucketRow[];
-    cohortFunnel: SysAdminCohortFunnelPoint[];
-  }): GqlSysAdminCommunityDetailPayload {
+    chainDepthDistribution: AnalyticsChainDepthBucketRow[];
+    cohortFunnel: AnalyticsCohortFunnelPoint[];
+  }): GqlAnalyticsCommunityPayload {
     return {
       communityId: params.communityId,
       communityName: params.communityName,
@@ -344,7 +294,7 @@ export default class SysAdminPresenter {
  * Internal offset → GraphQL `nextCursor` wire format. Base64 of the
  * offset's stringified form, matching the prior in-service helper.
  * Exported so the round-trip unit test can assert encode/decode
- * symmetry against `SysAdminConverter.parseMemberListCursor` without
+ * symmetry against `AnalyticsCommunityConverter.parseMemberListCursor` without
  * exercising the full member-list presenter.
  */
 export function encodeMemberListCursor(offset: number): string {

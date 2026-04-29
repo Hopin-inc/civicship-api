@@ -1,4 +1,4 @@
-import { SysAdminMemberStatsRow } from "@/application/domain/sysadmin/data/type";
+import { AnalyticsMemberStatsRow } from "@/application/domain/analytics/community/data/type";
 
 export type SortField = "SEND_RATE" | "MONTHS_IN" | "DONATION_OUT_MONTHS" | "TOTAL_POINTS_OUT";
 export type SortOrder = "ASC" | "DESC";
@@ -12,13 +12,13 @@ export type MemberListParams = {
   sortOrder: SortOrder;
   limit: number;
   // Pre-decoded offset; the GraphQL → number wire-format step lives
-  // in `SysAdminConverter.parseMemberListCursor` so the service
+  // in `AnalyticsCommunityConverter.parseMemberListCursor` so the service
   // operates on internal form only.
   cursor?: number;
 };
 
 export type MemberListResult = {
-  users: SysAdminMemberStatsRow[];
+  users: AnalyticsMemberStatsRow[];
   hasNextPage: boolean;
   // Internal form. The GraphQL `nextCursor: String | null` is built
   // by the presenter, which owns the internal → wire-format step.
@@ -29,7 +29,7 @@ export type MemberListResult = {
  * Member-list page-size cap. Raised from the historical 200 to 1000
  * so client-side aggregations that span the full membership (e.g.
  * the L2 "受領→送付 転換率" / recipient-to-sender conversion rate
- * derived from `SysAdminMemberRow.uniqueDonationSenders` +
+ * derived from `AnalyticsMemberRow.uniqueDonationSenders` +
  * `totalPointsOut`) can pull a single page without N round-trips
  * for typical communities. Communities larger than 1000 members
  * still need cursor pagination — the cap exists to prevent a
@@ -46,7 +46,7 @@ export const MAX_LIMIT = 1000;
  * a new SQL round-trip per page.
  */
 export function paginateMembers(
-  members: SysAdminMemberStatsRow[],
+  members: AnalyticsMemberStatsRow[],
   params: MemberListParams,
 ): MemberListResult {
   const filtered = members.filter((m) => {
@@ -59,7 +59,7 @@ export function paginateMembers(
   });
 
   const sign = params.sortOrder === "ASC" ? 1 : -1;
-  const numericKey = (m: SysAdminMemberStatsRow): number => {
+  const numericKey = (m: AnalyticsMemberStatsRow): number => {
     switch (params.sortField) {
       case "SEND_RATE":
         return m.userSendRate;

@@ -6,10 +6,10 @@ import {
   computeStageBreakdown,
   computeStageCounts,
   computeTenureDistribution,
-} from "@/application/domain/sysadmin/aggregations";
-import { DEFAULT_SEGMENT_THRESHOLDS } from "@/application/domain/sysadmin/classifiers";
-import type { SysAdminMonthlyActivityRow } from "@/application/domain/sysadmin/data/type";
-import { member } from "@/__tests__/unit/sysadmin/fixtures";
+} from "@/application/domain/analytics/community/aggregations";
+import { DEFAULT_SEGMENT_THRESHOLDS } from "@/application/domain/analytics/community/classifiers";
+import type { AnalyticsMonthlyActivityRow } from "@/application/domain/analytics/community/data/type";
+import { member } from "@/__tests__/unit/analytics/community/fixtures";
 
 // ========================================================================
 // computeStageCounts: cumulative (tier2 includes tier1)
@@ -409,7 +409,7 @@ describe("computeDormantCount", () => {
     // Production asOf is `new Date()` with the wall-clock time
     // component preserved (e.g. 06:17:55Z). lastDonationDay is a
     // JST calendar day at UTC 00:00 (the SQL ::date cast in
-    // findMemberStats strips the time). Without truncating asOf
+    // findMemberStatsBulk strips the time). Without truncating asOf
     // to its JST date before subtracting days, a member who
     // donated on the cutoff day has lastDonationDay = cutoff-day
     // 00:00Z < cutoff-day HH:MM:SSZ → they'd be misclassified as
@@ -549,7 +549,7 @@ describe("computeActivityRate3mAvg", () => {
     month: string,
     senderCount: number,
     totalMembers: number,
-  ): SysAdminMonthlyActivityRow {
+  ): AnalyticsMonthlyActivityRow {
     return {
       monthStart: new Date(month),
       senderCount,

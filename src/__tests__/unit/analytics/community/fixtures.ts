@@ -1,11 +1,11 @@
-import type { SysAdminMemberStatsRow } from "@/application/domain/sysadmin/data/type";
+import type { AnalyticsMemberStatsRow } from "@/application/domain/analytics/community/data/type";
 
 /**
  * Member factory keeps the tests readable — every test below really
  * only cares about 2–3 fields, so the helper defaults the rest to
  * non-interesting values.
  */
-export function member(overrides: Partial<SysAdminMemberStatsRow>): SysAdminMemberStatsRow {
+export function member(overrides: Partial<AnalyticsMemberStatsRow>): AnalyticsMemberStatsRow {
   const monthsIn = overrides.monthsIn ?? 1;
   // lastDonationDay defaults to undefined → null so a member that
   // hasn't been given a donation history is "latent". Override

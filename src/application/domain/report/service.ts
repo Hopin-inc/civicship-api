@@ -136,6 +136,23 @@ export default class ReportService {
     return this.statsRepo.findRetentionAggregate(ctx, communityId, range);
   }
 
+  /**
+   * Bulk variant of `getRetentionAggregate` for the L1 dashboard
+   * fan-out. Delegates straight through to the repository's bulk SQL.
+   */
+  async getRetentionAggregateBulk(
+    ctx: IContext,
+    communityIds: string[],
+    range: {
+      currentWeekStart: Date;
+      nextWeekStart: Date;
+      prevWeekStart: Date;
+      twelveWeeksAgo: Date;
+    },
+  ): Promise<Map<string, RetentionAggregateRow>> {
+    return this.statsRepo.findRetentionAggregateBulk(ctx, communityIds, range);
+  }
+
   async getCohortRetention(
     ctx: IContext,
     communityId: string,
@@ -143,6 +160,18 @@ export default class ReportService {
     active: { activeStart: Date; activeEnd: Date },
   ): Promise<CohortRetentionRow> {
     return this.statsRepo.findCohortRetention(ctx, communityId, cohort, active);
+  }
+
+  /**
+   * Bulk variant of `getCohortRetention` for the L1 dashboard fan-out.
+   */
+  async getCohortRetentionBulk(
+    ctx: IContext,
+    communityIds: string[],
+    cohort: { cohortStart: Date; cohortEnd: Date },
+    active: { activeStart: Date; activeEnd: Date },
+  ): Promise<Map<string, CohortRetentionRow>> {
+    return this.statsRepo.findCohortRetentionBulk(ctx, communityIds, cohort, active);
   }
 
   async refreshTransactionSummaryDaily(ctx: IContext, tx: Prisma.TransactionClient): Promise<void> {

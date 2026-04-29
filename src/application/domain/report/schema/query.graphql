@@ -82,6 +82,18 @@ extend type Query {
     maxRating: Int
     cursor: String
     first: Int = 20
+  ): ReportFeedbacksConnection!
+    @authz(rules: [IsAdmin])
+    @deprecated(reason: "Use `reportTemplateFeedbacks` instead.")
+
+  reportTemplateFeedbacks(
+    variant: ReportVariant!
+    version: Int
+    kind: ReportTemplateKind = GENERATION
+    feedbackType: ReportFeedbackType
+    maxRating: Int
+    cursor: String
+    first: Int = 20
   ): ReportFeedbacksConnection! @authz(rules: [IsAdmin])
 
   # Phase 1.5 sysAdmin: aggregate stats for a template's feedback set,
@@ -103,6 +115,14 @@ extend type Query {
     variant: ReportVariant!
     version: Int
     kind: ReportTemplateKind = GENERATION
+  ): AdminTemplateFeedbackStats!
+    @authz(rules: [IsAdmin])
+    @deprecated(reason: "Use `reportTemplateFeedbackStats` instead.")
+
+  reportTemplateFeedbackStats(
+    variant: ReportVariant!
+    version: Int
+    kind: ReportTemplateKind = GENERATION
   ): AdminTemplateFeedbackStats! @authz(rules: [IsAdmin])
 
   # Phase 2 sysAdmin: cross-community report search. Same shape as
@@ -113,6 +133,18 @@ extend type Query {
   # backs both "show all PUBLISHED across communities" and "drill into
   # one community + variant" use cases.
   adminBrowseReports(
+    communityId: ID
+    status: ReportStatus
+    variant: ReportVariant
+    publishedAfter: Datetime
+    publishedBefore: Datetime
+    cursor: String
+    first: Int
+  ): ReportsConnection!
+    @authz(rules: [IsAdmin])
+    @deprecated(reason: "Use `reportsAll` instead.")
+
+  reportsAll(
     communityId: ID
     status: ReportStatus
     variant: ReportVariant
@@ -131,6 +163,13 @@ extend type Query {
   # NOT exposed on the `Community` type to keep general community
   # reads cheap.
   adminReportSummary(
+    cursor: String
+    first: Int
+  ): AdminReportSummaryConnection!
+    @authz(rules: [IsAdmin])
+    @deprecated(reason: "Use `reportSummaries` instead.")
+
+  reportSummaries(
     cursor: String
     first: Int
   ): AdminReportSummaryConnection! @authz(rules: [IsAdmin])
