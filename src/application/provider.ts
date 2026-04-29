@@ -132,6 +132,7 @@ import VoteConverter from "@/application/domain/vote/data/converter";
 import VoteRepository from "@/application/domain/vote/data/repository";
 import AnalyticsCommunityRepository from "@/application/domain/analytics/community/data/repository";
 import AnalyticsPlatformRepository from "@/application/domain/analytics/platform/data/repository";
+import AnalyticsPlatformService from "@/application/domain/analytics/platform/service";
 import SysAdminRepository from "@/application/domain/sysadmin/data/repository";
 import SysAdminService from "@/application/domain/sysadmin/service";
 import SysAdminUseCase from "@/application/domain/sysadmin/usecase";
@@ -391,6 +392,7 @@ export function registerProductionDependencies() {
 
   container.register("AnalyticsCommunityRepository", { useClass: AnalyticsCommunityRepository });
   container.register("AnalyticsPlatformRepository", { useClass: AnalyticsPlatformRepository });
+  container.register("AnalyticsPlatformService", { useClass: AnalyticsPlatformService });
   container.register("SysAdminRepository", { useClass: SysAdminRepository });
   container.register("SysAdminService", { useClass: SysAdminService });
   container.register("SysAdminUseCase", { useClass: SysAdminUseCase });
