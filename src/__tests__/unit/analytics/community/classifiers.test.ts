@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { classifyMember } from "@/application/domain/analytics/community/classifiers";
-import { member } from "@/__tests__/unit/sysadmin/fixtures";
+import { member } from "@/__tests__/unit/analytics/community/fixtures";
 
 // ============================================================================
 // classifyMember: shared classifier feeding both computeStageCounts and

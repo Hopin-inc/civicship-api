@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { MAX_LIMIT, paginateMembers } from "@/application/domain/analytics/community/pagination";
 import type { AnalyticsMemberStatsRow } from "@/application/domain/analytics/community/data/type";
-import { member } from "@/__tests__/unit/sysadmin/fixtures";
+import { member } from "@/__tests__/unit/analytics/community/fixtures";
 
 // ========================================================================
 // paginateMembers: in-memory filter + sort + slice
