@@ -51,16 +51,17 @@ jobs:
         # Image: rhysd/actionlint:1.7.7 (Docker Hub, multi-arch index digest)
         # shellcheck / pyflakes are bundled in the image.
 
-  # 共通の生成物 (Prisma client + TypedSQL + GraphQL types) を 1 回だけ生成し、
-  # build / test matrix で artifact 経由で再利用する。これにより各 job から
-  # `pnpm db:deploy` (test 以外) / `pnpm db:generate` / `pnpm gql:generate` の
-  # 重複実行を排除し、CI 全体の wall-clock を短縮する。
-  setup:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
 
+    # Postgres is required because `pnpm db:generate` uses `prisma generate --sql`
+    # (TypedSQL). --sql introspects `src/infrastructure/prisma/sql/*.sql` against
+    # a live DB to type the `@prisma/client/sql` exports which are imported by
+    # src (e.g. refreshMaterializedViewCurrentPoints). Without DB, generate fails
+    # and typecheck breaks at import resolution.
     services:
       postgres:
         image: postgres:16-alpine
@@ -125,56 +126,6 @@ jobs:
             docs/schema.graphql \
             src/infrastructure/prisma/schema.prisma
 
-      # Prisma client (TypedSQL を含む) と GraphQL types を artifact として配布。
-      # 後続 job では `pnpm install` 後に download し、再生成をスキップする。
-      # node_modules 全体ではなく Prisma 出力サブツリーのみ対象とすることで
-      # upload/download コストを最小化 (~数 MB)。
-      - name: Upload generated artifacts
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: ci-generated
-          path: |
-            node_modules/.prisma
-            node_modules/@prisma/client
-            src/types/graphql.ts
-            docs/schema.graphql
-          retention-days: 1
-          if-no-files-found: error
-
-  build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: setup
-    permissions:
-      contents: read
-
-    steps:
-      - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
-        with:
-          egress-policy: audit
-          disable-sudo: true
-
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Download generated artifacts from setup
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          name: ci-generated
-
       # tsc incremental の `.tsbuildinfo` を branch ごとに cache。
       # 完全一致 hit は稀でも、restore-keys 経由で前回 build の info を
       # 復元すれば未変更ファイルの typecheck を skip できる。
@@ -193,7 +144,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: setup
     permissions:
       contents: read
     strategy:
@@ -269,20 +219,19 @@ jobs:
       - name: Install dependencies (lockfile integrity check)
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Download generated artifacts from setup
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          name: ci-generated
-
       - name: Apply Prisma migrations to CI database
         # `prisma db push` は schema.prisma のモデルのみ反映し、migration.sql を
         # 実行しない。view (10 個) / materialized view (4 個) は migration.sql のみで
         # 定義されているため、db push だと view/mv が作られず、それらに依存する test
         # が構造的に fail する。`pnpm db:deploy` (= prisma migrate deploy) で migration
         # を順次適用し、view/mv 含めた全スキーマを CI DB に反映する。
-        # (Postgres service は job ごとに独立しているため、setup job の DB 状態は
-        # 共有できず各 test job で再 deploy が必要)
         run: pnpm db:deploy
+
+      - name: Generate Prisma client (with TypedSQL)
+        run: pnpm db:generate
+
+      - name: Generate GraphQL types
+        run: pnpm gql:generate
 
       # ts-jest の transform 結果 cache を matrix 単位で永続化。
       # restore-keys で同一 matrix の最近の cache に fallback し、
@@ -322,7 +271,7 @@ jobs:
         run: pnpm test -- "${{ matrix.path }}"
 
   # Aggregator job: branch protection の required status check として
-  # `ci` を維持したまま、実体は lint / setup / build / test の複合結果を集約する。
+  # `ci` を維持したまま、実体は lint / build / test の複合結果を集約する。
   # 分割した各 job を required check として列挙すると、matrix の shard 数を
   # 変えるたびに branch protection 設定を更新する必要が出るため、aggregator
   # 1 個に集約することで将来の shard 数変更に branch protection 無変更で追従
@@ -330,7 +279,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    needs: [lint, setup, build, test]
+    needs: [lint, build, test]
     if: always()
     permissions:
       contents: read
@@ -338,11 +287,10 @@ jobs:
       - name: Verify all required jobs passed
         run: |
           lint='${{ needs.lint.result }}'
-          setup='${{ needs.setup.result }}'
           build='${{ needs.build.result }}'
           test='${{ needs.test.result }}'
-          echo "lint=$lint setup=$setup build=$build test=$test"
-          if [ "$lint" != "success" ] || [ "$setup" != "success" ] || [ "$build" != "success" ] || [ "$test" != "success" ]; then
+          echo "lint=$lint build=$build test=$test"
+          if [ "$lint" != "success" ] || [ "$build" != "success" ] || [ "$test" != "success" ]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi
