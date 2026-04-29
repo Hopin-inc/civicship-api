@@ -11,8 +11,6 @@ import {
   GqlQueryReportArgs,
   GqlQueryReportTemplateArgs,
   GqlQueryReportTemplatesArgs,
-  GqlQueryAdminBrowseReportsArgs,
-  GqlQueryAdminReportSummaryArgs,
   GqlQueryReportsAllArgs,
   GqlQueryReportSummariesArgs,
 } from "@/types/graphql";
@@ -34,12 +32,6 @@ export default class ReportResolver {
     },
     reportTemplates: (_: unknown, args: GqlQueryReportTemplatesArgs, ctx: IContext) => {
       return this.useCase.listReportTemplates(args, ctx);
-    },
-    adminBrowseReports: (_: unknown, args: GqlQueryAdminBrowseReportsArgs, ctx: IContext) => {
-      return this.useCase.adminBrowseReports(args, ctx);
-    },
-    adminReportSummary: (_: unknown, args: GqlQueryAdminReportSummaryArgs, ctx: IContext) => {
-      return this.useCase.adminViewReportSummary(args, ctx);
     },
     reportsAll: (_: unknown, args: GqlQueryReportsAllArgs, ctx: IContext) => {
       return this.useCase.adminBrowseReports(args, ctx);

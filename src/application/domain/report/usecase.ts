@@ -35,8 +35,8 @@ import {
   GqlQueryReportArgs,
   GqlQueryReportTemplateArgs,
   GqlQueryReportTemplatesArgs,
-  GqlQueryAdminBrowseReportsArgs,
-  GqlQueryAdminReportSummaryArgs,
+  GqlQueryReportsAllArgs,
+  GqlQueryReportSummariesArgs,
 } from "@/types/graphql";
 
 const LLM_TIMEOUT_MS = 180_000;
@@ -793,7 +793,7 @@ export default class ReportUseCase {
    * directive and does not re-check sysRole.
    */
   async adminBrowseReports(
-    args: GqlQueryAdminBrowseReportsArgs,
+    args: GqlQueryReportsAllArgs,
     ctx: IContext,
   ): Promise<GqlReportsConnection> {
     const first = args.first
@@ -819,7 +819,7 @@ export default class ReportUseCase {
    * existing dataloaders.
    */
   async adminViewReportSummary(
-    args: GqlQueryAdminReportSummaryArgs,
+    args: GqlQueryReportSummariesArgs,
     ctx: IContext,
   ): Promise<GqlAdminReportSummaryConnection> {
     const first = args.first

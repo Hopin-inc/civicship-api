@@ -29,7 +29,6 @@ import NftTokenResolver from "@/application/domain/account/nft-token/controller/
 import VoteResolver from "@/application/domain/vote/controller/resolver";
 import ReportResolver from "@/application/domain/report/controller/resolver";
 import ReportFeedbackResolver from "@/application/domain/report/feedback/controller/resolver";
-import SysAdminResolver from "@/application/domain/sysadmin/controller/resolver";
 import AnalyticsCommunityResolver from "@/application/domain/analytics/community/controller/resolver";
 import AnalyticsResolver from "@/application/domain/analytics/controller/resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
@@ -68,7 +67,6 @@ const incentiveGrant = container.resolve(IncentiveGrantResolver);
 const vote = container.resolve(VoteResolver);
 const report = container.resolve(ReportResolver);
 const reportFeedback = container.resolve(ReportFeedbackResolver);
-const sysAdmin = container.resolve(SysAdminResolver);
 const analyticsCommunity = container.resolve(AnalyticsCommunityResolver);
 const analytics = container.resolve(AnalyticsResolver);
 
@@ -102,7 +100,6 @@ const resolvers = {
     ...vote.Query,
     ...report.Query,
     ...reportFeedback.Query,
-    ...sysAdmin.Query,
     ...analyticsCommunity.Query,
     ...analytics.Query,
   },

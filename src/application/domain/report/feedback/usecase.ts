@@ -12,9 +12,9 @@ import {
   GqlReportTemplateStats,
   GqlQueryReportTemplateStatsBreakdownArgs,
   GqlReportTemplateStatsBreakdownConnection,
-  GqlQueryAdminTemplateFeedbacksArgs,
+  GqlQueryReportTemplateFeedbacksArgs,
   GqlReportFeedbacksConnection,
-  GqlQueryAdminTemplateFeedbackStatsArgs,
+  GqlQueryReportTemplateFeedbackStatsArgs,
   GqlAdminTemplateFeedbackStats,
 } from "@/types/graphql";
 
@@ -237,7 +237,7 @@ export default class ReportFeedbackUseCase {
    *     producing an empty-page response that masks the input error.
    */
   async viewAdminTemplateFeedbacks(
-    args: GqlQueryAdminTemplateFeedbacksArgs,
+    args: GqlQueryReportTemplateFeedbacksArgs,
     ctx: IContext,
   ): Promise<GqlReportFeedbacksConnection> {
     const first = args.first
@@ -280,7 +280,7 @@ export default class ReportFeedbackUseCase {
    * the input bug.
    */
   async viewAdminTemplateFeedbackStats(
-    args: GqlQueryAdminTemplateFeedbackStatsArgs,
+    args: GqlQueryReportTemplateFeedbackStatsArgs,
     ctx: IContext,
   ): Promise<GqlAdminTemplateFeedbackStats> {
     if (args.version !== undefined && args.version !== null) {
