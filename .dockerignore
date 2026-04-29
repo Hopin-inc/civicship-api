@@ -2,19 +2,21 @@
 #
 # node_modules is intentionally NOT excluded from the build context.
 #
-# The current Dockerfile relies on the CI/CD runner having pre-built
-# node_modules (including Prisma TypedSQL generated types at
-# @prisma/client/sql/*.d.ts) that are copied into the image via
-# `COPY . ./`. This is because `prisma generate --sql` requires
-# database connectivity (via jumpbox tunnel) which is not available
-# during `docker build`.
+# The Dockerfile relies on the CI/CD runner having pre-built node_modules
+# (including Prisma TypedSQL generated types at @prisma/client/sql/*.d.ts)
+# AND the compiled output at `dist/` that are copied into the image via
+# `COPY . ./`. This is because `prisma generate --sql` requires database
+# connectivity (via jumpbox tunnel) which is not available during
+# `docker build`. The compiled `dist/` is shipped as-is from the runner so
+# the in-container `RUN pnpm build` is no longer needed.
 #
 # This is intentional tech debt. A multi-stage build with CI artifact
 # injection is the proper fix - see the git log around this file and
 # the associated PR description for context. Do NOT re-enable the
-# `node_modules` exclusion below without first resolving the build
+# `node_modules` / `dist` exclusion below without first resolving the build
 # flow (runner-dependent -> self-contained).
 # node_modules
+# dist  -- shipped from runner; see .dockerignore comment above
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
@@ -22,9 +24,6 @@ pnpm-debug.log*
 # Logs
 logs
 *.log
-
-# Dependency directories
-dist
 
 # Environment variables
 .env
