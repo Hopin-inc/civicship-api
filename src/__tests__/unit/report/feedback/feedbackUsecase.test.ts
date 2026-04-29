@@ -180,7 +180,7 @@ describe("ReportFeedbackUseCase.submitReportFeedback", () => {
  * filter (variant / version / kind / feedbackType / maxRating). The
  * service layer is stubbed — no Prisma is involved.
  */
-describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
+describe("ReportFeedbackUseCase.viewReportTemplateFeedbacks", () => {
   const fakeCtx = {} as IContext;
 
   let feedbackService: { listAdminTemplateFeedbacks: jest.Mock };
@@ -203,12 +203,12 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
   // The codegen `InputMaybe<T>` type is `T | undefined` (no `null`), so
   // the default fixture omits optional fields rather than zeroing them.
   // Variant is required.
-  function defaultArgs(): Parameters<ReportFeedbackUseCase["viewAdminTemplateFeedbacks"]>[0] {
+  function defaultArgs(): Parameters<ReportFeedbackUseCase["viewReportTemplateFeedbacks"]>[0] {
     return { variant: GqlReportVariant.WeeklySummary };
   }
 
   it("forwards every filter through to the service unchanged (happy path)", async () => {
-    await usecase.viewAdminTemplateFeedbacks(
+    await usecase.viewReportTemplateFeedbacks(
       {
         variant: GqlReportVariant.WeeklySummary,
         version: 2,
@@ -237,7 +237,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
     // call surfaces here as `kind: null`. Mirror the equivalent
     // behaviour in `viewReportTemplateStatsBreakdown` — coerce to
     // GENERATION at the usecase boundary.
-    await usecase.viewAdminTemplateFeedbacks(defaultArgs(), fakeCtx);
+    await usecase.viewReportTemplateFeedbacks(defaultArgs(), fakeCtx);
     expect(feedbackService.listAdminTemplateFeedbacks).toHaveBeenCalledWith(
       fakeCtx,
       expect.objectContaining({ kind: ReportTemplateKind.GENERATION }),
@@ -248,7 +248,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
     "rejects maxRating=%s with ValidationError (not in 1..5 or non-integer)",
     async (maxRating) => {
       await expect(
-        usecase.viewAdminTemplateFeedbacks(
+        usecase.viewReportTemplateFeedbacks(
           { ...defaultArgs(), maxRating: maxRating as number },
           fakeCtx,
         ),
@@ -261,7 +261,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
     "rejects version=%s with ValidationError (not a positive integer)",
     async (version) => {
       await expect(
-        usecase.viewAdminTemplateFeedbacks(
+        usecase.viewReportTemplateFeedbacks(
           { ...defaultArgs(), version: version as number },
           fakeCtx,
         ),
@@ -272,7 +272,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
 
   it("rejects out-of-range first with ValidationError", async () => {
     await expect(
-      usecase.viewAdminTemplateFeedbacks({ ...defaultArgs(), first: 1000 }, fakeCtx),
+      usecase.viewReportTemplateFeedbacks({ ...defaultArgs(), first: 1000 }, fakeCtx),
     ).rejects.toThrow(/first/);
     expect(feedbackService.listAdminTemplateFeedbacks).not.toHaveBeenCalled();
   });
@@ -294,7 +294,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
       totalCount: 1,
     });
 
-    const result = await usecase.viewAdminTemplateFeedbacks(defaultArgs(), fakeCtx);
+    const result = await usecase.viewReportTemplateFeedbacks(defaultArgs(), fakeCtx);
     expect(result.totalCount).toBe(1);
     expect(result.edges).toHaveLength(1);
     expect(result.edges?.[0]?.cursor).toBe("feedback-1");
@@ -310,7 +310,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbacks", () => {
  * `feedbackType` / `maxRating`), and the dense 1..5 distribution
  * shape on the way out.
  */
-describe("ReportFeedbackUseCase.viewAdminTemplateFeedbackStats", () => {
+describe("ReportFeedbackUseCase.viewReportTemplateFeedbackStats", () => {
   const fakeCtx = {} as IContext;
 
   let feedbackService: { getAdminTemplateFeedbackStats: jest.Mock };
@@ -333,13 +333,13 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbackStats", () => {
   });
 
   function defaultArgs(): Parameters<
-    ReportFeedbackUseCase["viewAdminTemplateFeedbackStats"]
+    ReportFeedbackUseCase["viewReportTemplateFeedbackStats"]
   >[0] {
     return { variant: GqlReportVariant.WeeklySummary };
   }
 
   it("forwards variant / version / kind to the service unchanged", async () => {
-    await usecase.viewAdminTemplateFeedbackStats(
+    await usecase.viewReportTemplateFeedbackStats(
       {
         variant: GqlReportVariant.WeeklySummary,
         version: 2,
@@ -355,7 +355,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbackStats", () => {
   });
 
   it("defaults kind to GENERATION when the caller omits it", async () => {
-    await usecase.viewAdminTemplateFeedbackStats(defaultArgs(), fakeCtx);
+    await usecase.viewReportTemplateFeedbackStats(defaultArgs(), fakeCtx);
     expect(feedbackService.getAdminTemplateFeedbackStats).toHaveBeenCalledWith(
       fakeCtx,
       expect.objectContaining({ kind: ReportTemplateKind.GENERATION }),
@@ -366,7 +366,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbackStats", () => {
     "rejects version=%s with ValidationError (not a positive integer)",
     async (version) => {
       await expect(
-        usecase.viewAdminTemplateFeedbackStats(
+        usecase.viewReportTemplateFeedbackStats(
           { ...defaultArgs(), version: version as number },
           fakeCtx,
         ),
@@ -388,7 +388,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbackStats", () => {
       ],
     });
 
-    const result = await usecase.viewAdminTemplateFeedbackStats(defaultArgs(), fakeCtx);
+    const result = await usecase.viewReportTemplateFeedbackStats(defaultArgs(), fakeCtx);
 
     expect(result.totalCount).toBe(6);
     expect(result.avgRating).toBe(3.0);
@@ -401,7 +401,7 @@ describe("ReportFeedbackUseCase.viewAdminTemplateFeedbackStats", () => {
     // Empty population — schema contract: avgRating null, but the
     // distribution is still a dense five-row array (the bar
     // renders five empty bars rather than vanishing).
-    const result = await usecase.viewAdminTemplateFeedbackStats(defaultArgs(), fakeCtx);
+    const result = await usecase.viewReportTemplateFeedbackStats(defaultArgs(), fakeCtx);
     expect(result.totalCount).toBe(0);
     expect(result.avgRating).toBeNull();
     expect(result.ratingDistribution).toHaveLength(5);

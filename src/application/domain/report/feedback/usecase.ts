@@ -12,9 +12,9 @@ import {
   GqlReportTemplateStats,
   GqlQueryReportTemplateStatsBreakdownArgs,
   GqlReportTemplateStatsBreakdownConnection,
-  GqlQueryAdminTemplateFeedbacksArgs,
+  GqlQueryReportTemplateFeedbacksArgs,
   GqlReportFeedbacksConnection,
-  GqlQueryAdminTemplateFeedbackStatsArgs,
+  GqlQueryReportTemplateFeedbackStatsArgs,
   GqlAdminTemplateFeedbackStats,
 } from "@/types/graphql";
 
@@ -236,8 +236,8 @@ export default class ReportFeedbackUseCase {
    *     would reject negative version lookups silently as "no row",
    *     producing an empty-page response that masks the input error.
    */
-  async viewAdminTemplateFeedbacks(
-    args: GqlQueryAdminTemplateFeedbacksArgs,
+  async viewReportTemplateFeedbacks(
+    args: GqlQueryReportTemplateFeedbacksArgs,
     ctx: IContext,
   ): Promise<GqlReportFeedbacksConnection> {
     const first = args.first
@@ -279,8 +279,8 @@ export default class ReportFeedbackUseCase {
    * an empty stats object for a negative version silently, masking
    * the input bug.
    */
-  async viewAdminTemplateFeedbackStats(
-    args: GqlQueryAdminTemplateFeedbackStatsArgs,
+  async viewReportTemplateFeedbackStats(
+    args: GqlQueryReportTemplateFeedbackStatsArgs,
     ctx: IContext,
   ): Promise<GqlAdminTemplateFeedbackStats> {
     if (args.version !== undefined && args.version !== null) {

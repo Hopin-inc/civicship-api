@@ -5,8 +5,6 @@ import {
   GqlMutationSubmitReportFeedbackArgs,
   GqlQueryReportTemplateStatsArgs,
   GqlQueryReportTemplateStatsBreakdownArgs,
-  GqlQueryAdminTemplateFeedbacksArgs,
-  GqlQueryAdminTemplateFeedbackStatsArgs,
   GqlQueryReportTemplateFeedbacksArgs,
   GqlQueryReportTemplateFeedbackStatsArgs,
 } from "@/types/graphql";
@@ -28,33 +26,19 @@ export default class ReportFeedbackResolver {
     ) => {
       return this.useCase.viewReportTemplateStatsBreakdown(args, ctx);
     },
-    adminTemplateFeedbacks: (
-      _: unknown,
-      args: GqlQueryAdminTemplateFeedbacksArgs,
-      ctx: IContext,
-    ) => {
-      return this.useCase.viewAdminTemplateFeedbacks(args, ctx);
-    },
-    adminTemplateFeedbackStats: (
-      _: unknown,
-      args: GqlQueryAdminTemplateFeedbackStatsArgs,
-      ctx: IContext,
-    ) => {
-      return this.useCase.viewAdminTemplateFeedbackStats(args, ctx);
-    },
     reportTemplateFeedbacks: (
       _: unknown,
       args: GqlQueryReportTemplateFeedbacksArgs,
       ctx: IContext,
     ) => {
-      return this.useCase.viewAdminTemplateFeedbacks(args, ctx);
+      return this.useCase.viewReportTemplateFeedbacks(args, ctx);
     },
     reportTemplateFeedbackStats: (
       _: unknown,
       args: GqlQueryReportTemplateFeedbackStatsArgs,
       ctx: IContext,
     ) => {
-      return this.useCase.viewAdminTemplateFeedbackStats(args, ctx);
+      return this.useCase.viewReportTemplateFeedbackStats(args, ctx);
     },
   };
 

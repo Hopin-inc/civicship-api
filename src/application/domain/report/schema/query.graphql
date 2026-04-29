@@ -74,18 +74,6 @@ extend type Query {
   # Order is `(createdAt DESC, id DESC)` — newest review first, with `id`
   # as a tiebreaker so cursor pagination is stable when a seed script or
   # batch insert produces rows sharing a `createdAt`.
-  adminTemplateFeedbacks(
-    variant: ReportVariant!
-    version: Int
-    kind: ReportTemplateKind = GENERATION
-    feedbackType: ReportFeedbackType
-    maxRating: Int
-    cursor: String
-    first: Int = 20
-  ): ReportFeedbacksConnection!
-    @authz(rules: [IsAdmin])
-    @deprecated(reason: "Use `reportTemplateFeedbacks` instead.")
-
   reportTemplateFeedbacks(
     variant: ReportVariant!
     version: Int
@@ -99,7 +87,7 @@ extend type Query {
   # Phase 1.5 sysAdmin: aggregate stats for a template's feedback set,
   # rendered as a "Customer Reviews"-style summary (avg rating + total
   # count + 1..5 distribution bar) on the template detail page.
-  # `adminTemplateFeedbacks` returns the paginated list; this query
+  # `reportTemplateFeedbacks` returns the paginated list; this query
   # returns the **population** stats so the summary stays meaningful
   # regardless of the page the caller is on.
   #
@@ -111,14 +99,6 @@ extend type Query {
   # actually fall across the full 1..5 spectrum. The frontend pairs
   # this query with the list query in parallel from a single filter
   # object so `variant` / `version` / `kind` stay in lock-step.
-  adminTemplateFeedbackStats(
-    variant: ReportVariant!
-    version: Int
-    kind: ReportTemplateKind = GENERATION
-  ): AdminTemplateFeedbackStats!
-    @authz(rules: [IsAdmin])
-    @deprecated(reason: "Use `reportTemplateFeedbackStats` instead.")
-
   reportTemplateFeedbackStats(
     variant: ReportVariant!
     version: Int
@@ -132,18 +112,6 @@ extend type Query {
   # than leading the page. Filters are all optional so the same query
   # backs both "show all PUBLISHED across communities" and "drill into
   # one community + variant" use cases.
-  adminBrowseReports(
-    communityId: ID
-    status: ReportStatus
-    variant: ReportVariant
-    publishedAfter: Datetime
-    publishedBefore: Datetime
-    cursor: String
-    first: Int
-  ): ReportsConnection!
-    @authz(rules: [IsAdmin])
-    @deprecated(reason: "Use `reportsAll` instead.")
-
   reportsAll(
     communityId: ID
     status: ReportStatus
@@ -162,13 +130,6 @@ extend type Query {
   # `publishReport` and `supersedeParentIfRegenerating` (A-3); it is
   # NOT exposed on the `Community` type to keep general community
   # reads cheap.
-  adminReportSummary(
-    cursor: String
-    first: Int
-  ): AdminReportSummaryConnection!
-    @authz(rules: [IsAdmin])
-    @deprecated(reason: "Use `reportSummaries` instead.")
-
   reportSummaries(
     cursor: String
     first: Int

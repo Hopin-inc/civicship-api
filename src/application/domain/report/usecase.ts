@@ -35,8 +35,8 @@ import {
   GqlQueryReportArgs,
   GqlQueryReportTemplateArgs,
   GqlQueryReportTemplatesArgs,
-  GqlQueryAdminBrowseReportsArgs,
-  GqlQueryAdminReportSummaryArgs,
+  GqlQueryReportsAllArgs,
+  GqlQueryReportSummariesArgs,
 } from "@/types/graphql";
 
 const LLM_TIMEOUT_MS = 180_000;
@@ -792,8 +792,8 @@ export default class ReportUseCase {
    * permission.communityId hand-off) — the usecase trusts the
    * directive and does not re-check sysRole.
    */
-  async adminBrowseReports(
-    args: GqlQueryAdminBrowseReportsArgs,
+  async browseAllReports(
+    args: GqlQueryReportsAllArgs,
     ctx: IContext,
   ): Promise<GqlReportsConnection> {
     const first = args.first
@@ -818,8 +818,8 @@ export default class ReportUseCase {
    * resolver hydrates `community` / `lastPublishedReport` via the
    * existing dataloaders.
    */
-  async adminViewReportSummary(
-    args: GqlQueryAdminReportSummaryArgs,
+  async viewReportSummaries(
+    args: GqlQueryReportSummariesArgs,
     ctx: IContext,
   ): Promise<GqlAdminReportSummaryConnection> {
     const first = args.first
@@ -859,7 +859,7 @@ function clampInt(value: number, min: number, max: number, name: string): number
 
 /**
  * Mirror of `feedback/usecase.ts`'s `validateInt` so the admin-query
- * paths in this file (`adminBrowseReports`, `adminViewReportSummary`)
+ * paths in this file (`browseAllReports`, `viewReportSummaries`)
  * surface a `ValidationError` instead of `clampInt`'s `RangeError` —
  * `ValidationError` is what the GraphQL error mapper translates into a
  * client-facing `ValidationError` extension. Existing `clampInt`
