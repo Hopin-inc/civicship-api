@@ -10,14 +10,11 @@ import AnalyticsCommunityService from "@/application/domain/analytics/community/
 class MockAnalyticsCommunityRepository {
   findAllCommunities = jest.fn();
   findCommunityById = jest.fn();
-  findMemberStats = jest.fn();
   findMemberStatsBulk = jest.fn();
   findMonthlyActivity = jest.fn();
   findActivitySnapshot = jest.fn();
   findNewMemberCount = jest.fn();
-  findWindowActivityCounts = jest.fn();
   findWindowActivityCountsBulk = jest.fn();
-  findWindowHubMemberCount = jest.fn();
   findWindowHubMemberCountBulk = jest.fn();
   findAllTimeTotals = jest.fn();
   findPlatformTotals = jest.fn();

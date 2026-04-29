@@ -188,8 +188,15 @@ export default class AnalyticsCommunityService {
     return this.repository.findCommunityById(ctx, communityId);
   }
 
+  /**
+   * Per-member counters for one community at `asOf`, returned as a flat
+   * array. Thin wrapper over the bulk SQL — the L2 community-detail
+   * path is the only single-community caller, so we share the bulk
+   * primitive instead of maintaining a duplicate 1300-line CTE.
+   */
   async getMemberStats(ctx: IContext, communityId: string, asOf: Date) {
-    return this.repository.findMemberStats(ctx, communityId, asOf);
+    const map = await this.repository.findMemberStatsBulk(ctx, [communityId], asOf);
+    return map.get(communityId) ?? [];
   }
 
   /**
@@ -451,45 +458,22 @@ export default class AnalyticsCommunityService {
   /**
    * Rolling-window DONATION activity for the L1 overview. Returns the
    * raw sender / new-member counts for both the current window and the
-   * immediately preceding window of equal length. The client divides
-   * by `totalMembers` for rates and computes growth as
-   * `(currRate - prevRate) / prevRate` with a null guard.
+   * immediately preceding window of equal length, keyed by community.
+   * The client divides by `totalMembers` for rates and computes growth
+   * as `(currRate - prevRate) / prevRate` with a null guard.
    *
    *   current  = [asOf - windowDays JST日, asOf + 1 JST日)
    *   previous = [asOf - 2 * windowDays, asOf - windowDays)
    *
    * All five counts come from a single repository call
-   * (`findWindowActivityCounts`) which scans `mv_user_transaction_daily`
-   * once over `[prevLower, upper)` and `t_memberships` once over the
-   * same span — collapsing what used to be five overlapping scans
-   * (curr senders + prev senders + intersection + curr new members +
-   * prev new members) into two. The service's only job here is the
-   * date-window arithmetic.
-   */
-  async getWindowActivity(
-    ctx: IContext,
-    communityId: string,
-    asOf: Date,
-    windowDays: number,
-  ): Promise<WindowActivityCounts> {
-    const upper = asOfBounds(asOf).asOfJstDayPlusOne;
-    const currLower = addDays(upper, -windowDays);
-    const prevLower = addDays(upper, -windowDays * 2);
-
-    return this.repository.findWindowActivityCounts(
-      ctx,
-      communityId,
-      prevLower,
-      currLower,
-      upper,
-    );
-  }
-
-  /**
-   * Bulk variant of `getWindowActivity` for the L1 dashboard fan-out.
-   * The same window arithmetic applies uniformly to every community —
-   * `windowDays` is a dashboard-level scalar — so the date math runs
-   * once and the repository takes care of the per-community split.
+   * (`findWindowActivityCountsBulk`) which scans
+   * `mv_user_transaction_daily` once over `[prevLower, upper)` and
+   * `t_memberships` once over the same span — collapsing what used to
+   * be five overlapping scans (curr senders + prev senders +
+   * intersection + curr new members + prev new members) into two. The
+   * service's only job here is the date-window arithmetic; the same
+   * window applies uniformly to every community because `windowDays`
+   * is a dashboard-level scalar.
    */
   async getWindowActivityBulk(
     ctx: IContext,
@@ -511,43 +495,20 @@ export default class AnalyticsCommunityService {
   }
 
   /**
-   * Count of members classified as hubs within the parametric
-   * window: those who sent DONATION to at least
-   * `hubBreadthThreshold` DISTINCT counterparties during
-   * `[asOf - windowDays, asOf + 1 JST日)`.
+   * Count of members classified as hubs within the parametric window:
+   * those who sent DONATION to at least `hubBreadthThreshold` DISTINCT
+   * counterparties during `[asOf - windowDays, asOf + 1 JST日)`,
+   * computed for every community in `communityIds` and returned as
+   * `Map<communityId, count>` (zero for communities with no hub
+   * members in the window).
    *
-   * Single-axis classification (breadth only) — reaching the
-   * threshold inherently requires that many transactions, so a
-   * separate frequency floor would be redundant. The service's
-   * only job is the date arithmetic; the count itself comes from a
-   * dedicated repository SQL because it needs DISTINCT recipient
-   * aggregation against `t_transactions` (which the per-day MV
-   * cannot compose into a window-wide DISTINCT).
-   */
-  async getWindowHubMemberCount(
-    ctx: IContext,
-    communityId: string,
-    asOf: Date,
-    windowDays: number,
-    hubBreadthThreshold: number,
-  ): Promise<number> {
-    const upper = asOfBounds(asOf).asOfJstDayPlusOne;
-    const currLower = addDays(upper, -windowDays);
-
-    const row = await this.repository.findWindowHubMemberCount(
-      ctx,
-      communityId,
-      currLower,
-      upper,
-      hubBreadthThreshold,
-    );
-    return row.count;
-  }
-
-  /**
-   * Bulk variant of `getWindowHubMemberCount`. Returns one count per
-   * community (defaulting to 0 for communities with no hub members in
-   * the window).
+   * Single-axis classification (breadth only) — reaching the threshold
+   * inherently requires that many transactions, so a separate
+   * frequency floor would be redundant. The service's only job is the
+   * date arithmetic; the count itself comes from a dedicated
+   * repository SQL because it needs DISTINCT recipient aggregation
+   * against `t_transactions` (which the per-day MV cannot compose into
+   * a window-wide DISTINCT).
    */
   async getWindowHubMemberCountBulk(
     ctx: IContext,

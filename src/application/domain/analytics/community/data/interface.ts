@@ -33,21 +33,11 @@ export interface IAnalyticsCommunityRepository {
   ): Promise<AnalyticsCommunityRow | null>;
 
   /**
-   * Per-member LTV-variable counters at `asOf` for one community.
-   * Scoped to `status='JOINED'`. A member with zero DONATION-outs is
-   * still present (donationOutMonths=0, userSendRate=0, latent stage).
-   */
-  findMemberStats(
-    ctx: IContext,
-    communityId: string,
-    asOf: Date,
-  ): Promise<AnalyticsMemberStatsRow[]>;
-
-  /**
-   * Bulk variant of `findMemberStats`. Computes per-member counters for
-   * every community in `communityIds` in a single SQL roundtrip,
-   * returning a `Map<communityId, rows[]>` pre-seeded with empty arrays.
-   * Cross-community leakage guards and same-user JOIN keys are tightened
+   * Per-member LTV-variable counters at `asOf` for every community in
+   * `communityIds`, returned as `Map<communityId, rows[]>` pre-seeded
+   * with empty arrays. Scoped to `status='JOINED'`. A member with zero
+   * DONATION-outs is still present (donationOutMonths=0,
+   * userSendRate=0, latent stage). Same-user JOIN keys are tightened
    * to `(user_id, community_id)` so a user who is a member of multiple
    * communities is correctly bucketed.
    */
@@ -67,7 +57,7 @@ export interface IAnalyticsCommunityRepository {
    * a sender is counted as a hub for month N if they sent DONATION
    * to >= hubBreadthThreshold distinct recipients during the trailing
    * 28-day window ending at month N's end. Same threshold semantic
-   * as `findWindowHubMemberCount`, evaluated at each month-end.
+   * as `findWindowHubMemberCountBulk`, evaluated at each month-end.
    */
   findMonthlyActivity(
     ctx: IContext,
@@ -100,39 +90,24 @@ export interface IAnalyticsCommunityRepository {
   ): Promise<AnalyticsNewMemberCountRow>;
 
   /**
-   * Per-community count of members whose distinct DONATION
-   * recipient count within `[currLower, upper)` reaches
-   * `hubBreadthThreshold`. Backs
+   * Per-community count of members whose distinct DONATION recipient
+   * count within `[currLower, upper)` reaches `hubBreadthThreshold`,
+   * computed for every community in `communityIds` in one SQL pass and
+   * returned as `Map<communityId, {count}>` pre-seeded with count=0 for
+   * every requested community. Backs
    * `AnalyticsCommunityOverview.hubMemberCount`.
    *
-   * The recipient count is computed against `t_transactions`
-   * directly (not `mv_user_transaction_daily`) because the MV's
-   * per-day `unique_counterparties` does not compose into a
-   * window-wide DISTINCT — the same recipient across multiple days
-   * would double-count under SUM. Same reasoning as the
-   * `donation_recipients` CTE in `findMemberStats`, restricted to
-   * the parametric window instead of the full tenure.
+   * The recipient count is computed against `t_transactions` directly
+   * (not `mv_user_transaction_daily`) because the MV's per-day
+   * `unique_counterparties` does not compose into a window-wide
+   * DISTINCT — the same recipient across multiple days would
+   * double-count under SUM.
    *
-   * Senders are restricted to users still JOINED in this community
-   * at `upper` (membership filter mirrors `findActivitySnapshot`
-   * /`findMemberStats`), so a now-departed member who donated
-   * while a member is excluded. Without that filter, the L1
-   * invariant `hubMemberCount <= senderCount <= totalMembers`
-   * would not hold.
-   */
-  findWindowHubMemberCount(
-    ctx: IContext,
-    communityId: string,
-    currLower: Date,
-    upper: Date,
-    hubBreadthThreshold: number,
-  ): Promise<AnalyticsHubMemberCountRow>;
-
-  /**
-   * Bulk variant of `findWindowHubMemberCount`. Computes the hub-member
-   * count for every community in `communityIds` in a single SQL pass.
-   * Returns one entry per requested community (count=0 for communities
-   * with no hub members in the window).
+   * Senders are restricted to users still JOINED in this community at
+   * `upper` (membership filter mirrors `findActivitySnapshot`), so a
+   * now-departed member who donated while a member is excluded.
+   * Without that filter, the L1 invariant
+   * `hubMemberCount <= senderCount <= totalMembers` would not hold.
    */
   findWindowHubMemberCountBulk(
     ctx: IContext,
@@ -144,28 +119,14 @@ export interface IAnalyticsCommunityRepository {
 
   /**
    * All five raw counts the L1 `AnalyticsWindowActivity` payload needs
-   * for the parametric window pair driven by `windowDays`. Issues a
-   * single SQL with two scans (one over `mv_user_transaction_daily`
-   * and one over `t_memberships`), each spanning `[prevLower, upper)`.
+   * for the parametric window pair driven by `windowDays`, computed for
+   * every community in `communityIds` in one SQL pass and returned as
+   * `Map<communityId, counts>` pre-seeded with zero-row defaults.
    *
-   * Replaces three separate `findActivitySnapshot` / intersection
-   * calls and two `findNewMemberCount` calls; the previous design
-   * scanned the same MV three times for overlapping windows.
-   */
-  findWindowActivityCounts(
-    ctx: IContext,
-    communityId: string,
-    prevLower: Date,
-    currLower: Date,
-    upper: Date,
-  ): Promise<AnalyticsWindowActivityCountsRow>;
-
-  /**
-   * Bulk variant of `findWindowActivityCounts`. Aggregates the same five
-   * counts for every community in `communityIds` in a single SQL pass.
-   * Returns one entry per requested community (zero-row defaults for
-   * communities with no activity in the window). Used by the L1
-   * dashboard fan-out to collapse N roundtrips to one.
+   * The SQL issues two scans: one over `mv_user_transaction_daily`
+   * spanning `[prevLower, upper)` collapsed by FILTER clauses into
+   * curr / prev / intersection counts, and one over `t_memberships`
+   * over the same span split into curr / prev new-member counts.
    */
   findWindowActivityCountsBulk(
     ctx: IContext,
