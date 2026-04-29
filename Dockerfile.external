@@ -1,4 +1,4 @@
 FROM node:20
 WORKDIR /tmp
 COPY . ./
-CMD ["node", "dist/external-api.js"]
+CMD ["node", "-r", "tsconfig-paths/register", "dist/external-api.js"]
