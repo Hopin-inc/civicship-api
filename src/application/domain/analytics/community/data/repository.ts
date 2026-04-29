@@ -152,42 +152,52 @@ export default class AnalyticsCommunityRepository implements IAnalyticsCommunity
             AND m."created_at" < ab.upper_ts
         ),
         donation_activity AS (
-          -- Per-(community, user, JST calendar day) DONATION-out
-          -- activity: one row per day the member sent a DONATION,
-          -- carrying the day's aggregated points and JST-month
-          -- bucket. The final SELECT then derives:
+          -- Per-(community, user, JST calendar day) DONATION activity:
+          -- emits one row per day the user sent a DONATION from their
+          -- wallet in that community, carrying both the aggregated
+          -- points for that day and the day's JST month bucket. The
+          -- final SELECT then derives:
           --   donation_out_months = COUNT(DISTINCT jst_month)
           --   donation_out_days   = COUNT(DISTINCT jst_day)
           --   total_points_out    = SUM(day_points_out)
           --
-          -- Sources from mv_donation_tx_edges (the tx-level normalized
-          -- DONATION fact view). The MV bakes in the wallet -> user/
-          -- community resolution, the cross-community guard, the burn-
-          -- target / self-donation exclusions, and the DONATION reason
-          -- filter — so this CTE only has to clamp at asOf, scope to
-          -- the sender community of interest, and aggregate per JST
-          -- day. The previous version scanned t_transactions joined to
-          -- t_wallets twice; the rewrite replaces that with a sender-
-          -- community-keyed range scan on the MV.
+          -- Reads t_transactions directly (with a single sender-side
+          -- t_wallets join) on purpose: this CTE measures ALL outgoing
+          -- DONATION activity from a member, including donations to
+          -- burn / system targets, self-donations, and cross-community
+          -- recipients. mv_donation_tx_edges is intentionally NOT used
+          -- here because its WHERE bakes in recipient-side filters
+          -- (tw.user_id IS NOT NULL, fw.user_id <> tw.user_id, cross-
+          -- community guard) that are correct for the DISTINCT-
+          -- counterparty CTEs (donation_recipients, donation_senders)
+          -- and the hub queries, but would silently narrow the
+          -- denominator and totals here — a regression flagged by code
+          -- review on PR #952.
+          --
+          -- JST date bucketing matches the rest of the query so
+          -- daysIn / donationOutDays line up with the member-tenure
+          -- boundary, and findActivitySnapshot / findPlatformTotals
+          -- agree on what "as of asOf" includes.
           SELECT
-            e."sender_community_id" AS community_id,
-            e."sender_user_id" AS user_id,
-            e."date" AS jst_day,
-            DATE_TRUNC('month', e."date") AS jst_month,
-            SUM(e."from_point_change") AS day_points_out
-          FROM "mv_donation_tx_edges" e
+            fw."community_id" AS community_id,
+            fw."user_id" AS user_id,
+            (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date AS jst_day,
+            DATE_TRUNC(
+              'month',
+              (t."created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')
+            ) AS jst_month,
+            SUM(t."from_point_change") AS day_points_out
+          FROM "t_transactions" t
+          INNER JOIN "t_wallets" fw
+            ON fw."id" = t."from"
+            AND fw."community_id" = ANY(${communityIds}::text[])
           INNER JOIN members m
-            ON m."user_id" = e."sender_user_id"
-            AND m."community_id" = e."sender_community_id"
+            ON m."user_id" = fw."user_id"
+            AND m."community_id" = fw."community_id"
           CROSS JOIN asof_bound ab
-          WHERE e."sender_community_id" = ANY(${communityIds}::text[])
-            AND e."date" < ab.upper_jst_date
-          -- jst_month is functionally dependent on e."date" (DATE_TRUNC
-          -- output), but listing it explicitly matches the previous
-          -- inline CTE's GROUP BY shape and removes any reliance on
-          -- Postgres' functional-dependency analysis for the SELECT-
-          -- list expression.
-          GROUP BY e."sender_community_id", e."sender_user_id", e."date", jst_month
+          WHERE t."reason" = 'DONATION'
+            AND t."created_at" < ab.upper_ts
+          GROUP BY fw."community_id", fw."user_id", jst_day, jst_month
         ),
         donation_recipients AS (
           -- Per-sender count of DISTINCT recipient user_ids over the
