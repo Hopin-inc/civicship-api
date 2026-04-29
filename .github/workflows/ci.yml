@@ -5,6 +5,13 @@ on:
     branches: [master, develop]
   push:
     branches: [master]
+  # NOTE: workflow-level の `paths-ignore` は使えない。`ci` aggregator job が
+  # branch protection の required status check として登録されているため、
+  # paths-ignore で workflow ごと skip すると status が報告されず、docs-only
+  # PR が永久に merge 不能になる (admin override が必要になる)。
+  # 軽量化が必要になったら job 側で changed-files filter (dorny/paths-filter
+  # 等) を使って expensive job (build / test) を条件付き skip し、aggregator は
+  # 必ず走る形にする。
 
 permissions:
   contents: read
@@ -88,7 +95,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Audit (non-blocking)
         run: pnpm audit --audit-level=high
@@ -107,15 +114,24 @@ jobs:
         run: pnpm gql:generate
 
       # Detect uncommitted regenerations of tracked generated files.
-      # Note: this workflow's name ("CI") will be referenced by downstream
-      # deploy workflows via `workflow_run` triggers in PR-β (not yet
-      # implemented). Renaming after PR-β lands will require updating those.
       - name: Check generated files are up to date
         run: |
           git diff --exit-code \
             src/types/graphql.ts \
             docs/schema.graphql \
             src/infrastructure/prisma/schema.prisma
+
+      # tsc incremental の `.tsbuildinfo` を branch ごとに cache。
+      # 完全一致 hit は稀でも、restore-keys 経由で前回 build の info を
+      # 復元すれば未変更ファイルの typecheck を skip できる。
+      - name: Cache TypeScript build info
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: .tsbuildinfo
+          key: tsbuildinfo-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            tsbuildinfo-${{ runner.os }}-${{ github.ref_name }}-
+            tsbuildinfo-${{ runner.os }}-
 
       - name: Build (typecheck + emit)
         run: pnpm build
@@ -196,7 +212,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Apply Prisma migrations to CI database
         # `prisma db push` は schema.prisma のモデルのみ反映し、migration.sql を
@@ -211,6 +227,18 @@ jobs:
 
       - name: Generate GraphQL types
         run: pnpm gql:generate
+
+      # ts-jest の transform 結果 cache を matrix 単位で永続化。
+      # restore-keys で同一 matrix の最近の cache に fallback し、
+      # 変更されていない test file の transform を skip できる。
+      - name: Cache Jest transform cache
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: .jest-cache
+          key: jest-${{ runner.os }}-${{ matrix.name }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            jest-${{ runner.os }}-${{ matrix.name }}-${{ github.ref_name }}-
+            jest-${{ runner.os }}-${{ matrix.name }}-
 
       - name: Generate test JWT RSA key
         # firebase-admin の内部 JWT 署名 (RS256) 用に、test 専用の使い捨て RSA 2048

@@ -1,0 +1,150 @@
+name: Deploy External API to Cloud Run (reusable)
+
+# Reusable workflow called by deploy-external-api-{dev,prd}.yml.
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        description: '"dev" or "prd" — used for cache scope and STAGE env.'
+        type: string
+        required: true
+      environment:
+        description: GitHub Actions environment name (e.g., "dev", "co-creation-dao-prod").
+        type: string
+        required: true
+      node-env:
+        description: Value to set NODE_ENV in the Cloud Run service.
+        type: string
+        required: true
+      extra-env-vars:
+        description: Additional env vars (newline-separated KEY=VAL) for the Cloud Run service.
+        type: string
+        required: false
+        default: ''
+      create-git-tag:
+        description: Whether to create + push a timestamp git tag (prd only).
+        type: boolean
+        required: false
+        default: false
+      git-tag-prefix:
+        description: Prefix prepended to the timestamp git tag (e.g. "external-api-").
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+
+    permissions:
+      id-token: write
+      # contents:write は git tag push に必要 (prd only)。GHA の `permissions:` は
+      # 式で動的に切り替えできないため両 stage で write を付与する
+      # (dev でも実質 read しか使わないので影響なし)。
+      contents: write
+
+    env:
+      STAGE: ${{ inputs.stage }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+      ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
+      EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
+      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
+      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
+
+      - name: Open jumpbox tunnel
+        uses: ./.github/actions/jumpbox-db-tunnel
+        with:
+          jumpbox-instance-name: ${{ env.JUMPBOX_INSTANCE_NAME }}
+          jumpbox-zone: ${{ env.JUMPBOX_ZONE }}
+          db-name: ${{ env.DB_NAME }}
+
+      - name: Run prisma generate
+        env:
+          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+        run: pnpm db:generate
+
+      - name: Build TypeScript output (consumed by Docker COPY)
+        run: pnpm build
+
+      - name: Configure Docker for GCP Artifact Registry
+        run: |
+          gcloud auth configure-docker "${{ env.ARTIFACT_REGISTRY }}"
+          gcloud auth configure-docker "${{ env.GCP_REGION }}-docker.pkg.dev"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
+      - name: Build and push External API image
+        env:
+          EXTERNAL_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
+        run: |
+          docker buildx build \
+            --file Dockerfile.external \
+            --tag "$EXTERNAL_IMAGE" \
+            --cache-from "type=gha,scope=external-${{ inputs.stage }}" \
+            --cache-to "type=gha,mode=max,scope=external-${{ inputs.stage }}" \
+            --push \
+            .
+
+      - name: Deploy External API to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522 # v2.7.6
+        with:
+          service: ${{ env.EXTERNAL_API_NAME }}
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
+          region: ${{ env.GCP_REGION }}
+          flags: '--allow-unauthenticated --port=3000'
+          env_vars: |
+            NODE_ENV=${{ inputs.node-env }}
+            ${{ inputs.extra-env-vars }}
+
+      - name: Create Git tag
+        if: ${{ inputs.create-git-tag }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y tzdata
+          sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+          sudo dpkg-reconfigure -f noninteractive tzdata
+
+          TAG_NAME="${{ inputs.git-tag-prefix }}$(date +"%Y%m%d%H%M%S")"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+
+      - name: Cleanup SSH Key
+        if: always()
+        run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub
