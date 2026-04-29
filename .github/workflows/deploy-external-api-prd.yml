@@ -1,12 +1,18 @@
 name: Deploy External API to Cloud Run (prd)
 
+# master への直接 push では trigger しない (本番デプロイは PR merge 経由のみ)。
+# `pull_request: closed` + `merged == true` でフィルタすることで、PR が
+# merge されずに close されたときも skip される。
 on:
-  push:
-    branches:
-      - master
+  pull_request:
+    types: [closed]
+    branches: [master]
 
+# concurrency は workflow 単位で 1 本に絞る (異なる PR が同時に master に
+# 入っても deploy を直列化)。`github.ref` 単位だと PR ごとに別キューに
+# なってしまうため意図的に外す。
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 # Caller permissions must be a superset of the reusable workflow's permissions
@@ -18,6 +24,7 @@ permissions:
 
 jobs:
   deploy:
+    if: github.event.pull_request.merged == true
     uses: ./.github/workflows/_deploy-external-api.yml
     with:
       stage: prd
