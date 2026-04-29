@@ -1,6 +1,6 @@
 # report ドメイン — 計算ロジック解説
 
-このドキュメントは、`report` および `report` を再利用する `sysadmin` ドメインで使われる
+このドキュメントは、`report` および `report` を再利用する `analytics` ドメインで使われる
 **集計・分析クエリの計算ロジック**を日本語でまとめたものです。
 新しい分析メソッドを追加する際は、本ドキュメントを参照して既存パターンと整合させてください。
 
@@ -82,7 +82,7 @@ AND m."created_at" < (${jstUpper}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE '
 - 「ある週」 → `[weekStart, weekStart + 7日)`
 
 `<= asOf::timestamp` のような閉区間と JST 日単位の `< (...)::date` を
-混在させると `findMemberStats` と `findActivitySnapshot` で精度がズレるので統一する。
+混在させると `findMemberStatsBulk` と `findActivitySnapshot` で精度がズレるので統一する。
 
 ---
 
@@ -263,7 +263,7 @@ const upperExclusive = addDays(asOfJstDay, 1);            // 翌日 0:00 JST
 
 ---
 
-## 5. ステージ分類（sysadmin）
+## 5. ステージ分類（analytics）
 
 `userSendRate` の閾値で 4 段階に分類:
 
@@ -315,11 +315,14 @@ L1 dashboard の表示用には累積、L2 詳細の構成比表示には disjoi
 
 ### 7.1. fan-out 戦略
 
-- 現状（コミュニティ数 〜6）：N ループを許容（`Promise.all`）
-- 〜20 を超えたら：`GROUP BY community_id` のバルク取得メソッドを検討
-- 週次 retention のループ（〜43 週）も同様。MV のインデックス
-  `(community_id, date)` が効くので並列小クエリで十分速い
-  （`scripts/sysadmin_bench.ts` の計測：bulk 化は 364x 遅化したので revert）
+- L1 dashboard (community 軸 fan-out)：`*Bulk` メソッドで `GROUP BY
+  community_id` の単一 SQL 化済み (`AnalyticsCommunityRepository.findMemberStatsBulk` 等、
+  `ReportRepository.findRetentionAggregateBulk` 等)。コミュニティ数に
+  依らず 1 ラウンドトリップ
+- 週次 retention / 月次 cohort のループ（〜43 週 / 〜36 ヶ月）は per-time-window
+  ループのまま。MV のインデックス `(community_id, date)` が効くので並列小
+  クエリで十分速い（`scripts/sysadmin_bench.ts` の計測：時間軸 bulk 化は
+  364x 遅化したので revert）
 
 ### 7.2. `windowMonths` の上限
 
@@ -348,8 +351,8 @@ input に上限を設ける（`MAX_WINDOW_MONTHS = 36`）。
 | パス | 内容 |
 |---|---|
 | `src/application/domain/report/util.ts` | JST 日付ヘルパー、`bigintToSafeNumber`、`percentChange` |
-| `src/application/domain/report/data/repository.ts` | retention / cohort / period aggregates の中核実装 |
-| `src/application/domain/sysadmin/data/repository.ts` | `findMemberStats` / `findMonthlyActivity` などの sysadmin 固有クエリ |
-| `src/application/domain/sysadmin/service.ts` | アラート判定・ステージ分類・トレンド orchestrator |
-| `scripts/sysadmin_bench.ts` | 週次 retention のローカル計測スクリプト |
+| `src/application/domain/report/transactionStats/data/repository.ts` | retention / cohort / period aggregates の中核実装（`findRetentionAggregate` / `findRetentionAggregateBulk` 等） |
+| `src/application/domain/analytics/community/data/repository.ts` | `findMemberStatsBulk` / `findMonthlyActivity` / `findWindowActivityCountsBulk` などの analytics 固有クエリ |
+| `src/application/domain/analytics/community/service.ts` | アラート判定・ステージ分類・トレンド orchestrator |
+| `scripts/sysadmin_bench.ts` | 週次 retention のローカル計測スクリプト（旧 sysadmin 命名のまま） |
 | `src/infrastructure/prisma/migrations/20260416000001_fix_report_views_jst_bucketing/` | JST バケツバグの修正履歴 |

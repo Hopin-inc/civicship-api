@@ -227,7 +227,7 @@ export default class AnalyticsCommunityPresenter {
       donationInDays: row.donationInDays,
       uniqueDonationSenders: row.uniqueDonationSenders,
       // lastDonationDay is already a JST-midnight Date on the row
-      // (see findMemberStats); rename to the public-facing
+      // (see findMemberStatsBulk); rename to the public-facing
       // `lastDonationAt` here. null pass-through for never-donated
       // members.
       lastDonationAt: row.lastDonationDay,

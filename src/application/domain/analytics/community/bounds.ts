@@ -4,7 +4,7 @@ import { addDays, truncateToJstDate } from "@/application/domain/report/util";
  * Clamp helper for queries whose upper bound should never land in the
  * future relative to an `asOf` timestamp.
  *
- * Four places across the sysadmin domain need the same calculation:
+ * Four places across the analytics domain need the same calculation:
  *   - usecase.getDashboard  (findPlatformTotals upper)
  *   - service.getMonthActivityWithPrev (current-month snapshot)
  *   - service.getRetentionTrend (per-week denominator)

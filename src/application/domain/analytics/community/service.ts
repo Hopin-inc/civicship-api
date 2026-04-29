@@ -162,7 +162,7 @@ export default class AnalyticsCommunityService {
     // domain's service-layer entry point), not the report repository.
     // CLAUDE.md restricts services to "Call other domain services
     // (read operations only)" — going straight to the repository
-    // would couple sysadmin to the report domain's data layer.
+    // would couple analytics to the report domain's data layer.
     @inject("ReportService") private readonly reportService: ReportService,
   ) {}
 
@@ -188,8 +188,24 @@ export default class AnalyticsCommunityService {
     return this.repository.findCommunityById(ctx, communityId);
   }
 
+  /**
+   * Per-member counters for one community at `asOf`, returned as a flat
+   * array. Thin wrapper over the bulk SQL — the L2 community-detail
+   * path is the only single-community caller, so we share the bulk
+   * primitive instead of maintaining a duplicate 1300-line CTE.
+   */
   async getMemberStats(ctx: IContext, communityId: string, asOf: Date) {
-    return this.repository.findMemberStats(ctx, communityId, asOf);
+    const map = await this.repository.findMemberStatsBulk(ctx, [communityId], asOf);
+    return map.get(communityId) ?? [];
+  }
+
+  /**
+   * Bulk variant of `getMemberStats` for the L1 dashboard fan-out.
+   * Replaces N per-community SQL roundtrips with one. The returned Map
+   * is pre-seeded with empty arrays for every requested community.
+   */
+  async getMemberStatsBulk(ctx: IContext, communityIds: string[], asOf: Date) {
+    return this.repository.findMemberStatsBulk(ctx, communityIds, asOf);
   }
 
   async getChainDepthDistribution(ctx: IContext, communityId: string, asOf: Date) {
@@ -442,34 +458,36 @@ export default class AnalyticsCommunityService {
   /**
    * Rolling-window DONATION activity for the L1 overview. Returns the
    * raw sender / new-member counts for both the current window and the
-   * immediately preceding window of equal length. The client divides
-   * by `totalMembers` for rates and computes growth as
-   * `(currRate - prevRate) / prevRate` with a null guard.
+   * immediately preceding window of equal length, keyed by community.
+   * The client divides by `totalMembers` for rates and computes growth
+   * as `(currRate - prevRate) / prevRate` with a null guard.
    *
    *   current  = [asOf - windowDays JST日, asOf + 1 JST日)
    *   previous = [asOf - 2 * windowDays, asOf - windowDays)
    *
    * All five counts come from a single repository call
-   * (`findWindowActivityCounts`) which scans `mv_user_transaction_daily`
-   * once over `[prevLower, upper)` and `t_memberships` once over the
-   * same span — collapsing what used to be five overlapping scans
-   * (curr senders + prev senders + intersection + curr new members +
-   * prev new members) into two. The service's only job here is the
-   * date-window arithmetic.
+   * (`findWindowActivityCountsBulk`) which scans
+   * `mv_user_transaction_daily` once over `[prevLower, upper)` and
+   * `t_memberships` once over the same span — collapsing what used to
+   * be five overlapping scans (curr senders + prev senders +
+   * intersection + curr new members + prev new members) into two. The
+   * service's only job here is the date-window arithmetic; the same
+   * window applies uniformly to every community because `windowDays`
+   * is a dashboard-level scalar.
    */
-  async getWindowActivity(
+  async getWindowActivityBulk(
     ctx: IContext,
-    communityId: string,
+    communityIds: string[],
     asOf: Date,
     windowDays: number,
-  ): Promise<WindowActivityCounts> {
+  ): Promise<Map<string, WindowActivityCounts>> {
     const upper = asOfBounds(asOf).asOfJstDayPlusOne;
     const currLower = addDays(upper, -windowDays);
     const prevLower = addDays(upper, -windowDays * 2);
 
-    return this.repository.findWindowActivityCounts(
+    return this.repository.findWindowActivityCountsBulk(
       ctx,
-      communityId,
+      communityIds,
       prevLower,
       currLower,
       upper,
@@ -477,37 +495,43 @@ export default class AnalyticsCommunityService {
   }
 
   /**
-   * Count of members classified as hubs within the parametric
-   * window: those who sent DONATION to at least
-   * `hubBreadthThreshold` DISTINCT counterparties during
-   * `[asOf - windowDays, asOf + 1 JST日)`.
+   * Count of members classified as hubs within the parametric window:
+   * those who sent DONATION to at least `hubBreadthThreshold` DISTINCT
+   * counterparties during `[asOf - windowDays, asOf + 1 JST日)`,
+   * computed for every community in `communityIds` and returned as
+   * `Map<communityId, count>` (zero for communities with no hub
+   * members in the window).
    *
-   * Single-axis classification (breadth only) — reaching the
-   * threshold inherently requires that many transactions, so a
-   * separate frequency floor would be redundant. The service's
-   * only job is the date arithmetic; the count itself comes from a
-   * dedicated repository SQL because it needs DISTINCT recipient
-   * aggregation against `t_transactions` (which the per-day MV
-   * cannot compose into a window-wide DISTINCT).
+   * Single-axis classification (breadth only) — reaching the threshold
+   * inherently requires that many transactions, so a separate
+   * frequency floor would be redundant. The service's only job is the
+   * date arithmetic; the count itself comes from a dedicated
+   * repository SQL because it needs DISTINCT recipient aggregation
+   * against `t_transactions` (which the per-day MV cannot compose into
+   * a window-wide DISTINCT).
    */
-  async getWindowHubMemberCount(
+  async getWindowHubMemberCountBulk(
     ctx: IContext,
-    communityId: string,
+    communityIds: string[],
     asOf: Date,
     windowDays: number,
     hubBreadthThreshold: number,
-  ): Promise<number> {
+  ): Promise<Map<string, number>> {
     const upper = asOfBounds(asOf).asOfJstDayPlusOne;
     const currLower = addDays(upper, -windowDays);
 
-    const row = await this.repository.findWindowHubMemberCount(
+    const rowsByCommunity = await this.repository.findWindowHubMemberCountBulk(
       ctx,
-      communityId,
+      communityIds,
       currLower,
       upper,
       hubBreadthThreshold,
     );
-    return row.count;
+    const out = new Map<string, number>();
+    for (const id of communityIds) {
+      out.set(id, rowsByCommunity.get(id)?.count ?? 0);
+    }
+    return out;
   }
 
   /**
@@ -542,6 +566,42 @@ export default class AnalyticsCommunityService {
   }
 
   /**
+   * Bulk variant of `getWeeklyRetention`. The week-arithmetic is a
+   * dashboard-level scalar (asOf only), so the bounds run once and the
+   * single bulk repository call returns one entry per community.
+   */
+  async getWeeklyRetentionBulk(
+    ctx: IContext,
+    communityIds: string[],
+    asOf: Date,
+  ): Promise<Map<string, WeeklyRetentionCounts>> {
+    const latestWeekStart = isoWeekStartJst(asOf);
+    const prevWeekStart = addDays(latestWeekStart, -7);
+    const prevPrevWeekStart = addDays(prevWeekStart, -7);
+    const twelveWeeksAgo = addDays(prevWeekStart, -7 * 12);
+
+    const aggByCommunity = await this.reportService.getRetentionAggregateBulk(
+      ctx,
+      communityIds,
+      {
+        currentWeekStart: prevWeekStart,
+        nextWeekStart: latestWeekStart,
+        prevWeekStart: prevPrevWeekStart,
+        twelveWeeksAgo,
+      },
+    );
+    const out = new Map<string, WeeklyRetentionCounts>();
+    for (const id of communityIds) {
+      const agg = aggByCommunity.get(id);
+      out.set(id, {
+        retainedSenders: agg?.retainedSenders ?? 0,
+        churnedSenders: agg?.churnedSenders ?? 0,
+      });
+    }
+    return out;
+  }
+
+  /**
    * Most recently completed monthly cohort + its M+1 activity, as raw
    * counts. The cohort is selected as (asOf JST月 - 2) so the M+1
    * window — which is (asOf JST月 - 1) — is fully past; this matches
@@ -571,6 +631,39 @@ export default class AnalyticsCommunityService {
       size: row.cohortSize,
       activeAtM1: row.activeNextWeek,
     };
+  }
+
+  /**
+   * Bulk variant of `getLatestCohort`. The cohort-month math depends
+   * only on `asOf`, so the same window applies uniformly across
+   * `communityIds` and the bulk repository call returns one entry per
+   * community.
+   */
+  async getLatestCohortBulk(
+    ctx: IContext,
+    communityIds: string[],
+    asOf: Date,
+  ): Promise<Map<string, LatestCohortCounts>> {
+    const monthStart = jstMonthStart(asOf);
+    const cohortStart = jstMonthStartOffset(monthStart, -2);
+    const cohortEnd = jstMonthStartOffset(monthStart, -1);
+    const activeStart = cohortEnd;
+    const activeEnd = monthStart;
+    const rowsByCommunity = await this.reportService.getCohortRetentionBulk(
+      ctx,
+      communityIds,
+      { cohortStart, cohortEnd },
+      { activeStart, activeEnd },
+    );
+    const out = new Map<string, LatestCohortCounts>();
+    for (const id of communityIds) {
+      const row = rowsByCommunity.get(id);
+      out.set(id, {
+        size: row?.cohortSize ?? 0,
+        activeAtM1: row?.activeNextWeek ?? 0,
+      });
+    }
+    return out;
   }
 
   /**

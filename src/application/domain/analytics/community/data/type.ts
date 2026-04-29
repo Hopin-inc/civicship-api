@@ -47,7 +47,7 @@ export type AnalyticsMemberStatsRow = {
   /**
    * The most recent JST calendar day the member sent a DONATION
    * (UTC-encoded date at JST midnight, same convention as the rest
-   * of the sysadmin domain). null when the member has never
+   * of the analytics domain). null when the member has never
    * donated. Internal raw signal; not exposed in GraphQL today —
    * `dormantCount` is derived from it in the service layer.
    */

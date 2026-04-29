@@ -287,7 +287,7 @@ export function computeTenureDistribution(
     else if (m.daysIn < 365) m3to12Months++;
     else gte12Months++;
     // Members with daysIn < 0 (data anomaly — shouldn't occur
-    // because findMemberStats clamps daysIn to >= 1) are
+    // because findMemberStatsBulk clamps daysIn to >= 1) are
     // already counted in lt1Month above (daysIn < 0 < 30), so
     // they also flow into histogram bucket 0 via the
     // Math.max(0, ...) clamp below. Without that clamp,
@@ -341,7 +341,7 @@ export function computeDormantCount(
  *   habitual      — classifyMember(...) === "habitual"
  *
  * activatedD30 / repeated / habitual are JOINED-at-asOf scoped
- * because `members` is itself JOINED-at-asOf (findMemberStats
+ * because `members` is itself JOINED-at-asOf (findMemberStatsBulk
  * applies the membership filter).
  */
 export function computeCohortFunnel(
@@ -377,7 +377,7 @@ export function computeCohortFunnel(
     if (!bucket) continue;
     bucket.acquired++;
     // Both sides are JST-day grain: firstDonationDay is already
-    // a JST date encoded at UTC midnight (see findMemberStats),
+    // a JST date encoded at UTC midnight (see findMemberStatsBulk),
     // and joinedAt is truncated to its JST date here so the
     // "30 days within join" comparison is symmetric. Without
     // truncation the joinedAt time-of-day component skewed the

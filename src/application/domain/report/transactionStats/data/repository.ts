@@ -510,31 +510,206 @@ export default class ReportTransactionStatsRepository
   }
 
   /**
-   * Retention signals for one week. Computed via FULL OUTER JOIN on the
-   * week-aggregated sender sets for [currentWeekStart, nextWeekStart) and
-   * [prevWeekStart, currentWeekStart) so each user contributes one row
-   * regardless of which weeks they appear in — a naive two-pass COUNT
-   * would double-count people active in both weeks.
+   * Retention signals for one week, computed for every community in
+   * `communityIds` in one SQL roundtrip. Same six counters per
+   * community as the single-row variant; `Map<communityId, counts>` is
+   * pre-seeded with zero-row defaults so the caller can iterate
+   * `communityIds` without null-checking.
+   *
+   * Computed via FULL OUTER JOIN on the week-aggregated sender sets
+   * for [currentWeekStart, nextWeekStart) and [prevWeekStart,
+   * currentWeekStart) so each (community, user) pair contributes one
+   * row regardless of which weeks they appear in — a naive two-pass
+   * COUNT would double-count people active in both weeks.
    *
    * `is_sender` is gated on `donation_out_count > 0` (not
    * `tx_count_out > 0`) so the definition stays consistent with
    * `returned_senders` which scans the same MV column. This matters:
    * ONBOARDING / GRANT transactions increment `tx_count_out` for the
-   * admin wallet but not `donation_out_count`, and we want retention to
-   * track peer-to-peer DONATION behaviour specifically.
+   * admin wallet but not `donation_out_count`, and we want retention
+   * to track peer-to-peer DONATION behaviour specifically.
    *
-   * `is_receiver` is gated symmetrically on `received_donation_count > 0`
-   * (DONATION-only) rather than `tx_count_in > 0`. The same ONBOARDING /
-   * GRANT noise that we filter out of the sender frame also shows up on
-   * the receiver side (admin-issued grants land as incoming transactions
-   * on every recipient's wallet); including those in `is_receiver` would
+   * `is_receiver` is gated symmetrically on
+   * `received_donation_count > 0` (DONATION-only) rather than
+   * `tx_count_in > 0`. The same ONBOARDING / GRANT noise that we
+   * filter out of the sender frame also shows up on the receiver side
+   * (admin-issued grants land as incoming transactions on every
+   * recipient's wallet); including those in `is_receiver` would
    * inflate `current_active_count` and the `active_rate_any` the
    * presenter divides out of it, overstating peer-to-peer engagement.
    *
    * The `ever_before` CTE is bounded to a 12-week lookback to keep the
-   * returning-users scan from fanning out to years of history on mature
-   * communities; the trade-off is documented in the design notes —
-   * 13+-week comebacks land in no bucket.
+   * returning-users scan from fanning out to years of history on
+   * mature communities; the trade-off is documented in the design
+   * notes — 13+-week comebacks land in no bucket. The lookback widens
+   * by `community_id` for the bulk version so each community gets its
+   * own per-user "ever-before" set.
+   */
+  async findRetentionAggregateBulk(
+    ctx: IContext,
+    communityIds: string[],
+    range: {
+      currentWeekStart: Date;
+      nextWeekStart: Date;
+      prevWeekStart: Date;
+      twelveWeeksAgo: Date;
+    },
+  ): Promise<Map<string, RetentionAggregateRow>> {
+    const empty = (): RetentionAggregateRow => ({
+      newMembers: 0,
+      retainedSenders: 0,
+      returnedSenders: 0,
+      churnedSenders: 0,
+      currentSendersCount: 0,
+      currentActiveCount: 0,
+    });
+    const out = new Map<string, RetentionAggregateRow>();
+    for (const id of communityIds) out.set(id, empty());
+    if (communityIds.length === 0) return out;
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          community_id: string;
+          new_members: number;
+          retained_senders: number;
+          returned_senders: number;
+          churned_senders: number;
+          current_senders_count: number;
+          current_active_count: number;
+        }[]
+      >`
+        WITH current_week AS (
+          SELECT
+            "community_id",
+            "user_id",
+            BOOL_OR("donation_out_count" > 0) AS is_sender,
+            BOOL_OR("received_donation_count" > 0) AS is_receiver
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ANY(${communityIds}::text[])
+            AND "date" >= ${range.currentWeekStart}::date
+            AND "date" <  ${range.nextWeekStart}::date
+          GROUP BY "community_id", "user_id"
+        ),
+        prev_week AS (
+          SELECT
+            "community_id",
+            "user_id",
+            BOOL_OR("donation_out_count" > 0) AS is_sender
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ANY(${communityIds}::text[])
+            AND "date" >= ${range.prevWeekStart}::date
+            AND "date" <  ${range.currentWeekStart}::date
+          GROUP BY "community_id", "user_id"
+        ),
+        ever_before AS (
+          SELECT DISTINCT "community_id", "user_id"
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ANY(${communityIds}::text[])
+            AND "date" >= ${range.twelveWeeksAgo}::date
+            AND "date" <  ${range.prevWeekStart}::date
+            AND "donation_out_count" > 0
+        ),
+        new_this_week AS (
+          -- created_at is naive-UTC timestamp -- see the boundary
+          -- conversion rationale in findDeepestChain. The
+          -- ::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC' dance
+          -- pins the window to JST midnight regardless of the DB
+          -- session timezone.
+          SELECT "community_id", COUNT(*)::int AS n
+          FROM "t_memberships"
+          WHERE "community_id" = ANY(${communityIds}::text[])
+            AND "status" = 'JOINED'
+            AND "created_at" >= (${range.currentWeekStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  (${range.nextWeekStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+          GROUP BY "community_id"
+        ),
+        joined AS (
+          -- FULL OUTER JOIN on (community_id, user_id) so each user
+          -- contributes one row per community regardless of which
+          -- weeks they appear in — a naive two-pass COUNT would
+          -- double-count people active in both weeks. ever_before is
+          -- LEFT JOINed on the union key so a user who appears in
+          -- only one of the two weeks still gets their returning-
+          -- user signal looked up.
+          SELECT
+            COALESCE(cw."community_id", pw."community_id") AS community_id,
+            cw."user_id" AS cw_user,
+            pw."user_id" AS pw_user,
+            cw.is_sender AS cw_is_sender,
+            cw.is_receiver AS cw_is_receiver,
+            pw.is_sender AS pw_is_sender,
+            eb."user_id" AS eb_user
+          FROM current_week cw
+          FULL OUTER JOIN prev_week pw
+            ON cw."community_id" = pw."community_id"
+            AND cw."user_id" = pw."user_id"
+          LEFT JOIN ever_before eb
+            ON eb."community_id" = COALESCE(cw."community_id", pw."community_id")
+            AND eb."user_id" = COALESCE(cw."user_id", pw."user_id")
+        ),
+        joined_aggregates AS (
+          SELECT
+            community_id,
+            COUNT(*) FILTER (
+              WHERE cw_is_sender = true AND pw_is_sender = true
+            )::int AS retained_senders,
+            COUNT(*) FILTER (
+              WHERE cw_is_sender = true
+                AND (pw_is_sender IS NULL OR pw_is_sender = false)
+                AND eb_user IS NOT NULL
+            )::int AS returned_senders,
+            COUNT(*) FILTER (
+              WHERE pw_is_sender = true
+                AND (cw_is_sender IS NULL OR cw_is_sender = false)
+            )::int AS churned_senders,
+            COUNT(*) FILTER (WHERE cw_is_sender = true)::int AS current_senders_count,
+            COUNT(*) FILTER (
+              WHERE cw_is_sender = true OR cw_is_receiver = true
+            )::int AS current_active_count
+          FROM joined
+          GROUP BY community_id
+        ),
+        community_keys AS (
+          -- Materialise the input id list so the final LEFT JOIN
+          -- emits one row per requested community, even those with
+          -- no senders / no new members in the window. Without this,
+          -- the caller would have to null-check every Map.get(id)
+          -- lookup.
+          SELECT unnest(${communityIds}::text[]) AS community_id
+        )
+        SELECT
+          ck."community_id"                          AS community_id,
+          COALESCE(nw.n, 0)                          AS new_members,
+          COALESCE(ja.retained_senders, 0)           AS retained_senders,
+          COALESCE(ja.returned_senders, 0)           AS returned_senders,
+          COALESCE(ja.churned_senders, 0)            AS churned_senders,
+          COALESCE(ja.current_senders_count, 0)      AS current_senders_count,
+          COALESCE(ja.current_active_count, 0)       AS current_active_count
+        FROM community_keys ck
+        LEFT JOIN new_this_week nw       ON nw."community_id" = ck."community_id"
+        LEFT JOIN joined_aggregates ja   ON ja."community_id" = ck."community_id"
+      `;
+      for (const r of rows) {
+        out.set(r.community_id, {
+          newMembers: r.new_members,
+          retainedSenders: r.retained_senders,
+          returnedSenders: r.returned_senders,
+          churnedSenders: r.churned_senders,
+          currentSendersCount: r.current_senders_count,
+          currentActiveCount: r.current_active_count,
+        });
+      }
+      return out;
+    });
+  }
+
+  /**
+   * Single-community variant of `findRetentionAggregateBulk`. Same
+   * SQL semantics applied to one community at a time — kept because
+   * `getRetentionTrend` and the per-month cohort fan-out call this
+   * once per time window, where the bulk-by-community axis doesn't
+   * help. See the bulk variant's docblock for `is_sender` / `is_receiver`
+   * gating and `ever_before` 12-week lookback rationale.
    */
   async findRetentionAggregate(
     ctx: IContext,
@@ -646,15 +821,97 @@ export default class ReportTransactionStatsRepository
   }
 
   /**
-   * Week-N retention lookup: how many members of the cohort that joined
-   * during `[cohortStart, cohortEnd)` were senders during
-   * `[activeStart, activeEnd)`. Returns raw numerator / denominator so
-   * an empty cohort surfaces as `cohortSize = 0` and the presenter
-   * converts that to `null` rather than `0 / 0`.
+   * Week-N retention lookup, computed for every community in
+   * `communityIds` in one SQL roundtrip: how many members of the
+   * cohort that joined during `[cohortStart, cohortEnd)` were senders
+   * during `[activeStart, activeEnd)`. Returns
+   * `Map<communityId, {cohortSize, activeNextWeek}>` pre-seeded with
+   * zeros for every requested community.
+   *
+   * Returns raw numerator / denominator so an empty cohort surfaces
+   * as `cohortSize = 0` and the presenter converts that to `null`
+   * rather than `0 / 0`.
    *
    * `is_sender` uses the same `donation_out_count > 0` frame as
-   * `findRetentionAggregate` so week1/week4 retention and the weekly
-   * retention counters are apples-to-apples.
+   * `findRetentionAggregateBulk` so week1/week4 retention and the
+   * weekly retention counters are apples-to-apples.
+   */
+  async findCohortRetentionBulk(
+    ctx: IContext,
+    communityIds: string[],
+    cohort: { cohortStart: Date; cohortEnd: Date },
+    active: { activeStart: Date; activeEnd: Date },
+  ): Promise<Map<string, CohortRetentionRow>> {
+    const out = new Map<string, CohortRetentionRow>();
+    for (const id of communityIds) out.set(id, { cohortSize: 0, activeNextWeek: 0 });
+    if (communityIds.length === 0) return out;
+    return ctx.issuer.public(ctx, async (tx) => {
+      const rows = await tx.$queryRaw<
+        {
+          community_id: string;
+          cohort_size: number;
+          active_next_week: number;
+        }[]
+      >`
+        WITH cohort AS (
+          -- Naive-UTC timestamp column vs JST-midnight boundary:
+          -- see the findDeepestChain comment for the full
+          -- explanation of the double AT TIME ZONE dance.
+          SELECT "community_id", "user_id"
+          FROM "t_memberships"
+          WHERE "community_id" = ANY(${communityIds}::text[])
+            AND "status" = 'JOINED'
+            AND "created_at" >= (${cohort.cohortStart}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+            AND "created_at" <  (${cohort.cohortEnd}::date AT TIME ZONE 'Asia/Tokyo' AT TIME ZONE 'UTC')
+        ),
+        active_members AS (
+          -- donation_out_count > 0 keeps the active-side definition
+          -- aligned with findRetentionAggregateBulk is_sender frame:
+          -- week1/week4 retention and the weekly retention counters
+          -- land on the same definition of "active".
+          SELECT DISTINCT "community_id", "user_id"
+          FROM "mv_user_transaction_daily"
+          WHERE "community_id" = ANY(${communityIds}::text[])
+            AND "date" >= ${active.activeStart}::date
+            AND "date" <  ${active.activeEnd}::date
+            AND "donation_out_count" > 0
+        ),
+        community_keys AS (
+          -- Materialise the input id list so the final LEFT JOIN
+          -- emits one row per requested community, even those with
+          -- empty cohorts. Without this, the caller would have to
+          -- null-check every Map.get(id) lookup.
+          SELECT unnest(${communityIds}::text[]) AS community_id
+        )
+        SELECT
+          ck."community_id" AS community_id,
+          COUNT(DISTINCT c."user_id")::int AS "cohort_size",
+          COUNT(DISTINCT a."user_id")::int AS "active_next_week"
+        FROM community_keys ck
+        LEFT JOIN cohort c
+          ON c."community_id" = ck."community_id"
+        LEFT JOIN active_members a
+          ON a."community_id" = c."community_id"
+          AND a."user_id" = c."user_id"
+        GROUP BY ck."community_id"
+      `;
+      for (const r of rows) {
+        out.set(r.community_id, {
+          cohortSize: r.cohort_size,
+          activeNextWeek: r.active_next_week,
+        });
+      }
+      return out;
+    });
+  }
+
+  /**
+   * Single-community variant of `findCohortRetentionBulk`. Same SQL
+   * semantics applied to one community at a time — kept because the
+   * per-month cohort fan-out (`AnalyticsCommunityService.getCohortRetention`)
+   * issues 4 calls per cohort window, where the bulk-by-community
+   * axis doesn't help. See the bulk variant's docblock for the
+   * `is_sender` gating rationale.
    */
   async findCohortRetention(
     ctx: IContext,
