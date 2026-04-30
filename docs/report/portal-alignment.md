@@ -109,7 +109,7 @@ backend は **L1 ダッシュボード向けには「生カウント」を返し
 | `D30_COHORT_WINDOW` | `3` | (なし、ただし `COHORT_ACTIVATION_WINDOW_DAYS = 30` で D30 自体の定義は一致) | — | ⚠️ window 概念は portal 専管 |
 | `FUNNEL_CONTINUING_MIN_MONTHS` | `2` | (なし) | — | ❌ portal 専管 |
 
-> ❗ `minMonthsIn`: portal=3 ヶ月、backend=1 ヶ月。`classifyMember` の tenure floor が異なるので **同じメンバーでも分類が変わる**。詳細は §3 #9 / §6。
+> ✅ **minMonthsIn**: portal=3 ヶ月、backend=3 ヶ月。本 PR によりデフォルト値が統一され、同一メンバーに対する分類の不一致が解消されました。詳細は §6。
 
 ### 2.2 L1 メトリクス(rate 派生)
 
