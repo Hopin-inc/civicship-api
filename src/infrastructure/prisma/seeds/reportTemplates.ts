@@ -394,32 +394,52 @@ ${COMMON_RULES}`,
     maxTokens: 1000,
     temperature: 0,
     notes:
-      "WEEKLY_SUMMARY 生成結果を評価する LLM-as-Judge プロンプト。SYSTEM scope 固定。",
-    systemPrompt: `あなたはコミュニティレポートの品質評価者です。
-以下の基準で生成されたレポートを 0-100 点で評価してください。
-必ず JSON 形式のみで回答してください。前後に解説や Markdown フェンスを付けないでください。`,
-    userPromptTemplate: `# 評価対象レポート
-\${output_markdown}
+      "WEEKLY_SUMMARY 生成結果を評価する LLM-as-Judge プロンプト。SYSTEM scope 固定。" +
+      "PR-B: fabrication / quality を分離した breakdown と「fabrication 検知時のみ score ≤ 40」のスコア設計で、" +
+      "auto-reject 閾値 60 と組み合わせて「捏造があれば自動却下」を担保する。",
+    systemPrompt: `あなたはコミュニティレポートの品質審査員です。
+元データ（payload）と生成されたレポートを照合し、指定された審査基準に従って審査してください。
 
-# 元データ（payload）
-\${input_payload}
+出力は必ず以下の JSON 形式のみとすること。JSON 以外のテキスト・Markdown フェンス・前後の解説は出力しない。
 
-# 評価基準（このリストの観点で減点・加点を判断）
-\${judge_criteria}
-
-# 出力形式（JSON のみ。前後のテキスト不要）
 {
-  "score": <0-100>,
+  "score": 0から100の整数,
   "breakdown": {
-    "data_accuracy": <0-100>,
-    "narrative_quality": <0-100>,
-    "deepest_chain_mentioned": <true|false>,
-    "actionable_insights": <0-100>,
-    "no_fabrication": <true|false>
+    "fabrication": {
+      "top_user_names": true または false,
+      "top_user_points": true または false,
+      "chain_depth": true または false,
+      "active_users": true または false,
+      "total_members": true または false,
+      "no_phantom_comparison": true または false
+    },
+    "quality": {
+      "deepest_chain_mentioned": true または false,
+      "actionable_insights": true または false,
+      "reason_distinction": true または false,
+      "no_enum_names": true または false
+    }
   },
   "issues": ["問題点1", "問題点2"],
   "strengths": ["良い点1"]
-}`,
+}
+
+スコア計算ルール：
+- fabrication の各項目のいずれかが false → score は 40 以下にする
+- fabrication がすべて true かつ quality がすべて true → score: 90〜100
+- fabrication がすべて true かつ quality に false あり → score: 60〜89`,
+    userPromptTemplate: `以下の審査基準に従って審査してください。
+
+## 審査基準
+\${judge_criteria}
+
+## 元データ（payload）
+\${input_payload}
+
+## 生成されたレポート
+\${output_markdown}
+
+上記の形式の JSON のみを出力してください。`,
   },
   {
     variant: GqlReportVariant.MemberNewsletter,

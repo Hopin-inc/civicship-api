@@ -369,6 +369,200 @@ describe("ReportUseCase.generateReport", () => {
       expect(result.report.outputMarkdown).toBe(llmResult.text);
     }
   });
+
+  // ---------------------------------------------------------------------------
+  // PR-B auto-reject: judge score below the threshold (60) flips the row to
+  // REJECTED in the same transaction as the judge save. The threshold is
+  // tuned so that fabrication detections (which the judge prompt scores at
+  // ≤ 40) reliably land below it, while quality-only failures (60–89) stay
+  // DRAFT for human review.
+  // ---------------------------------------------------------------------------
+  describe("judge auto-reject (PR-B)", () => {
+    const activePayload: WeeklyReportPayload = {
+      ...zeroActivityPayload,
+      community_context: {
+        ...zeroActivityPayload.community_context!,
+        active_users_in_window: 26,
+        active_rate: 0.046,
+      },
+      daily_summaries: [
+        {
+          date: "2026-04-14",
+          reason: "DONATION",
+          tx_count: 8,
+          points_sum: 125830,
+          chain_root_count: 0,
+          chain_descendant_count: 8,
+          max_chain_depth: 19,
+          avg_chain_depth: 5,
+          issuance_count: 0,
+          burn_count: 0,
+        },
+      ],
+    };
+    const llmResult: LlmCompleteResult = {
+      text: "## レポート本文 ...",
+      model: "claude-sonnet-4-6",
+      usage: {
+        inputTokens: 10000,
+        outputTokens: 3000,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 0,
+      },
+      stopReason: "end_turn",
+    };
+    const judgeTemplate = {
+      id: "judge-tpl-1",
+      variant: GqlReportVariant.WeeklySummary,
+      kind: "JUDGE",
+      systemPrompt: "judge system",
+      userPromptTemplate: "${judge_criteria}/${input_payload}/${output_markdown}",
+      model: "claude-haiku-4-5-20251001",
+      maxTokens: 1000,
+      temperature: 0,
+      stopSequences: [],
+      isEnabled: true,
+      isActive: true,
+    };
+
+    beforeEach(() => {
+      service.evaluateSkipReason.mockReturnValue(null);
+      jest.spyOn(usecase, "buildReportPayload").mockResolvedValue(activePayload);
+      llmClient.complete.mockResolvedValue(llmResult);
+      judgeService.selectJudgeTemplate.mockResolvedValue(judgeTemplate);
+
+      // Default: updateReportStatus echoes back a REJECTED-shaped row so
+      // the auto-reject test can assert on its return without contorting
+      // the type-narrow happy-path mock.
+      service.updateReportStatus.mockImplementation(async (_ctx, id, status) => {
+        const lastCreate = service.createReport.mock.results.at(-1);
+        const created = lastCreate ? await lastCreate.value : null;
+        return { ...(created ?? { id }), status };
+      });
+    });
+
+    it("flips DRAFT to REJECTED in the same tx when judgeScore is below the threshold", async () => {
+      // Score 35 puts the row firmly inside the "fabrication detected"
+      // band (≤ 40 by the prompt's scoring rule), well below the
+      // auto-reject threshold of 60.
+      judgeService.executeJudge.mockResolvedValue({
+        score: 35,
+        breakdown: {
+          fabrication: { top_user_names: false, top_user_points: true, chain_depth: true },
+          quality: { actionable_insights: true },
+        },
+        issues: ["架空のユーザー名が含まれていました"],
+        strengths: [],
+      });
+
+      const result = await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      expect(judgeService.executeJudge).toHaveBeenCalledTimes(1);
+      // criteria must be threaded through for WEEKLY_SUMMARY — JSON.stringify(undefined ?? {})
+      // would emit "{}" and the rubric never reaches the judge prompt.
+      const judgeCallArg = judgeService.executeJudge.mock.calls[0][2];
+      expect(judgeCallArg.judgeCriteria).toBeDefined();
+      expect(judgeCallArg.judgeCriteria.fabrication_check).toBeDefined();
+
+      expect(service.saveJudgeResult).toHaveBeenCalledTimes(1);
+      const saveArgs = service.saveJudgeResult.mock.calls[0];
+      expect(saveArgs[2].judgeScore).toBe(35);
+
+      // Auto-reject: assertStatusTransition + updateReportStatus must
+      // both fire on the same tx as the judge save.
+      expect(service.assertStatusTransition).toHaveBeenCalledWith(
+        ReportStatus.DRAFT,
+        ReportStatus.REJECTED,
+      );
+      expect(service.updateReportStatus).toHaveBeenCalledTimes(1);
+      const updateArgs = service.updateReportStatus.mock.calls[0];
+      expect(updateArgs[2]).toBe(ReportStatus.REJECTED);
+
+      expect(result.__typename).toBe("GenerateReportSuccess");
+      if (result.__typename === "GenerateReportSuccess") {
+        expect(result.report.status).toBe(ReportStatus.REJECTED);
+      }
+    });
+
+    it("leaves the row as DRAFT when judgeScore meets the threshold (no auto-reject)", async () => {
+      // 75 lands in the "quality-only failures" band (60–89). Quality
+      // issues are real but not fabrication — the row stays DRAFT for a
+      // human reviewer.
+      judgeService.executeJudge.mockResolvedValue({
+        score: 75,
+        breakdown: {
+          fabrication: { top_user_names: true, top_user_points: true, chain_depth: true },
+          quality: { actionable_insights: false },
+        },
+        issues: ["来週への具体的アクションが不足"],
+        strengths: ["数値の引用は正確"],
+      });
+
+      const result = await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      expect(service.saveJudgeResult).toHaveBeenCalledTimes(1);
+      // Critical regression guard: at-or-above the threshold must NOT
+      // trigger the reject path. Without these assertions, a future
+      // off-by-one in the comparison (`<` vs `<=`) would silently land.
+      expect(service.assertStatusTransition).not.toHaveBeenCalled();
+      expect(service.updateReportStatus).not.toHaveBeenCalled();
+
+      expect(result.__typename).toBe("GenerateReportSuccess");
+      if (result.__typename === "GenerateReportSuccess") {
+        expect(result.report.status).toBe(ReportStatus.DRAFT);
+      }
+    });
+
+    it("does not auto-reject when judgeScore equals the threshold exactly (60)", async () => {
+      // Boundary check: the comparison is `<` not `<=`, so 60 stays
+      // DRAFT. Pinning this lets a future "make it stricter" change be
+      // an obvious code edit rather than a silent threshold shift.
+      judgeService.executeJudge.mockResolvedValue({
+        score: 60,
+        breakdown: {},
+        issues: [],
+        strengths: [],
+      });
+
+      await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      expect(service.assertStatusTransition).not.toHaveBeenCalled();
+      expect(service.updateReportStatus).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe("ReportUseCase.buildReportPayload retention window", () => {
