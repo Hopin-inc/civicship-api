@@ -122,6 +122,10 @@ describe("ReportService", () => {
       highlight_comments: [],
       previous_period: null,
       retention: null,
+      aggregate: { tx_count: 0, points_sum: 0 },
+      aggregates_by_reason: {},
+      peak_active_day: null,
+      active_rate_pct: null,
     };
 
     it("returns a prefixed skip reason when active_users=0 AND daily_summaries is empty", () => {

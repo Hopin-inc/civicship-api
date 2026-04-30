@@ -496,4 +496,258 @@ describe("ReportPresenter.weeklyPayload (community_context / deepest_chain)", ()
     expect(payload.previous_period?.total_points_sum).toBe(1_500_000);
     expect(payload.previous_period?.growth_rate.points_sum).toBe(0);
   });
+
+  // ---------------------------------------------------------------------------
+  // Pre-computed aggregate fields (PR-A v5): aggregate / aggregates_by_reason /
+  // peak_active_day / active_rate_pct. The presenter pre-computes these so the
+  // prompt template can substitute them as fixed values rather than asking the
+  // LLM to GROUP BY / SUM / MAX / format percentages — every arithmetic step
+  // moved out of the model is one less hallucination surface.
+  // ---------------------------------------------------------------------------
+
+  describe("aggregates_by_reason", () => {
+    it("groups daily_summaries by reason and sums tx_count / points_sum", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        summaries: [
+          {
+            date: new Date(Date.UTC(2026, 3, 14)),
+            communityId: "community-1",
+            reason: TransactionReason.DONATION,
+            txCount: 3,
+            pointsSum: 1500n,
+            chainRootCount: 0,
+            chainDescendantCount: 0,
+            maxChainDepth: null,
+            sumChainDepth: 0,
+            issuanceCount: 0,
+            burnCount: 0,
+          },
+          {
+            date: new Date(Date.UTC(2026, 3, 15)),
+            communityId: "community-1",
+            reason: TransactionReason.DONATION,
+            txCount: 2,
+            pointsSum: 800n,
+            chainRootCount: 0,
+            chainDescendantCount: 0,
+            maxChainDepth: null,
+            sumChainDepth: 0,
+            issuanceCount: 0,
+            burnCount: 0,
+          },
+          {
+            date: new Date(Date.UTC(2026, 3, 14)),
+            communityId: "community-1",
+            reason: TransactionReason.GRANT,
+            txCount: 1,
+            pointsSum: 5000n,
+            chainRootCount: 0,
+            chainDescendantCount: 0,
+            maxChainDepth: null,
+            sumChainDepth: 0,
+            issuanceCount: 0,
+            burnCount: 0,
+          },
+        ],
+        communityContext: null,
+        deepestChain: null,
+      });
+
+      // ONBOARDING is pre-filled with zero even though no ONBOARDING rows
+      // were summed — without that the prompt's `[...]` copy-verbatim rule
+      // breaks for quiet weeks. DONATION / GRANT carry their summed values.
+      expect(payload.aggregates_by_reason).toEqual({
+        [TransactionReason.DONATION]: { tx_count: 5, points_sum: 2300 },
+        [TransactionReason.GRANT]: { tx_count: 1, points_sum: 5000 },
+        [TransactionReason.ONBOARDING]: { tx_count: 0, points_sum: 0 },
+      });
+    });
+
+    it("pre-fills the core reasons with zero when daily_summaries is empty", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        communityContext: null,
+        deepestChain: null,
+      });
+
+      // The keys must be present so prompt placeholders like
+      // `[aggregates_by_reason.DONATION.tx_count]` still resolve to a real
+      // number — the [...] copy-verbatim rule cannot apply to a missing key.
+      expect(payload.aggregates_by_reason).toEqual({
+        [TransactionReason.DONATION]: { tx_count: 0, points_sum: 0 },
+        [TransactionReason.GRANT]: { tx_count: 0, points_sum: 0 },
+        [TransactionReason.ONBOARDING]: { tx_count: 0, points_sum: 0 },
+      });
+    });
+
+    // Regression guard: the per-reason sum must be computed at BigInt and
+    // narrowed once per reason key, not row-by-row. If individual rows fit
+    // in MAX_SAFE_INTEGER but their bucketed sum does not, narrowing per row
+    // would silently lose precision. Mirrors the same guarantee the
+    // top-level `aggregate` field already provides via aggregateTransactionTotals.
+    it("throws RangeError when a per-reason sum overflows MAX_SAFE_INTEGER", () => {
+      const nearMax = BigInt(Number.MAX_SAFE_INTEGER);
+      expect(() =>
+        ReportPresenter.weeklyPayload({
+          ...baseInput,
+          summaries: [
+            {
+              date: new Date(Date.UTC(2026, 3, 14)),
+              communityId: "community-1",
+              reason: TransactionReason.DONATION,
+              txCount: 1,
+              pointsSum: nearMax,
+              chainRootCount: 0,
+              chainDescendantCount: 0,
+              maxChainDepth: null,
+              sumChainDepth: 0,
+              issuanceCount: 0,
+              burnCount: 0,
+            },
+            {
+              date: new Date(Date.UTC(2026, 3, 15)),
+              communityId: "community-1",
+              reason: TransactionReason.DONATION,
+              txCount: 1,
+              pointsSum: nearMax,
+              chainRootCount: 0,
+              chainDescendantCount: 0,
+              maxChainDepth: null,
+              sumChainDepth: 0,
+              issuanceCount: 0,
+              burnCount: 0,
+            },
+          ],
+          communityContext: null,
+          deepestChain: null,
+        }),
+      ).toThrow(RangeError);
+    });
+  });
+
+  describe("peak_active_day", () => {
+    it("returns the day with the largest active_users count", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        activeUsers: [
+          { date: new Date(Date.UTC(2026, 3, 14)), communityId: "community-1", activeUsers: 4, senders: 3, receivers: 2 },
+          { date: new Date(Date.UTC(2026, 3, 15)), communityId: "community-1", activeUsers: 9, senders: 6, receivers: 5 },
+          { date: new Date(Date.UTC(2026, 3, 16)), communityId: "community-1", activeUsers: 7, senders: 5, receivers: 4 },
+        ],
+        communityContext: null,
+        deepestChain: null,
+      });
+
+      expect(payload.peak_active_day).toEqual({ date: "2026-04-15", active_users: 9 });
+    });
+
+    it("breaks ties by surfacing the earliest date", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        activeUsers: [
+          { date: new Date(Date.UTC(2026, 3, 14)), communityId: "community-1", activeUsers: 5, senders: 3, receivers: 2 },
+          { date: new Date(Date.UTC(2026, 3, 15)), communityId: "community-1", activeUsers: 5, senders: 3, receivers: 2 },
+          { date: new Date(Date.UTC(2026, 3, 16)), communityId: "community-1", activeUsers: 5, senders: 3, receivers: 2 },
+        ],
+        communityContext: null,
+        deepestChain: null,
+      });
+
+      expect(payload.peak_active_day).toEqual({ date: "2026-04-14", active_users: 5 });
+    });
+
+    it("returns null when daily_active_users is empty", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        communityContext: null,
+        deepestChain: null,
+      });
+
+      expect(payload.peak_active_day).toBeNull();
+    });
+  });
+
+  describe("active_rate_pct", () => {
+    it("formats the 0..1 ratio as a one-decimal percentage string", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        // 5 / 20 = 0.25 → "25.0"
+        communityContext: { ...sampleContext, totalMembers: 20, activeUsersInWindow: 5 },
+        deepestChain: null,
+      });
+
+      expect(payload.active_rate_pct).toBe("25.0");
+    });
+
+    it("returns null when active_rate is null (no JOINED members)", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        communityContext: { ...sampleContext, totalMembers: 0, activeUsersInWindow: 0 },
+        deepestChain: null,
+      });
+
+      expect(payload.active_rate_pct).toBeNull();
+    });
+
+    it("returns null when communityContext itself is null", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        communityContext: null,
+        deepestChain: null,
+      });
+
+      expect(payload.active_rate_pct).toBeNull();
+    });
+  });
+
+  describe("aggregate (top-level totals)", () => {
+    it("matches the totals from aggregateTransactionTotals", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        summaries: [
+          {
+            date: new Date(Date.UTC(2026, 3, 14)),
+            communityId: "community-1",
+            reason: TransactionReason.DONATION,
+            txCount: 3,
+            pointsSum: 1500n,
+            chainRootCount: 0,
+            chainDescendantCount: 0,
+            maxChainDepth: null,
+            sumChainDepth: 0,
+            issuanceCount: 0,
+            burnCount: 0,
+          },
+          {
+            date: new Date(Date.UTC(2026, 3, 15)),
+            communityId: "community-1",
+            reason: TransactionReason.GRANT,
+            txCount: 2,
+            pointsSum: 5000n,
+            chainRootCount: 0,
+            chainDescendantCount: 0,
+            maxChainDepth: null,
+            sumChainDepth: 0,
+            issuanceCount: 0,
+            burnCount: 0,
+          },
+        ],
+        communityContext: null,
+        deepestChain: null,
+      });
+
+      expect(payload.aggregate).toEqual({ tx_count: 5, points_sum: 6500 });
+    });
+
+    it("emits zero counts when daily_summaries is empty", () => {
+      const payload = ReportPresenter.weeklyPayload({
+        ...baseInput,
+        communityContext: null,
+        deepestChain: null,
+      });
+
+      expect(payload.aggregate).toEqual({ tx_count: 0, points_sum: 0 });
+    });
+  });
 });
