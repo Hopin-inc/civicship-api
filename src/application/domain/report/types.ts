@@ -43,6 +43,46 @@ export interface WeeklyReportPayload {
   top_users: TopUserItem[];
   highlight_comments: CommentItem[];
   /**
+   * Window-wide totals across all reasons. Pre-computed in the presenter so
+   * prompt templates can reference `[aggregate.tx_count]` / `[aggregate.points_sum]`
+   * without asking the LLM to sum daily_summaries — keeping arithmetic out of
+   * the model is the core guard against fabricated headline numbers.
+   */
+  aggregate: {
+    tx_count: number;
+    points_sum: number;
+  };
+  /**
+   * Per-reason totals (DONATION / GRANT / ONBOARDING / TICKET_* / OPPORTUNITY_*
+   * / POINT_*) keyed by the raw `TransactionReason` enum string. Templates
+   * reference `[aggregates_by_reason.DONATION.tx_count]` etc.; reasons absent
+   * from the payload mean zero transactions of that kind in the window and
+   * the prompt is instructed to omit the corresponding row.
+   */
+  aggregates_by_reason: {
+    [reason: string]: {
+      tx_count: number;
+      points_sum: number;
+    };
+  };
+  /**
+   * Day with the highest `active_users` count in the window. `null` when
+   * `daily_active_users` is empty. Ties resolve to the earliest date so the
+   * surfaced day is stable across runs.
+   */
+  peak_active_day: {
+    date: string;
+    active_users: number;
+  } | null;
+  /**
+   * Display-formatted percentage string for `community_context.active_rate`,
+   * one decimal place (e.g. `"3.4"`). `null` when `active_rate` is null
+   * (community has no JOINED members). Pre-formatting in the presenter
+   * removes the LLM's chance to misformat a 0..1 ratio as `"0.034%"` or
+   * `"3%"`.
+   */
+  active_rate_pct: string | null;
+  /**
    * Aggregates for the equal-length window immediately preceding `period`,
    * plus pre-computed week-over-week growth rates. Populated only when the
    * caller opts in via `includePreviousPeriod`; otherwise null so the LLM

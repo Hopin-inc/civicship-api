@@ -190,6 +190,15 @@ const sparseCase: GoldenCaseDefinition = {
     ],
     previous_period: null,
     retention: null,
+    // Sums of the daily_summaries above (DONATION 1+1 / 500+800).
+    aggregate: { tx_count: 2, points_sum: 1300 },
+    aggregates_by_reason: {
+      DONATION: { tx_count: 2, points_sum: 1300 },
+    },
+    // 04-12 and 04-14 both have active_users=2 → ties resolve to the earliest date.
+    peak_active_day: { date: "2026-04-12", active_users: 2 },
+    // 3 / 28 = 0.10714... → "10.7"
+    active_rate_pct: "10.7",
   },
 };
 
@@ -239,6 +248,17 @@ const zeroActivityCase: GoldenCaseDefinition = {
     highlight_comments: [],
     previous_period: null,
     retention: null,
+    // Zero-activity case: aggregates collapse to zero/empty/null. Mirrors
+    // exactly what the presenter would emit if buildReportPayload were
+    // invoked against this state (it never is — evaluateSkipReason
+    // short-circuits to SKIPPED before the LLM call).
+    aggregate: { tx_count: 0, points_sum: 0 },
+    aggregates_by_reason: {},
+    peak_active_day: null,
+    // active_rate is 0 (members exist, no activity) so the formatter
+    // emits "0.0", not null. Null is reserved for the "no JOINED members"
+    // edge case where active_rate is unset.
+    active_rate_pct: "0.0",
   },
 };
 
@@ -421,6 +441,22 @@ const bustlingCase: GoldenCaseDefinition = {
     ],
     previous_period: null,
     retention: null,
+    // Sums across the four daily_summaries rows above:
+    //   DONATION:  12+33 = 45 / 18500+62300 = 80800
+    //   GRANT:        4       / 40000
+    //   ONBOARDING:   5       / 5000
+    //   total:       54       / 125800
+    aggregate: { tx_count: 54, points_sum: 125800 },
+    aggregates_by_reason: {
+      DONATION: { tx_count: 45, points_sum: 80800 },
+      GRANT: { tx_count: 4, points_sum: 40000 },
+      ONBOARDING: { tx_count: 5, points_sum: 5000 },
+    },
+    // 04-15 has the largest active_users (28); 04-11 (14) and 04-13 (9)
+    // are smaller, so no tie.
+    peak_active_day: { date: "2026-04-15", active_users: 28 },
+    // 34 / 150 = 0.22666... → "22.7"
+    active_rate_pct: "22.7",
   },
 };
 

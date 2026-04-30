@@ -33,6 +33,10 @@ const basePayload: WeeklyReportPayload = {
   highlight_comments: [],
   previous_period: null,
   retention: null,
+  aggregate: { tx_count: 0, points_sum: 0 },
+  aggregates_by_reason: {},
+  peak_active_day: null,
+  active_rate_pct: null,
 };
 
 describe("analyzeCoverage", () => {

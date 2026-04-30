@@ -57,6 +57,10 @@ describe("ReportUseCase.generateReport", () => {
     highlight_comments: [],
     previous_period: null,
     retention: null,
+    aggregate: { tx_count: 0, points_sum: 0 },
+    aggregates_by_reason: {},
+    peak_active_day: null,
+    active_rate_pct: null,
   };
 
   const stubTemplate = {
@@ -660,6 +664,10 @@ describe("ReportUseCase A-3 community last-publish pointer maintenance", () => {
       highlight_comments: [],
       previous_period: null,
       retention: null,
+      aggregate: { tx_count: 0, points_sum: 0 },
+      aggregates_by_reason: {},
+      peak_active_day: null,
+      active_rate_pct: null,
     });
   });
 
