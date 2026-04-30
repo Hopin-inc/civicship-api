@@ -104,7 +104,7 @@ backend は **L1 ダッシュボード向けには「生カウント」を返し
 | `TENURE_THRESHOLD_DAYS` | `90` | (なし、ただし `tenureDistribution` MV のバケット境界が 90 日) | — | ⚠️ MV 側と整合 |
 | `DEFAULT_SEGMENT_THRESHOLDS.tier1` | `0.7` | `classifiers.ts:30` | `0.7` | ✅ |
 | `DEFAULT_SEGMENT_THRESHOLDS.tier2` | `0.4` | `classifiers.ts:31` | `0.4` | ✅ |
-| `DEFAULT_SEGMENT_THRESHOLDS.minMonthsIn` | **`3`** | `classifiers.ts:32` | **`1`** | ❗ **乖離** |
+| DEFAULT_SEGMENT_THRESHOLDS.minMonthsIn | **3** | classifiers.ts:39 | **3** | ✅ |
 | `COHORT_M1_ALERT_THRESHOLD` | `-0.05` | (なし) | — | ❌ portal 専管 |
 | `D30_COHORT_WINDOW` | `3` | (なし、ただし `COHORT_ACTIVATION_WINDOW_DAYS = 30` で D30 自体の定義は一致) | — | ⚠️ window 概念は portal 専管 |
 | `FUNNEL_CONTINUING_MIN_MONTHS` | `2` | (なし) | — | ❌ portal 専管 |
