@@ -26,10 +26,17 @@ export type SegmentThresholds = {
   minMonthsIn: number;
 };
 
+// minMonthsIn = 3 aligns with the portal's DEFAULT_SEGMENT_THRESHOLDS
+// (civicship-portal `_shared/derive.ts`). 1 month was the pre-issue-918
+// "no tenure floor" baseline; 3 months matches the operational
+// short-tenure-artifact guard the portal applies by default and the
+// `tenureDistribution` MV's m3to12Months bucket boundary (90 days).
+// Callers that need the looser baseline can still pass `minMonthsIn: 1`
+// explicitly via AnalyticsSegmentThresholdsInput (MIN_MIN_MONTHS_IN = 1).
 export const DEFAULT_SEGMENT_THRESHOLDS: SegmentThresholds = {
   tier1: 0.7,
   tier2: 0.4,
-  minMonthsIn: 1,
+  minMonthsIn: 3,
 };
 
 export const MIN_MIN_MONTHS_IN = 1;
