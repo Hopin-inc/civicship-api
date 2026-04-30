@@ -82,7 +82,7 @@ backend は **L1 ダッシュボード向けには「生カウント」を返し
 |---|---|---|---|
 | `ACTIVE_DROP_THRESHOLD` | `-0.2` (fraction) | `service.ts:87` | activeDrop 警告の MoM rate 閾値 |
 | `NO_NEW_MEMBERS_WINDOW_DAYS` | `14` | `service.ts:88` | noNewMembers 警告のウィンドウ |
-| `DEFAULT_SEGMENT_THRESHOLDS` | `{tier1: 0.7, tier2: 0.4, minMonthsIn: 1}` | `classifiers.ts:29` | habitual/regular 判定 |
+| DEFAULT_SEGMENT_THRESHOLDS | {tier1: 0.7, tier2: 0.4, minMonthsIn: 3} | classifiers.ts:36 | habitual/regular 判定 |
 | `MIN_MIN_MONTHS_IN` / `MAX_MIN_MONTHS_IN` | `1` / `120` | `classifiers.ts:35-36` | minMonthsIn 入力上下限 |
 | `DAYS_PER_MONTH_APPROX` | `30` | `classifiers.ts:46` | minMonthsIn 月→日変換 |
 | `COHORT_ACTIVATION_WINDOW_DAYS` | `30` | `aggregations.ts:91` | cohort funnel の activatedD30 |
