@@ -46,7 +46,7 @@ backend は **L1 ダッシュボード向けには「生カウント」を返し
 | `aggregateTransactionTotals` | `weeklyAggregator.ts:21` | `TransactionSummaryDailyRow[]` → `{txCount, pointsSum}` | BigInt で合計してから safe-narrow(行ごと narrow だと total が overflow しても素通り) |
 | `computeAvgChainDepth` | `weeklyAggregator.ts:38` | `TransactionSummaryDailyRow` → `number \| null` | 分母は `chainRootCount + chainDescendantCount`(NULL 行は除外) |
 | `computeRetentionSummary` | `weeklyAggregator.ts:53` | `{aggregate, totalMembers, week1, week4}` → `RetentionSummary` | `totalMembers <= 0` または `cohortSize === 0` で各 rate を **null** に collapse |
-| `computeGrowthRates` | `weeklyAggregator.ts:95` | `{currentTxCount, currentPointsSum, currentActiveUsers, hasCommunityContext, previousAggregate}` → `{active_users, tx_count, points_sum}` | `hasCommunityContext === false` 時 `active_users` のみ null(scale-mismatch 回避) |
+| `computeGrowthRates` | `weeklyAggregator.ts:95` | `{currentTxCount, currentPointsSum, currentActiveUsers, hasCommunityContext, previousAggregate}` → `{active_users, tx_count, points_sum}` | `active_users` は `hasCommunityContext === false` または前期間 0 で null。`tx_count` / `points_sum` も `percentChange` 経由で前期間 0 のとき null |
 | `computeStageCounts` | `aggregations.ts:135` | `(members, thresholds)` → cumulative tier counts (tier1 ⊂ tier2) | classifier と単一定義 |
 | `computeStageBreakdown` | `aggregations.ts:171` | `(members, thresholds)` → disjoint buckets, sums to 1.0 | `pointsContributionPct` も計算 |
 
@@ -117,13 +117,13 @@ backend は **L1 ダッシュボード向けには「生カウント」を返し
 
 ## 3. 既知の "ハマりどころ"(突合せ時に必ずチェック)
 
-1. **`percentChange` の単位** — backend は `× 100` 済みの「%」値を返す。portal が fraction(0.13)で受けていたら 100倍ズレる。
+1. **`percentChange` の単位** — backend の純関数は `× 100` 済みの「%」値を返すが、L1 ダッシュボード向け API (`growthRateActivity` 等、`service.ts:454`)では fraction に変換して返す箇所がある。portal 側で「どの backend フィールドと突き合わせるか」によって期待される単位が異なる点に注意。
 2. **0 / null 規約の不統一** — backend 内ですら `rateOf`(0返し) と `computeActiveRate`(null返し)の2系統。portal がどちらに寄せているか要確認。
 3. **alert ウィンドウ** — backend `getAlerts` は **直近完了週**(月曜火曜のノイズ回避)。portal が「現在進行週」で判定していたら毎週月曜に false positive が出る。
 4. **JST 境界** — backend は `truncateToJstDate` で UTC-encoded-JST date 規約を厳守(SQL `@db.Date` と round-trip 可)。portal が naive `setUTCHours(0,0,0,0)` していたら 00:00–08:59 JST で off-by-one。
 5. **`isDormant` の strict less-than** — equality は active 扱い。portal が `<=` だと境界日のメンバーが片側に倒れる。
 6. **`bigintToSafeNumber` の throw** — backend は precision loss で throw、silent narrow しない。portal が `Number(bigint)` を直叩きしていたら大コミュニティで silent 破綻。
-7. **`computeGrowthRates.active_users` の null collapse** — `hasCommunityContext === false` のときのみ null。portal が常に値を期待していたら欠損。
+7. **`computeGrowthRates.active_users` の null collapse** — `hasCommunityContext === false` または比較対象の前期間が 0 のとき null。portal が常に値を期待していたら欠損。
 8. **`minMonthsIn` の day vs month** — backend は `daysIn >= minMonthsIn × 30`(calendar month inflate を回避)。portal が `monthsIn >= minMonthsIn` だと 2日メンバーが habitual になる artifact が再発。
 
 ---
