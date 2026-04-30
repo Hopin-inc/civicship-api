@@ -171,7 +171,7 @@ backend は **L1 ダッシュボード向けには「生カウント」を返し
 6. **`bigintToSafeNumber` の throw** — backend は precision loss で throw、silent narrow しない。portal は GraphQL 側で number 化済の値を受けるので影響なし。✅
 7. **`computeGrowthRates.active_users` の null collapse** — `hasCommunityContext === false` または比較対象の前期間が 0 のとき null。portal が常に値を期待していたら欠損。**未確認**: portal は report-bot 経由の `WeeklyReportPayload` を消費していないので影響範囲は LLM 経路のみ。
 8. **`minMonthsIn` の day vs month** — backend は `daysIn >= minMonthsIn × 30`(calendar month inflate を回避)。portal `derive.ts` は `classifyMember` 自体を持たず分類は backend に任せているので、portal 側の day/month バグは無し。✅
-9. **❗ `minMonthsIn` のデフォルト値** — **portal=3 / backend=1** で乖離(`DEFAULT_SEGMENT_THRESHOLDS`)。portal の `DEFAULT_SEGMENT_THRESHOLDS` は SSR / hook / story の共通値で、backend の `classifyMember` には届かない(GraphQL 入力 `segmentThresholds` 経由で渡される想定)。問題は **portal が既定値で叩く時 と backend が `DEFAULT_SEGMENT_THRESHOLDS` を fallback で使う時の振る舞いが違う**こと。**用途別に正を決める必要あり**(§6)。
+9. ✅ **minMonthsIn のデフォルト値** — **portal=3 / backend=3** で統一済み。portal の運用判断を尊重し、backend 側のデフォルト値を 3 に引き上げました。詳細は §6。
 
 ---
 
