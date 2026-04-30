@@ -26,10 +26,12 @@ export default class AnalyticsConverter {
    *
    * - Negative inputs are clamped to 0 so the downstream invariant
    *   `tier1 >= tier2 >= 0` holds.
-   * - `minMonthsIn` is clamped to [MIN, MAX]. Default 1 preserves the
-   *   pre-issue-918 behaviour (no tenure filter); portal opts in to
-   *   stricter classification by passing 3+. Hard ceiling 120 prevents
-   *   `minMonthsIn = 9999` classifying every member as ineligible.
+   * - `minMonthsIn` is clamped to [MIN, MAX]. Default 3 matches the
+   *   portal's DEFAULT_SEGMENT_THRESHOLDS and the short-tenure-artifact
+   *   guard intent; callers that want the pre-issue-918 baseline (no
+   *   tenure floor) can pass `minMonthsIn: 1` explicitly. Hard ceiling
+   *   120 prevents `minMonthsIn = 9999` classifying every member as
+   *   ineligible.
    * - If a caller flips them (tier2 > tier1), they are swapped silently.
    */
   static resolveThresholds(

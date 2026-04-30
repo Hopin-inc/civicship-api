@@ -18,11 +18,13 @@ describe("computeStageCounts", () => {
   it("classifies members by the supplied thresholds with cumulative tiers", () => {
     // userSendRate: 0 (latent), 0.3 (occasional), 0.5 (regular),
     // 0.8 (habitual). Default thresholds tier1=0.7, tier2=0.4.
+    // monthsIn = 6 keeps every member above the default minMonthsIn = 3
+    // tenure floor so the test exercises the rate axis only.
     const members = [
-      member({ userId: "a", donationOutMonths: 0, userSendRate: 0 }),
-      member({ userId: "b", donationOutMonths: 1, userSendRate: 0.3 }),
-      member({ userId: "c", donationOutMonths: 2, userSendRate: 0.5 }),
-      member({ userId: "d", donationOutMonths: 5, userSendRate: 0.8 }),
+      member({ userId: "a", monthsIn: 6, donationOutMonths: 0, userSendRate: 0 }),
+      member({ userId: "b", monthsIn: 6, donationOutMonths: 1, userSendRate: 0.3 }),
+      member({ userId: "c", monthsIn: 6, donationOutMonths: 2, userSendRate: 0.5 }),
+      member({ userId: "d", monthsIn: 6, donationOutMonths: 5, userSendRate: 0.8 }),
     ];
     const counts = computeStageCounts(members, DEFAULT_SEGMENT_THRESHOLDS);
     expect(counts).toEqual({
@@ -46,9 +48,10 @@ describe("computeStageCounts", () => {
 
   it("exactly-at-threshold rows are INCLUDED (>= comparison)", () => {
     // userSendRate == tier1 exactly should count as habitual.
+    // monthsIn = 6 clears the default minMonthsIn = 3 floor.
     const members = [
-      member({ userId: "a", donationOutMonths: 7, userSendRate: 0.7 }),
-      member({ userId: "b", donationOutMonths: 4, userSendRate: 0.4 }),
+      member({ userId: "a", monthsIn: 6, donationOutMonths: 7, userSendRate: 0.7 }),
+      member({ userId: "b", monthsIn: 6, donationOutMonths: 4, userSendRate: 0.4 }),
     ];
     const counts = computeStageCounts(members, DEFAULT_SEGMENT_THRESHOLDS);
     expect(counts.tier1Count).toBe(1);
@@ -84,11 +87,12 @@ describe("computeStageCounts", () => {
   // ====================================================================
   // minMonthsIn: short-tenure artifact guard (issue #918, refinement 1)
   // ====================================================================
-  it("minMonthsIn = 1 (default) admits a 1-month-tenure habitual sender", () => {
-    // Reproduces the artifact: a brand-new member who donated once
-    // their first month — userSendRate = 1/1 = 1.0, comfortably
-    // over tier1 = 0.7. With the legacy minMonthsIn = 1, they
-    // count as habitual.
+  it("minMonthsIn = 1 (legacy override) admits a 1-month-tenure habitual sender", () => {
+    // Reproduces the artifact the default guards against: a brand-new
+    // member who donated once their first month — userSendRate = 1/1 =
+    // 1.0, comfortably over tier1 = 0.7. With the legacy minMonthsIn =
+    // 1 (now an explicit opt-in via AnalyticsSegmentThresholdsInput),
+    // they count as habitual.
     const members = [
       member({ userId: "n", monthsIn: 1, donationOutMonths: 1, userSendRate: 1.0 }),
     ];
@@ -450,11 +454,13 @@ describe("computeDormantCount", () => {
 // ========================================================================
 describe("computeStageBreakdown", () => {
   it("splits members into 4 disjoint buckets whose counts sum to total", () => {
+    // monthsIn = 6 keeps every member above the default minMonthsIn = 3
+    // tenure floor so the test exercises the rate axis only.
     const members = [
-      member({ userId: "a", donationOutMonths: 0, userSendRate: 0 }), // latent
-      member({ userId: "b", donationOutMonths: 1, userSendRate: 0.3 }), // occasional
-      member({ userId: "c", donationOutMonths: 2, userSendRate: 0.5 }), // regular
-      member({ userId: "d", donationOutMonths: 7, userSendRate: 0.9 }), // habitual
+      member({ userId: "a", monthsIn: 6, donationOutMonths: 0, userSendRate: 0 }), // latent
+      member({ userId: "b", monthsIn: 6, donationOutMonths: 1, userSendRate: 0.3 }), // occasional
+      member({ userId: "c", monthsIn: 6, donationOutMonths: 2, userSendRate: 0.5 }), // regular
+      member({ userId: "d", monthsIn: 6, donationOutMonths: 7, userSendRate: 0.9 }), // habitual
     ];
     const bd = computeStageBreakdown(members, DEFAULT_SEGMENT_THRESHOLDS);
     expect(bd.latent.count).toBe(1);
@@ -468,10 +474,10 @@ describe("computeStageBreakdown", () => {
 
   it("pct of each bucket sums to 1.0", () => {
     const members = [
-      member({ userId: "a", donationOutMonths: 0 }),
-      member({ userId: "b", donationOutMonths: 0 }),
-      member({ userId: "c", donationOutMonths: 3, userSendRate: 0.4 }),
-      member({ userId: "d", donationOutMonths: 7, userSendRate: 0.8 }),
+      member({ userId: "a", monthsIn: 6, donationOutMonths: 0 }),
+      member({ userId: "b", monthsIn: 6, donationOutMonths: 0 }),
+      member({ userId: "c", monthsIn: 6, donationOutMonths: 3, userSendRate: 0.4 }),
+      member({ userId: "d", monthsIn: 6, donationOutMonths: 7, userSendRate: 0.8 }),
     ];
     const bd = computeStageBreakdown(members, DEFAULT_SEGMENT_THRESHOLDS);
     expect(bd.latent.pct + bd.occasional.pct + bd.regular.pct + bd.habitual.pct).toBeCloseTo(
@@ -481,22 +487,27 @@ describe("computeStageBreakdown", () => {
 
   it("pointsContributionPct is 0 for latent and sums to 1.0 over non-latent buckets", () => {
     // Habitual: 700pt, regular: 200pt, occasional: 100pt. Total 1000.
+    // monthsIn = 6 keeps every member above the default minMonthsIn = 3
+    // tenure floor so the test exercises the rate axis only.
     const members = [
-      member({ userId: "a", donationOutMonths: 0, totalPointsOut: BigInt(0) }),
+      member({ userId: "a", monthsIn: 6, donationOutMonths: 0, totalPointsOut: BigInt(0) }),
       member({
         userId: "b",
+        monthsIn: 6,
         donationOutMonths: 1,
         userSendRate: 0.3,
         totalPointsOut: BigInt(100),
       }),
       member({
         userId: "c",
+        monthsIn: 6,
         donationOutMonths: 4,
         userSendRate: 0.5,
         totalPointsOut: BigInt(200),
       }),
       member({
         userId: "d",
+        monthsIn: 6,
         donationOutMonths: 7,
         userSendRate: 0.9,
         totalPointsOut: BigInt(700),

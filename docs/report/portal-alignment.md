@@ -6,8 +6,8 @@
 **Backend scope:** `src/application/domain/report/util.ts`, `report/transactionStats/weeklyAggregator.ts`, `analytics/community/{service,classifiers,aggregations}.ts`, `report/feedback/data/repository.ts`
 **Portal scope:** `src/app/sysAdmin/_shared/derive.ts` (civicship-portal PR #1212, branch `claude/share-report-logic-4dazu`)
 
-> **TL;DR — 即時対応が必要な発見**
-> 1. **`minMonthsIn` の値が portal=3 / backend=1 でズレている**(`DEFAULT_SEGMENT_THRESHOLDS`)。同じメンバーが portal では `occasional`、backend LLM ペイロードでは `habitual` に分類されうる。**まず合意形成が必要**。
+> **TL;DR — 主な発見**
+> 1. ✅ **`minMonthsIn` の portal/backend 乖離は解消済み**(本 PR で backend を `1` → `3` に変更、§6)。
 > 2. portal の L2 メトリクス(Pareto / Recovery / D30 / Weekly continuation series 等)は **backend 等価なし** — portal が raw counts から派生する設計どおり。共有対象から外す。
 > 3. portal `deriveAlerts` と backend `getAlerts` は **意図的に別計算**(L1 ダッシュボード vs report-bot)。同名だが揃えてはいけない。
 
@@ -209,26 +209,21 @@ backend 側も **2系統並存**: `rateOf`(0 返し、L1 ダッシュボード A
 
 ---
 
-## 6. ❗ `minMonthsIn` 乖離の取り扱い
+## 6. ❗ `minMonthsIn` 乖離の取り扱い ✅ 解消済み
 
-| 経路 | 既定値 | 影響 |
-|---|---|---|
-| portal L1 ダッシュボード(`segmentThresholds` 引数で backend に渡す) | `3` | backend `classifyMember` に `{minMonthsIn: 3}` が渡る |
-| backend LLM ペイロード(`classifyMember` を fallback で使う場合) | `1` | report-bot は backend デフォルトで分類 |
+**経緯**: portal=3 / backend=1 で乖離していたため、同じメンバー(daysIn=60)が L1 ダッシュボードでは `occasional`、report-bot LLM では `habitual` に分類される問題があった。
 
-**問題**: 同じメンバー(daysIn = 60)が
+**選択**: **(A) backend のデフォルトを `3` に揃える** を採用(portal の運用判断「短期在籍 artifact 排除」を尊重、`tenureDistribution` MV の `m3to12Months` バケット境界 90 日とも整合)。本 PR で `classifiers.ts:32` を `1` → `3` に変更済み。
 
-- L1 ダッシュボード: `daysIn(60) < 3 × 30(=90)` → `occasional` に降格
-- report-bot LLM: `daysIn(60) >= 1 × 30(=30)` → rate 次第で `habitual`/`regular`
+**実装変更**:
+- `src/application/domain/analytics/community/classifiers.ts`: `DEFAULT_SEGMENT_THRESHOLDS.minMonthsIn = 3`、変更理由のコメント追記
+- `src/application/domain/analytics/data/converter.ts`: `resolveThresholds` のドキュメントコメントを更新(default 3、portal alignment、legacy 1 は明示 opt-in 経路)
+- `src/__tests__/unit/analytics/community/aggregations.test.ts`: `DEFAULT_SEGMENT_THRESHOLDS` を使うテストで member fixture の `monthsIn` を 6 に bump して tenure floor を回避(rate 軸テストの意図を保つ)
+- 同テスト内の "minMonthsIn = 1 (default)" を "minMonthsIn = 1 (legacy override)" に rename
 
-**選択肢**:
-- (A) backend のデフォルトを `3` に揃える(portal の運用判断「短期在籍 artifact 排除」を採用)
-- (B) portal のデフォルトを `1` に揃える(backend のドメインモデルの初期値を尊重)
-- (C) 別物として明示的に保持(L1 と LLM で分類意図が違う、と documentation する)
+**後方互換**: `MIN_MIN_MONTHS_IN = 1` は維持。明示的に `{minMonthsIn: 1}` を渡せば従来挙動を取り戻せる。`AnalyticsSegmentThresholdsInput` 経由の API caller には影響なし(値を明示している場合)。
 
-**backend からの推奨**: **(A)**。portal の comment "短期在籍 artifact (1 ヶ月で 1 回送って habitual 扱い) を運用上排除" は backend 側の `classifiers.ts:50-63` の同じ artifact ガードと意図が一致。backend デフォルトの `1` は domain の最小値で、UI 既定値としては緩すぎる。要 portal 側の合意。
-
-→ 合意できれば backend で `DEFAULT_SEGMENT_THRESHOLDS.minMonthsIn = 3` に変更する小 PR を切ります。
+**注意**: caller が `minMonthsIn` を未指定の場合、production の分類が変わる。portal の hook / SSR は従来から `3` を渡しているので影響なし。LLM ペイロード経路で fallback を使っていた箇所のみ実質的に厳格化される。
 
 ---
 
@@ -236,11 +231,10 @@ backend 側も **2系統並存**: `rateOf`(0 返し、L1 ダッシュボード A
 
 ### portal 側
 - [ ] `deriveHubUserPct` を null 返しに揃える小 PR を切る(§4)
-- [ ] `minMonthsIn` を 3 で固定する運用方針が長期的に正しいか確認(§6)
 - [ ] limit 1000 到達コミュニティの実データ確認 → server-side 集計を backend に依頼する優先度判断(§5.2)
 
 ### backend 側(本リポ・後続 PR)
-- [ ] §6 の合意が取れたら `DEFAULT_SEGMENT_THRESHOLDS.minMonthsIn = 3` に変更
+- [x] `DEFAULT_SEGMENT_THRESHOLDS.minMonthsIn = 3` に変更(本 PR で対応、§6)
 - [ ] 月次版 `computeGrowthRates`(現状は週次のみ純関数化)を関数化するか判断 — portal 側 `deriveDonationMoM` と仕様が異なるので共有しない方針なら不要
 
 ### 両者
