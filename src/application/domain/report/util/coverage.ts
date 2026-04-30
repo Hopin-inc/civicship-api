@@ -24,6 +24,18 @@ export interface CoverageField {
  * here is a strong "fabrication or omission" signal. Empty `name`
  * values (rare; profile lookup miss in the presenter) carry
  * `mentioned: true` so they don't poison the warning aggregation.
+ *
+ * Same shipability-vs-fidelity tradeoff as `CoverageField`: substring
+ * matching has no concept of word boundaries (especially in Japanese,
+ * where there isn't a reliable boundary character), so a payload name
+ * of "田中" matches an unrelated "田中太郎" in the output and gets
+ * flagged `mentioned: true`. The reverse failure (payload "田中" vs.
+ * output "田中さん") is the exact case we want to catch, and
+ * disambiguating is impossible from the substring alone. The
+ * authoritative fidelity check lives in the JUDGE prompt's
+ * `fabrication_check.top_user_names` rubric, which reads the surrounding
+ * context; this coverage signal is a cheap pre-judge tripwire and is
+ * intentionally permissive.
  */
 export interface TopUserNameCoverage {
   name: string;
