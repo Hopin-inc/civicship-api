@@ -554,20 +554,31 @@ describe("ReportPresenter.weeklyPayload (community_context / deepest_chain)", ()
         deepestChain: null,
       });
 
+      // ONBOARDING is pre-filled with zero even though no ONBOARDING rows
+      // were summed — without that the prompt's `[...]` copy-verbatim rule
+      // breaks for quiet weeks. DONATION / GRANT carry their summed values.
       expect(payload.aggregates_by_reason).toEqual({
         [TransactionReason.DONATION]: { tx_count: 5, points_sum: 2300 },
         [TransactionReason.GRANT]: { tx_count: 1, points_sum: 5000 },
+        [TransactionReason.ONBOARDING]: { tx_count: 0, points_sum: 0 },
       });
     });
 
-    it("returns an empty object when daily_summaries is empty", () => {
+    it("pre-fills the core reasons with zero when daily_summaries is empty", () => {
       const payload = ReportPresenter.weeklyPayload({
         ...baseInput,
         communityContext: null,
         deepestChain: null,
       });
 
-      expect(payload.aggregates_by_reason).toEqual({});
+      // The keys must be present so prompt placeholders like
+      // `[aggregates_by_reason.DONATION.tx_count]` still resolve to a real
+      // number — the [...] copy-verbatim rule cannot apply to a missing key.
+      expect(payload.aggregates_by_reason).toEqual({
+        [TransactionReason.DONATION]: { tx_count: 0, points_sum: 0 },
+        [TransactionReason.GRANT]: { tx_count: 0, points_sum: 0 },
+        [TransactionReason.ONBOARDING]: { tx_count: 0, points_sum: 0 },
+      });
     });
 
     // Regression guard: the per-reason sum must be computed at BigInt and

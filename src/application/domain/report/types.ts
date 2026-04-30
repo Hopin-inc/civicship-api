@@ -53,11 +53,19 @@ export interface WeeklyReportPayload {
     points_sum: number;
   };
   /**
-   * Per-reason totals (DONATION / GRANT / ONBOARDING / TICKET_* / OPPORTUNITY_*
-   * / POINT_*) keyed by the raw `TransactionReason` enum string. Templates
-   * reference `[aggregates_by_reason.DONATION.tx_count]` etc.; reasons absent
-   * from the payload mean zero transactions of that kind in the window and
-   * the prompt is instructed to omit the corresponding row.
+   * Per-reason totals keyed by the raw `TransactionReason` enum string.
+   * The core reasons `DONATION` / `GRANT` / `ONBOARDING` are ALWAYS
+   * present — pre-filled with zero on weeks where no transactions of
+   * that kind occurred — so prompt placeholders like
+   * `[aggregates_by_reason.DONATION.tx_count]` always resolve to a real
+   * number. Without the prefill the key would be absent on quiet weeks,
+   * the `[...]` copy-verbatim rule could not apply, and the LLM would be
+   * free to invent the missing value. Other reasons (`POINT_ISSUED` /
+   * `POINT_REWARD` / `TICKET_*` / `OPPORTUNITY_*`) appear only when they
+   * actually occurred; the prompt rules instruct the model to leave
+   * non-core reasons unmentioned. Templates omit a core-reason row only
+   * when its `tx_count` is zero (i.e. nothing happened) — the key itself
+   * is always there.
    */
   aggregates_by_reason: {
     [reason: string]: {

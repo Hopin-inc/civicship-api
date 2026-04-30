@@ -191,9 +191,14 @@ const sparseCase: GoldenCaseDefinition = {
     previous_period: null,
     retention: null,
     // Sums of the daily_summaries above (DONATION 1+1 / 500+800).
+    // GRANT / ONBOARDING are pre-filled with zero so the prompt's
+    // `[aggregates_by_reason.GRANT.tx_count]` placeholder still resolves
+    // even though no transactions of those kinds occurred in the window.
     aggregate: { tx_count: 2, points_sum: 1300 },
     aggregates_by_reason: {
       DONATION: { tx_count: 2, points_sum: 1300 },
+      GRANT: { tx_count: 0, points_sum: 0 },
+      ONBOARDING: { tx_count: 0, points_sum: 0 },
     },
     // 04-12 and 04-14 both have active_users=2 → ties resolve to the earliest date.
     peak_active_day: { date: "2026-04-12", active_users: 2 },
@@ -251,9 +256,15 @@ const zeroActivityCase: GoldenCaseDefinition = {
     // Zero-activity case: aggregates collapse to zero/empty/null. Mirrors
     // exactly what the presenter would emit if buildReportPayload were
     // invoked against this state (it never is — evaluateSkipReason
-    // short-circuits to SKIPPED before the LLM call).
+    // short-circuits to SKIPPED before the LLM call). Core reasons are
+    // pre-filled even here so the fixture matches the runtime payload
+    // shape exactly.
     aggregate: { tx_count: 0, points_sum: 0 },
-    aggregates_by_reason: {},
+    aggregates_by_reason: {
+      DONATION: { tx_count: 0, points_sum: 0 },
+      GRANT: { tx_count: 0, points_sum: 0 },
+      ONBOARDING: { tx_count: 0, points_sum: 0 },
+    },
     peak_active_day: null,
     // active_rate is 0 (members exist, no activity) so the formatter
     // emits "0.0", not null. Null is reserved for the "no JOINED members"
