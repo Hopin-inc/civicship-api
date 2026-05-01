@@ -6,6 +6,7 @@ import { ReportTemplateKind, ReportTemplateScope } from "@prisma/client";
 import { container } from "tsyringe";
 import { GqlReportVariant } from "@/types/graphql";
 import ReportUseCase from "@/application/domain/report/usecase";
+import { addDays, truncateToJstDate } from "@/application/domain/report/util";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import type { IContext } from "@/types/server";
 
@@ -117,18 +118,15 @@ function parseArgs(): CliArgs {
       periodTo: new Date(`${toArg}T00:00:00Z`),
     };
   }
-  // Default window: yesterday back 6 days (the same 7-day inclusive
-  // window the live weekly batch uses). Operating in UTC at this layer
-  // is fine because `generateReport` itself runs the values through
-  // `truncateToJstDate` before persisting.
-  const today = new Date();
-  const todayUtc = new Date(
-    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
-  );
-  const periodTo = new Date(todayUtc);
-  periodTo.setUTCDate(periodTo.getUTCDate() - 1);
-  const periodFrom = new Date(periodTo);
-  periodFrom.setUTCDate(periodFrom.getUTCDate() - 6);
+  // Default window: yesterday back 6 days, computed against the JST
+  // calendar via the same `truncateToJstDate` helper the live weekly
+  // batch uses (`generateWeeklyReports.ts:24-25`). The earlier UTC-only
+  // computation drifted by a day during the JST 00:00–09:00 window
+  // (= UTC 15:00–24:00 of the prior day) because `getUTCDate()` would
+  // still be on "yesterday" while JST had already rolled to "today",
+  // landing the probe one day off from what the batch would have run.
+  const periodTo = addDays(truncateToJstDate(new Date()), -1);
+  const periodFrom = addDays(periodTo, -6);
   return { communityIds, periodFrom, periodTo };
 }
 
