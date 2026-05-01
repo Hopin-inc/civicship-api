@@ -68,6 +68,12 @@ describe("ReportService", () => {
       [ReportStatus.APPROVED, ReportStatus.REJECTED],
       [ReportStatus.APPROVED, ReportStatus.SUPERSEDED],
       [ReportStatus.PUBLISHED, ReportStatus.SUPERSEDED],
+      // PR-B: regenerating from a REJECTED parent (auto-rejected by the
+      // judge or manually rejected by an admin) routes through
+      // supersedeParentIfRegenerating, which calls
+      // assertStatusTransition(REJECTED, SUPERSEDED). Without this entry
+      // the regenerate path would throw on every attempt.
+      [ReportStatus.REJECTED, ReportStatus.SUPERSEDED],
       // Force-regenerating from a SKIPPED parent needs this transition so
       // the shared supersedeParentIfRegenerating helper can mark the prior
       // row obsolete before the fresh run is persisted.

@@ -431,7 +431,13 @@ export default class ReportService {
         ReportStatus.SUPERSEDED,
       ],
       [ReportStatus.PUBLISHED]: [ReportStatus.SUPERSEDED],
-      [ReportStatus.REJECTED]: [],
+      // PR-B: REJECTED → SUPERSEDED is permitted so a manual or batch
+      // regenerate of an auto-rejected row (judgeScore < threshold) can
+      // mark the prior row obsolete via `supersedeParentIfRegenerating`.
+      // Without this transition `generateReport(parentRunId=<rejected>)`
+      // would fail at the assertStatusTransition guard. SUPERSEDED is
+      // the only legal target — there is no "un-reject" mutation.
+      [ReportStatus.REJECTED]: [ReportStatus.SUPERSEDED],
       [ReportStatus.SUPERSEDED]: [],
       // SKIPPED is a creation-time state: rows are born SKIPPED when the
       // zero-activity guard elides the LLM call. They do NOT progress into
