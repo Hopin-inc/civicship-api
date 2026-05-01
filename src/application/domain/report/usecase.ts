@@ -2,6 +2,7 @@ import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
+import logger from "@/infrastructure/logging";
 import ReportService from "@/application/domain/report/service";
 import ReportJudgeService, { JudgeParseError } from "@/application/domain/report/template/judgeService";
 import ReportTemplateSelector from "@/application/domain/report/template/selector";
@@ -21,6 +22,7 @@ import {
   GqlReportsConnection,
   GqlReport,
   GqlReportTemplate,
+  GqlReportVariant,
   GqlUpdateReportTemplatePayload,
   GqlApproveReportPayload,
   GqlPublishReportPayload,
@@ -49,6 +51,61 @@ const DEFAULT_COMMENT_LIMIT = 200;
 const MAX_WINDOW_DAYS = 90;
 const MAX_TOP_N = 100;
 const MAX_COMMENT_LIMIT = 1000;
+
+/**
+ * Score below which the judge auto-rejects the report (DRAFT → REJECTED in
+ * the same transaction as the judge save). Paired with the JUDGE prompt's
+ * scoring rule "fabrication 検知時は score ≤ 40", the threshold of 60 means
+ * "auto-reject only when fabrication is detected" — quality-only failures
+ * land in 60–89 and stay DRAFT for human review.
+ */
+const JUDGE_AUTO_REJECT_THRESHOLD = 60;
+
+/**
+ * Variant-specific rubric handed to the JUDGE prompt via the
+ * `${judge_criteria}` placeholder in `userPromptTemplate`. Splits the
+ * checks into `fabrication_check` (factual fidelity — must all be true to
+ * avoid auto-reject) and `quality_check` (narrative qualities — false
+ * here lowers score but does not trigger auto-reject by itself).
+ *
+ * Other variants pass `judgeCriteria: undefined` to `executeJudge` and
+ * receive a JSON.stringify of `{}` in the prompt. JUDGE templates do not
+ * exist for non-WEEKLY_SUMMARY variants today, so the judge step is
+ * skipped upstream and the empty-criteria branch is unreachable in
+ * practice; it stays for forward compatibility with future variants.
+ */
+const WEEKLY_SUMMARY_JUDGE_CRITERIA = {
+  fabrication_check: {
+    top_user_names:
+      "レポートに登場する人名は payload の top_users[*].name のいずれかと一致しているか。" +
+      "存在しない名前が書かれていたら false。top_users が空なら true。",
+    top_user_points:
+      "レポートに登場するポイント数値は payload の top_users[*].points_in / points_out / donation_out_points の値と一致しているか。" +
+      "数値が変形・概算されていたら false。top_users が空なら true。",
+    chain_depth:
+      "deepest_chain.chain_depth の値がレポートに正確に記載されているか。" +
+      "deepest_chain が null なら true。",
+    active_users:
+      "community_context.active_users_in_window の値がレポートに正確に記載されているか。",
+    total_members:
+      "community_context.total_members の値がレポートに正確に記載されているか。",
+    no_phantom_comparison:
+      "previous_period が null のとき、前週比・先週比・増加・減少等の比較表現がレポートに含まれていないか。" +
+      "previous_period が non-null なら true。",
+  },
+  quality_check: {
+    deepest_chain_mentioned:
+      "deepest_chain が non-null のとき、そのエピソードがレポートに言及されているか。" +
+      "deepest_chain が null なら true。",
+    actionable_insights:
+      "来週に向けた具体的なアクション（「〇〇をする」形式）が含まれているか。",
+    reason_distinction:
+      "活動認定と感謝の贈り合いが正確に区別されているか。" +
+      "活動認定をメンバー間の感謝として誤記していたら false。",
+    no_enum_names:
+      "DONATION / GRANT / ONBOARDING 等の内部キー名がそのまま出力されていないか。",
+  },
+} as const;
 
 @injectable()
 export default class ReportUseCase {
@@ -450,6 +507,24 @@ export default class ReportUseCase {
     // coverage signal recorded.
     const coverage = analyzeCoverage(payload, outputMarkdown);
 
+    // Coverage observability: surface top_user_names that the LLM
+    // failed to copy verbatim. Numeric fields (top_user_points etc.)
+    // are intentionally NOT logged here because their substring
+    // matches false-positive too easily (e.g. "21000" appearing as a
+    // fragment of "210000") to be a useful signal — the raw counters
+    // still flow into `coverageJson` for offline analysis.
+    const missedNames = coverage.top_user_names
+      .filter((u) => !u.mentioned)
+      .map((u) => u.name);
+    if (missedNames.length > 0) {
+      logger.warn("report.coverage.top_user_names_missed", {
+        event: "report.coverage.top_user_names_missed",
+        reportId: report.id,
+        variant: report.variant,
+        names: missedNames,
+      });
+    }
+
     let judgeTemplate;
     try {
       judgeTemplate = await this.judgeService.selectJudgeTemplate(ctx, report.variant);
@@ -483,11 +558,21 @@ export default class ReportUseCase {
       });
     }
 
+    // Variant-specific rubric. WEEKLY_SUMMARY has the only criteria
+    // defined today; other variants currently have no JUDGE template
+    // either, so this branch is unreachable in practice but keeps the
+    // call contract honest for future variants.
+    const judgeCriteria =
+      report.variant === GqlReportVariant.WeeklySummary
+        ? WEEKLY_SUMMARY_JUDGE_CRITERIA
+        : undefined;
+
     let judgeResult;
     try {
       judgeResult = await this.judgeService.executeJudge(ctx, judgeTemplate, {
         outputMarkdown,
         inputPayload: payload,
+        judgeCriteria,
       });
     } catch (e) {
       const isParseError = e instanceof JudgeParseError;
@@ -514,11 +599,12 @@ export default class ReportUseCase {
       });
     }
 
-    return this.persistJudgeOutcome(ctx, report.id, {
+    return this.persistJudgeOutcomeWithAutoReject(ctx, report.id, {
       judgeScore: judgeResult.score,
       judgeBreakdown: judgeResult as unknown as Prisma.InputJsonValue,
       judgeTemplateId: judgeTemplate.id,
       coverageJson: coverage as unknown as Prisma.InputJsonValue,
+      reportVariant: report.variant,
     });
   }
 
@@ -542,6 +628,60 @@ export default class ReportUseCase {
     return ctx.issuer.onlyBelongingCommunity(ctx, (tx) =>
       this.service.saveJudgeResult(ctx, reportId, data, tx),
     );
+  }
+
+  /**
+   * Success-path counterpart to `persistJudgeOutcome`: saves the judge
+   * outcome AND, if `judgeScore < JUDGE_AUTO_REJECT_THRESHOLD`, flips
+   * the row to REJECTED **inside the same transaction**. The combined
+   * write closes the observable window where a fabricating row would
+   * otherwise be visible as DRAFT with a low judgeScore until the
+   * follow-up status update lands.
+   *
+   * Failure paths (judge template missing, parse error, LLM 5xx) keep
+   * using `persistJudgeOutcome` directly — `judgeScore` is null on
+   * those paths and the threshold comparison is not meaningful, so the
+   * row stays DRAFT for human review rather than being auto-rejected
+   * on insufficient evidence.
+   */
+  private async persistJudgeOutcomeWithAutoReject(
+    ctx: IContext,
+    reportId: string,
+    data: {
+      judgeScore: number;
+      judgeBreakdown: Prisma.InputJsonValue;
+      judgeTemplateId: string;
+      coverageJson: Prisma.InputJsonValue;
+      reportVariant: string;
+    },
+  ) {
+    const { reportVariant, ...judgeData } = data;
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      const updated = await this.service.saveJudgeResult(ctx, reportId, judgeData, tx);
+      if (data.judgeScore >= JUDGE_AUTO_REJECT_THRESHOLD) {
+        return updated;
+      }
+      // Auto-reject path: assertStatusTransition throws on illegal
+      // moves so a future workflow change that disallows DRAFT → REJECTED
+      // surfaces here as a hard error rather than a silently-skipped
+      // transition.
+      this.service.assertStatusTransition(updated.status, ReportStatus.REJECTED);
+      const rejected = await this.service.updateReportStatus(
+        ctx,
+        reportId,
+        ReportStatus.REJECTED,
+        undefined,
+        tx,
+      );
+      logger.warn("report.judge.auto_rejected", {
+        event: "report.judge.auto_rejected",
+        reportId,
+        variant: reportVariant,
+        judgeScore: data.judgeScore,
+        threshold: JUDGE_AUTO_REJECT_THRESHOLD,
+      });
+      return rejected;
+    });
   }
 
   /**
