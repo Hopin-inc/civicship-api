@@ -638,6 +638,19 @@ export default class ReportUseCase {
    * otherwise be visible as DRAFT with a low judgeScore until the
    * follow-up status update lands.
    *
+   * INVARIANT: this helper is called **only from `judgeAndPersist`,
+   * which itself is only invoked from the LLM-success branch of
+   * `generateReport` immediately after `service.createReport`**.
+   * `createReport` does not set `status`, so the row is born DRAFT
+   * (the Prisma column default), and `saveJudgeResult` only writes
+   * judge / coverage columns — `updated.status` is therefore
+   * guaranteed to be DRAFT here. The `assertStatusTransition` call
+   * below verifies that invariant: any future refactor that surfaces
+   * a non-DRAFT row to this code path will throw a hard error rather
+   * than silently skip the auto-reject. Do NOT replace the assertion
+   * with an `if (status === DRAFT)` guard — silent-skip would mask
+   * the regression as "auto-reject mysteriously stopped firing".
+   *
    * Failure paths (judge template missing, parse error, LLM 5xx) keep
    * using `persistJudgeOutcome` directly — `judgeScore` is null on
    * those paths and the threshold comparison is not meaningful, so the
