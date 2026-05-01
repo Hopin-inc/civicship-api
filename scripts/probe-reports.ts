@@ -43,6 +43,14 @@ interface CliArgs {
   periodTo: Date;
 }
 
+const USAGE =
+  "Usage: tsx scripts/probe-reports.ts --community=<id> [--from=YYYY-MM-DD --to=YYYY-MM-DD]";
+
+/**
+ * Throws on bad input rather than calling `process.exit` directly so the
+ * caller controls the exit boundary (and the parser stays unit-testable).
+ * `main` catches and exits with the usage banner.
+ */
 function parseArgs(): CliArgs {
   const map = new Map<string, string>();
   for (const a of process.argv.slice(2)) {
@@ -51,16 +59,12 @@ function parseArgs(): CliArgs {
   }
   const communityId = map.get("community");
   if (!communityId) {
-    console.error(
-      "Usage: tsx scripts/probe-reports.ts --community=<id> [--from=YYYY-MM-DD --to=YYYY-MM-DD]",
-    );
-    process.exit(1);
+    throw new Error(USAGE);
   }
   const fromArg = map.get("from");
   const toArg = map.get("to");
   if ((fromArg && !toArg) || (!fromArg && toArg)) {
-    console.error("--from and --to must be specified together");
-    process.exit(1);
+    throw new Error("--from and --to must be specified together");
   }
   if (fromArg && toArg) {
     return {
@@ -109,6 +113,33 @@ function makeProbeContext(): IContext {
   } as any;
 }
 
+/**
+ * Subset of `GqlReport` the probe actually consumes. The full GraphQL
+ * type carries DataLoader-resolved relationships (`community`,
+ * `template`, etc.) that the probe never hydrates — narrowing here
+ * keeps the field set explicit and lets typos surface at compile time
+ * instead of resolving to `any`.
+ */
+interface ProbeReport {
+  id: string;
+  variant: string;
+  status: string;
+  skipReason: string | null;
+  outputMarkdown: string | null;
+  model: string | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheReadTokens: number | null;
+  judgeScore: number | null;
+  judgeBreakdown: unknown;
+  judgeTemplateId: string | null;
+  coverageJson: unknown;
+  templateId: string | null;
+  periodFrom: Date | string;
+  periodTo: Date | string;
+  createdAt: Date | string;
+}
+
 interface VariantOutcome {
   variant: string;
   status: string;
@@ -142,7 +173,9 @@ async function runOneVariant(
     );
     if (result.__typename !== "GenerateReportSuccess") {
       const msg = `non-success payload: ${JSON.stringify(result)}`;
-      console.log(`FAIL ${msg}`);
+      // Failure-mode messages go to stderr so a wrapping shell can
+      // separate them from the OK / Summary stream on stdout.
+      console.error(`FAIL ${msg}`);
       return {
         variant,
         status: "ERROR",
@@ -153,10 +186,10 @@ async function runOneVariant(
       };
     }
     // The Report type carries DataLoader-resolved relationship fields
-    // that the probe never hydrates; the raw cast is enough to grab
-    // the scalar columns the dump cares about.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r: any = result.report;
+    // (community / template / parentRun etc.) the probe never hydrates;
+    // narrow to the scalar subset we actually consume so typos surface
+    // at compile time.
+    const r = result.report as unknown as ProbeReport;
     const mdPath = join(outDir, `${variant}_${timestamp}.md`);
     const metaPath = join(outDir, `${variant}_${timestamp}.meta.json`);
 
@@ -199,7 +232,7 @@ async function runOneVariant(
     };
   } catch (e) {
     const msg = (e as Error).message;
-    console.log(`ERROR ${msg}`);
+    console.error(`ERROR ${msg}`);
     return {
       variant,
       status: "ERROR",
@@ -212,7 +245,15 @@ async function runOneVariant(
 }
 
 async function main(): Promise<void> {
-  const args = parseArgs();
+  let args: CliArgs;
+  try {
+    args = parseArgs();
+  } catch (e) {
+    // CLI parser surfaces validation errors via throw so it stays
+    // unit-testable; main owns the exit boundary.
+    console.error((e as Error).message);
+    process.exit(1);
+  }
 
   const usecase = container.resolve(ReportUseCase);
   const ctx = makeProbeContext();
