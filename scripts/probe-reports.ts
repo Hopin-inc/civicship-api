@@ -123,7 +123,7 @@ function parseArgs(): CliArgs {
   // batch uses (`generateWeeklyReports.ts:24-25`). The earlier UTC-only
   // computation drifted by a day during the JST 00:00–09:00 window
   // (= UTC 15:00–24:00 of the prior day) because `getUTCDate()` would
-  // already have rolled to "today" while JST was still on "yesterday",
+  // still be on "yesterday" while JST had already rolled to "today",
   // landing the probe one day off from what the batch would have run.
   const periodTo = addDays(truncateToJstDate(new Date()), -1);
   const periodFrom = addDays(periodTo, -6);
