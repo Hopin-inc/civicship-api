@@ -42,6 +42,18 @@ import {
 } from "@/application/domain/report/transactionStats/weeklyAggregator";
 
 /**
+ * Reason buckets that appear in every `aggregates_by_reason` payload, even
+ * when no transactions of that kind occurred in the window. Pre-filling
+ * these with zero keeps the LLM's `[...]`-copy-verbatim contract intact:
+ * the placeholder always resolves to a real number rather than missing
+ * from the JSON, which removes the "fabricate the missing key" failure
+ * mode. Other `TransactionReason` values (POINT_ISSUED / POINT_REWARD /
+ * TICKET_* / OPPORTUNITY_*) only surface when they actually occurred —
+ * the prompt rules instruct the model to leave them unmentioned.
+ */
+const CORE_AGGREGATE_REASONS = ["DONATION", "GRANT", "ONBOARDING"] as const;
+
+/**
  * Internal → GraphQL `edge.cursor` (base64url JSON of `{at, id}`).
  * Mirror of `ReportConverter.decodeCommunitySummaryCursor`; kept on
  * the presenter side because `edge.cursor` is a GraphQL output
@@ -218,6 +230,61 @@ export default class ReportPresenter {
         }
       : null;
 
+    // Per-reason totals: sum at BigInt and narrow once at the boundary so
+    // `bigintToSafeNumber`'s safe-integer guard fires on each per-reason
+    // sum rather than on individual rows. Mirrors the existing pattern in
+    // `aggregateTransactionTotals` (weeklyAggregator.ts) where summing as
+    // Number-after-narrow would lose precision when individual rows are
+    // safe but their reason-bucketed sum is not.
+    //
+    // Core reasons (DONATION / GRANT / ONBOARDING) are pre-filled with
+    // zero so prompt placeholders like `[aggregates_by_reason.DONATION.tx_count]`
+    // ALWAYS resolve to a number — even on weeks with no transactions of
+    // that kind. Without the prefill the key is absent from the JSON, the
+    // [...] copy-verbatim rule cannot apply, and the LLM is free to invent
+    // a number or fabricate the missing key. Reasons outside the core
+    // three (POINT_ISSUED / POINT_REWARD / TICKET_* / OPPORTUNITY_*) only
+    // appear in the output when they actually occurred — the COMMON_RULES
+    // block instructs the model to leave non-core reasons unmentioned.
+    const aggregatesByReason: WeeklyReportPayload["aggregates_by_reason"] = (() => {
+      const agg = new Map<string, { txCount: number; pointsSum: bigint }>();
+      for (const reason of CORE_AGGREGATE_REASONS) {
+        agg.set(reason, { txCount: 0, pointsSum: 0n });
+      }
+      for (const s of input.summaries) {
+        const cur = agg.get(s.reason) ?? { txCount: 0, pointsSum: 0n };
+        cur.txCount += s.txCount;
+        cur.pointsSum += s.pointsSum;
+        agg.set(s.reason, cur);
+      }
+      return Object.fromEntries(
+        Array.from(agg, ([k, v]) => [
+          k,
+          { tx_count: v.txCount, points_sum: bigintToSafeNumber(v.pointsSum) },
+        ]),
+      );
+    })();
+
+    // Highest-activity day in the window. `reduce` with `>` (strict) keeps
+    // the earliest date on ties because the first row stays as the seed
+    // until something strictly greater displaces it — making the surfaced
+    // peak day stable across runs even when two days share the count.
+    const peakActiveDay: WeeklyReportPayload["peak_active_day"] = (() => {
+      if (input.activeUsers.length === 0) return null;
+      const peak = input.activeUsers.reduce((max, d) =>
+        d.activeUsers > max.activeUsers ? d : max,
+      );
+      return { date: toJstIsoDate(peak.date), active_users: peak.activeUsers };
+    })();
+
+    // Pre-formatted percentage string. Pre-formatting here removes the LLM's
+    // opportunity to render the 0..1 ratio as "0.034%" or to round to a
+    // different precision than the rest of the document.
+    const activeRatePct: string | null =
+      communityContext?.active_rate != null
+        ? (communityContext.active_rate * 100).toFixed(1)
+        : null;
+
     return {
       period: {
         from: toJstIsoDate(input.range.from),
@@ -228,6 +295,13 @@ export default class ReportPresenter {
       deepest_chain: deepestChain,
       previous_period: previousPeriod,
       retention,
+      aggregate: {
+        tx_count: currentTxCount,
+        points_sum: currentPointsSum,
+      },
+      aggregates_by_reason: aggregatesByReason,
+      peak_active_day: peakActiveDay,
+      active_rate_pct: activeRatePct,
       daily_summaries: input.summaries.map((s) => ({
         date: toJstIsoDate(s.date),
         reason: s.reason,
