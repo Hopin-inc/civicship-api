@@ -644,12 +644,15 @@ export default class ReportUseCase {
    * `createReport` does not set `status`, so the row is born DRAFT
    * (the Prisma column default), and `saveJudgeResult` only writes
    * judge / coverage columns — `updated.status` is therefore
-   * guaranteed to be DRAFT here. The `assertStatusTransition` call
-   * below verifies that invariant: any future refactor that surfaces
-   * a non-DRAFT row to this code path will throw a hard error rather
-   * than silently skip the auto-reject. Do NOT replace the assertion
-   * with an `if (status === DRAFT)` guard — silent-skip would mask
-   * the regression as "auto-reject mysteriously stopped firing".
+   * guaranteed to be DRAFT here. The explicit `status !== DRAFT` check
+   * below enforces that invariant: any future refactor that surfaces a
+   * non-DRAFT row to this code path throws a hard error rather than
+   * silently skipping the auto-reject. (Earlier revisions relied on
+   * `assertStatusTransition(updated.status, REJECTED)` to do the same
+   * job, but service.ts legitimately allows APPROVED → REJECTED for
+   * the human `rejectReport` mutation, so that check would let an
+   * APPROVED row slip through without throwing — the direct DRAFT
+   * comparison is the one that matches the intended invariant.)
    *
    * Failure paths (judge template missing, parse error, LLM 5xx) keep
    * using `persistJudgeOutcome` directly — `judgeScore` is null on
@@ -674,11 +677,14 @@ export default class ReportUseCase {
       if (data.judgeScore >= JUDGE_AUTO_REJECT_THRESHOLD) {
         return updated;
       }
-      // Auto-reject path: assertStatusTransition throws on illegal
-      // moves so a future workflow change that disallows DRAFT → REJECTED
-      // surfaces here as a hard error rather than a silently-skipped
-      // transition.
-      this.service.assertStatusTransition(updated.status, ReportStatus.REJECTED);
+      // Auto-reject path. Enforce the DRAFT-only invariant directly so
+      // a non-DRAFT row arriving here surfaces as a hard error rather
+      // than a silently-converted REJECTED transition (see JSDoc).
+      if (updated.status !== ReportStatus.DRAFT) {
+        throw new Error(
+          `persistJudgeOutcomeWithAutoReject invariant violated: expected DRAFT, got ${updated.status} (reportId=${reportId})`,
+        );
+      }
       const rejected = await this.service.updateReportStatus(
         ctx,
         reportId,

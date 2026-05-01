@@ -479,12 +479,11 @@ describe("ReportUseCase.generateReport", () => {
       const saveArgs = service.saveJudgeResult.mock.calls[0];
       expect(saveArgs[2].judgeScore).toBe(35);
 
-      // Auto-reject: assertStatusTransition + updateReportStatus must
-      // both fire on the same tx as the judge save.
-      expect(service.assertStatusTransition).toHaveBeenCalledWith(
-        ReportStatus.DRAFT,
-        ReportStatus.REJECTED,
-      );
+      // Auto-reject must fire on the same tx as the judge save. The
+      // invariant guard (status === DRAFT, see persistJudgeOutcomeWithAutoReject
+      // JSDoc) is enforced inline rather than via assertStatusTransition,
+      // so the mock for it must NOT be called on this path.
+      expect(service.assertStatusTransition).not.toHaveBeenCalled();
       expect(service.updateReportStatus).toHaveBeenCalledTimes(1);
       const updateArgs = service.updateReportStatus.mock.calls[0];
       expect(updateArgs[2]).toBe(ReportStatus.REJECTED);
@@ -493,6 +492,64 @@ describe("ReportUseCase.generateReport", () => {
       if (result.__typename === "GenerateReportSuccess") {
         expect(result.report.status).toBe(ReportStatus.REJECTED);
       }
+    });
+
+    // Regression guard for the DRAFT-only invariant: if a non-DRAFT row
+    // ever reaches this code path (e.g. a future refactor that allows
+    // judgeAndPersist to be called against an already-APPROVED row),
+    // the auto-reject branch must throw instead of silently flipping
+    // the row to REJECTED. Earlier revisions used assertStatusTransition
+    // for this check, but service.ts legitimately allows APPROVED →
+    // REJECTED for the human rejectReport mutation, so an APPROVED row
+    // would slip through without throwing — the inline DRAFT comparison
+    // is the one that matches the intended invariant.
+    it("throws when saveJudgeResult returns a non-DRAFT row (invariant guard)", async () => {
+      judgeService.executeJudge.mockResolvedValue({
+        score: 35,
+        breakdown: {},
+        issues: [],
+        strengths: [],
+      });
+      // Override the saveJudgeResult mock so the row comes back APPROVED —
+      // the invariant guard must fire even though service.assertStatusTransition
+      // would have allowed APPROVED → REJECTED. Mirrors the default
+      // mock shape declared at the top of beforeEach (spread the latest
+      // createReport result), but flips status to APPROVED.
+      service.saveJudgeResult.mockImplementationOnce(async (_ctx, id, data) => {
+        const lastCreateCall = service.createReport.mock.results.at(-1);
+        const created = lastCreateCall ? await lastCreateCall.value : null;
+        return {
+          ...(created ?? { id }),
+          status: ReportStatus.APPROVED,
+          judgeScore: data.judgeScore,
+          judgeBreakdown: data.judgeBreakdown,
+          judgeTemplateId: data.judgeTemplateId,
+          coverageJson: data.coverageJson,
+        };
+      });
+
+      // The invariant violation surfaces inside judgeAndPersist's
+      // try/catch and is logged as `report.judge.failed` with reason
+      // `persist_failure`; the outer generateReport completes with the
+      // pre-judge row (status DRAFT) so the user-facing mutation does
+      // not fail just because the auto-reject step did.
+      const result = await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      // updateReportStatus is the auto-reject side effect; the throw
+      // must happen BEFORE it is reached.
+      expect(service.updateReportStatus).not.toHaveBeenCalled();
+      expect(result.__typename).toBe("GenerateReportSuccess");
     });
 
     it("leaves the row as DRAFT when judgeScore meets the threshold (no auto-reject)", async () => {
