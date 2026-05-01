@@ -74,11 +74,17 @@ interface TemplateDefinition {
 const TEMPLATES: TemplateDefinition[] = [
   {
     variant: GqlReportVariant.WeeklySummary,
-    // PR-A v5: split traffic 90/10 with v2. v1 stays the production prompt
-    // until v2 clears Golden Case verification, at which point the weights
-    // flip. The selector reads `trafficWeight` straight from this row, so
-    // the canary share is set declaratively here without a separate flag.
-    trafficWeight: 90,
+    // PR-C: align seed values to the actual prd state. PR-A's original
+    // 90/10 canary design assumed v1 was the production prompt and v2
+    // would ramp from 10%; the prd inspection (2026-04-30) showed the
+    // opposite — v1 had been retired (`isActive: false`) and v2 had
+    // been carrying 100% of traffic. Seeding v1 as `isActive: true` /
+    // `trafficWeight: 90` would silently re-activate the retired
+    // pre-PR-A prompt for 90% of communities, regressing report
+    // quality. Pin v1 to the retired state instead so re-running the
+    // seed is a no-op against the current prd.
+    isActive: false,
+    trafficWeight: 0,
     model: "claude-sonnet-4-6",
     maxTokens: 8192,
     temperature: 0.5,
@@ -115,19 +121,20 @@ const TEMPLATES: TemplateDefinition[] = [
   {
     variant: GqlReportVariant.WeeklySummary,
     version: 2,
-    // PR-A v5: flip from `isActive: false` (v1-only Golden Case shakeout)
-    // to canary at 10% — paired with v1 at 90% above. The selector samples
-    // by `trafficWeight` so this row begins receiving live runs immediately
-    // on next deploy. Promote to 100% by inverting the weights once the
-    // structural template (pre-computed [...] fields, {{...}} sections)
-    // has been validated against real outputs.
+    // PR-C: v2 was already serving 100% of traffic in prd before PR-A
+    // (v1 had been retired separately). Keep the 100% weight so re-
+    // running the seed preserves the existing routing — the prompt
+    // *content* is replaced by PR-A's structured template, but the
+    // share of traffic v2 carries does not change. PR-A's transient
+    // "10% canary" assumption never matched the prd state; pinning
+    // here at 100% removes the routing-vs-content confusion.
     isActive: true,
-    trafficWeight: 10,
+    trafficWeight: 100,
     model: "claude-sonnet-4-6",
     maxTokens: 6144,
     temperature: 0.7,
     notes:
-      "v2: [...]/{{...}} 構造化テンプレート + 集計値の事前計算 (aggregate / aggregates_by_reason / peak_active_day / active_rate_pct) で LLM の数値計算経路をゼロにし、ハルシ耐性を構造的に上げる。canary 10% で投入。",
+      "v2: [...]/{{...}} 構造化テンプレート + 集計値の事前計算 (aggregate / aggregates_by_reason / peak_active_day / active_rate_pct) で LLM の数値計算経路をゼロにする。PR-C 時点で v1 退役 / v2 100% の prd 状態に揃えた seed。",
     systemPrompt: `あなたはコミュニティ運営を支援するレポートライターです。
 以下の出力テンプレートを厳密に守って、週次レポートを作成してください。
 
