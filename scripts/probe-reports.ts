@@ -2,6 +2,7 @@ import "reflect-metadata";
 import "@/application/provider";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { ReportTemplateKind, ReportTemplateScope } from "@prisma/client";
 import { container } from "tsyringe";
 import { GqlReportVariant } from "@/types/graphql";
 import ReportUseCase from "@/application/domain/report/usecase";
@@ -23,6 +24,11 @@ import type { IContext } from "@/types/server";
  * continues so a missing JUDGE template or transient LLM 5xx on one
  * variant doesn't block the rest.
  *
+ * The variant set is discovered at startup from the seeded SYSTEM
+ * templates (kind=GENERATION, isActive=true, isEnabled=true), so
+ * adding a new variant to `seedReportTemplates` automatically pulls it
+ * into the probe — no edit to this file required.
+ *
  * Default period is the most recent completed 7-day window in JST,
  * matching `generateWeeklyReports.ts`. The `--from` / `--to` overrides
  * are useful for back-filling against an older window or for testing
@@ -35,12 +41,35 @@ import type { IContext } from "@/types/server";
  * fine — these rows aren't published.
  */
 
-const PROBE_VARIANTS = [
-  GqlReportVariant.WeeklySummary,
-  GqlReportVariant.GrantApplication,
-  GqlReportVariant.MediaPr,
-  GqlReportVariant.MemberNewsletter,
-] as const;
+/**
+ * Discover the GENERATION variants the probe should exercise. The
+ * source of truth is the seeded SYSTEM templates: any (variant,
+ * GENERATION) row that is both `isActive` and `isEnabled` and lacks a
+ * communityId override is in scope. This matches what the live
+ * `templateSelector.findActiveTemplates` would surface for an
+ * unscoped lookup, so the probe and production paths stay aligned
+ * automatically when a new variant is seeded.
+ *
+ * Variants without a JUDGE counterpart are still probed; the
+ * generation step succeeds and the judge step short-circuits inside
+ * `judgeAndPersist` (no JUDGE template => coverage-only persist, no
+ * auto-reject). The summary still records the result.
+ */
+async function fetchActiveGenerationVariants(): Promise<string[]> {
+  const rows = await prismaClient.reportTemplate.findMany({
+    where: {
+      kind: ReportTemplateKind.GENERATION,
+      scope: ReportTemplateScope.SYSTEM,
+      isActive: true,
+      isEnabled: true,
+      communityId: null,
+    },
+    distinct: ["variant"],
+    select: { variant: true },
+    orderBy: { variant: "asc" },
+  });
+  return rows.map((r) => r.variant);
+}
 
 interface CliArgs {
   communityIds: string[];
@@ -169,7 +198,13 @@ interface RunOneArgs {
   usecase: ReportUseCase;
   ctx: IContext;
   communityId: string;
-  variant: GqlReportVariant;
+  // `variant` arrives as a raw string from the DB (variant column on
+  // t_report_templates is a free-form String, not a Prisma enum) and
+  // is cast to `GqlReportVariant` at the usecase boundary below. Keeps
+  // the discovery path independent of the codegen union type, so
+  // adding a new variant to the seed doesn't require regenerating
+  // GraphQL types before the probe can exercise it.
+  variant: string;
   periodFrom: Date;
   periodTo: Date;
   outDir: string;
@@ -195,7 +230,10 @@ async function runOneVariant(args: RunOneArgs): Promise<VariantOutcome> {
       {
         input: {
           communityId,
-          variant,
+          // GqlReportVariant is the codegen union of seeded variant
+          // strings; the cast is sound because we discovered `variant`
+          // from the same seed that codegen reads.
+          variant: variant as GqlReportVariant,
           periodFrom,
           periodTo,
         },
@@ -295,6 +333,19 @@ async function main(): Promise<void> {
   const usecase = container.resolve(ReportUseCase);
   const ctx = makeProbeContext();
 
+  // Discover variants from the seed before opening the output dir so
+  // a "no templates seeded" failure is reported up-front, before the
+  // operator sees an empty `tmp/reports/` and wonders if the probe ran.
+  const variants = await fetchActiveGenerationVariants();
+  if (variants.length === 0) {
+    console.error(
+      "No active SYSTEM GENERATION templates found in t_report_templates. " +
+        "Run `pnpm db:seed-report-templates` (or `:dev` / `:prd`) first.",
+    );
+    await prismaClient.$disconnect();
+    process.exit(1);
+  }
+
   const outDir = join(process.cwd(), "tmp", "reports");
   mkdirSync(outDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -304,12 +355,13 @@ async function main(): Promise<void> {
       .toISOString()
       .slice(0, 10)}, ${args.periodTo.toISOString().slice(0, 10)}]`,
   );
+  console.info(`Discovered variants: [${variants.join(", ")}]`);
   console.info(`Output dir: ${outDir}`);
   console.info("");
 
   const outcomes: VariantOutcome[] = [];
   for (const communityId of args.communityIds) {
-    for (const variant of PROBE_VARIANTS) {
+    for (const variant of variants) {
       const outcome = await runOneVariant({
         usecase,
         ctx,
