@@ -164,6 +164,26 @@ jobs:
             NODE_ENV=${{ inputs.node-env }}
             ${{ inputs.extra-env-vars }}
 
+      # Cloud Run の deploy アクションは revision の作成成功までしか保証しない。
+      # 実際にコンテナが起動失敗した (例: 起動時 import error / DB 接続失敗) ケースでも
+      # workflow は green になってしまうため、deploy 直後に health endpoint を叩いて
+      # 失敗時はジョブを fail させ、Cloud Run のエラーログを step summary に残す。
+      - name: Smoke check
+        env:
+          SERVICE: ${{ env.APPLICATION_NAME }}
+          REGION: ${{ env.GCP_REGION }}
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')
+          echo "Smoking $URL/health"
+          if ! curl --fail --silent --show-error --retry 6 --retry-delay 10 --max-time 10 "$URL/health"; then
+            echo "::error::Smoke check failed for $SERVICE"
+            gcloud logging read \
+              "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE AND severity>=ERROR" \
+              --limit=50 --format='value(timestamp,textPayload,jsonPayload.message)' \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Update Cloud Run Job (batch) to new image
         # docker push :latest alone does not roll the Cloud Run Job to the new
         # image — Cloud Run Jobs pin the image digest at deploy time, so we
