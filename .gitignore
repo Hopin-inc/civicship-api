@@ -154,3 +154,6 @@ credentials/
 
 # NMKR generated files
 /src/infrastructure/libs/nmkr/types/*.d.ts
+
+# Claude Code agent worktrees (harness-managed, never committed)
+.claude/worktrees/
