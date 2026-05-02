@@ -1,0 +1,50 @@
+name: 'Setup civicship-api dev environment'
+description: >
+  Sets up pnpm + Node.js, installs dependencies, optionally applies Prisma
+  migrations to the target database, then generates the Prisma client (with
+  TypedSQL) and the GraphQL TypeScript types. Used by both CI jobs (build /
+  test matrix) and reusable deploy workflows so the repeated bootstrap steps
+  stay in one place.
+
+inputs:
+  database-url:
+    description: DATABASE_URL used by `prisma migrate deploy` and `prisma generate --sql`.
+    required: true
+  run-migrate:
+    description: '"true" to run `pnpm db:deploy` (Prisma migrate deploy) before generating clients. Set "false" for environments where migrations are applied out-of-band (e.g. external API deploy).'
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - name: Install dependencies (lockfile integrity check)
+      shell: bash
+      run: pnpm install --frozen-lockfile --prefer-offline
+
+    - name: Apply Prisma migrations
+      # TypedSQL (`--sql`) は DB 接続を必要とするため、db:generate の前に
+      # migration を当ててスキーマを用意する。view / materialized view も
+      # migration.sql 経由でのみ作成される。
+      if: inputs.run-migrate == 'true'
+      shell: bash
+      env:
+        DATABASE_URL: ${{ inputs.database-url }}
+      run: pnpm db:deploy
+
+    - name: Generate Prisma client (with TypedSQL) and GraphQL types
+      shell: bash
+      env:
+        DATABASE_URL: ${{ inputs.database-url }}
+      run: |
+        pnpm db:generate
+        pnpm gql:generate

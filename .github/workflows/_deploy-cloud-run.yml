@@ -78,18 +78,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || '' }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
-
       - name: Authenticate to Google Cloud (Workload Identity Federation)
         uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
         with:
@@ -106,15 +94,13 @@ jobs:
           jumpbox-zone: ${{ env.JUMPBOX_ZONE }}
           db-name: ${{ env.DB_NAME }}
 
-      - name: Run prisma generate and migrate deploy
-        env:
-          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
-        run: |
-          pnpm db:generate
-          pnpm db:deploy
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
+      # composite action の `pnpm db:deploy` で本番 / dev DB に対して
+      # prisma migrate deploy を実行する。jumpbox 経由 DATABASE_URL を渡す。
+      - name: Setup civicship environment (pnpm + node + deps + prisma + gql)
+        uses: ./.github/actions/setup-civicship
+        with:
+          database-url: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+          run-migrate: 'true'
 
       - name: Install and Publish via Rover CLI
         env:
