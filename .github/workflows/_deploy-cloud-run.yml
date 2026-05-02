@@ -139,15 +139,22 @@ jobs:
       # main / batch の両 registry に同じ image を multi-tag push する。
       # batch (Cloud Run Job) 側は entrypoint を `--command/--args` で
       # `node dist/index.js` に上書きする (旧 Dockerfile.batch CMD と等価)。
+      # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
+      # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
+      # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build unified image and push to main + batch registries
         env:
           MAIN_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+          MAIN_IMAGE_SHA: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:sha-${{ github.sha }}
           BATCH_IMAGE: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
+          BATCH_IMAGE_SHA: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}
         run: |
           docker buildx build \
             --file Dockerfile \
             --tag "$MAIN_IMAGE" \
+            --tag "$MAIN_IMAGE_SHA" \
             --tag "$BATCH_IMAGE" \
+            --tag "$BATCH_IMAGE_SHA" \
             --cache-from "type=gha,scope=cloud-run-${{ inputs.stage }}" \
             --cache-to "type=gha,mode=max,scope=cloud-run-${{ inputs.stage }}" \
             --push \
@@ -158,7 +165,7 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522 # v2.7.6
         with:
           service: ${{ env.APPLICATION_NAME }}
-          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:sha-${{ github.sha }}
           region: ${{ env.GCP_REGION }}
           env_vars: |
             NODE_ENV=${{ inputs.node-env }}
@@ -177,7 +184,7 @@ jobs:
         run: |
           gcloud run jobs update "${{ env.BATCH_NAME }}" \
             --region="${{ env.GCP_REGION }}" \
-            --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest" \
+            --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}" \
             --command=node \
             --args=-r,tsconfig-paths/register,dist/bootstrap/batch.js
 
