@@ -395,6 +395,65 @@ app.post('/admin/users', adminController.createUser);
 - Auditing Administrator Actions
 - Recording Security Violations
 
+## Container Image Scanning (Trivy)
+
+Cloud Run にデプロイされる image は、`docker push` 直後 / `gcloud run deploy` 前に
+[Trivy](https://github.com/aquasecurity/trivy-action) で vulnerability scan を行う。
+対象 workflow は以下:
+
+- `.github/workflows/_deploy-cloud-run.yml` (internal API + batch)
+- `.github/workflows/_deploy-external-api.yml` (external API)
+
+### Severity Policy
+
+| Severity | exit-code | 振る舞い                                   |
+| -------- | --------- | ------------------------------------------ |
+| CRITICAL | `1`       | deploy を **block** (job が fail)          |
+| HIGH     | `0`       | warning。job は通り、結果は Security タブで確認 |
+| その他   | -         | scan 対象外 (MEDIUM 以下は雑音になりやすい)   |
+
+両 severity の結果は SARIF として GitHub の **Security → Code scanning alerts**
+タブに upload される (`github/codeql-action/upload-sarif`)。`category` を
+`trivy-critical` / `trivy-high` (external API は `trivy-external-*`) で
+分けることで、severity 別に alert を追える。
+
+`ignore-unfixed: true` を付けているため、upstream で fix が未公開の CVE は
+対象外となる。
+
+### `.trivyignore`
+
+リポジトリ root の [.trivyignore](../../.trivyignore) で、誤検知や対応保留の
+CVE を一時的に除外できる。**追加時は必ず以下を併記**:
+
+1. 1 行 1 CVE (`CVE-YYYY-NNNNN`)。`#` から行末はコメント。
+2. 直前のコメントで影響範囲・ignore 理由・再評価期限 (`expires: YYYY-MM-DD`)
+   を明示する。
+3. 月次で棚卸しし、期限切れまたは不要になったエントリは削除する。
+
+### Local 検証
+
+PR を出す前に手元で同じ scan を回したい場合:
+
+```bash
+# CRITICAL のみ blocking で確認
+trivy image --severity CRITICAL --exit-code 1 --ignore-unfixed \
+  asia-northeast1-docker.pkg.dev/<project>/<repo>/<image>:latest
+
+# HIGH の一覧を確認 (block しない)
+trivy image --severity HIGH --exit-code 0 --ignore-unfixed \
+  asia-northeast1-docker.pkg.dev/<project>/<repo>/<image>:latest
+```
+
+### Block 時の対処
+
+deploy が CRITICAL で fail したら、まず scan log で CVE と該当パッケージを
+特定し、以下の優先順で対応する:
+
+1. **Base image / dependency の bump** で fix 済み version に上げる (推奨)。
+2. **multi-stage build (`Dockerfile`) で当該パッケージを最終ステージから外す**。
+3. 上記が現実的でない場合のみ、`.trivyignore` に追記して暫定回避し、
+   別 issue で恒久対応をトラックする。
+
 ## Related Documentation
 
 - [Architecture Guide](./ARCHITECTURE.md) - System Design Overview

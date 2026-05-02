@@ -1,0 +1,11 @@
+# .trivyignore — Trivy が CVE を無視するためのリスト。
+#
+# 運用ルール:
+#   1. 1 行 1 CVE。形式は `CVE-YYYY-NNNNN`。`#` から行末はコメント。
+#   2. 追加するときは必ず以下を併記したコメントを直前に置く:
+#        - 影響範囲 (どの image / どのライブラリ経由か)
+#        - 暫定 ignore する理由 (例: upstream fix 待ち / 不到達 path)
+#        - 期限 (`expires: YYYY-MM-DD` 目安) と再評価担当
+#   3. 期限切れの ignore を月次で棚卸しし、不要になったら削除する。
+#
+# 詳細は docs/handbook/SECURITY.md の "Container Image Scanning (Trivy)" を参照。

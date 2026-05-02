@@ -45,6 +45,9 @@ jobs:
       # 式で動的に切り替えできないため、両 stage で write を付与する
       # (dev でも実質 read しか使わないので影響なし)。
       contents: write
+      # security-events:write は Trivy scan 結果 (sarif) を Security タブに
+      # upload するために必要 (codeql-action/upload-sarif)。
+      security-events: write
 
     env:
       STAGE: ${{ inputs.stage }}
@@ -60,6 +63,12 @@ jobs:
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
       APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
+      # MAIN_IMAGE を job-level env に出すことで、build/push と Trivy scan の
+      # 両 step から同じ参照 (`${{ env.MAIN_IMAGE }}`) で扱えるようにする。
+      # #974 で sha tag が入った後は MAIN_IMAGE_SHA を別途設定し、Trivy 側は
+      # `MAIN_IMAGE_SHA || MAIN_IMAGE` の fallback で動く想定。
+      MAIN_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.APPLICATION_NAME }}:latest
+      BATCH_IMAGE: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}/${{ secrets.BATCH_NAME }}:latest
 
     steps:
       # `audit` mode: log egress (GCP / npm registry / GitHub) without blocking.
@@ -140,9 +149,6 @@ jobs:
       # batch (Cloud Run Job) 側は entrypoint を `--command/--args` で
       # `node dist/index.js` に上書きする (旧 Dockerfile.batch CMD と等価)。
       - name: Build unified image and push to main + batch registries
-        env:
-          MAIN_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
-          BATCH_IMAGE: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
         run: |
           docker buildx build \
             --file Dockerfile \
@@ -152,6 +158,47 @@ jobs:
             --cache-to "type=gha,mode=max,scope=cloud-run-${{ inputs.stage }}" \
             --push \
             .
+
+      # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
+      # CRITICAL は exit-code 1 で deploy を block。HIGH は exit-code 0 で
+      # warning 扱いとし、両 severity の sarif を Security タブに upload する。
+      # `ignore-unfixed: true` で fix が出ていない CVE は雑音になるので除外。
+      # MAIN_IMAGE_SHA (#974) が定義された環境ではそちらを優先し、未定義の
+      # 場合は :latest tag (MAIN_IMAGE) を scan する。
+      - name: Scan image (Trivy CRITICAL — blocking)
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
+          severity: CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-critical.sarif
+
+      - name: Scan image (Trivy HIGH — warning)
+        if: always()
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-high.sarif
+
+      - name: Upload Trivy CRITICAL results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-critical.sarif
+          category: trivy-critical
+
+      - name: Upload Trivy HIGH results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-high.sarif
+          category: trivy-high
 
       - name: Deploy Internal API to Cloud Run
         id: deploy
