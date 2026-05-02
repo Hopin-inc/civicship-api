@@ -46,6 +46,28 @@ jobs:
         # Image: rhysd/actionlint:1.7.7 (Docker Hub, multi-arch index digest)
         # shellcheck / pyflakes are bundled in the image.
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies (lockfile integrity check)
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      # ESLint (no --fix) と Prettier --check で source の lint / format 違反を検出する。
+      # 現状 src/ には既存違反 (ESLint 841 errors / Prettier 265 files) が残存している
+      # ため、暫定的に failure を `::warning::` に降格し job は green を維持する。
+      # 既存違反の解消後 (separate PR) に `|| echo` を外して required check 化する。
+      - name: Lint (ESLint + Prettier check, non-blocking)
+        run: |
+          if ! pnpm lint:check; then
+            echo "::warning::existing lint failures (ESLint / Prettier) — see step log; failures are non-blocking until backlog is fixed (issue #978)"
+          fi
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
