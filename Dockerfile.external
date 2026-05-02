@@ -1,4 +1,49 @@
-FROM node:20
+# syntax=docker/dockerfile:1.7
+#
+# Multi-stage build for the External API service.
+#
+# Mirrors `Dockerfile` (internal/main API). See that file's header comment
+# for context on why the builder stage copies pre-built `node_modules` /
+# `dist` from the CI build context instead of running `pnpm install` +
+# `pnpm build` itself.
+
+# ---------------------------------------------------------------------------
+# Builder stage: take the pre-built workspace, prune dev dependencies.
+# ---------------------------------------------------------------------------
+FROM node:20-slim AS builder
+
 WORKDIR /app
-COPY . ./
+
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+
+COPY node_modules ./node_modules
+COPY dist ./dist
+
+RUN pnpm prune --prod
+
+# ---------------------------------------------------------------------------
+# Runtime stage: minimal, non-root, HEALTHCHECK enabled.
+# ---------------------------------------------------------------------------
+FROM node:20-slim AS runtime
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    PORT=3000
+
+USER node
+
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/package.json ./package.json
+COPY --chown=node:node tsconfig.json ./tsconfig.json
+
+EXPOSE 3000
+
+# Same /health endpoint exists in src/external-api.ts.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
 CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/external-api.js"]
