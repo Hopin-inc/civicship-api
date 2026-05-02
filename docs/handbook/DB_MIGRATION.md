@@ -112,10 +112,12 @@ DROP INDEX CONCURRENTLY IF EXISTS idx_old_thing;
 
 Caveats:
 - Cannot run inside a transaction. Prisma migrations wrap each `.sql` file
-  in a transaction by default; you must split the `DROP INDEX
-  CONCURRENTLY` into its own migration **and** add the `-- prisma+deploy`
-  marker (or split the file) so it runs outside a transaction. See the
-  Prisma docs for the current escape hatch.
+  in a transaction by default. The portable workaround is to put the
+  `CONCURRENTLY` statement (and only that statement) in its own dedicated
+  migration directory — Prisma applies one transaction per `migration.sql`,
+  so a single-statement file effectively runs the command outside any
+  surrounding statement's transaction. **Do not rely on undocumented Prisma
+  magic comments**; split the file instead.
 
 The same applies to `CREATE INDEX CONCURRENTLY` for adding indexes on
 large tables.
