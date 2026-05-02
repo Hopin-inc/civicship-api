@@ -436,4 +436,5 @@ gcloud alpha monitoring policies create --policy-from-file=alerting-policy.yaml
 - [Security Guide](./SECURITY.md) - Security Architecture
 - [Performance Guide](./PERFORMANCE.md) - Optimization Strategies
 - [Environment Variable Guide](./ENVIRONMENT.md) - Environment Settings
+- [Database Migration Guide](./DB_MIGRATION.md) - Safe-migration playbook for destructive DDL
 - [Troubleshooting](./TROUBLESHOOTING.md) - Problem Resolution Guide

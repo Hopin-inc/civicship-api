@@ -84,6 +84,13 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Destructive-migration scan (`pnpm db:migrate-diff`) diffs new
+          # migration .sql files against the PR base branch. The default
+          # shallow checkout (fetch-depth=1) doesn't include the base ref, so
+          # `git merge-base origin/<base>` would fail and the scan would
+          # silently no-op. fetch-depth=0 ensures `origin/<base>` is reachable.
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -107,6 +114,18 @@ jobs:
           if ! pnpm audit --audit-level=high; then
             echo "::warning::pnpm audit found high-severity vulnerabilities (non-blocking — see step log for details)"
           fi
+
+      # Surface destructive Prisma migration DDL (DROP TABLE / DROP COLUMN /
+      # ALTER COLUMN ... TYPE / RENAME / non-CONCURRENTLY DROP INDEX / ...)
+      # added by this PR as `::warning::` annotations on the PR check summary.
+      # Non-blocking by design: reviewers decide whether the migration is
+      # safe (2-step migration, backfill, view-based replacement). See
+      # docs/handbook/DB_MIGRATION.md for the safe-migration playbook.
+      - name: Detect destructive Prisma migration DDL (non-blocking)
+        if: github.event_name == 'pull_request'
+        env:
+          MIGRATE_DIFF_BASE_REF: origin/${{ github.base_ref }}
+        run: pnpm db:migrate-diff
 
       - name: Apply Prisma migrations to CI database
         # TypedSQL (`--sql`) は DB 接続を必要とするため、db:generate の前に
