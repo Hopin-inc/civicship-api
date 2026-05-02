@@ -404,6 +404,58 @@ run.googleapis.com/vpc-access-connector: projects/PROJECT_ID/locations/REGION/co
 run.googleapis.com/vpc-access-egress: private-ranges-only
 ```
 
+## Rollback
+
+### Image SHA Tagging
+
+Every deploy pushes the built image with two tags in parallel:
+
+- `:latest` — moving tag, always points at the most recent successful build
+- `:sha-<commit-sha>` — immutable tag pinned to the commit that triggered the
+  build (`github.sha`)
+
+Cloud Run services / Jobs are deployed with the `:sha-<commit-sha>` tag (not
+`:latest`) so that each revision is identifyable by the source commit and a
+specific past build can be re-deployed at any time.
+
+### Rolling back to a previous image
+
+To roll a Cloud Run **service** back to an older build, look up the commit SHA
+of the target build (e.g. from the GitHub Actions run, `git log`, or
+`gcloud artifacts docker tags list`) and run:
+
+```bash
+# Internal API
+gcloud run services update "$APPLICATION_NAME" \
+  --image="${ARTIFACT_REGISTRY}/${APPLICATION_NAME}:sha-${TARGET_SHA}" \
+  --region="$GCP_REGION"
+
+# External API
+gcloud run services update "$EXTERNAL_API_NAME" \
+  --image="${ARTIFACT_REGISTRY}/${EXTERNAL_API_NAME}:sha-${TARGET_SHA}" \
+  --region="$GCP_REGION"
+```
+
+For the **batch Cloud Run Job**, use `run jobs update` instead:
+
+```bash
+gcloud run jobs update "$BATCH_NAME" \
+  --image="${BATCH_ARTIFACT_REGISTRY}/${BATCH_NAME}:sha-${TARGET_SHA}" \
+  --region="$GCP_REGION"
+```
+
+Alternatively, for services you can shift traffic back to a previously
+deployed revision without re-deploying the image:
+
+```bash
+gcloud run services update-traffic "$APPLICATION_NAME" \
+  --to-revisions="<previous-revision-name>=100" \
+  --region="$GCP_REGION"
+```
+
+Use `gcloud run revisions list --service="$APPLICATION_NAME" --region="$GCP_REGION"`
+to find the revision name.
+
 ## Troubleshooting
 
 ### Deployment issues
