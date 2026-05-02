@@ -85,17 +85,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+      - name: Setup civicship environment (pnpm + node + deps + prisma + gql)
+        uses: ./.github/actions/setup-civicship
         with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
+          database-url: ${{ env.DATABASE_URL }}
 
       # Surface high/critical findings as a `::warning::` annotation visible
       # in the PR check summary, but do not fail the job (audit results can
@@ -107,18 +100,6 @@ jobs:
           if ! pnpm audit --audit-level=high; then
             echo "::warning::pnpm audit found high-severity vulnerabilities (non-blocking — see step log for details)"
           fi
-
-      - name: Apply Prisma migrations to CI database
-        # TypedSQL (`--sql`) は DB 接続を必要とするため、db:generate の前に
-        # migration を当ててスキーマを用意する。view / materialized view も
-        # migration.sql 経由でのみ作成される。
-        run: pnpm db:deploy
-
-      - name: Generate Prisma client (with TypedSQL)
-        run: pnpm db:generate
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
 
       # Detect uncommitted regenerations of tracked generated files.
       - name: Check generated files are up to date
@@ -209,31 +190,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+      # `prisma db push` は schema.prisma のモデルのみ反映し、migration.sql を
+      # 実行しない。view (10 個) / materialized view (4 個) は migration.sql のみで
+      # 定義されているため、db push だと view/mv が作られず、それらに依存する test
+      # が構造的に fail する。composite action 内の `pnpm db:deploy`
+      # (= prisma migrate deploy) で migration を順次適用し、view/mv 含めた全スキーマを
+      # CI DB に反映する。
+      - name: Setup civicship environment (pnpm + node + deps + prisma + gql)
+        uses: ./.github/actions/setup-civicship
         with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Apply Prisma migrations to CI database
-        # `prisma db push` は schema.prisma のモデルのみ反映し、migration.sql を
-        # 実行しない。view (10 個) / materialized view (4 個) は migration.sql のみで
-        # 定義されているため、db push だと view/mv が作られず、それらに依存する test
-        # が構造的に fail する。`pnpm db:deploy` (= prisma migrate deploy) で migration
-        # を順次適用し、view/mv 含めた全スキーマを CI DB に反映する。
-        run: pnpm db:deploy
-
-      - name: Generate Prisma client (with TypedSQL)
-        run: pnpm db:generate
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
+          database-url: ${{ env.DATABASE_URL }}
 
       # ts-jest の transform 結果 cache を matrix 単位で永続化。
       # restore-keys で同一 matrix の最近の cache に fallback し、
