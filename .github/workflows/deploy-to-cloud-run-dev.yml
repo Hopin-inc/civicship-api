@@ -29,4 +29,7 @@ jobs:
       extra-env-vars: |
         ENV=dev
       create-git-tag: false
+      # dev は canary を skip し従来通り即 100% で切り替える (ループバック検証
+      # を高速化するため)。canary rollout 自体の有効化は prd のみ。
+      enable-canary: false
     secrets: inherit
