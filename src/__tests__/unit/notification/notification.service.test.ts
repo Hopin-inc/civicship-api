@@ -17,7 +17,7 @@ describe("NotificationService - Point Transfer Notifications", () => {
   let notificationService: NotificationService;
   let mockCommunityConfigService: jest.Mocked<CommunityConfigService>;
   let mockUserService: jest.Mocked<UserService>;
-  let mockLineClient: any;
+  let mockLineClient: { pushMessage: jest.Mock };
   let mockTransactionFindUnique: jest.Mock;
 
   const TEST_TRANSACTION_ID = "test-transaction-id";
@@ -26,7 +26,7 @@ describe("NotificationService - Point Transfer Notifications", () => {
   const TEST_LINE_UID = "test-line-uid";
   const TEST_LIFF_URL = "https://liff.example.com";
 
-  const buildDonationTransaction = (overrides: any = {}) => ({
+  const buildDonationTransaction = (overrides: Record<string, unknown> = {}) => ({
     toPointChange: 100,
     comment: null,
     createdAt: new Date("2026-04-15T12:30:00Z"),
@@ -47,7 +47,7 @@ describe("NotificationService - Point Transfer Notifications", () => {
     ...overrides,
   });
 
-  const buildGrantTransaction = (overrides: any = {}) => ({
+  const buildGrantTransaction = (overrides: Record<string, unknown> = {}) => ({
     toPointChange: 200,
     comment: null,
     createdAt: new Date("2026-04-15T12:30:00Z"),
@@ -76,7 +76,7 @@ describe("NotificationService - Point Transfer Notifications", () => {
     currentUser: { id: "current-user-id", name: "Current User" },
     communityId: TEST_COMMUNITY_ID,
     issuer: {
-      internal: jest.fn(async (cb: any) => {
+      internal: jest.fn(async (cb: (tx: unknown) => Promise<unknown>) => {
         return cb({
           transaction: { findUnique: mockTransactionFindUnique },
         });
@@ -89,18 +89,20 @@ describe("NotificationService - Point Transfer Notifications", () => {
     container.reset();
 
     mockTransactionFindUnique = jest.fn();
-    (mockCtx.issuer.internal as jest.Mock).mockImplementation(async (cb: any) => {
-      return cb({
-        transaction: { findUnique: mockTransactionFindUnique },
-      });
-    });
+    (mockCtx.issuer.internal as jest.Mock).mockImplementation(
+      async (cb: (tx: unknown) => Promise<unknown>) => {
+        return cb({
+          transaction: { findUnique: mockTransactionFindUnique },
+        });
+      },
+    );
 
     // Mock CommunityConfigService
     mockCommunityConfigService = {
       getLiffConfig: jest.fn().mockResolvedValue({
         liffBaseUrl: TEST_LIFF_URL,
       }),
-    } as any;
+    } as unknown as jest.Mocked<CommunityConfigService>;
 
     // Mock UserService
     mockUserService = {
@@ -108,7 +110,7 @@ describe("NotificationService - Point Transfer Notifications", () => {
       findLineUidAndLanguageForCommunity: jest
         .fn()
         .mockResolvedValue({ uid: TEST_LINE_UID, language: "JA" }),
-    } as any;
+    } as unknown as jest.Mocked<UserService>;
 
     // Mock LINE client
     mockLineClient = {

@@ -144,7 +144,9 @@ describe("Vote Integration: VoteTopicUpdate", () => {
     });
 
     expect(result.voteTopic.gate.type).toBe("NFT");
-    expect((result.voteTopic.gate as any).nftTokenId).toBe(nftToken.id);
+    expect((result.voteTopic.gate as unknown as { nftTokenId: string }).nftTokenId).toBe(
+      nftToken.id,
+    );
   });
 
   it("should switch powerPolicy type from FLAT to NFT_COUNT", async () => {
@@ -170,7 +172,9 @@ describe("Vote Integration: VoteTopicUpdate", () => {
     });
 
     expect(result.voteTopic.powerPolicy.type).toBe("NFT_COUNT");
-    expect((result.voteTopic.powerPolicy as any).nftTokenId).toBe(nftToken.id);
+    expect(
+      (result.voteTopic.powerPolicy as unknown as { nftTokenId: string }).nftTokenId,
+    ).toBe(nftToken.id);
   });
 
   // ─── 異常系: フェーズ制約 ─────────────────────────────────────────────────

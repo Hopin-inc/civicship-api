@@ -485,7 +485,7 @@ describe("Vote Integration: VoteQuery", () => {
       expect(result.myBallot).not.toBeNull();
       expect(result.myBallot?.power).toBe(1);
       // resultVisible フラグが true（期間終了 → 結果開示モード）
-      expect((result.myBallot as any).resultVisible).toBe(true);
+      expect((result.myBallot as unknown as { resultVisible: boolean }).resultVisible).toBe(true);
     });
   });
 });

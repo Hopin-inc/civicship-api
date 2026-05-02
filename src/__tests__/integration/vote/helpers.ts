@@ -73,7 +73,7 @@ export async function createVoteTopic(params: {
     data: {
       type: gate.type ?? "MEMBERSHIP",
       topicId: topic.id,
-      requiredRole: (gate.requiredRole as any) ?? null,
+      requiredRole: (gate.requiredRole as Role | undefined) ?? null,
       nftTokenId: gate.nftTokenId ?? null,
     },
   });
