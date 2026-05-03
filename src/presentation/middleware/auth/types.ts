@@ -47,7 +47,7 @@ export interface AuthResultBase {
 /**
  * Firebase認証成功時
  */
-export interface FirebaseAuthResult extends AuthResultBase {}
+export type FirebaseAuthResult = AuthResultBase;
 
 /**
  * 未認証リクエスト
