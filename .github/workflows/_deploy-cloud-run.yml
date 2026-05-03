@@ -32,6 +32,11 @@ on:
         type: boolean
         required: false
         default: false
+      git-tag-prefix:
+        description: Prefix prepended to the timestamp git tag (e.g. "internal-api-").
+        type: string
+        required: false
+        default: ''
 
 jobs:
   deploy:
@@ -64,31 +69,21 @@ jobs:
     steps:
       # `audit` mode: log egress (GCP / npm registry / GitHub) without blocking.
       # `block` mode would require maintaining an allowlist for every gcloud
-      # endpoint and is fragile across SDK updates. `disable-sudo` is left
-      # enabled (default) because the "Create Git tag" step installs tzdata
-      # via apt-get on prd. Audit logs surface in the job summary and let us
-      # detect unexpected egress (e.g. credential exfiltration) post-hoc.
+      # endpoint and is fragile across SDK updates. Audit logs surface in the
+      # job summary and let us detect unexpected egress (e.g. credential
+      # exfiltration) post-hoc. `disable-sudo: true` matches ci.yml — no step
+      # in this workflow needs sudo (the "Create Git tag" step uses
+      # `TZ=Asia/Tokyo date` instead of installing tzdata).
       - name: Harden runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
         with:
           egress-policy: audit
+          disable-sudo: true
 
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || '' }}
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Authenticate to Google Cloud (Workload Identity Federation)
         uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
@@ -106,23 +101,13 @@ jobs:
           jumpbox-zone: ${{ env.JUMPBOX_ZONE }}
           db-name: ${{ env.DB_NAME }}
 
-      - name: Run prisma generate and migrate deploy
-        env:
-          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
-        run: |
-          pnpm db:generate
-          pnpm db:deploy
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
-
-      - name: Install and Publish via Rover CLI
-        env:
-          APOLLO_KEY: ${{ env.APOLLO_KEY }}
-        run: |
-          curl -sSL https://rover.apollo.dev/nix/latest | sh
-          export PATH="$HOME/.rover/bin:$PATH"
-          rover graph publish "civicship-api-jq1988@${{ inputs.apollo-variant }}" --schema ./docs/schema.graphql
+      # composite action の `pnpm db:deploy` で本番 / dev DB に対して
+      # prisma migrate deploy を実行する。jumpbox 経由 DATABASE_URL を渡す。
+      - name: Setup civicship environment (pnpm + node + deps + prisma + gql)
+        uses: ./.github/actions/setup-civicship
+        with:
+          database-url: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+          run-migrate: 'true'
 
       - name: Build TypeScript output (consumed by Docker COPY)
         run: pnpm build
@@ -181,18 +166,26 @@ jobs:
             --command=node \
             --args=-r,tsconfig-paths/register,dist/bootstrap/batch.js
 
+      # Publish the schema to Apollo Studio only after the Cloud Run service
+      # (and batch job) has been updated successfully. Publishing earlier risks
+      # advertising a schema that the running service does not yet implement
+      # if the deploy fails for any reason.
+      - name: Install and Publish via Rover CLI
+        env:
+          APOLLO_KEY: ${{ env.APOLLO_KEY }}
+        run: |
+          curl -sSL https://rover.apollo.dev/nix/latest | sh
+          export PATH="$HOME/.rover/bin:$PATH"
+          rover graph publish "civicship-api-jq1988@${{ inputs.apollo-variant }}" --schema ./docs/schema.graphql
+
       - name: Create Git tag
         if: ${{ inputs.create-git-tag }}
+        env:
+          TZ: Asia/Tokyo
         run: |
-          sudo apt-get update && sudo apt-get install -y tzdata
-          sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
-          sudo dpkg-reconfigure -f noninteractive tzdata
-
-          TAG_NAME=$(date +"%Y%m%d%H%M%S")
-
+          TAG_NAME="${{ inputs.git-tag-prefix }}$(date +'%Y%m%d%H%M%S')"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
           git tag "$TAG_NAME"
           git push origin "$TAG_NAME"
 

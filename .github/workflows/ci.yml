@@ -9,9 +9,10 @@ on:
   # branch protection の required status check として登録されているため、
   # paths-ignore で workflow ごと skip すると status が報告されず、docs-only
   # PR が永久に merge 不能になる (admin override が必要になる)。
-  # 軽量化が必要になったら job 側で changed-files filter (dorny/paths-filter
-  # 等) を使って expensive job (build / test) を条件付き skip し、aggregator は
-  # 必ず走る形にする。
+  # 代わりに job 側で changed-files filter (`filter` job + dorny/paths-filter)
+  # を使って expensive job (build / test) を条件付き skip し、aggregator (`ci`)
+  # は always() で必ず走らせる。aggregator 側では skipped を success と同等に
+  # 扱うことで required status check を緑に保つ。
 
 permissions:
   contents: read
@@ -21,6 +22,43 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Detect whether the PR touches code that affects build / test outputs.
+  # docs-only PR (README, handbook, schema doc 等) では expensive な build / test を
+  # skip して PR feedback loop を高速化する。aggregator job (`ci`) は always() で
+  # 走り、skipped を success と同等に扱うことで required status check を緑に保つ。
+  # workflow lint (lint job) は filter に依存させない: workflow 自体の文法 / 安全性
+  # チェックは docs-only PR でも常に必要。
+  filter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Detect code-affecting changes
+        id: changes
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'pnpm-lock.yaml'
+              - 'package.json'
+              - 'tsconfig*.json'
+              - '.github/workflows/**'
+              - '.github/actions/**'
+              - 'Dockerfile*'
+              - 'scripts/**'
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -49,6 +87,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [filter]
+    if: needs.filter.outputs.code == 'true'
     permissions:
       contents: read
 
@@ -85,17 +125,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+      - name: Setup civicship environment (pnpm + node + deps + prisma + gql)
+        uses: ./.github/actions/setup-civicship
         with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
+          database-url: ${{ env.DATABASE_URL }}
 
       # Surface high/critical findings as a `::warning::` annotation visible
       # in the PR check summary, but do not fail the job (audit results can
@@ -107,18 +140,6 @@ jobs:
           if ! pnpm audit --audit-level=high; then
             echo "::warning::pnpm audit found high-severity vulnerabilities (non-blocking — see step log for details)"
           fi
-
-      - name: Apply Prisma migrations to CI database
-        # TypedSQL (`--sql`) は DB 接続を必要とするため、db:generate の前に
-        # migration を当ててスキーマを用意する。view / materialized view も
-        # migration.sql 経由でのみ作成される。
-        run: pnpm db:deploy
-
-      - name: Generate Prisma client (with TypedSQL)
-        run: pnpm db:generate
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
 
       # Detect uncommitted regenerations of tracked generated files.
       - name: Check generated files are up to date
@@ -146,6 +167,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: [filter]
+    if: needs.filter.outputs.code == 'true'
     permissions:
       contents: read
     strategy:
@@ -209,31 +232,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+      # `prisma db push` は schema.prisma のモデルのみ反映し、migration.sql を
+      # 実行しない。view (10 個) / materialized view (4 個) は migration.sql のみで
+      # 定義されているため、db push だと view/mv が作られず、それらに依存する test
+      # が構造的に fail する。composite action 内の `pnpm db:deploy`
+      # (= prisma migrate deploy) で migration を順次適用し、view/mv 含めた全スキーマを
+      # CI DB に反映する。
+      - name: Setup civicship environment (pnpm + node + deps + prisma + gql)
+        uses: ./.github/actions/setup-civicship
         with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Apply Prisma migrations to CI database
-        # `prisma db push` は schema.prisma のモデルのみ反映し、migration.sql を
-        # 実行しない。view (10 個) / materialized view (4 個) は migration.sql のみで
-        # 定義されているため、db push だと view/mv が作られず、それらに依存する test
-        # が構造的に fail する。`pnpm db:deploy` (= prisma migrate deploy) で migration
-        # を順次適用し、view/mv 含めた全スキーマを CI DB に反映する。
-        run: pnpm db:deploy
-
-      - name: Generate Prisma client (with TypedSQL)
-        run: pnpm db:generate
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
+          database-url: ${{ env.DATABASE_URL }}
 
       # ts-jest の transform 結果 cache を matrix 単位で永続化。
       # restore-keys で同一 matrix の最近の cache に fallback し、
@@ -287,13 +295,19 @@ jobs:
       contents: read
     steps:
       - name: Verify all required jobs passed
+        # docs-only PR では filter job が build / test を skip させるため、
+        # `skipped` も success と同等に扱う必要がある (skipped を fail 扱い
+        # すると aggregator が永久に赤くなり required check が通らない)。
+        # 一方 `cancelled` / `failure` 等の異常終了は明示的に fail させる。
         run: |
           lint='${{ needs.lint.result }}'
           build='${{ needs.build.result }}'
           test='${{ needs.test.result }}'
           echo "lint=$lint build=$build test=$test"
-          if [ "$lint" != "success" ] || [ "$build" != "success" ] || [ "$test" != "success" ]; then
-            echo "::error::One or more required jobs failed"
-            exit 1
-          fi
-          echo "All required jobs passed"
+          for j in "$lint" "$build" "$test"; do
+            case "$j" in
+              success|skipped) ;;
+              *) echo "::error::job failed: $j"; exit 1 ;;
+            esac
+          done
+          echo "All required jobs passed (skipped treated as success)"

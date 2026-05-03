@@ -59,28 +59,19 @@ jobs:
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
 
     steps:
-      # See _deploy-cloud-run.yml for rationale on audit mode + sudo.
+      # See _deploy-cloud-run.yml for rationale on audit mode. `disable-sudo:
+      # true` matches ci.yml — the "Create Git tag" step uses
+      # `TZ=Asia/Tokyo date` instead of installing tzdata via apt-get.
       - name: Harden runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
         with:
           egress-policy: audit
+          disable-sudo: true
 
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || '' }}
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Authenticate to Google Cloud (Workload Identity Federation)
         uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
@@ -98,10 +89,14 @@ jobs:
           jumpbox-zone: ${{ env.JUMPBOX_ZONE }}
           db-name: ${{ env.DB_NAME }}
 
-      - name: Run prisma generate
-        env:
-          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
-        run: pnpm db:generate
+      # External API は Internal API 側 deploy で migrate 済みの DB を共有するため、
+      # ここでは `prisma migrate deploy` は実行しない (`run-migrate: 'false'`)。
+      # composite action 内で db:generate (TypedSQL) と gql:generate のみ実行する。
+      - name: Setup civicship environment (pnpm + node + deps + prisma + gql)
+        uses: ./.github/actions/setup-civicship
+        with:
+          database-url: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+          run-migrate: 'false'
 
       - name: Build TypeScript output (consumed by Docker COPY)
         run: pnpm build
@@ -140,16 +135,12 @@ jobs:
 
       - name: Create Git tag
         if: ${{ inputs.create-git-tag }}
+        env:
+          TZ: Asia/Tokyo
         run: |
-          sudo apt-get update && sudo apt-get install -y tzdata
-          sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
-          sudo dpkg-reconfigure -f noninteractive tzdata
-
-          TAG_NAME="${{ inputs.git-tag-prefix }}$(date +"%Y%m%d%H%M%S")"
-
+          TAG_NAME="${{ inputs.git-tag-prefix }}$(date +'%Y%m%d%H%M%S')"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
           git tag "$TAG_NAME"
           git push origin "$TAG_NAME"
 
