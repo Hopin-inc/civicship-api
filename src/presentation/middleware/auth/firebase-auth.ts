@@ -103,7 +103,8 @@ export async function handleFirebaseAuth(
     if (err instanceof AuthenticationError) {
       throw err;
     }
-    const error = err as Error & { code?: string };
+    const error =
+      err instanceof Error ? (err as Error & { code?: string }) : new Error(String(err));
     logger.warn("⚠️ Firebase verification failed, falling back to anonymous", {
       method: verificationMethod,
       tenantId,

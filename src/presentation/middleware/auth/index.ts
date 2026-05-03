@@ -14,9 +14,7 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
   const traceId = currentSpan?.spanContext().traceId;
 
   if (currentSpan) {
-    const body = (
-      req as http.IncomingMessage & { body?: { operationName?: string; query?: string } }
-    ).body;
+    const body = (req as { body?: { operationName?: string; query?: string } }).body;
     if (body?.operationName) {
       currentSpan.setAttribute("app.graphql.operation.name", body.operationName);
     }

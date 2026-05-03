@@ -91,7 +91,8 @@ export async function handleSessionLogin(req: Request, res: Response) {
 
     return res.json({ status: "success" });
   } catch (err) {
-    const error = err as Error & { code?: string };
+    const error =
+      err instanceof Error ? (err as Error & { code?: string }) : new Error(String(err));
     const tokenTenantId = extractTenantFromIdToken(idToken);
     logger.error("🔥 [handleSessionLogin] Session login failed", {
       message: error.message,
