@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request } from 'express';
 import { container } from 'tsyringe';
 import NFTWalletUsecase from '@/application/domain/account/nft-wallet/usecase';
 import { apiKeyAuthMiddleware } from '@/presentation/middleware/api-key-auth';
@@ -18,7 +18,10 @@ router.post('/nft-wallets',
   async (req, res) => {
     try {
       const { walletAddress, name } = req.body;
-      const user = (req as any).user as PrismaAuthUser;
+      const user = (req as Request & { user?: PrismaAuthUser }).user;
+      if (!user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
       
       if (!walletAddress || typeof walletAddress !== 'string') {
         return res.status(400).json({ error: 'walletAddress must be a string' });

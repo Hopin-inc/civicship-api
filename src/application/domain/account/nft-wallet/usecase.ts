@@ -129,18 +129,19 @@ export default class NFTWalletUsecase {
         });
       }
 
+      const typedError = error as { code?: string; type?: string } | null;
       const errorDetails = {
         walletAddress: wallet.walletAddress,
         durationMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : JSON.stringify(error),
         errorName: error instanceof Error ? error.name : 'Unknown',
-        errorCode: (error as any)?.code,
-        errorType: (error as any)?.type,
+        errorCode: typedError?.code,
+        errorType: typedError?.type,
         errorStack: error instanceof Error ? error.stack : undefined,
       };
 
       // Use warn level for timeout errors (temporary network issues)
-      const isTimeout = !!error && (error as any).code === 'ETIMEDOUT';
+      const isTimeout = typedError?.code === 'ETIMEDOUT';
       if (isTimeout) {
         logger.warn("⚠️ NFT metadata sync timeout", errorDetails);
       } else {
