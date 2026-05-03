@@ -47,14 +47,6 @@ router.post("/liff-login", express.json(), async (req, res) => {
 
     res.setHeader("X-Token-Expires-At", result.expiryTimestamp.toString());
 
-    const liffContext = {
-      uid: result.profile.userId,
-      platform: "LINE",
-      idToken: accessToken,
-      refreshToken: accessToken,
-    };
-    (req as unknown as { context?: typeof liffContext }).context = liffContext;
-
     return res.status(200).json({
       customToken: result.customToken,
       profile: result.profile,

@@ -1,4 +1,4 @@
-import { GqlNftInstance, GqlNftInstancesConnection } from "@/types/graphql";
+import { GqlNftInstance, GqlNftInstancesConnection, GqlUser } from "@/types/graphql";
 import { PrismaNftInstance } from "@/application/domain/account/nft-instance/data/type";
 import NftTokenPresenter from "@/application/domain/account/nft-token/presenter";
 
@@ -6,17 +6,19 @@ export default class NftInstancePresenter {
   static get(nftInstance: PrismaNftInstance): GqlNftInstance {
     const { nftWallet, nftToken, ...nftInstanceProps } = nftInstance;
 
-    // The `user` field on `nftWallet` is filled in by the GraphQL field resolver,
-    // so the literal here doesn't satisfy `GqlNftWallet` structurally.
     return {
       __typename: "NftInstance",
       ...nftInstanceProps,
       nftToken: NftTokenPresenter.get(nftToken),
+      // `user` is resolved by the GraphQL field resolver from `userId`; it
+      // intentionally is not populated here. We mark it null to satisfy the
+      // schema's required `user: GqlUser`.
       nftWallet: nftWallet ? {
         __typename: "NftWallet",
         ...nftWallet,
+        user: null as unknown as GqlUser,
       } : null,
-    } as unknown as GqlNftInstance;
+    };
   }
 
   static query(

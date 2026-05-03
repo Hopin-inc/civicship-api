@@ -6,6 +6,17 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { NftMintStatus, NftInstanceStatus } from "@prisma/client";
 
+function readNmkrProjectUid(json: unknown): string | undefined {
+  if (typeof json !== "object" || json === null) return undefined;
+  if ("nmkrProjectUid" in json && typeof json.nmkrProjectUid === "string") {
+    return json.nmkrProjectUid;
+  }
+  if ("projectUid" in json && typeof json.projectUid === "string") {
+    return json.projectUid;
+  }
+  return undefined;
+}
+
 export async function processQueuedMints() {
   logger.debug("🚀 Starting batch for QUEUED nftMints...");
 
@@ -45,16 +56,12 @@ export async function processQueuedMints() {
         try {
           const walletAddress = mint.nftInstance?.nftWallet?.walletAddress;
           const nftInstanceId = mint.nftInstance?.instanceId;
-          const nftTokenJson = mint.nftInstance?.nftToken?.json as
-            | { nmkrProjectUid?: string; projectUid?: string }
-            | null
-            | undefined;
-          
+
           if (!walletAddress || !nftInstanceId) {
             throw new Error(`Missing required data: walletAddress=${walletAddress}, nftInstanceId=${nftInstanceId}`);
           }
 
-          const nmkrProjectUid = nftTokenJson?.nmkrProjectUid || nftTokenJson?.projectUid;
+          const nmkrProjectUid = readNmkrProjectUid(mint.nftInstance?.nftToken?.json);
           if (!nmkrProjectUid) {
             throw new Error(`NMKR project UID not found in nftToken.json`);
           }

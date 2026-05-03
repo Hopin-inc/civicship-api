@@ -6,6 +6,7 @@ import { IContext } from "@/types/server";
 import { Prisma, IdentityPlatform, User } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 import { FirebaseTokenRefreshResponse } from "@/application/domain/account/identity/data/type";
+import { getErrorCode } from "@/utils/error";
 
 @injectable()
 export default class IdentityService {
@@ -149,8 +150,7 @@ export default class IdentityService {
     try {
       await tenantedAuth.deleteUser(uid);
     } catch (error) {
-      const typedError = error as { code?: string } | null;
-      if (typedError?.code === "auth/user-not-found") {
+      if (getErrorCode(error) === "auth/user-not-found") {
         logger.info("Firebase user not found when deleting; treated as already deleted.", { uid, tenantId });
         return;
       }

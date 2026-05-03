@@ -3,13 +3,19 @@
  * otherwise undefined. Avoids unsafe `as` casts in catch blocks.
  */
 export function getErrorCode(err: unknown): string | undefined {
-  if (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    typeof err.code === "string"
-  ) {
+  if (typeof err === "object" && err !== null && "code" in err && typeof err.code === "string") {
     return err.code;
+  }
+  return undefined;
+}
+
+/**
+ * Returns the `.type` field of an unknown caught error if it is a string,
+ * otherwise undefined.
+ */
+export function getErrorType(err: unknown): string | undefined {
+  if (typeof err === "object" && err !== null && "type" in err && typeof err.type === "string") {
+    return err.type;
   }
   return undefined;
 }

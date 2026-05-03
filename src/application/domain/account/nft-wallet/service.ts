@@ -11,6 +11,7 @@ import pLimit from "p-limit";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import crypto from "crypto";
+import { getErrorCode, getErrorType } from "@/utils/error";
 
 const TOKEN_CACHE_TTL = 24 * 60 * 60 * 1000;
 const MAX_RETRIES = 3;
@@ -120,19 +121,19 @@ export default class NFTWalletService {
       });
       return response;
     } catch (error) {
-      const typedError = error as { code?: string; type?: string } | null;
+      const errorCode = getErrorCode(error);
       const errorDetails = {
         walletAddress,
         durationMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : JSON.stringify(error),
         errorName: error instanceof Error ? error.name : 'Unknown',
-        errorCode: typedError?.code,
-        errorType: typedError?.type,
+        errorCode,
+        errorType: getErrorType(error),
         errorStack: error instanceof Error ? error.stack : undefined,
       };
 
       // Use warn level for timeout errors (temporary network issues)
-      const isTimeout = typedError?.code === 'ETIMEDOUT';
+      const isTimeout = errorCode === 'ETIMEDOUT';
       if (isTimeout) {
         logger.warn("⚠️ Failed to fetch NFT metadata (timeout)", errorDetails);
       } else {

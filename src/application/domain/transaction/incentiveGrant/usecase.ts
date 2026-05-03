@@ -27,6 +27,7 @@ import {
   GqlSortDirection,
   GqlIncentiveGrantRetryPayload,
 } from "@/types/graphql";
+import { toError } from "@/utils/error";
 
 @injectable()
 export default class IncentiveGrantUseCase {
@@ -213,7 +214,7 @@ export default class IncentiveGrantUseCase {
           (updateError) => {
             logger.error("Failed to update grant failure status", {
               incentiveGrantId: input.incentiveGrantId,
-              originalError: error instanceof Error ? error.message : String(error),
+              originalError: toError(error).message,
               error: updateError,
             });
           },
@@ -273,7 +274,7 @@ export default class IncentiveGrantUseCase {
       }
 
       // Mark as failed
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = toError(error).message;
       await this.repository.markAsFailed(
         ctx,
         grant.userId,

@@ -1,4 +1,4 @@
-import express, { Request } from 'express';
+import express from 'express';
 import { container } from 'tsyringe';
 import NFTWalletUsecase from '@/application/domain/account/nft-wallet/usecase';
 import { apiKeyAuthMiddleware } from '@/presentation/middleware/api-key-auth';
@@ -7,7 +7,6 @@ import { walletRateLimit } from '@/presentation/middleware/rate-limit';
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
-import { PrismaAuthUser } from '@/application/domain/account/user/data/type';
 
 const router = express();
 
@@ -18,7 +17,7 @@ router.post('/nft-wallets',
   async (req, res) => {
     try {
       const { walletAddress, name } = req.body;
-      const user = (req as Request & { user?: PrismaAuthUser }).user;
+      const { user } = res.locals;
       if (!user) {
         return res.status(401).json({ error: 'User not authenticated' });
       }

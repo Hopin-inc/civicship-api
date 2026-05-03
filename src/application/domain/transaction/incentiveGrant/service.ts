@@ -16,6 +16,7 @@ import {
   IncentiveDisabledError,
   ConcurrentRetryError,
 } from "@/errors/graphql";
+import { getErrorCode, toError } from "@/utils/error";
 
 export type SignupBonusGrantResult = {
   granted: boolean;
@@ -118,9 +119,8 @@ export default class IncentiveGrantService {
         await this.repository.create(ctx, createData, tx);
         grantRecordCreated = true;
       } catch (error) {
-        const typedError = error as { code?: string } | null;
         // P2002 = unique constraint violation = already granted
-        if (typedError?.code === "P2002") {
+        if (getErrorCode(error) === "P2002") {
           logger.info("Signup bonus already granted (idempotent)", logContext);
           return { granted: false, transaction: null };
         }
@@ -179,9 +179,8 @@ export default class IncentiveGrantService {
         },
       };
     } catch (error) {
-      const typedError =
-        error instanceof Error ? error : new Error(String(error));
-      const errorCode = (error as { code?: string } | null)?.code;
+      const typedError = toError(error);
+      const errorCode = getErrorCode(error);
       // Best-effort: Log error and mark as failed, but don't throw
       logger.warn("Signup bonus grant failed (best-effort)", {
         ...logContext,
@@ -198,7 +197,7 @@ export default class IncentiveGrantService {
             failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
           } else if (error instanceof NotFoundError) {
             failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
-          } else if (typeof errorCode === "string" && errorCode.startsWith("P")) {
+          } else if (errorCode?.startsWith("P")) {
             failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
           } else {
             failureCode = IncentiveGrantFailureCode.UNKNOWN;
@@ -216,14 +215,10 @@ export default class IncentiveGrantService {
             tx,
           );
         } catch (markFailedError) {
-          const typedMarkError =
-            markFailedError instanceof Error
-              ? markFailedError
-              : new Error(String(markFailedError));
           // If marking as failed also fails, just log it
           logger.error("Failed to mark incentive grant as failed", {
             ...logContext,
-            error: typedMarkError.message,
+            error: toError(markFailedError).message,
           });
         }
       }
