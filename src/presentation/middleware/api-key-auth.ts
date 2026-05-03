@@ -23,7 +23,7 @@ export async function apiKeyAuthMiddleware(req: Request, res: Response, next: Ne
       return;
     }
 
-    (req as any).apiKey = keyRecord;
+    req.apiKey = keyRecord;
     next();
   } catch (error) {
     logger.error('API key validation error:', error);

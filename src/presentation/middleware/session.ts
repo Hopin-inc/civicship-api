@@ -90,12 +90,15 @@ export async function handleSessionLogin(req: Request, res: Response) {
     });
 
     return res.json({ status: "success" });
-  } catch (err: any) {
+  } catch (err) {
+    const error = (err instanceof Error ? err : new Error(String(err))) as Error & {
+      code?: string;
+    };
     const tokenTenantId = extractTenantFromIdToken(idToken);
     logger.error("🔥 [handleSessionLogin] Session login failed", {
-      message: err.message,
-      code: err.code,
-      stack: err.stack,
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
       communityId,
       idTokenLength: idToken?.length,
       tenantIdFromDb: tenantId,
