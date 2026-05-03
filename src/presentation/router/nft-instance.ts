@@ -96,6 +96,62 @@ router.put(
   },
 );
 
+const DEFAULT_INSTANCE_LIST_LIMIT = 50;
+const MAX_INSTANCE_LIST_LIMIT = 200;
+
+router.get(
+  "/nft-tokens/:tokenAddress/instances",
+  nftReadRateLimit,
+  apiKeyAuthMiddleware,
+  async (req, res) => {
+    try {
+      const { tokenAddress } = req.params;
+
+      if (!ETH_ADDRESS_PATTERN.test(tokenAddress)) {
+        return res.status(400).json({ error: "Invalid contract address format" });
+      }
+
+      const limitParam = typeof req.query.limit === "string" ? Number(req.query.limit) : NaN;
+      const limit = Number.isFinite(limitParam)
+        ? Math.min(Math.max(Math.floor(limitParam), 1), MAX_INSTANCE_LIST_LIMIT)
+        : DEFAULT_INSTANCE_LIST_LIMIT;
+
+      const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+
+      const issuer = new PrismaClientIssuer();
+      const ctx = { issuer } as IContext;
+      const usecase = container.resolve(NftInstanceUseCase);
+
+      const rows = await usecase.listByTokenAddress(ctx, tokenAddress, limit + 1, cursor);
+
+      const hasNext = rows.length > limit;
+      const items = rows.slice(0, limit).map((instance) => ({
+        id: instance.id,
+        instanceId: instance.instanceId,
+        tokenAddress: instance.nftToken.address,
+        nftTokenId: instance.nftTokenId,
+        ownerWalletAddress: instance.nftWallet?.walletAddress ?? null,
+        nftWalletId: instance.nftWalletId,
+        name: instance.name,
+        description: instance.description,
+        imageUrl: instance.imageUrl,
+        json: instance.json,
+        status: instance.status,
+        communityId: instance.communityId,
+        createdAt: instance.createdAt,
+        updatedAt: instance.updatedAt,
+      }));
+
+      const nextCursor = hasNext ? items[items.length - 1]?.id ?? null : null;
+
+      return res.status(200).json({ items, nextCursor, hasNext });
+    } catch (error) {
+      logger.error("NFT instance list error:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
 router.get(
   "/nft-tokens/:tokenAddress/instances/:instanceId",
   nftReadRateLimit,

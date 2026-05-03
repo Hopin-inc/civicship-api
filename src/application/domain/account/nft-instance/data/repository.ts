@@ -118,6 +118,25 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
+  async findManyByTokenAddress(
+    ctx: IContext,
+    tokenAddress: string,
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaNftInstance[]> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      return tx.nftInstance.findMany({
+        where: {
+          nftToken: { address: tokenAddress },
+        },
+        include: nftInstanceInclude,
+        orderBy: { createdAt: "desc" },
+        take,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+    });
+  }
+
   async upsert(
     ctx: IContext,
     data: {

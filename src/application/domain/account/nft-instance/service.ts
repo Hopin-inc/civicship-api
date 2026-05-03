@@ -52,6 +52,15 @@ export default class NftInstanceService {
     return this.repository.findByTokenAddressAndInstanceId(ctx, tokenAddress, instanceId);
   }
 
+  async listByTokenAddress(
+    ctx: IContext,
+    tokenAddress: string,
+    limit: number,
+    cursor?: string,
+  ) {
+    return this.repository.findManyByTokenAddress(ctx, tokenAddress, limit, cursor);
+  }
+
   async upsertInstance(
     ctx: IContext,
     params: {
