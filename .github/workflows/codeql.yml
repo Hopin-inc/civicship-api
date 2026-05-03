@@ -1,0 +1,62 @@
+name: CodeQL
+
+# CodeQL static analysis for JavaScript/TypeScript.
+# Runs on push / PR against master / develop, plus a weekly schedule
+# (cron は UTC で 21:00 月曜 = JST 火曜 06:00)。
+# branch protection の required check には登録しない (run time が PR feedback
+# loop に乗らない / queue 競合で発見が遅れることへの許容)。
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+  schedule:
+    - cron: '0 21 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # SARIF upload to code scanning
+      security-events: write
+      # workflow artifact / source checkout
+      contents: read
+      # required by codeql-action to read the workflow run metadata
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # JS と TS は同一の analyzer (`javascript-typescript`) で解析する。
+        # 旧 `javascript` / `typescript` 個別指定は deprecated で、統合 ID 推奨。
+        language: [javascript-typescript]
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@14c9a0cbe6373488c2a41f7e75c8dd142bb2aba8 # v3.35.3
+        with:
+          languages: ${{ matrix.language }}
+          # security-extended: 既定の security-and-quality 抜きで、より厳しめの
+          # security 系 query pack のみ有効化。FP 抑制と signal 重視のバランス。
+          queries: security-extended
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@14c9a0cbe6373488c2a41f7e75c8dd142bb2aba8 # v3.35.3
+        with:
+          category: '/language:${{ matrix.language }}'
