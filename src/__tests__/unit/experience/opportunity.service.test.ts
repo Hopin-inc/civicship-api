@@ -5,6 +5,11 @@ import { NotFoundError } from "@/errors/graphql";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { MOCK_IMAGE_UPLOAD_RESULT } from "@/__tests__/helper/mock-helper";
+import {
+  GqlOpportunityCreateInput,
+  GqlOpportunityFilterInput,
+  GqlOpportunityUpdateContentInput,
+} from "@/types/graphql";
 
 class MockOpportunityRepository {
   create = jest.fn();
@@ -51,7 +56,9 @@ describe("OpportunityService", () => {
 
   describe("createOpportunity", () => {
     it("should create an opportunity with uploaded images", async () => {
-      const input = { place: { where: { id: "place-id" } } } as any;
+      const input = {
+        place: { where: { id: "place-id" } },
+      } as unknown as GqlOpportunityCreateInput;
 
       mockConverter.create.mockReturnValue({
         data: { title: "Opportunity" },
@@ -112,7 +119,9 @@ describe("OpportunityService", () => {
 
       mockRepository.update.mockResolvedValue({ id: "opportunity-1" });
 
-      const input = { place: { where: { id: "place-1" } } } as any;
+      const input = {
+        place: { where: { id: "place-1" } },
+      } as unknown as GqlOpportunityUpdateContentInput;
 
       const result = await service.updateOpportunityContent(
         mockCtx,
@@ -143,7 +152,12 @@ describe("OpportunityService", () => {
       mockRepository.find.mockResolvedValue(null);
 
       await expect(
-        service.updateOpportunityContent(mockCtx, "opportunity-1", {} as any, mockTx),
+        service.updateOpportunityContent(
+          mockCtx,
+          "opportunity-1",
+          {} as GqlOpportunityUpdateContentInput,
+          mockTx,
+        ),
       ).rejects.toThrow(NotFoundError);
     });
   });
@@ -153,13 +167,13 @@ describe("OpportunityService", () => {
       mockRepository.find.mockResolvedValue({ id: "opportunity-1" });
       mockRepository.setPublishStatus.mockResolvedValue({
         id: "opportunity-1",
-        publishStatus: "PUBLISHED",
+        publishStatus: PublishStatus.PUBLIC,
       });
 
       const result = await service.setOpportunityPublishStatus(
         mockCtx,
         "opportunity-1",
-        "PUBLISHED" as any,
+        PublishStatus.PUBLIC,
         mockTx,
       );
 
@@ -167,17 +181,17 @@ describe("OpportunityService", () => {
       expect(mockRepository.setPublishStatus).toHaveBeenCalledWith(
         mockCtx,
         "opportunity-1",
-        "PUBLISHED",
+        PublishStatus.PUBLIC,
         mockTx,
       );
-      expect(result).toEqual({ id: "opportunity-1", publishStatus: "PUBLISHED" });
+      expect(result).toEqual({ id: "opportunity-1", publishStatus: PublishStatus.PUBLIC });
     });
 
     it("should throw NotFoundError if opportunity not found", async () => {
       mockRepository.find.mockResolvedValue(null);
 
       await expect(
-        service.setOpportunityPublishStatus(mockCtx, "opportunity-1", "PUBLISHED" as any, mockTx),
+        service.setOpportunityPublishStatus(mockCtx, "opportunity-1", PublishStatus.PUBLIC, mockTx),
       ).rejects.toThrow(NotFoundError);
     });
   });
@@ -185,7 +199,7 @@ describe("OpportunityService", () => {
   describe("validatePublishStatus", () => {
     it("should pass validation when filter publishStatus matches allowed statuses", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -194,7 +208,7 @@ describe("OpportunityService", () => {
 
     it("should pass validation when filter publishStatus is subset of allowed statuses", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
-      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -211,7 +225,7 @@ describe("OpportunityService", () => {
 
     it("should pass validation when filter publishStatus is undefined", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = {} as any;
+      const filter = {} as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -220,7 +234,7 @@ describe("OpportunityService", () => {
 
     it("should throw ValidationError when filter publishStatus contains disallowed status", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, "INVALID_STATUS"] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, "INVALID_STATUS" as PublishStatus] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -229,7 +243,7 @@ describe("OpportunityService", () => {
 
     it("should throw ValidationError when filter publishStatus is empty array", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [] } as any;
+      const filter = { publishStatus: [] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -238,7 +252,7 @@ describe("OpportunityService", () => {
 
     it("should throw ValidationError with multiple disallowed statuses", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE, "INVALID"] } as any;
+      const filter = { publishStatus: [PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE, "INVALID" as PublishStatus] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -247,7 +261,7 @@ describe("OpportunityService", () => {
 
     it("should handle duplicate statuses in filter", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -258,16 +272,16 @@ describe("OpportunityService", () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
       
       await expect(
-        service.validatePublishStatus(allowedStatuses, null as any),
+        service.validatePublishStatus(allowedStatuses, undefined),
       ).resolves.not.toThrow();
       
       await expect(
-        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as any),
+        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as unknown as GqlOpportunityFilterInput),
       ).resolves.not.toThrow();
     });
 
     it("should handle empty allowed statuses array", async () => {
-      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as GqlOpportunityFilterInput;
       
       await expect(
         service.validatePublishStatus([], filter),
@@ -277,7 +291,7 @@ describe("OpportunityService", () => {
     it("should handle very large arrays", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
       const largeArray = new Array(1000).fill(PublishStatus.PUBLIC);
-      const filter = { publishStatus: largeArray } as any;
+      const filter = { publishStatus: largeArray } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -286,7 +300,7 @@ describe("OpportunityService", () => {
 
     it("should validate error message format", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
-      const filter = { publishStatus: [PublishStatus.PRIVATE] } as any;
+      const filter = { publishStatus: [PublishStatus.PRIVATE] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -297,16 +311,16 @@ describe("OpportunityService", () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
       
       await expect(
-        service.validatePublishStatus(allowedStatuses, null as any),
+        service.validatePublishStatus(allowedStatuses, undefined),
       ).resolves.not.toThrow();
       
       await expect(
-        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as any),
+        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as unknown as GqlOpportunityFilterInput),
       ).resolves.not.toThrow();
     });
 
     it("should handle empty allowed statuses array", async () => {
-      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as GqlOpportunityFilterInput;
       
       await expect(
         service.validatePublishStatus([], filter),
@@ -316,7 +330,7 @@ describe("OpportunityService", () => {
     it("should handle very large arrays", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
       const largeArray = new Array(1000).fill(PublishStatus.PUBLIC);
-      const filter = { publishStatus: largeArray } as any;
+      const filter = { publishStatus: largeArray } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -325,7 +339,7 @@ describe("OpportunityService", () => {
 
     it("should handle mixed valid and invalid statuses", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PRIVATE] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PRIVATE] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -334,7 +348,7 @@ describe("OpportunityService", () => {
 
     it("should handle duplicate statuses in filter", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -343,7 +357,7 @@ describe("OpportunityService", () => {
 
     it("should handle mixed valid and invalid statuses", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, "INVALID_STATUS", PublishStatus.PRIVATE] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, "INVALID_STATUS" as PublishStatus, PublishStatus.PRIVATE] } as GqlOpportunityFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
