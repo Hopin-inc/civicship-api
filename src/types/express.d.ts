@@ -1,4 +1,3 @@
-import { Request } from 'express';
 import { IContext } from './server';
 
 declare global {
