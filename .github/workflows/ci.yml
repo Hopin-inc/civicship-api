@@ -46,6 +46,28 @@ jobs:
         # Image: rhysd/actionlint:1.7.7 (Docker Hub, multi-arch index digest)
         # shellcheck / pyflakes are bundled in the image.
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies (lockfile integrity check)
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      # ESLint (no --fix) と Prettier --check で source の lint / format 違反を検出する。
+      # 現状 src/ には既存違反 (ESLint 841 errors / Prettier 265 files) が残存している
+      # ため、暫定的に failure を `::warning::` に降格し job は green を維持する。
+      # 既存違反の解消後 (separate PR) に `|| echo` を外して required check 化する。
+      - name: Lint (ESLint + Prettier check, non-blocking)
+        run: |
+          if ! pnpm lint:check; then
+            echo "::warning::existing lint failures (ESLint / Prettier) — see step log; failures are non-blocking until backlog is fixed (issue #978)"
+          fi
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -270,7 +292,18 @@ jobs:
         # 文字列そのものが pattern として解釈され 0 match になる。
         # jest の最初の positional 引数が testPathPattern として扱われる仕様を
         # 利用し、path を positional で渡す。
-        run: pnpm test -- "${{ matrix.path }}"
+        # `--coverage` で istanbul coverage を収集。matrix 単位で
+        # coverageDirectory を分け、後段の aggregator で merge して PR に
+        # 投稿する。閾値 gate は設けず、まず可視化のみ。
+        run: pnpm test -- --coverage --coverageDirectory=coverage-${{ matrix.name }} "${{ matrix.path }}"
+
+      - name: Upload coverage artifact (${{ matrix.name }})
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-${{ matrix.name }}
+          path: coverage-${{ matrix.name }}/
+          retention-days: 7
+          if-no-files-found: warn
 
   # Aggregator job: branch protection の required status check として
   # `ci` を維持したまま、実体は lint / build / test の複合結果を集約する。
@@ -280,11 +313,13 @@ jobs:
   # できる。
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     needs: [lint, build, test]
     if: always()
     permissions:
       contents: read
+      # PR への coverage コメント投稿に必要 (marocchino/sticky-pull-request-comment)。
+      pull-requests: write
     steps:
       - name: Verify all required jobs passed
         run: |
@@ -297,3 +332,102 @@ jobs:
             exit 1
           fi
           echo "All required jobs passed"
+
+      # 以下、coverage 集約 step。閾値 gate は設けない:
+      # coverage の生成や merge が失敗しても aggregator 自体は success を維持し、
+      # PR の merge 可能性に影響を与えない (issue #979 方針)。
+      - name: Download all coverage artifacts
+        if: github.event_name == 'pull_request'
+        id: download-coverage
+        continue-on-error: true
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        with:
+          path: coverage-artifacts
+          pattern: coverage-*
+          merge-multiple: false
+
+      - name: Merge coverage and generate lcov
+        if: github.event_name == 'pull_request' && steps.download-coverage.outcome == 'success'
+        id: merge-coverage
+        continue-on-error: true
+        run: |
+          set -eu
+          mkdir -p coverage-merged coverage-final
+          # download-artifact は各 artifact を `coverage-artifacts/<artifact-name>/`
+          # 配下に展開する。upload 時の path には `coverage-${name}/` を指定しており、
+          # 結果として coverage-final.json は
+          # `coverage-artifacts/coverage-<name>/coverage-<name>/coverage-final.json`
+          # に置かれる。階層深さに依存しない `find` で全て収集し、matrix 名を
+          # ファイル名に埋め込んで coverage-merged/ に集約。nyc merge は input
+          # ディレクトリ配下の *.json を全て merge する。
+          found=0
+          while IFS= read -r -d '' file; do
+            # /coverage-<name>/ に含まれる name を抽出して unique なファイル名にする。
+            rel="${file#coverage-artifacts/}"
+            top="${rel%%/*}"
+            cp "$file" "coverage-merged/${top}.json"
+            found=$((found + 1))
+          done < <(find coverage-artifacts -type f -name 'coverage-final.json' -print0)
+          if [ "$found" -eq 0 ]; then
+            echo "::warning::no coverage files found to merge"
+            echo "has_coverage=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # nyc merge: 複数 coverage-final.json を 1 つに統合。
+          # nyc report: lcov / text-summary を生成。
+          pnpm dlx nyc@17.1.0 merge coverage-merged coverage-final/coverage-final.json
+          pnpm dlx nyc@17.1.0 report \
+            --temp-dir coverage-merged \
+            --report-dir coverage-final \
+            --reporter=lcov \
+            --reporter=text-summary \
+            --reporter=json-summary \
+            > coverage-final/text-summary.txt
+          echo "has_coverage=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build PR coverage comment
+        if: github.event_name == 'pull_request' && steps.merge-coverage.outputs.has_coverage == 'true'
+        id: build-comment
+        continue-on-error: true
+        run: |
+          set -eu
+          summary_json="coverage-final/coverage-summary.json"
+          if [ ! -f "$summary_json" ]; then
+            echo "::warning::coverage-summary.json not found; skipping comment"
+            exit 0
+          fi
+          # jq で total の lines / branches / functions / statements を抽出。
+          lines_pct=$(jq -r '.total.lines.pct' "$summary_json")
+          branches_pct=$(jq -r '.total.branches.pct' "$summary_json")
+          functions_pct=$(jq -r '.total.functions.pct' "$summary_json")
+          statements_pct=$(jq -r '.total.statements.pct' "$summary_json")
+          lines_cov=$(jq -r '.total.lines.covered' "$summary_json")
+          lines_tot=$(jq -r '.total.lines.total' "$summary_json")
+          branches_cov=$(jq -r '.total.branches.covered' "$summary_json")
+          branches_tot=$(jq -r '.total.branches.total' "$summary_json")
+          functions_cov=$(jq -r '.total.functions.covered' "$summary_json")
+          functions_tot=$(jq -r '.total.functions.total' "$summary_json")
+          statements_cov=$(jq -r '.total.statements.covered' "$summary_json")
+          statements_tot=$(jq -r '.total.statements.total' "$summary_json")
+          {
+            echo 'body<<COVERAGE_EOF'
+            echo '## Coverage Report'
+            echo ''
+            echo '| Metric | Coverage | Covered / Total |'
+            echo '| --- | ---: | ---: |'
+            echo "| Lines | ${lines_pct}% | ${lines_cov} / ${lines_tot} |"
+            echo "| Branches | ${branches_pct}% | ${branches_cov} / ${branches_tot} |"
+            echo "| Functions | ${functions_pct}% | ${functions_cov} / ${functions_tot} |"
+            echo "| Statements | ${statements_pct}% | ${statements_cov} / ${statements_tot} |"
+            echo ''
+            echo '> Aggregated across all test matrix jobs (unit / integration / e2e / auth). Visualization only — no threshold gate.'
+            echo 'COVERAGE_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post coverage comment to PR
+        if: github.event_name == 'pull_request' && steps.build-comment.outputs.body != ''
+        continue-on-error: true
+        uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
+        with:
+          header: ci-coverage
+          message: ${{ steps.build-comment.outputs.body }}
