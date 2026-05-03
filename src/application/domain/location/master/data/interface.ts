@@ -1,5 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import {
+  PrismaCityDetail,
+  PrismaStateDetail,
+} from "@/application/domain/location/master/data/type";
 
 export default interface IMasterRepository {
   findCities(
@@ -8,7 +12,7 @@ export default interface IMasterRepository {
     orderBy: Prisma.CityOrderByWithRelationInput[],
     take: number,
     cursor?: string
-  ): Promise<any[]>;
+  ): Promise<PrismaCityDetail[]>;
 
   findStates(
     ctx: IContext,
@@ -16,5 +20,5 @@ export default interface IMasterRepository {
     orderBy: Prisma.StateOrderByWithRelationInput[],
     take: number,
     cursor?: string
-  ): Promise<any[]>;
+  ): Promise<PrismaStateDetail[]>;
 }

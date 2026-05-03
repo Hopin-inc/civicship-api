@@ -45,7 +45,10 @@ export async function processQueuedMints() {
         try {
           const walletAddress = mint.nftInstance?.nftWallet?.walletAddress;
           const nftInstanceId = mint.nftInstance?.instanceId;
-          const nftTokenJson = mint.nftInstance?.nftToken?.json as any;
+          const nftTokenJson = mint.nftInstance?.nftToken?.json as
+            | { nmkrProjectUid?: string; projectUid?: string }
+            | null
+            | undefined;
           
           if (!walletAddress || !nftInstanceId) {
             throw new Error(`Missing required data: walletAddress=${walletAddress}, nftInstanceId=${nftInstanceId}`);

@@ -148,8 +148,9 @@ export default class IdentityService {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     try {
       await tenantedAuth.deleteUser(uid);
-    } catch (error: any) {
-      if (error?.code === "auth/user-not-found") {
+    } catch (error) {
+      const typedError = error as { code?: string } | null;
+      if (typedError?.code === "auth/user-not-found") {
         logger.info("Firebase user not found when deleting; treated as already deleted.", { uid, tenantId });
         return;
       }
