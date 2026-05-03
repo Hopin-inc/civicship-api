@@ -197,7 +197,7 @@ export default class IncentiveGrantUseCase {
         // Transaction will be resolved by the field resolver using DataLoader
         transaction: null,
       };
-    } catch (error: any) {
+    } catch (error) {
       // Handle business logic errors: persist failure info in a separate transaction
       const isValidationError =
         error instanceof NotFoundError ||
@@ -213,7 +213,7 @@ export default class IncentiveGrantUseCase {
           (updateError) => {
             logger.error("Failed to update grant failure status", {
               incentiveGrantId: input.incentiveGrantId,
-              originalError: error.message || String(error),
+              originalError: error instanceof Error ? error.message : String(error),
               error: updateError,
             });
           },
@@ -232,7 +232,7 @@ export default class IncentiveGrantUseCase {
   private async updateFailedGrantStatus(
     ctx: IContext,
     incentiveGrantId: string,
-    error: any,
+    error: unknown,
   ): Promise<void> {
     await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       const grant = await this.repository.findInTransaction(ctx, incentiveGrantId, tx);
@@ -273,6 +273,7 @@ export default class IncentiveGrantUseCase {
       }
 
       // Mark as failed
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await this.repository.markAsFailed(
         ctx,
         grant.userId,
@@ -280,7 +281,7 @@ export default class IncentiveGrantUseCase {
         grant.type,
         grant.sourceId,
         failureCode,
-        error.message || "Unknown error",
+        errorMessage || "Unknown error",
         tx,
       );
     });
