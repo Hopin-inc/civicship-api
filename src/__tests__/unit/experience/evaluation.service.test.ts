@@ -109,7 +109,7 @@ describe("EvaluationService", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: null,
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -125,7 +125,7 @@ describe("EvaluationService", () => {
             opportunitySlot: { opportunity: null },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -160,7 +160,7 @@ describe("EvaluationService", () => {
             opportunity: { id: "opportunity-2" },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       const result = service.validateParticipationHasOpportunity(evaluation);
       expect(result.opportunity.id).toBe("opportunity-2");
@@ -174,7 +174,7 @@ describe("EvaluationService", () => {
           userId: "user-1",
           reservation: null,
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -191,7 +191,7 @@ describe("EvaluationService", () => {
             opportunitySlot: null,
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -206,7 +206,7 @@ describe("EvaluationService", () => {
           userId: "user-1",
           opportunitySlot: null,
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -223,7 +223,7 @@ describe("EvaluationService", () => {
             opportunity: null,
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -242,7 +242,7 @@ describe("EvaluationService", () => {
             },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -268,7 +268,7 @@ describe("EvaluationService", () => {
               },
             },
           },
-        } as any;
+        } as unknown as PrismaEvaluation;
 
         const result = service.validateParticipationHasOpportunity(evaluation);
         expect(result.opportunity.id).toBe("opportunity-1");
@@ -277,7 +277,7 @@ describe("EvaluationService", () => {
 
     it("should handle undefined evaluation object", () => {
       expect(() => {
-        service.validateParticipationHasOpportunity(undefined as any);
+        service.validateParticipationHasOpportunity(undefined as unknown as PrismaEvaluation);
       }).toThrow();
     });
 
@@ -285,7 +285,7 @@ describe("EvaluationService", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: undefined,
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -302,7 +302,7 @@ describe("EvaluationService", () => {
             opportunity: undefined,
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -321,7 +321,7 @@ describe("EvaluationService", () => {
             },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -338,7 +338,7 @@ describe("EvaluationService", () => {
             opportunity: { id: "opportunity-1" },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -355,7 +355,7 @@ describe("EvaluationService", () => {
             opportunity: { id: "opportunity-1" },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       const result = service.validateParticipationHasOpportunity(evaluation);
       expect(result.userId).toBe("   ");
@@ -365,7 +365,7 @@ describe("EvaluationService", () => {
       const evaluation = {
         id: "evaluation-123",
         participation: null,
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       try {
         service.validateParticipationHasOpportunity(evaluation);
@@ -388,7 +388,7 @@ describe("EvaluationService", () => {
             opportunity: null,
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       try {
         service.validateParticipationHasOpportunity(evaluation);
@@ -411,7 +411,7 @@ describe("EvaluationService", () => {
             opportunity: { id: "opportunity-1" },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       try {
         service.validateParticipationHasOpportunity(evaluation);
@@ -435,7 +435,7 @@ describe("EvaluationService", () => {
             opportunity: { id: "should-not-be-used" },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
@@ -457,7 +457,7 @@ describe("EvaluationService", () => {
             },
           },
         },
-      } as any;
+      } as unknown as PrismaEvaluation;
 
       const result = service.validateParticipationHasOpportunity(evaluation);
       expect(result.opportunity.id).toBe("personal-opportunity");
