@@ -2,10 +2,11 @@ import { injectable, inject } from "tsyringe";
 import { GqlNftInstanceFilterInput, GqlNftInstanceSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import NftInstanceService from "@/application/domain/account/nft-instance/service";
-import { NotFoundError } from "@/errors/graphql";
+import NftInstanceService, {
+  UpsertInstanceInput,
+} from "@/application/domain/account/nft-instance/service";
 
-export type SyncNftInstanceResult = {
+export type UpsertNftInstanceResult = {
   id: string;
   instanceId: string;
   tokenAddress: string;
@@ -33,25 +34,19 @@ export default class NftInstanceUseCase {
     return this.service.getNftInstance(id, ctx);
   }
 
-  async syncByTokenAddressAndInstanceId(
+  async upsertByTokenAddressAndInstanceId(
     ctx: IContext,
     tokenAddress: string,
     instanceId: string,
-  ): Promise<SyncNftInstanceResult> {
-    const nftToken = await this.service.findTokenForSync(ctx, tokenAddress);
-    const instanceInfo = await this.service.fetchInstanceFromChain(tokenAddress, instanceId);
-
-    const ownerAddress = instanceInfo.owner?.hash;
-    if (!ownerAddress) {
-      throw new NotFoundError("NftInstanceOwner", { tokenAddress, instanceId });
-    }
-
-    const nftWallet = await this.service.findOwnerWallet(ctx, ownerAddress);
+    input: UpsertInstanceInput,
+  ): Promise<UpsertNftInstanceResult> {
+    const nftToken = await this.service.findTokenByAddress(ctx, tokenAddress);
+    const nftWallet = await this.service.findWalletByAddress(ctx, input.ownerWalletAddress);
 
     return this.issuer.internal((tx) =>
-      this.service.persistInstanceFromInfo(
+      this.service.upsertInstance(
         ctx,
-        { tokenAddress, instanceId, instanceInfo, nftToken, nftWallet },
+        { tokenAddress, instanceId, input, nftToken, nftWallet },
         tx,
       ),
     );

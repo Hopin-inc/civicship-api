@@ -7,12 +7,19 @@ import { INftTokenRepository } from "@/application/domain/account/nft-token/data
 import NftTokenConverter from "@/application/domain/account/nft-token/data/converter";
 import NftTokenPresenter from "@/application/domain/account/nft-token/presenter";
 import { clampFirst } from "@/application/domain/utils";
-import { fetchWithRetry } from "@/utils/retry";
-import { BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 
-const TOKEN_SYNC_MAX_RETRIES = 3;
-const TOKEN_SYNC_RETRY_DELAY = 1000;
-const TOKEN_SYNC_TIMEOUT = 60000;
+export type UpsertTokenInput = {
+  type: string;
+  name?: string | null;
+  symbol?: string | null;
+  decimals?: string;
+  totalSupply?: string;
+  holders?: string;
+  exchangeRate?: string;
+  circulatingMarketCap?: string;
+  iconUrl?: string;
+  metadata?: Record<string, unknown>;
+};
 
 @injectable()
 export default class NftTokenService {
@@ -21,31 +28,20 @@ export default class NftTokenService {
     @inject("NftTokenConverter") private readonly converter: NftTokenConverter,
   ) {}
 
-  async fetchTokenFromChain(address: string): Promise<BaseSepoliaTokenResponse> {
-    const baseApiUrl =
-      process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
-    return fetchWithRetry<BaseSepoliaTokenResponse>(
-      `${baseApiUrl}/tokens/${address}`,
-      TOKEN_SYNC_MAX_RETRIES,
-      TOKEN_SYNC_RETRY_DELAY,
-      TOKEN_SYNC_TIMEOUT,
-    );
-  }
-
-  async persistTokenFromInfo(
+  async upsertToken(
     ctx: IContext,
     address: string,
-    tokenInfo: BaseSepoliaTokenResponse,
+    input: UpsertTokenInput,
     tx: Prisma.TransactionClient,
   ) {
     return this.repository.upsert(
       ctx,
       {
         address,
-        name: tokenInfo.name ?? null,
-        symbol: tokenInfo.symbol ?? null,
-        type: tokenInfo.type || "UNKNOWN",
-        json: tokenInfo as unknown as Record<string, unknown>,
+        name: input.name ?? null,
+        symbol: input.symbol ?? null,
+        type: input.type,
+        json: input as unknown as Record<string, unknown>,
       },
       tx,
     );

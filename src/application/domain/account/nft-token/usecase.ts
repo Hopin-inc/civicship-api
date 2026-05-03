@@ -2,9 +2,11 @@ import { injectable, inject } from "tsyringe";
 import { GqlNftTokenFilterInput, GqlNftTokenSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import NftTokenService from "@/application/domain/account/nft-token/service";
+import NftTokenService, {
+  UpsertTokenInput,
+} from "@/application/domain/account/nft-token/service";
 
-export type SyncNftTokenResult = {
+export type UpsertNftTokenResult = {
   id: string;
   address: string;
 };
@@ -30,10 +32,13 @@ export default class NftTokenUseCase {
     return this.service.getNftToken(id, ctx);
   }
 
-  async syncByAddress(ctx: IContext, address: string): Promise<SyncNftTokenResult> {
-    const tokenInfo = await this.service.fetchTokenFromChain(address);
+  async upsertByAddress(
+    ctx: IContext,
+    address: string,
+    input: UpsertTokenInput,
+  ): Promise<UpsertNftTokenResult> {
     const result = await this.issuer.internal((tx) =>
-      this.service.persistTokenFromInfo(ctx, address, tokenInfo, tx),
+      this.service.upsertToken(ctx, address, input, tx),
     );
     return { id: result.id, address: result.address };
   }
