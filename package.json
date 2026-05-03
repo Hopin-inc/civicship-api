@@ -15,6 +15,7 @@
     "dev:https:prd": "tsx scripts/confirmPrd.ts 'dev:https:prd' && dotenvx run -f .env.prd --env='NODE_HTTPS=true' --env='LOCAL_DEV=true' -- tsx watch src/bootstrap/index.ts",
     "dev:external": "dotenvx run -f .env --env='NODE_HTTPS=false' --env='LOCAL_DEV=true' -- tsx watch src/bootstrap/external-api.ts",
     "lint": "eslint --fix src/ && prettier --write src/",
+    "lint:check": "eslint src/ && prettier --check src/",
     "test": "jest --runInBand",
     "test:coverage": "jest --coverage --runInBand",
     "db:pull": "prisma db pull --schema src/infrastructure/prisma/schema.prisma",

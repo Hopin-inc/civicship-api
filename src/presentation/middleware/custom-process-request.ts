@@ -162,7 +162,7 @@ export const customProcessRequest = async (
       }
     });
 
-    busboy.on('file', (name: string, stream: NodeJS.ReadableStream, info: { filename: string; encoding: string; mimeType: string }) => {
+    busboy.on('file', (name: string, stream: NodeJS.ReadableStream, _info: { filename: string; encoding: string; mimeType: string }) => {
       fieldOrder.push(`file:${name}`);
       fileKeys.add(name);
       stream.resume();

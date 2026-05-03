@@ -101,7 +101,7 @@ describe("TicketClaimLinkService", () => {
     it("should return link for invalid status values (edge case)", async () => {
       const linkWithInvalidStatus = {
         id: claimLinkId,
-        status: "INVALID_STATUS" as any,
+        status: "INVALID_STATUS" as GqlClaimLinkStatus,
       };
 
       mockRepository.find.mockResolvedValue(linkWithInvalidStatus);

@@ -60,9 +60,14 @@ jobs:
       EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
-      # MAIN_IMAGE を job-level env に出すことで build/push と Trivy scan の
-      # 両 step から同じ参照で扱えるようにする (cloud-run 側と命名を合わせる)。
-      MAIN_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:latest
+      # EXTERNAL_IMAGE / EXTERNAL_IMAGE_SHA を job-level env に出すことで、
+      # build/push step と Trivy scan step (build step 後の独立 step) から同じ
+      # 参照で扱えるようにする。`:sha-${{ github.sha }}` は Cloud Run revision
+      # を commit 単位で identifyable にし、過去 image にロールバックできるよう
+      # にするため (#974)。Trivy 側は `EXTERNAL_IMAGE_SHA || EXTERNAL_IMAGE` の
+      # fallback で sha tag 優先。
+      EXTERNAL_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:latest
+      EXTERNAL_IMAGE_SHA: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
 
     steps:
       # See _deploy-cloud-run.yml for rationale on audit mode + sudo.
@@ -120,11 +125,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
 
+      # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
+      # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
+      # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build and push External API image
         run: |
           docker buildx build \
             --file Dockerfile.external \
-            --tag "$MAIN_IMAGE" \
+            --tag "$EXTERNAL_IMAGE" \
+            --tag "$EXTERNAL_IMAGE_SHA" \
             --cache-from "type=gha,scope=external-${{ inputs.stage }}" \
             --cache-to "type=gha,mode=max,scope=external-${{ inputs.stage }}" \
             --push \
@@ -137,7 +146,7 @@ jobs:
       - name: Scan image (Trivy CRITICAL — advisory, see SECURITY.md for blocking rollout)
         uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
         with:
-          image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
+          image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
           severity: CRITICAL
           exit-code: '0'
           ignore-unfixed: true
@@ -148,7 +157,7 @@ jobs:
         if: always()
         uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
         with:
-          image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
+          image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
           severity: HIGH
           exit-code: '0'
           ignore-unfixed: true
@@ -174,12 +183,37 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522 # v2.7.6
         with:
           service: ${{ env.EXTERNAL_API_NAME }}
-          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
           region: ${{ env.GCP_REGION }}
           flags: '--allow-unauthenticated --port=3000'
           env_vars: |
             NODE_ENV=${{ inputs.node-env }}
             ${{ inputs.extra-env-vars }}
+
+      # Cloud Run の deploy アクションは revision の作成成功までしか保証しない。
+      # 実際にコンテナが起動失敗した (例: 起動時 import error / DB 接続失敗) ケースでも
+      # workflow は green になってしまうため、deploy 直後に health endpoint を叩いて
+      # 失敗時はジョブを fail させ、Cloud Run のエラーログを step summary に残す。
+      - name: Smoke check
+        env:
+          SERVICE: ${{ env.EXTERNAL_API_NAME }}
+          REGION: ${{ env.GCP_REGION }}
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')
+          echo "Smoking $URL/health"
+          # retry 9 × delay 10s ≒ 90s + --retry-connrefused: cold start headroom.
+          # cloud-run.yml の Smoke check (immediate deploy) と同じパラメータ。
+          if ! curl --fail --silent --show-error \
+                --retry 9 --retry-delay 10 --retry-connrefused \
+                --max-time 10 \
+                "$URL/health"; then
+            echo "::error::Smoke check failed for $SERVICE"
+            gcloud logging read \
+              "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE AND severity>=ERROR" \
+              --limit=50 --format='value(timestamp,textPayload,jsonPayload.message)' \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       - name: Create Git tag
         if: ${{ inputs.create-git-tag }}

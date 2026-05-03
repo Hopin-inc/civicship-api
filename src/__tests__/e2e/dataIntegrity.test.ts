@@ -159,7 +159,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
   it("should maintain data integrity across complex multi-step workflows", async () => {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    const users: any[] = [];
+    const users: Awaited<ReturnType<typeof TestDataSourceHelper.createUser>>[] = [];
     for (let i = 0; i < 5; i++) {
       const user = await TestDataSourceHelper.createUser({
         name: `User ${i + 1}`,
@@ -179,7 +179,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
       community: { connect: { id: community.id } },
     });
 
-    const userWallets: any[] = [];
+    const userWallets: Awaited<ReturnType<typeof TestDataSourceHelper.createWallet>>[] = [];
     for (const user of users) {
       const wallet = await TestDataSourceHelper.createWallet({
         type: WalletType.MEMBER,
@@ -220,7 +220,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const finalWallets: any[] = [];
+    const finalWallets: Awaited<ReturnType<typeof TestDataSourceHelper.findWallet>>[] = [];
     for (const wallet of userWallets) {
       const updated = await TestDataSourceHelper.findWallet(wallet.id);
       finalWallets.push(updated);
