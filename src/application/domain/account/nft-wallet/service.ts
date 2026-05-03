@@ -55,6 +55,10 @@ export default class NFTWalletService {
     @inject("NftInstanceRepository") private nftInstanceRepository: NftInstanceRepository,
     @inject("NmkrClient") private nmkrClient: NmkrClient,
   ) {}
+  async findByWalletAddress(ctx: IContext, walletAddress: string) {
+    return this.nftWalletRepository.findByWalletAddress(ctx, walletAddress);
+  }
+
   async createOrUpdateWalletAddress(
     ctx: IContext,
     userId: string,

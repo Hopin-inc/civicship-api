@@ -1,11 +1,25 @@
 import { NotFoundError } from "@/errors/graphql";
 import { GqlNftTokenFilterInput, GqlNftTokenSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { Prisma } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { INftTokenRepository } from "@/application/domain/account/nft-token/data/interface";
 import NftTokenConverter from "@/application/domain/account/nft-token/data/converter";
 import NftTokenPresenter from "@/application/domain/account/nft-token/presenter";
 import { clampFirst } from "@/application/domain/utils";
+
+export type UpsertTokenInput = {
+  type: string;
+  name?: string | null;
+  symbol?: string | null;
+  decimals?: string;
+  totalSupply?: string;
+  holders?: string;
+  exchangeRate?: string;
+  circulatingMarketCap?: string;
+  iconUrl?: string;
+  metadata?: Record<string, unknown>;
+};
 
 @injectable()
 export default class NftTokenService {
@@ -13,6 +27,29 @@ export default class NftTokenService {
     @inject("NftTokenRepository") private readonly repository: INftTokenRepository,
     @inject("NftTokenConverter") private readonly converter: NftTokenConverter,
   ) {}
+
+  async findByAddress(ctx: IContext, address: string) {
+    return this.repository.findByAddress(ctx, address);
+  }
+
+  async upsertToken(
+    ctx: IContext,
+    address: string,
+    input: UpsertTokenInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return this.repository.upsert(
+      ctx,
+      {
+        address,
+        name: input.name ?? null,
+        symbol: input.symbol ?? null,
+        type: input.type,
+        json: input as unknown as Record<string, unknown>,
+      },
+      tx,
+    );
+  }
 
   async fetchNftTokens(
     filter: GqlNftTokenFilterInput | undefined,
