@@ -111,7 +111,9 @@ describe("Vote Integration: VoteTopicCreate", () => {
 
     expect(result.voteTopic.gate.type).toBe("NFT");
     // gate の nftTokenId が DB に保存されていること（フィールドリゾルバー用メタデータ）
-    expect((result.voteTopic.gate as any).nftTokenId).toBe(nftToken.id);
+    expect((result.voteTopic.gate as unknown as { nftTokenId: string }).nftTokenId).toBe(
+      nftToken.id,
+    );
   });
 
   // ─── 異常系: communityId / 日付 ──────────────────────────────────────────────

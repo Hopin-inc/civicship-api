@@ -172,7 +172,7 @@ describe("End-to-End User Journey Integration Tests", () => {
       ownerCtx,
     );
 
-    const users: any[] = [];
+    const users: Awaited<ReturnType<typeof TestDataSourceHelper.createUser>>[] = [];
     for (let i = 0; i < 3; i++) {
       const user = await TestDataSourceHelper.createUser({
         name: `User ${i + 1}`,
