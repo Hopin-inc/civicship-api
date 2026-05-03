@@ -28,6 +28,7 @@ export default [
           varsIgnorePattern: "^_",
           caughtErrorsIgnorePattern: "^_",
           destructuredArrayIgnorePattern: "^_",
+          ignoreRestSiblings: true,
         },
       ],
     },
