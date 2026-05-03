@@ -207,7 +207,14 @@ jobs:
         run: |
           URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')
           echo "Smoking $URL/health"
-          if ! curl --fail --silent --show-error --retry 6 --retry-delay 10 --max-time 10 "$URL/health"; then
+          # retry 9 × delay 10s ≒ 90s. cold start (Prisma + Apollo + DI container 構築)
+          # で初回 first-byte が 60s を超えるケースに対応するため retry を増やす。
+          # --retry-connrefused: instance がまだ listen 開始してない (connection refused)
+          # 状態でも retry 対象にする (デフォルトは HTTP error と timeout のみ)。
+          if ! curl --fail --silent --show-error \
+                --retry 9 --retry-delay 10 --retry-connrefused \
+                --max-time 10 \
+                "$URL/health"; then
             echo "::error::Smoke check failed for $SERVICE"
             gcloud logging read \
               "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE AND severity>=ERROR" \
@@ -227,12 +234,14 @@ jobs:
         if: ${{ inputs.enable-canary }}
         run: |
           set -euo pipefail
-          # `serving` に出ている revision の中で最新のものを「現在 100% を受けて
-          # いる前 revision」として記録する。filter で latestReadyRevision = true
-          # は使えないため、status.conditions = Active を頼りに上から 1 件取る。
+          # rollback target は「現在 100% traffic を受けている revision」。
+          # `status.traffic[0]` は配列順に依存し、過去 deploy で残った canary tag
+          # 等が `[0]` を占める edge case があるため、`status.latestReadyRevisionName`
+          # (最後に Ready になった revision) を使う。これは Cloud Run の規約上
+          # 「現在 serving 中の revision」と一致する。
           PREV_REV=$(gcloud run services describe "${APPLICATION_NAME}" \
             --region="${GCP_REGION}" \
-            --format='value(status.traffic[0].revisionName)')
+            --format='value(status.latestReadyRevisionName)')
           if [ -z "${PREV_REV}" ]; then
             echo "Could not determine previous revision" >&2
             exit 1
@@ -273,18 +282,18 @@ jobs:
             exit 1
           fi
           echo "Canary URL: ${CANARY_URL}"
-          # /health は内部 API の health endpoint。404 を含む 5xx は failure 扱い。
-          # NOTE: health endpoint が無い場合は ルート `/` への HEAD で代替する。
-          for i in 1 2 3; do
-            if curl -fsS --max-time 10 "${CANARY_URL}/health" >/dev/null; then
-              echo "Smoke OK on attempt $i"
-              exit 0
-            fi
-            echo "Smoke attempt $i failed, retrying..."
-            sleep 5
-          done
-          echo "Canary smoke test failed" >&2
-          exit 1
+          # canary revision は `--no-traffic` で deploy されているため warming
+          # されておらず、cold start (Prisma + Apollo + DI container 構築) が確実に
+          # 走る。immediate smoke と同じく 60s 程度は許容しないと初回 hit で false
+          # negative する。retry 6 × 10s = 60s。
+          if ! curl --fail --silent --show-error \
+                --retry 6 --retry-delay 10 --retry-connrefused \
+                --max-time 10 \
+                "${CANARY_URL}/health"; then
+            echo "Canary smoke test failed" >&2
+            exit 1
+          fi
+          echo "Canary smoke OK"
 
       - name: Shift 10% traffic to canary revision
         id: traffic-10
@@ -342,7 +351,7 @@ jobs:
             --data-urlencode "aggregation.alignmentPeriod=${BAKE_SECONDS}s" \
             --data-urlencode "aggregation.perSeriesAligner=ALIGN_SUM" \
             --data-urlencode "aggregation.crossSeriesReducer=REDUCE_SUM" \
-            --data-urlencode "aggregation.groupByFields=metric.label.\"response_code_class\"" \
+            --data-urlencode "aggregation.groupByFields=metric.label.response_code_class" \
             "https://monitoring.googleapis.com/v3/projects/${PROJECT_ID}/timeSeries")
 
           echo "Monitoring response:"
@@ -351,11 +360,14 @@ jobs:
           # jq で response_code_class 別合計を出す。canary に traffic がまだ
           # ほぼ流れていない (total < 50) 場合は判定保留 = pass 扱いにする
           # (false-positive で rollback してしまうのを避ける)。
+          # **5xx 限定で評価する** (旧実装は `!= "2xx"` で 3xx redirect / 4xx client
+          # error も「エラー」扱いになっており、normal traffic でも 1% 閾値を
+          # 超えて誤 rollback する。サーバ側障害は 5xx に出るため、それだけを見る)。
           TOTAL=$(echo "${RESPONSE}" | jq '[.timeSeries[]?.points[0].value.int64Value | tonumber? // 0] | add // 0')
-          ERRORS=$(echo "${RESPONSE}" | jq '[.timeSeries[]? | select(.metric.labels.response_code_class != "2xx") | .points[0].value.int64Value | tonumber? // 0] | add // 0')
+          ERRORS=$(echo "${RESPONSE}" | jq '[.timeSeries[]? | select(.metric.labels.response_code_class == "5xx") | .points[0].value.int64Value | tonumber? // 0] | add // 0')
 
           echo "Total requests during bake: ${TOTAL}"
-          echo "Non-2xx requests during bake: ${ERRORS}"
+          echo "5xx requests during bake: ${ERRORS}"
 
           if [ "${TOTAL}" -lt 50 ]; then
             echo "Insufficient traffic (<50 requests) — skipping rate check"
