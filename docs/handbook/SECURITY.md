@@ -406,9 +406,15 @@ Cloud Run にデプロイされる image は、`docker push` 直後 / `gcloud ru
 
 ### Severity Policy
 
+**現在は初回投入フェーズ — CRITICAL も advisory (warning) で運用中。** 既存
+image (node:20-slim base + transitive deps) に未対応 CRITICAL CVE が残っている
+可能性があり、初手から block 化すると prd merge を永久に止めてしまう。最初の
+数回 scan で出た CVE を `.trivyignore` に登録し、それ以外を fix した上で
+別 PR で blocking に上げる。
+
 | Severity | exit-code | 振る舞い                                   |
 | -------- | --------- | ------------------------------------------ |
-| CRITICAL | `1`       | deploy を **block** (job が fail)          |
+| CRITICAL | `0` (暫定) → `1` (将来) | 現在: warning のみ / 将来: deploy を block |
 | HIGH     | `0`       | warning。job は通り、結果は Security タブで確認 |
 | その他   | -         | scan 対象外 (MEDIUM 以下は雑音になりやすい)   |
 
@@ -419,6 +425,17 @@ Cloud Run にデプロイされる image は、`docker push` 直後 / `gcloud ru
 
 `ignore-unfixed: true` を付けているため、upstream で fix が未公開の CVE は
 対象外となる。
+
+#### Blocking 化への移行手順
+
+1. 最初の deploy 後、Security タブの `trivy-critical` alert を確認。
+2. 各 CVE について次のいずれかを実施:
+   - **Fix 可能**: base image / dependency を bump して PR を出す。
+   - **Fix 不可 / 不到達**: `.trivyignore` に追記 (CVE-ID + 理由 + 期限)。
+3. CRITICAL alert がゼロになったことを確認したら、別 PR で `_deploy-cloud-run.yml`
+   と `_deploy-external-api.yml` の `Scan image (Trivy CRITICAL ...)` step の
+   `exit-code: '0'` → `'1'` に変更し、step name の `advisory` を `blocking`
+   に戻す。
 
 ### `.trivyignore`
 
