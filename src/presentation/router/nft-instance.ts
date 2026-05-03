@@ -18,7 +18,7 @@ const isOptionalString = (value: unknown): value is string | undefined =>
   value === undefined || typeof value === "string";
 
 router.put(
-  "/nft-instances/:tokenAddress/:instanceId",
+  "/nft-tokens/:tokenAddress/instances/:instanceId",
   nftInstanceSyncRateLimit,
   apiKeyAuthMiddleware,
   async (req, res) => {
