@@ -14,7 +14,9 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
   const traceId = currentSpan?.spanContext().traceId;
 
   if (currentSpan) {
-    const body = (req as any).body;
+    const body = (
+      req as http.IncomingMessage & { body?: { operationName?: string; query?: string } }
+    ).body;
     if (body?.operationName) {
       currentSpan.setAttribute("app.graphql.operation.name", body.operationName);
     }
@@ -28,7 +30,7 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
 
   logger.debug("🔍 [TRACE] GraphQL context creation (Express entry)", {
     traceId,
-    path: (req as any).url,
+    path: req.url,
   });
 
   const headers = extractAuthHeaders(req);
