@@ -198,7 +198,7 @@ export default class IncentiveGrantService {
             failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
           } else if (error instanceof NotFoundError) {
             failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
-          } else if (errorCode?.startsWith("P")) {
+          } else if (typeof errorCode === "string" && errorCode.startsWith("P")) {
             failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
           } else {
             failureCode = IncentiveGrantFailureCode.UNKNOWN;
