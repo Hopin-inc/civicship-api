@@ -4,6 +4,7 @@ import ArticleService from "@/application/domain/content/article/service";
 import { ValidationError } from "@/errors/graphql";
 import { PublishStatus } from "@prisma/client";
 import { MOCK_IMAGE_UPLOAD_RESULT } from "@/__tests__/helper/mock-helper";
+import { GqlArticleFilterInput } from "@/types/graphql";
 
 class MockArticleRepository {
   query = jest.fn();
@@ -49,7 +50,7 @@ describe("ArticleService", () => {
   describe("validatePublishStatus", () => {
     it("should pass validation when filter publishStatus matches allowed statuses", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as GqlArticleFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -58,7 +59,7 @@ describe("ArticleService", () => {
 
     it("should throw ValidationError for disallowed status", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [PublishStatus.PRIVATE] } as any;
+      const filter = { publishStatus: [PublishStatus.PRIVATE] } as GqlArticleFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -73,16 +74,16 @@ describe("ArticleService", () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
       
       await expect(
-        service.validatePublishStatus(allowedStatuses, null as any),
+        service.validatePublishStatus(allowedStatuses, undefined),
       ).resolves.not.toThrow();
       
       await expect(
-        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as any),
+        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as unknown as GqlArticleFilterInput),
       ).resolves.not.toThrow();
     });
 
     it("should handle empty allowed statuses array", async () => {
-      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as GqlArticleFilterInput;
       
       await expect(
         service.validatePublishStatus([], filter),
@@ -92,7 +93,7 @@ describe("ArticleService", () => {
     it("should handle very large arrays", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
       const largeArray = new Array(1000).fill(PublishStatus.PUBLIC);
-      const filter = { publishStatus: largeArray } as any;
+      const filter = { publishStatus: largeArray } as GqlArticleFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -101,7 +102,7 @@ describe("ArticleService", () => {
 
     it("should validate error message format", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
-      const filter = { publishStatus: [PublishStatus.PRIVATE] } as any;
+      const filter = { publishStatus: [PublishStatus.PRIVATE] } as GqlArticleFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -114,7 +115,7 @@ describe("ArticleService", () => {
 
     it("should handle mixed valid and invalid statuses", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PRIVATE, "INVALID"] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PRIVATE, "INVALID" as PublishStatus] } as GqlArticleFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),
@@ -123,7 +124,7 @@ describe("ArticleService", () => {
 
     it("should handle duplicate statuses in filter", async () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as GqlArticleFilterInput;
 
       await expect(
         service.validatePublishStatus(allowedStatuses, filter),

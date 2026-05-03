@@ -20,6 +20,7 @@ import { registerProductionDependencies } from "@/application/provider";
 import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
 import { GqlEvaluationStatus } from "@/types/graphql";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { EvaluationCredentialClaim } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 
 describe("Point Reward Tests", () => {
   const testSetup = {
@@ -283,7 +284,7 @@ describe("Point Reward Tests", () => {
     expect(vcRequest.evaluationId).toBeDefined();
     expect(vcRequest.userId).toBe(participationUserId);
     
-    const claims = vcRequest.claims as any;
+    const claims = vcRequest.claims as unknown as EvaluationCredentialClaim;
     expect(claims.type).toBe("EvaluationCredential");
     expect(claims.evaluator).toBeDefined();
     expect(claims.participant).toBeDefined();
@@ -337,7 +338,7 @@ describe("Point Reward Tests", () => {
 
     const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
     const vcRequest = vcRequests[0];
-    const claims = vcRequest.claims as any;
+    const claims = vcRequest.claims as unknown as EvaluationCredentialClaim;
 
     // EvaluationCredentialClaim 型 (vcIssuanceRequest/data/type.ts:3-21) に沿って assert。
     // type 上で claims.id は evaluation.id を格納する (converter.ts:38)。
@@ -361,12 +362,8 @@ describe("Point Reward Tests", () => {
   });
 
   it("creates multiple VC issuance requests for bulk evaluations", async () => {
-    let reservation: any;
-    
     const reservations = await TestDataSourceHelper.findAllReservations();
-    if (reservations.length > 0) {
-      reservation = reservations[0];
-    }
+    const reservation = reservations[0];
 
     const secondParticipation = await TestDataSourceHelper.createParticipation({
       status: ParticipationStatus.PENDING,
@@ -410,7 +407,7 @@ describe("Point Reward Tests", () => {
     vcRequests.forEach(vcRequest => {
       expect(vcRequest.status).toBe(VcIssuanceStatus.PENDING);
       expect(vcRequest.userId).toBe(participationUserId);
-      const claims = vcRequest.claims as any;
+      const claims = vcRequest.claims as unknown as EvaluationCredentialClaim;
       expect(claims.type).toBe("EvaluationCredential");
     });
   });
@@ -444,12 +441,8 @@ describe("Point Reward Tests", () => {
   });
 
   it("creates VC only for Passed evaluations in mixed bulk evaluation", async () => {
-    let reservation: any;
-    
     const reservations = await TestDataSourceHelper.findAllReservations();
-    if (reservations.length > 0) {
-      reservation = reservations[0];
-    }
+    const reservation = reservations[0];
 
     const secondParticipation = await TestDataSourceHelper.createParticipation({
       status: ParticipationStatus.PENDING,
@@ -506,7 +499,7 @@ describe("Point Reward Tests", () => {
     vcRequests.forEach(vcRequest => {
       expect(vcRequest.status).toBe(VcIssuanceStatus.PENDING);
       expect(vcRequest.userId).toBe(participationUserId);
-      const claims = vcRequest.claims as any;
+      const claims = vcRequest.claims as unknown as EvaluationCredentialClaim;
       expect(claims.type).toBe("EvaluationCredential");
       expect(claims.score).toBe("PASSED");
     });
