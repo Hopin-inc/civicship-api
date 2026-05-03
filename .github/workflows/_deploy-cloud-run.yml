@@ -32,6 +32,28 @@ on:
         type: boolean
         required: false
         default: false
+      enable-canary:
+        description: |
+          Whether to roll out via canary (10% → 100% with auto-rollback on
+          elevated 5xx). When false, the new revision serves 100% of traffic
+          immediately on deploy (existing behavior). prd uses canary; dev skips.
+        type: boolean
+        required: false
+        default: false
+      canary-error-threshold:
+        description: |
+          5xx error-rate threshold (fraction, e.g. 0.01 = 1%) above which the
+          canary is rolled back. Only applied when `enable-canary` is true.
+        type: string
+        required: false
+        default: '0.01'
+      canary-bake-seconds:
+        description: |
+          How long to bake the 10% canary before evaluating 5xx rate (seconds).
+          Only applied when `enable-canary` is true.
+        type: string
+        required: false
+        default: '300'
 
 jobs:
   deploy:
@@ -139,30 +161,252 @@ jobs:
       # main / batch の両 registry に同じ image を multi-tag push する。
       # batch (Cloud Run Job) 側は entrypoint を `--command/--args` で
       # `node dist/index.js` に上書きする (旧 Dockerfile.batch CMD と等価)。
+      # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
+      # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
+      # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build unified image and push to main + batch registries
         env:
           MAIN_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+          MAIN_IMAGE_SHA: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:sha-${{ github.sha }}
           BATCH_IMAGE: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
+          BATCH_IMAGE_SHA: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}
         run: |
           docker buildx build \
             --file Dockerfile \
             --tag "$MAIN_IMAGE" \
+            --tag "$MAIN_IMAGE_SHA" \
             --tag "$BATCH_IMAGE" \
+            --tag "$BATCH_IMAGE_SHA" \
             --cache-from "type=gha,scope=cloud-run-${{ inputs.stage }}" \
             --cache-to "type=gha,mode=max,scope=cloud-run-${{ inputs.stage }}" \
             --push \
             .
 
-      - name: Deploy Internal API to Cloud Run
+      # --- Non-canary deploy (dev / 既存挙動) ---------------------------------
+      # `enable-canary: false` の場合は従来通り即 100% で切り替える。
+      - name: Deploy Internal API to Cloud Run (immediate 100%)
         id: deploy
+        if: ${{ !inputs.enable-canary }}
         uses: google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522 # v2.7.6
         with:
           service: ${{ env.APPLICATION_NAME }}
-          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:sha-${{ github.sha }}
           region: ${{ env.GCP_REGION }}
           env_vars: |
             NODE_ENV=${{ inputs.node-env }}
             ${{ inputs.extra-env-vars }}
+
+      # 即 100% パス専用の smoke。deploy アクションは revision 作成成功までしか
+      # 保証しないため、起動時 import error / DB 接続失敗等で workflow が green
+      # になるのを防ぐ。canary パスは別の smoke (smoke-canary step) を持つ。
+      - name: Smoke check (immediate deploy)
+        if: ${{ !inputs.enable-canary }}
+        env:
+          SERVICE: ${{ env.APPLICATION_NAME }}
+          REGION: ${{ env.GCP_REGION }}
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')
+          echo "Smoking $URL/health"
+          # retry 9 × delay 10s ≒ 90s. cold start (Prisma + Apollo + DI container 構築)
+          # で初回 first-byte が 60s を超えるケースに対応するため retry を増やす。
+          # --retry-connrefused: instance がまだ listen 開始してない (connection refused)
+          # 状態でも retry 対象にする (デフォルトは HTTP error と timeout のみ)。
+          if ! curl --fail --silent --show-error \
+                --retry 9 --retry-delay 10 --retry-connrefused \
+                --max-time 10 \
+                "$URL/health"; then
+            echo "::error::Smoke check failed for $SERVICE"
+            gcloud logging read \
+              "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE AND severity>=ERROR" \
+              --limit=50 --format='value(timestamp,textPayload,jsonPayload.message)' \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+
+      # --- Canary deploy (prd) -----------------------------------------------
+      # `enable-canary: true` の場合は新 revision を `--no-traffic --tag canary`
+      # で deploy → 10% → bake → 5xx チェック → 100% / rollback の順で切り替え
+      # る。失敗時は最後の `Rollback to previous revision` step が前 revision に
+      # 全 traffic を戻す (下記 `if: failure()` step 参照)。
+      - name: Capture previous active revision (for rollback)
+        id: prev-rev
+        if: ${{ inputs.enable-canary }}
+        run: |
+          set -euo pipefail
+          # rollback target は「現在 100% traffic を受けている revision」。
+          # `status.traffic[0]` は配列順に依存し、過去 deploy で残った canary tag
+          # 等が `[0]` を占める edge case があるため、`status.latestReadyRevisionName`
+          # (最後に Ready になった revision) を使う。これは Cloud Run の規約上
+          # 「現在 serving 中の revision」と一致する。
+          PREV_REV=$(gcloud run services describe "${APPLICATION_NAME}" \
+            --region="${GCP_REGION}" \
+            --format='value(status.latestReadyRevisionName)')
+          if [ -z "${PREV_REV}" ]; then
+            echo "Could not determine previous revision" >&2
+            exit 1
+          fi
+          echo "Previous revision: ${PREV_REV}"
+          echo "previous=${PREV_REV}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy Internal API to Cloud Run (canary, no traffic)
+        id: deploy-canary
+        if: ${{ inputs.enable-canary }}
+        uses: google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522 # v2.7.6
+        with:
+          service: ${{ env.APPLICATION_NAME }}
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:sha-${{ github.sha }}
+          region: ${{ env.GCP_REGION }}
+          # `--no-traffic --tag canary` 相当。新 revision を作るが traffic は
+          # 0% のままにしておき、`canary` タグだけ振る (タグ URL で smoke 可)。
+          flags: '--no-traffic --tag=canary'
+          env_vars: |
+            NODE_ENV=${{ inputs.node-env }}
+            ${{ inputs.extra-env-vars }}
+
+      - name: Smoke test canary tag URL
+        id: smoke-canary
+        if: ${{ inputs.enable-canary }}
+        run: |
+          set -euo pipefail
+          # tag URL は `gcloud run services describe` の status.traffic[].url か
+          # ら canary tag のものを取る (リージョン固有の `canary---SERVICE-...`
+          # ホスト名が返る)。
+          CANARY_URL=$(gcloud run services describe "${APPLICATION_NAME}" \
+            --region="${GCP_REGION}" \
+            --format='value(status.traffic.url)' \
+            --flatten='status.traffic[]' \
+            --filter='status.traffic.tag=canary' | head -n 1)
+          if [ -z "${CANARY_URL}" ]; then
+            echo "Could not resolve canary tag URL" >&2
+            exit 1
+          fi
+          echo "Canary URL: ${CANARY_URL}"
+          # canary revision は `--no-traffic` で deploy されているため warming
+          # されておらず、cold start (Prisma + Apollo + DI container 構築) が確実に
+          # 走る。immediate smoke と同じく 60s 程度は許容しないと初回 hit で false
+          # negative する。retry 6 × 10s = 60s。
+          if ! curl --fail --silent --show-error \
+                --retry 6 --retry-delay 10 --retry-connrefused \
+                --max-time 10 \
+                "${CANARY_URL}/health"; then
+            echo "Canary smoke test failed" >&2
+            exit 1
+          fi
+          echo "Canary smoke OK"
+
+      - name: Shift 10% traffic to canary revision
+        id: traffic-10
+        if: ${{ inputs.enable-canary }}
+        run: |
+          set -euo pipefail
+          NEW_REV="${{ steps.deploy-canary.outputs.revision }}"
+          if [ -z "${NEW_REV}" ]; then
+            # フォールバック: deploy-cloudrun action が revision output を返さな
+            # い場合は describe で latestCreatedRevision を取得。
+            NEW_REV=$(gcloud run services describe "${APPLICATION_NAME}" \
+              --region="${GCP_REGION}" \
+              --format='value(status.latestCreatedRevisionName)')
+          fi
+          echo "New revision: ${NEW_REV}"
+          echo "new=${NEW_REV}" >> "$GITHUB_OUTPUT"
+          gcloud run services update-traffic "${APPLICATION_NAME}" \
+            --region="${GCP_REGION}" \
+            --to-revisions="${NEW_REV}=10"
+
+      - name: Bake canary (wait for traffic samples)
+        if: ${{ inputs.enable-canary }}
+        run: sleep "${{ inputs.canary-bake-seconds }}"
+
+      - name: Evaluate canary 5xx rate
+        id: evaluate-canary
+        if: ${{ inputs.enable-canary }}
+        env:
+          NEW_REV: ${{ steps.traffic-10.outputs.new }}
+          ERROR_THRESHOLD: ${{ inputs.canary-error-threshold }}
+          BAKE_SECONDS: ${{ inputs.canary-bake-seconds }}
+        run: |
+          set -euo pipefail
+          # Cloud Monitoring の TimeSeries API を直接叩いて bake 期間中の
+          # `run.googleapis.com/request_count` を revision 別に取り、5xx 比率
+          # (response_code_class != "2xx") が閾値を超えていないか判定する。
+          # gcloud auth は WIF から ADC 経由で利用可能。
+          PROJECT_ID=$(gcloud config get-value project)
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+
+          # ISO-8601 (UTC, RFC3339) で start/end を作る。bake 終了時刻が end。
+          END_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          START_TS=$(date -u -d "@$(( $(date -u +%s) - BAKE_SECONDS ))" +%Y-%m-%dT%H:%M:%SZ)
+
+          FILTER="metric.type=\"run.googleapis.com/request_count\" \
+            AND resource.label.\"service_name\"=\"${APPLICATION_NAME}\" \
+            AND resource.label.\"location\"=\"${GCP_REGION}\" \
+            AND resource.label.\"revision_name\"=\"${NEW_REV}\""
+
+          RESPONSE=$(curl -sS -G \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            --data-urlencode "filter=${FILTER}" \
+            --data-urlencode "interval.startTime=${START_TS}" \
+            --data-urlencode "interval.endTime=${END_TS}" \
+            --data-urlencode "aggregation.alignmentPeriod=${BAKE_SECONDS}s" \
+            --data-urlencode "aggregation.perSeriesAligner=ALIGN_SUM" \
+            --data-urlencode "aggregation.crossSeriesReducer=REDUCE_SUM" \
+            --data-urlencode "aggregation.groupByFields=metric.label.response_code_class" \
+            "https://monitoring.googleapis.com/v3/projects/${PROJECT_ID}/timeSeries")
+
+          echo "Monitoring response:"
+          echo "${RESPONSE}"
+
+          # jq で response_code_class 別合計を出す。canary に traffic がまだ
+          # ほぼ流れていない (total < 50) 場合は判定保留 = pass 扱いにする
+          # (false-positive で rollback してしまうのを避ける)。
+          # **5xx 限定で評価する** (旧実装は `!= "2xx"` で 3xx redirect / 4xx client
+          # error も「エラー」扱いになっており、normal traffic でも 1% 閾値を
+          # 超えて誤 rollback する。サーバ側障害は 5xx に出るため、それだけを見る)。
+          TOTAL=$(echo "${RESPONSE}" | jq '[.timeSeries[]?.points[0].value.int64Value | tonumber? // 0] | add // 0')
+          ERRORS=$(echo "${RESPONSE}" | jq '[.timeSeries[]? | select(.metric.labels.response_code_class == "5xx") | .points[0].value.int64Value | tonumber? // 0] | add // 0')
+
+          echo "Total requests during bake: ${TOTAL}"
+          echo "5xx requests during bake: ${ERRORS}"
+
+          if [ "${TOTAL}" -lt 50 ]; then
+            echo "Insufficient traffic (<50 requests) — skipping rate check"
+            exit 0
+          fi
+
+          # bash の浮動小数比較は awk で
+          RATE=$(awk -v e="${ERRORS}" -v t="${TOTAL}" 'BEGIN { if (t==0) print 0; else printf "%.6f", e/t }')
+          echo "Error rate: ${RATE} (threshold ${ERROR_THRESHOLD})"
+          OVER=$(awk -v r="${RATE}" -v th="${ERROR_THRESHOLD}" 'BEGIN { print (r+0 > th+0) ? 1 : 0 }')
+          if [ "${OVER}" = "1" ]; then
+            echo "Canary error rate ${RATE} exceeded threshold ${ERROR_THRESHOLD}" >&2
+            exit 1
+          fi
+          echo "Canary error rate within threshold."
+
+      - name: Promote canary to 100%
+        if: ${{ inputs.enable-canary && success() }}
+        env:
+          NEW_REV: ${{ steps.traffic-10.outputs.new }}
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic "${APPLICATION_NAME}" \
+            --region="${GCP_REGION}" \
+            --to-revisions="${NEW_REV}=100"
+
+      - name: Rollback to previous revision
+        # canary 関連 step のいずれかが失敗した場合に前 revision を 100% に戻
+        # す。`if: failure()` は (a) 同 job 内で earlier step が failed の時、
+        # (b) `enable-canary: true` でなければ意味が無いので両方を AND。
+        if: ${{ failure() && inputs.enable-canary && steps.prev-rev.outputs.previous != '' }}
+        env:
+          PREV_REV: ${{ steps.prev-rev.outputs.previous }}
+        run: |
+          set -euo pipefail
+          echo "Rolling back: shifting 100% traffic back to ${PREV_REV}"
+          gcloud run services update-traffic "${APPLICATION_NAME}" \
+            --region="${GCP_REGION}" \
+            --to-revisions="${PREV_REV}=100"
 
       - name: Update Cloud Run Job (batch) to new image
         # docker push :latest alone does not roll the Cloud Run Job to the new
@@ -177,7 +421,7 @@ jobs:
         run: |
           gcloud run jobs update "${{ env.BATCH_NAME }}" \
             --region="${{ env.GCP_REGION }}" \
-            --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest" \
+            --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}" \
             --command=node \
             --args=-r,tsconfig-paths/register,dist/bootstrap/batch.js
 
