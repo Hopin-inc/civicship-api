@@ -1,12 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaCityDetail } from "@/application/domain/location/master/data/type";
-
-type PrismaStateDetail = {
-  code: string;
-  name: string;
-  countryCode: string;
-};
+import {
+  PrismaCityDetail,
+  PrismaStateDetail,
+} from "@/application/domain/location/master/data/type";
 
 export default interface IMasterRepository {
   findCities(
