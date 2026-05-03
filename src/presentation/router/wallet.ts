@@ -3,7 +3,7 @@ import { container } from 'tsyringe';
 import NFTWalletUsecase from '@/application/domain/account/nft-wallet/usecase';
 import { apiKeyAuthMiddleware } from '@/presentation/middleware/api-key-auth';
 import { validateFirebasePhoneAuth } from '@/presentation/middleware/firebase-phone-auth';
-import { walletRateLimit } from '@/presentation/middleware/rate-limit';
+import { nftReadRateLimit, walletRateLimit } from '@/presentation/middleware/rate-limit';
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
@@ -77,6 +77,45 @@ router.put('/nft-wallets/:walletAddress',
       return await handleRegister(req, res, walletAddress, name);
     } catch (error) {
       logger.error('Wallet registration error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+router.get('/nft-wallets/:walletAddress',
+  nftReadRateLimit,
+  apiKeyAuthMiddleware,
+  async (req, res) => {
+    try {
+      const { walletAddress } = req.params;
+
+      if (!ETH_ADDRESS_PATTERN.test(walletAddress)) {
+        return res.status(400).json({ error: 'Invalid wallet address format' });
+      }
+
+      const issuer = new PrismaClientIssuer();
+      const nftWalletUsecase = container.resolve(NFTWalletUsecase);
+      const ctx = { issuer } as IContext;
+
+      const wallet = await nftWalletUsecase.getByWalletAddress(ctx, walletAddress);
+
+      if (!wallet) {
+        return res.status(404).json({
+          error: `NftWallet not found (walletAddress: ${walletAddress})`,
+          entity: 'NftWallet',
+        });
+      }
+
+      return res.status(200).json({
+        id: wallet.id,
+        walletAddress: wallet.walletAddress,
+        userId: wallet.userId,
+        type: wallet.type,
+        createdAt: wallet.createdAt,
+        updatedAt: wallet.updatedAt,
+      });
+    } catch (error) {
+      logger.error('Wallet read error:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
   }

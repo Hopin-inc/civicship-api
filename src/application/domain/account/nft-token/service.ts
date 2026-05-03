@@ -28,6 +28,10 @@ export default class NftTokenService {
     @inject("NftTokenConverter") private readonly converter: NftTokenConverter,
   ) {}
 
+  async findByAddress(ctx: IContext, address: string) {
+    return this.repository.findByAddress(ctx, address);
+  }
+
   async upsertToken(
     ctx: IContext,
     address: string,

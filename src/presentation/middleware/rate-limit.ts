@@ -10,6 +10,10 @@ const RATE_LIMIT_CONFIG = {
     windowMs: 60 * 1000, // 1 minute
     max: 10, // 10 sync requests per minute per IP
   },
+  NFT_READ_OPERATIONS: {
+    windowMs: 60 * 1000, // 1 minute
+    max: 60, // 60 read requests per minute per IP
+  },
   GENERAL_API: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // 100 requests per 15 minutes for general API operations
@@ -46,6 +50,16 @@ export const nftInstanceSyncRateLimit = rateLimit({
   max: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.max,
   message: {
     error: 'Too many NFT instance sync requests from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const nftReadRateLimit = rateLimit({
+  windowMs: RATE_LIMIT_CONFIG.NFT_READ_OPERATIONS.windowMs,
+  max: RATE_LIMIT_CONFIG.NFT_READ_OPERATIONS.max,
+  message: {
+    error: 'Too many NFT read requests from this IP, please try again later.',
   },
   standardHeaders: true,
   legacyHeaders: false,

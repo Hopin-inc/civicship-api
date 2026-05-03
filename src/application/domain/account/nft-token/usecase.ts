@@ -32,6 +32,10 @@ export default class NftTokenUseCase {
     return this.service.getNftToken(id, ctx);
   }
 
+  async getByAddress(ctx: IContext, address: string) {
+    return this.service.findByAddress(ctx, address);
+  }
+
   async upsertByAddress(
     ctx: IContext,
     address: string,

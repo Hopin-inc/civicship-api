@@ -71,34 +71,22 @@ export default class NftTokenRepository implements INftTokenRepository {
     });
   }
 
-  async findByAddress(ctx: IContext, address: string, tx?: Prisma.TransactionClient) {
+  async findByAddress(
+    ctx: IContext,
+    address: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftToken | null> {
     if (tx) {
       return tx.nftToken.findUnique({
         where: { address },
-        select: {
-          id: true,
-          address: true,
-          name: true,
-          symbol: true,
-          type: true,
-          communityId: true,
-          updatedAt: true,
-        },
+        select: nftTokenSelect,
       });
     }
 
     return ctx.issuer.internal(async (t) => {
       return t.nftToken.findUnique({
         where: { address },
-        select: {
-          id: true,
-          address: true,
-          name: true,
-          symbol: true,
-          type: true,
-          communityId: true,
-          updatedAt: true,
-        },
+        select: nftTokenSelect,
       });
     });
   }

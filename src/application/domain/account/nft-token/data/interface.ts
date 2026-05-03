@@ -19,15 +19,7 @@ export interface INftTokenRepository {
     ctx: IContext,
     address: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<{
-    id: string;
-    address: string;
-    name: string | null;
-    symbol: string | null;
-    type: string;
-    communityId: string | null;
-    updatedAt: Date | null;
-  } | null>;
+  ): Promise<PrismaNftToken | null>;
 
   findManyByAddresses(
     ctx: IContext,

@@ -3,7 +3,7 @@ import { container } from "tsyringe";
 import NftTokenUseCase from "@/application/domain/account/nft-token/usecase";
 import { UpsertTokenInput } from "@/application/domain/account/nft-token/service";
 import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
-import { nftTokenSyncRateLimit } from "@/presentation/middleware/rate-limit";
+import { nftReadRateLimit, nftTokenSyncRateLimit } from "@/presentation/middleware/rate-limit";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
@@ -75,6 +75,39 @@ router.put(
       return res.status(200).json({ success: true, ...result });
     } catch (error) {
       logger.error("NFT token upsert error:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+router.get(
+  "/nft-tokens/:address",
+  nftReadRateLimit,
+  apiKeyAuthMiddleware,
+  async (req, res) => {
+    try {
+      const { address } = req.params;
+
+      if (!ETH_ADDRESS_PATTERN.test(address)) {
+        return res.status(400).json({ error: "Invalid contract address format" });
+      }
+
+      const issuer = new PrismaClientIssuer();
+      const ctx = { issuer } as IContext;
+      const usecase = container.resolve(NftTokenUseCase);
+
+      const token = await usecase.getByAddress(ctx, address);
+
+      if (!token) {
+        return res.status(404).json({
+          error: `NftToken not found (address: ${address})`,
+          entity: "NftToken",
+        });
+      }
+
+      return res.status(200).json(token);
+    } catch (error) {
+      logger.error("NFT token read error:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   },

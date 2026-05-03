@@ -34,6 +34,14 @@ export default class NftInstanceUseCase {
     return this.service.getNftInstance(id, ctx);
   }
 
+  async getByTokenAddressAndInstanceId(
+    ctx: IContext,
+    tokenAddress: string,
+    instanceId: string,
+  ) {
+    return this.service.findByTokenAddressAndInstanceId(ctx, tokenAddress, instanceId);
+  }
+
   async upsertByTokenAddressAndInstanceId(
     ctx: IContext,
     tokenAddress: string,

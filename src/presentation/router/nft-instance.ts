@@ -4,7 +4,10 @@ import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecas
 import { UpsertInstanceInput } from "@/application/domain/account/nft-instance/service";
 import { NotFoundError } from "@/errors/graphql";
 import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
-import { nftInstanceSyncRateLimit } from "@/presentation/middleware/rate-limit";
+import {
+  nftInstanceSyncRateLimit,
+  nftReadRateLimit,
+} from "@/presentation/middleware/rate-limit";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
@@ -88,6 +91,62 @@ router.put(
       }
 
       logger.error("NFT instance upsert error:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+router.get(
+  "/nft-tokens/:tokenAddress/instances/:instanceId",
+  nftReadRateLimit,
+  apiKeyAuthMiddleware,
+  async (req, res) => {
+    try {
+      const { tokenAddress, instanceId } = req.params;
+
+      if (!ETH_ADDRESS_PATTERN.test(tokenAddress)) {
+        return res.status(400).json({ error: "Invalid contract address format" });
+      }
+
+      if (!INSTANCE_ID_PATTERN.test(instanceId)) {
+        return res.status(400).json({ error: "Invalid instance id format" });
+      }
+
+      const issuer = new PrismaClientIssuer();
+      const ctx = { issuer } as IContext;
+      const usecase = container.resolve(NftInstanceUseCase);
+
+      const instance = await usecase.getByTokenAddressAndInstanceId(
+        ctx,
+        tokenAddress,
+        instanceId,
+      );
+
+      if (!instance) {
+        return res.status(404).json({
+          error: `NftInstance not found (tokenAddress: ${tokenAddress}, instanceId: ${instanceId})`,
+          entity: "NftInstance",
+        });
+      }
+
+      return res.status(200).json({
+        id: instance.id,
+        instanceId: instance.instanceId,
+        tokenAddress: instance.nftToken.address,
+        nftTokenId: instance.nftTokenId,
+        ownerWalletAddress: instance.nftWallet?.walletAddress ?? null,
+        nftWalletId: instance.nftWalletId,
+        name: instance.name,
+        description: instance.description,
+        imageUrl: instance.imageUrl,
+        json: instance.json,
+        status: instance.status,
+        communityId: instance.communityId,
+        createdAt: instance.createdAt,
+        updatedAt: instance.updatedAt,
+      });
+    } catch (error) {
+      logger.error("NFT instance read error:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   },

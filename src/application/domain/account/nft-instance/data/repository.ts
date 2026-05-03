@@ -102,6 +102,22 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
+  async findByTokenAddressAndInstanceId(
+    ctx: IContext,
+    tokenAddress: string,
+    instanceId: string,
+  ): Promise<PrismaNftInstance | null> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      return tx.nftInstance.findFirst({
+        where: {
+          instanceId,
+          nftToken: { address: tokenAddress },
+        },
+        include: nftInstanceInclude,
+      });
+    });
+  }
+
   async upsert(
     ctx: IContext,
     data: {

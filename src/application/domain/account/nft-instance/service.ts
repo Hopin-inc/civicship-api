@@ -44,6 +44,14 @@ export default class NftInstanceService {
     return nftWallet;
   }
 
+  async findByTokenAddressAndInstanceId(
+    ctx: IContext,
+    tokenAddress: string,
+    instanceId: string,
+  ) {
+    return this.repository.findByTokenAddressAndInstanceId(ctx, tokenAddress, instanceId);
+  }
+
   async upsertInstance(
     ctx: IContext,
     params: {
