@@ -140,15 +140,15 @@ jobs:
             .
 
       # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
-      # 初回投入は **CRITICAL も warning モード** (`exit-code: 0`) で運用する。
-      # 詳細な rationale + blocking 化への段階的移行手順は
-      # _deploy-cloud-run.yml の同名 step + docs/handbook/SECURITY.md 参照。
-      - name: Scan image (Trivy CRITICAL — advisory, see SECURITY.md for blocking rollout)
+      # CRITICAL は blocking (`exit-code: '1'`) — ci.yml の build job 内で
+      # PR 段階に同 image を scan しており、ここは「PR をすり抜けた何か」への
+      # 最終防衛線。詳細は _deploy-cloud-run.yml の同名 step + SECURITY.md。
+      - name: Scan image (Trivy CRITICAL — blocking)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
           severity: CRITICAL
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
           format: sarif
           output: trivy-critical.sarif

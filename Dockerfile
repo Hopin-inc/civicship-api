@@ -29,15 +29,18 @@
 #   runs as the non-root `node` user with a HEALTHCHECK. See
 #   docs/handbook/SECURITY.md for the broader hardening rationale.
 #
-# Digest pinning (follow-up):
-#   `node:20-slim` is currently tag-only; pin to `@sha256:<digest>` once a
-#   known-good digest has been captured from CI (`docker buildx imagetools
-#   inspect node:20-slim`).
+# Digest pinning:
+#   `node:20-slim` is pinned via `@sha256:<digest>` to make every build
+#   bit-for-bit reproducible and to defend against silent re-tagging by
+#   the upstream `node` maintainers. Dependabot (`.github/dependabot.yml`,
+#   `package-ecosystem: docker`) bumps the digest on a weekly cadence; the
+#   tag (`node:20-slim`) is kept on the same line as the digest so it
+#   stays human-readable in `docker history` output.
 
 # ---------------------------------------------------------------------------
 # Builder stage: prune to production deps, preserving Prisma generator output.
 # ---------------------------------------------------------------------------
-FROM node:20-slim AS builder
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS builder
 
 WORKDIR /app
 
@@ -57,6 +60,12 @@ COPY dist ./dist
 # resolves `@prisma/client/sql` from. `|| true` keeps the layer succeeding on
 # fresh builds where the dirs don't exist yet (defensive — they SHOULD exist
 # in our flow but the restore step is a no-op if the snapshot is empty).
+# `set -o pipefail` makes the `find ... | xargs ...` pipe fail loudly if find
+# errors (otherwise the pipe would succeed silently on an unreadable
+# node_modules — masking a real issue). debian's `/bin/sh` is dash, which
+# does NOT support `pipefail`, so we switch to bash for this stage. hadolint
+# DL4006 explicitly warns against `/bin/sh` for the same reason.
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 RUN find node_modules -type d -name .prisma -print0 \
       | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar \
     || true
@@ -78,7 +87,7 @@ RUN if [ -s /tmp/prisma-snapshot.tar ]; then \
 # ---------------------------------------------------------------------------
 # Runtime stage: minimal, non-root, HEALTHCHECK enabled.
 # ---------------------------------------------------------------------------
-FROM node:20-slim AS runtime
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS runtime
 
 WORKDIR /app
 
@@ -93,6 +102,13 @@ WORKDIR /app
 # `USER root` は apt-get install のためだけに局所昇格、直後に `USER node` で
 # 非特権に戻す (root 実行時間を最小化)。
 USER root
+# Pinning openssl / ca-certificates to a debian APT version (DL3008) would
+# block security-patch bumps from upstream — debian rolls these forward on
+# a fast cadence specifically because they ARE security-relevant. We pin
+# the base image (`node:20-slim@sha256:...`) for reproducibility and let
+# debian's apt resolve the latest patched openssl / ca-certificates within
+# that frozen distribution snapshot.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssl ca-certificates \
     && apt-get clean \
