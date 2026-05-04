@@ -6,10 +6,20 @@
 #   The CI runner (.github/workflows/_deploy-cloud-run.yml) pre-builds
 #   `node_modules/` (incl. Prisma TypedSQL artifacts that need a live DB
 #   tunnel) and `dist/` BEFORE invoking `docker buildx build`. The builder
-#   stage below therefore copies those pre-built artifacts from the build
-#   context and only prunes node_modules to production deps. This keeps
-#   the existing CI flow working while still giving us a small, non-root
-#   runtime stage with a HEALTHCHECK and (optional) image-digest pin.
+#   stage below copies those pre-built artifacts from the build context.
+#
+#   We deliberately **do not** run `pnpm prune --prod` inside the builder
+#   stage. `pnpm prune --prod` rewrites `node_modules/.pnpm/` and removes
+#   any "untracked" content from package directories — this includes the
+#   generator output written by `prisma generate --sql` (e.g.
+#   `node_modules/.pnpm/@prisma+client@.../node_modules/.prisma/client/sql/`),
+#   which is required at runtime by callers of `@prisma/client/sql`
+#   (verified in src/application/domain/{transaction,report}/...).
+#
+#   The image cost of shipping devDependencies is acceptable for now;
+#   future optimization options are tracked in DEPLOYMENT.md (e.g.
+#   regenerate `prisma generate --sql` from inside the runtime stage with
+#   a jumpbox tunnel, or pre-bake a tarball of just the runtime tree).
 #
 # NOTE on digest pinning:
 #   The base image tag (`node:20-slim`) is intentionally not pinned to a
@@ -19,34 +29,20 @@
 #   digest is captured from CI / `docker buildx imagetools inspect`).
 
 # ---------------------------------------------------------------------------
-# Builder stage: take the pre-built workspace, prune dev dependencies.
+# Builder stage: take the pre-built workspace as-is.
 # ---------------------------------------------------------------------------
 FROM node:20-slim AS builder
 
 WORKDIR /app
-
-# corepack provides the `pnpm` shim so `pnpm prune` works without a global
-# install. Pin the version to match `packageManager` in package.json.
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 # Copy lockfile + manifests first (small, rarely-changing layer).
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # Pre-built artifacts copied from the CI runner build context.
 # (See file header comment for why these are pre-built rather than built
-#  in-stage.)
+#  in-stage, and why we don't run `pnpm prune --prod` here.)
 COPY node_modules ./node_modules
 COPY dist ./dist
-
-# Drop devDependencies from node_modules so the runtime stage only carries
-# what's needed at runtime. `--prod` keeps dependencies in the
-# `dependencies` field; devDependencies are removed.
-# pnpm 10 prompts for confirmation when removing modules unless `CI=true`
-# or `--config.confirm-modules-purge=false` is set; docker buildx has no
-# TTY so without this the build aborts with
-# `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`.
-ENV CI=true
-RUN pnpm prune --prod
 
 # ---------------------------------------------------------------------------
 # Runtime stage: minimal, non-root, HEALTHCHECK enabled.

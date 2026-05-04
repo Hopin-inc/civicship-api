@@ -8,23 +8,19 @@
 # `pnpm build` itself.
 
 # ---------------------------------------------------------------------------
-# Builder stage: take the pre-built workspace, prune dev dependencies.
+# Builder stage: take the pre-built workspace as-is.
+# Do NOT run `pnpm prune --prod` — it strips Prisma TypedSQL generator output
+# (`.prisma/client/sql/`) needed at runtime. See `Dockerfile` header for full
+# rationale.
 # ---------------------------------------------------------------------------
 FROM node:20-slim AS builder
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
-
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 COPY node_modules ./node_modules
 COPY dist ./dist
-
-# See `Dockerfile` for why `CI=true` is required before `pnpm prune --prod`
-# (pnpm 10 + non-TTY docker buildx context).
-ENV CI=true
-RUN pnpm prune --prod
 
 # ---------------------------------------------------------------------------
 # Runtime stage: minimal, non-root, HEALTHCHECK enabled.
