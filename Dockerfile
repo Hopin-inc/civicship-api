@@ -78,9 +78,10 @@ RUN find node_modules -type d -name .prisma -print0 \
 ENV CI=true
 RUN pnpm prune --prod
 
-# Restore the saved `.prisma/` directories. tar -P preserves absolute / as-is
-# paths, so the directories land back at the same `.pnpm/<pkg>/node_modules/
-# .prisma/` locations they came from.
+# Restore the saved `.prisma/` directories. The snapshot was created from
+# `find node_modules ...` (relative paths), and we extract from `WORKDIR
+# /app`, so the directories land back at the same
+# `node_modules/.pnpm/<pkg>/node_modules/.prisma/` locations they came from.
 RUN if [ -s /tmp/prisma-snapshot.tar ]; then \
       tar -xf /tmp/prisma-snapshot.tar \
         && rm /tmp/prisma-snapshot.tar; \

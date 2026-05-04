@@ -88,7 +88,7 @@ jobs:
       # MAIN_IMAGE / MAIN_IMAGE_SHA を job-level env に出すことで、build/push step
       # と Trivy scan step (build step 後の独立 step) から同じ参照で扱えるように
       # する。`:sha-${{ github.sha }}` は Cloud Run revision を commit 単位で
-      # identifyable にし、過去 image にロールバックできるようにするため (#974)。
+      # identifiable にし、過去 image にロールバックできるようにするため (#974)。
       # Trivy 側は `MAIN_IMAGE_SHA || MAIN_IMAGE` の fallback で sha tag 優先。
       MAIN_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.APPLICATION_NAME }}:latest
       MAIN_IMAGE_SHA: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.APPLICATION_NAME }}:sha-${{ github.sha }}
@@ -174,7 +174,7 @@ jobs:
       # batch (Cloud Run Job) 側は entrypoint を `--command/--args` で
       # `node dist/index.js` に上書きする (旧 Dockerfile.batch CMD と等価)。
       # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
-      # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
+      # Cloud Run の各 revision を commit SHA 単位で identifiable にし、
       # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build unified image and push to main + batch registries
         run: |

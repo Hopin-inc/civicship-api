@@ -63,7 +63,7 @@ jobs:
       # EXTERNAL_IMAGE / EXTERNAL_IMAGE_SHA を job-level env に出すことで、
       # build/push step と Trivy scan step (build step 後の独立 step) から同じ
       # 参照で扱えるようにする。`:sha-${{ github.sha }}` は Cloud Run revision
-      # を commit 単位で identifyable にし、過去 image にロールバックできるよう
+      # を commit 単位で identifiable にし、過去 image にロールバックできるよう
       # にするため (#974)。Trivy 側は `EXTERNAL_IMAGE_SHA || EXTERNAL_IMAGE` の
       # fallback で sha tag 優先。
       EXTERNAL_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:latest
@@ -126,7 +126,7 @@ jobs:
         uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
 
       # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
-      # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
+      # Cloud Run の各 revision を commit SHA 単位で identifiable にし、
       # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build and push External API image
         run: |
