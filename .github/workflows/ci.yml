@@ -199,6 +199,63 @@ jobs:
       - name: Build (typecheck + emit)
         run: pnpm build
 
+      # tsc-alias (in `pnpm build`) is supposed to rewrite every `@/` import in
+      # the compiled output to a relative path. The runtime image deliberately
+      # does **not** ship `tsconfig-paths/register` or `tsconfig.json` (#1015),
+      # so any `@/` import that survives into `dist/` will fail at runtime with
+      # `ERR_MODULE_NOT_FOUND`. Catch that drift at PR time rather than at
+      # deploy time. `grep -q` exits 0 on first match, so we negate to fail
+      # the step when residual `@/` is found.
+      - name: Assert tsc-alias rewrote all `@/` imports in dist
+        run: |
+          if grep -rqE '(from |require\()"@/' dist/; then
+            echo "::error::Found unrewritten \`@/\` imports in dist/. tsc-alias may have failed or new import shape (e.g. dynamic import) is not handled. Fix tsc-alias config or restore tsconfig-paths/register."
+            grep -rnE '(from |require\()"@/' dist/ | head -20
+            exit 1
+          fi
+          echo "✅ dist/ contains no unresolved \`@/\` imports."
+
+      # Validate that both Dockerfiles actually build with the just-built
+      # `node_modules` + `dist` in the build context. This catches Dockerfile
+      # syntax / package / COPY-path regressions at PR time instead of at
+      # deploy time (cf. the six-hotfix series in May 2026 — #1016, #1017,
+      # #1019, #1020, #1021, #1022 — each of which would have surfaced here
+      # if this step had existed). `--load` keeps the image local and
+      # restricts buildx to the docker driver, no registry push needed.
+      # The runtime stage is built (not just the builder) so apt-get install
+      # and the pnpm prune + .prisma snapshot/restore path are exercised.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
+      - name: Validate Dockerfile build (internal API)
+        run: |
+          docker buildx build \
+            --file Dockerfile \
+            --target runtime \
+            --tag civicship-api:ci-validate \
+            --load \
+            .
+
+      - name: Validate Dockerfile build (external API)
+        run: |
+          docker buildx build \
+            --file Dockerfile.external \
+            --target runtime \
+            --tag civicship-api-external:ci-validate \
+            --load \
+            .
+
+      # Smoke-test the runtime image: instantiating PrismaClient triggers
+      # query-engine binary detection (the OpenSSL-target match that broke
+      # in #1022). If the engine binary doesn't match the runtime's libssl,
+      # construction throws synchronously and node exits non-zero. We run
+      # under the image's default USER (`node`) and don't connect to a DB,
+      # so this is a pure load-time check, not a query check.
+      - name: Smoke-test runtime image (Prisma engine load)
+        run: |
+          docker run --rm civicship-api:ci-validate \
+            node -e "const { PrismaClient } = require('@prisma/client'); new PrismaClient(); console.log('prisma engine loaded');"
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
