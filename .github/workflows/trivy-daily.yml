@@ -1,0 +1,286 @@
+name: Daily Trivy CVE scan
+
+# Daily scheduled scan that complements the per-PR / per-deploy advisory
+# scans. Trivy DB updates daily, so CVE counts can drift even when the image
+# hasn't changed. Surface those drifts as a single tracked issue (label
+# `trivy-daily`), not as 365 issues per year.
+#
+# Issue lifecycle:
+#   - 0 CRITICAL  → close any open tracking issue (with comment).
+#   - >0 CRITICAL → upsert a single open tracking issue.
+#   - body の hidden marker (<!-- trivy-cve-ids: ... -->) で前回 CVE-ID set
+#     を保持。**集合が変わったときだけ** コメントを追加する (毎日コメント
+#     による issue noise を避ける)。新規 CVE が増えた / 解消した時のみ
+#     subscriber に通知が飛ぶ。
+#
+# Why daily (not weekly):
+#   Trivy DB の日次更新で CRITICAL が当日中に新出することがある。週次だと
+#   平均 3.5 日の検出遅延。daily にしても hidden-marker 比較で issue
+#   noise はほぼ発生しない。
+#
+# Scan target:
+#   ci.yml の trivy job と同様、local で `docker buildx build` した runtime
+#   image を scan する (cache-from の GHA cache 経由)。base image は digest
+#   pin (`node:20-slim@sha256:...`) してあるので bit-for-bit 再現可能、prd
+#   稼働 image と等価。registry pull (= GCP 認証) は不要で構成が単純。
+#
+# 関連: docs/handbook/SECURITY.md "Container Image Scanning (Trivy)"
+#  "3-layer visibility (PR + deploy + Security tab)" にこの daily が
+#  4 層目として追加される (PR + deploy + Security tab + tracked issue)。
+
+on:
+  schedule:
+    # 毎日 09:00 JST = 00:00 UTC. JST 朝の業務開始時にレポートが open
+    # issue として上がってる状態を作る。
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  # CVE 検出時に GitHub Issue を起票/更新/close するため。
+  issues: write
+  # SARIF を Code Scanning に upload する場合に必要 (PR/deploy と同
+  # category を保つことで Security タブの履歴と統合される)。
+  security-events: write
+
+# Schedule run の重複を避ける (workflow_dispatch でも同様)。
+concurrency:
+  group: trivy-daily
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      issues: write
+      security-events: write
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: civicship
+          POSTGRES_PASSWORD: civicship
+          POSTGRES_DB: civicship_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://civicship:civicship@localhost:5432/civicship_ci
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
+      # composite が install + db:deploy + db:generate + gql:generate を実行。
+      # docker build context (`node_modules/`, `dist/`) を整える。
+      - name: Setup civicship environment
+        uses: ./.github/actions/setup-civicship
+        with:
+          database-url: ${{ env.DATABASE_URL }}
+          apply-migrations: 'true'
+          generate-graphql: 'true'
+
+      - name: Build TypeScript output
+        run: pnpm build
+
+      # ci.yml の build job が `--cache-to scope=civicship-trivy-{internal,
+      # external}` で書く GHA cache を再利用 (ヒットすれば秒で完了)。daily
+      # schedule run は別 ref のことが多いので cache miss も普通に起こり、
+      # その場合は普通に full build する (~2-3 分)。
+      - name: Build images (cache-from gha)
+        run: |
+          docker buildx build \
+            --file Dockerfile \
+            --target runtime \
+            --tag civicship-api:trivy-daily \
+            --cache-from type=gha,scope=civicship-trivy-internal \
+            --load \
+            .
+          docker buildx build \
+            --file Dockerfile.external \
+            --target runtime \
+            --tag civicship-api-external:trivy-daily \
+            --cache-from type=gha,scope=civicship-trivy-external \
+            --load \
+            .
+
+      # 各 image を json + sarif の 2 形式で scan。json は issue 表生成、
+      # sarif は Code Scanning 連携。`exit-code: '0'` で advisory (= job
+      # は失敗させない、issue 起票で surface する)。
+      - name: Trivy scan internal image (json)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api:trivy-daily
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: json
+          output: trivy-internal.json
+
+      - name: Trivy scan internal image (sarif → Security tab)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api:trivy-daily
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-internal.sarif
+
+      - name: Trivy scan external image (json)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api-external:trivy-daily
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: json
+          output: trivy-external.json
+
+      - name: Trivy scan external image (sarif → Security tab)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api-external:trivy-daily
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-external.sarif
+
+      - name: Upload SARIF to Security tab (internal)
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-internal.sarif
+          category: trivy-critical
+
+      - name: Upload SARIF to Security tab (external)
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-external.sarif
+          category: trivy-external-critical
+
+      # body 生成 + 既存 issue との CVE-ID set 比較 + upsert/close。
+      - name: Manage Trivy tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          today=$(date -u +%Y-%m-%d)
+          ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          # 両 image の CVE-ID を統合してソート済みカンマ列にする (issue body の
+          # hidden marker に書き込み、次回 run と diff するための key)。
+          all_ids=$(jq -rs '
+            [ ( .[0].Results[]?.Vulnerabilities[]?.VulnerabilityID
+                , .[1].Results[]?.Vulnerabilities[]?.VulnerabilityID )
+            ] | unique | join(",")
+          ' trivy-internal.json trivy-external.json)
+
+          count_internal=$(jq '[.Results[]?.Vulnerabilities[]?] | length' trivy-internal.json)
+          count_external=$(jq '[.Results[]?.Vulnerabilities[]?] | length' trivy-external.json)
+          total=$(( count_internal + count_external ))
+
+          echo "internal=${count_internal} external=${count_external} total=${total}"
+          echo "all_ids=${all_ids}"
+
+          # issue 本文を組み立てる。<!-- trivy-cve-ids: ... --> は次回比較用。
+          {
+            echo "<!-- trivy-cve-ids: ${all_ids} -->"
+            echo ""
+            echo "# 🛡️ Daily Trivy CVE scan"
+            echo ""
+            echo "Last run: \`${ts}\` (UTC)"
+            echo ""
+            echo "Total CRITICAL: **${total}** (internal: ${count_internal}, external: ${count_external})"
+            echo ""
+            for variant in internal external; do
+              json="trivy-${variant}.json"
+              cnt=$(jq '[.Results[]?.Vulnerabilities[]?] | length' "$json")
+              echo "## \`${variant}\` image — ${cnt} CRITICAL"
+              echo ""
+              if [ "$cnt" -gt 0 ]; then
+                echo "| Package | Installed | CVE | Fixed | Severity |"
+                echo "| --- | --- | --- | --- | --- |"
+                jq -r '.Results[]? | select(.Vulnerabilities) | .Vulnerabilities[] | "| \(.PkgName) | \(.InstalledVersion) | [\(.VulnerabilityID)](\(.PrimaryURL // "")) | \(.FixedVersion // "<none>") | \(.Severity) |"' "$json"
+                echo ""
+              fi
+            done
+            echo "---"
+            echo ""
+            echo "対応優先順 (docs/handbook/SECURITY.md 参照):"
+            echo "1. **fix**: 依存 / base image を bump"
+            echo "2. **ignore**: 不到達 path / fix 待ちなら \`.trivyignore\` に entry 追加"
+            echo ""
+            echo "本 issue は \`trivy-daily.yml\` schedule で自動 upsert / close"
+            echo "される。CVE-ID set が変わった日のみコメントが追加される。"
+          } > issue-body.md
+
+          # 既存 open issue を探す。
+          existing=$(gh issue list --repo "$REPO" --label trivy-daily --state open --json number,body --jq '.[0]')
+          existing_num=$(echo "$existing" | jq -r '.number // empty')
+          existing_body=$(echo "$existing" | jq -r '.body // empty')
+          # `set -o pipefail` 下で grep no-match が script を kill するのを防ぐため
+          # `|| true` を付ける。issue が無い (= existing_body が空) の初回ケース、
+          # または marker を含まない手動編集ケースで existing_ids='' になる。
+          existing_ids=$( { echo "$existing_body" | grep -oE '<!-- trivy-cve-ids: [^>]*-->' || true; } | head -n1 | sed -E 's/<!-- trivy-cve-ids: (.*) -->/\1/')
+
+          if [ "$total" -eq 0 ]; then
+            if [ -n "$existing_num" ]; then
+              gh issue close "$existing_num" --repo "$REPO" \
+                --comment "✅ ${today}: 0 CRITICAL CVEs detected. Closing automatically."
+              echo "Closed issue #${existing_num}"
+            else
+              echo "0 CRITICAL, no existing issue — nothing to do."
+            fi
+            exit 0
+          fi
+
+          # CRITICAL > 0 のケース。
+          if [ -z "$existing_num" ]; then
+            new_num=$(gh issue create --repo "$REPO" \
+              --title "🛡️ Daily Trivy: ${total} CRITICAL CVEs (${today})" \
+              --body-file issue-body.md \
+              --label trivy-daily \
+              --label security \
+              | tail -n1 | grep -oE '[0-9]+$')
+            echo "Created issue #${new_num}"
+          else
+            gh issue edit "$existing_num" --repo "$REPO" \
+              --body-file issue-body.md \
+              --add-label trivy-daily \
+              --add-label security
+            # CVE-ID set が前回と異なる時のみコメント追加。
+            if [ "${existing_ids:-}" != "$all_ids" ]; then
+              {
+                echo "🔔 ${today}: CVE set changed."
+                echo ""
+                echo "- before: \`${existing_ids:-<none>}\`"
+                echo "- after:  \`${all_ids}\`"
+                echo ""
+                echo "Total CRITICAL now: **${total}** (internal: ${count_internal}, external: ${count_external})"
+              } | gh issue comment "$existing_num" --repo "$REPO" --body-file -
+              echo "Commented on issue #${existing_num} (CVE set changed)"
+            else
+              echo "CVE set unchanged on #${existing_num} — body updated, no comment."
+            fi
+          fi
