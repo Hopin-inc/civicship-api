@@ -115,6 +115,9 @@ importers:
       '@opentelemetry/semantic-conventions':
         specifier: ^1.37.0
         version: 1.37.0
+      '@prisma/client':
+        specifier: ^6.6.0
+        version: 6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3)
       '@prisma/instrumentation':
         specifier: ^6.19.0
         version: 6.19.0(@opentelemetry/api@1.9.0)
@@ -184,12 +187,18 @@ importers:
       p-limit:
         specifier: ^3.1.0
         version: 3.1.0
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
       sanitize-html:
         specifier: ^2.16.0
         version: 2.17.0
       sharp:
         specifier: ^0.34.1
         version: 0.34.3
+      tsyringe:
+        specifier: ^4.10.0
+        version: 4.10.0
       winston:
         specifier: ^3.17.0
         version: 3.17.0
@@ -227,9 +236,6 @@ importers:
       '@ngneat/falso':
         specifier: ^7.3.0
         version: 7.4.0
-      '@prisma/client':
-        specifier: ^6.6.0
-        version: 6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3)
       '@prisma/generator-helper':
         specifier: ^5.22.0
         version: 5.22.0
@@ -320,9 +326,6 @@ importers:
       prisma-json-types-generator:
         specifier: ^3.3.0
         version: 3.5.1(@prisma/client@6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3))(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3)
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
       supertest:
         specifier: ^7.2.2
         version: 7.2.2
@@ -341,9 +344,6 @@ importers:
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
-      tsyringe:
-        specifier: ^4.10.0
-        version: 4.10.0
       typedoc-plugin-merge-modules:
         specifier: ^6.1.0
         version: 6.1.0(typedoc@0.27.9(typescript@5.8.3))
