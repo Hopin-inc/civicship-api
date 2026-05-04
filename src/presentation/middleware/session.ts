@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { auth } from "@/infrastructure/libs/firebase";
 import logger from "@/infrastructure/logging";
+import { getErrorCode, toError } from "@/utils/error";
 import { SESSION_EXPIRATION_MS, getSessionCookieName } from "@/config/constants";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -90,12 +91,13 @@ export async function handleSessionLogin(req: Request, res: Response) {
     });
 
     return res.json({ status: "success" });
-  } catch (err: any) {
+  } catch (err) {
+    const error = toError(err);
     const tokenTenantId = extractTenantFromIdToken(idToken);
     logger.error("🔥 [handleSessionLogin] Session login failed", {
-      message: err.message,
-      code: err.code,
-      stack: err.stack,
+      message: error.message,
+      code: getErrorCode(err),
+      stack: error.stack,
       communityId,
       idTokenLength: idToken?.length,
       tenantIdFromDb: tenantId,

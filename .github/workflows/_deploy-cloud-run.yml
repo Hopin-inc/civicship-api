@@ -467,22 +467,6 @@ jobs:
             --region="${GCP_REGION}" \
             --to-revisions="${PREV_REV}=100"
 
-      # Apollo Studio に schema を publish するのは **deploy 成功 + smoke OK 後**
-      # にする (#986)。先に publish してしまうと、build / deploy が失敗したとき
-      # に新 schema だけが Studio に登録され、サーバ側は旧コードのまま — クライ
-      # アントが advertised なフィールドを叩いて壊れる、という inconsistency を
-      # 招く。デフォルトの `if: success()` 仕様で、immediate path / canary
-      # promote 100% のいずれも通った場合だけ走る。canary が rollback された
-      # 場合は `Rollback to previous revision` step が走った時点で job result が
-      # failure 化するので、本 step は skip される (= 旧 schema のまま維持)。
-      - name: Publish GraphQL schema to Apollo Studio
-        env:
-          APOLLO_KEY: ${{ env.APOLLO_KEY }}
-        run: |
-          curl -sSL https://rover.apollo.dev/nix/latest | sh
-          export PATH="$HOME/.rover/bin:$PATH"
-          rover graph publish "civicship-api-jq1988@${{ inputs.apollo-variant }}" --schema ./docs/schema.graphql
-
       - name: Update Cloud Run Job (batch) to new image
         # docker push :latest alone does not roll the Cloud Run Job to the new
         # image — Cloud Run Jobs pin the image digest at deploy time, so we
@@ -500,6 +484,26 @@ jobs:
             --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}" \
             --command=node \
             --args=dist/bootstrap/batch.js
+
+      # Apollo Studio に schema を publish するのは **main API deploy + smoke OK
+      # + batch (Cloud Run Job) 更新 が全部通った後** にする (#986)。
+      # 先に publish してしまうと、build / deploy が失敗したときに新 schema だけ
+      # が Studio に登録され、サーバ側は旧コードのまま — クライアントが advertised
+      # なフィールドを叩いて壊れる、という inconsistency を招く。
+      # また、batch update より前に置くと Rover/Apollo 側の一時障害で publish が
+      # 落ちた瞬間に main API は新 revision・batch は旧 image という非対称デプロイ
+      # で止まるため、batch update の **後ろ** に置く必要がある。
+      # デフォルトの `if: success()` 仕様で、immediate path / canary promote 100%
+      # のいずれも通った場合だけ走る。canary が rollback された場合は
+      # `Rollback to previous revision` step が走った時点で job result が failure
+      # 化するので、本 step は skip される (= 旧 schema のまま維持)。
+      - name: Publish GraphQL schema to Apollo Studio
+        env:
+          APOLLO_KEY: ${{ env.APOLLO_KEY }}
+        run: |
+          curl -sSL https://rover.apollo.dev/nix/latest | sh
+          export PATH="$HOME/.rover/bin:$PATH"
+          rover graph publish "civicship-api-jq1988@${{ inputs.apollo-variant }}" --schema ./docs/schema.graphql
 
       - name: Create Git tag
         # TZ env でプロセス単位に JST を効かせる。tzdata の system-wide install
