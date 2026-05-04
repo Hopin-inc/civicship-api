@@ -201,7 +201,7 @@ jobs:
       # MAIN_IMAGE_SHA (#974) が定義された環境ではそちらを優先し、未定義の
       # 場合は :latest tag (MAIN_IMAGE) を scan する。
       - name: Scan image (Trivy CRITICAL — advisory, see SECURITY.md for blocking rollout)
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
           severity: CRITICAL
@@ -212,7 +212,7 @@ jobs:
 
       - name: Scan image (Trivy HIGH — warning)
         if: always()
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
           severity: HIGH
