@@ -45,6 +45,9 @@ jobs:
       # 式で動的に切り替えできないため両 stage で write を付与する
       # (dev でも実質 read しか使わないので影響なし)。
       contents: write
+      # security-events:write は Trivy scan 結果 (sarif) を Security タブに
+      # upload するために必要 (codeql-action/upload-sarif)。
+      security-events: write
 
     env:
       STAGE: ${{ inputs.stage }}
@@ -57,6 +60,14 @@ jobs:
       EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+      # EXTERNAL_IMAGE / EXTERNAL_IMAGE_SHA を job-level env に出すことで、
+      # build/push step と Trivy scan step (build step 後の独立 step) から同じ
+      # 参照で扱えるようにする。`:sha-${{ github.sha }}` は Cloud Run revision
+      # を commit 単位で identifyable にし、過去 image にロールバックできるよう
+      # にするため (#974)。Trivy 側は `EXTERNAL_IMAGE_SHA || EXTERNAL_IMAGE` の
+      # fallback で sha tag 優先。
+      EXTERNAL_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:latest
+      EXTERNAL_IMAGE_SHA: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
 
     steps:
       # See _deploy-cloud-run.yml for rationale on audit mode + sudo.
@@ -118,9 +129,6 @@ jobs:
       # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
       # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build and push External API image
-        env:
-          EXTERNAL_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
-          EXTERNAL_IMAGE_SHA: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
         run: |
           docker buildx build \
             --file Dockerfile.external \
@@ -130,6 +138,45 @@ jobs:
             --cache-to "type=gha,mode=max,scope=external-${{ inputs.stage }}" \
             --push \
             .
+
+      # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
+      # 初回投入は **CRITICAL も warning モード** (`exit-code: 0`) で運用する。
+      # 詳細な rationale + blocking 化への段階的移行手順は
+      # _deploy-cloud-run.yml の同名 step + docs/handbook/SECURITY.md 参照。
+      - name: Scan image (Trivy CRITICAL — advisory, see SECURITY.md for blocking rollout)
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-critical.sarif
+
+      - name: Scan image (Trivy HIGH — warning)
+        if: always()
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-high.sarif
+
+      - name: Upload Trivy CRITICAL results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-critical.sarif
+          category: trivy-external-critical
+
+      - name: Upload Trivy HIGH results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-high.sarif
+          category: trivy-external-high
 
       - name: Deploy External API to Cloud Run
         id: deploy
@@ -154,7 +201,12 @@ jobs:
         run: |
           URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')
           echo "Smoking $URL/health"
-          if ! curl --fail --silent --show-error --retry 6 --retry-delay 10 --max-time 10 "$URL/health"; then
+          # retry 9 × delay 10s ≒ 90s + --retry-connrefused: cold start headroom.
+          # cloud-run.yml の Smoke check (immediate deploy) と同じパラメータ。
+          if ! curl --fail --silent --show-error \
+                --retry 9 --retry-delay 10 --retry-connrefused \
+                --max-time 10 \
+                "$URL/health"; then
             echo "::error::Smoke check failed for $SERVICE"
             gcloud logging read \
               "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE AND severity>=ERROR" \

@@ -46,6 +46,21 @@ jobs:
         # Image: rhysd/actionlint:1.7.7 (Docker Hub, multi-arch index digest)
         # shellcheck / pyflakes are bundled in the image.
 
+      - name: Lint Dockerfiles (hadolint v2.12.0-alpine)
+        # Pin to tag for now; follow-up will swap to immutable @sha256 digest
+        # (mirrors actionlint pattern above) once the digest is captured from
+        # `docker pull hadolint/hadolint:v2.12.0-alpine`.
+        # `continue-on-error: true` keeps this advisory while the existing
+        # Dockerfile / Dockerfile.external are brought into compliance in a
+        # follow-up PR — see PR description for the violation breakdown.
+        continue-on-error: true
+        run: |
+          docker run --rm -i \
+            -v "${{ github.workspace }}:/repo:ro" \
+            hadolint/hadolint:v2.12.0-alpine \
+            hadolint --config /repo/.hadolint.yaml \
+              /repo/Dockerfile /repo/Dockerfile.external
+
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
