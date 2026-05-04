@@ -90,17 +90,16 @@ WORKDIR /app
 # debian 12 の openssl パッケージは openssl 3.x なので、generate 済バイナリ
 # (binaryTargets = ["native","debian-openssl-3.0.x","linux-arm64-openssl-3.0.x"])
 # とそろう。`ca-certificates` は Cloud SQL / 外部 HTTPS 接続の TLS 検証用。
+# `USER root` は apt-get install のためだけに局所昇格、直後に `USER node` で
+# 非特権に戻す (root 実行時間を最小化)。
 USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+USER node
 
 ENV NODE_ENV=production \
     PORT=3000
-
-# `node:20-slim` ships a `node` user (uid/gid 1000) created for exactly
-# this purpose. Run the app as that user instead of root.
-USER node
 
 # Copy only what's needed at runtime, owned by the non-root user.
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
