@@ -21,7 +21,10 @@
 # The two modes are mutually exclusive. If the first argument is `--ci` or no
 # argument is supplied, CI mode runs; otherwise developer mode runs.
 
-set -uo pipefail
+# `set -e` を加える: pipeline 直外の単独コマンドが失敗した時点で即停止し、
+# 後続を中途半端に走らせない。grep の "no match" は exit 1 を返すが、明示的に
+# `|| true` を付けている呼び出し箇所があるので bare grep が止める動作にしない。
+set -euo pipefail
 
 MODE="${1:-}"
 
@@ -45,12 +48,13 @@ run_developer_mode() {
 
   mkdir -p "$MIGRATIONS_DIR"
 
-  npx prisma migrate diff \
-    --from-schema-datasource "$SCHEMA_PATH" \
-    --to-schema-datamodel "$SCHEMA_PATH" \
-    --script > "$MIGRATIONS_DIR/migration.sql"
-
-  if [ $? -eq 0 ]; then
+  # `set -e` 下では bare コマンドが失敗した時点で即終了する。`if cmd; then`
+  # 形式に置くと set -e が無効化されるので、エラーパスで cleanup + 専用メッセ
+  # ージを出せる (Gemini review on #1012 指摘)。
+  if npx prisma migrate diff \
+       --from-schema-datasource "$SCHEMA_PATH" \
+       --to-schema-datamodel "$SCHEMA_PATH" \
+       --script > "$MIGRATIONS_DIR/migration.sql"; then
     echo "✅ Success! Migration file created at: $MIGRATIONS_DIR/migration.sql"
     echo "---------------------------------------------------"
     echo "Next steps:"
@@ -59,6 +63,8 @@ run_developer_mode() {
     echo "3. npx prisma migrate resolve --applied ${DIR_NAME} --schema ${SCHEMA_PATH} で履歴を同期します。"
   else
     echo "❌ Error: SQLの生成に失敗しました。スキーマファイルの設定を確認してください。"
+    # 中途半端に作られた空 migration ディレクトリを残さない (Gemini #999 既出)。
+    rm -rf "$MIGRATIONS_DIR"
     exit 1
   fi
 }
@@ -136,13 +142,16 @@ run_ci_mode() {
       if [ -n "$matches" ]; then
         while IFS= read -r match_line; do
           [ -z "$match_line" ] && continue
-          local lineno
-          lineno=$(echo "$match_line" | cut -d: -f1)
-          local content
-          content=$(echo "$match_line" | cut -d: -f2-)
-          # Trim leading whitespace from content for the annotation.
-          content=$(echo "$content" | sed 's/^[[:space:]]*//')
-          echo "::warning file=${file},line=${lineno}::Destructive DDL detected (${label}): ${content}"
+          # bash parameter expansion + builtin regex で 0 fork (旧 `echo | cut
+          # | sed` は match 1 件あたり 4 fork)。`echo` 系は内容先頭が
+          # `-e/-n/-E` だと flag 解釈される shell があるため、annotation 出力
+          # には printf を使う。
+          local lineno="${match_line%%:*}"
+          local content="${match_line#*:}"
+          # Trim leading whitespace using bash builtin regex.
+          [[ "$content" =~ ^[[:space:]]*(.*) ]] && content="${BASH_REMATCH[1]}"
+          printf '::warning file=%s,line=%s::Destructive DDL detected (%s): %s\n' \
+            "$file" "$lineno" "$label" "$content"
           file_hits=$((file_hits + 1))
         done <<< "$matches"
       fi
@@ -160,12 +169,12 @@ run_ci_mode() {
     if [ -n "$drop_index_matches" ]; then
       while IFS= read -r match_line; do
         [ -z "$match_line" ] && continue
-        local lineno
-        lineno=$(echo "$match_line" | cut -d: -f1)
-        local content
-        content=$(echo "$match_line" | cut -d: -f2-)
-        content=$(echo "$content" | sed 's/^[[:space:]]*//')
-        echo "::warning file=${file},line=${lineno}::Destructive DDL detected (DROP INDEX without CONCURRENTLY locks readers): ${content}"
+        # 上のループと同じ理由 (0 fork + echo の flag 解釈回避)。
+        local lineno="${match_line%%:*}"
+        local content="${match_line#*:}"
+        [[ "$content" =~ ^[[:space:]]*(.*) ]] && content="${BASH_REMATCH[1]}"
+        printf '::warning file=%s,line=%s::Destructive DDL detected (DROP INDEX without CONCURRENTLY locks readers): %s\n' \
+          "$file" "$lineno" "$content"
         file_hits=$((file_hits + 1))
       done <<< "$drop_index_matches"
     fi
