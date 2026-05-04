@@ -140,20 +140,21 @@ jobs:
             .
 
       # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
-      # CRITICAL は blocking (`exit-code: '1'`) — ci.yml の build job 内で
-      # PR 段階に同 image を scan しており、ここは「PR をすり抜けた何か」への
-      # 最終防衛線。詳細は _deploy-cloud-run.yml の同名 step + SECURITY.md。
-      - name: Scan image (Trivy CRITICAL — blocking)
+      # CRITICAL も HIGH も **advisory** (`exit-code: '0'`) で運用。
+      # 詳細な運用ポリシー (PR 時 + deploy 時の visibility / 再 blocking 化条件)
+      # は _deploy-cloud-run.yml の同名 step コメント + docs/handbook/SECURITY.md
+      # を参照。両 image (internal / external) で完全に同じ政策。
+      - name: Scan image (Trivy CRITICAL — advisory)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
           severity: CRITICAL
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           format: sarif
           output: trivy-critical.sarif
 
-      - name: Scan image (Trivy HIGH — warning)
+      - name: Scan image (Trivy HIGH — advisory)
         if: always()
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -163,6 +164,22 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-high.sarif
+
+      # Surface CVE counts as `::warning::` annotations so the deploy job's
+      # summary makes the result loud. Same logic as _deploy-cloud-run.yml.
+      - name: Surface Trivy CVE count (advisory warning)
+        if: always()
+        run: |
+          set -euo pipefail
+          for sev in critical high; do
+            sarif="trivy-${sev}.sarif"
+            [ -s "$sarif" ] || continue
+            count=$(jq '[.runs[]?.results[]?] | length' "$sarif")
+            echo "${sev^^}: ${count}"
+            if [ "$count" -gt 0 ]; then
+              echo "::warning::Trivy ${sev^^}: ${count} CVEs in the deployed external-api image. Review the Security tab (category: trivy-external-${sev}) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked."
+            fi
+          done
 
       - name: Upload Trivy CRITICAL results to Security tab
         if: always()

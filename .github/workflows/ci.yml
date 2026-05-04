@@ -223,6 +223,13 @@ jobs:
       # restricts buildx to the docker driver, no registry push needed.
       # The runtime stage is built (not just the builder) so apt-get install
       # and the pnpm prune + .prisma snapshot/restore path are exercised.
+      #
+      # `--cache-to type=gha,scope=civicship-trivy,mode=max` writes a layer
+      # cache that the separate `trivy` job below reuses via `--cache-from`,
+      # so it can rebuild the same image without re-running tsc / pnpm
+      # install / apt-get from scratch. mode=max caches all stages, not just
+      # the final runtime stage, since trivy needs runtime + builder layers
+      # for full coverage.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
 
@@ -232,6 +239,7 @@ jobs:
             --file Dockerfile \
             --target runtime \
             --tag civicship-api:ci-validate \
+            --cache-to type=gha,scope=civicship-trivy-internal,mode=max \
             --load \
             .
 
@@ -241,6 +249,7 @@ jobs:
             --file Dockerfile.external \
             --target runtime \
             --tag civicship-api-external:ci-validate \
+            --cache-to type=gha,scope=civicship-trivy-external,mode=max \
             --load \
             .
 
@@ -255,20 +264,178 @@ jobs:
           docker run --rm civicship-api:ci-validate \
             node -e "const { PrismaClient } = require('@prisma/client'); new PrismaClient(); console.log('prisma engine loaded');"
 
-      # Shift the deploy-time Trivy gate left: scan the just-built image at PR
-      # time so CRITICAL CVEs are caught before merge instead of at deploy.
-      # `exit-code: '1'` for CRITICAL is the same blocking policy applied in
-      # the deploy workflow (`_deploy-cloud-run.yml`); HIGH is advisory.
-      # `.trivyignore` (repo root) is the escape hatch — see
-      # docs/handbook/SECURITY.md for the registration rules.
-      - name: Scan runtime image (Trivy CRITICAL — blocking)
+  # ---------------------------------------------------------------------------
+  # Trivy CVE scan — split out as its own job (per repo design decision).
+  #
+  # Why a separate job (vs inline in `build`):
+  #   - Independent status check on the PR (visible as `trivy` in the checks
+  #     pane instead of buried inside `build`).
+  #   - Independent retry: transient Trivy DB fetch errors only re-run this
+  #     job, not the full pnpm install + tsc + docker build.
+  #   - Logical separation: scanning ≠ artifact production.
+  #
+  # Why advisory (`exit-code: '0'`) and not blocking:
+  #   - Trivy DB updates daily; a CVE added today blocks an image that was
+  #     clean yesterday — there's no fix we can apply for upstream-pending
+  #     CVEs, and blocking deploys for them stalls unrelated work.
+  #   - The Trivy SARIF upload to GitHub Code Scanning has been intermittent
+  #     (`No summary of scanned files reported by Trivy` on the Security tab),
+  #     so we can't rely on the default Security-tab surface alone.
+  #   - Instead: emit a `::warning::` annotation when CRITICAL count > 0 so
+  #     the count is loud and visible in the PR checks summary, plus the full
+  #     CVE table is in this job's log. Treat advisory as "you must look,
+  #     not the gate that decides for you."
+  #   - Re-blocking conditions are tracked in docs/handbook/SECURITY.md
+  #     ("Severity Policy / Re-escalation").
+  trivy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
+      # Rebuild the runtime image inheriting the layer cache the `build` job
+      # wrote with `--cache-to type=gha,scope=civicship-trivy-*,mode=max`. With
+      # all stages cached this finishes in seconds and produces an image
+      # bit-for-bit identical to what `build` smoke-tested.
+      #
+      # NOTE: trivy needs the build context too, since the multi-stage builder
+      # COPYs `node_modules/` and `dist/` from the runner FS. We need pnpm
+      # install + db:generate + pnpm build before the `docker buildx` here.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies (lockfile integrity check)
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      # Postgres is needed because `pnpm db:generate` uses `prisma generate
+      # --sql` (TypedSQL), which introspects the live DB. We use a throwaway
+      # local container instead of a service container so this job stays self-
+      # contained and doesn't perturb the `build` / `test` job services.
+      - name: Spin up local Postgres for prisma generate --sql
+        run: |
+          docker run -d \
+            --name pg-trivy \
+            -e POSTGRES_USER=civicship \
+            -e POSTGRES_PASSWORD=civicship \
+            -e POSTGRES_DB=civicship_ci \
+            -p 5432:5432 \
+            postgres:16-alpine
+          for _ in $(seq 1 30); do
+            if docker exec pg-trivy pg_isready -U civicship -d civicship_ci -q; then break; fi
+            sleep 1
+          done
+
+      - name: Apply Prisma migrations + generate client + GraphQL types
+        env:
+          DATABASE_URL: postgresql://civicship:civicship@localhost:5432/civicship_ci
+        run: |
+          pnpm db:deploy
+          pnpm db:generate
+          pnpm gql:generate
+
+      - name: Build TypeScript output
+        run: pnpm build
+
+      - name: Build images (cache-from gha)
+        run: |
+          docker buildx build \
+            --file Dockerfile \
+            --target runtime \
+            --tag civicship-api:trivy \
+            --cache-from type=gha,scope=civicship-trivy-internal \
+            --load \
+            .
+          docker buildx build \
+            --file Dockerfile.external \
+            --target runtime \
+            --tag civicship-api-external:trivy \
+            --cache-from type=gha,scope=civicship-trivy-external \
+            --load \
+            .
+
+      # Two trivy invocations per image: one with `format: table` for human
+      # readable output in the step log, one with `format: json` to a file
+      # so the next step can count CRITICAL hits and emit a `::warning::`
+      # annotation. Both use `exit-code: '0'` (advisory). `.trivyignore`
+      # (repo root) is honored by both.
+      - name: Trivy CRITICAL scan (table — log visibility, internal)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: civicship-api:ci-validate
+          image-ref: civicship-api:trivy
           severity: CRITICAL
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           format: table
+
+      - name: Trivy CRITICAL scan (json — count parsing, internal)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api:trivy
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: json
+          output: trivy-internal.json
+
+      - name: Trivy CRITICAL scan (table — log visibility, external)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api-external:trivy
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: table
+
+      - name: Trivy CRITICAL scan (json — count parsing, external)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api-external:trivy
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: json
+          output: trivy-external.json
+
+      # Surface CRITICAL count as a `::warning::` annotation so reviewers see
+      # it in the PR checks summary without expanding step logs. We also list
+      # the first 20 hits (pkg + CVE-ID + fix-status) so the warning has
+      # actionable detail right next to the count.
+      - name: Surface CRITICAL count + top hits
+        run: |
+          set -euo pipefail
+          for variant in internal external; do
+            json="trivy-${variant}.json"
+            count=$(jq '[.Results[]?.Vulnerabilities[]?] | length' "$json")
+            echo "${variant}: ${count} CRITICAL"
+            if [ "$count" -gt 0 ]; then
+              echo "::warning::Trivy found ${count} CRITICAL vulnerabilities in the ${variant} runtime image. Review .trivyignore / fix the offending package or document an exception. See trivy job log for the full table."
+              jq -r '.Results[]? | select(.Vulnerabilities) | .Vulnerabilities[] | "  \(.PkgName)@\(.InstalledVersion)  \(.VulnerabilityID)  fix=\(.FixedVersion // "<none>")"' "$json" | head -20
+            fi
+          done
+
+      - name: Tear down Postgres
+        if: always()
+        run: docker rm -f pg-trivy 2>/dev/null || true
+
+
 
   test:
     runs-on: ubuntu-latest
@@ -419,7 +586,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint, build, test]
+    needs: [lint, build, trivy, test]
     if: always()
     permissions:
       contents: read
@@ -430,12 +597,22 @@ jobs:
         run: |
           lint='${{ needs.lint.result }}'
           build='${{ needs.build.result }}'
+          trivy='${{ needs.trivy.result }}'
           test='${{ needs.test.result }}'
-          echo "lint=$lint build=$build test=$test"
-          if [ "$lint" != "success" ] || [ "$build" != "success" ] || [ "$test" != "success" ]; then
-            echo "::error::One or more required jobs failed"
-            exit 1
-          fi
+          echo "lint=$lint build=$build trivy=$trivy test=$test"
+          # `trivy` is advisory: success or failure (advisory step shouldn't
+          # actually fail, but if Trivy job's infra step crashes we don't want
+          # to gate aggregator on it). Treat it like skipped.
+          for j in "$lint" "$build" "$test"; do
+            case "$j" in
+              success|skipped) ;;
+              *) echo "::error::required job failed: $j"; exit 1 ;;
+            esac
+          done
+          case "$trivy" in
+            success|skipped|failure) ;;  # advisory — never gate
+            *) echo "::warning::trivy job had unexpected result: $trivy" ;;
+          esac
           echo "All required jobs passed"
 
       # 以下、coverage 集約 step。閾値 gate は設けない:

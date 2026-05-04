@@ -406,11 +406,17 @@ Cloud Run にデプロイされる image は、`docker push` 直後 / `gcloud ru
 
 ### Severity Policy
 
-| Severity | exit-code | 振る舞い                                   |
-| -------- | --------- | ------------------------------------------ |
-| CRITICAL | `1`       | **deploy / PR を block** (CI build job + deploy job 両方) |
-| HIGH     | `0`       | warning。job は通り、結果は Security タブで確認 |
-| その他   | -         | scan 対象外 (MEDIUM 以下は雑音になりやすい)   |
+| Severity | exit-code | 振る舞い                                                          |
+| -------- | --------- | ----------------------------------------------------------------- |
+| CRITICAL | `0`       | **advisory** (deploy も PR も block しない)。件数を `::warning::` で surface + Security タブに sarif upload |
+| HIGH     | `0`       | advisory。同上                                                    |
+| その他   | -         | scan 対象外 (MEDIUM 以下は雑音になりやすい)                       |
+
+**なぜ advisory に下げているか**: Trivy DB は日次で更新されるため、昨日まで
+clean だった image が今日 CRITICAL を抱える、というドリフトが日常的に起きる。
+上流 fix を待つしかない CVE のために自動で deploy を止めると、無関係な fix も
+含めた全 deploy が stall するため、現状は「人間が必ず気付く可視化」を備えた
+上で advisory にしている。再 blocking の条件は下記参照。
 
 両 severity の結果は SARIF として GitHub の **Security → Code scanning alerts**
 タブに upload される (`github/codeql-action/upload-sarif`)。`category` を
@@ -420,28 +426,54 @@ Cloud Run にデプロイされる image は、`docker push` 直後 / `gcloud ru
 `ignore-unfixed: true` を付けているため、upstream で fix が未公開の CVE は
 対象外となる。
 
-#### Two-layer scan (PR + deploy)
+#### 3-layer visibility (PR + deploy + Security tab)
 
-同じ Trivy gate を **PR の CI** (`ci.yml:build`) と **deploy workflow**
-(`_deploy-{cloud-run,external-api}.yml`) の両方で走らせる:
+同じ Trivy scan を **PR の CI** (`ci.yml:trivy` job) と **deploy workflow**
+(`_deploy-{cloud-run,external-api}.yml`) の両方で走らせ、結果は 3 経路で surface
+する:
 
-- **PR CI**: 直前に `docker buildx build` した image を即 scan。CRITICAL が
-  出れば PR が赤くなり merge 不能。
-- **Deploy CI**: registry に push した image を scan。PR をすり抜けた何か
-  (例えば base image の re-tag) を最終防衛線として捕まえる。
+1. **PR CI** (`ci.yml:trivy`): build job が `--cache-to` で書いた layer cache
+   を再利用して runtime image を rebuild → scan。CRITICAL 件数を
+   `::warning::` annotation で PR checks 概要に出す。`build` から分離した独立
+   ジョブなので CI 全体の必須 check (`ci` aggregator) では advisory 扱い
+   (never gate) とし、Trivy DB の transient エラーで PR が永久 red にならない
+   ようにしてある。
+2. **Deploy CI**: registry に push した image を再 scan。Trivy DB が PR 時点
+   から更新されて新規 CVE が増えていてもここで surface される。同様に
+   `::warning::` を出すが、deploy は止めない。
+3. **Security tab**: 両 workflow が sarif を Code Scanning に upload。category
+   別に alert を追える。
 
-通常は PR CI で止まるので deploy CI の Trivy step は no-op に近いが、
-Dependabot 経由の base image bump 等で CRITICAL が後から発覚するパターン
-に備えて両方残す。
+#### CRITICAL の対処フロー (advisory mode)
 
-#### CRITICAL を block したときの対処
-
-1. CI 失敗 step の log で CVE-ID + 該当パッケージを確認。
+1. PR / deploy run の `::warning::` annotation または step log で CVE-ID + 該当
+   パッケージを確認。Security タブの該当 category でも同じ情報が見える。
 2. 次のいずれかを実施:
    - **Fix 可能**: base image / dependency を bump する PR を別途出す
      (Dependabot が自動で開いてる場合あり)。
    - **Fix 不可 / 不到達**: `.trivyignore` に追記 (下記運用ルール)。
-3. PR を再 push → CI green を確認 → merge。
+3. **重要**: advisory mode のため対処しなくても deploy は止まらない。だから
+   こそ「気付いて対処する」運用を週次 review で担保する必要がある (下記
+   "Re-escalation conditions" 参照)。
+
+#### Re-escalation conditions (再 blocking 化の条件)
+
+advisory はあくまで暫定運用で、以下を **全て** 満たしたら CRITICAL を blocking
+(`exit-code: '1'`) に戻す:
+
+1. 4 週間以上、両 image で CRITICAL 件数 0 を維持できている (PR / deploy 両
+   workflow の `::warning::` 履歴で確認)。
+2. `.trivyignore` に **期限切れ entry が無い** (月次棚卸しを完了している)。
+3. 週次の Trivy review 体制 (担当者 + 議事録 / 議題) が確立している。
+
+戻すときは:
+- `_deploy-cloud-run.yml` / `_deploy-external-api.yml` の
+  `Scan image (Trivy CRITICAL — advisory)` を `exit-code: '1'` に変更し step 名
+  を "blocking" に戻す。
+- `ci.yml:trivy` を必須 (`needs: [..., trivy]` の case 文で `failure)` を error
+  扱いに) する。
+- 本表 (Severity Policy) の CRITICAL 行を `1` / "block" に戻し、上記 advisory
+  のセクションを削除。
 
 ### `.trivyignore`
 
@@ -455,24 +487,27 @@ CVE を一時的に除外できる。**追加時は必ず以下を併記**:
 
 ### Local 検証
 
-PR を出す前に手元で同じ scan を回したい場合:
+PR を出す前に手元で同じ scan を回したい場合 (advisory mode と同じ
+`exit-code 0`):
 
 ```bash
-# CRITICAL のみ blocking で確認
-trivy image --severity CRITICAL --exit-code 1 --ignore-unfixed \
+# CRITICAL の一覧を確認
+trivy image --severity CRITICAL --exit-code 0 --ignore-unfixed \
   asia-northeast1-docker.pkg.dev/<project>/<repo>/<image>:latest
 
-# HIGH の一覧を確認 (block しない)
+# HIGH の一覧を確認
 trivy image --severity HIGH --exit-code 0 --ignore-unfixed \
   asia-northeast1-docker.pkg.dev/<project>/<repo>/<image>:latest
 ```
 
-### Block 時の対処
+### CVE 検出時の対処
 
-deploy が CRITICAL で fail したら、まず scan log で CVE と該当パッケージを
-特定し、以下の優先順で対応する:
+PR / deploy run で `::warning::` が出た、または Security タブに新規 alert が
+追加されたら、以下の優先順で対応する (advisory なので緊急停止はしないが、
+**気付いた時点で対処する**):
 
 1. **Base image / dependency の bump** で fix 済み version に上げる (推奨)。
+   Dependabot が自動で PR を開いている場合はそれを優先 merge。
 2. **multi-stage build (`Dockerfile`) で当該パッケージを最終ステージから外す**。
 3. 上記が現実的でない場合のみ、`.trivyignore` に追記して暫定回避し、
    別 issue で恒久対応をトラックする。
