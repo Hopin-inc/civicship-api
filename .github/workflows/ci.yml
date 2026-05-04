@@ -73,7 +73,7 @@ jobs:
       - name: Prettier check (non-blocking, formatting backlog from #978)
         run: |
           if ! pnpm exec prettier --check src/; then
-            echo "::warning::existing Prettier failures (267 files) — non-blocking until a one-shot `prettier --write src/` PR lands"
+            echo '::warning::existing Prettier failures (267 files) — non-blocking until a one-shot prettier --write PR lands'
           fi
 
   build:
