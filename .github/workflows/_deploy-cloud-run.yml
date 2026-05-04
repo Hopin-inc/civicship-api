@@ -332,10 +332,12 @@ jobs:
           # ら canary tag のものを取る (リージョン固有の `canary---SERVICE-...`
           # ホスト名が返る)。
           # `gcloud run services describe` は `--filter` 非対応なので、
-          # projection 側の `.filter()` で canary tag だけ抽出する。
+          # `--format=json` で status.traffic を取り出して `jq` で canary tag の
+          # URL を抽出する (projection チェーンより読みやすく debug しやすい)。
           CANARY_URL=$(gcloud run services describe "${APPLICATION_NAME}" \
             --region="${GCP_REGION}" \
-            --format='value(status.traffic.filter("tag:canary").extract(url).flatten())' \
+            --format='json(status.traffic)' \
+            | jq -r '.status.traffic[] | select(.tag == "canary") | .url' \
             | head -n 1)
           if [ -z "${CANARY_URL}" ]; then
             echo "Could not resolve canary tag URL" >&2
