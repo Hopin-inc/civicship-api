@@ -94,7 +94,8 @@ WORKDIR /app
 # 非特権に戻す (root 実行時間を最小化)。
 USER root
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssl ca-certificates \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 USER node
 
