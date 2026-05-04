@@ -45,6 +45,9 @@ jobs:
       # 式で動的に切り替えできないため両 stage で write を付与する
       # (dev でも実質 read しか使わないので影響なし)。
       contents: write
+      # security-events:write は Trivy scan 結果 (sarif) を Security タブに
+      # upload するために必要 (codeql-action/upload-sarif)。
+      security-events: write
 
     env:
       STAGE: ${{ inputs.stage }}
@@ -57,6 +60,14 @@ jobs:
       EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+      # EXTERNAL_IMAGE / EXTERNAL_IMAGE_SHA を job-level env に出すことで、
+      # build/push step と Trivy scan step (build step 後の独立 step) から同じ
+      # 参照で扱えるようにする。`:sha-${{ github.sha }}` は Cloud Run revision
+      # を commit 単位で identifiable にし、過去 image にロールバックできるよう
+      # にするため (#974)。Trivy 側は `EXTERNAL_IMAGE_SHA || EXTERNAL_IMAGE` の
+      # fallback で sha tag 優先。
+      EXTERNAL_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:latest
+      EXTERNAL_IMAGE_SHA: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
 
     steps:
       # See _deploy-cloud-run.yml for rationale on audit mode + sudo.
@@ -115,12 +126,9 @@ jobs:
         uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
 
       # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
-      # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
+      # Cloud Run の各 revision を commit SHA 単位で identifiable にし、
       # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build and push External API image
-        env:
-          EXTERNAL_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
-          EXTERNAL_IMAGE_SHA: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
         run: |
           docker buildx build \
             --file Dockerfile.external \
@@ -130,6 +138,62 @@ jobs:
             --cache-to "type=gha,mode=max,scope=external-${{ inputs.stage }}" \
             --push \
             .
+
+      # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
+      # CRITICAL も HIGH も **advisory** (`exit-code: '0'`) で運用。
+      # 詳細な運用ポリシー (PR 時 + deploy 時の visibility / 再 blocking 化条件)
+      # は _deploy-cloud-run.yml の同名 step コメント + docs/handbook/SECURITY.md
+      # を参照。両 image (internal / external) で完全に同じ政策。
+      - name: Scan image (Trivy CRITICAL — advisory)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-critical.sarif
+
+      - name: Scan image (Trivy HIGH — advisory)
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-high.sarif
+
+      # Surface CVE counts as `::warning::` annotations so the deploy job's
+      # summary makes the result loud. Same logic as _deploy-cloud-run.yml.
+      - name: Surface Trivy CVE count (advisory warning)
+        if: always()
+        run: |
+          set -euo pipefail
+          for sev in critical high; do
+            sarif="trivy-${sev}.sarif"
+            [ -s "$sarif" ] || continue
+            count=$(jq '[.runs[]?.results[]?] | length' "$sarif")
+            echo "${sev^^}: ${count}"
+            if [ "$count" -gt 0 ]; then
+              echo "::warning::Trivy ${sev^^}: ${count} CVEs in the deployed external-api image. Review the Security tab (category: trivy-external-${sev}) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked."
+            fi
+          done
+
+      - name: Upload Trivy CRITICAL results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-critical.sarif
+          category: trivy-external-critical
+
+      - name: Upload Trivy HIGH results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-high.sarif
+          category: trivy-external-high
 
       - name: Deploy External API to Cloud Run
         id: deploy
@@ -154,7 +218,12 @@ jobs:
         run: |
           URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')
           echo "Smoking $URL/health"
-          if ! curl --fail --silent --show-error --retry 6 --retry-delay 10 --max-time 10 "$URL/health"; then
+          # retry 9 × delay 10s ≒ 90s + --retry-connrefused: cold start headroom.
+          # cloud-run.yml の Smoke check (immediate deploy) と同じパラメータ。
+          if ! curl --fail --silent --show-error \
+                --retry 9 --retry-delay 10 --retry-connrefused \
+                --max-time 10 \
+                "$URL/health"; then
             echo "::error::Smoke check failed for $SERVICE"
             gcloud logging read \
               "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE AND severity>=ERROR" \

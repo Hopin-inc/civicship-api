@@ -1,0 +1,41 @@
+# .trivyignore — Trivy が CVE を無視するためのリスト。
+#
+# 運用ルール:
+#   1. 1 行 1 CVE。形式は `CVE-YYYY-NNNNN`。`#` から行末はコメント。
+#   2. 追加するときは必ず以下を併記したコメントを直前に置く:
+#        - 影響範囲 (どの image / どのライブラリ経由か)
+#        - 暫定 ignore する理由 (例: upstream fix 待ち / 不到達 path)
+#        - 期限 (`expires: YYYY-MM-DD` 目安) と再評価担当
+#   3. 期限切れの ignore を月次で棚卸しし、不要になったら削除する。
+#
+# 詳細は docs/handbook/SECURITY.md の "Container Image Scanning (Trivy)" を参照。
+#
+# 運用フロー (advisory mode + 強い可視化):
+#   現在 Trivy CRITICAL / HIGH は **advisory** (`exit-code: '0'`) で運用している。
+#   日次 DB 更新で新規 CVE がいつでも増え、上流 fix を待つしかない CRITICAL
+#   ですら自動で deploy を止めるとサービス全体が無関係な fix も巻き込んで
+#   stall する、という運用上の困難から、以下の **3 層の可視化** で代替する。
+#
+#   1. PR-time: `ci.yml` の `trivy` job が runtime image を scan し、CRITICAL
+#      件数を `::warning::` annotation として PR checks 概要に出す。
+#      件数が 0 でない PR は人間が必ず気付く前提。
+#   2. Deploy-time: `_deploy-cloud-run.yml` / `_deploy-external-api.yml` で
+#      docker push 直後の image を再 scan、件数を `::warning::` で
+#      workflow run summary 最上部に。Trivy DB drift で deploy 時点で新規に
+#      増えた CVE もここで surface される。
+#   3. Security tab: 両 workflow が sarif を Code Scanning に upload する
+#      (category: trivy-critical / trivy-high / trivy-external-*)。
+#
+#   CVE がヒットした時の対応優先順:
+#     (a) **fix**: 依存 / base image を bump、もしくは利用方を変えて到達可能性
+#         を断つ。fix が出ているなら最善。
+#     (b) **ignore**: ここに entry を追加 (影響範囲 / 理由 / 期限 / 担当付き)。
+#         fix 待ちや不到達 path の場合のみ、暫定回避として使う。期限切れ
+#         entry は月次棚卸しで削除する。
+#
+# 再 blocking (= `exit-code: '1'`) 化の条件:
+#   - 4 週間以上 CRITICAL 件数 0 を維持できている
+#   - .trivyignore に期限切れ entry が無い (月次棚卸しを完了している)
+#   - 週次の Trivy review 体制 (担当者 + 議事録 / 議題) が SECURITY.md に明文化されている
+#   3 つを全て満たしたら blocking に戻す。SECURITY.md の "Severity Policy" を
+#   合わせて更新すること。

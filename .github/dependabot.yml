@@ -69,3 +69,26 @@ updates:
     commit-message:
       prefix: "chore(ci)"
       include: "scope"
+
+  # Docker base image digest tracking. Both `Dockerfile` and `Dockerfile.external`
+  # pin `node:20-slim@sha256:<digest>` for reproducibility; Dependabot opens a PR
+  # when upstream re-tags `node:20-slim` to a new digest. Cooldown matches the
+  # other ecosystems so we don't get woken up by every nightly base re-build.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    cooldown:
+      semver-major-days: 14
+      semver-minor-days: 10
+      semver-patch-days: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"

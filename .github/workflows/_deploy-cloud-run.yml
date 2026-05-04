@@ -67,6 +67,9 @@ jobs:
       # 式で動的に切り替えできないため、両 stage で write を付与する
       # (dev でも実質 read しか使わないので影響なし)。
       contents: write
+      # security-events:write は Trivy scan 結果 (sarif) を Security タブに
+      # upload するために必要 (codeql-action/upload-sarif)。
+      security-events: write
 
     env:
       STAGE: ${{ inputs.stage }}
@@ -82,6 +85,15 @@ jobs:
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
       APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
+      # MAIN_IMAGE / MAIN_IMAGE_SHA を job-level env に出すことで、build/push step
+      # と Trivy scan step (build step 後の独立 step) から同じ参照で扱えるように
+      # する。`:sha-${{ github.sha }}` は Cloud Run revision を commit 単位で
+      # identifiable にし、過去 image にロールバックできるようにするため (#974)。
+      # Trivy 側は `MAIN_IMAGE_SHA || MAIN_IMAGE` の fallback で sha tag 優先。
+      MAIN_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.APPLICATION_NAME }}:latest
+      MAIN_IMAGE_SHA: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.APPLICATION_NAME }}:sha-${{ github.sha }}
+      BATCH_IMAGE: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}/${{ secrets.BATCH_NAME }}:latest
+      BATCH_IMAGE_SHA: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}/${{ secrets.BATCH_NAME }}:sha-${{ github.sha }}
 
     steps:
       # `audit` mode: log egress (GCP / npm registry / GitHub) without blocking.
@@ -162,14 +174,9 @@ jobs:
       # batch (Cloud Run Job) 側は entrypoint を `--command/--args` で
       # `node dist/index.js` に上書きする (旧 Dockerfile.batch CMD と等価)。
       # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
-      # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
+      # Cloud Run の各 revision を commit SHA 単位で identifiable にし、
       # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build unified image and push to main + batch registries
-        env:
-          MAIN_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
-          MAIN_IMAGE_SHA: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:sha-${{ github.sha }}
-          BATCH_IMAGE: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
-          BATCH_IMAGE_SHA: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}
         run: |
           docker buildx build \
             --file Dockerfile \
@@ -181,6 +188,71 @@ jobs:
             --cache-to "type=gha,mode=max,scope=cloud-run-${{ inputs.stage }}" \
             --push \
             .
+
+      # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
+      # CRITICAL も HIGH も **advisory** (`exit-code: '0'`) で運用:
+      # Trivy DB は日次更新、明日新 CVE が追加されると上流 fix を待つしかない
+      # CRITICAL ですら自動で deploy を止めてしまい、無関係な fix も巻き込んで
+      # 全 deploy が stall する。代わりに sarif を Security タブに上げ、件数
+      # を ::warning:: として workflow run の最上部に出すことで「**人間が必ず
+      # 気付く**」が、自動ゲートはしない、という政策にする。
+      # 再 blocking 化の条件 (CVE 0 件状態が継続 + .trivyignore 整備 + 週次
+      # review 体制) は docs/handbook/SECURITY.md 参照。
+      # `ignore-unfixed: true` で fix が出ていない CVE は雑音になるので除外。
+      # MAIN_IMAGE_SHA (#974) が定義された環境ではそちらを優先し、未定義の
+      # 場合は :latest tag (MAIN_IMAGE) を scan する。
+      - name: Scan image (Trivy CRITICAL — advisory)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-critical.sarif
+
+      - name: Scan image (Trivy HIGH — advisory)
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-high.sarif
+
+      # Surface CVE counts as `::warning::` annotations so the deploy job's
+      # summary makes the result loud. sarif's `runs[].results[]` is the
+      # canonical CVE list (`level: error` ≈ Trivy CRITICAL with default
+      # mapping). We stay advisory: never `exit 1` here.
+      - name: Surface Trivy CVE count (advisory warning)
+        if: always()
+        run: |
+          set -euo pipefail
+          for sev in critical high; do
+            sarif="trivy-${sev}.sarif"
+            [ -s "$sarif" ] || continue
+            count=$(jq '[.runs[]?.results[]?] | length' "$sarif")
+            echo "${sev^^}: ${count}"
+            if [ "$count" -gt 0 ]; then
+              echo "::warning::Trivy ${sev^^}: ${count} CVEs in the deployed image. Review the Security tab (category: trivy-${sev}) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked."
+            fi
+          done
+
+      - name: Upload Trivy CRITICAL results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-critical.sarif
+          category: trivy-critical
+
+      - name: Upload Trivy HIGH results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-high.sarif
+          category: trivy-high
 
       # --- Non-canary deploy (dev / 既存挙動) ---------------------------------
       # `enable-canary: false` の場合は従来通り即 100% で切り替える。
@@ -413,8 +485,9 @@ jobs:
         # image — Cloud Run Jobs pin the image digest at deploy time, so we
         # need an explicit `run jobs update` to create a new revision.
         # `dist/bootstrap/batch.js` 経由で起動することで OpenTelemetry tracing 初期化
-        # (`tracingReady` await) を batch ジョブでも有効にする。`@/` パスエイリアスが
-        # bootstrap 層で使われるため `-r tsconfig-paths/register` も必須。
+        # (`tracingReady` await) を batch ジョブでも有効にする。`tsc-alias` が build
+        # 時に `@/` を相対 path に rewrite するため、runtime の
+        # `tsconfig-paths/register` は不要 (Dockerfile の CMD と整合)。
         # PROCESS_TYPE=batch は Cloud Run Job 側の env で別途設定されている前提
         # (bootstrap/batch.ts は ../index に dispatch するだけで、batch 分岐自体は
         # src/index.ts:main() が PROCESS_TYPE で判定する)。
@@ -423,7 +496,7 @@ jobs:
             --region="${{ env.GCP_REGION }}" \
             --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}" \
             --command=node \
-            --args=-r,tsconfig-paths/register,dist/bootstrap/batch.js
+            --args=dist/bootstrap/batch.js
 
       - name: Create Git tag
         if: ${{ inputs.create-git-tag }}
