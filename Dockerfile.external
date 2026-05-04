@@ -44,10 +44,18 @@ FROM node:20-slim AS runtime
 
 WORKDIR /app
 
+# See `Dockerfile` runtime stage for rationale on installing openssl +
+# ca-certificates (required for Prisma engine detection on node:20-slim).
+# `USER root` は apt-get install のための局所昇格、直後に `USER node` に戻す。
+USER root
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssl ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+USER node
+
 ENV NODE_ENV=production \
     PORT=3000
-
-USER node
 
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/dist ./dist
