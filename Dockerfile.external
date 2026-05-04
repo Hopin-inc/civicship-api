@@ -8,19 +8,34 @@
 # `pnpm build` itself.
 
 # ---------------------------------------------------------------------------
-# Builder stage: take the pre-built workspace as-is.
-# Do NOT run `pnpm prune --prod` — it strips Prisma TypedSQL generator output
-# (`.prisma/client/sql/`) needed at runtime. See `Dockerfile` header for full
-# rationale.
+# Builder stage: prune to production deps, preserving Prisma generator output.
+# Mirrors `Dockerfile` builder stage — see that file's header comment for the
+# full rationale on the snapshot/restore around `pnpm prune --prod`.
 # ---------------------------------------------------------------------------
 FROM node:20-slim AS builder
 
 WORKDIR /app
 
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 COPY node_modules ./node_modules
 COPY dist ./dist
+
+# Snapshot Prisma generator output (`.prisma/` dirs) before prune wipes them.
+RUN find node_modules -type d -name .prisma -print0 \
+      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar \
+    || true
+
+ENV CI=true
+RUN pnpm prune --prod
+
+# Restore Prisma generator output post-prune.
+RUN if [ -s /tmp/prisma-snapshot.tar ]; then \
+      tar -xf /tmp/prisma-snapshot.tar \
+        && rm /tmp/prisma-snapshot.tar; \
+    fi
 
 # ---------------------------------------------------------------------------
 # Runtime stage: minimal, non-root, HEALTHCHECK enabled.
