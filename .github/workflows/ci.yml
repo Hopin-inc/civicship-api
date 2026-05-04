@@ -205,11 +205,20 @@ jobs:
       # `ERR_MODULE_NOT_FOUND`. Catch that drift at PR time rather than at
       # deploy time. `grep -q` exits 0 on first match, so we negate to fail
       # the step when residual `@/` is found.
+      #
+      # Pattern covers all import shapes that tsc emits / users write:
+      #   - Static  : `from "@/x"` / `from '@/x'`
+      #   - CJS     : `require("@/x")` / `require('@/x')`
+      #   - Dynamic : `import("@/x")` / `import('@/x')`
+      # Both single and double quotes are matched so the assertion stays
+      # robust against future formatter / source-style changes.
       - name: Assert tsc-alias rewrote all `@/` imports in dist
+        env:
+          AT_IMPORT_PATTERN: '(from |require\(|import\()["'']@/'
         run: |
-          if grep -rqE '(from |require\()"@/' dist/; then
-            echo "::error::Found unrewritten \`@/\` imports in dist/. tsc-alias may have failed or new import shape (e.g. dynamic import) is not handled. Fix tsc-alias config or restore tsconfig-paths/register."
-            grep -rnE '(from |require\()"@/' dist/ | head -20
+          if grep -rqE "$AT_IMPORT_PATTERN" dist/; then
+            echo "::error::Found unrewritten \`@/\` imports in dist/. tsc-alias may have failed or a new import shape is not handled. Fix tsc-alias config or restore tsconfig-paths/register."
+            grep -rnE "$AT_IMPORT_PATTERN" dist/ | head -20
             exit 1
           fi
           echo "✅ dist/ contains no unresolved \`@/\` imports."
@@ -331,6 +340,7 @@ jobs:
       # contained and doesn't perturb the `build` / `test` job services.
       - name: Spin up local Postgres for prisma generate --sql
         run: |
+          set -euo pipefail
           docker run -d \
             --name pg-trivy \
             -e POSTGRES_USER=civicship \
@@ -338,10 +348,23 @@ jobs:
             -e POSTGRES_DB=civicship_ci \
             -p 5432:5432 \
             postgres:16-alpine
+          # Wait up to 30s for Postgres to accept connections. If it never
+          # becomes ready, surface container logs and fail explicitly so the
+          # follow-up `db:deploy` doesn't blow up with a confusing connection
+          # error instead.
+          ready=false
           for _ in $(seq 1 30); do
-            if docker exec pg-trivy pg_isready -U civicship -d civicship_ci -q; then break; fi
+            if docker exec pg-trivy pg_isready -U civicship -d civicship_ci -q; then
+              ready=true
+              break
+            fi
             sleep 1
           done
+          if [ "$ready" != "true" ]; then
+            echo "::error::Postgres (pg-trivy) did not become ready within 30s"
+            docker logs pg-trivy || true
+            exit 1
+          fi
 
       - name: Apply Prisma migrations + generate client + GraphQL types
         env:
