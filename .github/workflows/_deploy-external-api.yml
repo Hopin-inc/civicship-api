@@ -70,11 +70,13 @@ jobs:
       EXTERNAL_IMAGE_SHA: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
 
     steps:
-      # See _deploy-cloud-run.yml for rationale on audit mode + sudo.
+      # See _deploy-cloud-run.yml for rationale on audit mode + disable-sudo
+      # (#986).
       - name: Harden runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
         with:
           egress-policy: audit
+          disable-sudo: true
 
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -233,17 +235,15 @@ jobs:
           fi
 
       - name: Create Git tag
+        # TZ env でプロセス単位に JST を効かせる (#986)。詳細は
+        # _deploy-cloud-run.yml の同名 step コメント参照。
         if: ${{ inputs.create-git-tag }}
+        env:
+          TZ: Asia/Tokyo
         run: |
-          sudo apt-get update && sudo apt-get install -y tzdata
-          sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
-          sudo dpkg-reconfigure -f noninteractive tzdata
-
           TAG_NAME="${{ inputs.git-tag-prefix }}$(date +"%Y%m%d%H%M%S")"
-
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
           git tag "$TAG_NAME"
           git push origin "$TAG_NAME"
 
