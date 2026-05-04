@@ -32,4 +32,8 @@ jobs:
       apollo-variant: prod
       node-env: production
       create-git-tag: true
+      # prd は canary rollout (10% → bake → 5xx チェック → 100%) を強制。
+      # 失敗時は前 revision に traffic を戻す。dev 側は `enable-canary: false`
+      # で従来通り即 100%。詳細は `_deploy-cloud-run.yml` 参照。
+      enable-canary: true
     secrets: inherit
