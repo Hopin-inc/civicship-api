@@ -160,18 +160,16 @@ jobs:
             docs/schema.graphql \
             src/infrastructure/prisma/schema.prisma
 
-      # tsc incremental の `.tsbuildinfo` を branch ごとに cache。
-      # 完全一致 hit は稀でも、restore-keys 経由で前回 build の info を
-      # 復元すれば未変更ファイルの typecheck を skip できる。
-      - name: Cache TypeScript build info
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
-        with:
-          path: .tsbuildinfo
-          key: tsbuildinfo-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
-          restore-keys: |
-            tsbuildinfo-${{ runner.os }}-${{ github.ref_name }}-
-            tsbuildinfo-${{ runner.os }}-
-
+      # NOTE (2026-05): 旧 `Cache TypeScript build info` step (`.tsbuildinfo`
+      # を `actions/cache` でブランチ間 fallback restore) は削除した。
+      # restore-keys が `tsbuildinfo-${{ runner.os }}-` まで緩く fallback
+      # する設定で、別ブランチの古い tsbuildinfo を読んだ tsc が「全ファイル
+      # コンパイル済み」と誤判定 → emit を skip → dist の一部が rewrite 前
+      # の `@/` を残したまま、という非決定的な build フレイクを起こしていた
+      # (`Assert tsc-alias rewrote all @/ imports in dist` step が間欠的に
+      # fail)。clean build (~25-30s) で十分速いので cache 復活時はキー
+      # 戦略を厳格化する (例: source ファイル hash 込みのキー、fallback
+      # 削除) こと。
       - name: Build (typecheck + emit)
         run: pnpm build
 
