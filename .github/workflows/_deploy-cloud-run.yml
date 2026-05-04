@@ -116,18 +116,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || '' }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
-
       - name: Authenticate to Google Cloud (Workload Identity Federation)
         uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
         with:
@@ -144,15 +132,18 @@ jobs:
           jumpbox-zone: ${{ env.JUMPBOX_ZONE }}
           db-name: ${{ env.DB_NAME }}
 
-      - name: Run prisma generate and migrate deploy
-        env:
-          DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
-        run: |
-          pnpm db:generate
-          pnpm db:deploy
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
+      # composite が install + db:deploy + db:generate + gql:generate を順に
+      # 実行する。jumpbox tunnel の後に呼び出すこと (composite 内の DB ops
+      # が tunnel 経由で localhost:5432 に接続する)。CI の build/test job と
+      # 同じ順序 (db:deploy → db:generate) に揃えており、新規 migration が
+      # 追加された場合でも `prisma generate --sql` が migrate 後の DB を
+      # introspection して TypedSQL types を生成できる。
+      - name: Setup civicship environment
+        uses: ./.github/actions/setup-civicship
+        with:
+          database-url: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+          apply-migrations: 'true'
+          generate-graphql: 'true'
 
       - name: Build TypeScript output (consumed by Docker COPY)
         run: pnpm build

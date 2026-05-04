@@ -1,0 +1,71 @@
+name: 'Setup civicship environment'
+description: >
+  pnpm + Node.js + frozen-lockfile install を共通化する composite action
+  (#985)。必要に応じて Prisma migration / client generate / GraphQL types
+  generate も実行する。
+
+  caller 側で Postgres (CI service container or `docker run` or jumpbox
+  tunnel) を先に立ち上げてから本 action を呼ぶこと。`database-url` が
+  指定されていれば `pnpm db:generate` (TypedSQL: `prisma generate --sql`
+  が DB introspection を要求する) を、`apply-migrations: 'true'` なら
+  `pnpm db:deploy` も流す。
+
+  pnpm / node / setup-node@v4 の cache 設定は全 caller で同一にする
+  (cache hit を最大化するため) — ここで一括管理する。
+
+inputs:
+  database-url:
+    description: >
+      PostgreSQL 接続文字列。指定されていれば `pnpm db:generate` を実行する
+      (Prisma TypedSQL は live DB を必要とする)。空文字なら install で停止
+      (lint job 等の DB 不要ケース向け)。
+    required: false
+    default: ''
+  apply-migrations:
+    description: >
+      `'true'` なら `pnpm db:deploy` (`prisma migrate deploy`) を実行。
+      DB 書き込み権限が必要。`database-url` が空の場合は無効。
+      external-api deploy のように migration 適用責務を持たない caller は
+      `'false'` にする (default)。
+    required: false
+    default: 'false'
+  generate-graphql:
+    description: >
+      `'true'` なら `pnpm gql:generate` を実行 (DB 不要)。
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - name: Install dependencies (lockfile integrity check)
+      shell: bash
+      run: pnpm install --frozen-lockfile --prefer-offline
+
+    - name: Apply Prisma migrations (db:deploy)
+      if: ${{ inputs.apply-migrations == 'true' && inputs.database-url != '' }}
+      shell: bash
+      env:
+        DATABASE_URL: ${{ inputs.database-url }}
+      run: pnpm db:deploy
+
+    - name: Generate Prisma client (db:generate, with TypedSQL)
+      if: ${{ inputs.database-url != '' }}
+      shell: bash
+      env:
+        DATABASE_URL: ${{ inputs.database-url }}
+      run: pnpm db:generate
+
+    - name: Generate GraphQL types (gql:generate)
+      if: ${{ inputs.generate-graphql == 'true' }}
+      shell: bash
+      run: pnpm gql:generate

@@ -60,17 +60,8 @@ jobs:
             hadolint --config /repo/.hadolint.yaml \
               /repo/Dockerfile /repo/Dockerfile.external
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Setup civicship environment
+        uses: ./.github/actions/setup-civicship
 
       # ESLint (no --fix) と Prettier --check で source の lint / format 違反を検出する。
       # 現状 src/ には既存違反 (ESLint 841 errors / Prettier 265 files) が残存している
@@ -128,17 +119,15 @@ jobs:
           # silently no-op. fetch-depth=0 ensures `origin/<base>` is reachable.
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+      - name: Setup civicship environment
+        # composite action 内で setup-node の cache: pnpm が working tree の
+        # `pnpm-lock.yaml` を hash に使う。`pnpm db:migrate-diff` を後続に
+        # 走らせる関係で fetch-depth: 0 (上で設定) は維持する必要がある。
+        uses: ./.github/actions/setup-civicship
         with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
+          database-url: ${{ env.DATABASE_URL }}
+          apply-migrations: 'true'
+          generate-graphql: 'true'
 
       # Surface high/critical findings as a `::warning::` annotation visible
       # in the PR check summary, but do not fail the job (audit results can
@@ -162,18 +151,6 @@ jobs:
         env:
           MIGRATE_DIFF_BASE_REF: origin/${{ github.base_ref }}
         run: pnpm db:migrate-diff
-
-      - name: Apply Prisma migrations to CI database
-        # TypedSQL (`--sql`) は DB 接続を必要とするため、db:generate の前に
-        # migration を当ててスキーマを用意する。view / materialized view も
-        # migration.sql 経由でのみ作成される。
-        run: pnpm db:deploy
-
-      - name: Generate Prisma client (with TypedSQL)
-        run: pnpm db:generate
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
 
       # Detect uncommitted regenerations of tracked generated files.
       - name: Check generated files are up to date
@@ -319,25 +296,12 @@ jobs:
       # all stages cached this finishes in seconds and produces an image
       # bit-for-bit identical to what `build` smoke-tested.
       #
-      # NOTE: trivy needs the build context too, since the multi-stage builder
-      # COPYs `node_modules/` and `dist/` from the runner FS. We need pnpm
-      # install + db:generate + pnpm build before the `docker buildx` here.
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
-
       # Postgres is needed because `pnpm db:generate` uses `prisma generate
       # --sql` (TypedSQL), which introspects the live DB. We use a throwaway
       # local container instead of a service container so this job stays self-
       # contained and doesn't perturb the `build` / `test` job services.
+      # Postgres を **composite action 呼び出しより先に** 立てる: composite が
+      # 中で `db:deploy` / `db:generate` を流す時点で接続可能である必要がある。
       - name: Spin up local Postgres for prisma generate --sql
         run: |
           set -euo pipefail
@@ -366,13 +330,15 @@ jobs:
             exit 1
           fi
 
-      - name: Apply Prisma migrations + generate client + GraphQL types
-        env:
-          DATABASE_URL: postgresql://civicship:civicship@localhost:5432/civicship_ci
-        run: |
-          pnpm db:deploy
-          pnpm db:generate
-          pnpm gql:generate
+      # NOTE: trivy needs the build context too, since the multi-stage builder
+      # COPYs `node_modules/` and `dist/` from the runner FS. We need pnpm
+      # install + db:generate + pnpm build before the `docker buildx` here.
+      - name: Setup civicship environment
+        uses: ./.github/actions/setup-civicship
+        with:
+          database-url: postgresql://civicship:civicship@localhost:5432/civicship_ci
+          apply-migrations: 'true'
+          generate-graphql: 'true'
 
       - name: Build TypeScript output
         run: pnpm build
@@ -526,31 +492,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+      # composite が install + db:deploy + db:generate + gql:generate を順に
+      # 実行する。`prisma db push` ではなく `db:deploy` が必要な理由は、
+      # view (10 個) / materialized view (4 個) を migration.sql のみで定義
+      # しており、db push だと view/mv が作られず関連 test が fail するため。
+      - name: Setup civicship environment
+        uses: ./.github/actions/setup-civicship
         with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies (lockfile integrity check)
-        run: pnpm install --frozen-lockfile --prefer-offline
-
-      - name: Apply Prisma migrations to CI database
-        # `prisma db push` は schema.prisma のモデルのみ反映し、migration.sql を
-        # 実行しない。view (10 個) / materialized view (4 個) は migration.sql のみで
-        # 定義されているため、db push だと view/mv が作られず、それらに依存する test
-        # が構造的に fail する。`pnpm db:deploy` (= prisma migrate deploy) で migration
-        # を順次適用し、view/mv 含めた全スキーマを CI DB に反映する。
-        run: pnpm db:deploy
-
-      - name: Generate Prisma client (with TypedSQL)
-        run: pnpm db:generate
-
-      - name: Generate GraphQL types
-        run: pnpm gql:generate
+          database-url: ${{ env.DATABASE_URL }}
+          apply-migrations: 'true'
+          generate-graphql: 'true'
 
       # ts-jest の transform 結果 cache を matrix 単位で永続化。
       # restore-keys で同一 matrix の最近の cache に fallback し、
