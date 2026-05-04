@@ -46,10 +46,15 @@
 # Test / coverage artifacts (not needed at runtime). `test` / `tests`
 # don't exist in this repo today (we use `__tests__/` everywhere), but
 # kept as defense-in-depth for any tooling that auto-creates them.
+# Both root and `**/<name>` forms are listed for parity with the existing
+# `__tests__` pattern (some Docker BuildKit setups historically required
+# both for full coverage).
 __tests__
 **/__tests__
 test
+**/test
 tests
+**/tests
 *.test.ts
 *.spec.ts
 coverage
