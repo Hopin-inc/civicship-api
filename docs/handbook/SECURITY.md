@@ -470,8 +470,8 @@ advisory はあくまで暫定運用で、以下を **全て** 満たしたら C
 - `_deploy-cloud-run.yml` / `_deploy-external-api.yml` の
   `Scan image (Trivy CRITICAL — advisory)` を `exit-code: '1'` に変更し step 名
   を "blocking" に戻す。
-- `ci.yml:trivy` を必須 (`needs: [..., trivy]` の case 文で `failure)` を error
-  扱いに) する。
+- `ci.yml:trivy` を必須ジョブに戻す (集約 `ci` job の結果判定で trivy の
+  `failure` を許容しないように変更する)。
 - 本表 (Severity Policy) の CRITICAL 行を `1` / "block" に戻し、上記 advisory
   のセクションを削除。
 

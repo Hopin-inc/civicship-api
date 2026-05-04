@@ -36,6 +36,6 @@
 # 再 blocking (= `exit-code: '1'`) 化の条件:
 #   - 4 週間以上 CRITICAL 件数 0 を維持できている
 #   - .trivyignore に期限切れ entry が無い (月次棚卸しを完了している)
-#   - 週次の Trivy review 体制 (担当 + 議事録) が SECURITY.md に明文化されている
+#   - 週次の Trivy review 体制 (担当者 + 議事録 / 議題) が SECURITY.md に明文化されている
 #   3 つを全て満たしたら blocking に戻す。SECURITY.md の "Severity Policy" を
 #   合わせて更新すること。
