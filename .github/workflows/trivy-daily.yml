@@ -188,10 +188,8 @@ jobs:
           today=$(date -u +%Y-%m-%d)
           ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-          # 各 image の CVE-ID 集合をソート済みカンマ列で取得 (空なら空文字)。
-          ids_internal=$(jq -r '[.Results[]?.Vulnerabilities[]?.VulnerabilityID] | unique | join(",")' trivy-internal.json)
-          ids_external=$(jq -r '[.Results[]?.Vulnerabilities[]?.VulnerabilityID] | unique | join(",")' trivy-external.json)
-          # 統合 ID set (issue 全体での比較用)。
+          # 両 image の CVE-ID を統合してソート済みカンマ列にする (issue body の
+          # hidden marker に書き込み、次回 run と diff するための key)。
           all_ids=$(jq -rs '
             [ ( .[0].Results[]?.Vulnerabilities[]?.VulnerabilityID
                 , .[1].Results[]?.Vulnerabilities[]?.VulnerabilityID )
