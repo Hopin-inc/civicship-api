@@ -38,7 +38,6 @@ USER node
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/dist ./dist
 COPY --from=builder --chown=node:node /app/package.json ./package.json
-COPY --chown=node:node tsconfig.json ./tsconfig.json
 
 EXPOSE 3000
 
@@ -46,4 +45,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/external-api.js"]
+# See `Dockerfile` for why `tsconfig-paths/register` and `tsconfig.json` are
+# not needed at runtime (tsc-alias rewrites all `@/` imports during build).
+CMD ["node", "dist/bootstrap/external-api.js"]
