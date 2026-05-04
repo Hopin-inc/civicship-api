@@ -84,8 +84,13 @@ const IsCommunityOwner = preExecRule({
 ) => {
   if (context.isAdmin) return true;
 
+  // Header-driven `context.communityId` is the source of truth — usecases
+  // resolve scope from it, so the authz check must compare ownership
+  // against the SAME id the operation will run under. Trusting
+  // `args.permission` first would let a caller pass authz with one
+  // community while the usecase mutates another.
   const communityId =
-    args.permission?.communityId ?? args.communityPermission?.communityId ?? context.communityId;
+    context.communityId ?? args.permission?.communityId ?? args.communityPermission?.communityId;
   if (!communityId) {
     logger.warn("IsCommunityOwner authorization FAILED", {
       rule: "IsCommunityOwner",
@@ -114,7 +119,7 @@ const IsCommunityManager = preExecRule({
 })((context: IContext, args: { permission?: { communityId?: string } }) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId ?? context.communityId;
+  const communityId = context.communityId ?? args.permission?.communityId;
   if (!communityId) {
     logger.warn("IsCommunityManager authorization FAILED", {
       rule: "IsCommunityManager",
@@ -143,7 +148,7 @@ const IsCommunityMember = preExecRule({
 })((context: IContext, args: { permission?: { communityId?: string } }) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId ?? context.communityId;
+  const communityId = context.communityId ?? args.permission?.communityId;
   if (!communityId) {
     logger.warn("IsCommunityMember authorization FAILED", {
       rule: "IsCommunityMember",

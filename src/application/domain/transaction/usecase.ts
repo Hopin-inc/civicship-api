@@ -222,7 +222,7 @@ export default class TransactionUseCase {
 
   async userUpdateTransactionMetadata(
     ctx: IContext,
-    { id, input, permission, communityPermission }: GqlMutationTransactionUpdateMetadataArgs,
+    { id, input }: GqlMutationTransactionUpdateMetadataArgs,
   ): Promise<GqlTransactionUpdateMetadataPayload> {
     const currentUserId = getCurrentUserId(ctx);
 
@@ -231,27 +231,29 @@ export default class TransactionUseCase {
       throw new NotFoundError(`TransactionNotFound: ID=${id}`);
     }
 
-    if (communityPermission?.communityId) {
-      const isOwner =
-        ctx.isAdmin ||
+    // The @authz directive admits IsSelf OR IsCommunityOwner. Pick the
+    // applicable authority here without relying on a client-supplied
+    // mode flag: prefer owner-mode when the caller actually owns the
+    // current community AND the txn was emitted from that community's
+    // wallet, otherwise fall back to self-mode (caller is the creator).
+    const ctxCommunityId = ctx.communityId;
+    const isOwnerOfCtxCommunity =
+      ctx.isAdmin ||
+      (!!ctxCommunityId &&
         ctx.currentUser?.memberships?.some(
-          (m) => m.communityId === communityPermission.communityId && m.role === Role.OWNER,
-        ) === true;
-      if (!isOwner) {
-        throw new AuthorizationError("User must be community owner");
-      }
+          (m) => m.communityId === ctxCommunityId && m.role === Role.OWNER,
+        ) === true);
+    const isCreator = existing.createdBy === currentUserId;
+
+    if (isOwnerOfCtxCommunity && ctxCommunityId) {
       const communityWallet = await this.walletService.findCommunityWalletOrThrow(
         ctx,
-        communityPermission.communityId,
+        ctxCommunityId,
       );
-      if (existing.from !== communityWallet.id) {
+      if (existing.from !== communityWallet.id && !isCreator) {
         throw new AuthorizationError("Transaction is not from the community wallet");
       }
-    } else if (permission?.userId) {
-      if (existing.createdBy !== currentUserId) {
-        throw new AuthorizationError("User is not the creator of this transaction");
-      }
-    } else {
+    } else if (!isCreator) {
       throw new AuthorizationError("Insufficient permissions to update transaction metadata");
     }
 

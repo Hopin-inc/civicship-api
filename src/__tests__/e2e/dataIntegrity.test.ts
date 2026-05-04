@@ -68,8 +68,16 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const ctx1 = { currentUser: { id: user1.id }, issuer } as IContext;
-    const ctx2 = { currentUser: { id: user2.id }, issuer } as IContext;
+    const ctx1 = {
+      currentUser: { id: user1.id },
+      issuer,
+      communityId: community.id,
+    } as IContext;
+    const ctx2 = {
+      currentUser: { id: user2.id },
+      issuer,
+      communityId: community.id,
+    } as IContext;
 
     await transactionUseCase.ownerGrantCommunityPoint(ctx1, {
       input: { transferPoints: 300, toUserId: user1.id },
@@ -130,7 +138,11 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+      communityId: community.id,
+    } as IContext;
 
     await transactionUseCase.ownerGrantCommunityPoint(ctx, {
       input: { transferPoints: 50, toUserId: user.id },
@@ -199,7 +211,11 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
     await TestDataSourceHelper.refreshCurrentPoints();
 
     for (let i = 0; i < users.length; i++) {
-      const ctx = { currentUser: { id: users[i].id }, issuer } as IContext;
+      const ctx = {
+        currentUser: { id: users[i].id },
+        issuer,
+        communityId: community.id,
+      } as IContext;
       await transactionUseCase.ownerGrantCommunityPoint(ctx, {
         input: { transferPoints: 1000, toUserId: users[i].id },
         permission: { communityId: community.id },
@@ -207,7 +223,11 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
     }
 
     for (let i = 0; i < users.length - 1; i++) {
-      const ctx = { currentUser: { id: users[i].id }, issuer } as IContext;
+      const ctx = {
+        currentUser: { id: users[i].id },
+        issuer,
+        communityId: community.id,
+      } as IContext;
       await transactionUseCase.userDonateSelfPointToAnother(ctx, {
         input: {
           communityId: community.id,
