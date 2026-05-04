@@ -41,6 +41,11 @@ COPY dist ./dist
 # Drop devDependencies from node_modules so the runtime stage only carries
 # what's needed at runtime. `--prod` keeps dependencies in the
 # `dependencies` field; devDependencies are removed.
+# pnpm 10 prompts for confirmation when removing modules unless `CI=true`
+# or `--config.confirm-modules-purge=false` is set; docker buildx has no
+# TTY so without this the build aborts with
+# `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`.
+ENV CI=true
 RUN pnpm prune --prod
 
 # ---------------------------------------------------------------------------

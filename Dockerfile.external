@@ -21,6 +21,9 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY node_modules ./node_modules
 COPY dist ./dist
 
+# See `Dockerfile` for why `CI=true` is required before `pnpm prune --prod`
+# (pnpm 10 + non-TTY docker buildx context).
+ENV CI=true
 RUN pnpm prune --prod
 
 # ---------------------------------------------------------------------------
