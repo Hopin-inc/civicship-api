@@ -2,60 +2,66 @@
 # Opportunity Query Definitions
 # ------------------------------
 extend type Query {
-    opportunities(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection!
-    opportunity(id: ID!, permission: CheckCommunityPermissionInput!): Opportunity
+  opportunities(
+    filter: OpportunityFilterInput
+    sort: OpportunitySortInput
+    cursor: String
+    first: Int
+  ): OpportunitiesConnection!
+  opportunity(
+    id: ID!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): Opportunity
 }
 
 # ------------------------------
 # Opportunity Connection Type Definitions
 # ------------------------------
 type OpportunitiesConnection {
-    edges: [OpportunityEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
+  edges: [OpportunityEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type OpportunityEdge implements Edge {
-    cursor: String!
-    node: Opportunity
+  cursor: String!
+  node: Opportunity
 }
 
 # ------------------------------
 # Opportunity Query Input Definitions
 # ------------------------------
 input OpportunityFilterInput {
-    keyword: String
+  keyword: String
 
-    category: OpportunityCategory
-    publishStatus: [PublishStatus!]
+  category: OpportunityCategory
+  publishStatus: [PublishStatus!]
 
-    communityIds: [ID!]
-    createdByUserIds: [ID!]
-    placeIds: [ID!]
-    cityCodes: [ID!]
-    stateCodes: [ID!]
-    articleIds: [ID!]
-    requiredUtilityIds: [ID!]
+  communityIds: [ID!]
+  createdByUserIds: [ID!]
+  placeIds: [ID!]
+  cityCodes: [ID!]
+  stateCodes: [ID!]
+  articleIds: [ID!]
+  requiredUtilityIds: [ID!]
 
-    isReservableWithTicket: Boolean
-    isReservableWithPoint: Boolean
+  isReservableWithTicket: Boolean
+  isReservableWithPoint: Boolean
 
-    # slot
-    slotHostingStatus: [OpportunitySlotHostingStatus!]
-    slotDateRange: DateTimeRangeFilter
-    slotRemainingCapacity: Int
+  # slot
+  slotHostingStatus: [OpportunitySlotHostingStatus!]
+  slotDateRange: DateTimeRangeFilter
+  slotRemainingCapacity: Int
 
-    and: [OpportunityFilterInput!]
-    or: [OpportunityFilterInput!]
-    not: OpportunityFilterInput
+  and: [OpportunityFilterInput!]
+  or: [OpportunityFilterInput!]
+  not: OpportunityFilterInput
 }
 
 input OpportunitySortInput {
-    createdAt: SortDirection
-    earliestSlotStartsAt: SortDirection
+  createdAt: SortDirection
+  earliestSlotStartsAt: SortDirection
 }

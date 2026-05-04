@@ -2,40 +2,41 @@
 # Evaluation Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    evaluationBulkCreate(
-        input: EvaluationBulkCreateInput!
-        permission: CheckCommunityPermissionInput!
-    ): EvaluationBulkCreatePayload
-    @authz(rules: [IsCommunityManager])
+  evaluationBulkCreate(
+    input: EvaluationBulkCreateInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): EvaluationBulkCreatePayload @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------
 # Evaluation Mutation Input Definitions
 # ------------------------------
 input EvaluationCreateInput {
-    participationId: ID!
-    comment: String
+  participationId: ID!
+  comment: String
 }
 
 input EvaluationItem {
-    participationId: ID!
-    status: EvaluationStatus!
-    comment: String
+  participationId: ID!
+  status: EvaluationStatus!
+  comment: String
 }
 
 input EvaluationBulkCreateInput {
-    evaluations: [EvaluationItem!]!
+  evaluations: [EvaluationItem!]!
 }
 
 # ------------------------------
 # Evaluation Mutation Success Type Definitions
 # ------------------------------
 type EvaluationBulkCreateSuccess {
-    evaluations: [Evaluation!]!
+  evaluations: [Evaluation!]!
 }
 
 # ------------------------------
 # Evaluation Mutation Union (Payload) Definitions
 # ------------------------------
-union EvaluationBulkCreatePayload =
-    EvaluationBulkCreateSuccess
+union EvaluationBulkCreatePayload = EvaluationBulkCreateSuccess

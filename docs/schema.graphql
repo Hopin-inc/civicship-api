@@ -2070,40 +2070,40 @@ type MembershipsConnection {
 
 type Mutation {
   approveReport(id: ID!): ApproveReportPayload
-  articleCreate(input: ArticleCreateInput!, permission: CheckCommunityPermissionInput!): ArticleCreatePayload
-  articleDelete(id: ID!, permission: CheckCommunityPermissionInput!): ArticleDeletePayload
-  articleUpdateContent(id: ID!, input: ArticleUpdateContentInput!, permission: CheckCommunityPermissionInput!): ArticleUpdateContentPayload
+  articleCreate(input: ArticleCreateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): ArticleCreatePayload
+  articleDelete(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): ArticleDeletePayload
+  articleUpdateContent(id: ID!, input: ArticleUpdateContentInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): ArticleUpdateContentPayload
   communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
-  communityDelete(id: ID!, permission: CheckCommunityPermissionInput!): CommunityDeletePayload
-  communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!, permission: CheckCommunityPermissionInput!): CommunityUpdateProfilePayload
-  evaluationBulkCreate(input: EvaluationBulkCreateInput!, permission: CheckCommunityPermissionInput!): EvaluationBulkCreatePayload
-  generateReport(input: GenerateReportInput!, permission: CheckCommunityPermissionInput!): GenerateReportPayload
+  communityDelete(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): CommunityDeletePayload
+  communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): CommunityUpdateProfilePayload
+  evaluationBulkCreate(input: EvaluationBulkCreateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): EvaluationBulkCreatePayload
+  generateReport(input: GenerateReportInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): GenerateReportPayload
   identityCheckPhoneUser(input: IdentityCheckPhoneUserInput!): IdentityCheckPhoneUserPayload!
-  incentiveGrantRetry(input: IncentiveGrantRetryInput!, permission: CheckCommunityPermissionInput!): IncentiveGrantRetryPayload
+  incentiveGrantRetry(input: IncentiveGrantRetryInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): IncentiveGrantRetryPayload
   linkPhoneAuth(input: LinkPhoneAuthInput!, permission: CheckIsSelfPermissionInput!): LinkPhoneAuthPayload
   membershipAcceptMyInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckIsSelfPermissionInput!): MembershipSetInvitationStatusPayload
-  membershipAssignManager(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput!): MembershipSetRolePayload
-  membershipAssignMember(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput!): MembershipSetRolePayload
-  membershipAssignOwner(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput!): MembershipSetRolePayload
-  membershipCancelInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckCommunityPermissionInput!): MembershipSetInvitationStatusPayload
+  membershipAssignManager(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): MembershipSetRolePayload
+  membershipAssignMember(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): MembershipSetRolePayload
+  membershipAssignOwner(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): MembershipSetRolePayload
+  membershipCancelInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): MembershipSetInvitationStatusPayload
   membershipDenyMyInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckIsSelfPermissionInput!): MembershipSetInvitationStatusPayload
-  membershipInvite(input: MembershipInviteInput!, permission: CheckCommunityPermissionInput!): MembershipInvitePayload
-  membershipRemove(input: MembershipRemoveInput!, permission: CheckCommunityPermissionInput!): MembershipRemovePayload
+  membershipInvite(input: MembershipInviteInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): MembershipInvitePayload
+  membershipRemove(input: MembershipRemoveInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): MembershipRemovePayload
   membershipWithdraw(input: MembershipWithdrawInput!, permission: CheckIsSelfPermissionInput!): MembershipWithdrawPayload
   mutationEcho: String!
-  opportunityCreate(input: OpportunityCreateInput!, permission: CheckCommunityPermissionInput!): OpportunityCreatePayload
+  opportunityCreate(input: OpportunityCreateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): OpportunityCreatePayload
   opportunityDelete(id: ID!, permission: CheckOpportunityPermissionInput!): OpportunityDeletePayload
   opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!, permission: CheckOpportunityPermissionInput!): OpportunitySetPublishStatusPayload
   opportunitySlotCreate(input: OpportunitySlotCreateInput!, opportunityId: ID!, permission: CheckOpportunityPermissionInput!): OpportunitySlotCreatePayload
   opportunitySlotSetHostingStatus(id: ID!, input: OpportunitySlotSetHostingStatusInput!, permission: CheckOpportunityPermissionInput!): OpportunitySlotSetHostingStatusPayload
   opportunitySlotsBulkUpdate(input: OpportunitySlotsBulkUpdateInput!, permission: CheckOpportunityPermissionInput!): OpportunitySlotsBulkUpdatePayload
   opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!, permission: CheckOpportunityPermissionInput!): OpportunityUpdateContentPayload
-  participationBulkCreate(input: ParticipationBulkCreateInput!, permission: CheckCommunityPermissionInput!): ParticipationBulkCreatePayload
+  participationBulkCreate(input: ParticipationBulkCreateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): ParticipationBulkCreatePayload
   participationCreatePersonalRecord(input: ParticipationCreatePersonalRecordInput!): ParticipationCreatePersonalRecordPayload
   participationDeletePersonalRecord(id: ID!, permission: CheckIsSelfPermissionInput!): ParticipationDeletePayload
-  placeCreate(input: PlaceCreateInput!, permission: CheckCommunityPermissionInput!): PlaceCreatePayload
-  placeDelete(id: ID!, permission: CheckCommunityPermissionInput!): PlaceDeletePayload
-  placeUpdate(id: ID!, input: PlaceUpdateInput!, permission: CheckCommunityPermissionInput!): PlaceUpdatePayload
+  placeCreate(input: PlaceCreateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): PlaceCreatePayload
+  placeDelete(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): PlaceDeletePayload
+  placeUpdate(id: ID!, input: PlaceUpdateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): PlaceUpdatePayload
   publishReport(finalContent: String!, id: ID!): PublishReportPayload
   rejectReport(id: ID!): RejectReportPayload
   reservationAccept(id: ID!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
@@ -2112,26 +2112,26 @@ type Mutation {
   reservationJoin(id: ID!): ReservationSetStatusPayload
   reservationReject(id: ID!, input: ReservationRejectInput!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
   storePhoneAuthToken(input: StorePhoneAuthTokenInput!, permission: CheckIsSelfPermissionInput!): StorePhoneAuthTokenPayload
-  submitReportFeedback(input: SubmitReportFeedbackInput!, permission: CheckCommunityPermissionInput!): SubmitReportFeedbackPayload
+  submitReportFeedback(input: SubmitReportFeedbackInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): SubmitReportFeedbackPayload
   ticketClaim(input: TicketClaimInput!): TicketClaimPayload
-  ticketIssue(input: TicketIssueInput!, permission: CheckCommunityPermissionInput!): TicketIssuePayload
-  ticketPurchase(input: TicketPurchaseInput!, permission: CheckCommunityPermissionInput!): TicketPurchasePayload
+  ticketIssue(input: TicketIssueInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): TicketIssuePayload
+  ticketPurchase(input: TicketPurchaseInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): TicketPurchasePayload
   ticketRefund(id: ID!, input: TicketRefundInput!, permission: CheckIsSelfPermissionInput!): TicketRefundPayload
   ticketUse(id: ID!, permission: CheckIsSelfPermissionInput!): TicketUsePayload
   transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!, permission: CheckIsSelfPermissionInput!): TransactionDonateSelfPointPayload
-  transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionGrantCommunityPointPayload
-  transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput!): TransactionIssueCommunityPointPayload
-  transactionUpdateMetadata(communityPermission: CheckCommunityPermissionInput, id: ID!, input: TransactionUpdateMetadataInput!, permission: CheckIsSelfPermissionInput): TransactionUpdateMetadataPayload
-  updatePortalConfig(input: CommunityPortalConfigInput!, permission: CheckCommunityPermissionInput!): CommunityPortalConfig!
+  transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): TransactionGrantCommunityPointPayload
+  transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): TransactionIssueCommunityPointPayload
+  transactionUpdateMetadata(communityPermission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."), id: ID!, input: TransactionUpdateMetadataInput!, permission: CheckIsSelfPermissionInput): TransactionUpdateMetadataPayload
+  updatePortalConfig(input: CommunityPortalConfigInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): CommunityPortalConfig!
   updateReportTemplate(communityId: ID, input: UpdateReportTemplateInput!, variant: ReportVariant!): UpdateReportTemplatePayload
-  updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput!): CommunitySignupBonusConfig!
+  updateSignupBonusConfig(input: UpdateSignupBonusConfigInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): CommunitySignupBonusConfig!
   userDeleteMe(permission: CheckIsSelfPermissionInput!): UserDeletePayload
   userSignUp(input: UserSignUpInput!): CurrentUserPayload
   userUpdateMyProfile(input: UserUpdateProfileInput!, permission: CheckIsSelfPermissionInput!): UserUpdateProfilePayload
-  utilityCreate(input: UtilityCreateInput!, permission: CheckCommunityPermissionInput!): UtilityCreatePayload
-  utilityDelete(id: ID!, permission: CheckCommunityPermissionInput!): UtilityDeletePayload
-  utilitySetPublishStatus(id: ID!, input: UtilitySetPublishStatusInput!, permission: CheckCommunityPermissionInput!): UtilitySetPublishStatusPayload
-  utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!, permission: CheckCommunityPermissionInput!): UtilityUpdateInfoPayload
+  utilityCreate(input: UtilityCreateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): UtilityCreatePayload
+  utilityDelete(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): UtilityDeletePayload
+  utilitySetPublishStatus(id: ID!, input: UtilitySetPublishStatusInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): UtilitySetPublishStatusPayload
+  utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): UtilityUpdateInfoPayload
 
   """
   ユーザー: 投票実行。
@@ -2147,14 +2147,14 @@ type Mutation {
   一致していなければならない（バックエンドで検証、違反時は `VALIDATION_ERROR`）。
   詳細は VoteGate 型の説明を参照。
   """
-  voteTopicCreate(input: VoteTopicCreateInput!, permission: CheckCommunityPermissionInput!): VoteTopicCreatePayload!
+  voteTopicCreate(input: VoteTopicCreateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): VoteTopicCreatePayload!
 
   """
   管理者: 投票テーマ削除。UPCOMING フェーズ（投票開始前）のみ許可。
   OPEN / CLOSED フェーズでは `VOTE_TOPIC_NOT_EDITABLE` エラーが返る。
   gate / powerPolicy / options は onDelete: Cascade で自動削除される（UPCOMING 限定なので ballots は存在しない）。
   """
-  voteTopicDelete(id: ID!, permission: CheckCommunityPermissionInput!): VoteTopicDeletePayload!
+  voteTopicDelete(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): VoteTopicDeletePayload!
 
   """
   管理者: 投票テーマを更新する。UPCOMING フェーズ（投票開始前）のみ許可。
@@ -2162,7 +2162,7 @@ type Mutation {
   options は全量置換される（UPCOMING なので投票0件が保証されており安全）。
   gate / powerPolicy も同時に再設定可能。
   """
-  voteTopicUpdate(id: ID!, input: VoteTopicUpdateInput!, permission: CheckCommunityPermissionInput!): VoteTopicUpdatePayload!
+  voteTopicUpdate(id: ID!, input: VoteTopicUpdateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): VoteTopicUpdatePayload!
 }
 
 """ログインユーザーの投票資格と現状。再投票可能性の判定にも利用する。"""
@@ -2852,7 +2852,7 @@ type Query {
   exceeds ~20 communities).
   """
   analyticsDashboard(input: AnalyticsDashboardInput): AnalyticsDashboardPayload!
-  article(id: ID!, permission: CheckCommunityPermissionInput!): Article
+  article(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): Article
   articles(cursor: String, filter: ArticleFilterInput, first: Int, sort: ArticleSortInput): ArticlesConnection!
   cities(cursor: String, filter: CitiesInput, first: Int, sort: CitiesSortInput): CitiesConnection!
   communities(cursor: String, filter: CommunityFilterInput, first: Int, sort: CommunitySortInput): CommunitiesConnection!
@@ -2881,7 +2881,7 @@ type Query {
   nftToken(id: ID!): NftToken
   nftTokens(cursor: String, filter: NftTokenFilterInput, first: Int, sort: NftTokenSortInput): NftTokensConnection!
   opportunities(cursor: String, filter: OpportunityFilterInput, first: Int, sort: OpportunitySortInput): OpportunitiesConnection!
-  opportunity(id: ID!, permission: CheckCommunityPermissionInput!): Opportunity
+  opportunity(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): Opportunity
   opportunitySlot(id: ID!): OpportunitySlot
   opportunitySlots(cursor: String, filter: OpportunitySlotFilterInput, first: Int, sort: OpportunitySlotSortInput): OpportunitySlotsConnection!
   participation(id: ID!): Participation
@@ -2899,7 +2899,7 @@ type Query {
   reportTemplateStats(variant: ReportVariant!, version: Int): ReportTemplateStats!
   reportTemplateStatsBreakdown(cursor: String, first: Int = 20, includeInactive: Boolean = false, kind: ReportTemplateKind = GENERATION, variant: ReportVariant!, version: Int): ReportTemplateStatsBreakdownConnection!
   reportTemplates(communityId: ID, includeInactive: Boolean = false, kind: ReportTemplateKind = GENERATION, variant: ReportVariant!): [ReportTemplate!]!
-  reports(communityId: ID!, cursor: String, first: Int, permission: CheckCommunityPermissionInput!, status: ReportStatus, variant: ReportVariant): ReportsConnection!
+  reports(communityId: ID!, cursor: String, first: Int, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."), status: ReportStatus, variant: ReportVariant): ReportsConnection!
   reportsAll(communityId: ID, cursor: String, first: Int, publishedAfter: Datetime, publishedBefore: Datetime, status: ReportStatus, variant: ReportVariant): ReportsConnection!
   reservation(id: ID!): Reservation
   reservationHistories(cursor: String, filter: ReservationHistoryFilterInput, first: Int, sort: ReservationHistorySortInput): ReservationHistoriesConnection!
@@ -2920,7 +2920,7 @@ type Query {
   user(id: ID!): User
   users(cursor: String, filter: UserFilterInput, first: Int, sort: UserSortInput): UsersConnection!
   utilities(cursor: String, filter: UtilityFilterInput, first: Int, sort: UtilitySortInput): UtilitiesConnection!
-  utility(id: ID!, permission: CheckCommunityPermissionInput!): Utility
+  utility(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): Utility
   vcIssuanceRequest(id: ID!): VcIssuanceRequest
   vcIssuanceRequests(cursor: String, filter: VcIssuanceRequestFilterInput, first: Int, sort: VcIssuanceRequestSortInput): VcIssuanceRequestsConnection!
 

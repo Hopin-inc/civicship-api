@@ -2,132 +2,136 @@
 # Membership Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    # invite
-    membershipInvite(
-        input: MembershipInviteInput!
-        permission:CheckCommunityPermissionInput!
-    ): MembershipInvitePayload
-    @authz(rules: [IsCommunityOwner])
+  # invite
+  membershipInvite(
+    input: MembershipInviteInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): MembershipInvitePayload @authz(rules: [IsCommunityOwner])
 
-    membershipCancelInvitation(
-        input: MembershipSetInvitationStatusInput!
-        permission:CheckCommunityPermissionInput!
-    ): MembershipSetInvitationStatusPayload
-    @authz(rules: [IsCommunityOwner])
+  membershipCancelInvitation(
+    input: MembershipSetInvitationStatusInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): MembershipSetInvitationStatusPayload @authz(rules: [IsCommunityOwner])
 
-    membershipAcceptMyInvitation(
-        input: MembershipSetInvitationStatusInput!
-        permission: CheckIsSelfPermissionInput!
-    ): MembershipSetInvitationStatusPayload
-    @authz(rules: [IsSelf])
+  membershipAcceptMyInvitation(
+    input: MembershipSetInvitationStatusInput!
+    permission: CheckIsSelfPermissionInput!
+  ): MembershipSetInvitationStatusPayload @authz(rules: [IsSelf])
 
-    membershipDenyMyInvitation(
-        input: MembershipSetInvitationStatusInput!
-        permission: CheckIsSelfPermissionInput!
-    ): MembershipSetInvitationStatusPayload
-    @authz(rules: [IsSelf])
+  membershipDenyMyInvitation(
+    input: MembershipSetInvitationStatusInput!
+    permission: CheckIsSelfPermissionInput!
+  ): MembershipSetInvitationStatusPayload @authz(rules: [IsSelf])
 
-    # join
-    membershipWithdraw(
-        input: MembershipWithdrawInput!
-        permission: CheckIsSelfPermissionInput!
-    ): MembershipWithdrawPayload
-    @authz(rules: [IsSelf])
+  # join
+  membershipWithdraw(
+    input: MembershipWithdrawInput!
+    permission: CheckIsSelfPermissionInput!
+  ): MembershipWithdrawPayload @authz(rules: [IsSelf])
 
-    # role
-    membershipAssignOwner(
-        input: MembershipSetRoleInput!
-        permission:CheckCommunityPermissionInput!
-    ): MembershipSetRolePayload
-    @authz(rules: [IsCommunityOwner])
+  # role
+  membershipAssignOwner(
+    input: MembershipSetRoleInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): MembershipSetRolePayload @authz(rules: [IsCommunityOwner])
 
-    membershipAssignManager(
-        input: MembershipSetRoleInput!
-        permission:CheckCommunityPermissionInput!
-    ): MembershipSetRolePayload
-    @authz(rules: [IsCommunityOwner])
+  membershipAssignManager(
+    input: MembershipSetRoleInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): MembershipSetRolePayload @authz(rules: [IsCommunityOwner])
 
-    membershipAssignMember(
-        input: MembershipSetRoleInput!
-        permission:CheckCommunityPermissionInput!
-    ): MembershipSetRolePayload
-    @authz(rules: [IsCommunityManager])
+  membershipAssignMember(
+    input: MembershipSetRoleInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): MembershipSetRolePayload @authz(rules: [IsCommunityManager])
 
-    membershipRemove(
-        input: MembershipRemoveInput!
-        permission:CheckCommunityPermissionInput!
-    ): MembershipRemovePayload
-    @authz(rules: [IsCommunityOwner])
+  membershipRemove(
+    input: MembershipRemoveInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): MembershipRemovePayload @authz(rules: [IsCommunityOwner])
 }
 
 # ------------------------------
 # Membership Mutation Input Definitions
 # ------------------------------
 input MembershipInviteInput {
-    userId: ID!
-    communityId: ID!
-    role: Role
+  userId: ID!
+  communityId: ID!
+  role: Role
 }
 
 input MembershipSetInvitationStatusInput {
-    userId: ID!
-    communityId: ID!
+  userId: ID!
+  communityId: ID!
 }
 
 input MembershipWithdrawInput {
-    userId: ID!
-    communityId: ID!
+  userId: ID!
+  communityId: ID!
 }
 
 input MembershipSetRoleInput {
-    userId: ID!
-    communityId: ID!
+  userId: ID!
+  communityId: ID!
 }
 
 input MembershipRemoveInput {
-    userId: ID!
-    communityId: ID!
+  userId: ID!
+  communityId: ID!
 }
 
 # ------------------------------
 # Membership Mutation Success Type Definitions
 # ------------------------------
 type MembershipInviteSuccess {
-    membership: Membership!
+  membership: Membership!
 }
 
 type MembershipSetRoleSuccess {
-    membership: Membership!
+  membership: Membership!
 }
 
 type MembershipRemoveSuccess {
-    userId: ID!
-    communityId: ID!
+  userId: ID!
+  communityId: ID!
 }
 
 type MembershipWithdrawSuccess {
-    userId: ID!
-    communityId: ID!
+  userId: ID!
+  communityId: ID!
 }
 
 type MembershipSetInvitationStatusSuccess {
-    membership: Membership!
+  membership: Membership!
 }
 
 # ------------------------------
 # Membership Mutation Union (Payload) Definitions
 # ------------------------------
-union MembershipInvitePayload =
-    MembershipInviteSuccess
+union MembershipInvitePayload = MembershipInviteSuccess
 
-union MembershipSetRolePayload =
-    MembershipSetRoleSuccess
+union MembershipSetRolePayload = MembershipSetRoleSuccess
 
-union MembershipRemovePayload =
-    MembershipRemoveSuccess
+union MembershipRemovePayload = MembershipRemoveSuccess
 
-union MembershipWithdrawPayload =
-    MembershipWithdrawSuccess
+union MembershipWithdrawPayload = MembershipWithdrawSuccess
 
-union MembershipSetInvitationStatusPayload =
-    MembershipSetInvitationStatusSuccess
+union MembershipSetInvitationStatusPayload = MembershipSetInvitationStatusSuccess

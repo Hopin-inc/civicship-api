@@ -12,7 +12,12 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { AuthorizationError, ValidationError } from "@/errors/graphql";
-import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
+import {
+  clampFirst,
+  getCommunityIdFromCtx,
+  getCurrentUserId,
+  getMembershipRolesByCtx,
+} from "@/application/domain/utils";
 import VoteService from "./service";
 import VotePresenter, {
   GqlVoteTopicWithMeta,
@@ -105,13 +110,14 @@ export default class VoteUseCase {
 
   async managerCreateVoteTopic(
     ctx: IContext,
-    { input, permission }: GqlMutationVoteTopicCreateArgs,
+    { input }: GqlMutationVoteTopicCreateArgs,
   ): Promise<GqlVoteTopicCreatePayloadWithMeta> {
     const currentUserId = getCurrentUserId(ctx);
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
 
-    // permission で指定されたコミュニティと input のコミュニティが一致することを確認
-    if (permission.communityId !== input.communityId) {
-      throw new ValidationError("communityId in input does not match permission.communityId", []);
+    // ctx と input のコミュニティが一致することを確認（クライアントの取り違え防止）
+    if (ctxCommunityId !== input.communityId) {
+      throw new ValidationError("communityId in input does not match x-community-id header", []);
     }
 
     this.service.validateTopicInput(input);
@@ -128,14 +134,15 @@ export default class VoteUseCase {
 
   async managerUpdateVoteTopic(
     ctx: IContext,
-    { id, input, permission }: GqlMutationVoteTopicUpdateArgs,
+    { id, input }: GqlMutationVoteTopicUpdateArgs,
   ): Promise<GqlVoteTopicUpdatePayloadWithMeta> {
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
     this.service.validateTopicInput(input);
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       // 既存 topic を取得し、コミュニティ所属・UPCOMING フェーズを検証
       const existing = await this.service.getTopicWithRelations(ctx, id, tx);
-      if (existing.communityId !== permission.communityId) {
+      if (existing.communityId !== ctxCommunityId) {
         throw new AuthorizationError("TOPIC_NOT_IN_COMMUNITY");
       }
       this.service.validateTopicIsUpcoming(existing);
@@ -242,12 +249,13 @@ export default class VoteUseCase {
 
   async managerDeleteVoteTopic(
     ctx: IContext,
-    { id, permission }: GqlMutationVoteTopicDeleteArgs,
+    { id }: GqlMutationVoteTopicDeleteArgs,
   ): Promise<GqlVoteTopicDeleteSuccess> {
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       // 削除前にコミュニティ所有チェック
       const topic = await this.service.getTopicWithRelations(ctx, id, tx);
-      if (topic.communityId !== permission.communityId) {
+      if (topic.communityId !== ctxCommunityId) {
         throw new AuthorizationError("TOPIC_NOT_IN_COMMUNITY");
       }
       // UPCOMING フェーズのみ削除を許可（OPEN / CLOSED は投票結果保護のためイミュータブル）

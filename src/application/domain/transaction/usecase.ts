@@ -5,7 +5,7 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
+import { clampFirst, getCommunityIdFromCtx, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
@@ -86,13 +86,11 @@ export default class TransactionUseCase {
   }
 
   async ownerIssueCommunityPoint(
-    { input, permission }: GqlMutationTransactionIssueCommunityPointArgs,
+    { input }: GqlMutationTransactionIssueCommunityPointArgs,
     ctx: IContext,
   ): Promise<GqlTransactionIssueCommunityPointPayload> {
-    const communityWallet = await this.walletService.findCommunityWalletOrThrow(
-      ctx,
-      permission.communityId,
-    );
+    const communityId = getCommunityIdFromCtx(ctx);
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
     const uploadedImages = await this.uploadTransactionImages(input.images);
 
     const res = await ctx.issuer.onlyBelongingCommunity(
@@ -116,30 +114,22 @@ export default class TransactionUseCase {
 
   async ownerGrantCommunityPoint(
     ctx: IContext,
-    { input, permission }: GqlMutationTransactionGrantCommunityPointArgs,
+    { input }: GqlMutationTransactionGrantCommunityPointArgs,
   ): Promise<GqlTransactionGrantCommunityPointPayload> {
     const { toUserId, transferPoints, comment } = input;
     const currentUserId = getCurrentUserId(ctx);
-    const communityWallet = await this.walletService.findCommunityWalletOrThrow(
-      ctx,
-      permission.communityId,
-    );
+    const communityId = getCommunityIdFromCtx(ctx);
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
     const uploadedImages = await this.uploadTransactionImages(input.images);
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(
       ctx,
       async (tx: Prisma.TransactionClient) => {
-        await this.membershipService.joinIfNeeded(
-          ctx,
-          currentUserId,
-          permission.communityId,
-          tx,
-          toUserId,
-        );
+        await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx, toUserId);
         const { toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
           ctx,
           tx,
-          permission.communityId,
+          communityId,
           toUserId,
           transferPoints,
           TransactionReason.GRANT,

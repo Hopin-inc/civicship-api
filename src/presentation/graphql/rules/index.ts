@@ -78,14 +78,18 @@ const IsSelf = preExecRule({
 // 🔐 コミュニティのオーナーか
 const IsCommunityOwner = preExecRule({
   error: new AuthorizationError("User must be community owner"),
-})((context: IContext, args: { permission?: { communityId?: string }; communityPermission?: { communityId?: string } }) => {
+})((
+  context: IContext,
+  args: { permission?: { communityId?: string }; communityPermission?: { communityId?: string } },
+) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId ?? args.communityPermission?.communityId;
+  const communityId =
+    args.permission?.communityId ?? args.communityPermission?.communityId ?? context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityOwner authorization FAILED", {
       rule: "IsCommunityOwner",
-      reason: "no_community_id_in_args",
+      reason: "no_community_id_resolvable",
     });
     return false;
   }
@@ -110,11 +114,11 @@ const IsCommunityManager = preExecRule({
 })((context: IContext, args: { permission?: { communityId?: string } }) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId;
+  const communityId = args.permission?.communityId ?? context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityManager authorization FAILED", {
       rule: "IsCommunityManager",
-      reason: "no_community_id_in_permission",
+      reason: "no_community_id_resolvable",
     });
     return false;
   }
@@ -139,11 +143,11 @@ const IsCommunityMember = preExecRule({
 })((context: IContext, args: { permission?: { communityId?: string } }) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId;
+  const communityId = args.permission?.communityId ?? context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityMember authorization FAILED", {
       rule: "IsCommunityMember",
-      reason: "no_community_id_in_permission",
+      reason: "no_community_id_resolvable",
     });
     return false;
   }

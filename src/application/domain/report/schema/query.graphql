@@ -8,10 +8,13 @@ extend type Query {
     status: ReportStatus
     cursor: String
     first: Int
-    permission: CheckCommunityPermissionInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
   ): ReportsConnection! @authz(compositeRules: [{ or: [IsCommunityManager, IsAdmin] }])
 
-  report(id: ID!): Report @authz(rules: [IsAdmin])
+  report(id: ID!): Report @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
   reportTemplate(communityId: ID, variant: ReportVariant!): ReportTemplate @authz(rules: [IsAdmin])
 
@@ -130,8 +133,6 @@ extend type Query {
   # `publishReport` and `supersedeParentIfRegenerating` (A-3); it is
   # NOT exposed on the `Community` type to keep general community
   # reads cheap.
-  reportSummaries(
-    cursor: String
-    first: Int
-  ): AdminReportSummaryConnection! @authz(rules: [IsAdmin])
+  reportSummaries(cursor: String, first: Int): AdminReportSummaryConnection!
+    @authz(rules: [IsAdmin])
 }
