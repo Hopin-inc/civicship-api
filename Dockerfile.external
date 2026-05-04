@@ -24,13 +24,15 @@ COPY node_modules ./node_modules
 COPY dist ./dist
 
 # Snapshot Prisma generator output (`.prisma/` dirs) before prune wipes them.
-# `set -o pipefail` so a `find` failure surfaces instead of being swallowed
+# `set -o pipefail` so a real find/tar error surfaces instead of being swallowed
 # by xargs success. dash (debian's /bin/sh) doesn't support pipefail; use
-# bash for this stage. hadolint DL4006.
+# bash for this stage. hadolint DL4006. `xargs -0 -r` skips when stdin is
+# empty, so the "no .prisma dirs yet" case still exits 0 — `|| true` would
+# defeat pipefail and is intentionally NOT used (see `Dockerfile` for full
+# rationale).
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 RUN find node_modules -type d -name .prisma -print0 \
-      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar \
-    || true
+      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar
 
 ENV CI=true
 RUN pnpm prune --prod

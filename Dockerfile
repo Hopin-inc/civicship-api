@@ -57,18 +57,20 @@ COPY dist ./dist
 # Save Prisma generator output (`.prisma/` directories under any package's
 # `node_modules`) before pruning. tar preserves the original paths verbatim,
 # so the post-prune restore lands the files back at the exact location node
-# resolves `@prisma/client/sql` from. `|| true` keeps the layer succeeding on
-# fresh builds where the dirs don't exist yet (defensive — they SHOULD exist
-# in our flow but the restore step is a no-op if the snapshot is empty).
+# resolves `@prisma/client/sql` from.
+#
 # `set -o pipefail` makes the `find ... | xargs ...` pipe fail loudly if find
-# errors (otherwise the pipe would succeed silently on an unreadable
-# node_modules — masking a real issue). debian's `/bin/sh` is dash, which
-# does NOT support `pipefail`, so we switch to bash for this stage. hadolint
-# DL4006 explicitly warns against `/bin/sh` for the same reason.
+# (or tar) errors. debian's `/bin/sh` is dash and does NOT support
+# `pipefail`, so we switch this stage's shell to bash with `-eo pipefail`.
+# hadolint DL4006 explicitly warns against `/bin/sh` for the same reason.
+#
+# We deliberately do NOT add `|| true`: `xargs -0 -r` skips invocation when
+# its stdin is empty, so the legitimate "no `.prisma` dirs yet" case already
+# exits 0. Adding `|| true` would defeat the pipefail guard by swallowing
+# real find/tar errors (e.g. unreadable node_modules, full /tmp).
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 RUN find node_modules -type d -name .prisma -print0 \
-      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar \
-    || true
+      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar
 
 # `pnpm prune --prod` requires `CI=true` (or `--config.confirm-modules-purge=
 # false`) under non-TTY docker buildx, otherwise pnpm 10 bails out with
