@@ -190,26 +190,28 @@ jobs:
             .
 
       # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
-      # CRITICAL (`exit-code: '1'`) は deploy を block する; CI 側でも同 image
-      # を build 直後に scan (ci.yml:build) するため、PR 段階で既に同じ判定が
-      # 走っており、このゲートは「PR をすり抜けた何か」への最終防衛線。
-      # 既知だが当面 fix できない CVE は `.trivyignore` に期限 + 担当付きで
-      # 登録 — docs/handbook/SECURITY.md の運用手順を参照。
-      # HIGH は引き続き advisory (`exit-code: '0'`) で sarif を Security タブへ。
+      # CRITICAL も HIGH も **advisory** (`exit-code: '0'`) で運用:
+      # Trivy DB は日次更新、明日新 CVE が追加されると上流 fix を待つしかない
+      # CRITICAL ですら自動で deploy を止めてしまい、無関係な fix も巻き込んで
+      # 全 deploy が stall する。代わりに sarif を Security タブに上げ、件数
+      # を ::warning:: として workflow run の最上部に出すことで「**人間が必ず
+      # 気付く**」が、自動ゲートはしない、という政策にする。
+      # 再 blocking 化の条件 (CVE 0 件状態が継続 + .trivyignore 整備 + 週次
+      # review 体制) は docs/handbook/SECURITY.md 参照。
       # `ignore-unfixed: true` で fix が出ていない CVE は雑音になるので除外。
       # MAIN_IMAGE_SHA (#974) が定義された環境ではそちらを優先し、未定義の
       # 場合は :latest tag (MAIN_IMAGE) を scan する。
-      - name: Scan image (Trivy CRITICAL — blocking)
+      - name: Scan image (Trivy CRITICAL — advisory)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
           severity: CRITICAL
-          exit-code: '1'
+          exit-code: '0'
           ignore-unfixed: true
           format: sarif
           output: trivy-critical.sarif
 
-      - name: Scan image (Trivy HIGH — warning)
+      - name: Scan image (Trivy HIGH — advisory)
         if: always()
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -219,6 +221,24 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-high.sarif
+
+      # Surface CVE counts as `::warning::` annotations so the deploy job's
+      # summary makes the result loud. sarif's `runs[].results[]` is the
+      # canonical CVE list (`level: error` ≈ Trivy CRITICAL with default
+      # mapping). We stay advisory: never `exit 1` here.
+      - name: Surface Trivy CVE count (advisory warning)
+        if: always()
+        run: |
+          set -euo pipefail
+          for sev in critical high; do
+            sarif="trivy-${sev}.sarif"
+            [ -s "$sarif" ] || continue
+            count=$(jq '[.runs[]?.results[]?] | length' "$sarif")
+            echo "${sev^^}: ${count}"
+            if [ "$count" -gt 0 ]; then
+              echo "::warning::Trivy ${sev^^}: ${count} CVEs in the deployed image. Review the Security tab (category: trivy-${sev}) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked."
+            fi
+          done
 
       - name: Upload Trivy CRITICAL results to Security tab
         if: always()
