@@ -61,7 +61,6 @@ USER node
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/dist ./dist
 COPY --from=builder --chown=node:node /app/package.json ./package.json
-COPY --chown=node:node tsconfig.json ./tsconfig.json
 
 EXPOSE 3000
 
@@ -72,6 +71,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-# `-r tsconfig-paths/register` is required because the compiled output keeps
-# `@/` path aliases (resolved via tsconfig paths at runtime).
-CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/index.js"]
+# `tsc-alias` (run during `pnpm build`) rewrites every `@/` import in `dist/`
+# to a relative path, so `tsconfig-paths/register` is not needed at runtime.
+# `tsconfig.json` is also dropped from the runtime stage for the same reason.
+CMD ["node", "dist/bootstrap/index.js"]
