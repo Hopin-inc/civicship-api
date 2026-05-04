@@ -9,3 +9,11 @@
 #   3. 期限切れの ignore を月次で棚卸しし、不要になったら削除する。
 #
 # 詳細は docs/handbook/SECURITY.md の "Container Image Scanning (Trivy)" を参照。
+#
+# 運用フロー (PR-time visibility):
+#   - `ci.yml` の `Scan runtime image (Trivy CRITICAL — blocking)` step が
+#     PR を開くたびに走り CRITICAL がヒットすると CI 赤 + log に CVE table。
+#     出た CVE をここに登録 (or fix) して再 push する。
+#   - `_deploy-cloud-run.yml` の Trivy 同設定 + sarif 出力で最終 gate。
+#     Trivy DB は日次更新で CI 緑→deploy 赤になり得る (新規 CVE が CI 後に
+#     追加された場合)、そのときは新 PR でここに追記して deploy を再 trigger。
