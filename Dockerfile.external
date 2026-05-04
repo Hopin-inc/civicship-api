@@ -12,7 +12,7 @@
 # Mirrors `Dockerfile` builder stage — see that file's header comment for the
 # full rationale on the snapshot/restore around `pnpm prune --prod`.
 # ---------------------------------------------------------------------------
-FROM node:20-slim AS builder
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS builder
 
 WORKDIR /app
 
@@ -24,9 +24,15 @@ COPY node_modules ./node_modules
 COPY dist ./dist
 
 # Snapshot Prisma generator output (`.prisma/` dirs) before prune wipes them.
+# `set -o pipefail` so a real find/tar error surfaces instead of being swallowed
+# by xargs success. dash (debian's /bin/sh) doesn't support pipefail; use
+# bash for this stage. hadolint DL4006. `xargs -0 -r` skips when stdin is
+# empty, so the "no .prisma dirs yet" case still exits 0 — `|| true` would
+# defeat pipefail and is intentionally NOT used (see `Dockerfile` for full
+# rationale).
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 RUN find node_modules -type d -name .prisma -print0 \
-      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar \
-    || true
+      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar
 
 ENV CI=true
 RUN pnpm prune --prod
@@ -40,7 +46,7 @@ RUN if [ -s /tmp/prisma-snapshot.tar ]; then \
 # ---------------------------------------------------------------------------
 # Runtime stage: minimal, non-root, HEALTHCHECK enabled.
 # ---------------------------------------------------------------------------
-FROM node:20-slim AS runtime
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS runtime
 
 WORKDIR /app
 
@@ -48,6 +54,8 @@ WORKDIR /app
 # ca-certificates (required for Prisma engine detection on node:20-slim).
 # `USER root` は apt-get install のための局所昇格、直後に `USER node` に戻す。
 USER root
+# See `Dockerfile` for why we don't pin openssl / ca-certificates versions.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssl ca-certificates \
     && apt-get clean \

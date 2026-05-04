@@ -47,17 +47,16 @@ jobs:
         # shellcheck / pyflakes are bundled in the image.
 
       - name: Lint Dockerfiles (hadolint v2.12.0-alpine)
-        # Pin to tag for now; follow-up will swap to immutable @sha256 digest
-        # (mirrors actionlint pattern above) once the digest is captured from
-        # `docker pull hadolint/hadolint:v2.12.0-alpine`.
-        # `continue-on-error: true` keeps this advisory while the existing
-        # Dockerfile / Dockerfile.external are brought into compliance in a
-        # follow-up PR — see PR description for the violation breakdown.
-        continue-on-error: true
+        # Pinned by digest now that the Dockerfiles are clean — no more
+        # `continue-on-error`. New violations will block the PR. Two repo-wide
+        # decisions are documented inline in each Dockerfile (DL3008 ignore
+        # for openssl/ca-certificates, switching SHELL to bash for pipefail
+        # support); future inline ignores should follow the same pattern with
+        # a justification comment immediately above the offending RUN.
         run: |
           docker run --rm -i \
             -v "${{ github.workspace }}:/repo:ro" \
-            hadolint/hadolint:v2.12.0-alpine \
+            hadolint/hadolint@sha256:3c206a451cec6d486367e758645269fd7d696c5ccb6ff59d8b03b0e45268a199 \
             hadolint --config /repo/.hadolint.yaml \
               /repo/Dockerfile /repo/Dockerfile.external
 
@@ -255,6 +254,21 @@ jobs:
         run: |
           docker run --rm civicship-api:ci-validate \
             node -e "const { PrismaClient } = require('@prisma/client'); new PrismaClient(); console.log('prisma engine loaded');"
+
+      # Shift the deploy-time Trivy gate left: scan the just-built image at PR
+      # time so CRITICAL CVEs are caught before merge instead of at deploy.
+      # `exit-code: '1'` for CRITICAL is the same blocking policy applied in
+      # the deploy workflow (`_deploy-cloud-run.yml`); HIGH is advisory.
+      # `.trivyignore` (repo root) is the escape hatch — see
+      # docs/handbook/SECURITY.md for the registration rules.
+      - name: Scan runtime image (Trivy CRITICAL — blocking)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api:ci-validate
+          severity: CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: table
 
   test:
     runs-on: ubuntu-latest
