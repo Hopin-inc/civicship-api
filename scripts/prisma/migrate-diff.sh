@@ -21,7 +21,10 @@
 # The two modes are mutually exclusive. If the first argument is `--ci` or no
 # argument is supplied, CI mode runs; otherwise developer mode runs.
 
-set -uo pipefail
+# `set -e` を加える: pipeline 直外の単独コマンドが失敗した時点で即停止し、
+# 後続を中途半端に走らせない。grep の "no match" は exit 1 を返すが、明示的に
+# `|| true` を付けている呼び出し箇所があるので bare grep が止める動作にしない。
+set -euo pipefail
 
 MODE="${1:-}"
 
@@ -136,13 +139,16 @@ run_ci_mode() {
       if [ -n "$matches" ]; then
         while IFS= read -r match_line; do
           [ -z "$match_line" ] && continue
-          local lineno
-          lineno=$(echo "$match_line" | cut -d: -f1)
-          local content
-          content=$(echo "$match_line" | cut -d: -f2-)
+          # bash parameter expansion で `lineno:content` を 0 fork で分解
+          # (旧 `echo | cut` 形式は match 1 件あたり 3 fork)。`echo` 系は内容
+          # 先頭が `-e/-n/-E` だと flag 解釈される shell があるため、annotation
+          # 出力には printf を使う。
+          local lineno="${match_line%%:*}"
+          local content="${match_line#*:}"
           # Trim leading whitespace from content for the annotation.
-          content=$(echo "$content" | sed 's/^[[:space:]]*//')
-          echo "::warning file=${file},line=${lineno}::Destructive DDL detected (${label}): ${content}"
+          content=$(printf '%s' "$content" | sed 's/^[[:space:]]*//')
+          printf '::warning file=%s,line=%s::Destructive DDL detected (%s): %s\n' \
+            "$file" "$lineno" "$label" "$content"
           file_hits=$((file_hits + 1))
         done <<< "$matches"
       fi
@@ -160,12 +166,12 @@ run_ci_mode() {
     if [ -n "$drop_index_matches" ]; then
       while IFS= read -r match_line; do
         [ -z "$match_line" ] && continue
-        local lineno
-        lineno=$(echo "$match_line" | cut -d: -f1)
-        local content
-        content=$(echo "$match_line" | cut -d: -f2-)
-        content=$(echo "$content" | sed 's/^[[:space:]]*//')
-        echo "::warning file=${file},line=${lineno}::Destructive DDL detected (DROP INDEX without CONCURRENTLY locks readers): ${content}"
+        # 上のループと同じ理由 (fork 削減 + echo の flag 解釈回避)。
+        local lineno="${match_line%%:*}"
+        local content="${match_line#*:}"
+        content=$(printf '%s' "$content" | sed 's/^[[:space:]]*//')
+        printf '::warning file=%s,line=%s::Destructive DDL detected (DROP INDEX without CONCURRENTLY locks readers): %s\n' \
+          "$file" "$lineno" "$content"
         file_hits=$((file_hits + 1))
       done <<< "$drop_index_matches"
     fi
