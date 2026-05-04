@@ -16,6 +16,7 @@ import {
   IncentiveDisabledError,
   ConcurrentRetryError,
 } from "@/errors/graphql";
+import { getErrorCode, toError } from "@/utils/error";
 
 export type SignupBonusGrantResult = {
   granted: boolean;
@@ -117,9 +118,9 @@ export default class IncentiveGrantService {
       try {
         await this.repository.create(ctx, createData, tx);
         grantRecordCreated = true;
-      } catch (error: any) {
+      } catch (error) {
         // P2002 = unique constraint violation = already granted
-        if (error?.code === "P2002") {
+        if (getErrorCode(error) === "P2002") {
           logger.info("Signup bonus already granted (idempotent)", logContext);
           return { granted: false, transaction: null };
         }
@@ -177,12 +178,14 @@ export default class IncentiveGrantService {
           comment: transaction.comment,
         },
       };
-    } catch (error: any) {
+    } catch (error) {
+      const typedError = toError(error);
+      const errorCode = getErrorCode(error);
       // Best-effort: Log error and mark as failed, but don't throw
       logger.warn("Signup bonus grant failed (best-effort)", {
         ...logContext,
-        error: error.message,
-        stack: error.stack,
+        error: typedError.message,
+        stack: typedError.stack,
       });
 
       // Only mark as failed if the PENDING record was created
@@ -194,7 +197,7 @@ export default class IncentiveGrantService {
             failureCode = IncentiveGrantFailureCode.INSUFFICIENT_FUNDS;
           } else if (error instanceof NotFoundError) {
             failureCode = IncentiveGrantFailureCode.WALLET_NOT_FOUND;
-          } else if (error?.code?.startsWith("P")) {
+          } else if (errorCode?.startsWith("P")) {
             failureCode = IncentiveGrantFailureCode.DATABASE_ERROR;
           } else {
             failureCode = IncentiveGrantFailureCode.UNKNOWN;
@@ -208,14 +211,14 @@ export default class IncentiveGrantService {
             IncentiveGrantType.SIGNUP,
             sourceId,
             failureCode,
-            error.message,
+            typedError.message,
             tx,
           );
-        } catch (markFailedError: any) {
+        } catch (markFailedError) {
           // If marking as failed also fails, just log it
           logger.error("Failed to mark incentive grant as failed", {
             ...logContext,
-            error: markFailedError.message,
+            error: toError(markFailedError).message,
           });
         }
       }
