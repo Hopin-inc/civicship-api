@@ -63,14 +63,17 @@ jobs:
       - name: Setup civicship environment
         uses: ./.github/actions/setup-civicship
 
-      # ESLint (no --fix) と Prettier --check で source の lint / format 違反を検出する。
-      # 現状 src/ には既存違反 (ESLint 841 errors / Prettier 265 files) が残存している
-      # ため、暫定的に failure を `::warning::` に降格し job は green を維持する。
-      # 既存違反の解消後 (separate PR) に `|| echo` を外して required check 化する。
-      - name: Lint (ESLint + Prettier check, non-blocking)
+      # ESLint は PR #1007 / #1008 / #1009 で issue #978 の backlog (841 errors → 0)
+      # を解消したので required check に格上げ。新規違反は CI で落とす。
+      # Prettier は formatting backlog (267 files) が残っているので暫定で
+      # `::warning::` 降格。一括フォーマット PR で潰したら blocking 化する。
+      - name: ESLint check
+        run: pnpm exec eslint src/
+
+      - name: Prettier check (non-blocking, formatting backlog from #978)
         run: |
-          if ! pnpm lint:check; then
-            echo "::warning::existing lint failures (ESLint / Prettier) — see step log; failures are non-blocking until backlog is fixed (issue #978)"
+          if ! pnpm exec prettier --check src/; then
+            echo '::warning::existing Prettier failures (267 files) — non-blocking until a one-shot prettier --write PR lands'
           fi
 
   build:
