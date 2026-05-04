@@ -17,8 +17,9 @@ inputs:
   database-url:
     description: >
       PostgreSQL 接続文字列。指定されていれば `pnpm db:generate` を実行する
-      (Prisma TypedSQL は live DB を必要とする)。空文字なら install で停止
-      (lint job 等の DB 不要ケース向け)。
+      (Prisma TypedSQL は live DB を必要とする)。空文字なら **Prisma 関連の
+      DB 操作 (db:deploy / db:generate) をスキップ** する (lint job 等の DB
+      不要ケース向け)。`generate-graphql` は本入力の値に依らず独立して動く。
     required: false
     default: ''
   apply-migrations:
@@ -34,6 +35,14 @@ inputs:
       `'true'` なら `pnpm gql:generate` を実行 (DB 不要)。
     required: false
     default: 'false'
+  node-version:
+    description: >
+      `actions/setup-node` に渡す Node.js バージョン。Node 升級時の
+      段階移行 / 上書き調整用に input 化している。caller を全部一斉に
+      触らずに一部 job だけ rehearsal できる。default は本リポジトリの
+      標準 (`20`)。
+    required: false
+    default: '20'
 
 runs:
   using: composite
@@ -44,7 +53,7 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
       with:
-        node-version: '20'
+        node-version: ${{ inputs.node-version }}
         cache: 'pnpm'
 
     - name: Install dependencies (lockfile integrity check)
