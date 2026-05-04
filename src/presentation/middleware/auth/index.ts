@@ -1,4 +1,4 @@
-import http from "http";
+import { Request } from "express";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
@@ -9,17 +9,23 @@ import logger from "@/infrastructure/logging";
 import { trace, context } from "@opentelemetry/api";
 import { runRequestSecurityChecks } from "@/presentation/middleware/auth/security";
 
-async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
+function isGraphQLBody(
+  body: unknown,
+): body is { operationName?: string; query?: string } {
+  return typeof body === "object" && body !== null;
+}
+
+async function createContext({ req }: { req: Request }): Promise<IContext> {
   const currentSpan = trace.getSpan(context.active());
   const traceId = currentSpan?.spanContext().traceId;
 
-  if (currentSpan) {
-    const body = (req as any).body;
-    if (body?.operationName) {
-      currentSpan.setAttribute("app.graphql.operation.name", body.operationName);
+  if (currentSpan && isGraphQLBody(req.body)) {
+    const { operationName, query } = req.body;
+    if (operationName) {
+      currentSpan.setAttribute("app.graphql.operation.name", operationName);
     }
-    if (body?.query) {
-      const operationType = body.query.trim().split(/\s+/)[0].toLowerCase();
+    if (query) {
+      const operationType = query.trim().split(/\s+/)[0].toLowerCase();
       if (["query", "mutation", "subscription"].includes(operationType)) {
         currentSpan.setAttribute("app.graphql.operation.type", operationType);
       }
@@ -28,7 +34,7 @@ async function createContext({ req }: { req: http.IncomingMessage }): Promise<IC
 
   logger.debug("🔍 [TRACE] GraphQL context creation (Express entry)", {
     traceId,
-    path: (req as any).url,
+    path: req.url,
   });
 
   const headers = extractAuthHeaders(req);
