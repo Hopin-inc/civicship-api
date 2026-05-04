@@ -466,8 +466,9 @@ jobs:
         # image — Cloud Run Jobs pin the image digest at deploy time, so we
         # need an explicit `run jobs update` to create a new revision.
         # `dist/bootstrap/batch.js` 経由で起動することで OpenTelemetry tracing 初期化
-        # (`tracingReady` await) を batch ジョブでも有効にする。`@/` パスエイリアスが
-        # bootstrap 層で使われるため `-r tsconfig-paths/register` も必須。
+        # (`tracingReady` await) を batch ジョブでも有効にする。`tsc-alias` が build
+        # 時に `@/` を相対 path に rewrite するため、runtime の
+        # `tsconfig-paths/register` は不要 (Dockerfile の CMD と整合)。
         # PROCESS_TYPE=batch は Cloud Run Job 側の env で別途設定されている前提
         # (bootstrap/batch.ts は ../index に dispatch するだけで、batch 分岐自体は
         # src/index.ts:main() が PROCESS_TYPE で判定する)。
@@ -476,7 +477,7 @@ jobs:
             --region="${{ env.GCP_REGION }}" \
             --image="${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}" \
             --command=node \
-            --args=-r,tsconfig-paths/register,dist/bootstrap/batch.js
+            --args=dist/bootstrap/batch.js
 
       - name: Create Git tag
         if: ${{ inputs.create-git-tag }}

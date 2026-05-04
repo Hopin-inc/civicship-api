@@ -59,10 +59,11 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
-# Documentation (not needed at runtime)
-README.md
+# Documentation (not needed at runtime). `*.md` covers README.md /
+# PR_DESCRIPTION.md / handbook prose; `LICENSE` is kept explicit because
+# legally we may want to ship it in some image variants — leave the entry
+# even though it is currently excluded.
 LICENSE
-PR_DESCRIPTION.md
 docs
 *.md
 
