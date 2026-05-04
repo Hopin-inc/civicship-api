@@ -98,14 +98,18 @@ jobs:
     steps:
       # `audit` mode: log egress (GCP / npm registry / GitHub) without blocking.
       # `block` mode would require maintaining an allowlist for every gcloud
-      # endpoint and is fragile across SDK updates. `disable-sudo` is left
-      # enabled (default) because the "Create Git tag" step installs tzdata
-      # via apt-get on prd. Audit logs surface in the job summary and let us
-      # detect unexpected egress (e.g. credential exfiltration) post-hoc.
+      # endpoint and is fragile across SDK updates. Audit logs surface in the
+      # job summary and let us detect unexpected egress (e.g. credential
+      # exfiltration) post-hoc.
+      # `disable-sudo: true`: tzdata install を `TZ=Asia/Tokyo` env に置き
+      # 換えた (#986) ことで sudo 不要になったため、deploy job 全体で root
+      # 昇格を禁止する。これで「step が想定外に root を取得する」攻撃面
+      # を一段塞げる。
       - name: Harden runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
         with:
           egress-policy: audit
+          disable-sudo: true
 
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -149,14 +153,6 @@ jobs:
 
       - name: Generate GraphQL types
         run: pnpm gql:generate
-
-      - name: Install and Publish via Rover CLI
-        env:
-          APOLLO_KEY: ${{ env.APOLLO_KEY }}
-        run: |
-          curl -sSL https://rover.apollo.dev/nix/latest | sh
-          export PATH="$HOME/.rover/bin:$PATH"
-          rover graph publish "civicship-api-jq1988@${{ inputs.apollo-variant }}" --schema ./docs/schema.graphql
 
       - name: Build TypeScript output (consumed by Docker COPY)
         run: pnpm build
@@ -498,18 +494,37 @@ jobs:
             --command=node \
             --args=dist/bootstrap/batch.js
 
-      - name: Create Git tag
-        if: ${{ inputs.create-git-tag }}
+      # Apollo Studio に schema を publish するのは **main API deploy + smoke OK
+      # + batch (Cloud Run Job) 更新 が全部通った後** にする (#986)。
+      # 先に publish してしまうと、build / deploy が失敗したときに新 schema だけ
+      # が Studio に登録され、サーバ側は旧コードのまま — クライアントが advertised
+      # なフィールドを叩いて壊れる、という inconsistency を招く。
+      # また、batch update より前に置くと Rover/Apollo 側の一時障害で publish が
+      # 落ちた瞬間に main API は新 revision・batch は旧 image という非対称デプロイ
+      # で止まるため、batch update の **後ろ** に置く必要がある。
+      # デフォルトの `if: success()` 仕様で、immediate path / canary promote 100%
+      # のいずれも通った場合だけ走る。canary が rollback された場合は
+      # `Rollback to previous revision` step が走った時点で job result が failure
+      # 化するので、本 step は skip される (= 旧 schema のまま維持)。
+      - name: Publish GraphQL schema to Apollo Studio
+        env:
+          APOLLO_KEY: ${{ env.APOLLO_KEY }}
         run: |
-          sudo apt-get update && sudo apt-get install -y tzdata
-          sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
-          sudo dpkg-reconfigure -f noninteractive tzdata
+          curl -sSL https://rover.apollo.dev/nix/latest | sh
+          export PATH="$HOME/.rover/bin:$PATH"
+          rover graph publish "civicship-api-jq1988@${{ inputs.apollo-variant }}" --schema ./docs/schema.graphql
 
+      - name: Create Git tag
+        # TZ env でプロセス単位に JST を効かせる。tzdata の system-wide install
+        # は不要 (#986) — apt 経由のネット I/O / sudo が消えるので、harden-runner
+        # で `disable-sudo: true` を有効化できる。
+        if: ${{ inputs.create-git-tag }}
+        env:
+          TZ: Asia/Tokyo
+        run: |
           TAG_NAME=$(date +"%Y%m%d%H%M%S")
-
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
           git tag "$TAG_NAME"
           git push origin "$TAG_NAME"
 
