@@ -2,51 +2,78 @@
 #
 # Multi-stage build for the internal/main GraphQL API + batch job image.
 #
-# NOTE on build flow (see .dockerignore for full context):
-#   The CI runner (.github/workflows/_deploy-cloud-run.yml) pre-builds
-#   `node_modules/` (incl. Prisma TypedSQL artifacts that need a live DB
-#   tunnel) and `dist/` BEFORE invoking `docker buildx build`. The builder
-#   stage below therefore copies those pre-built artifacts from the build
-#   context and only prunes node_modules to production deps. This keeps
-#   the existing CI flow working while still giving us a small, non-root
-#   runtime stage with a HEALTHCHECK and (optional) image-digest pin.
+# Build flow (see .dockerignore for full context):
+#   The CI runner pre-builds `node_modules/` (incl. Prisma TypedSQL
+#   generator output written by `prisma generate --sql`, which needs a
+#   live DB tunnel) and `dist/`, then invokes `docker buildx build` with
+#   those artifacts in the build context. The builder stage trims the
+#   tree down to production deps; the runtime stage receives only the
+#   slimmed `node_modules` + `dist`.
 #
-# NOTE on digest pinning:
-#   The base image tag (`node:20-slim`) is intentionally not pinned to a
-#   sha256 digest in this initial change — `docker pull` is unavailable in
-#   the dev sandbox where this PR was authored. Digest pinning is tracked
-#   as a follow-up (apply `node:20-slim@sha256:<digest>` once a known-good
-#   digest is captured from CI / `docker buildx imagetools inspect`).
+# Why we save/restore `.prisma/` around `pnpm prune`:
+#   `prisma generate --sql` writes the schema-bound TypedSQL types to
+#   `node_modules/.pnpm/@prisma+client@<...>/node_modules/.prisma/client/`
+#   (and `.prisma/client/sql/` for TypedSQL). pnpm does NOT track these
+#   generator-output files; `pnpm prune --prod` rewrites the .pnpm store
+#   and silently discards them, which causes runtime crashes for any code
+#   importing from `@prisma/client/sql` or relying on the generated typed
+#   client output. Re-running `prisma generate --sql` inside the runtime
+#   stage isn't viable here (the SQL form needs a DB tunnel that isn't
+#   available from the docker build context), so we tar-snapshot the
+#   `.prisma/` directories before prune and untar them back into the same
+#   paths after. This preserves both the slim production image AND the
+#   required generator output.
+#
+# Why we keep the multi-stage split:
+#   Production image stays slim (devDependencies pruned) and final stage
+#   runs as the non-root `node` user with a HEALTHCHECK. See
+#   docs/handbook/SECURITY.md for the broader hardening rationale.
+#
+# Digest pinning (follow-up):
+#   `node:20-slim` is currently tag-only; pin to `@sha256:<digest>` once a
+#   known-good digest has been captured from CI (`docker buildx imagetools
+#   inspect node:20-slim`).
 
 # ---------------------------------------------------------------------------
-# Builder stage: take the pre-built workspace, prune dev dependencies.
+# Builder stage: prune to production deps, preserving Prisma generator output.
 # ---------------------------------------------------------------------------
 FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# corepack provides the `pnpm` shim so `pnpm prune` works without a global
-# install. Pin the version to match `packageManager` in package.json.
+# corepack ships pnpm as a shim; pin to the version recorded in package.json.
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
-# Copy lockfile + manifests first (small, rarely-changing layer).
+# Copy lockfile + manifests first so subsequent layers cache well.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # Pre-built artifacts copied from the CI runner build context.
-# (See file header comment for why these are pre-built rather than built
-#  in-stage.)
 COPY node_modules ./node_modules
 COPY dist ./dist
 
-# Drop devDependencies from node_modules so the runtime stage only carries
-# what's needed at runtime. `--prod` keeps dependencies in the
-# `dependencies` field; devDependencies are removed.
-# pnpm 10 prompts for confirmation when removing modules unless `CI=true`
-# or `--config.confirm-modules-purge=false` is set; docker buildx has no
-# TTY so without this the build aborts with
+# Save Prisma generator output (`.prisma/` directories under any package's
+# `node_modules`) before pruning. tar preserves the original paths verbatim,
+# so the post-prune restore lands the files back at the exact location node
+# resolves `@prisma/client/sql` from. `|| true` keeps the layer succeeding on
+# fresh builds where the dirs don't exist yet (defensive — they SHOULD exist
+# in our flow but the restore step is a no-op if the snapshot is empty).
+RUN find node_modules -type d -name .prisma -print0 \
+      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar \
+    || true
+
+# `pnpm prune --prod` requires `CI=true` (or `--config.confirm-modules-purge=
+# false`) under non-TTY docker buildx, otherwise pnpm 10 bails out with
 # `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`.
 ENV CI=true
 RUN pnpm prune --prod
+
+# Restore the saved `.prisma/` directories. tar -P preserves absolute / as-is
+# paths, so the directories land back at the same `.pnpm/<pkg>/node_modules/
+# .prisma/` locations they came from.
+RUN if [ -s /tmp/prisma-snapshot.tar ]; then \
+      tar -xf /tmp/prisma-snapshot.tar \
+        && rm /tmp/prisma-snapshot.tar; \
+    fi
 
 # ---------------------------------------------------------------------------
 # Runtime stage: minimal, non-root, HEALTHCHECK enabled.
