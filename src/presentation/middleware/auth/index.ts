@@ -12,7 +12,24 @@ import { runRequestSecurityChecks } from "@/presentation/middleware/auth/securit
 function isGraphQLBody(
   body: unknown,
 ): body is { operationName?: string; query?: string } {
-  return typeof body === "object" && body !== null;
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return false;
+  }
+  if (
+    "operationName" in body &&
+    body.operationName !== undefined &&
+    typeof body.operationName !== "string"
+  ) {
+    return false;
+  }
+  if (
+    "query" in body &&
+    body.query !== undefined &&
+    typeof body.query !== "string"
+  ) {
+    return false;
+  }
+  return true;
 }
 
 async function createContext({ req }: { req: Request }): Promise<IContext> {
