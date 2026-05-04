@@ -72,6 +72,9 @@ jobs:
       # 式で動的に切り替えできないため、両 stage で write を付与する
       # (dev でも実質 read しか使わないので影響なし)。
       contents: write
+      # security-events:write は Trivy scan 結果 (sarif) を Security タブに
+      # upload するために必要 (codeql-action/upload-sarif)。
+      security-events: write
 
     env:
       STAGE: ${{ inputs.stage }}
@@ -87,6 +90,15 @@ jobs:
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
       APOLLO_KEY: ${{ secrets.APOLLO_KEY }}
+      # MAIN_IMAGE / MAIN_IMAGE_SHA を job-level env に出すことで、build/push step
+      # と Trivy scan step (build step 後の独立 step) から同じ参照で扱えるように
+      # する。`:sha-${{ github.sha }}` は Cloud Run revision を commit 単位で
+      # identifyable にし、過去 image にロールバックできるようにするため (#974)。
+      # Trivy 側は `MAIN_IMAGE_SHA || MAIN_IMAGE` の fallback で sha tag 優先。
+      MAIN_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.APPLICATION_NAME }}:latest
+      MAIN_IMAGE_SHA: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.APPLICATION_NAME }}:sha-${{ github.sha }}
+      BATCH_IMAGE: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}/${{ secrets.BATCH_NAME }}:latest
+      BATCH_IMAGE_SHA: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}/${{ secrets.BATCH_NAME }}:sha-${{ github.sha }}
 
     steps:
       # `audit` mode: log egress (GCP / npm registry / GitHub) without blocking.
@@ -150,11 +162,6 @@ jobs:
       # Cloud Run の各 revision を commit SHA 単位で identifyable にし、
       # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
       - name: Build unified image and push to main + batch registries
-        env:
-          MAIN_IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
-          MAIN_IMAGE_SHA: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:sha-${{ github.sha }}
-          BATCH_IMAGE: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
-          BATCH_IMAGE_SHA: ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:sha-${{ github.sha }}
         run: |
           docker buildx build \
             --file Dockerfile \
@@ -166,6 +173,52 @@ jobs:
             --cache-to "type=gha,mode=max,scope=cloud-run-${{ inputs.stage }}" \
             --push \
             .
+
+      # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
+      # 初回投入は **CRITICAL も warning モード** (`exit-code: 0`) で運用する:
+      # node:20-slim 等の base / transitive deps に既知 unfixed CRITICAL CVE が
+      # 残ってる可能性があり、初手から block 化すると prd merge を永久に止める
+      # リスクがある。最初の数回 scan で出た CVE を `.trivyignore` に登録し
+      # 再評価期限を付けた上で、別 PR で `exit-code: 1` (blocking) に上げる
+      # 段階的運用 — 詳細は docs/handbook/SECURITY.md 参照。
+      # 両 severity の sarif を Security タブに upload するので可視化はされる。
+      # `ignore-unfixed: true` で fix が出ていない CVE は雑音になるので除外。
+      # MAIN_IMAGE_SHA (#974) が定義された環境ではそちらを優先し、未定義の
+      # 場合は :latest tag (MAIN_IMAGE) を scan する。
+      - name: Scan image (Trivy CRITICAL — advisory, see SECURITY.md for blocking rollout)
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
+          severity: CRITICAL
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-critical.sarif
+
+      - name: Scan image (Trivy HIGH — warning)
+        if: always()
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-high.sarif
+
+      - name: Upload Trivy CRITICAL results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-critical.sarif
+          category: trivy-critical
+
+      - name: Upload Trivy HIGH results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-high.sarif
+          category: trivy-high
 
       # --- Non-canary deploy (dev / 既存挙動) ---------------------------------
       # `enable-canary: false` の場合は従来通り即 100% で切り替える。
