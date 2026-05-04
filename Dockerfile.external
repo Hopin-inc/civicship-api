@@ -44,6 +44,13 @@ FROM node:20-slim AS runtime
 
 WORKDIR /app
 
+# See `Dockerfile` runtime stage for rationale on installing openssl +
+# ca-certificates (required for Prisma engine detection on node:20-slim).
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production \
     PORT=3000
 

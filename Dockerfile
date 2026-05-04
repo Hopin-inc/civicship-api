@@ -82,6 +82,19 @@ FROM node:20-slim AS runtime
 
 WORKDIR /app
 
+# Prisma Query Engine 検出のため `openssl` + `ca-certificates` を入れる。
+# `node:20-slim` (debian 12 slim) はベースに openssl を含まないため、libssl
+# が見つからないと Prisma の runtime detection が `debian-openssl-1.1.x` に
+# fallback し、`prisma generate` が生成した `debian-openssl-3.0.x` 用バイナリ
+# とミスマッチして PrismaClientInitializationError で起動失敗する。
+# debian 12 の openssl パッケージは openssl 3.x なので、generate 済バイナリ
+# (binaryTargets = ["native","debian-openssl-3.0.x","linux-arm64-openssl-3.0.x"])
+# とそろう。`ca-certificates` は Cloud SQL / 外部 HTTPS 接続の TLS 検証用。
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production \
     PORT=3000
 
