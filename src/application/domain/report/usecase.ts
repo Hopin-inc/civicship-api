@@ -4,7 +4,9 @@ import { IContext } from "@/types/server";
 import { ValidationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 import ReportService from "@/application/domain/report/service";
-import ReportJudgeService, { JudgeParseError } from "@/application/domain/report/template/judgeService";
+import ReportJudgeService, {
+  JudgeParseError,
+} from "@/application/domain/report/template/judgeService";
 import ReportTemplateSelector from "@/application/domain/report/template/selector";
 import ReportPresenter from "@/application/domain/report/presenter";
 import { WeeklyReportPayload } from "@/application/domain/report/types";
@@ -87,8 +89,7 @@ const WEEKLY_SUMMARY_JUDGE_CRITERIA = {
       "deepest_chain が null なら true。",
     active_users:
       "community_context.active_users_in_window の値がレポートに正確に記載されているか。",
-    total_members:
-      "community_context.total_members の値がレポートに正確に記載されているか。",
+    total_members: "community_context.total_members の値がレポートに正確に記載されているか。",
     no_phantom_comparison:
       "previous_period が null のとき、前週比・先週比・増加・減少等の比較表現がレポートに含まれていないか。" +
       "previous_period が non-null なら true。",
@@ -97,13 +98,11 @@ const WEEKLY_SUMMARY_JUDGE_CRITERIA = {
     deepest_chain_mentioned:
       "deepest_chain が non-null のとき、そのエピソードがレポートに言及されているか。" +
       "deepest_chain が null なら true。",
-    actionable_insights:
-      "来週に向けた具体的なアクション（「〇〇をする」形式）が含まれているか。",
+    actionable_insights: "来週に向けた具体的なアクション（「〇〇をする」形式）が含まれているか。",
     reason_distinction:
       "活動認定と感謝の贈り合いが正確に区別されているか。" +
       "活動認定をメンバー間の感謝として誤記していたら false。",
-    no_enum_names:
-      "DONATION / GRANT / ONBOARDING 等の内部キー名がそのまま出力されていないか。",
+    no_enum_names: "DONATION / GRANT / ONBOARDING 等の内部キー名がそのまま出力されていないか。",
   },
 } as const;
 
@@ -508,21 +507,26 @@ export default class ReportUseCase {
     const coverage = analyzeCoverage(payload, outputMarkdown);
 
     // Coverage observability: surface top_user_names that the LLM
-    // failed to copy verbatim. Numeric fields (top_user_points etc.)
-    // are intentionally NOT logged here because their substring
-    // matches false-positive too easily (e.g. "21000" appearing as a
-    // fragment of "210000") to be a useful signal — the raw counters
-    // still flow into `coverageJson` for offline analysis.
-    const missedNames = coverage.top_user_names
-      .filter((u) => !u.mentioned)
-      .map((u) => u.name);
-    if (missedNames.length > 0) {
-      logger.warn("report.coverage.top_user_names_missed", {
-        event: "report.coverage.top_user_names_missed",
-        reportId: report.id,
-        variant: report.variant,
-        names: missedNames,
-      });
+    // failed to copy verbatim. Only WEEKLY_SUMMARY is required to
+    // mention top users by name — GRANT_APPLICATION / MEDIA_PR /
+    // MEMBER_NEWSLETTER deliberately omit individual names, so a
+    // "missed name" there is by-design, not a regression. Gating the
+    // warn log by variant prevents false-positive alerts from those
+    // designs. Numeric fields (top_user_points etc.) are intentionally
+    // NOT logged here because their substring matches false-positive
+    // too easily (e.g. "21000" appearing as a fragment of "210000")
+    // to be a useful signal — the raw counters still flow into
+    // `coverageJson` for offline analysis.
+    if (report.variant === GqlReportVariant.WeeklySummary) {
+      const missedNames = coverage.top_user_names.filter((u) => !u.mentioned).map((u) => u.name);
+      if (missedNames.length > 0) {
+        logger.warn("report.coverage.top_user_names_missed", {
+          event: "report.coverage.top_user_names_missed",
+          reportId: report.id,
+          variant: report.variant,
+          names: missedNames,
+        });
+      }
     }
 
     let judgeTemplate;
@@ -563,9 +567,7 @@ export default class ReportUseCase {
     // either, so this branch is unreachable in practice but keeps the
     // call contract honest for future variants.
     const judgeCriteria =
-      report.variant === GqlReportVariant.WeeklySummary
-        ? WEEKLY_SUMMARY_JUDGE_CRITERIA
-        : undefined;
+      report.variant === GqlReportVariant.WeeklySummary ? WEEKLY_SUMMARY_JUDGE_CRITERIA : undefined;
 
     let judgeResult;
     try {
@@ -988,11 +990,7 @@ export default class ReportUseCase {
       cursor: args.cursor ?? undefined,
       first,
     });
-    return ReportPresenter.adminReportSummaryConnection(
-      result.items,
-      result.totalCount,
-      first,
-    );
+    return ReportPresenter.adminReportSummaryConnection(result.items, result.totalCount, first);
   }
 
   // =========================================================================
@@ -1026,12 +1024,7 @@ function clampInt(value: number, min: number, max: number, name: string): number
  * legacy `browseReports`) keep their current behaviour to avoid
  * widening this PR's scope into a domain-wide refactor.
  */
-function validateIntInRange(
-  value: number,
-  min: number,
-  max: number,
-  name: string,
-): number {
+function validateIntInRange(value: number, min: number, max: number, name: string): number {
   if (!Number.isInteger(value) || value < min || value > max) {
     throw new ValidationError(
       `${name} must be an integer between ${min} and ${max}, got ${value}`,
