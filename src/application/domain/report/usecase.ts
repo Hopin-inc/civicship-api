@@ -9,7 +9,7 @@ import ReportJudgeService, {
 } from "@/application/domain/report/template/judgeService";
 import ReportTemplateSelector from "@/application/domain/report/template/selector";
 import ReportPresenter from "@/application/domain/report/presenter";
-import { WeeklyReportPayload } from "@/application/domain/report/types";
+import { WeeklyReportPayload, ReportVariant } from "@/application/domain/report/types";
 import {
   addDays,
   daysBetweenJst,
@@ -24,7 +24,6 @@ import {
   GqlReportsConnection,
   GqlReport,
   GqlReportTemplate,
-  GqlReportVariant,
   GqlUpdateReportTemplatePayload,
   GqlApproveReportPayload,
   GqlPublishReportPayload,
@@ -517,7 +516,7 @@ export default class ReportUseCase {
     // too easily (e.g. "21000" appearing as a fragment of "210000")
     // to be a useful signal — the raw counters still flow into
     // `coverageJson` for offline analysis.
-    if (report.variant === GqlReportVariant.WeeklySummary) {
+    if (report.variant === ReportVariant.WeeklySummary) {
       const missedNames = coverage.top_user_names.filter((u) => !u.mentioned).map((u) => u.name);
       if (missedNames.length > 0) {
         logger.warn("report.coverage.top_user_names_missed", {
@@ -567,7 +566,7 @@ export default class ReportUseCase {
     // either, so this branch is unreachable in practice but keeps the
     // call contract honest for future variants.
     const judgeCriteria =
-      report.variant === GqlReportVariant.WeeklySummary ? WEEKLY_SUMMARY_JUDGE_CRITERIA : undefined;
+      report.variant === ReportVariant.WeeklySummary ? WEEKLY_SUMMARY_JUDGE_CRITERIA : undefined;
 
     let judgeResult;
     try {
