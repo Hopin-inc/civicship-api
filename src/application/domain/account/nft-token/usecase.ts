@@ -1,6 +1,7 @@
 import { injectable, inject } from "tsyringe";
 import { GqlNftTokenFilterInput, GqlNftTokenSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { NftVendor } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import NftTokenService, {
   UpsertTokenInput,
@@ -40,9 +41,10 @@ export default class NftTokenUseCase {
     ctx: IContext,
     address: string,
     input: UpsertTokenInput,
+    vendor: NftVendor,
   ): Promise<UpsertNftTokenResult> {
     const result = await this.issuer.internal((tx) =>
-      this.service.upsertToken(ctx, address, input, tx),
+      this.service.upsertToken(ctx, address, input, vendor, tx),
     );
     return { id: result.id, address: result.address };
   }

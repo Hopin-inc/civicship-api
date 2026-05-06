@@ -2,8 +2,9 @@ import express from "express";
 import { container } from "tsyringe";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
 import { UpsertInstanceInput } from "@/application/domain/account/nft-instance/service";
-import { NotFoundError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
+import { requireApiKeyVendor } from "@/presentation/middleware/api-key-vendor";
 import {
   nftInstanceSyncRateLimit,
   nftReadRateLimit,
@@ -24,9 +25,11 @@ router.put(
   "/nft-tokens/:tokenAddress/instances/:instanceId",
   nftInstanceSyncRateLimit,
   apiKeyAuthMiddleware,
+  requireApiKeyVendor,
   async (req, res) => {
     try {
       const { tokenAddress, instanceId } = req.params;
+      const vendor = (req as any).apiKey.vendor;
 
       if (!ETH_ADDRESS_PATTERN.test(tokenAddress)) {
         return res.status(400).json({ error: "Invalid contract address format" });
@@ -79,6 +82,7 @@ router.put(
         tokenAddress,
         instanceId,
         input,
+        vendor,
       );
 
       return res.status(200).json({ success: true, ...result });
@@ -88,6 +92,9 @@ router.put(
           error: error.message,
           entity: error.entityName,
         });
+      }
+      if (error instanceof AuthorizationError) {
+        return res.status(403).json({ error: error.message });
       }
 
       logger.error("NFT instance upsert error:", error);

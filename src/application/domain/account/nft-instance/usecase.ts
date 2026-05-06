@@ -1,6 +1,8 @@
 import { injectable, inject } from "tsyringe";
 import { GqlNftInstanceFilterInput, GqlNftInstanceSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { NftVendor } from "@prisma/client";
+import { AuthorizationError } from "@/errors/graphql";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import NftInstanceService, {
   UpsertInstanceInput,
@@ -56,8 +58,16 @@ export default class NftInstanceUseCase {
     tokenAddress: string,
     instanceId: string,
     input: UpsertInstanceInput,
+    vendor: NftVendor,
   ): Promise<UpsertNftInstanceResult> {
     const nftToken = await this.service.findTokenByAddress(ctx, tokenAddress);
+
+    if (nftToken.issuedByVendor && nftToken.issuedByVendor !== vendor) {
+      throw new AuthorizationError(
+        `NftToken (address: ${tokenAddress}) is issued by another vendor`,
+      );
+    }
+
     const nftWallet = await this.service.findWalletByAddress(ctx, input.ownerWalletAddress);
 
     return this.issuer.internal((tx) =>

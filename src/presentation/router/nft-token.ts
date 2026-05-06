@@ -2,7 +2,9 @@ import express from "express";
 import { container } from "tsyringe";
 import NftTokenUseCase from "@/application/domain/account/nft-token/usecase";
 import { UpsertTokenInput } from "@/application/domain/account/nft-token/service";
+import { AuthorizationError } from "@/errors/graphql";
 import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
+import { requireApiKeyVendor } from "@/presentation/middleware/api-key-vendor";
 import { nftReadRateLimit, nftTokenSyncRateLimit } from "@/presentation/middleware/rate-limit";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
@@ -19,9 +21,11 @@ router.put(
   "/nft-tokens/:address",
   nftTokenSyncRateLimit,
   apiKeyAuthMiddleware,
+  requireApiKeyVendor,
   async (req, res) => {
     try {
       const { address } = req.params;
+      const vendor = (req as any).apiKey.vendor;
 
       if (!ETH_ADDRESS_PATTERN.test(address)) {
         return res.status(400).json({ error: "Invalid contract address format" });
@@ -70,10 +74,13 @@ router.put(
       const ctx = { issuer } as IContext;
       const usecase = container.resolve(NftTokenUseCase);
 
-      const result = await usecase.upsertByAddress(ctx, address, input);
+      const result = await usecase.upsertByAddress(ctx, address, input, vendor);
 
       return res.status(200).json({ success: true, ...result });
     } catch (error) {
+      if (error instanceof AuthorizationError) {
+        return res.status(403).json({ error: error.message });
+      }
       logger.error("NFT token upsert error:", error);
       return res.status(500).json({ error: "Internal server error" });
     }

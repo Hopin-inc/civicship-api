@@ -246,6 +246,13 @@ UNKNOWN UNKNOWN
     
 
 
+        NftVendor {
+            BORDERLESS BORDERLESS
+KIBOTCHA KIBOTCHA
+        }
+    
+
+
         NftWalletType {
             INTERNAL INTERNAL
 EXTERNAL EXTERNAL
@@ -788,6 +795,7 @@ OTHER OTHER
     String key 
     String name 
     Boolean is_active 
+    NftVendor vendor "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -811,6 +819,7 @@ OTHER OTHER
     String symbol "❓"
     Json json "❓"
     String community_id "❓"
+    NftVendor issued_by_vendor "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -1253,9 +1262,11 @@ OTHER OTHER
     "t_incentive_grants" }o--|| t_communities : "community"
     "t_incentive_grants" |o--|o "IncentiveGrantFailureCode" : "enum:failure_code"
     "t_incentive_grants" |o--|o t_transactions : "transaction"
+    "m_api_keys" |o--|o "NftVendor" : "enum:vendor"
     "t_nft_wallets" |o--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" }o--|| t_users : "user"
     "t_nft_tokens" }o--|o t_communities : "community"
+    "t_nft_tokens" |o--|o "NftVendor" : "enum:issued_by_vendor"
     "t_nft_instances" |o--|| "NftInstanceStatus" : "enum:status"
     "t_nft_instances" }o--|| t_nft_tokens : "nftToken"
     "t_nft_instances" }o--|o t_nft_wallets : "nftWallet"

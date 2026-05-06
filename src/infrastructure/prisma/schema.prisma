@@ -1348,11 +1348,17 @@ enum IncentiveGrantFailureCode {
 
 // ------------------------------ API Key Domain ------------------------------
 
+enum NftVendor {
+  BORDERLESS
+  KIBOTCHA
+}
+
 model ApiKey {
   id        String    @id @default(cuid())
   key       String    @unique
   name      String
   isActive  Boolean   @default(true) @map("is_active")
+  vendor    NftVendor?
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -1397,6 +1403,10 @@ model NftToken {
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
 
+  // このトークンを発行・管理する業者。null = 未 claim or バッチ由来 (syncNftMetadata)。
+  // 認可: PUT /api/nft-tokens は issuedByVendor が null か current vendor のときのみ許可。
+  issuedByVendor NftVendor? @map("issued_by_vendor")
+
   nftInstances      NftInstance[]
   voteGates         VoteGate[]
   votePowerPolicies VotePowerPolicy[]
@@ -1405,6 +1415,7 @@ model NftToken {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@index([communityId])
+  @@index([issuedByVendor])
   @@map("t_nft_tokens")
 }
 

@@ -1,7 +1,7 @@
-import { NotFoundError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import { GqlNftTokenFilterInput, GqlNftTokenSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { NftVendor, Prisma } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { INftTokenRepository } from "@/application/domain/account/nft-token/data/interface";
 import NftTokenConverter from "@/application/domain/account/nft-token/data/converter";
@@ -36,8 +36,16 @@ export default class NftTokenService {
     ctx: IContext,
     address: string,
     input: UpsertTokenInput,
+    vendor: NftVendor,
     tx: Prisma.TransactionClient,
   ) {
+    const existing = await this.repository.findByAddress(ctx, address, tx);
+    if (existing && existing.issuedByVendor && existing.issuedByVendor !== vendor) {
+      throw new AuthorizationError(
+        `NftToken (address: ${address}) is issued by another vendor`,
+      );
+    }
+
     return this.repository.upsert(
       ctx,
       {
@@ -46,6 +54,7 @@ export default class NftTokenService {
         symbol: input.symbol ?? null,
         type: input.type,
         json: input as unknown as Record<string, unknown>,
+        issuedByVendor: vendor,
       },
       tx,
     );

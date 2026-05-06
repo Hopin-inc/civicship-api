@@ -618,6 +618,7 @@ Table m_api_keys {
   key String [unique, not null]
   name String [not null]
   isActive Boolean [not null, default: true]
+  vendor NftVendor
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -642,6 +643,7 @@ Table t_nft_tokens {
   json Json
   communityId String
   community t_communities
+  issuedByVendor NftVendor
   nftInstances t_nft_instances [not null]
   voteGates t_vote_gates [not null]
   votePowerPolicies t_vote_power_policies [not null]
@@ -1276,6 +1278,11 @@ Enum IncentiveGrantFailureCode {
   DATABASE_ERROR
   TIMEOUT
   UNKNOWN
+}
+
+Enum NftVendor {
+  BORDERLESS
+  KIBOTCHA
 }
 
 Enum NftWalletType {
