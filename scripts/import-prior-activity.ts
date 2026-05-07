@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { createReadStream } from "node:fs";
 import { resolve as resolvePath } from "node:path";
+import { pipeline } from "node:stream/promises";
 import { MemberPriorActivitySource } from "@prisma/client";
 import csvParser from "csv-parser";
 import { prismaClient } from "@/infrastructure/prisma/client";
@@ -84,24 +85,26 @@ interface CsvRow {
  * the import actually writes (extras are ignored, which keeps the
  * import tolerant of operators adding an "owner notes" column or
  * similar in their spreadsheet).
+ *
+ * Uses `node:stream/promises` `pipeline` so an error on EITHER the
+ * file source (ENOENT / permission) or the parser surfaces as a
+ * rejected promise. Attaching `.on("error", reject)` only on the
+ * parser would silently drop source-side failures.
  */
 async function readCsv(path: string): Promise<CsvRow[]> {
-  return new Promise((resolve, reject) => {
-    const rows: CsvRow[] = [];
-    createReadStream(path)
-      .pipe(csvParser())
-      .on("data", (raw: Record<string, string | undefined>) => {
-        rows.push({
-          userId: (raw.userId ?? "").trim(),
-          communityId: (raw.communityId ?? "").trim(),
-          priorActiveFrom: (raw.priorActiveFrom ?? "").trim(),
-          priorActivityNote: (raw.priorActivityNote ?? "").trim(),
-          priorActivitySource: (raw.priorActivitySource ?? "").trim(),
-        });
-      })
-      .on("end", () => resolve(rows))
-      .on("error", reject);
+  const rows: CsvRow[] = [];
+  const parser = csvParser();
+  parser.on("data", (raw: Record<string, string | undefined>) => {
+    rows.push({
+      userId: (raw.userId ?? "").trim(),
+      communityId: (raw.communityId ?? "").trim(),
+      priorActiveFrom: (raw.priorActiveFrom ?? "").trim(),
+      priorActivityNote: (raw.priorActivityNote ?? "").trim(),
+      priorActivitySource: (raw.priorActivitySource ?? "").trim(),
+    });
   });
+  await pipeline(createReadStream(path), parser);
+  return rows;
 }
 
 /**
