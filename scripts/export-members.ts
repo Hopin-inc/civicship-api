@@ -6,7 +6,7 @@ import { prismaClient } from "@/infrastructure/prisma/client";
 
 /**
  * Export JOINED memberships to CSV so a community manager can fill in
- * `priorActiveFrom` / `priorActivityNote` in a spreadsheet and feed
+ * `priorActivityClass` / `priorActivityNote` in a spreadsheet and feed
  * the file back through `scripts/import-prior-activity.ts`.
  *
  * Usage:
@@ -23,7 +23,7 @@ import { prismaClient } from "@/infrastructure/prisma/client";
  * Only JOINED memberships are exported — PENDING / LEFT rows are not
  * actionable for a "civicship 導入前から動いていたか" question.
  *
- * Existing `priorActive*` values are preserved in the export so a
+ * Existing `priorActivity*` values are preserved in the export so a
  * manager re-running the workflow against an already-populated
  * community sees their prior entries and only fills in the gaps.
  */
@@ -65,7 +65,7 @@ function parseArgs(): CliArgs {
 /**
  * RFC 4180 minimal quoter. Wraps the value in quotes only when it
  * contains a delimiter (`,`), a quote, or a newline; doubles embedded
- * quotes. Avoids a CSV library dependency for an 8-column writer.
+ * quotes. Avoids a CSV library dependency for a 7-column writer.
  */
 function csvField(value: string | null | undefined): string {
   if (value === null || value === undefined) return "";
@@ -77,9 +77,8 @@ function csvField(value: string | null | undefined): string {
 }
 
 /**
- * Render a Date as `YYYY-MM-DD` in UTC. The export is meant to be
- * edited in a spreadsheet and re-imported, so calendar precision is
- * sufficient — the import script parses the same shape back.
+ * Render a Date as `YYYY-MM-DD` in UTC. Only used for `joinedAt`
+ * (system-recorded) — there is no editable date column in the export.
  */
 function formatDate(d: Date | null | undefined): string {
   if (!d) return "";
@@ -92,9 +91,8 @@ const HEADER = [
   "communityId",
   "communityName",
   "joinedAt",
-  "priorActiveFrom",
+  "priorActivityClass",
   "priorActivityNote",
-  "priorActivitySource",
 ] as const;
 
 interface MembershipRow {
@@ -103,9 +101,8 @@ interface MembershipRow {
   communityId: string;
   communityName: string;
   joinedAt: Date;
-  priorActiveFrom: Date | null;
+  priorActivityClass: string | null;
   priorActivityNote: string | null;
-  priorActivitySource: string | null;
 }
 
 async function fetchMemberships(communityIds: string[] | null): Promise<MembershipRow[]> {
@@ -118,9 +115,8 @@ async function fetchMemberships(communityIds: string[] | null): Promise<Membersh
       userId: true,
       communityId: true,
       createdAt: true,
-      priorActiveFrom: true,
+      priorActivityClass: true,
       priorActivityNote: true,
-      priorActivitySource: true,
       user: { select: { name: true } },
       community: { select: { name: true } },
     },
@@ -132,9 +128,8 @@ async function fetchMemberships(communityIds: string[] | null): Promise<Membersh
     communityId: r.communityId,
     communityName: r.community?.name ?? "",
     joinedAt: r.createdAt,
-    priorActiveFrom: r.priorActiveFrom,
+    priorActivityClass: r.priorActivityClass,
     priorActivityNote: r.priorActivityNote,
-    priorActivitySource: r.priorActivitySource,
   }));
 }
 
@@ -152,9 +147,8 @@ function buildCsv(rows: MembershipRow[]): string {
         csvField(r.communityId),
         csvField(r.communityName),
         csvField(formatDate(r.joinedAt)),
-        csvField(formatDate(r.priorActiveFrom)),
+        csvField(r.priorActivityClass),
         csvField(r.priorActivityNote),
-        csvField(r.priorActivitySource),
       ].join(","),
     );
   }

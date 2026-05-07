@@ -299,9 +299,8 @@ Table t_memberships {
   community t_communities [not null]
   headline String
   bio String
-  priorActiveFrom DateTime
+  priorActivityClass MemberPriorActivityClass
   priorActivityNote String
-  priorActivitySource MemberPriorActivitySource
   priorActivityRecordedBy String
   status MembershipStatus [not null]
   reason MembershipStatusReason [not null]
@@ -1174,9 +1173,9 @@ Enum MembershipStatusReason {
   ASSIGNED
 }
 
-Enum MemberPriorActivitySource {
-  SELF_REPORTED
-  ADMIN_CONFIRMED
+Enum MemberPriorActivityClass {
+  PRE_CIVICSHIP_ACTIVE
+  POST_CIVICSHIP_ENGAGED
 }
 
 Enum ParticipationType {

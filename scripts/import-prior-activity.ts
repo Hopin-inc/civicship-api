@@ -2,14 +2,15 @@ import "reflect-metadata";
 import { createReadStream } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import { pipeline } from "node:stream/promises";
-import { MemberPriorActivitySource } from "@prisma/client";
+import { MemberPriorActivityClass } from "@prisma/client";
 import csvParser from "csv-parser";
 import { prismaClient } from "@/infrastructure/prisma/client";
 
 /**
- * Bulk-load `priorActiveFrom` / `priorActivityNote` / `priorActivitySource`
- * onto existing memberships from a CSV produced by
- * `scripts/export-members.ts`.
+ * Bulk-load `priorActivityClass` / `priorActivityNote` onto existing
+ * memberships from a CSV produced by `scripts/export-members.ts`.
+ * `priorActivityRecordedBy` is set from the `--recorded-by` argument
+ * on every updated row.
  *
  * Usage:
  *   dotenvx run -f .env.local -- tsx scripts/import-prior-activity.ts \
@@ -24,16 +25,17 @@ import { prismaClient } from "@/infrastructure/prisma/client";
  * — by convention, only sysadmin / Hopin operators should be running
  * this against prd.
  *
- * Source semantics: a row's `priorActivitySource` column is preserved
- * verbatim when it is one of the known enum values; a blank / missing
- * value defaults to `ADMIN_CONFIRMED` because the operator running
- * this import is implicitly the one verifying the data. Unknown
- * values fail the row loudly rather than silently coercing.
+ * Class semantics: the `priorActivityClass` column must be one of
+ * `PRE_CIVICSHIP_ACTIVE` (古参) or `POST_CIVICSHIP_ENGAGED` (新規).
+ * A blank cell skips the row (nothing to write). Anything else fails
+ * the row loudly rather than silently coercing.
  *
- * Skip rules:
- *   - `priorActiveFrom` blank → row skipped (nothing to write).
- *   - `userId` or `communityId` blank → row skipped with an error.
- *   - membership not found in DB → row skipped with an error.
+ * Skip / error rules:
+ *   - `priorActivityClass` blank → row skipped (no write).
+ *   - `priorActivityClass` not a known enum → row errored.
+ *   - `userId` or `communityId` blank → row errored.
+ *   - `priorActivityNote` > 500 chars → row errored (column is VARCHAR(500)).
+ *   - membership not found in DB → row errored.
  *
  * `--dry-run` runs every validation and prints the per-row outcome
  * but rolls back at the end of the transaction, so the operator can
@@ -74,14 +76,13 @@ function parseArgs(): CliArgs {
 interface CsvRow {
   userId: string;
   communityId: string;
-  priorActiveFrom: string;
+  priorActivityClass: string;
   priorActivityNote: string;
-  priorActivitySource: string;
 }
 
 /**
  * Stream-parse the CSV via `csv-parser`. The export side emits a
- * fixed 8-column header; downstream we only consume the 5 columns
+ * fixed 7-column header; downstream we only consume the 4 columns
  * the import actually writes (extras are ignored, which keeps the
  * import tolerant of operators adding an "owner notes" column or
  * similar in their spreadsheet).
@@ -108,9 +109,8 @@ async function readCsv(path: string): Promise<CsvRow[]> {
     rows.push({
       userId: (raw.userId ?? "").trim(),
       communityId: (raw.communityId ?? "").trim(),
-      priorActiveFrom: (raw.priorActiveFrom ?? "").trim(),
+      priorActivityClass: (raw.priorActivityClass ?? "").trim(),
       priorActivityNote: (raw.priorActivityNote ?? "").trim(),
-      priorActivitySource: (raw.priorActivitySource ?? "").trim(),
     });
   });
   await pipeline(createReadStream(path), parser);
@@ -118,28 +118,19 @@ async function readCsv(path: string): Promise<CsvRow[]> {
 }
 
 /**
- * Parse a date in `YYYY-MM-DD` shape (the format the export writes)
- * to a `Date` at UTC midnight. Anything else returns null so the row
- * is skipped with an error rather than silently mis-recorded.
- *
- * The round-trip check (`d.toISOString().slice(0,10) !== s`) catches
- * calendar-invalid inputs that Date silently rolls forward — e.g.
- * `2023-02-31` would otherwise land as `2023-03-03` and corrupt the
- * audit trail. We refuse those rows instead.
+ * Coerce the CSV cell to a `MemberPriorActivityClass` enum value.
+ * Returns "BLANK" when the cell is empty (caller skips the row) and
+ * "INVALID" when it is non-empty but does not match any enum member
+ * (caller errors the row). Strings come from `csv-parser` already
+ * trimmed in `readCsv`, so we do not re-trim here.
  */
-function parsePriorActiveFrom(s: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
-  const d = new Date(`${s}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return null;
-  if (d.toISOString().slice(0, 10) !== s) return null;
-  return d;
-}
-
-function parseSource(s: string): MemberPriorActivitySource | "INVALID" | "DEFAULT" {
-  if (s === "") return "DEFAULT";
-  if (s === MemberPriorActivitySource.SELF_REPORTED) return MemberPriorActivitySource.SELF_REPORTED;
-  if (s === MemberPriorActivitySource.ADMIN_CONFIRMED) {
-    return MemberPriorActivitySource.ADMIN_CONFIRMED;
+function parseClass(s: string): MemberPriorActivityClass | "INVALID" | "BLANK" {
+  if (s === "") return "BLANK";
+  if (s === MemberPriorActivityClass.PRE_CIVICSHIP_ACTIVE) {
+    return MemberPriorActivityClass.PRE_CIVICSHIP_ACTIVE;
+  }
+  if (s === MemberPriorActivityClass.POST_CIVICSHIP_ENGAGED) {
+    return MemberPriorActivityClass.POST_CIVICSHIP_ENGAGED;
   }
   return "INVALID";
 }
@@ -202,37 +193,25 @@ async function main(): Promise<void> {
             });
             continue;
           }
-          if (!r.priorActiveFrom) {
+          const classParsed = parseClass(r.priorActivityClass);
+          if (classParsed === "BLANK") {
             outcomes.push({
               userId: r.userId,
               communityId: r.communityId,
               status: "skipped",
-              reason: "priorActiveFrom blank",
+              reason: "priorActivityClass blank",
             });
             continue;
           }
-          const activeFrom = parsePriorActiveFrom(r.priorActiveFrom);
-          if (!activeFrom) {
+          if (classParsed === "INVALID") {
             outcomes.push({
               userId: r.userId,
               communityId: r.communityId,
               status: "error",
-              reason: `priorActiveFrom not parseable: "${r.priorActiveFrom}"`,
+              reason: `priorActivityClass not a known enum: "${r.priorActivityClass}"`,
             });
             continue;
           }
-          const sourceParsed = parseSource(r.priorActivitySource);
-          if (sourceParsed === "INVALID") {
-            outcomes.push({
-              userId: r.userId,
-              communityId: r.communityId,
-              status: "error",
-              reason: `priorActivitySource not a known enum: "${r.priorActivitySource}"`,
-            });
-            continue;
-          }
-          const source =
-            sourceParsed === "DEFAULT" ? MemberPriorActivitySource.ADMIN_CONFIRMED : sourceParsed;
 
           // Pre-check the note against the column's VARCHAR(500) bound
           // before queuing the update. Without this, a single oversize
@@ -271,12 +250,11 @@ async function main(): Promise<void> {
               userId_communityId: { userId: r.userId, communityId: r.communityId },
             },
             data: {
-              priorActiveFrom: activeFrom,
+              priorActivityClass: classParsed,
               // Empty note is normalized to NULL so a manager clearing a
               // cell in the spreadsheet round-trips back to "no note"
               // instead of an empty-string row that's surprising to query.
               priorActivityNote: r.priorActivityNote === "" ? null : r.priorActivityNote,
-              priorActivitySource: source,
               priorActivityRecordedBy: args.recordedBy,
             },
           });

@@ -104,9 +104,9 @@ ASSIGNED ASSIGNED
     
 
 
-        MemberPriorActivitySource {
-            SELF_REPORTED SELF_REPORTED
-ADMIN_CONFIRMED ADMIN_CONFIRMED
+        MemberPriorActivityClass {
+            PRE_CIVICSHIP_ACTIVE PRE_CIVICSHIP_ACTIVE
+POST_CIVICSHIP_ENGAGED POST_CIVICSHIP_ENGAGED
         }
     
 
@@ -553,9 +553,8 @@ OTHER OTHER
     String community_id 
     String headline "❓"
     String bio "❓"
-    DateTime prior_active_from "❓"
+    MemberPriorActivityClass prior_activity_class "❓"
     String prior_activity_note "❓"
-    MemberPriorActivitySource prior_activity_source "❓"
     String prior_activity_recorded_by "❓"
     MembershipStatus status 
     MembershipStatusReason reason 
@@ -1188,7 +1187,7 @@ OTHER OTHER
     "t_vc_issuance_requests" }o--|| t_users : "user"
     "t_memberships" }o--|| t_users : "user"
     "t_memberships" }o--|| t_communities : "community"
-    "t_memberships" |o--|o "MemberPriorActivitySource" : "enum:prior_activity_source"
+    "t_memberships" |o--|o "MemberPriorActivityClass" : "enum:prior_activity_class"
     "t_memberships" |o--|| "MembershipStatus" : "enum:status"
     "t_memberships" |o--|| "MembershipStatusReason" : "enum:reason"
     "t_memberships" |o--|| "Role" : "enum:role"
