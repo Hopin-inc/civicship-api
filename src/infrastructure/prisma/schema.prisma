@@ -545,6 +545,20 @@ model Membership {
   headline String?
   bio      String?
 
+  // Operator-recorded context for members who were active in the
+  // community before civicship was introduced. Used by GRANT_APPLICATION
+  // / sales-facing reports to distinguish "civicship 導入前から動いて
+  // いた古参" from members who joined after onboarding. All four
+  // columns are nullable: existing rows backfill to NULL, and the
+  // bulk-import workflow (scripts/import-prior-activity.ts) writes
+  // them in batches as managers fill in a CSV. Free-text `note` is
+  // capped to 500 chars so a runaway paste from a spreadsheet cell
+  // cannot bloat the row.
+  priorActiveFrom         DateTime?                  @map("prior_active_from")
+  priorActivityNote       String?                    @map("prior_activity_note") @db.VarChar(500)
+  priorActivitySource     MemberPriorActivitySource? @map("prior_activity_source")
+  priorActivityRecordedBy String?                    @map("prior_activity_recorded_by")
+
   status MembershipStatus
   reason MembershipStatusReason
   role   Role                   @default(MEMBER)
@@ -629,6 +643,15 @@ enum MembershipStatusReason {
   REMOVED
 
   ASSIGNED
+}
+
+/// Provenance for `Membership.priorActiveFrom`.
+/// SELF_REPORTED — the member supplied the date themselves.
+/// ADMIN_CONFIRMED — a community manager / owner verified it; in this
+/// case `priorActivityRecordedBy` carries the admin's user id for audit.
+enum MemberPriorActivitySource {
+  SELF_REPORTED
+  ADMIN_CONFIRMED
 }
 
 enum ParticipationType {

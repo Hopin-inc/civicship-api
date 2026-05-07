@@ -104,6 +104,13 @@ ASSIGNED ASSIGNED
     
 
 
+        MemberPriorActivitySource {
+            SELF_REPORTED SELF_REPORTED
+ADMIN_CONFIRMED ADMIN_CONFIRMED
+        }
+    
+
+
         ParticipationType {
             HOSTED HOSTED
 PARTICIPATED PARTICIPATED
@@ -546,6 +553,10 @@ OTHER OTHER
     String community_id 
     String headline "❓"
     String bio "❓"
+    DateTime prior_active_from "❓"
+    String prior_activity_note "❓"
+    MemberPriorActivitySource prior_activity_source "❓"
+    String prior_activity_recorded_by "❓"
     MembershipStatus status 
     MembershipStatusReason reason 
     Role role 
@@ -1177,6 +1188,7 @@ OTHER OTHER
     "t_vc_issuance_requests" }o--|| t_users : "user"
     "t_memberships" }o--|| t_users : "user"
     "t_memberships" }o--|| t_communities : "community"
+    "t_memberships" |o--|o "MemberPriorActivitySource" : "enum:prior_activity_source"
     "t_memberships" |o--|| "MembershipStatus" : "enum:status"
     "t_memberships" |o--|| "MembershipStatusReason" : "enum:reason"
     "t_memberships" |o--|| "Role" : "enum:role"
