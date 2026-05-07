@@ -198,7 +198,7 @@ async function main(): Promise<void> {
     candidatePairs.length === 0
       ? []
       : await prismaClient.membership.findMany({
-          where: { OR: candidatePairs },
+          where: { userId_communityId: { in: candidatePairs } },
           select: { userId: true, communityId: true },
         });
   const existingKeys = new Set(
