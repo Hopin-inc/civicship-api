@@ -1,0 +1,296 @@
+import "reflect-metadata";
+import { createReadStream } from "node:fs";
+import { resolve as resolvePath } from "node:path";
+import { MemberPriorActivitySource } from "@prisma/client";
+import csvParser from "csv-parser";
+import { prismaClient } from "@/infrastructure/prisma/client";
+
+/**
+ * Bulk-load `priorActiveFrom` / `priorActivityNote` / `priorActivitySource`
+ * onto existing memberships from a CSV produced by
+ * `scripts/export-members.ts`.
+ *
+ * Usage:
+ *   dotenvx run -f .env.local -- tsx scripts/import-prior-activity.ts \
+ *     --file=tmp/members_export_<communityId>_<timestamp>.csv \
+ *     --recorded-by=<adminUserId> [--dry-run]
+ *
+ * Trust model: this script bypasses GraphQL authorization and writes
+ * directly via the Prisma client. It is admin-only tooling intended
+ * for an operator running it from a dev / ops shell with the right
+ * `.env`. The `--recorded-by` user id is checked to exist in
+ * `t_users`, but no manager-of-the-target-community check is enforced
+ * — by convention, only sysadmin / Hopin operators should be running
+ * this against prd.
+ *
+ * Source semantics: a row's `priorActivitySource` column is preserved
+ * verbatim when it is one of the known enum values; a blank / missing
+ * value defaults to `ADMIN_CONFIRMED` because the operator running
+ * this import is implicitly the one verifying the data. Unknown
+ * values fail the row loudly rather than silently coercing.
+ *
+ * Skip rules:
+ *   - `priorActiveFrom` blank → row skipped (nothing to write).
+ *   - `userId` or `communityId` blank → row skipped with an error.
+ *   - membership not found in DB → row skipped with an error.
+ *
+ * `--dry-run` runs every validation and prints the per-row outcome
+ * but rolls back at the end of the transaction, so the operator can
+ * verify the diff before committing.
+ */
+
+const USAGE =
+  "Usage: tsx scripts/import-prior-activity.ts --file=<csvPath> --recorded-by=<userId> [--dry-run]";
+
+interface CliArgs {
+  filePath: string;
+  recordedBy: string;
+  dryRun: boolean;
+}
+
+function parseArgs(): CliArgs {
+  const map = new Map<string, string>();
+  let dryRun = false;
+  for (const a of process.argv.slice(2)) {
+    if (a === "--dry-run") {
+      dryRun = true;
+      continue;
+    }
+    const m = /^--([\w-]+)=(.+)$/.exec(a);
+    if (m) map.set(m[1], m[2]);
+  }
+  const filePath = map.get("file");
+  if (!filePath) {
+    throw new Error("--file=<csvPath> is required");
+  }
+  const recordedBy = map.get("recorded-by");
+  if (!recordedBy) {
+    throw new Error("--recorded-by=<userId> is required");
+  }
+  return { filePath: resolvePath(filePath), recordedBy, dryRun };
+}
+
+interface CsvRow {
+  userId: string;
+  communityId: string;
+  priorActiveFrom: string;
+  priorActivityNote: string;
+  priorActivitySource: string;
+}
+
+/**
+ * Stream-parse the CSV via `csv-parser`. The export side emits a
+ * fixed 8-column header; downstream we only consume the 5 columns
+ * the import actually writes (extras are ignored, which keeps the
+ * import tolerant of operators adding an "owner notes" column or
+ * similar in their spreadsheet).
+ */
+async function readCsv(path: string): Promise<CsvRow[]> {
+  return new Promise((resolve, reject) => {
+    const rows: CsvRow[] = [];
+    createReadStream(path)
+      .pipe(csvParser())
+      .on("data", (raw: Record<string, string | undefined>) => {
+        rows.push({
+          userId: (raw.userId ?? "").trim(),
+          communityId: (raw.communityId ?? "").trim(),
+          priorActiveFrom: (raw.priorActiveFrom ?? "").trim(),
+          priorActivityNote: (raw.priorActivityNote ?? "").trim(),
+          priorActivitySource: (raw.priorActivitySource ?? "").trim(),
+        });
+      })
+      .on("end", () => resolve(rows))
+      .on("error", reject);
+  });
+}
+
+/**
+ * Parse a date in `YYYY-MM-DD` shape (the format the export writes)
+ * to a `Date` at UTC midnight. Anything else returns null so the row
+ * is skipped with an error rather than silently mis-recorded.
+ */
+function parsePriorActiveFrom(s: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const d = new Date(`${s}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function parseSource(s: string): MemberPriorActivitySource | "INVALID" | "DEFAULT" {
+  if (s === "") return "DEFAULT";
+  if (s === MemberPriorActivitySource.SELF_REPORTED) return MemberPriorActivitySource.SELF_REPORTED;
+  if (s === MemberPriorActivitySource.ADMIN_CONFIRMED) {
+    return MemberPriorActivitySource.ADMIN_CONFIRMED;
+  }
+  return "INVALID";
+}
+
+interface RowOutcome {
+  userId: string;
+  communityId: string;
+  status: "updated" | "skipped" | "error";
+  reason?: string;
+}
+
+async function main(): Promise<void> {
+  let args: CliArgs;
+  try {
+    args = parseArgs();
+  } catch (e) {
+    console.error((e as Error).message);
+    console.error(USAGE);
+    process.exit(1);
+  }
+
+  const recorder = await prismaClient.user.findUnique({
+    where: { id: args.recordedBy },
+    select: { id: true, name: true },
+  });
+  if (!recorder) {
+    console.error(`--recorded-by=${args.recordedBy} does not match any user.`);
+    await prismaClient.$disconnect();
+    process.exit(1);
+  }
+  console.info(`Recorder: ${recorder.id} (${recorder.name ?? "<no name>"})`);
+
+  const rows = await readCsv(args.filePath);
+  console.info(`Read ${rows.length} rows from ${args.filePath}`);
+  console.info(args.dryRun ? "Mode: DRY RUN (no writes will be committed)" : "Mode: COMMIT");
+  console.info("");
+
+  const outcomes: RowOutcome[] = [];
+
+  // Wrap every row in one transaction so dry-run can roll back as a
+  // group, and so a partial failure on commit mode aborts cleanly
+  // instead of leaving the community in a half-imported state.
+  await prismaClient
+    .$transaction(async (tx) => {
+      for (const r of rows) {
+        if (!r.userId || !r.communityId) {
+          outcomes.push({
+            userId: r.userId,
+            communityId: r.communityId,
+            status: "error",
+            reason: "userId or communityId is blank",
+          });
+          continue;
+        }
+        if (!r.priorActiveFrom) {
+          outcomes.push({
+            userId: r.userId,
+            communityId: r.communityId,
+            status: "skipped",
+            reason: "priorActiveFrom blank",
+          });
+          continue;
+        }
+        const activeFrom = parsePriorActiveFrom(r.priorActiveFrom);
+        if (!activeFrom) {
+          outcomes.push({
+            userId: r.userId,
+            communityId: r.communityId,
+            status: "error",
+            reason: `priorActiveFrom not parseable: "${r.priorActiveFrom}"`,
+          });
+          continue;
+        }
+        const sourceParsed = parseSource(r.priorActivitySource);
+        if (sourceParsed === "INVALID") {
+          outcomes.push({
+            userId: r.userId,
+            communityId: r.communityId,
+            status: "error",
+            reason: `priorActivitySource not a known enum: "${r.priorActivitySource}"`,
+          });
+          continue;
+        }
+        const source =
+          sourceParsed === "DEFAULT" ? MemberPriorActivitySource.ADMIN_CONFIRMED : sourceParsed;
+
+        const existing = await tx.membership.findUnique({
+          where: {
+            userId_communityId: { userId: r.userId, communityId: r.communityId },
+          },
+          select: { userId: true },
+        });
+        if (!existing) {
+          outcomes.push({
+            userId: r.userId,
+            communityId: r.communityId,
+            status: "error",
+            reason: "membership not found (re-export from this community first)",
+          });
+          continue;
+        }
+
+        await tx.membership.update({
+          where: {
+            userId_communityId: { userId: r.userId, communityId: r.communityId },
+          },
+          data: {
+            priorActiveFrom: activeFrom,
+            // Empty note is normalized to NULL so a manager clearing a
+            // cell in the spreadsheet round-trips back to "no note"
+            // instead of an empty-string row that's surprising to query.
+            priorActivityNote: r.priorActivityNote === "" ? null : r.priorActivityNote,
+            priorActivitySource: source,
+            priorActivityRecordedBy: args.recordedBy,
+          },
+        });
+        outcomes.push({
+          userId: r.userId,
+          communityId: r.communityId,
+          status: "updated",
+        });
+      }
+
+      if (args.dryRun) {
+        // Throw inside the transaction callback so Prisma rolls back
+        // every update we just queued. The catch in the surrounding
+        // try/finally below swallows this specific marker and reports
+        // the dry-run summary on the way out.
+        throw new DryRunRollback();
+      }
+    })
+    .catch((e: unknown) => {
+      if (e instanceof DryRunRollback) return;
+      throw e;
+    });
+
+  const counts = {
+    updated: outcomes.filter((o) => o.status === "updated").length,
+    skipped: outcomes.filter((o) => o.status === "skipped").length,
+    errored: outcomes.filter((o) => o.status === "error").length,
+  };
+
+  console.info("=== Per-row outcomes ===");
+  for (const o of outcomes) {
+    const reason = o.reason ? ` (${o.reason})` : "";
+    console.info(`  [${o.status}] ${o.userId} / ${o.communityId}${reason}`);
+  }
+  console.info("");
+  console.info("=== Summary ===");
+  console.info(`updated: ${counts.updated}`);
+  console.info(`skipped: ${counts.skipped}`);
+  console.info(`errored: ${counts.errored}`);
+  if (args.dryRun) {
+    console.info("(dry-run — no writes committed)");
+  }
+
+  await prismaClient.$disconnect();
+  // Exit non-zero when there were row-level errors so a wrapper /
+  // CI invocation can detect the failure without parsing stdout.
+  process.exit(counts.errored > 0 ? 1 : 0);
+}
+
+class DryRunRollback extends Error {
+  constructor() {
+    super("dry-run rollback");
+    this.name = "DryRunRollback";
+  }
+}
+
+main().catch((e) => {
+  console.error("Import crashed:", e);
+  prismaClient.$disconnect().finally(() => process.exit(2));
+});
