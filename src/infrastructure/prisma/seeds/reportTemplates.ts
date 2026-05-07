@@ -47,6 +47,12 @@ highlight_comments のコメントを読むとき、以下の3点だけを読み
 
 フレーム外の解釈（なぜそうなったか・コミュニティの文化論・背景の推測）はしない。
 活動認定と感謝の贈り合いを区別する。活動認定は運営からの公式な認定。
+
+### highlight_comments の重複引用を避ける
+出力の中で、同じ取引（同じ transaction_id）のコメントを2回以上引用しない。
+複数のセクションでコメントを引用する構成でも、各 transaction_id は出力全体で最大1回まで。
+payload の highlight_comments に同じ transaction_id が複数行で含まれていた場合も、
+出力に出すのは1回だけにする。
 `.trim();
 
 // This seed manages SYSTEM-scope rows only (the upsert lookup is
