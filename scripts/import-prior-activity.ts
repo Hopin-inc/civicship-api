@@ -37,6 +37,13 @@ import { prismaClient } from "@/infrastructure/prisma/client";
  *   - `priorActivityNote` > 500 chars → row errored (column is VARCHAR(500)).
  *   - membership not found in DB → row errored.
  *
+ * The whole CSV is treated as one all-or-nothing batch: if even one
+ * row errors, the transaction is rolled back and nothing is written
+ * (the per-row outcomes are still printed so the operator knows
+ * exactly which cells to fix). This matches the spreadsheet workflow
+ * — operators edit, re-run, edit, re-run — and avoids ever leaving
+ * a community half-imported.
+ *
  * `--dry-run` runs every validation and prints the per-row outcome
  * but rolls back at the end of the transaction, so the operator can
  * verify the diff before committing.
@@ -104,7 +111,15 @@ interface CsvRow {
  */
 async function readCsv(path: string): Promise<CsvRow[]> {
   const rows: CsvRow[] = [];
-  const parser = csvParser();
+  // Excel-on-Windows writes UTF-8 CSVs with a leading BOM (U+FEFF).
+  // Without stripping it, the first header parses as "﻿userId"
+  // and every row's `userId` comes back as undefined → silent
+  // "userId is blank" errors on a file that looks correct in a text
+  // editor. `mapHeaders` runs once per column at parse time, so the
+  // cost is negligible.
+  const parser = csvParser({
+    mapHeaders: ({ header }) => header.replace(/^\ufeff/, ""),
+  });
   parser.on("data", (raw: Record<string, string | undefined>) => {
     rows.push({
       userId: (raw.userId ?? "").trim(),
@@ -170,6 +185,26 @@ async function main(): Promise<void> {
 
   const outcomes: RowOutcome[] = [];
 
+  // Pre-fetch every membership referenced by the CSV in a single
+  // round-trip and key it by `${userId}::${communityId}` so the
+  // per-row existence check inside the transaction is an O(1) map
+  // lookup instead of one `findUnique` per row. On a several-hundred-
+  // row backfill this collapses N queries into one and keeps the
+  // transaction well within its 60s budget.
+  const candidatePairs = rows
+    .filter((r) => r.userId && r.communityId)
+    .map((r) => ({ userId: r.userId, communityId: r.communityId }));
+  const existingMemberships =
+    candidatePairs.length === 0
+      ? []
+      : await prismaClient.membership.findMany({
+          where: { OR: candidatePairs },
+          select: { userId: true, communityId: true },
+        });
+  const existingKeys = new Set(
+    existingMemberships.map((m) => `${m.userId}::${m.communityId}`),
+  );
+
   // Wrap every row in one transaction so dry-run can roll back as a
   // group, and so a partial failure on commit mode aborts cleanly
   // instead of leaving the community in a half-imported state.
@@ -229,13 +264,7 @@ async function main(): Promise<void> {
             continue;
           }
 
-          const existing = await tx.membership.findUnique({
-            where: {
-              userId_communityId: { userId: r.userId, communityId: r.communityId },
-            },
-            select: { userId: true },
-          });
-          if (!existing) {
+          if (!existingKeys.has(`${r.userId}::${r.communityId}`)) {
             outcomes.push({
               userId: r.userId,
               communityId: r.communityId,
@@ -265,6 +294,19 @@ async function main(): Promise<void> {
           });
         }
 
+        // The header docstring promises "succeed-or-rollback as a single
+        // transaction (so a partial CSV never leaves the community
+        // half-imported)". Honour that here: if any row failed
+        // validation, throw to roll the whole batch back. The
+        // per-row outcomes array survives (it is closed-over from
+        // outside the tx callback), so the summary printed below
+        // still tells the operator exactly which rows to fix before
+        // re-running.
+        const errored = outcomes.some((o) => o.status === "error");
+        if (errored) {
+          throw new ValidationRollback();
+        }
+
         if (args.dryRun) {
           // Throw inside the transaction callback so Prisma rolls back
           // every update we just queued. The catch in the surrounding
@@ -277,6 +319,7 @@ async function main(): Promise<void> {
     )
     .catch((e: unknown) => {
       if (e instanceof DryRunRollback) return;
+      if (e instanceof ValidationRollback) return;
       throw e;
     });
 
@@ -293,11 +336,20 @@ async function main(): Promise<void> {
   }
   console.info("");
   console.info("=== Summary ===");
-  console.info(`updated: ${counts.updated}`);
+  // When validation errors fire, the transaction is rolled back, so
+  // the per-row "updated" count reflects rows that *would have*
+  // committed had the batch passed validation — not rows that
+  // landed in the DB. Re-label it to avoid telling the operator
+  // they have a partial write when they do not.
+  const rolledBack = args.dryRun || counts.errored > 0;
+  const updatedLabel = rolledBack ? "updated (rolled back)" : "updated";
+  console.info(`${updatedLabel}: ${counts.updated}`);
   console.info(`skipped: ${counts.skipped}`);
   console.info(`errored: ${counts.errored}`);
   if (args.dryRun) {
     console.info("(dry-run — no writes committed)");
+  } else if (counts.errored > 0) {
+    console.info("(validation errors — transaction rolled back, no writes committed)");
   }
 
   await prismaClient.$disconnect();
@@ -310,6 +362,13 @@ class DryRunRollback extends Error {
   constructor() {
     super("dry-run rollback");
     this.name = "DryRunRollback";
+  }
+}
+
+class ValidationRollback extends Error {
+  constructor() {
+    super("validation rollback");
+    this.name = "ValidationRollback";
   }
 }
 
