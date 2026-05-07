@@ -198,6 +198,7 @@ Content-Type: application/json
 ```json
 {
   "type": "ERC721",
+  "chain": "BASE_SEPOLIA",
   "name": "Civicship Membership",
   "symbol": "CSM",
   "decimals": "0",
@@ -215,6 +216,7 @@ Content-Type: application/json
 | フィールド | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | `type` | string | ✓ | `"ERC721"` / `"ERC1155"` / `"UNKNOWN"` 等 |
+| `chain` | string | ✓ | チェーン環境。業者ごとに許可される値が異なる (現状 BORDERLESS / KIBOTCHA は `BASE_SEPOLIA` のみ)。許可されない値は 400 |
 | `name` | string |   | コントラクト名 |
 | `symbol` | string |   | シンボル |
 | `decimals` | string |   | 小数桁数 |
@@ -224,6 +226,8 @@ Content-Type: application/json
 | `circulatingMarketCap` | string |   | 流通時価総額 |
 | `iconUrl` | string |   | アイコン URL |
 | `metadata` | object |   | 上記以外の任意の追加データ |
+
+`chain` の取り得る値: `BASE_SEPOLIA` / `BASE_MAINNET` / `CARDANO_PREPROD` / `CARDANO_MAINNET`。
 
 リクエストボディ全体は `NftToken.json` カラムに保存される。
 

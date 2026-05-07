@@ -1,4 +1,4 @@
-import { NftVendor, Prisma } from "@prisma/client";
+import { NftChain, NftVendor, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { PrismaNftToken } from "@/application/domain/account/nft-token/data/type";
 
@@ -12,6 +12,7 @@ export interface INftTokenRepository {
       type: string;
       json?: Record<string, unknown>;
       issuedByVendor?: NftVendor;
+      chain?: NftChain;
     },
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string; address: string; communityId: string | null }>;

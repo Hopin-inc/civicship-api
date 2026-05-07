@@ -92,6 +92,7 @@ import type { IncentiveGrantStatus } from "@prisma/client";
 import type { IncentiveGrantFailureCode } from "@prisma/client";
 import type { NftVendor } from "@prisma/client";
 import type { NftWalletType } from "@prisma/client";
+import type { NftChain } from "@prisma/client";
 import type { NftInstanceStatus } from "@prisma/client";
 import type { NftMintStatus } from "@prisma/client";
 import type { Position } from "@prisma/client";
@@ -7481,6 +7482,7 @@ type NftWalletFactoryDefineInput = {
     id?: string;
     type?: NftWalletType;
     walletAddress?: string;
+    chain?: NftChain | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     user: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletsInput;
@@ -7642,6 +7644,7 @@ type NftTokenFactoryDefineInput = {
     symbol?: string | null;
     json?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     issuedByVendor?: NftVendor | null;
+    chain?: NftChain | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     community?: NftTokencommunityFactory | Prisma.CommunityCreateNestedOneWithoutNftTokensInput;

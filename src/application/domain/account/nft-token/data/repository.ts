@@ -1,4 +1,4 @@
-import { NftVendor, Prisma } from "@prisma/client";
+import { NftChain, NftVendor, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
 import { INftTokenRepository } from "./interface";
@@ -46,6 +46,7 @@ export default class NftTokenRepository implements INftTokenRepository {
       type: string;
       json?: Record<string, unknown>;
       issuedByVendor?: NftVendor;
+      chain?: NftChain;
     },
     tx: Prisma.TransactionClient,
   ) {
@@ -57,6 +58,7 @@ export default class NftTokenRepository implements INftTokenRepository {
         type: data.type,
         json: data.json,
         ...(data.issuedByVendor !== undefined ? { issuedByVendor: data.issuedByVendor } : {}),
+        ...(data.chain !== undefined ? { chain: data.chain } : {}),
       },
       create: {
         address: data.address,
@@ -65,6 +67,7 @@ export default class NftTokenRepository implements INftTokenRepository {
         type: data.type,
         json: data.json ?? null,
         issuedByVendor: data.issuedByVendor ?? null,
+        chain: data.chain ?? null,
       },
       select: {
         id: true,

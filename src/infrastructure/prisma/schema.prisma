@@ -1353,6 +1353,13 @@ enum NftVendor {
   KIBOTCHA
 }
 
+enum NftChain {
+  BASE_SEPOLIA
+  BASE_MAINNET
+  CARDANO_PREPROD
+  CARDANO_MAINNET
+}
+
 model ApiKey {
   id        String    @id @default(cuid())
   key       String    @unique
@@ -1373,6 +1380,10 @@ model NftWallet {
 
   walletAddress String @unique @map("wallet_address")
 
+  // チェーン環境。EXTERNAL は常に BASE_SEPOLIA、INTERNAL は env により
+  // CARDANO_PREPROD (dev) / CARDANO_MAINNET (prd)。作成時にサーバ側で自動セット。
+  chain NftChain?
+
   userId       String        @map("user_id")
   user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   nftInstances NftInstance[]
@@ -1380,6 +1391,7 @@ model NftWallet {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([chain])
   @@map("t_nft_wallets")
 }
 
@@ -1407,6 +1419,10 @@ model NftToken {
   // 認可: PUT /api/nft-tokens は issuedByVendor が null か current vendor のときのみ許可。
   issuedByVendor NftVendor? @map("issued_by_vendor")
 
+  // コントラクトが乗っているチェーン (BASE_SEPOLIA / CARDANO_MAINNET 等)。
+  // 業者 PUT 時に必須、業者ごとに許可チェーンが違う (VENDOR_ALLOWED_CHAINS で制限)。
+  chain NftChain?
+
   nftInstances      NftInstance[]
   voteGates         VoteGate[]
   votePowerPolicies VotePowerPolicy[]
@@ -1416,6 +1432,7 @@ model NftToken {
 
   @@index([communityId])
   @@index([issuedByVendor])
+  @@index([chain])
   @@map("t_nft_tokens")
 }
 

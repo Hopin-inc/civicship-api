@@ -627,6 +627,7 @@ Table t_nft_wallets {
   id String [pk]
   type NftWalletType [not null, default: 'INTERNAL']
   walletAddress String [unique, not null]
+  chain NftChain
   userId String [not null]
   user t_users [not null]
   nftInstances t_nft_instances [not null]
@@ -644,6 +645,7 @@ Table t_nft_tokens {
   communityId String
   community t_communities
   issuedByVendor NftVendor
+  chain NftChain
   nftInstances t_nft_instances [not null]
   voteGates t_vote_gates [not null]
   votePowerPolicies t_vote_power_policies [not null]
@@ -1283,6 +1285,13 @@ Enum IncentiveGrantFailureCode {
 Enum NftVendor {
   BORDERLESS
   KIBOTCHA
+}
+
+Enum NftChain {
+  BASE_SEPOLIA
+  BASE_MAINNET
+  CARDANO_PREPROD
+  CARDANO_MAINNET
 }
 
 Enum NftWalletType {
