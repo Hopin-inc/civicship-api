@@ -299,6 +299,9 @@ Table t_memberships {
   community t_communities [not null]
   headline String
   bio String
+  priorActivityClass MemberPriorActivityClass
+  priorActivityNote String
+  priorActivityRecordedBy String
   status MembershipStatus [not null]
   reason MembershipStatusReason [not null]
   role Role [not null, default: 'MEMBER']
@@ -1168,6 +1171,11 @@ Enum MembershipStatusReason {
   WITHDRAWN
   REMOVED
   ASSIGNED
+}
+
+Enum MemberPriorActivityClass {
+  PRE_CIVICSHIP_ACTIVE
+  POST_CIVICSHIP_ENGAGED
 }
 
 Enum ParticipationType {
