@@ -90,6 +90,16 @@ interface CsvRow {
  * file source (ENOENT / permission) or the parser surfaces as a
  * rejected promise. Attaching `.on("error", reject)` only on the
  * parser would silently drop source-side failures.
+ *
+ * Memory note: the parsed rows are buffered into one in-memory array
+ * before the import transaction runs. This is intentional — the import
+ * must succeed-or-rollback as a single transaction (so a partial CSV
+ * never leaves the community half-imported), and per-row pre-checks
+ * are easier to reason about against a fully-materialised list.
+ * Sizing assumption: this script is admin tooling for community
+ * onboarding (a few hundred rows per community at the high end).
+ * If CSV sizes grow into the tens of thousands the right shape is
+ * chunked transactions over a streaming parser, not a bigger array.
  */
 async function readCsv(path: string): Promise<CsvRow[]> {
   const rows: CsvRow[] = [];
@@ -111,11 +121,17 @@ async function readCsv(path: string): Promise<CsvRow[]> {
  * Parse a date in `YYYY-MM-DD` shape (the format the export writes)
  * to a `Date` at UTC midnight. Anything else returns null so the row
  * is skipped with an error rather than silently mis-recorded.
+ *
+ * The round-trip check (`d.toISOString().slice(0,10) !== s`) catches
+ * calendar-invalid inputs that Date silently rolls forward — e.g.
+ * `2023-02-31` would otherwise land as `2023-03-03` and corrupt the
+ * audit trail. We refuse those rows instead.
  */
 function parsePriorActiveFrom(s: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
   const d = new Date(`${s}T00:00:00Z`);
   if (Number.isNaN(d.getTime())) return null;
+  if (d.toISOString().slice(0, 10) !== s) return null;
   return d;
 }
 
@@ -166,95 +182,121 @@ async function main(): Promise<void> {
   // Wrap every row in one transaction so dry-run can roll back as a
   // group, and so a partial failure on commit mode aborts cleanly
   // instead of leaving the community in a half-imported state.
+  //
+  // Prisma's interactive-transaction default timeout is 5s, which is
+  // tight once an operator runs this against a backfill of a few
+  // hundred members over a slow connection. Raise both `timeout`
+  // (overall budget) and `maxWait` (queue wait before the tx slot
+  // opens) to one minute — well above any realistic admin batch and
+  // still bounded so a runaway script does not pin a connection.
   await prismaClient
-    .$transaction(async (tx) => {
-      for (const r of rows) {
-        if (!r.userId || !r.communityId) {
-          outcomes.push({
-            userId: r.userId,
-            communityId: r.communityId,
-            status: "error",
-            reason: "userId or communityId is blank",
-          });
-          continue;
-        }
-        if (!r.priorActiveFrom) {
-          outcomes.push({
-            userId: r.userId,
-            communityId: r.communityId,
-            status: "skipped",
-            reason: "priorActiveFrom blank",
-          });
-          continue;
-        }
-        const activeFrom = parsePriorActiveFrom(r.priorActiveFrom);
-        if (!activeFrom) {
-          outcomes.push({
-            userId: r.userId,
-            communityId: r.communityId,
-            status: "error",
-            reason: `priorActiveFrom not parseable: "${r.priorActiveFrom}"`,
-          });
-          continue;
-        }
-        const sourceParsed = parseSource(r.priorActivitySource);
-        if (sourceParsed === "INVALID") {
-          outcomes.push({
-            userId: r.userId,
-            communityId: r.communityId,
-            status: "error",
-            reason: `priorActivitySource not a known enum: "${r.priorActivitySource}"`,
-          });
-          continue;
-        }
-        const source =
-          sourceParsed === "DEFAULT" ? MemberPriorActivitySource.ADMIN_CONFIRMED : sourceParsed;
+    .$transaction(
+      async (tx) => {
+        for (const r of rows) {
+          if (!r.userId || !r.communityId) {
+            outcomes.push({
+              userId: r.userId,
+              communityId: r.communityId,
+              status: "error",
+              reason: "userId or communityId is blank",
+            });
+            continue;
+          }
+          if (!r.priorActiveFrom) {
+            outcomes.push({
+              userId: r.userId,
+              communityId: r.communityId,
+              status: "skipped",
+              reason: "priorActiveFrom blank",
+            });
+            continue;
+          }
+          const activeFrom = parsePriorActiveFrom(r.priorActiveFrom);
+          if (!activeFrom) {
+            outcomes.push({
+              userId: r.userId,
+              communityId: r.communityId,
+              status: "error",
+              reason: `priorActiveFrom not parseable: "${r.priorActiveFrom}"`,
+            });
+            continue;
+          }
+          const sourceParsed = parseSource(r.priorActivitySource);
+          if (sourceParsed === "INVALID") {
+            outcomes.push({
+              userId: r.userId,
+              communityId: r.communityId,
+              status: "error",
+              reason: `priorActivitySource not a known enum: "${r.priorActivitySource}"`,
+            });
+            continue;
+          }
+          const source =
+            sourceParsed === "DEFAULT" ? MemberPriorActivitySource.ADMIN_CONFIRMED : sourceParsed;
 
-        const existing = await tx.membership.findUnique({
-          where: {
-            userId_communityId: { userId: r.userId, communityId: r.communityId },
-          },
-          select: { userId: true },
-        });
-        if (!existing) {
+          // Pre-check the note against the column's VARCHAR(500) bound
+          // before queuing the update. Without this, a single oversize
+          // cell would surface as a Prisma `P2000` mid-transaction and
+          // roll the entire batch back, hiding which row was at fault.
+          // Reporting it row-by-row lets the operator fix that one cell
+          // and re-run.
+          if (r.priorActivityNote.length > 500) {
+            outcomes.push({
+              userId: r.userId,
+              communityId: r.communityId,
+              status: "error",
+              reason: `priorActivityNote too long (${r.priorActivityNote.length} > 500)`,
+            });
+            continue;
+          }
+
+          const existing = await tx.membership.findUnique({
+            where: {
+              userId_communityId: { userId: r.userId, communityId: r.communityId },
+            },
+            select: { userId: true },
+          });
+          if (!existing) {
+            outcomes.push({
+              userId: r.userId,
+              communityId: r.communityId,
+              status: "error",
+              reason: "membership not found (re-export from this community first)",
+            });
+            continue;
+          }
+
+          await tx.membership.update({
+            where: {
+              userId_communityId: { userId: r.userId, communityId: r.communityId },
+            },
+            data: {
+              priorActiveFrom: activeFrom,
+              // Empty note is normalized to NULL so a manager clearing a
+              // cell in the spreadsheet round-trips back to "no note"
+              // instead of an empty-string row that's surprising to query.
+              priorActivityNote: r.priorActivityNote === "" ? null : r.priorActivityNote,
+              priorActivitySource: source,
+              priorActivityRecordedBy: args.recordedBy,
+            },
+          });
           outcomes.push({
             userId: r.userId,
             communityId: r.communityId,
-            status: "error",
-            reason: "membership not found (re-export from this community first)",
+            status: "updated",
           });
-          continue;
         }
 
-        await tx.membership.update({
-          where: {
-            userId_communityId: { userId: r.userId, communityId: r.communityId },
-          },
-          data: {
-            priorActiveFrom: activeFrom,
-            // Empty note is normalized to NULL so a manager clearing a
-            // cell in the spreadsheet round-trips back to "no note"
-            // instead of an empty-string row that's surprising to query.
-            priorActivityNote: r.priorActivityNote === "" ? null : r.priorActivityNote,
-            priorActivitySource: source,
-            priorActivityRecordedBy: args.recordedBy,
-          },
-        });
-        outcomes.push({
-          userId: r.userId,
-          communityId: r.communityId,
-          status: "updated",
-        });
-      }
-
-      if (args.dryRun) {
-        // Throw inside the transaction callback so Prisma rolls back
-        // every update we just queued. The catch in the surrounding
-        // try/finally below swallows this specific marker and reports
-        // the dry-run summary on the way out.
-        throw new DryRunRollback();
-      }
-    })
+        if (args.dryRun) {
+          // Throw inside the transaction callback so Prisma rolls back
+          // every update we just queued. The catch in the surrounding
+          // try/finally below swallows this specific marker and reports
+          // the dry-run summary on the way out.
+          throw new DryRunRollback();
+        }
+      },
+      { timeout: 60_000, maxWait: 60_000 },
+    )
     .catch((e: unknown) => {
       if (e instanceof DryRunRollback) return;
       throw e;
