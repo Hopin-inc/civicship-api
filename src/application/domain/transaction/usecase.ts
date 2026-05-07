@@ -5,7 +5,7 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
+import { clampFirst, getCommunityIdFromCtx, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
@@ -86,13 +86,11 @@ export default class TransactionUseCase {
   }
 
   async ownerIssueCommunityPoint(
-    { input, permission }: GqlMutationTransactionIssueCommunityPointArgs,
+    { input }: GqlMutationTransactionIssueCommunityPointArgs,
     ctx: IContext,
   ): Promise<GqlTransactionIssueCommunityPointPayload> {
-    const communityWallet = await this.walletService.findCommunityWalletOrThrow(
-      ctx,
-      permission.communityId,
-    );
+    const communityId = getCommunityIdFromCtx(ctx);
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
     const uploadedImages = await this.uploadTransactionImages(input.images);
 
     const res = await ctx.issuer.onlyBelongingCommunity(
@@ -116,30 +114,22 @@ export default class TransactionUseCase {
 
   async ownerGrantCommunityPoint(
     ctx: IContext,
-    { input, permission }: GqlMutationTransactionGrantCommunityPointArgs,
+    { input }: GqlMutationTransactionGrantCommunityPointArgs,
   ): Promise<GqlTransactionGrantCommunityPointPayload> {
     const { toUserId, transferPoints, comment } = input;
     const currentUserId = getCurrentUserId(ctx);
-    const communityWallet = await this.walletService.findCommunityWalletOrThrow(
-      ctx,
-      permission.communityId,
-    );
+    const communityId = getCommunityIdFromCtx(ctx);
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(ctx, communityId);
     const uploadedImages = await this.uploadTransactionImages(input.images);
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(
       ctx,
       async (tx: Prisma.TransactionClient) => {
-        await this.membershipService.joinIfNeeded(
-          ctx,
-          currentUserId,
-          permission.communityId,
-          tx,
-          toUserId,
-        );
+        await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx, toUserId);
         const { toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
           ctx,
           tx,
-          permission.communityId,
+          communityId,
           toUserId,
           transferPoints,
           TransactionReason.GRANT,
@@ -232,7 +222,7 @@ export default class TransactionUseCase {
 
   async userUpdateTransactionMetadata(
     ctx: IContext,
-    { id, input, permission, communityPermission }: GqlMutationTransactionUpdateMetadataArgs,
+    { id, input }: GqlMutationTransactionUpdateMetadataArgs,
   ): Promise<GqlTransactionUpdateMetadataPayload> {
     const currentUserId = getCurrentUserId(ctx);
 
@@ -241,27 +231,29 @@ export default class TransactionUseCase {
       throw new NotFoundError(`TransactionNotFound: ID=${id}`);
     }
 
-    if (communityPermission?.communityId) {
-      const isOwner =
-        ctx.isAdmin ||
+    // The @authz directive admits IsSelf OR IsCommunityOwner. Pick the
+    // applicable authority here without relying on a client-supplied
+    // mode flag: prefer owner-mode when the caller actually owns the
+    // current community AND the txn was emitted from that community's
+    // wallet, otherwise fall back to self-mode (caller is the creator).
+    const ctxCommunityId = ctx.communityId;
+    const isOwnerOfCtxCommunity =
+      ctx.isAdmin ||
+      (!!ctxCommunityId &&
         ctx.currentUser?.memberships?.some(
-          (m) => m.communityId === communityPermission.communityId && m.role === Role.OWNER,
-        ) === true;
-      if (!isOwner) {
-        throw new AuthorizationError("User must be community owner");
-      }
+          (m) => m.communityId === ctxCommunityId && m.role === Role.OWNER,
+        ) === true);
+    const isCreator = existing.createdBy === currentUserId;
+
+    if (isOwnerOfCtxCommunity && ctxCommunityId) {
       const communityWallet = await this.walletService.findCommunityWalletOrThrow(
         ctx,
-        communityPermission.communityId,
+        ctxCommunityId,
       );
-      if (existing.from !== communityWallet.id) {
+      if (existing.from !== communityWallet.id && !isCreator) {
         throw new AuthorizationError("Transaction is not from the community wallet");
       }
-    } else if (permission?.userId) {
-      if (existing.createdBy !== currentUserId) {
-        throw new AuthorizationError("User is not the creator of this transaction");
-      }
-    } else {
+    } else if (!isCreator) {
       throw new AuthorizationError("Insufficient permissions to update transaction metadata");
     }
 

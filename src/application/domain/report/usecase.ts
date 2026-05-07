@@ -1,7 +1,8 @@
 import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { ValidationError } from "@/errors/graphql";
+import { AuthorizationError, ValidationError } from "@/errors/graphql";
+import { getCommunityIdFromCtx } from "@/application/domain/utils";
 import logger from "@/infrastructure/logging";
 import ReportService from "@/application/domain/report/service";
 import ReportJudgeService, {
@@ -323,13 +324,13 @@ export default class ReportUseCase {
   // =========================================================================
 
   async generateReport(
-    { input, permission }: GqlMutationGenerateReportArgs,
+    { input }: GqlMutationGenerateReportArgs,
     ctx: IContext,
   ): Promise<GqlGenerateReportPayload> {
-    if (permission.communityId !== input.communityId) {
-      throw new ValidationError("communityId in input does not match permission.communityId", []);
+    const communityId = getCommunityIdFromCtx(ctx);
+    if (communityId !== input.communityId) {
+      throw new ValidationError("communityId in input does not match x-community-id header", []);
     }
-    const communityId = permission.communityId;
 
     const periodFrom = truncateToJstDate(input.periodFrom);
     const periodTo = truncateToJstDate(input.periodTo);
@@ -725,8 +726,8 @@ export default class ReportUseCase {
     periodFrom: Date,
     periodTo: Date,
   ): Promise<Prisma.ReportUncheckedCreateInput> {
-    // `communityId` is sourced from the already-authorized
-    // `permission.communityId` upstream, rather than re-reading
+    // `communityId` is sourced from the authorized request context
+    // (`x-community-id` header) upstream, rather than re-reading
     // `payload.community_id`, so the two cannot drift if the payload
     // builder's responsibilities change later.
     const parentRegenerateCount = await this.supersedeParentIfRegenerating(
@@ -796,11 +797,12 @@ export default class ReportUseCase {
   }
 
   async browseReports(
-    { communityId, variant, status, cursor, first, permission }: GqlQueryReportsArgs,
+    { communityId, variant, status, cursor, first }: GqlQueryReportsArgs,
     ctx: IContext,
   ): Promise<GqlReportsConnection> {
-    if (permission.communityId !== communityId) {
-      throw new ValidationError("communityId does not match permission.communityId", []);
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
+    if (ctxCommunityId !== communityId) {
+      throw new ValidationError("communityId does not match x-community-id header", []);
     }
     const clampedFirst = first
       ? clampInt(first, 1, MAX_REPORTS_PER_PAGE, "first")
@@ -817,7 +819,15 @@ export default class ReportUseCase {
 
   async viewReport({ id }: GqlQueryReportArgs, ctx: IContext): Promise<GqlReport | null> {
     const report = await this.service.getReportById(ctx, id);
-    return report ? ReportPresenter.report(report) : null;
+    if (!report) return null;
+    // Non-admin owners must only see reports of their own community.
+    // The IsCommunityOwner rule verifies ownership of `ctx.communityId`,
+    // but does not bind the report id to that community — without this
+    // check an owner could view another community's report by id.
+    if (!ctx.isAdmin && report.communityId !== ctx.communityId) {
+      return null;
+    }
+    return ReportPresenter.report(report);
   }
 
   async viewReportTemplate(
@@ -893,9 +903,10 @@ export default class ReportUseCase {
     { id }: GqlMutationApproveReportArgs,
     ctx: IContext,
   ): Promise<GqlApproveReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.APPROVED);
       return this.service.updateReportStatus(ctx, id, ReportStatus.APPROVED, undefined, tx);
     });
@@ -906,9 +917,10 @@ export default class ReportUseCase {
     { id, finalContent }: GqlMutationPublishReportArgs,
     ctx: IContext,
   ): Promise<GqlPublishReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.PUBLISHED);
       const updated = await this.service.updateReportStatus(
         ctx,
@@ -937,9 +949,10 @@ export default class ReportUseCase {
     { id }: GqlMutationRejectReportArgs,
     ctx: IContext,
   ): Promise<GqlRejectReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.REJECTED);
       return this.service.updateReportStatus(ctx, id, ReportStatus.REJECTED, undefined, tx);
     });
@@ -949,7 +962,7 @@ export default class ReportUseCase {
   /**
    * Phase 2 sysAdmin: cross-community report search. The IsAdmin
    * directive on the GraphQL query is the only authz gate (no
-   * permission.communityId hand-off) — the usecase trusts the
+   * community scoping hand-off) — the usecase trusts the
    * directive and does not re-check sysRole.
    */
   async browseAllReports(
@@ -1000,6 +1013,17 @@ export default class ReportUseCase {
     await ctx.issuer.internal((tx) => this.service.refreshTransactionSummaryDaily(ctx, tx));
     await ctx.issuer.internal((tx) => this.service.refreshUserTransactionDaily(ctx, tx));
     await ctx.issuer.internal((tx) => this.service.refreshDonationTxEdges(ctx, tx));
+  }
+
+  // IsCommunityOwner gates approve/publish/reject by `ctx.communityId` only;
+  // it does not bind the report `id` to that community. Without this check
+  // an owner of community A could approve/publish/reject a report of
+  // community B by passing the foreign id. SYS_ADMIN bypasses scoping.
+  private assertReportInScope(ctx: IContext, reportCommunityId: string): void {
+    if (ctx.isAdmin) return;
+    if (reportCommunityId !== ctx.communityId) {
+      throw new AuthorizationError("Report does not belong to the current community");
+    }
   }
 }
 

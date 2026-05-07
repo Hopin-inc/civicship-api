@@ -78,14 +78,19 @@ const IsSelf = preExecRule({
 // 🔐 コミュニティのオーナーか
 const IsCommunityOwner = preExecRule({
   error: new AuthorizationError("User must be community owner"),
-})((context: IContext, args: { permission?: { communityId?: string }; communityPermission?: { communityId?: string } }) => {
+})((context: IContext) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId ?? args.communityPermission?.communityId;
+  // Scope is resolved from the `x-community-id` header — the auth
+  // middleware injects it from the authenticated session, so it's the
+  // only trusted source. Args (`permission` / `communityPermission`)
+  // are deprecated and ignored to keep the authz check and the
+  // operation aligned on the same community.
+  const communityId = context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityOwner authorization FAILED", {
       rule: "IsCommunityOwner",
-      reason: "no_community_id_in_args",
+      reason: "no_community_id_in_ctx",
     });
     return false;
   }
@@ -107,14 +112,14 @@ const IsCommunityOwner = preExecRule({
 // 🔐 コミュニティマネージャー（OWNER または MANAGER）
 const IsCommunityManager = preExecRule({
   error: new AuthorizationError("User must be community manager or owner"),
-})((context: IContext, args: { permission?: { communityId?: string } }) => {
+})((context: IContext) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId;
+  const communityId = context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityManager authorization FAILED", {
       rule: "IsCommunityManager",
-      reason: "no_community_id_in_permission",
+      reason: "no_community_id_in_ctx",
     });
     return false;
   }
@@ -136,14 +141,14 @@ const IsCommunityManager = preExecRule({
 // 🔐 コミュニティメンバー（OWNER / MANAGER / MEMBER）
 const IsCommunityMember = preExecRule({
   error: new AuthorizationError("User must be a community member"),
-})((context: IContext, args: { permission?: { communityId?: string } }) => {
+})((context: IContext) => {
   if (context.isAdmin) return true;
 
-  const communityId = args.permission?.communityId;
+  const communityId = context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityMember authorization FAILED", {
       rule: "IsCommunityMember",
-      reason: "no_community_id_in_permission",
+      reason: "no_community_id_in_ctx",
     });
     return false;
   }

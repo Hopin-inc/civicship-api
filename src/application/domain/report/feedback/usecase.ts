@@ -5,6 +5,7 @@ import { AuthenticationError, NotFoundError, ValidationError } from "@/errors/gr
 import ReportService from "@/application/domain/report/service";
 import ReportFeedbackService from "@/application/domain/report/feedback/service";
 import ReportFeedbackPresenter from "@/application/domain/report/feedback/presenter";
+import { getCommunityIdFromCtx } from "@/application/domain/utils";
 import {
   GqlMutationSubmitReportFeedbackArgs,
   GqlSubmitReportFeedbackPayload,
@@ -45,10 +46,11 @@ export default class ReportFeedbackUseCase {
    *      misbehaving client can't push multi-MB rows.
    *   3. The target `Report` exists and belongs to the community the
    *      caller already passed authz for — the `@authz IsCommunityMember`
-   *      rule checks `permission.communityId`, but we still need to
-   *      confirm the `reportId` is actually from that community; otherwise
-   *      a member of community A could rate a report of community B by
-   *      forging the report id.
+   *      rule checks the request community (resolved from
+   *      `x-community-id` header), but we still need to confirm the
+   *      `reportId` is actually from that community; otherwise a member
+   *      of community A could rate a report of community B by forging
+   *      the report id.
    *   4. One submit per (report, user). Pre-checked here so the client
    *      gets a structured ValidationError before the DB raises P2002 —
    *      friendlier message, same invariant. The @@unique([reportId, userId])
@@ -63,28 +65,27 @@ export default class ReportFeedbackUseCase {
    * second submit could land between the checks and the write.
    */
   async submitReportFeedback(
-    { input, permission }: GqlMutationSubmitReportFeedbackArgs,
+    { input }: GqlMutationSubmitReportFeedbackArgs,
     ctx: IContext,
   ): Promise<GqlSubmitReportFeedbackPayload> {
     const userId = ctx.currentUser?.id;
     if (!userId) {
       throw new AuthenticationError("User must be logged in to submit feedback");
     }
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
 
     if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
       throw new ValidationError("rating must be an integer between 1 and 5", ["rating"]);
     }
     if (input.comment && input.comment.length > MAX_COMMENT_LENGTH) {
-      throw new ValidationError(
-        `comment cannot exceed ${MAX_COMMENT_LENGTH} characters`,
-        ["comment"],
-      );
+      throw new ValidationError(`comment cannot exceed ${MAX_COMMENT_LENGTH} characters`, [
+        "comment",
+      ]);
     }
     if (input.sectionKey && input.sectionKey.length > MAX_SECTION_KEY_LENGTH) {
-      throw new ValidationError(
-        `sectionKey cannot exceed ${MAX_SECTION_KEY_LENGTH} characters`,
-        ["sectionKey"],
-      );
+      throw new ValidationError(`sectionKey cannot exceed ${MAX_SECTION_KEY_LENGTH} characters`, [
+        "sectionKey",
+      ]);
     }
 
     // `ctx.issuer.public` is used here deliberately — `t_report_feedbacks`
@@ -96,8 +97,8 @@ export default class ReportFeedbackUseCase {
     // is already enforced in two places:
     //   1. `@authz IsCommunityMember` on the GraphQL mutation rejects
     //      non-members before the resolver is entered.
-    //   2. The explicit `report.communityId === permission.communityId`
-    //      check below stops a member of community A from forging a
+    //   2. The explicit `report.communityId === ctxCommunityId` check
+    //      below stops a member of community A from forging a
     //      `reportId` belonging to community B.
     // If we later want defence-in-depth via RLS, a follow-up PR can add
     // the member-write policy and swap this for `onlyBelongingCommunity`
@@ -107,11 +108,11 @@ export default class ReportFeedbackUseCase {
       if (!report) {
         throw new NotFoundError("Report", { id: input.reportId });
       }
-      if (report.communityId !== permission.communityId) {
+      if (report.communityId !== ctxCommunityId) {
         // We return a NotFoundError rather than AuthorizationError here
         // so a non-member can't probe existence of other communities'
         // reports by watching the error code. The authz rule already
-        // verified membership of `permission.communityId`.
+        // verified membership of `ctxCommunityId`.
         throw new NotFoundError("Report", { id: input.reportId });
       }
 
@@ -122,10 +123,7 @@ export default class ReportFeedbackUseCase {
         tx,
       );
       if (existing) {
-        throw new ValidationError(
-          "Feedback already submitted for this report",
-          ["reportId"],
-        );
+        throw new ValidationError("Feedback already submitted for this report", ["reportId"]);
       }
 
       try {
@@ -140,9 +138,7 @@ export default class ReportFeedbackUseCase {
             // enum is the source of truth and the GraphQL schema mirrors
             // it), so a plain assertion is enough — no `as unknown`
             // intermediate needed.
-            feedbackType: input.feedbackType
-              ? (input.feedbackType as FeedbackType)
-              : null,
+            feedbackType: input.feedbackType ? (input.feedbackType as FeedbackType) : null,
             sectionKey: input.sectionKey ?? null,
             comment: input.comment ?? null,
           },
@@ -155,10 +151,7 @@ export default class ReportFeedbackUseCase {
         // P2002 into the same ValidationError the pre-check would have
         // thrown so clients see one error code for the invariant.
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-          throw new ValidationError(
-            "Feedback already submitted for this report",
-            ["reportId"],
-          );
+          throw new ValidationError("Feedback already submitted for this report", ["reportId"]);
         }
         throw e;
       }
@@ -180,11 +173,7 @@ export default class ReportFeedbackUseCase {
     { variant, version }: GqlQueryReportTemplateStatsArgs,
     ctx: IContext,
   ): Promise<GqlReportTemplateStats> {
-    const row = await this.feedbackService.getTemplateStats(
-      ctx,
-      variant,
-      version ?? undefined,
-    );
+    const row = await this.feedbackService.getTemplateStats(ctx, variant, version ?? undefined);
     return ReportFeedbackPresenter.templateStats(row);
   }
 

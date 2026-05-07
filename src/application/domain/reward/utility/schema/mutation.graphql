@@ -2,85 +2,89 @@
 # Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    utilityCreate(
-        input: UtilityCreateInput!
-        permission:CheckCommunityPermissionInput!
-    ): UtilityCreatePayload
-    @authz(rules: [IsCommunityManager])
+  utilityCreate(
+    input: UtilityCreateInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): UtilityCreatePayload @authz(rules: [IsCommunityManager])
 
-    utilityDelete(
-        id: ID!
-        permission:CheckCommunityPermissionInput!
-    ): UtilityDeletePayload
-    @authz(rules: [IsCommunityManager])
+  utilityDelete(
+    id: ID!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): UtilityDeletePayload @authz(rules: [IsCommunityManager])
 
-    utilityUpdateInfo(
-        id: ID!
-        input: UtilityUpdateInfoInput!
-        permission:CheckCommunityPermissionInput!
-    ): UtilityUpdateInfoPayload
-    @authz(rules: [IsCommunityManager])
+  utilityUpdateInfo(
+    id: ID!
+    input: UtilityUpdateInfoInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): UtilityUpdateInfoPayload @authz(rules: [IsCommunityManager])
 
-    utilitySetPublishStatus(
-        id: ID!
-        input: UtilitySetPublishStatusInput!
-        permission:CheckCommunityPermissionInput!
-    ): UtilitySetPublishStatusPayload
-    @authz(rules: [IsCommunityManager])
+  utilitySetPublishStatus(
+    id: ID!
+    input: UtilitySetPublishStatusInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): UtilitySetPublishStatusPayload @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------
 # Input Definitions
 # ------------------------------
 input UtilityCreateInput {
-    name: String!
-    description: String
-    images: [ImageInput!]
-    requiredForOpportunityIds: [String!]
-    pointsRequired: Int!
+  name: String!
+  description: String
+  images: [ImageInput!]
+  requiredForOpportunityIds: [String!]
+  pointsRequired: Int!
 }
 
 input UtilityUpdateInfoInput {
-    name: String!
-    description: String
-    images: [ImageInput!]
-    pointsRequired: Int!
+  name: String!
+  description: String
+  images: [ImageInput!]
+  pointsRequired: Int!
 }
 
 input UtilitySetPublishStatusInput {
-    publishStatus: PublishStatus!
+  publishStatus: PublishStatus!
 }
 
 # ------------------------------
 # Success Type Definitions
 # ------------------------------
 type UtilityCreateSuccess {
-    utility: Utility!
+  utility: Utility!
 }
 
 type UtilityDeleteSuccess {
-    utilityId: String!
+  utilityId: String!
 }
 
 type UtilityUpdateInfoSuccess {
-    utility: Utility!
+  utility: Utility!
 }
 
 type UtilitySetPublishStatusSuccess {
-    utility: Utility!
+  utility: Utility!
 }
 
 # ------------------------------
 # Union (Payload) Definitions
 # ------------------------------
-union UtilityCreatePayload =
-    UtilityCreateSuccess
+union UtilityCreatePayload = UtilityCreateSuccess
 
-union UtilityDeletePayload =
-    UtilityDeleteSuccess
+union UtilityDeletePayload = UtilityDeleteSuccess
 
-union UtilityUpdateInfoPayload =
-    UtilityUpdateInfoSuccess
+union UtilityUpdateInfoPayload = UtilityUpdateInfoSuccess
 
-union UtilitySetPublishStatusPayload =
-    UtilitySetPublishStatusSuccess
+union UtilitySetPublishStatusPayload = UtilitySetPublishStatusSuccess

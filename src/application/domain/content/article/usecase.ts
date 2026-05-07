@@ -15,13 +15,18 @@ import { IContext } from "@/types/server";
 import ArticleService from "@/application/domain/content/article/service";
 import ArticlePresenter from "@/application/domain/content/article/presenter";
 import { PublishStatus } from "@prisma/client";
-import { canViewArticleByPublishStatus, clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import {
+  canViewArticleByPublishStatus,
+  clampFirst,
+  getCommunityIdFromCtx,
+  getMembershipRolesByCtx,
+} from "@/application/domain/utils";
 import { articleInclude } from "@/application/domain/content/article/data/type";
 import { injectable, inject } from "tsyringe";
 
 @injectable()
 export default class ArticleUseCase {
-  constructor(@inject("ArticleService") private service: ArticleService) { }
+  constructor(@inject("ArticleService") private service: ArticleService) {}
 
   async anyoneBrowseArticles(
     ctx: IContext,
@@ -65,10 +70,7 @@ export default class ArticleUseCase {
     return ArticlePresenter.query(data, hasNextPage, cursor);
   }
 
-  async visitorViewArticle(
-    ctx: IContext,
-    { id }: GqlQueryArticleArgs,
-  ): Promise<GqlArticle | null> {
+  async visitorViewArticle(ctx: IContext, { id }: GqlQueryArticleArgs): Promise<GqlArticle | null> {
     const record = await this.service.findArticle(ctx, id);
     if (!record) {
       return null;
@@ -77,7 +79,15 @@ export default class ArticleUseCase {
     // Check if user can view based on publishStatus and role
     const authorIds = record.authors.map((a) => a.id);
     const relatedUserIds = record.relatedUsers.map((u) => u.id);
-    if (!canViewArticleByPublishStatus(ctx, record.publishStatus, record.communityId, authorIds, relatedUserIds)) {
+    if (
+      !canViewArticleByPublishStatus(
+        ctx,
+        record.publishStatus,
+        record.communityId,
+        authorIds,
+        relatedUserIds,
+      )
+    ) {
       return null;
     }
 
@@ -87,11 +97,12 @@ export default class ArticleUseCase {
   }
 
   async managerCreateArticle(
-    { input, permission }: GqlMutationArticleCreateArgs,
+    { input }: GqlMutationArticleCreateArgs,
     ctx: IContext,
   ): Promise<GqlArticleCreatePayload> {
+    const communityId = getCommunityIdFromCtx(ctx);
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const record = await this.service.createArticle(ctx, input, permission.communityId, tx);
+      const record = await this.service.createArticle(ctx, input, communityId, tx);
       return ArticlePresenter.create(record);
     });
   }

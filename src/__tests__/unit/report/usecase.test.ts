@@ -87,6 +87,7 @@ describe("ReportUseCase.generateReport", () => {
   // test-only: production IContext pulls in issuer / auth / loader wiring
   // we don't exercise here; the cast keeps the mock shape minimal.
   const fakeCtx = {
+    communityId,
     issuer: {
       onlyBelongingCommunity: (
         _ctx: IContext,
@@ -812,15 +813,15 @@ describe("ReportUseCase A-3 community last-publish pointer maintenance", () => {
   const communityId = "kibotcha";
   const fakeTx = {} as never;
   const fakeCtx = {
+    communityId,
+    isAdmin: true,
     issuer: {
       onlyBelongingCommunity: (
         _ctx: IContext,
         fn: (tx: unknown) => Promise<unknown>,
       ): Promise<unknown> => fn(fakeTx),
-      admin: (
-        _ctx: IContext,
-        fn: (tx: unknown) => Promise<unknown>,
-      ): Promise<unknown> => fn(fakeTx),
+      admin: (_ctx: IContext, fn: (tx: unknown) => Promise<unknown>): Promise<unknown> =>
+        fn(fakeTx),
     },
     currentUser: { id: "admin-user" },
   } as unknown as IContext;

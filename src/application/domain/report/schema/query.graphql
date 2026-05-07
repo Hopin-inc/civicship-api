@@ -8,19 +8,23 @@ extend type Query {
     status: ReportStatus
     cursor: String
     first: Int
-    permission: CheckCommunityPermissionInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
   ): ReportsConnection! @authz(compositeRules: [{ or: [IsCommunityManager, IsAdmin] }])
 
-  report(id: ID!): Report @authz(rules: [IsAdmin])
+  report(id: ID!): Report @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
-  reportTemplate(communityId: ID, variant: ReportVariant!): ReportTemplate @authz(rules: [IsAdmin])
+  reportTemplate(communityId: ID, variant: ReportVariant!): ReportTemplate
+    @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
-  # PR-F4: SYS_ADMIN-only snapshot of how a (variant, version) is
+  # PR-F4: snapshot of how a (variant, version) is
   # performing — avg feedback rating, avg judge score, and Pearson's
   # correlation between them. Used to decide when the judge prompt
   # needs re-calibration (correlation < 0.7 → flagged).
   reportTemplateStats(variant: ReportVariant!, version: Int): ReportTemplateStats!
-    @authz(rules: [IsAdmin])
+    @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
   # Phase 1 admin UI: same-variant template list (A/B candidates / past
   # versions). Single-row `reportTemplate` cannot expose the multiple
@@ -33,7 +37,7 @@ extend type Query {
     communityId: ID
     kind: ReportTemplateKind = GENERATION
     includeInactive: Boolean = false
-  ): [ReportTemplate!]! @authz(rules: [IsAdmin])
+  ): [ReportTemplate!]! @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
   # Phase 1 admin UI: per-template quality breakdown for the A/B
   # comparison screen — rows are templates (one per `prompt version`
@@ -50,14 +54,16 @@ extend type Query {
     includeInactive: Boolean = false
     cursor: String
     first: Int = 20
-  ): ReportTemplateStatsBreakdownConnection! @authz(rules: [IsAdmin])
+  ): ReportTemplateStatsBreakdownConnection!
+    @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
-  # Phase 1.5 sysAdmin: review-style list of individual feedbacks for a
+  # Phase 1.5: review-style list of individual feedbacks for a
   # template (variant + optional version). The `reportTemplateStatsBreakdown`
   # query above only exposes per-row aggregates (avgRating / avgJudgeScore),
-  # which hides the *why* behind a low score — sysAdmins iterating on
-  # prompts need to read the actual comments to spot recurring failure
-  # modes (tone drift, fabricated numbers, structural issues, etc.).
+  # which hides the *why* behind a low score — operators iterating on
+  # prompt iterators need to read the actual comments to spot
+  # recurring failure modes (tone drift, fabricated numbers, structural
+  # issues, etc.).
   #
   # Filters are oriented at the "drill into low ratings" workflow:
   #   - `version: null` rolls up across every revision of the variant.
@@ -82,9 +88,9 @@ extend type Query {
     maxRating: Int
     cursor: String
     first: Int = 20
-  ): ReportFeedbacksConnection! @authz(rules: [IsAdmin])
+  ): ReportFeedbacksConnection! @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
-  # Phase 1.5 sysAdmin: aggregate stats for a template's feedback set,
+  # Phase 1.5: aggregate stats for a template's feedback set,
   # rendered as a "Customer Reviews"-style summary (avg rating + total
   # count + 1..5 distribution bar) on the template detail page.
   # `reportTemplateFeedbacks` returns the paginated list; this query
@@ -103,10 +109,11 @@ extend type Query {
     variant: ReportVariant!
     version: Int
     kind: ReportTemplateKind = GENERATION
-  ): AdminTemplateFeedbackStats! @authz(rules: [IsAdmin])
+  ): AdminTemplateFeedbackStats! @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
-  # Phase 2 sysAdmin: cross-community report search. Same shape as
-  # `reports` but `permission` is dropped — IsAdmin alone gates access.
+  # Phase 2: cross-community report search. Same shape as
+  # `reports` but `permission` is dropped — scope is the community
+  # carried in `x-community-id` (or any community for SYS_ADMIN).
   # Order is `publishedAt DESC NULLS LAST, createdAt DESC` so DRAFT /
   # SKIPPED rows that have no publishedAt sink to the bottom rather
   # than leading the page. Filters are all optional so the same query
@@ -120,9 +127,9 @@ extend type Query {
     publishedBefore: Datetime
     cursor: String
     first: Int
-  ): ReportsConnection! @authz(rules: [IsAdmin])
+  ): ReportsConnection! @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
-  # Phase 2 sysAdmin: per-community last-publish summary for the L1
+  # Phase 2: per-community last-publish summary for the L1
   # dashboard. Sort order `lastPublishedAt ASC NULLS FIRST` floats
   # dormant / never-published communities to the top so they are the
   # first things an operator sees. The `lastPublishedReportAt` column
@@ -130,8 +137,6 @@ extend type Query {
   # `publishReport` and `supersedeParentIfRegenerating` (A-3); it is
   # NOT exposed on the `Community` type to keep general community
   # reads cheap.
-  reportSummaries(
-    cursor: String
-    first: Int
-  ): AdminReportSummaryConnection! @authz(rules: [IsAdmin])
+  reportSummaries(cursor: String, first: Int): AdminReportSummaryConnection!
+    @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 }
