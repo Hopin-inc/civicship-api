@@ -24,7 +24,6 @@
 [![CodeQL](https://github.com/Hopin-inc/civicship-api/actions/workflows/codeql.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Hopin-inc/civicship-api/badge)](https://scorecard.dev/viewer/?uri=github.com/Hopin-inc/civicship-api)
 [![Trivy](https://github.com/Hopin-inc/civicship-api/actions/workflows/trivy-daily.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/trivy-daily.yml)
-[![Known Vulnerabilities](https://snyk.io/test/github/Hopin-inc/civicship-api/badge.svg)](https://snyk.io/test/github/Hopin-inc/civicship-api)
 [![StepSecurity](https://img.shields.io/badge/StepSecurity-Harden_Runner-4D7CFF?logo=github&logoColor=white)](https://github.com/step-security/harden-runner)
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c?logo=dependabot&logoColor=white)](.github/dependabot.yml)
 [![Hadolint](https://img.shields.io/badge/hadolint-passing-brightgreen?logo=docker&logoColor=white)](.hadolint.yaml)
