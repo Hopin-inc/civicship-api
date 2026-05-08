@@ -21,6 +21,38 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # `dependency-review-action` は PR diff (base..head) で **新規追加された**
+  # npm 依存に既知 CVE / 不適合 license が含まれていないかを GitHub の
+  # advisory DB に問い合わせて gate する。`pnpm audit` (build job 内、
+  # advisory) が lockfile 全体を継続監視するのに対し、こちらは
+  # **PR で増えた diff だけ** を高い severity で blocking する役割分担。
+  # push (master) や手動 dispatch では動かないため `if: github.event_name`
+  # で gating する。aggregator (`ci` job) は `skipped` を success 扱い
+  # にしているので push 時は無害に skip される。
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # comment-summary-in-pr で失敗時に PR コメントを起こすため write が必要。
+      pull-requests: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9 # v4.7.1
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -137,10 +169,20 @@ jobs:
       # change independently of code changes; gating CI on transitive
       # vulnerabilities yields a flaky required check). The full audit output
       # is preserved in the step log for triage.
+      # `pnpm audit` は npm advisory DB ベースで lockfile 全体 (transitive 含む)
+      # を継続監視する。Trivy は image レイヤ (OS / Debian package) しか
+      # 見ないので、両者で守備範囲が異なる:
+      #   - Trivy: Debian package / Node ランタイムの CVE
+      #   - pnpm audit: package.json + 推移的依存の npm advisory
+      # `--prod` で devDependencies (jest / eslint plugin 等) を除外し、
+      # 本番デプロイに乗らない dev tool の CVE ノイズを advisory から外す。
+      # CI runner 上では dev tool もコード実行されるが、production 影響を
+      # 切り分けて見たい運用に倒している (dev tool CVE は手動 pnpm audit /
+      # Dependabot の生 PR で別途確認可能)。
       - name: Audit (non-blocking, surfaces findings as warnings)
         run: |
-          if ! pnpm audit --audit-level=high; then
-            echo "::warning::pnpm audit found high-severity vulnerabilities (non-blocking — see step log for details)"
+          if ! pnpm audit --audit-level=high --prod; then
+            echo "::warning::pnpm audit found high-severity vulnerabilities in production deps (non-blocking — see step log for details)"
           fi
 
       # Surface destructive Prisma migration DDL (DROP TABLE / DROP COLUMN /
@@ -605,7 +647,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint, build, trivy, test]
+    needs: [dependency-review, lint, build, trivy, test]
     if: always()
     permissions:
       contents: read
@@ -614,11 +656,12 @@ jobs:
     steps:
       - name: Verify all required jobs passed
         run: |
+          dep_review='${{ needs.dependency-review.result }}'
           lint='${{ needs.lint.result }}'
           build='${{ needs.build.result }}'
           trivy='${{ needs.trivy.result }}'
           test='${{ needs.test.result }}'
-          echo "lint=$lint build=$build trivy=$trivy test=$test"
+          echo "dep_review=$dep_review lint=$lint build=$build trivy=$trivy test=$test"
           # CRITICAL を blocking 化したので trivy も required ジョブに昇格。
           # trivy job 内部で「scan = exit 0、最後に Surface step が件数 > 0 で
           # exit 1」という構造を取っているので、`failure` は CRITICAL 検出
@@ -626,7 +669,9 @@ jobs:
           # 必要になったら trivy job 側で step output を立てて aggregator で
           # 分岐する形に拡張する (現時点では「とにかく落ちたら deploy 不可」
           # という挙動で十分)。
-          for j in "$lint" "$build" "$trivy" "$test"; do
+          # dependency-review は push (master) 時に if-skip するので
+          # `skipped` を success と等価扱いする (case 句で吸収)。
+          for j in "$dep_review" "$lint" "$build" "$trivy" "$test"; do
             case "$j" in
               success|skipped) ;;
               *) echo "::error::required job failed: $j"; exit 1 ;;
