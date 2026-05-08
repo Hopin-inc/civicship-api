@@ -154,3 +154,7 @@ credentials/
 
 # NMKR generated files
 /src/infrastructure/libs/nmkr/types/*.d.ts
+
+# Claude Code personal overrides (shared settings live in .claude/settings.json)
+.claude/settings.local.json
+

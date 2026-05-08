@@ -1,0 +1,143 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh search:*)",
+
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git blame:*)",
+      "Bash(git stash list:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+
+      "Bash(pnpm install:*)",
+      "Bash(pnpm build)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test:coverage)",
+      "Bash(pnpm test --:*)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm gql:generate)",
+      "Bash(pnpm db:generate)",
+      "Bash(pnpm copy-graphql)",
+      "Bash(pnpm exec eslint:*)",
+      "Bash(pnpm exec prettier:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm ci:report-golden)",
+
+      "Bash(pnpm dev)",
+      "Bash(pnpm dev:https)",
+      "Bash(pnpm dev:external)",
+
+      "Bash(pnpm db:pull:local)",
+      "Bash(pnpm db:generate:local)",
+      "Bash(pnpm db:migrate:local)",
+      "Bash(pnpm db:deploy:local)",
+      "Bash(pnpm db:studio:local)",
+      "Bash(pnpm db:migrate-diff)",
+      "Bash(pnpm db:seed)",
+      "Bash(pnpm db:seed-master)",
+      "Bash(pnpm db:seed-domain)",
+      "Bash(pnpm db:seed-report-templates)",
+      "Bash(pnpm db:seed-report-golden-cases)",
+
+      "Bash(pnpm container:up)",
+      "Bash(pnpm container:down)",
+      "Bash(docker compose up:*)",
+      "Bash(docker compose down:*)",
+      "Bash(docker compose ps:*)",
+      "Bash(docker compose logs:*)",
+      "Bash(docker compose restart:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker exec civicship-db:*)",
+      "Bash(docker exec -it civicship-db:*)",
+      "Bash(docker exec civicship-api-db:*)",
+      "Bash(docker exec -it civicship-api-db:*)",
+      "Bash(docker exec civicship-api-postgres-1:*)",
+      "Bash(docker exec -it civicship-api-postgres-1:*)",
+
+      "Bash(psql postgresql://*@localhost:*)",
+      "Bash(psql postgresql://*@127.0.0.1:*)"
+    ],
+    "ask": [
+      "Bash(pnpm db:migrate-reset)",
+      "Bash(pnpm db:mark-rolled-back:*)",
+      "Bash(pnpm db:deploy)",
+      "Bash(pnpm db:migrate)",
+
+      "Bash(pnpm dev:https:dev)",
+      "Bash(pnpm db:pull:dev)",
+      "Bash(pnpm db:generate:dev)",
+      "Bash(pnpm db:deploy:dev)",
+      "Bash(pnpm db:studio:dev)",
+      "Bash(pnpm db:seed-report-templates:dev)",
+      "Bash(pnpm db:seed-report-golden-cases:dev)",
+      "Bash(pnpm richmenu:deploy:dev)",
+      "Bash(pnpm richmenu:deploy)",
+
+      "Bash(gh pr merge:*)",
+      "Bash(gh pr close:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh issue create:*)"
+    ],
+    "deny": [
+      "Bash(pnpm dev:https:prd)",
+      "Bash(pnpm db:pull:prd)",
+      "Bash(pnpm db:generate:prd)",
+      "Bash(pnpm db:migrate:prd)",
+      "Bash(pnpm db:deploy:prd)",
+      "Bash(pnpm db:studio:prd)",
+      "Bash(pnpm db:seed-report-templates:prd)",
+      "Bash(pnpm db:seed-report-golden-cases:prd)",
+      "Bash(pnpm richmenu:deploy:prd)",
+
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean -fd:*)",
+      "Bash(git clean -f:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git rebase -i:*)",
+
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf ~:*)",
+      "Bash(rm -rf .:*)",
+      "Bash(rm -rf *)",
+
+      "Bash(docker system prune:*)",
+      "Bash(docker volume prune:*)",
+      "Bash(docker volume rm:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/post-edit.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
