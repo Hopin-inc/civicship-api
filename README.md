@@ -28,17 +28,12 @@
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c?logo=dependabot&logoColor=white)](.github/dependabot.yml)
 [![Hadolint](https://img.shields.io/badge/hadolint-passing-brightgreen?logo=docker&logoColor=white)](.hadolint.yaml)
 
-<!-- ─── DDD KPIs (dynamic — requires GIST_SECRET / GIST_ID) ─────────── -->
-<!-- Setup: create a public Gist + a fine-grained PAT with `gist` scope.
-     Set GIST_SECRET (the PAT) and GIST_ID (the gist ID) as repo secrets,
-     then replace `<GIST_USER>/<GIST_ID>` below with the actual values.
-     The `Update Badges` workflow will populate the JSON files on push to master.
-[![DDD domains](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-domains.json)](#)
-[![GraphQL ops](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-graphql-ops.json)](#)
-[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-tests.json)](#)
-[![Prisma migrations](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-migrations.json)](#)
-[![UseCases](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-usecases.json)](#)
--->
+<!-- ─── DDD KPIs (dynamic — populated by .github/workflows/badges.yml) ─── -->
+[![DDD domains](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-domains.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
+[![GraphQL ops](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-graphql-ops.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
+[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-tests.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
+[![Prisma migrations](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-migrations.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
+[![UseCases](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-usecases.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
 
 <!-- ─── Repo Meta ───────────────────────────────────────────────────── -->
 ![Last commit](https://img.shields.io/github/last-commit/Hopin-inc/civicship-api/master)
