@@ -65,25 +65,30 @@ jobs:
         run: |
           set -euo pipefail
 
-          domains=$(find src/application/domain -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+          # `find ... -printf x` で 1 マッチ 1 文字を出力 → `wc -c` でバイト数 = 件数。
+          # `find | wc -l` だと shellcheck SC2126 が grep|wc-l と誤検知するため
+          # printf 形式で件数を返している (find はマッチしないと何も出さないので
+          # 空入力に対する `wc -c` は 0 を返す)。
+          domains=$(find src/application/domain -mindepth 1 -maxdepth 1 -type d -printf x | wc -c)
 
-          # Query / Mutation operation を素朴に grep。schema は 1 行 1 op の規約に従っているのでこれで十分。
-          ops=$(grep -hE '^[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(' \
+          # Query / Mutation operation を awk でカウント。schema は 1 行 1 op の規約。
+          ops=$(awk '/^[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(/ {n++} END{print n+0}' \
                   src/application/domain/*/schema/query.graphql \
-                  src/application/domain/*/schema/mutation.graphql 2>/dev/null \
-                  | wc -l | tr -d ' ')
+                  src/application/domain/*/schema/mutation.graphql 2>/dev/null)
 
-          tests=$(find src -type f \( -name '*.test.ts' -o -name '*.spec.ts' \) | wc -l | tr -d ' ')
+          tests=$(find src -type f \( -name '*.test.ts' -o -name '*.spec.ts' \) -printf x | wc -c)
 
-          migrations=$(find src/infrastructure/prisma/migrations -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+          migrations=$(find src/infrastructure/prisma/migrations -mindepth 1 -maxdepth 1 -type d -printf x | wc -c)
 
-          usecases=$(find src -type f -name 'usecase.ts' | wc -l | tr -d ' ')
+          usecases=$(find src -type f -name 'usecase.ts' -printf x | wc -c)
 
-          echo "domains=$domains"       | tee -a "$GITHUB_OUTPUT"
-          echo "ops=$ops"                | tee -a "$GITHUB_OUTPUT"
-          echo "tests=$tests"            | tee -a "$GITHUB_OUTPUT"
-          echo "migrations=$migrations"  | tee -a "$GITHUB_OUTPUT"
-          echo "usecases=$usecases"      | tee -a "$GITHUB_OUTPUT"
+          {
+            echo "domains=$domains"
+            echo "ops=$ops"
+            echo "tests=$tests"
+            echo "migrations=$migrations"
+            echo "usecases=$usecases"
+          } | tee -a "$GITHUB_OUTPUT"
 
       - name: Update badge — DDD domains
         if: steps.check.outputs.skip == 'false'
