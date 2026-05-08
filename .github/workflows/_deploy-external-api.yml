@@ -145,6 +145,12 @@ jobs:
       # CRITICAL = blocking、HIGH = advisory。政策と blocking 解除手順は
       # _deploy-cloud-run.yml の同名 step コメント + docs/handbook/SECURITY.md
       # 参照。両 image (internal / external) で完全に同じ政策。
+      # `limit-severities-for-sarif: true` の根拠は `_deploy-cloud-run.yml` の
+      # 同名 step コメント参照。trivy-action の `format: sarif` モードは
+      # default で severity フィルタが無効化されるため、本 flag が無いと
+      # `severity: CRITICAL` を指定しても HIGH/MEDIUM で exit-code: '1' が
+      # trip し deploy が誤 block される。両 image (internal / external) で
+      # 完全に同じ政策。
       - name: Scan image (Trivy CRITICAL — blocking)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -154,6 +160,7 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-critical.sarif
+          limit-severities-for-sarif: true
 
       - name: Scan image (Trivy HIGH — advisory)
         if: always()
@@ -165,6 +172,7 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-high.sarif
+          limit-severities-for-sarif: true
 
       # CRITICAL = ::error:: annotation, HIGH = ::warning::.
       # 同 step の根拠は _deploy-cloud-run.yml 参照。
