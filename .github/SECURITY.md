@@ -12,7 +12,9 @@ civicship-api のセキュリティ脆弱性を発見した場合の報告手順
 セキュリティ脆弱性は **必ず非公開チャネル** で報告してください。
 
 - 推奨: GitHub の **Private Vulnerability Reporting** 機能から報告
-  - <https://github.com/Hopin-inc/civicship-api/security/advisories/new>
+  - 本リポジトリの **Security タブ → Report a vulnerability** ボタンから
+    advisory を作成してください (本ファイル `SECURITY.md` を GitHub が認識
+    すると自動でリンクが表示されます)
   - GitHub アカウントがあれば誰でも利用可能。レポート / 議論 / fix の調整 / CVE 採番までを 1 つの advisory 内で完結できます。
 
 公開 issue / pull request / discussion 等で **脆弱性の詳細を開示しないでください**。
