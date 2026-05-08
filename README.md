@@ -28,12 +28,12 @@
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c?logo=dependabot&logoColor=white)](.github/dependabot.yml)
 [![Hadolint](https://img.shields.io/badge/hadolint-passing-brightgreen?logo=docker&logoColor=white)](.hadolint.yaml)
 
-<!-- ─── DDD KPIs (dynamic — populated by .github/workflows/badges.yml) ─── -->
-[![DDD domains](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-domains.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
-[![GraphQL ops](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-graphql-ops.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
-[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-tests.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
-[![Prisma migrations](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-migrations.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
-[![UseCases](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-usecases.json)](https://gist.github.com/709sakata/15e16d8aa7c4499d755d6b7db724e687)
+<!-- ─── DDD KPIs (dynamic — .github/workflows/badges.yml) ─────────────── -->
+[![DDD domains](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-domains.json)](./src/application/domain)
+[![GraphQL ops](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-graphql-ops.json)](./src/presentation)
+[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-tests.json)](./src)
+[![Prisma migrations](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-migrations.json)](./src/infrastructure/prisma/migrations)
+[![UseCases](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-usecases.json)](./src/application/domain)
 
 <!-- ─── Repo Meta ───────────────────────────────────────────────────── -->
 ![Last commit](https://img.shields.io/github/last-commit/Hopin-inc/civicship-api/master)
@@ -123,7 +123,7 @@ This project follows **Domain-Driven Design (DDD)** and **Clean Architecture** p
 ### High-Level Structure
 ```
 src/
-├── application/domain/     # 🏗️ Business Logic (7 core domains)
+├── application/domain/     # 🏗️ Business Logic (10 core domains)
 ├── infrastructure/        # 🔌 Database & External Services  
 ├── presentation/         # 🌐 GraphQL API & Middleware
 └── types/               # 📝 Shared Types
@@ -131,12 +131,15 @@ src/
 
 ### Core Business Domains
 - **account/** - User, Community, Membership, Wallet Management
-- **experience/** - Opportunities, Reservations, Participation Tracking  
+- **analytics/** - Activity & engagement analytics
 - **content/** - Articles, Media Management
+- **experience/** - Opportunities, Reservations, Participation Tracking
+- **location/** - Geographic Data Management
+- **notification/** - LINE Messaging Integration
+- **report/** - Reporting features
 - **reward/** - Utilities, Tickets, Point-based Rewards
 - **transaction/** - Point Transfers, Financial Operations
-- **notification/** - LINE Messaging Integration
-- **location/** - Geographic Data Management
+- **vote/** - Voting features
 
 ## 📖 Documentation
 
