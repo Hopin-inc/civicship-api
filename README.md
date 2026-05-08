@@ -1,5 +1,3 @@
-# civicship-api
-
 <!-- ─── Project / Stack ─────────────────────────────────────────────── -->
 [![License: GPL v3](https://img.shields.io/github/license/Hopin-inc/civicship-api?color=blue)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -42,6 +40,8 @@
 ![Open PRs](https://img.shields.io/github/issues-pr/Hopin-inc/civicship-api)
 ![Contributors](https://img.shields.io/github/contributors/Hopin-inc/civicship-api)
 ![Repo size](https://img.shields.io/github/repo-size/Hopin-inc/civicship-api)
+
+# civicship-api
 
 ![logo.svg](./docs/asset/logo.svg)
 
