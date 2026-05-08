@@ -1,5 +1,47 @@
+<!-- ─── Build / Deploy ──────────────────────────────────────────────── -->
+[![CI](https://github.com/Hopin-inc/civicship-api/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Hopin-inc/civicship-api/actions/workflows/ci.yml)
+[![Deploy dev](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-dev.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-dev.yml)
+[![Deploy prd](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-prd.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-prd.yml)
+
+<!-- ─── Quality ─────────────────────────────────────────────────────── -->
+[![codecov](https://codecov.io/gh/Hopin-inc/civicship-api/branch/master/graph/badge.svg)](https://codecov.io/gh/Hopin-inc/civicship-api)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Hopin-inc_civicship-api&metric=alert_status)](https://sonarcloud.io/dashboard?id=Hopin-inc_civicship-api)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?logo=prettier)](https://github.com/prettier/prettier)
+[![ESLint](https://img.shields.io/badge/lint-eslint-4B32C3?logo=eslint&logoColor=white)](./eslint.config.mjs)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
+
+<!-- ─── Security / Supply Chain ─────────────────────────────────────── -->
+[![CodeQL](https://github.com/Hopin-inc/civicship-api/actions/workflows/codeql.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Hopin-inc/civicship-api/badge)](https://scorecard.dev/viewer/?uri=github.com/Hopin-inc/civicship-api)
+[![Trivy](https://github.com/Hopin-inc/civicship-api/actions/workflows/trivy-daily.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/trivy-daily.yml)
+[![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c?logo=dependabot&logoColor=white)](.github/dependabot.yml)
+[![Hadolint](https://img.shields.io/badge/hadolint-passing-brightgreen?logo=docker&logoColor=white)](.hadolint.yaml)
+[![StepSecurity](https://img.shields.io/badge/StepSecurity-Harden_Runner-4D7CFF?logo=github&logoColor=white)](https://github.com/step-security/harden-runner)
+
+<!-- ─── DDD KPIs (dynamic — .github/workflows/badges.yml) ─────────────── -->
+[![DDD domains](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-domains.json)](./src/application/domain)
+[![GraphQL ops](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-graphql-ops.json)](./src/presentation)
+[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-tests.json)](./src)
+[![Prisma migrations](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-migrations.json)](./src/infrastructure/prisma/migrations)
+[![UseCases](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-usecases.json)](./src/application/domain)
+
+<!-- ─── Stack ───────────────────────────────────────────────────────── -->
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Apollo Server](https://img.shields.io/badge/Apollo%20Server-311C87?logo=apollographql&logoColor=white)](https://www.apollographql.com/docs/apollo-server/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
+
+<!-- ─── Repo Meta ───────────────────────────────────────────────────── -->
+[![License: GPL v3](https://img.shields.io/github/license/Hopin-inc/civicship-api?color=blue)](LICENSE)
+![Last commit](https://img.shields.io/github/last-commit/Hopin-inc/civicship-api/master)
+![Commit activity](https://img.shields.io/github/commit-activity/m/Hopin-inc/civicship-api)
+![Open Issues](https://img.shields.io/github/issues/Hopin-inc/civicship-api)
+![Open PRs](https://img.shields.io/github/issues-pr/Hopin-inc/civicship-api)
+![Contributors](https://img.shields.io/github/contributors/Hopin-inc/civicship-api)
+![Repo size](https://img.shields.io/github/repo-size/Hopin-inc/civicship-api)
+
 # civicship-api
-[![OpenSSF Scorecard supply-chain analysis](https://github.com/Hopin-inc/civicship-api/actions/workflows/scorecard.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/scorecard.yml)
 
 ![logo.svg](./docs/asset/logo.svg)
 
@@ -81,7 +123,7 @@ This project follows **Domain-Driven Design (DDD)** and **Clean Architecture** p
 ### High-Level Structure
 ```
 src/
-├── application/domain/     # 🏗️ Business Logic (7 core domains)
+├── application/domain/     # 🏗️ Business Logic (10 core domains)
 ├── infrastructure/        # 🔌 Database & External Services  
 ├── presentation/         # 🌐 GraphQL API & Middleware
 └── types/               # 📝 Shared Types
@@ -89,12 +131,15 @@ src/
 
 ### Core Business Domains
 - **account/** - User, Community, Membership, Wallet Management
-- **experience/** - Opportunities, Reservations, Participation Tracking  
+- **analytics/** - Activity & engagement analytics
 - **content/** - Articles, Media Management
+- **experience/** - Opportunities, Reservations, Participation Tracking
+- **location/** - Geographic Data Management
+- **notification/** - LINE Messaging Integration
+- **report/** - Reporting features
 - **reward/** - Utilities, Tickets, Point-based Rewards
 - **transaction/** - Point Transfers, Financial Operations
-- **notification/** - LINE Messaging Integration
-- **location/** - Geographic Data Management
+- **vote/** - Voting features
 
 ## 📖 Documentation
 

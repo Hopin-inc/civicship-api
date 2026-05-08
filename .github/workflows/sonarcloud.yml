@@ -1,0 +1,63 @@
+name: SonarCloud
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonarcloud-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # SONAR_TOKEN 未設定なら no-op。SonarCloud 上で project import 後に
+  # repo secret として SONAR_TOKEN を登録すれば自動で scan が動く。
+  # CodeQL (SAST) / Codecov (coverage) と機能重複するが、Quality Gate
+  # 1 つで品質指標を集約したいケース向け。lcov は ci.yml が生成する
+  # `coverage-final/lcov.info` を artifacts 経由で取得する。
+  sonarcloud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Check SONAR_TOKEN presence
+        id: check
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "${SONAR_TOKEN:-}" ]; then
+            echo "::notice::SONAR_TOKEN is not set; skipping SonarCloud scan. Add the secret in repo settings to enable."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # PR analysis では base..head の blame 情報が必要なので full clone。
+          fetch-depth: 0
+
+      # SonarCloud は "SonarQube Cloud" にリブランディングされ、action も
+       # `sonarqube-scan-action` に統合されている。OSS / private 両対応。
+      - name: SonarQube Cloud Scan
+        if: steps.check.outputs.skip == 'false'
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7.2.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

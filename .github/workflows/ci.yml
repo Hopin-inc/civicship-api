@@ -682,8 +682,10 @@ jobs:
       # 以下、coverage 集約 step。閾値 gate は設けない:
       # coverage の生成や merge が失敗しても aggregator 自体は success を維持し、
       # PR の merge 可能性に影響を与えない (issue #979 方針)。
+      # PR / push (master) の両方で coverage を集約する。PR では下流の comment
+      # post step が動き、push (master) では Codecov upload step が動く
+      # — どちらの経路でも merge は必要なので gate を外している。
       - name: Download all coverage artifacts
-        if: github.event_name == 'pull_request'
         id: download-coverage
         continue-on-error: true
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
@@ -693,7 +695,7 @@ jobs:
           merge-multiple: false
 
       - name: Merge coverage and generate lcov
-        if: github.event_name == 'pull_request' && steps.download-coverage.outcome == 'success'
+        if: steps.download-coverage.outcome == 'success'
         id: merge-coverage
         continue-on-error: true
         run: |
@@ -730,6 +732,20 @@ jobs:
             --reporter=json-summary \
             > coverage-final/text-summary.txt
           echo "has_coverage=true" >> "$GITHUB_OUTPUT"
+
+      # Codecov へ aggregated lcov を upload する。tokenless OIDC が public repo
+      # では使えるが、private 化や rate-limit 回避のため `CODECOV_TOKEN` (repo
+      # secret) があれば優先利用する。Codecov 障害で CI を壊したくないので
+      # `continue-on-error: true` で advisory 扱い。
+      - name: Upload coverage to Codecov
+        if: steps.merge-coverage.outputs.has_coverage == 'true'
+        continue-on-error: true
+        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5.5.4
+        with:
+          files: coverage-final/lcov.info
+          flags: aggregated
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build PR coverage comment
         if: github.event_name == 'pull_request' && steps.merge-coverage.outputs.has_coverage == 'true'
