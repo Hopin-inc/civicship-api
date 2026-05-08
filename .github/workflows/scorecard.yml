@@ -66,8 +66,25 @@ jobs:
           # (Scorecard 自体は OIDC で publish するため checkout の token は不要)。
           persist-credentials: false
 
+      # `f49aabe0...` は v2.4.1 タグの **peeled commit SHA** (= refs/tags/v2.4.1^{}
+      # の commit object)。actions/starter-workflows の公式 scorecard starter
+      # も同 SHA を pin しており、scorecard.dev の verifier が allowlist
+      # しているのもこの commit SHA の系譜。
+      #
+      # ⚠️ 注意: `git ls-remote --tags` で v2.4.x の tag SHA を取ると、annotated
+      # tag の場合は **tag object SHA が先に返り**、peeled (^{}) な commit SHA
+      # と区別が付きにくい。tag object SHA を pin すると scorecard.dev の publish
+      # step が `imposter commit: ... does not belong to ossf/scorecard-action`
+      # で 400 を返して job 全体が fail する (initial deploy で実際に踏んだ)。
+      # 必ず `refs/tags/<ver>^{}` の peeled commit SHA を pin すること。
+      #
+      # version 上げる場合は (a) annotated tag の peeled commit SHA を取り、
+      # (b) actions/starter-workflows の scorecard.yml の現行推奨と整合する
+      # ことを確認してから差し替える。新 release 直後は scorecard.dev の
+      # verifier allowlist 反映が遅れ得るため、starter が推奨してない version
+      # への先行 bump は推奨しない。
       - name: Run analysis
-        uses: ossf/scorecard-action@99c09fe975337306107572b4fdf4db224cf8e2f2 # v2.4.3
+        uses: ossf/scorecard-action@f49aabe0b5af0936a0987cfb85d86b75731b0186 # v2.4.1
         with:
           results_file: scorecard-results.sarif
           results_format: sarif
