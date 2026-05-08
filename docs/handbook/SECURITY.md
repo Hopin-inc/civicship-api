@@ -602,6 +602,10 @@ unpublish されるので、3 日待つだけで window の大半を回避でき
    恒久的な exclude は supply chain hardening を骨抜きにするので避ける。
 3. 月次棚卸しで残存 entry を確認 (`.trivyignore` の expires policy と同じ運用)。
 
+`package.json` は JSON のためファイル内にコメントを書けず、`.trivyignore` の
+ような inline `expires:` を持てない。この制約のため、bypass の理由・期限は
+PR description / commit message への併記で代替する運用としている。
+
 ### 既知の副作用
 
 - Dependabot / 手動 bump PR で **publish 直後の version** が指定されると、
