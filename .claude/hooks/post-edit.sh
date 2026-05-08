@@ -15,7 +15,7 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 input=$(cat)
-file_path=$(echo "$input" | jq -r '.tool_input.file_path // empty')
+file_path=$(printf "%s" "$input" | jq -r '.tool_input.file_path // empty')
 
 [[ -z "$file_path" ]] && exit 0
 [[ -f "$file_path" ]] || exit 0
@@ -38,7 +38,7 @@ case "$file_path" in
     # Local Postgres container must be running because `prisma generate --sql`
     # validates TypedSQL queries against the live DB.
     if ! docker ps --format '{{.Names}}' 2>/dev/null \
-         | grep -qE '^civicship-api[-_]db([-_]|$)'; then
+         | grep -qE '^civicship-api[-_](db|postgres)([-_]|$)'; then
       echo "[hook] Local DB is not running. Start it first:" >&2
       echo "[hook]   pnpm container:up" >&2
       echo "[hook] Then regenerate types:" >&2
