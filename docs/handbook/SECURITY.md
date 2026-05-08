@@ -556,6 +556,61 @@ Cosign keyless 署名は将来的に検討するが、現状は GitHub Actions O
 build provenance を保持する形で十分とする (cosign 署名追加時は
 `sigstore/cosign-installer` + `cosign sign --yes` を deploy workflow に追加)。
 
+## npm Supply Chain Hardening (`pnpm.minimumReleaseAge`)
+
+`package.json` の `pnpm.minimumReleaseAge: 4320` (= **3 日**, 分単位) で、
+publish 後 3 日経過していない npm package version は install 対象から
+除外する。これは pnpm 10.16+ の supply chain hardening 機能。
+
+### 何を防ぐか / 防げないか
+
+| 脅威 | 防御 |
+|---|---|
+| 既知 CVE (古い lib) | Trivy / Dependabot / `pnpm.overrides` で対処 |
+| postinstall 型 malware | pnpm 10 default-deny + `onlyBuiltDependencies` allowlist (現状未定義 = 全 lifecycle script 無効) |
+| **publish 直後の runtime 混入型 malware** | **`minimumReleaseAge`** で attack window を短縮 |
+
+`pnpm audit` / Trivy は **既知 CVE** の検知が前提で、`chalk` / `debug` の hijack
+(2025-09) のように publish 直後で発見前の malware が混入したケースは原理的に
+検知できない。npm の supply chain 攻撃の大半は publish 後 24〜72h 以内に検知 →
+unpublish されるので、3 日待つだけで window の大半を回避できる
+(cf. ua-parser-js, event-stream, eslint-scope, chalk/debug の各事案)。
+
+### 緊急バイパス: `minimumReleaseAgeExclude`
+
+緊急 CVE で fresh patch を 3 日待たず即時取り込みたい場合は、
+`package.json` の `pnpm` block に `minimumReleaseAgeExclude` を追加して
+特定 package のみ release age 制限を bypass できる:
+
+```json
+"pnpm": {
+  "minimumReleaseAge": 4320,
+  "minimumReleaseAgeExclude": [
+    "axios"
+  ],
+  "overrides": { ... }
+}
+```
+
+運用ルール:
+
+1. bypass entry を追加するときは、PR description / commit message に以下を併記する:
+   - 対象 CVE / GHSA ID
+   - なぜ 3 日待てないか (active exploitation / 重大 impact 等)
+   - 該当 fix を取り込む PR / 期限の見込み
+2. fix を取り込んで lockfile が更新できたら、bypass entry は **すぐ削除する**。
+   恒久的な exclude は supply chain hardening を骨抜きにするので避ける。
+3. 月次棚卸しで残存 entry を確認 (`.trivyignore` の expires policy と同じ運用)。
+
+### 既知の副作用
+
+- Dependabot / 手動 bump PR で **publish 直後の version** が指定されると、
+  install が解決失敗相当になることがある。3 日後に自然解消するため
+  運用負荷は小さいが、急ぎの場合は上記 `minimumReleaseAgeExclude` で
+  対象 package を bypass する。
+- 内部 (registry private) package は通常 publish 直後でも信頼できるため、
+  必要なら同じく `minimumReleaseAgeExclude` に追加して対象外化する。
+
 ## Related Documentation
 
 - [Architecture Guide](./ARCHITECTURE.md) - System Design Overview
