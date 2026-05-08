@@ -556,19 +556,91 @@ Cosign keyless 署名は将来的に検討するが、現状は GitHub Actions O
 build provenance を保持する形で十分とする (cosign 署名追加時は
 `sigstore/cosign-installer` + `cosign sign --yes` を deploy workflow に追加)。
 
-## npm Supply Chain Hardening (`pnpm.minimumReleaseAge`)
+## npm Supply Chain Hardening
 
-`package.json` の `pnpm.minimumReleaseAge: 4320` (= **3 日**, 分単位) で、
+npm エコシステム由来の脅威 (既知 CVE / postinstall malware / runtime 混入型
+malware / typosquat 等) に対して、**重ね合わせ** で守る方針を取る。各層は
+別の検知ロジック / 起動タイミングを持ち、1 つが空振りしても他が拾う。
+
+### 防御レイヤ一覧
+
+| 層 | ツール / 設定 | 起動 | 役割 |
+|---|---|---|---|
+| (1) PR diff の追加 dep を gate | `actions/dependency-review-action` | PR 時 | 新規追加 dep に既知 CVE (HIGH+) / 不適合 license があれば fail |
+| (2) lockfile 全体の advisory | `pnpm audit --audit-level=high --prod` | CI build job | npm advisory DB ベースで lockfile 全体を継続監視 (warning only、production deps に scope) |
+| (3) image 全体の CVE scan | Trivy CRITICAL=blocking / HIGH=advisory | CI + deploy + daily | OS / Debian package / Node ランタイム |
+| (4) lifecycle script の execution gate | `pnpm-workspace.yaml` の `onlyBuiltDependencies` allowlist | install 時 | allowlist 外の dep の postinstall / preinstall を deny |
+| (5) publish 直後の release を install 拒否 | `pnpm-workspace.yaml` の `minimumReleaseAge: 4320` (= 3 日) | install 時 | 0-day マルウェア混入 release (chalk/debug 型 hijack) の attack window を短縮 |
+| (6) direct dep 自動 bump | Dependabot (cooldown 付き) | weekly | (1)〜(5) で検知された CVE / drift を自動修正 |
+
+(1)〜(3) は **既知 CVE 対策**、(4)〜(5) は **未知 / 0-day malware 対策**、
+(6) は **修正サイクルの自動化**。
+
+### (1) `dependency-review-action` (PR diff gate)
+
+GitHub 公式 action。`base..head` の `package.json` / `pnpm-lock.yaml` 差分を
+GitHub Advisory Database に問い合わせ、**新規追加された dep に HIGH+ CVE が
+含まれていれば PR を fail** させる。`pnpm audit` (advisory) との違いは:
+
+- audit: lockfile 全体を毎回チェック → drift で flaky
+- dep-review: PR で**増えた dep だけ** をチェック → 安定 / blocking 可能
+
+push (master) や手動 dispatch では skip され、aggregator (`ci`) は `skipped` を
+success と等価扱いする。
+
+### (2) `pnpm audit --audit-level=high --prod` (advisory)
+
+`ci.yml` の build job に組み込み済み。`--prod` で devDependencies (jest /
+eslint plugin 等、本番デプロイに乗らない dev tool) を除外し、production 影響を
+切り分けて見る運用に倒している。閾値超えは `::warning::` annotation で surface
+するのみで blocking はしない (lockfile-wide audit は drift で flaky になりがち
+なので gate には使わない、issue #979 と同じ方針)。
+
+### (3) Trivy
+
+詳細は本ドキュメント上部の "Container Image Scanning (Trivy)" 参照。
+image レイヤの CVE 検出を担い、(1)(2) と検出ソースが補完関係にある。
+
+### (4) `onlyBuiltDependencies` allowlist (lifecycle deny by default)
+
+pnpm 10 から `postinstall` / `preinstall` 等の lifecycle script は
+**デフォルトで無効化** され、`onlyBuiltDependencies` に明示 allowlist した
+package のみ走る。本リポジトリでは **`pnpm-workspace.yaml`** で許可 package を
+列挙する形で運用している (該当ファイル参照):
+
+```yaml
+# pnpm-workspace.yaml (抜粋)
+onlyBuiltDependencies:
+  - '@apollo/protobufjs'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - esbuild
+  - prisma
+  - protobufjs
+  - puppeteer
+  - sharp
+  - vue-demi
+```
+
+それ以外の package の lifecycle script はすべて deny される (例: 新たに
+追加された malicious package が postinstall で外部にデータ送出する等の攻撃を
+install 時点で阻止する)。
+
+許可を新規追加する場合は:
+
+1. PR で `pnpm-workspace.yaml` を編集し、commit message に **追加の根拠**
+   (なぜ build script が必要か / 代替手段が無いか / その package を信頼する根拠)
+   を必ず書く
+2. CI レビューで明示的に承認する (現状リストの 9 package はいずれも
+   ビルドツール / native binary 系で必要性が明確、新規追加は同等の妥当性を要求)
+3. pnpm 10 では `pnpm approve-builds` で interactive に追加もできるが、
+   YAML 直編集 + PR の方が レビュー導線として推奨
+
+### (5) `minimumReleaseAge` (release age gate)
+
+`pnpm-workspace.yaml` の `minimumReleaseAge: 4320` (= **3 日**, 分単位) で、
 publish 後 3 日経過していない npm package version は install 対象から
 除外する。これは pnpm 10.16+ の supply chain hardening 機能。
-
-### 何を防ぐか / 防げないか
-
-| 脅威 | 防御 |
-|---|---|
-| 既知 CVE (古い lib) | Trivy / Dependabot / `pnpm.overrides` で対処 |
-| postinstall 型 malware | pnpm 10 default-deny + `onlyBuiltDependencies` allowlist (現状未定義 = 全 lifecycle script 無効) |
-| **publish 直後の runtime 混入型 malware** | **`minimumReleaseAge`** で attack window を短縮 |
 
 `pnpm audit` / Trivy は **既知 CVE** の検知が前提で、`chalk` / `debug` の hijack
 (2025-09) のように publish 直後で発見前の malware が混入したケースは原理的に
@@ -576,20 +648,20 @@ publish 後 3 日経過していない npm package version は install 対象か
 unpublish されるので、3 日待つだけで window の大半を回避できる
 (cf. ua-parser-js, event-stream, eslint-scope, chalk/debug の各事案)。
 
-### 緊急バイパス: `minimumReleaseAgeExclude`
+#### 緊急バイパス: `minimumReleaseAgeExclude`
 
 緊急 CVE で fresh patch を 3 日待たず即時取り込みたい場合は、
-`package.json` の `pnpm` block に `minimumReleaseAgeExclude` を追加して
+`pnpm-workspace.yaml` に `minimumReleaseAgeExclude` を追加して
 特定 package のみ release age 制限を bypass できる:
 
-```json
-"pnpm": {
-  "minimumReleaseAge": 4320,
-  "minimumReleaseAgeExclude": [
-    "axios"
-  ],
-  "overrides": { ... }
-}
+```yaml
+# pnpm-workspace.yaml (抜粋)
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - axios
+
+onlyBuiltDependencies:
+  - ...
 ```
 
 運用ルール:
@@ -602,11 +674,7 @@ unpublish されるので、3 日待つだけで window の大半を回避でき
    恒久的な exclude は supply chain hardening を骨抜きにするので避ける。
 3. 月次棚卸しで残存 entry を確認 (`.trivyignore` の expires policy と同じ運用)。
 
-`package.json` は JSON のためファイル内にコメントを書けず、`.trivyignore` の
-ような inline `expires:` を持てない。この制約のため、bypass の理由・期限は
-PR description / commit message への併記で代替する運用としている。
-
-### 既知の副作用
+#### 既知の副作用 (`minimumReleaseAge`)
 
 - Dependabot / 手動 bump PR で **publish 直後の version** が指定されると、
   install が解決失敗相当になることがある。3 日後に自然解消するため
