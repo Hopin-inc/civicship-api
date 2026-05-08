@@ -17,7 +17,7 @@ import { CommunityPortalConfigResult } from "@/application/domain/account/commun
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/domain/account/community/service";
 import CommunityPresenter from "@/application/domain/account/community/presenter";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
+import { clampFirst, getCommunityIdFromCtx, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
 import CommunitySignupBonusConfigService from "@/application/domain/account/community/config/incentive/signup/service";
@@ -78,7 +78,10 @@ export default class CommunityUseCase {
       });
     } catch (err) {
       await this.communityService.deleteFirebaseTenant(tenantId).catch((cleanupErr) => {
-        logger.error("Failed to clean up Firebase tenant after community creation failure; manual cleanup required", { tenantId, cleanupErr });
+        logger.error(
+          "Failed to clean up Firebase tenant after community creation failure; manual cleanup required",
+          { tenantId, cleanupErr },
+        );
       });
       throw err;
     }
@@ -105,21 +108,23 @@ export default class CommunityUseCase {
   }
 
   async managerUpdateSignupBonusConfig(
-    { input, permission }: GqlMutationUpdateSignupBonusConfigArgs,
+    { input }: GqlMutationUpdateSignupBonusConfigArgs,
     ctx: IContext,
   ): Promise<CommunitySignupBonusConfig> {
+    const communityId = getCommunityIdFromCtx(ctx);
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      return this.signupBonusConfigService.update(ctx, permission.communityId, input, tx);
+      return this.signupBonusConfigService.update(ctx, communityId, input, tx);
     });
   }
 
   async managerUpdatePortalConfig(
-    { input, permission }: GqlMutationUpdatePortalConfigArgs,
+    { input }: GqlMutationUpdatePortalConfigArgs,
     ctx: IContext,
   ): Promise<CommunityPortalConfigResult> {
+    const communityId = getCommunityIdFromCtx(ctx);
     await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      await this.portalConfigService.update(ctx, permission.communityId, input, tx);
+      await this.portalConfigService.update(ctx, communityId, input, tx);
     });
-    return this.portalConfigService.getPortalConfig(ctx, permission.communityId);
+    return this.portalConfigService.getPortalConfig(ctx, communityId);
   }
 }

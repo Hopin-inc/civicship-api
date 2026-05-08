@@ -61,10 +61,6 @@ describe("Point Reward Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
     opportunityOwnerUserId = opportunityOwnerUserInserted.id;
-    ctx = {
-      currentUser: { id: opportunityOwnerUserId },
-      issuer,
-    } as unknown as IContext;
 
     const participationUserInserted = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
@@ -83,6 +79,12 @@ describe("Point Reward Tests", () => {
       website: undefined,
     });
     communityId = communityInserted.id;
+
+    ctx = {
+      currentUser: { id: opportunityOwnerUserId },
+      issuer,
+      communityId,
+    } as unknown as IContext;
 
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: opportunityOwnerUserId } },
@@ -278,12 +280,12 @@ describe("Point Reward Tests", () => {
 
     const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
     expect(vcRequests).toHaveLength(1);
-    
+
     const vcRequest = vcRequests[0];
     expect(vcRequest.status).toBe(VcIssuanceStatus.PENDING);
     expect(vcRequest.evaluationId).toBeDefined();
     expect(vcRequest.userId).toBe(participationUserId);
-    
+
     const claims = vcRequest.claims as unknown as EvaluationCredentialClaim;
     expect(claims.type).toBe("EvaluationCredential");
     expect(claims.evaluator).toBeDefined();
@@ -403,8 +405,8 @@ describe("Point Reward Tests", () => {
 
     const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
     expect(vcRequests).toHaveLength(2);
-    
-    vcRequests.forEach(vcRequest => {
+
+    vcRequests.forEach((vcRequest) => {
       expect(vcRequest.status).toBe(VcIssuanceStatus.PENDING);
       expect(vcRequest.userId).toBe(participationUserId);
       const claims = vcRequest.claims as unknown as EvaluationCredentialClaim;
@@ -495,8 +497,8 @@ describe("Point Reward Tests", () => {
 
     const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
     expect(vcRequests).toHaveLength(2);
-    
-    vcRequests.forEach(vcRequest => {
+
+    vcRequests.forEach((vcRequest) => {
       expect(vcRequest.status).toBe(VcIssuanceStatus.PENDING);
       expect(vcRequest.userId).toBe(participationUserId);
       const claims = vcRequest.claims as unknown as EvaluationCredentialClaim;

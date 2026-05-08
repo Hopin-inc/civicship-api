@@ -1,73 +1,79 @@
 input CommunityConfigInput {
-    lineConfig: CommunityLineConfigInput
-    portalConfig: CommunityPortalConfigInput
+  lineConfig: CommunityLineConfigInput
+  portalConfig: CommunityPortalConfigInput
 }
 
 input CommunityLineConfigInput {
-    channelId: String!
-    channelSecret: String!
-    accessToken: String!
-    liffId: String!
-    liffAppId: String
-    liffBaseUrl: String!
-    richMenus: [CommunityLineRichMenuConfigInput!]!
+  channelId: String!
+  channelSecret: String!
+  accessToken: String!
+  liffId: String!
+  liffAppId: String
+  liffBaseUrl: String!
+  richMenus: [CommunityLineRichMenuConfigInput!]!
 }
 
 input CommunityLineRichMenuConfigInput {
-    type: LineRichMenuType!
-    richMenuId: String!
+  type: LineRichMenuType!
+  richMenuId: String!
 }
 
 input CommunityPortalConfigInput {
-    tokenName: String
-    title: String
-    description: String
-    shortDescription: String
-    domain: String
-    faviconPrefix: String @deprecated(reason: "Use favicon instead")
-    favicon: ImageInput
-    logoPath: String @deprecated(reason: "Use logo instead")
-    logo: ImageInput
-    squareLogoPath: String @deprecated(reason: "Use squareLogo instead")
-    squareLogo: ImageInput
-    ogImagePath: String @deprecated(reason: "Use ogImage instead")
-    ogImage: ImageInput
-    enableFeatures: [String!]
-    rootPath: String
-    adminRootPath: String
-    regionName: String
-    regionKey: String
-    documents: [CommunityDocumentInput!]
-    commonDocumentOverrides: CommonDocumentOverridesInput
+  tokenName: String
+  title: String
+  description: String
+  shortDescription: String
+  domain: String
+  faviconPrefix: String @deprecated(reason: "Use favicon instead")
+  favicon: ImageInput
+  logoPath: String @deprecated(reason: "Use logo instead")
+  logo: ImageInput
+  squareLogoPath: String @deprecated(reason: "Use squareLogo instead")
+  squareLogo: ImageInput
+  ogImagePath: String @deprecated(reason: "Use ogImage instead")
+  ogImage: ImageInput
+  enableFeatures: [String!]
+  rootPath: String
+  adminRootPath: String
+  regionName: String
+  regionKey: String
+  documents: [CommunityDocumentInput!]
+  commonDocumentOverrides: CommonDocumentOverridesInput
 }
 
 input CommunityDocumentInput {
-    id: String!
-    title: String!
-    path: String!
-    type: String!
-    order: Int
+  id: String!
+  title: String!
+  path: String!
+  type: String!
+  order: Int
 }
 
 input CommonDocumentOverridesInput {
-    terms: CommunityDocumentInput
-    privacy: CommunityDocumentInput
+  terms: CommunityDocumentInput
+  privacy: CommunityDocumentInput
 }
 
 input UpdateSignupBonusConfigInput {
-    isEnabled: Boolean!
-    bonusPoint: Int!
-    message: String
+  isEnabled: Boolean!
+  bonusPoint: Int!
+  message: String
 }
 
 extend type Mutation {
-    updateSignupBonusConfig(
-        input: UpdateSignupBonusConfigInput!,
-        permission: CheckCommunityPermissionInput!
-    ): CommunitySignupBonusConfig! @authz(rules: [IsCommunityManager])
+  updateSignupBonusConfig(
+    input: UpdateSignupBonusConfigInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): CommunitySignupBonusConfig! @authz(rules: [IsCommunityManager])
 
-    updatePortalConfig(
-        input: CommunityPortalConfigInput!,
-        permission: CheckCommunityPermissionInput!
-    ): CommunityPortalConfig! @authz(rules: [IsCommunityManager])
+  updatePortalConfig(
+    input: CommunityPortalConfigInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): CommunityPortalConfig! @authz(rules: [IsCommunityManager])
 }

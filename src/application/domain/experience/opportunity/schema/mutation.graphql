@@ -2,117 +2,112 @@
 # Opportunity Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    opportunityCreate(
-        input: OpportunityCreateInput!
-        permission:CheckCommunityPermissionInput!
-    ): OpportunityCreatePayload
-    @authz(rules: [IsCommunityManager])
+  opportunityCreate(
+    input: OpportunityCreateInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): OpportunityCreatePayload @authz(rules: [IsCommunityManager])
 
-    opportunityDelete(
-        id: ID!
-        permission:CheckOpportunityPermissionInput!
-    ): OpportunityDeletePayload
-    @authz(rules: [CanManageOpportunity])
+  opportunityDelete(
+    id: ID!
+    permission: CheckOpportunityPermissionInput!
+  ): OpportunityDeletePayload @authz(rules: [CanManageOpportunity])
 
-    opportunityUpdateContent(
-        id: ID!,
-        input: OpportunityUpdateContentInput!
-        permission:CheckOpportunityPermissionInput!
-    ): OpportunityUpdateContentPayload
-    @authz(rules: [CanManageOpportunity])
+  opportunityUpdateContent(
+    id: ID!
+    input: OpportunityUpdateContentInput!
+    permission: CheckOpportunityPermissionInput!
+  ): OpportunityUpdateContentPayload @authz(rules: [CanManageOpportunity])
 
-    opportunitySetPublishStatus(
-        id: ID!
-        input: OpportunitySetPublishStatusInput!
-        permission:CheckOpportunityPermissionInput!
-    ): OpportunitySetPublishStatusPayload
-    @authz(rules: [CanManageOpportunity])
+  opportunitySetPublishStatus(
+    id: ID!
+    input: OpportunitySetPublishStatusInput!
+    permission: CheckOpportunityPermissionInput!
+  ): OpportunitySetPublishStatusPayload @authz(rules: [CanManageOpportunity])
 }
 
 # ------------------------------
 # Opportunity Mutation Input Definitions
 # ------------------------------
 input OpportunityCreateInput {
-    title: String!
-    description: String!
-    body: String
-    images: [ImageInput!]
+  title: String!
+  description: String!
+  body: String
+  images: [ImageInput!]
 
-    category: OpportunityCategory!
+  category: OpportunityCategory!
 
-    publishStatus: PublishStatus!
-    requireApproval: Boolean!
-    requiredUtilityIds: [ID!]
+  publishStatus: PublishStatus!
+  requireApproval: Boolean!
+  requiredUtilityIds: [ID!]
 
-    pointsToEarn: Int
-    pointsRequired: Int
-    feeRequired: Int
+  pointsToEarn: Int
+  pointsRequired: Int
+  feeRequired: Int
 
-    slots: [OpportunitySlotCreateInput!]
-    relatedArticleIds: [ID!]
-    placeId: ID
+  slots: [OpportunitySlotCreateInput!]
+  relatedArticleIds: [ID!]
+  placeId: ID
 
-    # for isAdmin
-    createdBy: ID
+  # for isAdmin
+  createdBy: ID
 }
 
 input OpportunityUpdateContentInput {
-    title: String!
-    description: String!
-    body: String
-    images: [ImageInput!]
+  title: String!
+  description: String!
+  body: String
+  images: [ImageInput!]
 
-    category: OpportunityCategory!
+  category: OpportunityCategory!
 
-    publishStatus: PublishStatus!
-    requireApproval: Boolean!
-    requiredUtilityIds: [ID!]
+  publishStatus: PublishStatus!
+  requireApproval: Boolean!
+  requiredUtilityIds: [ID!]
 
-    pointsToEarn: Int
-    pointsRequired: Int
-    feeRequired: Int
+  pointsToEarn: Int
+  pointsRequired: Int
+  feeRequired: Int
 
-    relatedArticleIds: [ID!]
-    placeId: ID
+  relatedArticleIds: [ID!]
+  placeId: ID
 
-    # for isAdmin
-    createdBy: ID
+  # for isAdmin
+  createdBy: ID
 }
 
 input OpportunitySetPublishStatusInput {
-    publishStatus: PublishStatus!
+  publishStatus: PublishStatus!
 }
 
 # ------------------------------
 # Opportunity Mutation Success Type Definitions
 # ------------------------------
 type OpportunityCreateSuccess {
-    opportunity: Opportunity!
+  opportunity: Opportunity!
 }
 
 type OpportunityDeleteSuccess {
-    opportunityId: ID!
+  opportunityId: ID!
 }
 
 type OpportunityUpdateContentSuccess {
-    opportunity: Opportunity!
+  opportunity: Opportunity!
 }
 
 type OpportunitySetPublishStatusSuccess {
-    opportunity: Opportunity!
+  opportunity: Opportunity!
 }
 
 # ------------------------------
 # Opportunity Mutation Union (Payload) Definitions
 # ------------------------------
-union OpportunityCreatePayload =
-    OpportunityCreateSuccess
+union OpportunityCreatePayload = OpportunityCreateSuccess
 
-union OpportunityDeletePayload =
-    OpportunityDeleteSuccess
+union OpportunityDeletePayload = OpportunityDeleteSuccess
 
-union OpportunityUpdateContentPayload =
-    OpportunityUpdateContentSuccess
+union OpportunityUpdateContentPayload = OpportunityUpdateContentSuccess
 
-union OpportunitySetPublishStatusPayload =
-    OpportunitySetPublishStatusSuccess
+union OpportunitySetPublishStatusPayload = OpportunitySetPublishStatusSuccess

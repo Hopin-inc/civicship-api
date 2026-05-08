@@ -5,7 +5,7 @@ import IncentiveGrantService from "./service";
 import { IIncentiveGrantRepository } from "./data/interface";
 import CommunityService from "@/application/domain/account/community/service";
 import NotificationService from "@/application/domain/notification/service";
-import { clampFirst } from "@/application/domain/utils";
+import { clampFirst, getCommunityIdFromCtx } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import {
@@ -125,7 +125,8 @@ export default class IncentiveGrantUseCase {
     args: GqlMutationIncentiveGrantRetryArgs,
     ctx: IContext,
   ): Promise<GqlIncentiveGrantRetryPayload> {
-    const { input, permission } = args;
+    const { input } = args;
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
 
     try {
       // Execute retry in transaction
@@ -139,9 +140,9 @@ export default class IncentiveGrantUseCase {
           }
 
           // 2. Security check: Ensure the grant belongs to the community (before retry)
-          if (grant.communityId !== permission.communityId) {
+          if (grant.communityId !== ctxCommunityId) {
             throw new AuthorizationError(
-              `Grant ${input.incentiveGrantId} does not belong to community ${permission.communityId}`,
+              `Grant ${input.incentiveGrantId} does not belong to community ${ctxCommunityId}`,
             );
           }
 

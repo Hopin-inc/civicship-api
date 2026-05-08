@@ -40,7 +40,10 @@ input SubmitReportFeedbackInput {
 extend type Mutation {
   generateReport(
     input: GenerateReportInput!
-    permission: CheckCommunityPermissionInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
   ): GenerateReportPayload @authz(compositeRules: [{ or: [IsCommunityManager, IsAdmin] }])
 
   updateReportTemplate(
@@ -49,18 +52,25 @@ extend type Mutation {
     input: UpdateReportTemplateInput!
   ): UpdateReportTemplatePayload @authz(rules: [IsAdmin])
 
-  approveReport(id: ID!): ApproveReportPayload @authz(rules: [IsAdmin])
+  approveReport(id: ID!): ApproveReportPayload
+    @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
-  publishReport(id: ID!, finalContent: String!): PublishReportPayload @authz(rules: [IsAdmin])
+  publishReport(id: ID!, finalContent: String!): PublishReportPayload
+    @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
-  rejectReport(id: ID!): RejectReportPayload @authz(rules: [IsAdmin])
+  rejectReport(id: ID!): RejectReportPayload
+    @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 
   # PR-F4: Anyone in the target community (MEMBER or higher) may submit
   # a rating. The usecase additionally verifies that `input.reportId`
-  # belongs to `permission.communityId` — otherwise a member of
-  # community A could rate a report of community B by forging the id.
+  # belongs to the request community (`x-community-id` header) — otherwise
+  # a member of community A could rate a report of community B by forging
+  # the id.
   submitReportFeedback(
     input: SubmitReportFeedbackInput!
-    permission: CheckCommunityPermissionInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
   ): SubmitReportFeedbackPayload @authz(compositeRules: [{ or: [IsCommunityMember, IsAdmin] }])
 }

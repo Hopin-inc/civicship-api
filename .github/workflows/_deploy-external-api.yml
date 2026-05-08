@@ -125,31 +125,42 @@ jobs:
       # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
       # Cloud Run の各 revision を commit SHA 単位で identifiable にし、
       # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
+      #
+      # `--sbom=true` / `--provenance=mode=max` の根拠は _deploy-cloud-run.yml
+      # 同名 step コメント参照。両 image (internal / external) で完全に同じ。
       - name: Build and push External API image
         run: |
           docker buildx build \
             --file Dockerfile.external \
             --tag "$EXTERNAL_IMAGE" \
             --tag "$EXTERNAL_IMAGE_SHA" \
+            --sbom=true \
+            --provenance=mode=max \
             --cache-from "type=gha,scope=external-${{ inputs.stage }}" \
             --cache-to "type=gha,mode=max,scope=external-${{ inputs.stage }}" \
             --push \
             .
 
       # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
-      # CRITICAL も HIGH も **advisory** (`exit-code: '0'`) で運用。
-      # 詳細な運用ポリシー (PR 時 + deploy 時の visibility / 再 blocking 化条件)
-      # は _deploy-cloud-run.yml の同名 step コメント + docs/handbook/SECURITY.md
-      # を参照。両 image (internal / external) で完全に同じ政策。
-      - name: Scan image (Trivy CRITICAL — advisory)
+      # CRITICAL = blocking、HIGH = advisory。政策と blocking 解除手順は
+      # _deploy-cloud-run.yml の同名 step コメント + docs/handbook/SECURITY.md
+      # 参照。両 image (internal / external) で完全に同じ政策。
+      # `limit-severities-for-sarif: true` の根拠は `_deploy-cloud-run.yml` の
+      # 同名 step コメント参照。trivy-action の `format: sarif` モードは
+      # default で severity フィルタが無効化されるため、本 flag が無いと
+      # `severity: CRITICAL` を指定しても HIGH/MEDIUM で exit-code: '1' が
+      # trip し deploy が誤 block される。両 image (internal / external) で
+      # 完全に同じ政策。
+      - name: Scan image (Trivy CRITICAL — blocking)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
           severity: CRITICAL
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
           format: sarif
           output: trivy-critical.sarif
+          limit-severities-for-sarif: true
 
       - name: Scan image (Trivy HIGH — advisory)
         if: always()
@@ -161,10 +172,11 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-high.sarif
+          limit-severities-for-sarif: true
 
-      # Surface CVE counts as `::warning::` annotations so the deploy job's
-      # summary makes the result loud. Same logic as _deploy-cloud-run.yml.
-      - name: Surface Trivy CVE count (advisory warning)
+      # CRITICAL = ::error:: annotation, HIGH = ::warning::.
+      # 同 step の根拠は _deploy-cloud-run.yml 参照。
+      - name: Surface Trivy CVE count (CRITICAL=error / HIGH=warning)
         if: always()
         run: |
           set -euo pipefail
@@ -173,8 +185,11 @@ jobs:
             [ -s "$sarif" ] || continue
             count=$(jq '[.runs[]?.results[]?] | length' "$sarif")
             echo "${sev^^}: ${count}"
-            if [ "$count" -gt 0 ]; then
-              echo "::warning::Trivy ${sev^^}: ${count} CVEs in the deployed external-api image. Review the Security tab (category: trivy-external-${sev}) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked."
+            [ "$count" -eq 0 ] && continue
+            if [ "$sev" = "critical" ]; then
+              echo "::error::Trivy CRITICAL: ${count} CVEs in the deployed external-api image — deploy was blocked. Review the Security tab (category: trivy-external-critical), fix the offending package, or add a time-boxed entry to .trivyignore (see SECURITY.md)."
+            else
+              echo "::warning::Trivy HIGH: ${count} CVEs in the deployed external-api image. Review the Security tab (category: trivy-external-high) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked on HIGH."
             fi
           done
 

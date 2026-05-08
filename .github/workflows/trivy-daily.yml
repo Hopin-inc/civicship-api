@@ -135,6 +135,11 @@ jobs:
           format: json
           output: trivy-internal.json
 
+      # `limit-severities-for-sarif: true` の根拠は `_deploy-cloud-run.yml`
+      # の同名 step コメント参照。本 daily job は exit-code: '0' なので
+      # blocking 影響は無いが、本 flag が無いと Security タブの
+      # `trivy-critical` category に HIGH/MEDIUM 含む全 severity が混入し、
+      # category 名と中身が乖離するため必須。
       - name: Trivy scan internal image (sarif → Security tab)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -144,6 +149,7 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-internal.sarif
+          limit-severities-for-sarif: true
 
       - name: Trivy scan external image (json)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -164,6 +170,7 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-external.sarif
+          limit-severities-for-sarif: true
 
       - name: Upload SARIF to Security tab (internal)
         uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1

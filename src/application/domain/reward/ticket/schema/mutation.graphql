@@ -2,34 +2,31 @@
 # Ticket Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    ticketIssue(
-        input: TicketIssueInput!
-        permission: CheckCommunityPermissionInput!
-    ): TicketIssuePayload
-    @authz(rules: [IsCommunityMember])
+  ticketIssue(
+    input: TicketIssueInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): TicketIssuePayload @authz(rules: [IsCommunityMember])
 
-    ticketClaim(
-        input: TicketClaimInput!
-    ): TicketClaimPayload
-    @authz(rules: [IsUser])
+  ticketClaim(input: TicketClaimInput!): TicketClaimPayload @authz(rules: [IsUser])
 
-    ticketPurchase(
-        input: TicketPurchaseInput!
-        permission: CheckCommunityPermissionInput!
-    ): TicketPurchasePayload
-    @authz(rules: [IsCommunityMember])
+  ticketPurchase(
+    input: TicketPurchaseInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): TicketPurchasePayload @authz(rules: [IsCommunityMember])
 
-    ticketRefund(
-        id: ID!
-        input: TicketRefundInput!
-        permission: CheckIsSelfPermissionInput!
-    ): TicketRefundPayload
-    @authz(rules: [IsSelf])
+  ticketRefund(
+    id: ID!
+    input: TicketRefundInput!
+    permission: CheckIsSelfPermissionInput!
+  ): TicketRefundPayload @authz(rules: [IsSelf])
 
-    ticketUse(
-        id: ID!
-        permission: CheckIsSelfPermissionInput!
-    ): TicketUsePayload
+  ticketUse(id: ID!, permission: CheckIsSelfPermissionInput!): TicketUsePayload
     @authz(rules: [IsSelf])
 }
 
@@ -37,64 +34,59 @@ extend type Mutation {
 # Ticket Mutation Input Definitions
 # ------------------------------
 input TicketIssueInput {
-    utilityId: ID!
-    qtyToBeIssued: Int!
+  utilityId: ID!
+  qtyToBeIssued: Int!
 }
 
 input TicketClaimInput {
-    ticketClaimLinkId: ID!
+  ticketClaimLinkId: ID!
 }
 
 input TicketPurchaseInput {
-    walletId: ID!
-    utilityId: ID!
-    communityId: ID!
-    pointsRequired: Int!
+  walletId: ID!
+  utilityId: ID!
+  communityId: ID!
+  pointsRequired: Int!
 }
 
 input TicketRefundInput {
-    walletId: ID!
-    communityId: ID!
-    pointsRequired: Int!
+  walletId: ID!
+  communityId: ID!
+  pointsRequired: Int!
 }
 
 # ------------------------------
 # Ticket Mutation Success Type Definitions
 # ------------------------------
 type TicketIssueSuccess {
-    issue: TicketIssuer!
+  issue: TicketIssuer!
 }
 
 type TicketPurchaseSuccess {
-    ticket: Ticket!
+  ticket: Ticket!
 }
 
 type TicketUseSuccess {
-    ticket: Ticket!
+  ticket: Ticket!
 }
 
 type TicketRefundSuccess {
-    ticket: Ticket!
+  ticket: Ticket!
 }
 
 type TicketClaimSuccess {
-    tickets: [Ticket!]!
+  tickets: [Ticket!]!
 }
 
 # ------------------------------
 # Ticket Mutation Union (Payload) Definitions
 # ------------------------------
-union TicketPurchasePayload =
-    TicketPurchaseSuccess
+union TicketPurchasePayload = TicketPurchaseSuccess
 
-union TicketUsePayload =
-    TicketUseSuccess
+union TicketUsePayload = TicketUseSuccess
 
-union TicketRefundPayload =
-    TicketRefundSuccess
+union TicketRefundPayload = TicketRefundSuccess
 
-union TicketIssuePayload =
-    TicketIssueSuccess
+union TicketIssuePayload = TicketIssueSuccess
 
-union TicketClaimPayload =
-    TicketClaimSuccess
+union TicketClaimPayload = TicketClaimSuccess

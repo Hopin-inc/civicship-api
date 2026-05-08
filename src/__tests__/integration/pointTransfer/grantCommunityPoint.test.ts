@@ -34,12 +34,12 @@ describe("Point Grant Tests", () => {
       slug: "recipient-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
-
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-grant",
       pointName: "c-point",
     });
+
+    const ctx = { currentUser: { id: user.id }, issuer, communityId: community.id } as IContext;
 
     const communityWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.COMMUNITY,
@@ -85,13 +85,13 @@ describe("Point Grant Tests", () => {
       slug: "recipient-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
-
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-grant",
       pointName: "c-point",
     });
-    
+
+    const ctx = { currentUser: { id: user.id }, issuer, communityId: community.id } as IContext;
+
     const communityWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.COMMUNITY,
       community: { connect: { id: community.id } },
@@ -126,8 +126,6 @@ describe("Point Grant Tests", () => {
       slug: "recipient-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
-
     const communityA = await TestDataSourceHelper.createCommunity({
       name: "community-a",
       pointName: "a-point",
@@ -137,6 +135,12 @@ describe("Point Grant Tests", () => {
       name: "community-b",
       pointName: "b-point",
     });
+
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+      communityId: communityA.id,
+    } as IContext;
 
     const communityWalletA = await TestDataSourceHelper.createWallet({
       type: WalletType.COMMUNITY,
@@ -170,8 +174,12 @@ describe("Point Grant Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const communityWalletABalanceBefore = await TestDataSourceHelper.getCurrentPoints(communityWalletA.id);
-    const communityWalletBBalanceBefore = await TestDataSourceHelper.getCurrentPoints(communityWalletB.id);
+    const communityWalletABalanceBefore = await TestDataSourceHelper.getCurrentPoints(
+      communityWalletA.id,
+    );
+    const communityWalletBBalanceBefore = await TestDataSourceHelper.getCurrentPoints(
+      communityWalletB.id,
+    );
 
     expect(communityWalletABalanceBefore).toBe(100);
     expect(communityWalletBBalanceBefore).toBe(200);
@@ -187,9 +195,13 @@ describe("Point Grant Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const communityWalletABalanceAfter = await TestDataSourceHelper.getCurrentPoints(communityWalletA.id);
+    const communityWalletABalanceAfter = await TestDataSourceHelper.getCurrentPoints(
+      communityWalletA.id,
+    );
     const memberWalletABalanceAfter = await TestDataSourceHelper.getCurrentPoints(memberWalletA.id);
-    const communityWalletBBalanceAfter = await TestDataSourceHelper.getCurrentPoints(communityWalletB.id);
+    const communityWalletBBalanceAfter = await TestDataSourceHelper.getCurrentPoints(
+      communityWalletB.id,
+    );
 
     expect(communityWalletABalanceAfter).toBe(100 - GRANT_POINTS);
     expect(memberWalletABalanceAfter).toBe(GRANT_POINTS);

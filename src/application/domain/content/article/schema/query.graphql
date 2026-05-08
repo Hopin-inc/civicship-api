@@ -2,55 +2,61 @@
 # Article Query Definitions
 # ------------------------------
 extend type Query {
-    articles(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection!
-    article(id: ID!, permission: CheckCommunityPermissionInput!): Article
+  articles(
+    filter: ArticleFilterInput
+    sort: ArticleSortInput
+    cursor: String
+    first: Int
+  ): ArticlesConnection!
+  article(
+    id: ID!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): Article
 }
 
 # ------------------------------
 # Article Connection Type Definitions
 # ------------------------------
 type ArticlesConnection {
-    edges: [ArticleEdge]
-    pageInfo: PageInfo!
-    totalCount: Int!
+  edges: [ArticleEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type ArticleEdge implements Edge {
-    cursor: String!
-    node: Article
+  cursor: String!
+  node: Article
 }
 
 # ------------------------------
 # Article Query Input Definitions
 # ------------------------------
 input ArticleFilterInput {
-    keyword: String
-    categories: [String!]
-    publishStatus: [PublishStatus!]
+  keyword: String
+  categories: [String!]
+  publishStatus: [PublishStatus!]
 
-    authors: [ID!]
-    relatedUserIds: [ID!]
+  authors: [ID!]
+  relatedUserIds: [ID!]
 
-    dateFrom: Datetime
-    dateTo: Datetime
+  dateFrom: Datetime
+  dateTo: Datetime
 
-    cityCodes: [ID!]
-    stateCodes: [ID!]
+  cityCodes: [ID!]
+  stateCodes: [ID!]
 
-    communityId: ID
+  communityId: ID
 
-    and: [ArticleFilterInput!]
-    or: [ArticleFilterInput!]
-    not: ArticleFilterInput
+  and: [ArticleFilterInput!]
+  or: [ArticleFilterInput!]
+  not: ArticleFilterInput
 }
 
 input ArticleSortInput {
-    createdAt: SortDirection
-    publishedAt: SortDirection
-    startsAt: SortDirection
+  createdAt: SortDirection
+  publishedAt: SortDirection
+  startsAt: SortDirection
 }

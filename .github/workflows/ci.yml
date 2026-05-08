@@ -261,19 +261,22 @@ jobs:
   #     job, not the full pnpm install + tsc + docker build.
   #   - Logical separation: scanning ≠ artifact production.
   #
-  # Why advisory (`exit-code: '0'`) and not blocking:
-  #   - Trivy DB updates daily; a CVE added today blocks an image that was
-  #     clean yesterday — there's no fix we can apply for upstream-pending
-  #     CVEs, and blocking deploys for them stalls unrelated work.
-  #   - The Trivy SARIF upload to GitHub Code Scanning has been intermittent
-  #     (`No summary of scanned files reported by Trivy` on the Security tab),
-  #     so we can't rely on the default Security-tab surface alone.
-  #   - Instead: emit a `::warning::` annotation when CRITICAL count > 0 so
-  #     the count is loud and visible in the PR checks summary, plus the full
-  #     CVE table is in this job's log. Treat advisory as "you must look,
-  #     not the gate that decides for you."
-  #   - Re-blocking conditions are tracked in docs/handbook/SECURITY.md
-  #     ("Severity Policy / Re-escalation").
+  # Severity policy: CRITICAL = **blocking**, HIGH = **advisory** (deploy 側 scan
+  # と対称)。
+  #   - CRITICAL: table + json で scan、件数 > 0 で末尾 `Surface` step が
+  #     `::error::` annotation を出して `exit 1`、aggregator まで failure を
+  #     伝播。
+  #   - HIGH: json のみ scan (table 省略 — log 汚染回避)。Surface step が
+  #     `::warning::` annotation を出すだけで `exit 1` しない (drift が大きい
+  #     severity なので gating には使わない)。
+  #   - 各 trivy step は `exit-code: '0'` のまま (gating は集計 step に集約)。
+  #     こうすると table のヒューマンリーダブル出力 → `::error::` /
+  #     `::warning::` → トップ 20 件、の順で揃って出るので reviewer が
+  #     「何が落ちた / 何が警告か」を 1 ヶ所で読める。
+  #   - aggregator job (`ci`) も `needs.trivy.result` を required 扱いに
+  #     上げている (CRITICAL 検出時のみ failure になる構造)。
+  #   - blocking 解除 (= advisory に戻す) の条件 / 手順 / 緊急 bypass は
+  #     docs/handbook/SECURITY.md "Severity Policy" 参照。
   trivy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -363,9 +366,10 @@ jobs:
 
       # Two trivy invocations per image: one with `format: table` for human
       # readable output in the step log, one with `format: json` to a file
-      # so the next step can count CRITICAL hits and emit a `::warning::`
-      # annotation. Both use `exit-code: '0'` (advisory). `.trivyignore`
-      # (repo root) is honored by both.
+      # so the next step can count CRITICAL hits and gate the job. Both use
+      # `exit-code: '0'` so the steps always run; gating happens at the end
+      # in `Surface CRITICAL count + top hits` (件数 > 0 で `exit 1`)。
+      # `.trivyignore` (repo root) は両 invocation で honored される。
       - name: Trivy CRITICAL scan (table — log visibility, internal)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -404,22 +408,62 @@ jobs:
           format: json
           output: trivy-external.json
 
-      # Surface CRITICAL count as a `::warning::` annotation so reviewers see
-      # it in the PR checks summary without expanding step logs. We also list
-      # the first 20 hits (pkg + CVE-ID + fix-status) so the warning has
-      # actionable detail right next to the count.
-      - name: Surface CRITICAL count + top hits
+      # HIGH は **advisory** で scan する (deploy 側 workflow と対称)。CRITICAL
+      # と違って drift が大きい severity なので gating はしない (`exit-code: '0'`
+      # のまま、Surface step も `::warning::` のみで `exit 1` しない)。
+      # PR 段階で件数を可視化することで、deploy 時に初めて気付く運用を防ぐ。
+      # table は冗長になるため省略し、json + Surface step での集計のみ。
+      - name: Trivy HIGH scan (json — count parsing, internal — advisory)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api:trivy
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: json
+          output: trivy-high-internal.json
+
+      - name: Trivy HIGH scan (json — count parsing, external — advisory)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: civicship-api-external:trivy
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: json
+          output: trivy-high-external.json
+
+      # Surface CRITICAL count as a `::error::` annotation and **fail the job**
+      # if any image has > 0 CRITICAL CVEs. CRITICAL は blocking 政策のため、
+      # 件数 > 0 のときは `exit 1` で aggregator まで failure を伝播させる。
+      # HIGH は同じ step 内で `::warning::` annotation で件数を出すだけで gate
+      # はしない (advisory 政策、deploy 側と対称)。
+      # 各 image の先頭 20 件 (pkg + CVE-ID + fix-status) を annotation 直後の
+      # log に出すので、reviewer は ::error:: / ::warning:: のサマリと中身を
+      # 1 ヶ所で読める。緊急 bypass (false-positive / 上流 fix 待ちが緊急 deploy
+      # を止めている) は `.trivyignore` に時限 expiry 付き entry を追加
+      # (SECURITY.md 参照)。
+      - name: Surface CRITICAL + HIGH count + top hits
         run: |
           set -euo pipefail
+          fail=0
           for variant in internal external; do
-            json="trivy-${variant}.json"
-            count=$(jq '[.Results[]?.Vulnerabilities[]?] | length' "$json")
-            echo "${variant}: ${count} CRITICAL"
-            if [ "$count" -gt 0 ]; then
-              echo "::warning::Trivy found ${count} CRITICAL vulnerabilities in the ${variant} runtime image. Review .trivyignore / fix the offending package or document an exception. See trivy job log for the full table."
-              jq -r '.Results[]? | select(.Vulnerabilities) | .Vulnerabilities[] | "  \(.PkgName)@\(.InstalledVersion)  \(.VulnerabilityID)  fix=\(.FixedVersion // "<none>")"' "$json" | head -20
+            crit_json="trivy-${variant}.json"
+            high_json="trivy-high-${variant}.json"
+            crit_count=$(jq '[.Results[]?.Vulnerabilities[]?] | length' "$crit_json")
+            high_count=$(jq '[.Results[]?.Vulnerabilities[]?] | length' "$high_json")
+            echo "${variant}: ${crit_count} CRITICAL / ${high_count} HIGH"
+            if [ "$crit_count" -gt 0 ]; then
+              echo "::error::Trivy found ${crit_count} CRITICAL vulnerabilities in the ${variant} runtime image. Fix the offending package or add a time-boxed entry to .trivyignore (see docs/handbook/SECURITY.md). See trivy job log for the full table."
+              jq -r '.Results[]? | select(.Vulnerabilities) | .Vulnerabilities[] | "  \(.PkgName)@\(.InstalledVersion)  \(.VulnerabilityID)  fix=\(.FixedVersion // "<none>")"' "$crit_json" | head -20
+              fail=1
+            fi
+            if [ "$high_count" -gt 0 ]; then
+              echo "::warning::Trivy found ${high_count} HIGH vulnerabilities in the ${variant} runtime image. Advisory only — review and update .trivyignore / fix the offending package. See trivy job log for the top hits."
+              jq -r '.Results[]? | select(.Vulnerabilities) | .Vulnerabilities[] | "  [HIGH] \(.PkgName)@\(.InstalledVersion)  \(.VulnerabilityID)  fix=\(.FixedVersion // "<none>")"' "$high_json" | head -20
             fi
           done
+          [ "$fail" -eq 0 ] || exit 1
 
       - name: Tear down Postgres
         if: always()
@@ -575,19 +619,19 @@ jobs:
           trivy='${{ needs.trivy.result }}'
           test='${{ needs.test.result }}'
           echo "lint=$lint build=$build trivy=$trivy test=$test"
-          # `trivy` is advisory: success or failure (advisory step shouldn't
-          # actually fail, but if Trivy job's infra step crashes we don't want
-          # to gate aggregator on it). Treat it like skipped.
-          for j in "$lint" "$build" "$test"; do
+          # CRITICAL を blocking 化したので trivy も required ジョブに昇格。
+          # trivy job 内部で「scan = exit 0、最後に Surface step が件数 > 0 で
+          # exit 1」という構造を取っているので、`failure` は CRITICAL 検出
+          # または infra (Postgres / buildx 等) クラッシュのいずれか。区別が
+          # 必要になったら trivy job 側で step output を立てて aggregator で
+          # 分岐する形に拡張する (現時点では「とにかく落ちたら deploy 不可」
+          # という挙動で十分)。
+          for j in "$lint" "$build" "$trivy" "$test"; do
             case "$j" in
               success|skipped) ;;
               *) echo "::error::required job failed: $j"; exit 1 ;;
             esac
           done
-          case "$trivy" in
-            success|skipped|failure) ;;  # advisory — never gate
-            *) echo "::warning::trivy job had unexpected result: $trivy" ;;
-          esac
           echo "All required jobs passed"
 
       # 以下、coverage 集約 step。閾値 gate は設けない:
