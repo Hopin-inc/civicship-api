@@ -163,6 +163,13 @@ jobs:
       # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
       # Cloud Run の各 revision を commit SHA 単位で identifiable にし、
       # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
+      #
+      # `--sbom=true` で SPDX SBOM、`--provenance=mode=max` で SLSA build
+      # provenance を attestation として image manifest に attach する。
+      # Artifact Registry の image detail / `cosign verify-attestation` /
+      # `gcloud artifacts docker images describe --show-package-vulnerability`
+      # から検証可能。両 attestation は cache-friendly でビルド時間にほぼ影響
+      # しない (実測で +5〜10s 程度)。
       - name: Build unified image and push to main + batch registries
         run: |
           docker buildx build \
@@ -171,34 +178,41 @@ jobs:
             --tag "$MAIN_IMAGE_SHA" \
             --tag "$BATCH_IMAGE" \
             --tag "$BATCH_IMAGE_SHA" \
+            --sbom=true \
+            --provenance=mode=max \
             --cache-from "type=gha,scope=cloud-run-${{ inputs.stage }}" \
             --cache-to "type=gha,mode=max,scope=cloud-run-${{ inputs.stage }}" \
             --push \
             .
 
       # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
-      # CRITICAL も HIGH も **advisory** (`exit-code: '0'`) で運用:
-      # Trivy DB は日次更新、明日新 CVE が追加されると上流 fix を待つしかない
-      # CRITICAL ですら自動で deploy を止めてしまい、無関係な fix も巻き込んで
-      # 全 deploy が stall する。代わりに sarif を Security タブに上げ、件数
-      # を ::warning:: として workflow run の最上部に出すことで「**人間が必ず
-      # 気付く**」が、自動ゲートはしない、という政策にする。
-      # 再 blocking 化の条件 (CVE 0 件状態が継続 + .trivyignore 整備 + 週次
-      # review 体制) は docs/handbook/SECURITY.md 参照。
-      # `ignore-unfixed: true` で fix が出ていない CVE は雑音になるので除外。
-      # MAIN_IMAGE_SHA (#974) が定義された環境ではそちらを優先し、未定義の
-      # 場合は :latest tag (MAIN_IMAGE) を scan する。
-      - name: Scan image (Trivy CRITICAL — advisory)
+      # CRITICAL は **blocking** (`exit-code: '1'`)、HIGH は引き続き **advisory**
+      # (`exit-code: '0'`) で運用する。
+      #
+      # 政策の経緯: 当初は両 severity とも advisory にしていた (Trivy DB の
+      # 日次更新で昨日まで clean だった image が今日落ちる、という drift で
+      # 無関係な fix が deploy stall を巻き込むのを避けるため)。一定期間 0 件
+      # 維持を確認できたので、CRITICAL のみ gate に昇格。HIGH は drift の
+      # 余地が大きいので advisory のまま (sarif は引き続き Security タブに
+      # 上げて可視化のみ)。
+      #
+      # blocking 解除 (= advisory に戻す) の条件 / 手順 / 緊急 bypass は
+      # docs/handbook/SECURITY.md "Severity Policy" を参照。
+      # `ignore-unfixed: true` で fix の出ていない CVE は除外する (上流が
+      # 直せない CVE で deploy が永久に止まらないようにする保険)。
+      - name: Scan image (Trivy CRITICAL — blocking)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ env.MAIN_IMAGE_SHA || env.MAIN_IMAGE }}
           severity: CRITICAL
-          exit-code: '0'
+          exit-code: '1'
           ignore-unfixed: true
           format: sarif
           output: trivy-critical.sarif
 
       - name: Scan image (Trivy HIGH — advisory)
+        # CRITICAL が落ちて job が fail した場合でも HIGH の sarif を生成し
+        # 後段で Security タブに upload するため `if: always()` を維持。
         if: always()
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -209,11 +223,11 @@ jobs:
           format: sarif
           output: trivy-high.sarif
 
-      # Surface CVE counts as `::warning::` annotations so the deploy job's
-      # summary makes the result loud. sarif's `runs[].results[]` is the
-      # canonical CVE list (`level: error` ≈ Trivy CRITICAL with default
-      # mapping). We stay advisory: never `exit 1` here.
-      - name: Surface Trivy CVE count (advisory warning)
+      # CRITICAL 件数を `::error::` annotation として workflow summary 最上部
+      # に上げる (上の scan step が `exit-code: '1'` で既に fail させているが、
+      # PR / deploy run のサマリで「何件 / どの CVE か」が一目で分かるよう
+      # 件数とトップ 20 を出す)。HIGH は advisory なので `::warning::` のまま。
+      - name: Surface Trivy CVE count (CRITICAL=error / HIGH=warning)
         if: always()
         run: |
           set -euo pipefail
@@ -222,8 +236,11 @@ jobs:
             [ -s "$sarif" ] || continue
             count=$(jq '[.runs[]?.results[]?] | length' "$sarif")
             echo "${sev^^}: ${count}"
-            if [ "$count" -gt 0 ]; then
-              echo "::warning::Trivy ${sev^^}: ${count} CVEs in the deployed image. Review the Security tab (category: trivy-${sev}) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked."
+            [ "$count" -eq 0 ] && continue
+            if [ "$sev" = "critical" ]; then
+              echo "::error::Trivy CRITICAL: ${count} CVEs in the deployed image — deploy was blocked. Review the Security tab (category: trivy-critical), fix the offending package, or add a time-boxed entry to .trivyignore (see SECURITY.md)."
+            else
+              echo "::warning::Trivy HIGH: ${count} CVEs in the deployed image. Review the Security tab (category: trivy-high) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked on HIGH."
             fi
           done
 
