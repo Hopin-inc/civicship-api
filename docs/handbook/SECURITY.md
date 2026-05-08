@@ -2,6 +2,12 @@
 
 This document describes civicship-api's security architecture, authentication flow, authorization system, and security best practices.
 
+> **Reporting a security vulnerability?**
+> 本ドキュメントは内部設計書です。脆弱性を発見した場合は
+> [`/.github/SECURITY.md`](../../.github/SECURITY.md) (Vulnerability Disclosure
+> Policy) を参照し、GitHub の Private Vulnerability Reporting で非公開に報告してください。
+> 公開 issue / PR で詳細を開示しないでください。
+
 ## Security Architecture Overview
 
 civicship-api employs a four-tier security architecture:
