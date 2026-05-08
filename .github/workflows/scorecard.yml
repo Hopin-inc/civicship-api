@@ -1,0 +1,94 @@
+name: OpenSSF Scorecard supply-chain analysis
+
+# OpenSSF Scorecard は repo の supply chain 健全性を ~20 項目で自動採点する
+# (https://github.com/ossf/scorecard)。public repo は score / 各項目の sarif を
+# Security タブ + scorecard.dev の badge に publish できるため、外部からの
+# 信頼性指標 + 内部の継続改善トリガーとして運用する。
+#
+# トリガー:
+#   - branch_protection_rule: branch protection 変更時に再スコア
+#   - schedule (週次): 採点 drift の検知
+#   - push (default branch のみ): 直近のコード変更を反映
+#
+# 結果は (1) Security タブ (sarif), (2) artifact (json), (3) scorecard.dev
+# (publish_results: true) の 3 経路で確認できる。
+
+on:
+  branch_protection_rule:
+  schedule:
+    # CodeQL (Mon 21:00 UTC) と 1 時間ずらしてランナーの輻輳を避ける。
+    # 火曜 07:00 JST 相当。
+    - cron: '0 22 * * 1'
+  push:
+    branches:
+      # default branch に push されたタイミング (= PR merge 直後) に再採点。
+      # 本 repo の development フローは develop 起点 (`ci.yml` の push trigger
+      # も `[master]` だが Scorecard は default branch のスコアを評価するため
+      # 別途 develop 側でも採点する)。
+      - master
+      - develop
+
+# Scorecard の各 check は read 権限で十分なので job 単位で job-level に
+# 必要な write を付与する形にする (workflow-level は最小)。
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      # SARIF を Security タブに upload するため。
+      security-events: write
+      # publish_results: true で OIDC 経由で scorecard.dev に署名付き publish するため。
+      id-token: write
+      contents: read
+      # branch protection / dangerous-workflow 等の check が actions API を読む。
+      actions: read
+
+    steps:
+      # 他 workflow と同様に audit mode + disable-sudo で start。Scorecard 自体
+      # が dangerous-workflow check で harden-runner の有無を見ているため、
+      # 入れておくと自分のスコアにも返ってくる。
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Scorecard の Token-Permissions / Pinned-Dependencies 等の検査は
+          # full history を要求しないが、persist-credentials: false にして
+          # 後続 step が誤って GITHUB_TOKEN を漏らすリスクを下げる
+          # (Scorecard 自体は OIDC で publish するため checkout の token は不要)。
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@99c09fe975337306107572b4fdf4db224cf8e2f2 # v2.4.3
+        with:
+          results_file: scorecard-results.sarif
+          results_format: sarif
+          # public repo なので publish_results: true で scorecard.dev に
+          # OIDC 署名付きで publish。badge / 公開 dashboard が利用可能になる。
+          # private repo に変わった場合はここを false にすること。
+          publish_results: true
+
+      # 解析の生 json/sarif を artifact として 5 日保持。debugging 用 + score
+      # 推移を比較したい場合に手で download できるようにしておく。
+      - name: Upload artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: scorecard-results
+          path: scorecard-results.sarif
+          retention-days: 5
+
+      # Security タブ (Code Scanning) に上げて、各 check が low/medium/high で
+      # surface されるようにする。trivy / codeql と同居するため category 必須。
+      - name: Upload to Security tab
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: scorecard-results.sarif
+          category: scorecard
