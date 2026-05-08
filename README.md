@@ -1,11 +1,3 @@
-<!-- ─── Project / Stack ─────────────────────────────────────────────── -->
-[![License: GPL v3](https://img.shields.io/github/license/Hopin-inc/civicship-api?color=blue)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Apollo Server](https://img.shields.io/badge/Apollo%20Server-311C87?logo=apollographql&logoColor=white)](https://www.apollographql.com/docs/apollo-server/)
-[![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
-
 <!-- ─── Build / Deploy ──────────────────────────────────────────────── -->
 [![CI](https://github.com/Hopin-inc/civicship-api/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Hopin-inc/civicship-api/actions/workflows/ci.yml)
 [![Deploy dev](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-dev.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-dev.yml)
@@ -22,9 +14,9 @@
 [![CodeQL](https://github.com/Hopin-inc/civicship-api/actions/workflows/codeql.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Hopin-inc/civicship-api/badge)](https://scorecard.dev/viewer/?uri=github.com/Hopin-inc/civicship-api)
 [![Trivy](https://github.com/Hopin-inc/civicship-api/actions/workflows/trivy-daily.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/trivy-daily.yml)
-[![StepSecurity](https://img.shields.io/badge/StepSecurity-Harden_Runner-4D7CFF?logo=github&logoColor=white)](https://github.com/step-security/harden-runner)
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c?logo=dependabot&logoColor=white)](.github/dependabot.yml)
 [![Hadolint](https://img.shields.io/badge/hadolint-passing-brightgreen?logo=docker&logoColor=white)](.hadolint.yaml)
+[![StepSecurity](https://img.shields.io/badge/StepSecurity-Harden_Runner-4D7CFF?logo=github&logoColor=white)](https://github.com/step-security/harden-runner)
 
 <!-- ─── DDD KPIs (dynamic — .github/workflows/badges.yml) ─────────────── -->
 [![DDD domains](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-domains.json)](./src/application/domain)
@@ -33,7 +25,15 @@
 [![Prisma migrations](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-migrations.json)](./src/infrastructure/prisma/migrations)
 [![UseCases](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/709sakata/15e16d8aa7c4499d755d6b7db724e687/raw/civicship-usecases.json)](./src/application/domain)
 
+<!-- ─── Stack ───────────────────────────────────────────────────────── -->
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Apollo Server](https://img.shields.io/badge/Apollo%20Server-311C87?logo=apollographql&logoColor=white)](https://www.apollographql.com/docs/apollo-server/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
+
 <!-- ─── Repo Meta ───────────────────────────────────────────────────── -->
+[![License: GPL v3](https://img.shields.io/github/license/Hopin-inc/civicship-api?color=blue)](LICENSE)
 ![Last commit](https://img.shields.io/github/last-commit/Hopin-inc/civicship-api/master)
 ![Commit activity](https://img.shields.io/github/commit-activity/m/Hopin-inc/civicship-api)
 ![Open Issues](https://img.shields.io/github/issues/Hopin-inc/civicship-api)
