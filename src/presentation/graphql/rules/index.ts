@@ -79,13 +79,15 @@ const IsSelf = preExecRule({
 const IsCommunityOwner = preExecRule({
   error: new AuthorizationError("User must be community owner"),
 })((context: IContext) => {
-  if (context.isAdmin) return true;
-
   // Scope is resolved from the `x-community-id` header — the auth
   // middleware injects it from the authenticated session, so it's the
   // only trusted source. Args (`permission` / `communityPermission`)
   // are deprecated and ignored to keep the authz check and the
-  // operation aligned on the same community.
+  // operation aligned on the same community. The header is required
+  // for admins too: every downstream usecase calls
+  // `getCommunityIdFromCtx(ctx)` which throws on a missing header,
+  // and forcing admins to declare the operating community keeps the
+  // audit trail honest.
   const communityId = context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityOwner authorization FAILED", {
@@ -94,6 +96,8 @@ const IsCommunityOwner = preExecRule({
     });
     return false;
   }
+
+  if (context.isAdmin) return true;
 
   const allowed = isCommunityOwner(context, communityId);
 
@@ -113,8 +117,6 @@ const IsCommunityOwner = preExecRule({
 const IsCommunityManager = preExecRule({
   error: new AuthorizationError("User must be community manager or owner"),
 })((context: IContext) => {
-  if (context.isAdmin) return true;
-
   const communityId = context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityManager authorization FAILED", {
@@ -123,6 +125,8 @@ const IsCommunityManager = preExecRule({
     });
     return false;
   }
+
+  if (context.isAdmin) return true;
 
   const allowed = isCommunityManager(context, communityId);
 
@@ -142,8 +146,6 @@ const IsCommunityManager = preExecRule({
 const IsCommunityMember = preExecRule({
   error: new AuthorizationError("User must be a community member"),
 })((context: IContext) => {
-  if (context.isAdmin) return true;
-
   const communityId = context.communityId;
   if (!communityId) {
     logger.warn("IsCommunityMember authorization FAILED", {
@@ -152,6 +154,8 @@ const IsCommunityMember = preExecRule({
     });
     return false;
   }
+
+  if (context.isAdmin) return true;
 
   const allowed = isCommunityMember(context, communityId);
 

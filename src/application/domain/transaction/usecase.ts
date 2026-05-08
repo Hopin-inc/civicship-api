@@ -236,16 +236,21 @@ export default class TransactionUseCase {
     // mode flag: prefer owner-mode when the caller actually owns the
     // current community AND the txn was emitted from that community's
     // wallet, otherwise fall back to self-mode (caller is the creator).
+    // SYS_ADMIN bypasses the wallet/creator checks entirely — admins are
+    // a cross-community operations role and the IsCommunityOwner rule
+    // already forced them to declare the operating community via the
+    // x-community-id header.
     const ctxCommunityId = ctx.communityId;
-    const isOwnerOfCtxCommunity =
-      ctx.isAdmin ||
-      (!!ctxCommunityId &&
-        ctx.currentUser?.memberships?.some(
-          (m) => m.communityId === ctxCommunityId && m.role === Role.OWNER,
-        ) === true);
     const isCreator = existing.createdBy === currentUserId;
+    const isOwnerOfCtxCommunity =
+      !!ctxCommunityId &&
+      ctx.currentUser?.memberships?.some(
+        (m) => m.communityId === ctxCommunityId && m.role === Role.OWNER,
+      ) === true;
 
-    if (isOwnerOfCtxCommunity && ctxCommunityId) {
+    if (ctx.isAdmin) {
+      // admin はスコープ制限なし
+    } else if (isOwnerOfCtxCommunity && ctxCommunityId) {
       const communityWallet = await this.walletService.findCommunityWalletOrThrow(
         ctx,
         ctxCommunityId,
