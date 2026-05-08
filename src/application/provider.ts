@@ -3,11 +3,13 @@ import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
+import ReportTransactionStatsRepository from "@/application/domain/report/transactionStats/data/repository";
 import ReportRepository from "@/application/domain/report/data/repository";
+import ReportTemplateRepository from "@/application/domain/report/template/data/repository";
 import ReportService from "@/application/domain/report/service";
 import ReportUseCase from "@/application/domain/report/usecase";
-import ReportJudgeService from "@/application/domain/report/judgeService";
-import ReportTemplateSelector from "@/application/domain/report/templateSelector";
+import ReportJudgeService from "@/application/domain/report/template/judgeService";
+import ReportTemplateSelector from "@/application/domain/report/template/selector";
 import ReportFeedbackRepository from "@/application/domain/report/feedback/data/repository";
 import ReportFeedbackService from "@/application/domain/report/feedback/service";
 import ReportFeedbackUseCase from "@/application/domain/report/feedback/usecase";
@@ -128,9 +130,12 @@ import VoteUseCase from "@/application/domain/vote/usecase";
 import VoteService from "@/application/domain/vote/service";
 import VoteConverter from "@/application/domain/vote/data/converter";
 import VoteRepository from "@/application/domain/vote/data/repository";
-import SysAdminRepository from "@/application/domain/sysadmin/data/repository";
-import SysAdminService from "@/application/domain/sysadmin/service";
-import SysAdminUseCase from "@/application/domain/sysadmin/usecase";
+import AnalyticsCommunityRepository from "@/application/domain/analytics/community/data/repository";
+import AnalyticsPlatformRepository from "@/application/domain/analytics/platform/data/repository";
+import AnalyticsPlatformService from "@/application/domain/analytics/platform/service";
+import AnalyticsUseCase from "@/application/domain/analytics/usecase";
+import AnalyticsCommunityService from "@/application/domain/analytics/community/service";
+import AnalyticsCommunityUseCase from "@/application/domain/analytics/community/usecase";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -356,7 +361,11 @@ export function registerProductionDependencies() {
   // ------------------------------
   // 📊 Report
   // ------------------------------
+  container.register("ReportTransactionStatsRepository", {
+    useClass: ReportTransactionStatsRepository,
+  });
   container.register("ReportRepository", { useClass: ReportRepository });
+  container.register("ReportTemplateRepository", { useClass: ReportTemplateRepository });
   container.register("ReportService", { useClass: ReportService });
   container.register("ReportUseCase", { useClass: ReportUseCase });
   container.register("ReportJudgeService", { useClass: ReportJudgeService });
@@ -376,12 +385,12 @@ export function registerProductionDependencies() {
   container.register("VoteRepository", { useClass: VoteRepository });
 
   // ------------------------------
-  // 🛰️ SysAdmin (platform operator analytics)
-  // ------------------------------
-
-  container.register("SysAdminRepository", { useClass: SysAdminRepository });
-  container.register("SysAdminService", { useClass: SysAdminService });
-  container.register("SysAdminUseCase", { useClass: SysAdminUseCase });
+  container.register("AnalyticsCommunityRepository", { useClass: AnalyticsCommunityRepository });
+  container.register("AnalyticsPlatformRepository", { useClass: AnalyticsPlatformRepository });
+  container.register("AnalyticsPlatformService", { useClass: AnalyticsPlatformService });
+  container.register("AnalyticsUseCase", { useClass: AnalyticsUseCase });
+  container.register("AnalyticsCommunityService", { useClass: AnalyticsCommunityService });
+  container.register("AnalyticsCommunityUseCase", { useClass: AnalyticsCommunityUseCase });
 
   // ------------------------------
   // 👓 View

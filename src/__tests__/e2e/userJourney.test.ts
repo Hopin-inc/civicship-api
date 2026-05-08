@@ -90,7 +90,11 @@ describe("End-to-End User Journey Integration Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const grantCtx = { currentUser: { id: userId }, issuer } as IContext;
+    const grantCtx = {
+      currentUser: { id: userId },
+      issuer,
+      communityId: community.id,
+    } as IContext;
 
     await transactionUseCase.ownerGrantCommunityPoint(grantCtx, {
       input: { transferPoints: 500, toUserId: userId },
@@ -149,7 +153,7 @@ describe("End-to-End User Journey Integration Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    const ownerCtx = { currentUser: { id: owner.id }, issuer } as IContext;
+    const ownerCtxNoCommunity = { currentUser: { id: owner.id }, issuer } as IContext;
 
     const communityResult = await communityUseCase.userCreateCommunityAndJoin(
       {
@@ -158,11 +162,17 @@ describe("End-to-End User Journey Integration Tests", () => {
           pointName: "pts",
         },
       },
-      ownerCtx,
+      ownerCtxNoCommunity,
     );
 
     expect(communityResult.community).toBeDefined();
     const communityId = communityResult.community!.id;
+
+    const ownerCtx = {
+      currentUser: { id: owner.id },
+      issuer,
+      communityId,
+    } as IContext;
 
     await transactionUseCase.ownerIssueCommunityPoint(
       {
@@ -172,7 +182,7 @@ describe("End-to-End User Journey Integration Tests", () => {
       ownerCtx,
     );
 
-    const users: any[] = [];
+    const users: Awaited<ReturnType<typeof TestDataSourceHelper.createUser>>[] = [];
     for (let i = 0; i < 3; i++) {
       const user = await TestDataSourceHelper.createUser({
         name: `User ${i + 1}`,
@@ -187,7 +197,11 @@ describe("End-to-End User Journey Integration Tests", () => {
       });
     }
 
-    const user1Ctx = { currentUser: { id: users[0].id }, issuer } as IContext;
+    const user1Ctx = {
+      currentUser: { id: users[0].id },
+      issuer,
+      communityId,
+    } as IContext;
     await transactionUseCase.userDonateSelfPointToAnother(user1Ctx, {
       input: {
         communityId,
@@ -197,7 +211,11 @@ describe("End-to-End User Journey Integration Tests", () => {
       permission: { userId: users[0].id },
     });
 
-    const user2Ctx = { currentUser: { id: users[1].id }, issuer } as IContext;
+    const user2Ctx = {
+      currentUser: { id: users[1].id },
+      issuer,
+      communityId,
+    } as IContext;
     await transactionUseCase.userDonateSelfPointToAnother(user2Ctx, {
       input: {
         communityId,

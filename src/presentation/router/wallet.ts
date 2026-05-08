@@ -7,7 +7,6 @@ import { nftReadRateLimit, walletRateLimit } from '@/presentation/middleware/rat
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
-import { PrismaAuthUser } from '@/application/domain/account/user/data/type';
 
 const router = express();
 
@@ -19,11 +18,14 @@ async function handleRegister(
   walletAddress: string,
   name: unknown,
 ) {
+  const user = res.locals.user as { id: string; name: string } | undefined;
+  if (!user) {
+    return res.status(401).json({ error: 'User not authenticated' });
+  }
+
   if (name !== undefined && typeof name !== 'string') {
     return res.status(400).json({ error: 'name must be a string' });
   }
-
-  const user = (req as any).user as PrismaAuthUser;
 
   const issuer = new PrismaClientIssuer();
   const nftWalletUsecase = container.resolve(NFTWalletUsecase);

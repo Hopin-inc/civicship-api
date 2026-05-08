@@ -70,6 +70,7 @@ import type { Language } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
 import type { DidIssuanceStatus } from "@prisma/client";
 import type { VcIssuanceStatus } from "@prisma/client";
+import type { MemberPriorActivityClass } from "@prisma/client";
 import type { MembershipStatus } from "@prisma/client";
 import type { MembershipStatusReason } from "@prisma/client";
 import type { Role } from "@prisma/client";
@@ -1932,6 +1933,8 @@ type CommunityFactoryDefineInput = {
     bio?: string | null;
     establishedAt?: Date | null;
     website?: string | null;
+    lastPublishedReportAt?: Date | null;
+    lastPublishedReportId?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     image?: CommunityimageFactory | Prisma.ImageCreateNestedOneWithoutCommunitiesInput;
@@ -3837,6 +3840,9 @@ type MembershipopportunityHostedCountViewFactory = {
 type MembershipFactoryDefineInput = {
     headline?: string | null;
     bio?: string | null;
+    priorActivityClass?: MemberPriorActivityClass | null;
+    priorActivityNote?: string | null;
+    priorActivityRecordedBy?: string | null;
     status?: MembershipStatus;
     reason?: MembershipStatusReason;
     role?: Role;

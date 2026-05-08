@@ -1,4 +1,6 @@
 # civicship-api
+[![OpenSSF Scorecard supply-chain analysis](https://github.com/Hopin-inc/civicship-api/actions/workflows/scorecard.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/scorecard.yml)
+
 ![logo.svg](./docs/asset/logo.svg)
 
 ## Overview

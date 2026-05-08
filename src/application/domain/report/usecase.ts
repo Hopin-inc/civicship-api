@@ -1,12 +1,16 @@
 import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { ValidationError } from "@/errors/graphql";
+import { AuthorizationError, ValidationError } from "@/errors/graphql";
+import { getCommunityIdFromCtx } from "@/application/domain/utils";
+import logger from "@/infrastructure/logging";
 import ReportService from "@/application/domain/report/service";
-import ReportJudgeService, { JudgeParseError } from "@/application/domain/report/judgeService";
-import ReportTemplateSelector from "@/application/domain/report/templateSelector";
+import ReportJudgeService, {
+  JudgeParseError,
+} from "@/application/domain/report/template/judgeService";
+import ReportTemplateSelector from "@/application/domain/report/template/selector";
 import ReportPresenter from "@/application/domain/report/presenter";
-import { WeeklyReportPayload } from "@/application/domain/report/types";
+import { WeeklyReportPayload, ReportVariant } from "@/application/domain/report/types";
 import {
   addDays,
   daysBetweenJst,
@@ -25,6 +29,7 @@ import {
   GqlApproveReportPayload,
   GqlPublishReportPayload,
   GqlRejectReportPayload,
+  GqlAdminReportSummaryConnection,
   GqlMutationGenerateReportArgs,
   GqlMutationUpdateReportTemplateArgs,
   GqlMutationApproveReportArgs,
@@ -33,6 +38,9 @@ import {
   GqlQueryReportsArgs,
   GqlQueryReportArgs,
   GqlQueryReportTemplateArgs,
+  GqlQueryReportTemplatesArgs,
+  GqlQueryReportsAllArgs,
+  GqlQueryReportSummariesArgs,
 } from "@/types/graphql";
 
 const LLM_TIMEOUT_MS = 180_000;
@@ -45,6 +53,58 @@ const DEFAULT_COMMENT_LIMIT = 200;
 const MAX_WINDOW_DAYS = 90;
 const MAX_TOP_N = 100;
 const MAX_COMMENT_LIMIT = 1000;
+
+/**
+ * Score below which the judge auto-rejects the report (DRAFT → REJECTED in
+ * the same transaction as the judge save). Paired with the JUDGE prompt's
+ * scoring rule "fabrication 検知時は score ≤ 40", the threshold of 60 means
+ * "auto-reject only when fabrication is detected" — quality-only failures
+ * land in 60–89 and stay DRAFT for human review.
+ */
+const JUDGE_AUTO_REJECT_THRESHOLD = 60;
+
+/**
+ * Variant-specific rubric handed to the JUDGE prompt via the
+ * `${judge_criteria}` placeholder in `userPromptTemplate`. Splits the
+ * checks into `fabrication_check` (factual fidelity — must all be true to
+ * avoid auto-reject) and `quality_check` (narrative qualities — false
+ * here lowers score but does not trigger auto-reject by itself).
+ *
+ * Other variants pass `judgeCriteria: undefined` to `executeJudge` and
+ * receive a JSON.stringify of `{}` in the prompt. JUDGE templates do not
+ * exist for non-WEEKLY_SUMMARY variants today, so the judge step is
+ * skipped upstream and the empty-criteria branch is unreachable in
+ * practice; it stays for forward compatibility with future variants.
+ */
+const WEEKLY_SUMMARY_JUDGE_CRITERIA = {
+  fabrication_check: {
+    top_user_names:
+      "レポートに登場する人名は payload の top_users[*].name のいずれかと一致しているか。" +
+      "存在しない名前が書かれていたら false。top_users が空なら true。",
+    top_user_points:
+      "レポートに登場するポイント数値は payload の top_users[*].points_in / points_out / donation_out_points の値と一致しているか。" +
+      "数値が変形・概算されていたら false。top_users が空なら true。",
+    chain_depth:
+      "deepest_chain.chain_depth の値がレポートに正確に記載されているか。" +
+      "deepest_chain が null なら true。",
+    active_users:
+      "community_context.active_users_in_window の値がレポートに正確に記載されているか。",
+    total_members: "community_context.total_members の値がレポートに正確に記載されているか。",
+    no_phantom_comparison:
+      "previous_period が null のとき、前週比・先週比・増加・減少等の比較表現がレポートに含まれていないか。" +
+      "previous_period が non-null なら true。",
+  },
+  quality_check: {
+    deepest_chain_mentioned:
+      "deepest_chain が non-null のとき、そのエピソードがレポートに言及されているか。" +
+      "deepest_chain が null なら true。",
+    actionable_insights: "来週に向けた具体的なアクション（「〇〇をする」形式）が含まれているか。",
+    reason_distinction:
+      "活動認定と感謝の贈り合いが正確に区別されているか。" +
+      "活動認定をメンバー間の感謝として誤記していたら false。",
+    no_enum_names: "DONATION / GRANT / ONBOARDING 等の内部キー名がそのまま出力されていないか。",
+  },
+} as const;
 
 @injectable()
 export default class ReportUseCase {
@@ -264,13 +324,13 @@ export default class ReportUseCase {
   // =========================================================================
 
   async generateReport(
-    { input, permission }: GqlMutationGenerateReportArgs,
+    { input }: GqlMutationGenerateReportArgs,
     ctx: IContext,
   ): Promise<GqlGenerateReportPayload> {
-    if (permission.communityId !== input.communityId) {
-      throw new ValidationError("communityId in input does not match permission.communityId", []);
+    const communityId = getCommunityIdFromCtx(ctx);
+    if (communityId !== input.communityId) {
+      throw new ValidationError("communityId in input does not match x-community-id header", []);
     }
-    const communityId = permission.communityId;
 
     const periodFrom = truncateToJstDate(input.periodFrom);
     const periodTo = truncateToJstDate(input.periodTo);
@@ -446,6 +506,29 @@ export default class ReportUseCase {
     // coverage signal recorded.
     const coverage = analyzeCoverage(payload, outputMarkdown);
 
+    // Coverage observability: surface top_user_names that the LLM
+    // failed to copy verbatim. Only WEEKLY_SUMMARY is required to
+    // mention top users by name — GRANT_APPLICATION / MEDIA_PR /
+    // MEMBER_NEWSLETTER deliberately omit individual names, so a
+    // "missed name" there is by-design, not a regression. Gating the
+    // warn log by variant prevents false-positive alerts from those
+    // designs. Numeric fields (top_user_points etc.) are intentionally
+    // NOT logged here because their substring matches false-positive
+    // too easily (e.g. "21000" appearing as a fragment of "210000")
+    // to be a useful signal — the raw counters still flow into
+    // `coverageJson` for offline analysis.
+    if (report.variant === ReportVariant.WeeklySummary) {
+      const missedNames = coverage.top_user_names.filter((u) => !u.mentioned).map((u) => u.name);
+      if (missedNames.length > 0) {
+        logger.warn("report.coverage.top_user_names_missed", {
+          event: "report.coverage.top_user_names_missed",
+          reportId: report.id,
+          variant: report.variant,
+          names: missedNames,
+        });
+      }
+    }
+
     let judgeTemplate;
     try {
       judgeTemplate = await this.judgeService.selectJudgeTemplate(ctx, report.variant);
@@ -479,11 +562,19 @@ export default class ReportUseCase {
       });
     }
 
+    // Variant-specific rubric. WEEKLY_SUMMARY has the only criteria
+    // defined today; other variants currently have no JUDGE template
+    // either, so this branch is unreachable in practice but keeps the
+    // call contract honest for future variants.
+    const judgeCriteria =
+      report.variant === ReportVariant.WeeklySummary ? WEEKLY_SUMMARY_JUDGE_CRITERIA : undefined;
+
     let judgeResult;
     try {
       judgeResult = await this.judgeService.executeJudge(ctx, judgeTemplate, {
         outputMarkdown,
         inputPayload: payload,
+        judgeCriteria,
       });
     } catch (e) {
       const isParseError = e instanceof JudgeParseError;
@@ -510,11 +601,12 @@ export default class ReportUseCase {
       });
     }
 
-    return this.persistJudgeOutcome(ctx, report.id, {
+    return this.persistJudgeOutcomeWithAutoReject(ctx, report.id, {
       judgeScore: judgeResult.score,
       judgeBreakdown: judgeResult as unknown as Prisma.InputJsonValue,
       judgeTemplateId: judgeTemplate.id,
       coverageJson: coverage as unknown as Prisma.InputJsonValue,
+      reportVariant: report.variant,
     });
   }
 
@@ -541,6 +633,79 @@ export default class ReportUseCase {
   }
 
   /**
+   * Success-path counterpart to `persistJudgeOutcome`: saves the judge
+   * outcome AND, if `judgeScore < JUDGE_AUTO_REJECT_THRESHOLD`, flips
+   * the row to REJECTED **inside the same transaction**. The combined
+   * write closes the observable window where a fabricating row would
+   * otherwise be visible as DRAFT with a low judgeScore until the
+   * follow-up status update lands.
+   *
+   * INVARIANT: this helper is called **only from `judgeAndPersist`,
+   * which itself is only invoked from the LLM-success branch of
+   * `generateReport` immediately after `service.createReport`**.
+   * `createReport` does not set `status`, so the row is born DRAFT
+   * (the Prisma column default), and `saveJudgeResult` only writes
+   * judge / coverage columns — `updated.status` is therefore
+   * guaranteed to be DRAFT here. The explicit `status !== DRAFT` check
+   * below enforces that invariant: any future refactor that surfaces a
+   * non-DRAFT row to this code path throws a hard error rather than
+   * silently skipping the auto-reject. (Earlier revisions relied on
+   * `assertStatusTransition(updated.status, REJECTED)` to do the same
+   * job, but service.ts legitimately allows APPROVED → REJECTED for
+   * the human `rejectReport` mutation, so that check would let an
+   * APPROVED row slip through without throwing — the direct DRAFT
+   * comparison is the one that matches the intended invariant.)
+   *
+   * Failure paths (judge template missing, parse error, LLM 5xx) keep
+   * using `persistJudgeOutcome` directly — `judgeScore` is null on
+   * those paths and the threshold comparison is not meaningful, so the
+   * row stays DRAFT for human review rather than being auto-rejected
+   * on insufficient evidence.
+   */
+  private async persistJudgeOutcomeWithAutoReject(
+    ctx: IContext,
+    reportId: string,
+    data: {
+      judgeScore: number;
+      judgeBreakdown: Prisma.InputJsonValue;
+      judgeTemplateId: string;
+      coverageJson: Prisma.InputJsonValue;
+      reportVariant: string;
+    },
+  ) {
+    const { reportVariant, ...judgeData } = data;
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      const updated = await this.service.saveJudgeResult(ctx, reportId, judgeData, tx);
+      if (data.judgeScore >= JUDGE_AUTO_REJECT_THRESHOLD) {
+        return updated;
+      }
+      // Auto-reject path. Enforce the DRAFT-only invariant directly so
+      // a non-DRAFT row arriving here surfaces as a hard error rather
+      // than a silently-converted REJECTED transition (see JSDoc).
+      if (updated.status !== ReportStatus.DRAFT) {
+        throw new Error(
+          `persistJudgeOutcomeWithAutoReject invariant violated: expected DRAFT, got ${updated.status} (reportId=${reportId})`,
+        );
+      }
+      const rejected = await this.service.updateReportStatus(
+        ctx,
+        reportId,
+        ReportStatus.REJECTED,
+        undefined,
+        tx,
+      );
+      logger.warn("report.judge.auto_rejected", {
+        event: "report.judge.auto_rejected",
+        reportId,
+        variant: reportVariant,
+        judgeScore: data.judgeScore,
+        threshold: JUDGE_AUTO_REJECT_THRESHOLD,
+      });
+      return rejected;
+    });
+  }
+
+  /**
    * Build the fields shared by skip-path and LLM-path Report inserts:
    * identifying columns, the immutable payload snapshot, the regenerate
    * chain trailer (when the run supersedes a parent), and the `generatedBy`
@@ -561,8 +726,8 @@ export default class ReportUseCase {
     periodFrom: Date,
     periodTo: Date,
   ): Promise<Prisma.ReportUncheckedCreateInput> {
-    // `communityId` is sourced from the already-authorized
-    // `permission.communityId` upstream, rather than re-reading
+    // `communityId` is sourced from the authorized request context
+    // (`x-community-id` header) upstream, rather than re-reading
     // `payload.community_id`, so the two cannot drift if the payload
     // builder's responsibilities change later.
     const parentRegenerateCount = await this.supersedeParentIfRegenerating(
@@ -608,6 +773,14 @@ export default class ReportUseCase {
       throw new Error("Parent report must belong to the same community and variant");
     }
     if (parent.status !== ReportStatus.SUPERSEDED) {
+      // A-3: capture whether the parent was PUBLISHED *before* we
+      // transition it. The recalc only matters when the row being
+      // superseded was actually the (or a) PUBLISHED row pointed at
+      // by `t_communities.last_published_report_id`; for DRAFT /
+      // APPROVED / SKIPPED parents the pointer was never on this
+      // row and recompute would be a no-op, so we skip the extra
+      // query.
+      const wasPublished = parent.status === ReportStatus.PUBLISHED;
       this.service.assertStatusTransition(parent.status, ReportStatus.SUPERSEDED);
       await this.service.updateReportStatus(
         ctx,
@@ -616,16 +789,20 @@ export default class ReportUseCase {
         undefined,
         tx,
       );
+      if (wasPublished) {
+        await this.service.recalculateCommunityLastPublished(ctx, communityId, tx);
+      }
     }
     return parent.regenerateCount;
   }
 
   async browseReports(
-    { communityId, variant, status, cursor, first, permission }: GqlQueryReportsArgs,
+    { communityId, variant, status, cursor, first }: GqlQueryReportsArgs,
     ctx: IContext,
   ): Promise<GqlReportsConnection> {
-    if (permission.communityId !== communityId) {
-      throw new ValidationError("communityId does not match permission.communityId", []);
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
+    if (ctxCommunityId !== communityId) {
+      throw new ValidationError("communityId does not match x-community-id header", []);
     }
     const clampedFirst = first
       ? clampInt(first, 1, MAX_REPORTS_PER_PAGE, "first")
@@ -642,7 +819,15 @@ export default class ReportUseCase {
 
   async viewReport({ id }: GqlQueryReportArgs, ctx: IContext): Promise<GqlReport | null> {
     const report = await this.service.getReportById(ctx, id);
-    return report ? ReportPresenter.report(report) : null;
+    if (!report) return null;
+    // Non-admin owners must only see reports of their own community.
+    // The IsCommunityOwner rule verifies ownership of `ctx.communityId`,
+    // but does not bind the report id to that community — without this
+    // check an owner could view another community's report by id.
+    if (!ctx.isAdmin && report.communityId !== ctx.communityId) {
+      return null;
+    }
+    return ReportPresenter.report(report);
   }
 
   async viewReportTemplate(
@@ -651,6 +836,29 @@ export default class ReportUseCase {
   ): Promise<GqlReportTemplate | null> {
     const template = await this.service.getTemplate(ctx, variant, communityId ?? null);
     return template ? ReportPresenter.reportTemplate(template) : null;
+  }
+
+  /**
+   * Phase 1 admin: list multiple template revisions for the
+   * management UI. The schema default is `kind: GENERATION`, which
+   * GraphQL applies when the arg is omitted; `null` only reaches us
+   * when the caller sends it explicitly or the usecase is invoked
+   * directly (e.g. from tests) without going through the schema
+   * default. Codegen also types every arg as nullable, so coalesce
+   * here to guarantee the service layer sees a concrete kind.
+   */
+  async listReportTemplates(
+    { variant, communityId, kind, includeInactive }: GqlQueryReportTemplatesArgs,
+    ctx: IContext,
+  ): Promise<GqlReportTemplate[]> {
+    const templates = await this.service.listTemplates(
+      ctx,
+      variant,
+      communityId ?? null,
+      kind ?? ReportTemplateKind.GENERATION,
+      includeInactive ?? false,
+    );
+    return templates.map(ReportPresenter.reportTemplate);
   }
 
   async updateReportTemplate(
@@ -695,9 +903,10 @@ export default class ReportUseCase {
     { id }: GqlMutationApproveReportArgs,
     ctx: IContext,
   ): Promise<GqlApproveReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.APPROVED);
       return this.service.updateReportStatus(ctx, id, ReportStatus.APPROVED, undefined, tx);
     });
@@ -708,11 +917,12 @@ export default class ReportUseCase {
     { id, finalContent }: GqlMutationPublishReportArgs,
     ctx: IContext,
   ): Promise<GqlPublishReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.PUBLISHED);
-      return this.service.updateReportStatus(
+      const updated = await this.service.updateReportStatus(
         ctx,
         id,
         ReportStatus.PUBLISHED,
@@ -723,6 +933,14 @@ export default class ReportUseCase {
         },
         tx,
       );
+      // A-3: keep the per-community last-publish pointer
+      // (`t_communities.last_published_report_*`) in sync inside the
+      // same transaction. `adminReportSummary` reads from those
+      // columns, so a publish without recalc would surface a stale
+      // pointer until the next maintenance call. Always re-derives
+      // from `t_reports`, so re-running is a no-op.
+      await this.service.recalculateCommunityLastPublished(ctx, updated.communityId, tx);
+      return updated;
     });
     return { __typename: "PublishReportSuccess", report: ReportPresenter.report(report) };
   }
@@ -731,13 +949,60 @@ export default class ReportUseCase {
     { id }: GqlMutationRejectReportArgs,
     ctx: IContext,
   ): Promise<GqlRejectReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.REJECTED);
       return this.service.updateReportStatus(ctx, id, ReportStatus.REJECTED, undefined, tx);
     });
     return { __typename: "RejectReportSuccess", report: ReportPresenter.report(report) };
+  }
+
+  /**
+   * Phase 2 sysAdmin: cross-community report search. The IsAdmin
+   * directive on the GraphQL query is the only authz gate (no
+   * community scoping hand-off) — the usecase trusts the
+   * directive and does not re-check sysRole.
+   */
+  async browseAllReports(
+    args: GqlQueryReportsAllArgs,
+    ctx: IContext,
+  ): Promise<GqlReportsConnection> {
+    const first = args.first
+      ? validateIntInRange(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
+      : DEFAULT_REPORTS_PER_PAGE;
+    const result = await this.service.getAllReports(ctx, {
+      communityId: args.communityId ?? undefined,
+      status: args.status ?? undefined,
+      variant: args.variant ?? undefined,
+      publishedAfter: args.publishedAfter ? new Date(args.publishedAfter) : undefined,
+      publishedBefore: args.publishedBefore ? new Date(args.publishedBefore) : undefined,
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportPresenter.reportsConnection(result.items, result.totalCount, first);
+  }
+
+  /**
+   * Phase 2 sysAdmin: per-community last-publish summary for the L1
+   * dashboard. Returns an `AdminReportSummaryConnection` whose nodes
+   * carry the denormalized pointer + 90-day publish count; the
+   * resolver hydrates `community` / `lastPublishedReport` via the
+   * existing dataloaders.
+   */
+  async viewReportSummaries(
+    args: GqlQueryReportSummariesArgs,
+    ctx: IContext,
+  ): Promise<GqlAdminReportSummaryConnection> {
+    const first = args.first
+      ? validateIntInRange(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
+      : DEFAULT_REPORTS_PER_PAGE;
+    const result = await this.service.getCommunityReportSummary(ctx, {
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportPresenter.adminReportSummaryConnection(result.items, result.totalCount, first);
   }
 
   // =========================================================================
@@ -747,6 +1012,18 @@ export default class ReportUseCase {
   async refreshAllReportViews(ctx: IContext): Promise<void> {
     await ctx.issuer.internal((tx) => this.service.refreshTransactionSummaryDaily(ctx, tx));
     await ctx.issuer.internal((tx) => this.service.refreshUserTransactionDaily(ctx, tx));
+    await ctx.issuer.internal((tx) => this.service.refreshDonationTxEdges(ctx, tx));
+  }
+
+  // IsCommunityOwner gates approve/publish/reject by `ctx.communityId` only;
+  // it does not bind the report `id` to that community. Without this check
+  // an owner of community A could approve/publish/reject a report of
+  // community B by passing the foreign id. SYS_ADMIN bypasses scoping.
+  private assertReportInScope(ctx: IContext, reportCommunityId: string): void {
+    if (ctx.isAdmin) return;
+    if (reportCommunityId !== ctx.communityId) {
+      throw new AuthorizationError("Report does not belong to the current community");
+    }
   }
 }
 
@@ -756,6 +1033,26 @@ function clampInt(value: number, min: number, max: number, name: string): number
   }
   if (value < min || value > max) {
     throw new RangeError(`${name} must be between ${min} and ${max}, got ${value}`);
+  }
+  return value;
+}
+
+/**
+ * Mirror of `feedback/usecase.ts`'s `validateInt` so the admin-query
+ * paths in this file (`browseAllReports`, `viewReportSummaries`)
+ * surface a `ValidationError` instead of `clampInt`'s `RangeError` —
+ * `ValidationError` is what the GraphQL error mapper translates into a
+ * client-facing `ValidationError` extension. Existing `clampInt`
+ * call sites (buildReportPayload's window/topN/commentLimit and the
+ * legacy `browseReports`) keep their current behaviour to avoid
+ * widening this PR's scope into a domain-wide refactor.
+ */
+function validateIntInRange(value: number, min: number, max: number, name: string): number {
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new ValidationError(
+      `${name} must be an integer between ${min} and ${max}, got ${value}`,
+      [name],
+    );
   }
   return value;
 }

@@ -1,0 +1,38 @@
+# .trivyignore — Trivy が CVE を無視するためのリスト。
+#
+# 運用ルール:
+#   1. 1 行 1 CVE。形式は `CVE-YYYY-NNNNN`。`#` から行末はコメント。
+#   2. 追加するときは必ず以下を併記したコメントを直前に置く:
+#        - 影響範囲 (どの image / どのライブラリ経由か)
+#        - 暫定 ignore する理由 (例: upstream fix 待ち / 不到達 path)
+#        - 期限 (`expires: YYYY-MM-DD` 目安) と再評価担当
+#   3. 期限切れの ignore を月次で棚卸しし、不要になったら削除する。
+#
+# 詳細は docs/handbook/SECURITY.md の "Container Image Scanning (Trivy)" を参照。
+#
+# 運用フロー (CRITICAL = blocking、HIGH = advisory):
+#   - **CRITICAL**: `exit-code: '1'` で blocking。CI (`ci.yml:trivy` job) も
+#     deploy workflow (`_deploy-{cloud-run,external-api}.yml`) も件数 > 0 で
+#     fail する。Cloud Run revision は作られない。aggregator (`ci`) の必須
+#     check に組み込まれている。
+#   - **HIGH**: `exit-code: '0'` で advisory。`::warning::` annotation +
+#     Security タブ upload のみ。Drift が大きいため gating には使わない。
+#   - 結果は両 severity とも GitHub Code Scanning (Security タブ) に sarif
+#     upload される。category: trivy-critical / trivy-high (external API は
+#     trivy-external-*)。
+#
+#   CVE がヒットした時の対応優先順 (CRITICAL は deploy が止まっているので即対応):
+#     (a) **fix**: 依存 / base image を bump、もしくは利用方を変えて到達可能性
+#         を断つ。fix が出ているなら最善。Dependabot が PR を開いていないか
+#         先に確認。
+#     (b) **時限 ignore**: ここに entry を追加 (影響範囲 / 理由 / `expires:` /
+#         担当付き)。fix 待ちや不到達 path の場合のみ、暫定回避として使う。
+#         期限切れ entry は月次棚卸しで削除する。CRITICAL の時限 ignore は
+#         最長 2 週間目安。
+#
+# advisory への降格 (= `exit-code: '0'` に戻す):
+#   blocking を維持するのが原則だが、上流 fix が出ない CRITICAL が長期化
+#   する / Trivy DB の infra failure が頻発するなどの理由で deploy 不能に
+#   なる場合は SECURITY.md "Rollback conditions" の手順で降格できる。
+#   無言で `exit-code` を書き換えると政策との乖離が生まれるので、必ず
+#   SECURITY.md と本ファイル両方を同時に更新すること。

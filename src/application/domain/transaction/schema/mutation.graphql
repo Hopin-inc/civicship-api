@@ -2,31 +2,36 @@
 # Transaction Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    transactionIssueCommunityPoint(
-        input: TransactionIssueCommunityPointInput!
-        permission:CheckCommunityPermissionInput!
-    ): TransactionIssueCommunityPointPayload
-    @authz(rules: [IsCommunityOwner])
+  transactionIssueCommunityPoint(
+    input: TransactionIssueCommunityPointInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): TransactionIssueCommunityPointPayload @authz(rules: [IsCommunityOwner])
 
-    transactionGrantCommunityPoint(
-        input: TransactionGrantCommunityPointInput!
-        permission:CheckCommunityPermissionInput!
-    ): TransactionGrantCommunityPointPayload
-    @authz(rules: [IsCommunityOwner])
+  transactionGrantCommunityPoint(
+    input: TransactionGrantCommunityPointInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): TransactionGrantCommunityPointPayload @authz(rules: [IsCommunityOwner])
 
-    transactionDonateSelfPoint(
-        input: TransactionDonateSelfPointInput!
-        permission:CheckIsSelfPermissionInput!
-    ): TransactionDonateSelfPointPayload
-    @authz(rules: [IsSelf])
+  transactionDonateSelfPoint(
+    input: TransactionDonateSelfPointInput!
+    permission: CheckIsSelfPermissionInput!
+  ): TransactionDonateSelfPointPayload @authz(rules: [IsSelf])
 
-    transactionUpdateMetadata(
-        id: ID!
-        input: TransactionUpdateMetadataInput!
-        permission: CheckIsSelfPermissionInput
-        communityPermission: CheckCommunityPermissionInput
-    ): TransactionUpdateMetadataPayload
-    @authz(compositeRules: [{ or: [IsSelf, IsCommunityOwner] }])
+  transactionUpdateMetadata(
+    id: ID!
+    input: TransactionUpdateMetadataInput!
+    permission: CheckIsSelfPermissionInput
+    communityPermission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): TransactionUpdateMetadataPayload @authz(compositeRules: [{ or: [IsSelf, IsCommunityOwner] }])
 }
 
 # ------------------------------
@@ -62,35 +67,31 @@ input TransactionUpdateMetadataInput {
 # Transaction Mutation Success Type Definitions
 # ------------------------------
 type TransactionIssueCommunityPointSuccess {
-    transaction: Transaction!
+  transaction: Transaction!
 }
 
 type TransactionGrantCommunityPointSuccess {
-    transaction: Transaction!
+  transaction: Transaction!
 }
 
 type TransactionDonateSelfPointSuccess {
-    transaction: Transaction!
+  transaction: Transaction!
 }
 
 # ------------------------------
 # Transaction Mutation Union (Payload) Definitions
 # ------------------------------
-union TransactionIssueCommunityPointPayload =
-    TransactionIssueCommunityPointSuccess
+union TransactionIssueCommunityPointPayload = TransactionIssueCommunityPointSuccess
 
-union TransactionGrantCommunityPointPayload =
-    TransactionGrantCommunityPointSuccess
+union TransactionGrantCommunityPointPayload = TransactionGrantCommunityPointSuccess
 
-union TransactionDonateSelfPointPayload =
-    TransactionDonateSelfPointSuccess
+union TransactionDonateSelfPointPayload = TransactionDonateSelfPointSuccess
 
 # ------------------------------
 # TransactionUpdateMetadata Success / Payload
 # ------------------------------
 type TransactionUpdateMetadataSuccess {
-    transaction: Transaction!
+  transaction: Transaction!
 }
 
-union TransactionUpdateMetadataPayload =
-    TransactionUpdateMetadataSuccess
+union TransactionUpdateMetadataPayload = TransactionUpdateMetadataSuccess

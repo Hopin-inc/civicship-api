@@ -2,74 +2,74 @@
 # Community Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
-    @authz(rules: [IsAdmin])
+  communityCreate(input: CommunityCreateInput!): CommunityCreatePayload @authz(rules: [IsAdmin])
 
-    communityDelete(
-        id: ID!,
-        permission:CheckCommunityPermissionInput!
-    ): CommunityDeletePayload
-    @authz(rules: [IsCommunityOwner])
+  communityDelete(
+    id: ID!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): CommunityDeletePayload @authz(rules: [IsCommunityOwner])
 
-    communityUpdateProfile(
-        id: ID!,
-        input: CommunityUpdateProfileInput!,
-        permission:CheckCommunityPermissionInput!
-    ): CommunityUpdateProfilePayload
-    @authz(rules: [IsCommunityManager])
+  communityUpdateProfile(
+    id: ID!
+    input: CommunityUpdateProfileInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): CommunityUpdateProfilePayload @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------
 # Community Mutation Input Definitions
 # ------------------------------
 input CommunityCreateInput {
-    originalId: String
+  originalId: String
 
-    name: String!
-    pointName: String!
-    image: ImageInput
-    bio: String
-    establishedAt: Datetime
-    website: String
+  name: String!
+  pointName: String!
+  image: ImageInput
+  bio: String
+  establishedAt: Datetime
+  website: String
 
-    config: CommunityConfigInput
+  config: CommunityConfigInput
 
-    #for admin
-    createdBy: ID
+  #for admin
+  createdBy: ID
 }
 
 input CommunityUpdateProfileInput {
-    name: String!
-    pointName: String!
-    image: ImageInput
-    bio: String
-    establishedAt: Datetime
-    website: String
+  name: String!
+  pointName: String!
+  image: ImageInput
+  bio: String
+  establishedAt: Datetime
+  website: String
 }
 
 # ------------------------------
 # Community Mutation Success Type Definitions
 # ------------------------------
 type CommunityCreateSuccess {
-    community: Community!
+  community: Community!
 }
 
 type CommunityDeleteSuccess {
-    communityId: String!
+  communityId: String!
 }
 
 type CommunityUpdateProfileSuccess {
-    community: Community!
+  community: Community!
 }
 
 # ------------------------------
 # Community Mutation Union (Payload) Definitions
 # ------------------------------
-union CommunityCreatePayload =
-    CommunityCreateSuccess
+union CommunityCreatePayload = CommunityCreateSuccess
 
-union CommunityDeletePayload =
-    CommunityDeleteSuccess
+union CommunityDeletePayload = CommunityDeleteSuccess
 
-union CommunityUpdateProfilePayload =
-    CommunityUpdateProfileSuccess
+union CommunityUpdateProfilePayload = CommunityUpdateProfileSuccess

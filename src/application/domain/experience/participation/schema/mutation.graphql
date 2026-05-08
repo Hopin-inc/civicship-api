@@ -2,61 +2,58 @@
 # Participation Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    participationBulkCreate(
-        input: ParticipationBulkCreateInput!
-        permission: CheckCommunityPermissionInput!
-    ): ParticipationBulkCreatePayload
-    @authz(rules: [IsCommunityManager])
+  participationBulkCreate(
+    input: ParticipationBulkCreateInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): ParticipationBulkCreatePayload @authz(rules: [IsCommunityManager])
 
-    participationCreatePersonalRecord(
-        input: ParticipationCreatePersonalRecordInput!
-    ): ParticipationCreatePersonalRecordPayload
-    @authz(rules: [IsUser])
+  participationCreatePersonalRecord(
+    input: ParticipationCreatePersonalRecordInput!
+  ): ParticipationCreatePersonalRecordPayload @authz(rules: [IsUser])
 
-    participationDeletePersonalRecord(
-        id: ID!
-        permission: CheckIsSelfPermissionInput!
-    ): ParticipationDeletePayload
-    @authz(rules: [IsSelf])
+  participationDeletePersonalRecord(
+    id: ID!
+    permission: CheckIsSelfPermissionInput!
+  ): ParticipationDeletePayload @authz(rules: [IsSelf])
 }
 
 # ------------------------------
 # Participation Mutation Input Definitions
 # ------------------------------
 input ParticipationBulkCreateInput {
-    userIds: [ID!]!
-    slotId: ID!
-    description: String
+  userIds: [ID!]!
+  slotId: ID!
+  description: String
 }
 
 input ParticipationCreatePersonalRecordInput {
-    description: String
-    images: [ImageInput!]
+  description: String
+  images: [ImageInput!]
 }
 
 # ------------------------------
 # Participation Mutation Success Type Definitions
 # ------------------------------
 type ParticipationBulkCreateSuccess {
-    participations: [Participation!]!
+  participations: [Participation!]!
 }
 
 type ParticipationCreatePersonalRecordSuccess {
-    participation: Participation!
+  participation: Participation!
 }
 
 type ParticipationDeleteSuccess {
-    participationId: ID!
+  participationId: ID!
 }
 
 # ------------------------------
 # Participation Mutation Union (Payload) Definitions
 # ------------------------------
-union ParticipationBulkCreatePayload =
-    ParticipationBulkCreateSuccess
+union ParticipationBulkCreatePayload = ParticipationBulkCreateSuccess
 
-union ParticipationCreatePersonalRecordPayload =
-    ParticipationCreatePersonalRecordSuccess
+union ParticipationCreatePersonalRecordPayload = ParticipationCreatePersonalRecordSuccess
 
-union ParticipationDeletePayload =
-    ParticipationDeleteSuccess
+union ParticipationDeletePayload = ParticipationDeleteSuccess

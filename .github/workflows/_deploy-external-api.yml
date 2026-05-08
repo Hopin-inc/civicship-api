@@ -1,0 +1,262 @@
+name: Deploy External API to Cloud Run (reusable)
+
+# Reusable workflow called by deploy-external-api-{dev,prd}.yml.
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        description: '"dev" or "prd" — used for cache scope and STAGE env.'
+        type: string
+        required: true
+      environment:
+        description: GitHub Actions environment name (e.g., "dev", "co-creation-dao-prod").
+        type: string
+        required: true
+      node-env:
+        description: Value to set NODE_ENV in the Cloud Run service.
+        type: string
+        required: true
+      extra-env-vars:
+        description: Additional env vars (newline-separated KEY=VAL) for the Cloud Run service.
+        type: string
+        required: false
+        default: ''
+      create-git-tag:
+        description: Whether to create + push a timestamp git tag (prd only).
+        type: boolean
+        required: false
+        default: false
+      git-tag-prefix:
+        description: Prefix prepended to the timestamp git tag (e.g. "external-api-").
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 30
+
+    permissions:
+      id-token: write
+      # contents:write は git tag push に必要 (prd only)。GHA の `permissions:` は
+      # 式で動的に切り替えできないため両 stage で write を付与する
+      # (dev でも実質 read しか使わないので影響なし)。
+      contents: write
+      # security-events:write は Trivy scan 結果 (sarif) を Security タブに
+      # upload するために必要 (codeql-action/upload-sarif)。
+      security-events: write
+
+    env:
+      STAGE: ${{ inputs.stage }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+      ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
+      EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
+      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
+      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+      # EXTERNAL_IMAGE / EXTERNAL_IMAGE_SHA を job-level env に出すことで、
+      # build/push step と Trivy scan step (build step 後の独立 step) から同じ
+      # 参照で扱えるようにする。`:sha-${{ github.sha }}` は Cloud Run revision
+      # を commit 単位で identifiable にし、過去 image にロールバックできるよう
+      # にするため (#974)。Trivy 側は `EXTERNAL_IMAGE_SHA || EXTERNAL_IMAGE` の
+      # fallback で sha tag 優先。
+      EXTERNAL_IMAGE: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:latest
+      EXTERNAL_IMAGE_SHA: ${{ secrets.ARTIFACT_REGISTRY }}/${{ secrets.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
+
+    steps:
+      # See _deploy-cloud-run.yml for rationale on audit mode + disable-sudo
+      # (#986).
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || '' }}
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
+
+      - name: Open jumpbox tunnel
+        uses: ./.github/actions/jumpbox-db-tunnel
+        with:
+          jumpbox-instance-name: ${{ env.JUMPBOX_INSTANCE_NAME }}
+          jumpbox-zone: ${{ env.JUMPBOX_ZONE }}
+          db-name: ${{ env.DB_NAME }}
+
+      # composite が install + db:generate を実行する
+      # (`apply-migrations: 'false'` / `generate-graphql: 'false'`)。
+      # external-api は migration 適用責務を持たない (内部 API 側で apply
+      # 済み前提) ので db:deploy はせず、graphql types は build 時の生成で
+      # 充足するので gql:generate も不要。
+      - name: Setup civicship environment
+        uses: ./.github/actions/setup-civicship
+        with:
+          database-url: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+          apply-migrations: 'false'
+          generate-graphql: 'false'
+
+      - name: Build TypeScript output (consumed by Docker COPY)
+        run: pnpm build
+
+      - name: Configure Docker for GCP Artifact Registry
+        run: |
+          gcloud auth configure-docker "${{ env.ARTIFACT_REGISTRY }}"
+          gcloud auth configure-docker "${{ env.GCP_REGION }}-docker.pkg.dev"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
+      # `:sha-${{ github.sha }}` を `:latest` と並列で push することで、
+      # Cloud Run の各 revision を commit SHA 単位で identifiable にし、
+      # 過去 image にロールバックできるようにする (DEPLOYMENT.md 参照)。
+      #
+      # `--sbom=true` / `--provenance=mode=max` の根拠は _deploy-cloud-run.yml
+      # 同名 step コメント参照。両 image (internal / external) で完全に同じ。
+      - name: Build and push External API image
+        run: |
+          docker buildx build \
+            --file Dockerfile.external \
+            --tag "$EXTERNAL_IMAGE" \
+            --tag "$EXTERNAL_IMAGE_SHA" \
+            --sbom=true \
+            --provenance=mode=max \
+            --cache-from "type=gha,scope=external-${{ inputs.stage }}" \
+            --cache-to "type=gha,mode=max,scope=external-${{ inputs.stage }}" \
+            --push \
+            .
+
+      # Trivy scan は docker push 直後 / Cloud Run deploy 前に走らせる。
+      # CRITICAL = blocking、HIGH = advisory。政策と blocking 解除手順は
+      # _deploy-cloud-run.yml の同名 step コメント + docs/handbook/SECURITY.md
+      # 参照。両 image (internal / external) で完全に同じ政策。
+      # `limit-severities-for-sarif: true` の根拠は `_deploy-cloud-run.yml` の
+      # 同名 step コメント参照。trivy-action の `format: sarif` モードは
+      # default で severity フィルタが無効化されるため、本 flag が無いと
+      # `severity: CRITICAL` を指定しても HIGH/MEDIUM で exit-code: '1' が
+      # trip し deploy が誤 block される。両 image (internal / external) で
+      # 完全に同じ政策。
+      - name: Scan image (Trivy CRITICAL — blocking)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
+          severity: CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-critical.sarif
+          limit-severities-for-sarif: true
+
+      - name: Scan image (Trivy HIGH — advisory)
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.EXTERNAL_IMAGE_SHA || env.EXTERNAL_IMAGE }}
+          severity: HIGH
+          exit-code: '0'
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-high.sarif
+          limit-severities-for-sarif: true
+
+      # CRITICAL = ::error:: annotation, HIGH = ::warning::.
+      # 同 step の根拠は _deploy-cloud-run.yml 参照。
+      - name: Surface Trivy CVE count (CRITICAL=error / HIGH=warning)
+        if: always()
+        run: |
+          set -euo pipefail
+          for sev in critical high; do
+            sarif="trivy-${sev}.sarif"
+            [ -s "$sarif" ] || continue
+            count=$(jq '[.runs[]?.results[]?] | length' "$sarif")
+            echo "${sev^^}: ${count}"
+            [ "$count" -eq 0 ] && continue
+            if [ "$sev" = "critical" ]; then
+              echo "::error::Trivy CRITICAL: ${count} CVEs in the deployed external-api image — deploy was blocked. Review the Security tab (category: trivy-external-critical), fix the offending package, or add a time-boxed entry to .trivyignore (see SECURITY.md)."
+            else
+              echo "::warning::Trivy HIGH: ${count} CVEs in the deployed external-api image. Review the Security tab (category: trivy-external-high) and update .trivyignore / fix the offending package. Advisory only — deploy not blocked on HIGH."
+            fi
+          done
+
+      - name: Upload Trivy CRITICAL results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-critical.sarif
+          category: trivy-external-critical
+
+      - name: Upload Trivy HIGH results to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-high.sarif
+          category: trivy-external-high
+
+      - name: Deploy External API to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@251330ba9a8a34bfbc1622895f42e1d53fd14522 # v2.7.6
+        with:
+          service: ${{ env.EXTERNAL_API_NAME }}
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:sha-${{ github.sha }}
+          region: ${{ env.GCP_REGION }}
+          flags: '--allow-unauthenticated --port=3000'
+          env_vars: |
+            NODE_ENV=${{ inputs.node-env }}
+            ${{ inputs.extra-env-vars }}
+
+      # Cloud Run の deploy アクションは revision の作成成功までしか保証しない。
+      # 実際にコンテナが起動失敗した (例: 起動時 import error / DB 接続失敗) ケースでも
+      # workflow は green になってしまうため、deploy 直後に health endpoint を叩いて
+      # 失敗時はジョブを fail させ、Cloud Run のエラーログを step summary に残す。
+      - name: Smoke check
+        env:
+          SERVICE: ${{ env.EXTERNAL_API_NAME }}
+          REGION: ${{ env.GCP_REGION }}
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')
+          echo "Smoking $URL/health"
+          # retry 9 × delay 10s ≒ 90s + --retry-connrefused: cold start headroom.
+          # cloud-run.yml の Smoke check (immediate deploy) と同じパラメータ。
+          if ! curl --fail --silent --show-error \
+                --retry 9 --retry-delay 10 --retry-connrefused \
+                --max-time 10 \
+                "$URL/health"; then
+            echo "::error::Smoke check failed for $SERVICE"
+            gcloud logging read \
+              "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE AND severity>=ERROR" \
+              --limit=50 --format='value(timestamp,textPayload,jsonPayload.message)' \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Create Git tag
+        # TZ env でプロセス単位に JST を効かせる (#986)。詳細は
+        # _deploy-cloud-run.yml の同名 step コメント参照。
+        if: ${{ inputs.create-git-tag }}
+        env:
+          TZ: Asia/Tokyo
+        run: |
+          TAG_NAME="${{ inputs.git-tag-prefix }}$(date +"%Y%m%d%H%M%S")"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+
+      - name: Cleanup SSH Key
+        if: always()
+        run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub

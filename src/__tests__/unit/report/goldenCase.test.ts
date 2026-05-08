@@ -117,29 +117,46 @@ describe("ReportGoldenCases seed", () => {
   describe("zero-activity case", () => {
     it("declares expectedStatus=SKIPPED and trips the skip guard", () => {
       container.reset();
-      const repo = {
+      const statsRepo = {
         findDailySummaries: jest.fn(),
         findDailyActiveUsers: jest.fn(),
         findTopUsersByTotalPoints: jest.fn(),
+        findTrueUniqueCounterpartiesForUsers: jest.fn(),
         findCommentsByDateRange: jest.fn(),
         findUserProfiles: jest.fn(),
         findCommunityContext: jest.fn(),
         findDeepestChain: jest.fn(),
+        findPeriodAggregate: jest.fn(),
+        findRetentionAggregate: jest.fn(),
+        findCohortRetention: jest.fn(),
         refreshTransactionSummaryDaily: jest.fn(),
         refreshUserTransactionDaily: jest.fn(),
-        findTemplate: jest.fn(),
-        upsertTemplate: jest.fn(),
+        refreshDonationTxEdges: jest.fn(),
+      };
+      const entityRepo = {
         createReport: jest.fn(),
         findReportById: jest.fn(),
         findReports: jest.fn(),
+        findAllReports: jest.fn(),
+        findCommunityReportSummary: jest.fn(),
+        recalculateCommunityLastPublished: jest.fn(),
         updateReportStatus: jest.fn(),
         findReportsByParentRunId: jest.fn(),
-        findJudgeTemplate: jest.fn(),
         updateReportJudgeResult: jest.fn(),
+      };
+      const templateRepo = {
+        findTemplate: jest.fn(),
+        findTemplateByVersion: jest.fn(),
+        findActiveTemplates: jest.fn(),
+        findTemplates: jest.fn(),
+        findJudgeTemplate: jest.fn(),
+        upsertTemplate: jest.fn(),
         findGoldenCases: jest.fn(),
         upsertGoldenCase: jest.fn(),
       };
-      container.register("ReportRepository", { useValue: repo });
+      container.register("ReportTransactionStatsRepository", { useValue: statsRepo });
+      container.register("ReportRepository", { useValue: entityRepo });
+      container.register("ReportTemplateRepository", { useValue: templateRepo });
       const service = container.resolve(ReportService);
 
       const c = captured.find((x) => x.label === "zero-activity")!;
@@ -163,29 +180,46 @@ describe("ReportGoldenCases seed", () => {
       "%s does NOT trip the skip guard and has discrimination criteria",
       (label) => {
         container.reset();
-        const repo = {
+        const statsRepo = {
           findDailySummaries: jest.fn(),
           findDailyActiveUsers: jest.fn(),
           findTopUsersByTotalPoints: jest.fn(),
+          findTrueUniqueCounterpartiesForUsers: jest.fn(),
           findCommentsByDateRange: jest.fn(),
           findUserProfiles: jest.fn(),
           findCommunityContext: jest.fn(),
           findDeepestChain: jest.fn(),
+          findPeriodAggregate: jest.fn(),
+          findRetentionAggregate: jest.fn(),
+          findCohortRetention: jest.fn(),
           refreshTransactionSummaryDaily: jest.fn(),
           refreshUserTransactionDaily: jest.fn(),
-          findTemplate: jest.fn(),
-          upsertTemplate: jest.fn(),
+          refreshDonationTxEdges: jest.fn(),
+        };
+        const entityRepo = {
           createReport: jest.fn(),
           findReportById: jest.fn(),
           findReports: jest.fn(),
+          findAllReports: jest.fn(),
+          findCommunityReportSummary: jest.fn(),
+          recalculateCommunityLastPublished: jest.fn(),
           updateReportStatus: jest.fn(),
           findReportsByParentRunId: jest.fn(),
-          findJudgeTemplate: jest.fn(),
           updateReportJudgeResult: jest.fn(),
+        };
+        const templateRepo = {
+          findTemplate: jest.fn(),
+          findTemplateByVersion: jest.fn(),
+          findActiveTemplates: jest.fn(),
+          findTemplates: jest.fn(),
+          findJudgeTemplate: jest.fn(),
+          upsertTemplate: jest.fn(),
           findGoldenCases: jest.fn(),
           upsertGoldenCase: jest.fn(),
         };
-        container.register("ReportRepository", { useValue: repo });
+        container.register("ReportTransactionStatsRepository", { useValue: statsRepo });
+        container.register("ReportRepository", { useValue: entityRepo });
+        container.register("ReportTemplateRepository", { useValue: templateRepo });
         const service = container.resolve(ReportService);
 
         const c = captured.find((x) => x.label === label)!;

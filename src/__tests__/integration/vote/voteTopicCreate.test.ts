@@ -68,7 +68,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
       role: Role.MANAGER,
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     const result = await voteUseCase.managerCreateVoteTopic(ctx, {
       input: makeValidInput(community.id),
       permission: { communityId: community.id },
@@ -101,7 +105,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
 
     const nftToken = await createNftToken();
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     const result = await voteUseCase.managerCreateVoteTopic(ctx, {
       input: makeValidInput(community.id, {
         gate: { type: GqlVoteGateType.Nft, nftTokenId: nftToken.id },
@@ -111,7 +119,9 @@ describe("Vote Integration: VoteTopicCreate", () => {
 
     expect(result.voteTopic.gate.type).toBe("NFT");
     // gate の nftTokenId が DB に保存されていること（フィールドリゾルバー用メタデータ）
-    expect((result.voteTopic.gate as any).nftTokenId).toBe(nftToken.id);
+    expect((result.voteTopic.gate as unknown as { nftTokenId: string }).nftTokenId).toBe(
+      nftToken.id,
+    );
   });
 
   // ─── 異常系: communityId / 日付 ──────────────────────────────────────────────
@@ -131,7 +141,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
       pointName: "pt",
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: communityB.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(communityA.id),
@@ -152,7 +166,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
     });
 
     const now = new Date();
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
@@ -177,7 +195,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
     });
 
     const sameTime = new Date(Date.now() + 3_600_000);
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
@@ -202,7 +224,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
       pointName: "pt",
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
@@ -224,7 +250,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
       pointName: "pt",
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
@@ -249,7 +279,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
       pointName: "pt",
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
@@ -276,7 +310,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
       pointName: "pt",
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
@@ -302,7 +340,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
     // NFT gate ではなく MEMBERSHIP gate の場合でも policy 側は独立して検証される
     const nftToken = await createNftToken(); // gate 用ではなく policy 検証のため
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
@@ -328,7 +370,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
     const tokenA = await createNftToken();
     const tokenB = await createNftToken();
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
@@ -346,7 +392,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
 
     const nftToken = await createNftToken();
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     const result = await voteUseCase.managerCreateVoteTopic(ctx, {
       input: makeValidInput(community.id, {
         gate: { type: GqlVoteGateType.Nft, nftTokenId: nftToken.id },
@@ -365,7 +415,11 @@ describe("Vote Integration: VoteTopicCreate", () => {
 
     const nftToken = await createNftToken();
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     const result = await voteUseCase.managerCreateVoteTopic(ctx, {
       input: makeValidInput(community.id, {
         gate: { type: GqlVoteGateType.Membership },

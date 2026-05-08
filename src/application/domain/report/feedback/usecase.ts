@@ -1,21 +1,35 @@
 import { inject, injectable } from "tsyringe";
-import { Prisma, FeedbackType } from "@prisma/client";
+import { Prisma, FeedbackType, ReportTemplateKind } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { AuthenticationError, NotFoundError, ValidationError } from "@/errors/graphql";
 import ReportService from "@/application/domain/report/service";
 import ReportFeedbackService from "@/application/domain/report/feedback/service";
 import ReportFeedbackPresenter from "@/application/domain/report/feedback/presenter";
+import { getCommunityIdFromCtx } from "@/application/domain/utils";
 import {
   GqlMutationSubmitReportFeedbackArgs,
   GqlSubmitReportFeedbackPayload,
   GqlQueryReportTemplateStatsArgs,
   GqlReportTemplateStats,
+  GqlQueryReportTemplateStatsBreakdownArgs,
+  GqlReportTemplateStatsBreakdownConnection,
+  GqlQueryReportTemplateFeedbacksArgs,
+  GqlReportFeedbacksConnection,
+  GqlQueryReportTemplateFeedbackStatsArgs,
+  GqlAdminTemplateFeedbackStats,
 } from "@/types/graphql";
 
 const MAX_FEEDBACKS_PER_PAGE = 100;
 const DEFAULT_FEEDBACKS_PER_PAGE = 20;
 const MAX_COMMENT_LENGTH = 2000;
 const MAX_SECTION_KEY_LENGTH = 128;
+
+// Breakdown rows mirror per-template revisions; communities with active
+// experimentation can reach the hundreds across history. Cap at 100 to
+// keep the per-page Pearson computation bounded and prompt the UI to
+// paginate rather than fetch everything at once.
+const MAX_BREAKDOWN_ROWS_PER_PAGE = 100;
+const DEFAULT_BREAKDOWN_ROWS_PER_PAGE = 20;
 
 @injectable()
 export default class ReportFeedbackUseCase {
@@ -32,10 +46,11 @@ export default class ReportFeedbackUseCase {
    *      misbehaving client can't push multi-MB rows.
    *   3. The target `Report` exists and belongs to the community the
    *      caller already passed authz for — the `@authz IsCommunityMember`
-   *      rule checks `permission.communityId`, but we still need to
-   *      confirm the `reportId` is actually from that community; otherwise
-   *      a member of community A could rate a report of community B by
-   *      forging the report id.
+   *      rule checks the request community (resolved from
+   *      `x-community-id` header), but we still need to confirm the
+   *      `reportId` is actually from that community; otherwise a member
+   *      of community A could rate a report of community B by forging
+   *      the report id.
    *   4. One submit per (report, user). Pre-checked here so the client
    *      gets a structured ValidationError before the DB raises P2002 —
    *      friendlier message, same invariant. The @@unique([reportId, userId])
@@ -50,28 +65,27 @@ export default class ReportFeedbackUseCase {
    * second submit could land between the checks and the write.
    */
   async submitReportFeedback(
-    { input, permission }: GqlMutationSubmitReportFeedbackArgs,
+    { input }: GqlMutationSubmitReportFeedbackArgs,
     ctx: IContext,
   ): Promise<GqlSubmitReportFeedbackPayload> {
     const userId = ctx.currentUser?.id;
     if (!userId) {
       throw new AuthenticationError("User must be logged in to submit feedback");
     }
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
 
     if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
       throw new ValidationError("rating must be an integer between 1 and 5", ["rating"]);
     }
     if (input.comment && input.comment.length > MAX_COMMENT_LENGTH) {
-      throw new ValidationError(
-        `comment cannot exceed ${MAX_COMMENT_LENGTH} characters`,
-        ["comment"],
-      );
+      throw new ValidationError(`comment cannot exceed ${MAX_COMMENT_LENGTH} characters`, [
+        "comment",
+      ]);
     }
     if (input.sectionKey && input.sectionKey.length > MAX_SECTION_KEY_LENGTH) {
-      throw new ValidationError(
-        `sectionKey cannot exceed ${MAX_SECTION_KEY_LENGTH} characters`,
-        ["sectionKey"],
-      );
+      throw new ValidationError(`sectionKey cannot exceed ${MAX_SECTION_KEY_LENGTH} characters`, [
+        "sectionKey",
+      ]);
     }
 
     // `ctx.issuer.public` is used here deliberately — `t_report_feedbacks`
@@ -83,8 +97,8 @@ export default class ReportFeedbackUseCase {
     // is already enforced in two places:
     //   1. `@authz IsCommunityMember` on the GraphQL mutation rejects
     //      non-members before the resolver is entered.
-    //   2. The explicit `report.communityId === permission.communityId`
-    //      check below stops a member of community A from forging a
+    //   2. The explicit `report.communityId === ctxCommunityId` check
+    //      below stops a member of community A from forging a
     //      `reportId` belonging to community B.
     // If we later want defence-in-depth via RLS, a follow-up PR can add
     // the member-write policy and swap this for `onlyBelongingCommunity`
@@ -94,11 +108,11 @@ export default class ReportFeedbackUseCase {
       if (!report) {
         throw new NotFoundError("Report", { id: input.reportId });
       }
-      if (report.communityId !== permission.communityId) {
+      if (report.communityId !== ctxCommunityId) {
         // We return a NotFoundError rather than AuthorizationError here
         // so a non-member can't probe existence of other communities'
         // reports by watching the error code. The authz rule already
-        // verified membership of `permission.communityId`.
+        // verified membership of `ctxCommunityId`.
         throw new NotFoundError("Report", { id: input.reportId });
       }
 
@@ -109,10 +123,7 @@ export default class ReportFeedbackUseCase {
         tx,
       );
       if (existing) {
-        throw new ValidationError(
-          "Feedback already submitted for this report",
-          ["reportId"],
-        );
+        throw new ValidationError("Feedback already submitted for this report", ["reportId"]);
       }
 
       try {
@@ -127,9 +138,7 @@ export default class ReportFeedbackUseCase {
             // enum is the source of truth and the GraphQL schema mirrors
             // it), so a plain assertion is enough — no `as unknown`
             // intermediate needed.
-            feedbackType: input.feedbackType
-              ? (input.feedbackType as FeedbackType)
-              : null,
+            feedbackType: input.feedbackType ? (input.feedbackType as FeedbackType) : null,
             sectionKey: input.sectionKey ?? null,
             comment: input.comment ?? null,
           },
@@ -142,10 +151,7 @@ export default class ReportFeedbackUseCase {
         // P2002 into the same ValidationError the pre-check would have
         // thrown so clients see one error code for the invariant.
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-          throw new ValidationError(
-            "Feedback already submitted for this report",
-            ["reportId"],
-          );
+          throw new ValidationError("Feedback already submitted for this report", ["reportId"]);
         }
         throw e;
       }
@@ -167,12 +173,114 @@ export default class ReportFeedbackUseCase {
     { variant, version }: GqlQueryReportTemplateStatsArgs,
     ctx: IContext,
   ): Promise<GqlReportTemplateStats> {
-    const row = await this.feedbackService.getTemplateStats(
-      ctx,
-      variant,
-      version ?? undefined,
-    );
+    const row = await this.feedbackService.getTemplateStats(ctx, variant, version ?? undefined);
     return ReportFeedbackPresenter.templateStats(row);
+  }
+
+  /**
+   * Phase 1 admin: per-template quality breakdown for the A/B
+   * comparison screen. Pagination defaults align with the rest of the
+   * report domain — same `clampInt` helper, same DEFAULT/MAX bounds —
+   * so the screen and the existing `reports` browse share an
+   * intuitive page-size feel. Authorization is enforced upstream by
+   * the `@authz IsAdmin` rule on the GraphQL query.
+   */
+  async viewReportTemplateStatsBreakdown(
+    args: GqlQueryReportTemplateStatsBreakdownArgs,
+    ctx: IContext,
+  ): Promise<GqlReportTemplateStatsBreakdownConnection> {
+    const first = args.first
+      ? validateInt(args.first, 1, MAX_BREAKDOWN_ROWS_PER_PAGE, "first")
+      : DEFAULT_BREAKDOWN_ROWS_PER_PAGE;
+    const result = await this.feedbackService.getTemplateBreakdown(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+      includeInactive: args.includeInactive ?? false,
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportFeedbackPresenter.templateBreakdownConnection(
+      result.items,
+      result.totalCount,
+      first,
+    );
+  }
+
+  /**
+   * Phase 1.5 admin: review-style list of individual feedbacks for a
+   * template. Authorization is enforced upstream by `@authz IsAdmin`
+   * on the GraphQL query; the usecase trusts the directive and does
+   * not re-check sysRole.
+   *
+   * Validation here mirrors the existing breakdown / stats paths:
+   *   - `first` is bounded with the same `validateInt` / DEFAULT /
+   *     MAX constants the per-Report `feedbacks` field uses, so the
+   *     two screens share an intuitive page-size feel.
+   *   - `maxRating` is bounded 1..5 (mirroring the rating CHECK on
+   *     submit) so a misbehaving client can't pass `maxRating: 0` and
+   *     read an empty page that hides a real bug, or `maxRating: 99`
+   *     that quietly drops the filter.
+   *   - `version` (when present) must be a positive integer; the DB
+   *     would reject negative version lookups silently as "no row",
+   *     producing an empty-page response that masks the input error.
+   */
+  async viewReportTemplateFeedbacks(
+    args: GqlQueryReportTemplateFeedbacksArgs,
+    ctx: IContext,
+  ): Promise<GqlReportFeedbacksConnection> {
+    const first = args.first
+      ? validateInt(args.first, 1, MAX_FEEDBACKS_PER_PAGE, "first")
+      : DEFAULT_FEEDBACKS_PER_PAGE;
+    if (args.maxRating !== undefined && args.maxRating !== null) {
+      validateInt(args.maxRating, 1, 5, "maxRating");
+    }
+    if (args.version !== undefined && args.version !== null) {
+      validateInt(args.version, 1, Number.MAX_SAFE_INTEGER, "version");
+    }
+    const result = await this.feedbackService.listAdminTemplateFeedbacks(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+      // The GraphQL `ReportFeedbackType` enum and the Prisma `FeedbackType`
+      // enum share identical member names by contract (Prisma is the
+      // source of truth and the GraphQL schema mirrors it), so a plain
+      // assertion is enough here — same pattern as `submitReportFeedback`.
+      feedbackType: args.feedbackType ? (args.feedbackType as FeedbackType) : undefined,
+      maxRating: args.maxRating ?? undefined,
+      cursor: args.cursor ?? undefined,
+      first,
+    });
+    return ReportFeedbackPresenter.connection(result.items, result.totalCount, first);
+  }
+
+  /**
+   * Phase 1.5 admin: population stats paired with
+   * `adminTemplateFeedbacks` for the template detail page summary
+   * card. Argument scope is intentionally narrower than the list
+   * query — `feedbackType` / `maxRating` are not accepted because a
+   * filtered distribution defeats the bar's purpose. Authorization
+   * is enforced upstream by `@authz IsAdmin` on the GraphQL query;
+   * the usecase trusts the directive.
+   *
+   * Validation mirrors the list path's `version` check: `version`
+   * (when present) must be a positive integer. The DB would return
+   * an empty stats object for a negative version silently, masking
+   * the input bug.
+   */
+  async viewReportTemplateFeedbackStats(
+    args: GqlQueryReportTemplateFeedbackStatsArgs,
+    ctx: IContext,
+  ): Promise<GqlAdminTemplateFeedbackStats> {
+    if (args.version !== undefined && args.version !== null) {
+      validateInt(args.version, 1, Number.MAX_SAFE_INTEGER, "version");
+    }
+    const row = await this.feedbackService.getAdminTemplateFeedbackStats(ctx, {
+      variant: args.variant,
+      version: args.version ?? undefined,
+      kind: args.kind ?? ReportTemplateKind.GENERATION,
+    });
+    return ReportFeedbackPresenter.adminTemplateFeedbackStats(row);
   }
 
   // Field-resolver helper used by `Report.feedbacks`. `Report.myFeedback`

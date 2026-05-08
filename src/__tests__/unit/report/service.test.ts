@@ -6,28 +6,44 @@ import ReportService, {
 } from "@/application/domain/report/service";
 import type { WeeklyReportPayload } from "@/application/domain/report/types";
 
-class MockReportRepository {
+class MockTransactionStatsRepository {
   findDailySummaries = jest.fn();
   findDailyActiveUsers = jest.fn();
   findTopUsersByTotalPoints = jest.fn();
+  findTrueUniqueCounterpartiesForUsers = jest.fn();
   findCommentsByDateRange = jest.fn();
   findUserProfiles = jest.fn();
   findCommunityContext = jest.fn();
   findDeepestChain = jest.fn();
+  findPeriodAggregate = jest.fn();
+  findRetentionAggregate = jest.fn();
+  findCohortRetention = jest.fn();
   refreshTransactionSummaryDaily = jest.fn();
   refreshUserTransactionDaily = jest.fn();
-  findTemplate = jest.fn();
-  findActiveTemplates = jest.fn();
-  findJudgeTemplate = jest.fn();
-  updateReportJudgeResult = jest.fn();
-  findGoldenCases = jest.fn();
-  upsertGoldenCase = jest.fn();
-  upsertTemplate = jest.fn();
+  refreshDonationTxEdges = jest.fn();
+}
+
+class MockEntityRepository {
   createReport = jest.fn();
   findReportById = jest.fn();
   findReports = jest.fn();
+  findAllReports = jest.fn();
+  findCommunityReportSummary = jest.fn();
+  recalculateCommunityLastPublished = jest.fn();
   updateReportStatus = jest.fn();
   findReportsByParentRunId = jest.fn();
+  updateReportJudgeResult = jest.fn();
+}
+
+class MockTemplateRepository {
+  findTemplate = jest.fn();
+  findTemplateByVersion = jest.fn();
+  findActiveTemplates = jest.fn();
+  findTemplates = jest.fn();
+  findJudgeTemplate = jest.fn();
+  upsertTemplate = jest.fn();
+  findGoldenCases = jest.fn();
+  upsertGoldenCase = jest.fn();
 }
 
 describe("ReportService", () => {
@@ -35,7 +51,11 @@ describe("ReportService", () => {
 
   beforeEach(() => {
     container.reset();
-    container.register("ReportRepository", { useValue: new MockReportRepository() });
+    container.register("ReportTransactionStatsRepository", {
+      useValue: new MockTransactionStatsRepository(),
+    });
+    container.register("ReportRepository", { useValue: new MockEntityRepository() });
+    container.register("ReportTemplateRepository", { useValue: new MockTemplateRepository() });
     service = container.resolve(ReportService);
   });
 
@@ -48,6 +68,12 @@ describe("ReportService", () => {
       [ReportStatus.APPROVED, ReportStatus.REJECTED],
       [ReportStatus.APPROVED, ReportStatus.SUPERSEDED],
       [ReportStatus.PUBLISHED, ReportStatus.SUPERSEDED],
+      // PR-B: regenerating from a REJECTED parent (auto-rejected by the
+      // judge or manually rejected by an admin) routes through
+      // supersedeParentIfRegenerating, which calls
+      // assertStatusTransition(REJECTED, SUPERSEDED). Without this entry
+      // the regenerate path would throw on every attempt.
+      [ReportStatus.REJECTED, ReportStatus.SUPERSEDED],
       // Force-regenerating from a SKIPPED parent needs this transition so
       // the shared supersedeParentIfRegenerating helper can mark the prior
       // row obsolete before the fresh run is persisted.
@@ -102,6 +128,10 @@ describe("ReportService", () => {
       highlight_comments: [],
       previous_period: null,
       retention: null,
+      aggregate: { tx_count: 0, points_sum: 0 },
+      aggregates_by_reason: {},
+      peak_active_day: null,
+      active_rate_pct: null,
     };
 
     it("returns a prefixed skip reason when active_users=0 AND daily_summaries is empty", () => {

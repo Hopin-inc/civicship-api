@@ -32,17 +32,24 @@ describe("Point Issuance Error Handling Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+      communityId: "non-existent-community-id",
+    } as IContext;
 
     const input: GqlTransactionIssueCommunityPointInput = {
       transferPoints: 1000,
     };
 
     await expect(
-      transactionUseCase.ownerIssueCommunityPoint({
-        input,
-        permission: { communityId: "non-existent-community-id" },
-      }, ctx),
+      transactionUseCase.ownerIssueCommunityPoint(
+        {
+          input,
+          permission: { communityId: "non-existent-community-id" },
+        },
+        ctx,
+      ),
     ).rejects.toThrow(/not found/i);
   });
 });

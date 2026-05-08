@@ -25,18 +25,16 @@ civicship-api supports multiple deployment configurations, separating different 
 
 ```dockerfile
 # Dockerfile
-FROM node:20-alpine
-
+FROM node:20
 WORKDIR /app
-COPY package*.json ./
-RUN pnpm install --frozen-lockfile --prod
-
-COPY .. .
-RUN pnpm build
-
-EXPOSE 3000
-CMD ["pnpm", "start"]
+COPY . ./
+CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/index.js"]
 ```
+
+The runner builds `dist/` via `pnpm build` before the Docker build, and
+`node_modules/` is intentionally included in the build context (see
+`.dockerignore`). The image therefore ships pre-built JS and pre-installed
+dependencies — no `pnpm install` / `pnpm build` runs inside the container.
 
 #### 2. External API (Public Wallet Operations)
 
@@ -55,25 +53,21 @@ CMD ["pnpm", "start"]
 
 ```dockerfile
 # Dockerfile.external
-FROM node:20-alpine
-
+FROM node:20
 WORKDIR /app
-COPY package*.json ./
-RUN pnpm install --frozen-lockfile --prod
-
-COPY . .
-RUN pnpm build
-
-EXPOSE 8080
-CMD ["node", "dist/external-api.js"]
+COPY . ./
+CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/external-api.js"]
 ```
+
+Same pattern as Internal API: `dist/` and `node_modules/` come from the
+runner-side build, so the container starts directly from the pre-built output.
 
 #### 3. Batch Processing (Background Jobs)
 
 **Configuration:**
-- **Entry Point:** `src/batch.ts`
+- **Entry Point:** `src/index.ts` (with `PROCESS_TYPE=batch` env)
 - **Purpose:** Background job processing
-- **Dockerfile:** `Dockerfile.batch`
+- **Dockerfile:** `Dockerfile` (unified — same image as Internal API)
 - **Deployment:** Google Cloud Run Jobs
 - **Execution:** Scheduled execution
 
@@ -83,19 +77,10 @@ CMD ["node", "dist/external-api.js"]
 - Periodic cleanup
 - Notification sending
 
-```dockerfile
-# Dockerfile.batch
-FROM node:20-alpine
-
-WORKDIR /app
-COPY package*.json ./
-RUN pnpm install --frozen-lockfile --prod
-
-COPY . .
-RUN pnpm build
-
-CMD ["node", "dist/batch.js"]
-```
+The batch image is the same `Dockerfile`-built image as the Internal API.
+The Cloud Run Job overrides the entrypoint with `--command=node --args=dist/index.js`
+in the deploy workflow (`_deploy-cloud-run.yml`), and the `main()` function in
+`src/index.ts` dispatches to `batchProcess()` when `process.env.PROCESS_TYPE === "batch"`.
 
 ## Google Cloud Run Settings
 
@@ -419,6 +404,58 @@ run.googleapis.com/vpc-access-connector: projects/PROJECT_ID/locations/REGION/co
 run.googleapis.com/vpc-access-egress: private-ranges-only
 ```
 
+## Rollback
+
+### Image SHA Tagging
+
+Every deploy pushes the built image with two tags in parallel:
+
+- `:latest` — moving tag, always points at the most recent successful build
+- `:sha-<commit-sha>` — immutable tag pinned to the commit that triggered the
+  build (`github.sha`)
+
+Cloud Run services / Jobs are deployed with the `:sha-<commit-sha>` tag (not
+`:latest`) so that each revision is identifyable by the source commit and a
+specific past build can be re-deployed at any time.
+
+### Rolling back to a previous image
+
+To roll a Cloud Run **service** back to an older build, look up the commit SHA
+of the target build (e.g. from the GitHub Actions run, `git log`, or
+`gcloud artifacts docker tags list`) and run:
+
+```bash
+# Internal API
+gcloud run services update "$APPLICATION_NAME" \
+  --image="${ARTIFACT_REGISTRY}/${APPLICATION_NAME}:sha-${TARGET_SHA}" \
+  --region="$GCP_REGION"
+
+# External API
+gcloud run services update "$EXTERNAL_API_NAME" \
+  --image="${ARTIFACT_REGISTRY}/${EXTERNAL_API_NAME}:sha-${TARGET_SHA}" \
+  --region="$GCP_REGION"
+```
+
+For the **batch Cloud Run Job**, use `run jobs update` instead:
+
+```bash
+gcloud run jobs update "$BATCH_NAME" \
+  --image="${BATCH_ARTIFACT_REGISTRY}/${BATCH_NAME}:sha-${TARGET_SHA}" \
+  --region="$GCP_REGION"
+```
+
+Alternatively, for services you can shift traffic back to a previously
+deployed revision without re-deploying the image:
+
+```bash
+gcloud run services update-traffic "$APPLICATION_NAME" \
+  --to-revisions="<previous-revision-name>=100" \
+  --region="$GCP_REGION"
+```
+
+Use `gcloud run revisions list --service="$APPLICATION_NAME" --region="$GCP_REGION"`
+to find the revision name.
+
 ## Troubleshooting
 
 ### Deployment issues
@@ -451,4 +488,5 @@ gcloud alpha monitoring policies create --policy-from-file=alerting-policy.yaml
 - [Security Guide](./SECURITY.md) - Security Architecture
 - [Performance Guide](./PERFORMANCE.md) - Optimization Strategies
 - [Environment Variable Guide](./ENVIRONMENT.md) - Environment Settings
+- [Database Migration Guide](./DB_MIGRATION.md) - Safe-migration playbook for destructive DDL
 - [Troubleshooting](./TROUBLESHOOTING.md) - Problem Resolution Guide

@@ -65,7 +65,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     const result = await voteUseCase.managerUpdateVoteTopic(ctx, {
       id: topic.id,
       input: makeValidUpdateInput({ title: "Brand New Title" }),
@@ -100,7 +104,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await voteUseCase.managerUpdateVoteTopic(ctx, {
       id: topic.id,
       input: makeValidUpdateInput({
@@ -134,7 +142,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
 
     const nftToken = await createNftToken();
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     const result = await voteUseCase.managerUpdateVoteTopic(ctx, {
       id: topic.id,
       input: makeValidUpdateInput({
@@ -144,7 +156,9 @@ describe("Vote Integration: VoteTopicUpdate", () => {
     });
 
     expect(result.voteTopic.gate.type).toBe("NFT");
-    expect((result.voteTopic.gate as any).nftTokenId).toBe(nftToken.id);
+    expect((result.voteTopic.gate as unknown as { nftTokenId: string }).nftTokenId).toBe(
+      nftToken.id,
+    );
   });
 
   it("should switch powerPolicy type from FLAT to NFT_COUNT", async () => {
@@ -160,7 +174,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
 
     const nftToken = await createNftToken();
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     const result = await voteUseCase.managerUpdateVoteTopic(ctx, {
       id: topic.id,
       input: makeValidUpdateInput({
@@ -170,7 +188,9 @@ describe("Vote Integration: VoteTopicUpdate", () => {
     });
 
     expect(result.voteTopic.powerPolicy.type).toBe("NFT_COUNT");
-    expect((result.voteTopic.powerPolicy as any).nftTokenId).toBe(nftToken.id);
+    expect((result.voteTopic.powerPolicy as unknown as { nftTokenId: string }).nftTokenId).toBe(
+      nftToken.id,
+    );
   });
 
   // ─── 異常系: フェーズ制約 ─────────────────────────────────────────────────
@@ -186,7 +206,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: topic.id,
@@ -207,7 +231,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       endsAt: new Date(now.getTime() - 60_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: topic.id,
@@ -222,7 +250,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
   it("should throw NotFoundError when the topic id does not exist", async () => {
     const { manager, community } = await setupManagerAndCommunity("manager-upd-nf");
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: "nonexistent-topic-id",
@@ -249,7 +281,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: communityB.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: topic.id,
@@ -272,7 +308,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: topic.id,
@@ -296,7 +336,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: topic.id,
@@ -319,7 +363,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: topic.id,
@@ -349,7 +397,11 @@ describe("Vote Integration: VoteTopicUpdate", () => {
     const tokenA = await createNftToken();
     const tokenB = await createNftToken();
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: topic.id,

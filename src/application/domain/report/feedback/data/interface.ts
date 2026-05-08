@@ -1,6 +1,13 @@
-import { Prisma, FeedbackType } from "@prisma/client";
+import { Prisma, FeedbackType, ReportTemplateKind } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaReportFeedback } from "@/application/domain/report/feedback/data/type";
+import {
+  PrismaReportFeedback,
+  TemplateBreakdownRow,
+  JudgeFeedbackPairRow,
+  AdminTemplateFeedbackStatsRow,
+} from "@/application/domain/report/feedback/data/type";
+
+export { JudgeFeedbackPairRow };
 
 export interface CreateReportFeedbackInput {
   reportId: string;
@@ -9,19 +16,6 @@ export interface CreateReportFeedbackInput {
   feedbackType?: FeedbackType | null;
   sectionKey?: string | null;
   comment?: string | null;
-}
-
-/**
- * Paired (judgeScore, avgFeedbackRating) rows used by the service to
- * compute Pearson's r between the two series. A report is eligible to
- * appear here only when both signals exist — reports with no feedback are
- * skipped upstream rather than contributing a 0 that would bias the
- * correlation.
- */
-export interface JudgeFeedbackPairRow {
-  reportId: string;
-  judgeScore: number;
-  avgRating: number;
 }
 
 export interface IReportFeedbackRepository {
@@ -69,4 +63,76 @@ export interface IReportFeedbackRepository {
     pairs: JudgeFeedbackPairRow[];
     version: number | null;
   }>;
+
+  /**
+   * Per-template breakdown for the A/B comparison screen
+   * (`reportTemplateStatsBreakdown`). Each row pairs a template's
+   * config snapshot (version / scope / kind / experimentKey / state)
+   * with feedbackCount / avgRating / avgJudgeScore aggregated over
+   * the Reports that used it, plus the per-template (judgeScore,
+   * avgRating) pair set the service runs Pearson's r over.
+   *
+   * Implementation must use a LEFT JOIN from `t_report_templates` so
+   * a template with zero feedback still surfaces (the UI displays
+   * `—` for the metrics rather than omitting the row). Pagination
+   * is `id ASC` based for cursor stability — the breakdown rows are
+   * O(versions × experimentKeys) per variant, which can reach the
+   * hundreds for variants with active experimentation.
+   */
+  getTemplateBreakdown(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      includeInactive: boolean;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: TemplateBreakdownRow[]; totalCount: number }>;
+
+  /**
+   * Phase 1.5 admin: review-style list of individual feedbacks scoped
+   * to a template (variant + optional version, plus `kind` so JUDGE
+   * and GENERATION prompts have separate review streams). The
+   * `feedbackType` / `maxRating` filters drive the "drill into low
+   * ratings on a specific quality axis" workflow.
+   *
+   * Ordering is `(createdAt DESC, id DESC)` so newest reviews lead
+   * the page and cursor pagination is total-ordered (without `id` as
+   * tiebreaker, two rows sharing a `createdAt` — possible under bulk
+   * seed inserts or high-concurrency writes — could reshuffle between
+   * pages and either duplicate or skip across cursor boundaries). The
+   * cursor is a feedback `id`.
+   */
+  findAdminTemplateFeedbacks(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+      feedbackType?: FeedbackType;
+      maxRating?: number;
+      cursor?: string;
+      first: number;
+    },
+  ): Promise<{ items: PrismaReportFeedback[]; totalCount: number }>;
+
+  /**
+   * Phase 1.5 admin: aggregate stats over the same template scope as
+   * `findAdminTemplateFeedbacks` but without the row-level
+   * `feedbackType` / `maxRating` filters — the population stats power
+   * a "Customer Reviews"-style summary that must reflect the full
+   * 1..5 spread. Returns total count, mean rating (null when no
+   * observations), and a sparse bucket list (zero-count ratings
+   * omitted; the presenter densifies to 1..5).
+   */
+  getAdminTemplateFeedbackStats(
+    ctx: IContext,
+    params: {
+      variant: string;
+      version?: number;
+      kind: ReportTemplateKind;
+    },
+  ): Promise<AdminTemplateFeedbackStatsRow>;
 }

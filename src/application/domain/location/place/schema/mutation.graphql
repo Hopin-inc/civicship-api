@@ -2,24 +2,30 @@
 # Place Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    placeCreate(
-        input: PlaceCreateInput!
-        permission: CheckCommunityPermissionInput!
-    ): PlaceCreatePayload
-    @authz(rules: [IsCommunityManager])
+  placeCreate(
+    input: PlaceCreateInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): PlaceCreatePayload @authz(rules: [IsCommunityManager])
 
-    placeDelete(
-        id: ID!
-        permission: CheckCommunityPermissionInput!
-    ): PlaceDeletePayload
-    @authz(rules: [IsCommunityManager])
+  placeDelete(
+    id: ID!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): PlaceDeletePayload @authz(rules: [IsCommunityManager])
 
-    placeUpdate(
-        id: ID!
-        input: PlaceUpdateInput!
-        permission: CheckCommunityPermissionInput!
-    ): PlaceUpdatePayload
-    @authz(rules: [IsCommunityManager])
+  placeUpdate(
+    id: ID!
+    input: PlaceUpdateInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): PlaceUpdatePayload @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------
@@ -27,84 +33,81 @@ extend type Mutation {
 # ------------------------------
 
 input PlaceCreateInput {
-    name: String!
-    address: String!
-    latitude: Decimal!
-    longitude: Decimal!
-    cityCode: ID!
-    isManual: Boolean!
-    googlePlaceId: String
-    mapLocation: JSON
+  name: String!
+  address: String!
+  latitude: Decimal!
+  longitude: Decimal!
+  cityCode: ID!
+  isManual: Boolean!
+  googlePlaceId: String
+  mapLocation: JSON
 
-    communityId: ID!
-    opportunityIds: [ID!]
+  communityId: ID!
+  opportunityIds: [ID!]
 }
 
 input PlaceUpdateInput {
-    id: ID!
+  id: ID!
 
-    name: String!
-    address: String!
-    latitude: Decimal!
-    longitude: Decimal!
-    cityCode: ID!
-    isManual: Boolean!
-    googlePlaceId: String
-    mapLocation: JSON
+  name: String!
+  address: String!
+  latitude: Decimal!
+  longitude: Decimal!
+  cityCode: ID!
+  isManual: Boolean!
+  googlePlaceId: String
+  mapLocation: JSON
 
-    opportunityIds: [ID!]
+  opportunityIds: [ID!]
 }
 
 input NestedPlacesBulkUpdateInput {
-    connectOrCreate: [NestedPlaceConnectOrCreateInput!]
-    disconnect: [ID!]
+  connectOrCreate: [NestedPlaceConnectOrCreateInput!]
+  disconnect: [ID!]
 }
 
 input NestedPlacesBulkConnectOrCreateInput {
-    data: [NestedPlaceConnectOrCreateInput!]
+  data: [NestedPlaceConnectOrCreateInput!]
 }
 
 input NestedPlaceConnectOrCreateInput {
-    where: ID
-    create: NestedPlaceCreateInput
+  where: ID
+  create: NestedPlaceCreateInput
 }
 
 input NestedPlaceCreateInput {
-    name: String!
-    address: String!
-    latitude: Decimal!
-    longitude: Decimal!
-    cityCode: ID!
-    isManual: Boolean!
-    googlePlaceId: String
-    mapLocation: JSON
+  name: String!
+  address: String!
+  latitude: Decimal!
+  longitude: Decimal!
+  cityCode: ID!
+  isManual: Boolean!
+  googlePlaceId: String
+  mapLocation: JSON
 
-    communityId: ID
+  communityId: ID
 }
 
 # ------------------------------
 # Place Mutation Success Type Definitions
 # ------------------------------
 type PlaceCreateSuccess {
-    place: Place!
+  place: Place!
 }
 
 type PlaceUpdateSuccess {
-    place: Place!
+  place: Place!
 }
 
 type PlaceDeleteSuccess {
-    id: ID!
+  id: ID!
 }
 
 # ------------------------------
 # Place Mutation Union (Payload) Definitions
 # ------------------------------
-union PlaceCreatePayload =
-    PlaceCreateSuccess
+union PlaceCreatePayload = PlaceCreateSuccess
 
-union PlaceUpdatePayload =
-    PlaceUpdateSuccess
+union PlaceUpdatePayload = PlaceUpdateSuccess
 
-union PlaceDeletePayload =
-    PlaceDeleteSuccess
+union PlaceDeletePayload = PlaceDeleteSuccess

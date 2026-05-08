@@ -57,6 +57,10 @@ describe("ReportUseCase.generateReport", () => {
     highlight_comments: [],
     previous_period: null,
     retention: null,
+    aggregate: { tx_count: 0, points_sum: 0 },
+    aggregates_by_reason: {},
+    peak_active_day: null,
+    active_rate_pct: null,
   };
 
   const stubTemplate = {
@@ -83,6 +87,7 @@ describe("ReportUseCase.generateReport", () => {
   // test-only: production IContext pulls in issuer / auth / loader wiring
   // we don't exercise here; the cast keeps the mock shape minimal.
   const fakeCtx = {
+    communityId,
     issuer: {
       onlyBelongingCommunity: (
         _ctx: IContext,
@@ -365,6 +370,257 @@ describe("ReportUseCase.generateReport", () => {
       expect(result.report.outputMarkdown).toBe(llmResult.text);
     }
   });
+
+  // ---------------------------------------------------------------------------
+  // PR-B auto-reject: judge score below the threshold (60) flips the row to
+  // REJECTED in the same transaction as the judge save. The threshold is
+  // tuned so that fabrication detections (which the judge prompt scores at
+  // ≤ 40) reliably land below it, while quality-only failures (60–89) stay
+  // DRAFT for human review.
+  // ---------------------------------------------------------------------------
+  describe("judge auto-reject (PR-B)", () => {
+    const activePayload: WeeklyReportPayload = {
+      ...zeroActivityPayload,
+      community_context: {
+        ...zeroActivityPayload.community_context!,
+        active_users_in_window: 26,
+        active_rate: 0.046,
+      },
+      daily_summaries: [
+        {
+          date: "2026-04-14",
+          reason: "DONATION",
+          tx_count: 8,
+          points_sum: 125830,
+          chain_root_count: 0,
+          chain_descendant_count: 8,
+          max_chain_depth: 19,
+          avg_chain_depth: 5,
+          issuance_count: 0,
+          burn_count: 0,
+        },
+      ],
+    };
+    const llmResult: LlmCompleteResult = {
+      text: "## レポート本文 ...",
+      model: "claude-sonnet-4-6",
+      usage: {
+        inputTokens: 10000,
+        outputTokens: 3000,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 0,
+      },
+      stopReason: "end_turn",
+    };
+    const judgeTemplate = {
+      id: "judge-tpl-1",
+      variant: GqlReportVariant.WeeklySummary,
+      kind: "JUDGE",
+      systemPrompt: "judge system",
+      userPromptTemplate: "${judge_criteria}/${input_payload}/${output_markdown}",
+      model: "claude-haiku-4-5-20251001",
+      maxTokens: 1000,
+      temperature: 0,
+      stopSequences: [],
+      isEnabled: true,
+      isActive: true,
+    };
+
+    beforeEach(() => {
+      service.evaluateSkipReason.mockReturnValue(null);
+      jest.spyOn(usecase, "buildReportPayload").mockResolvedValue(activePayload);
+      llmClient.complete.mockResolvedValue(llmResult);
+      judgeService.selectJudgeTemplate.mockResolvedValue(judgeTemplate);
+
+      // Default: updateReportStatus echoes back a REJECTED-shaped row so
+      // the auto-reject test can assert on its return without contorting
+      // the type-narrow happy-path mock.
+      service.updateReportStatus.mockImplementation(async (_ctx, id, status) => {
+        const lastCreate = service.createReport.mock.results.at(-1);
+        const created = lastCreate ? await lastCreate.value : null;
+        return { ...(created ?? { id }), status };
+      });
+    });
+
+    it("flips DRAFT to REJECTED in the same tx when judgeScore is below the threshold", async () => {
+      // Score 35 puts the row firmly inside the "fabrication detected"
+      // band (≤ 40 by the prompt's scoring rule), well below the
+      // auto-reject threshold of 60.
+      judgeService.executeJudge.mockResolvedValue({
+        score: 35,
+        breakdown: {
+          fabrication: { top_user_names: false, top_user_points: true, chain_depth: true },
+          quality: { actionable_insights: true },
+        },
+        issues: ["架空のユーザー名が含まれていました"],
+        strengths: [],
+      });
+
+      const result = await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      expect(judgeService.executeJudge).toHaveBeenCalledTimes(1);
+      // criteria must be threaded through for WEEKLY_SUMMARY — JSON.stringify(undefined ?? {})
+      // would emit "{}" and the rubric never reaches the judge prompt.
+      const judgeCallArg = judgeService.executeJudge.mock.calls[0][2];
+      expect(judgeCallArg.judgeCriteria).toBeDefined();
+      expect(judgeCallArg.judgeCriteria.fabrication_check).toBeDefined();
+
+      expect(service.saveJudgeResult).toHaveBeenCalledTimes(1);
+      const saveArgs = service.saveJudgeResult.mock.calls[0];
+      expect(saveArgs[2].judgeScore).toBe(35);
+
+      // Auto-reject must fire on the same tx as the judge save. The
+      // invariant guard (status === DRAFT, see persistJudgeOutcomeWithAutoReject
+      // JSDoc) is enforced inline rather than via assertStatusTransition,
+      // so the mock for it must NOT be called on this path.
+      expect(service.assertStatusTransition).not.toHaveBeenCalled();
+      expect(service.updateReportStatus).toHaveBeenCalledTimes(1);
+      const updateArgs = service.updateReportStatus.mock.calls[0];
+      expect(updateArgs[2]).toBe(ReportStatus.REJECTED);
+
+      expect(result.__typename).toBe("GenerateReportSuccess");
+      if (result.__typename === "GenerateReportSuccess") {
+        expect(result.report.status).toBe(ReportStatus.REJECTED);
+      }
+    });
+
+    // Regression guard for the DRAFT-only invariant: if a non-DRAFT row
+    // ever reaches this code path (e.g. a future refactor that allows
+    // judgeAndPersist to be called against an already-APPROVED row),
+    // the auto-reject branch must throw instead of silently flipping
+    // the row to REJECTED. Earlier revisions used assertStatusTransition
+    // for this check, but service.ts legitimately allows APPROVED →
+    // REJECTED for the human rejectReport mutation, so an APPROVED row
+    // would slip through without throwing — the inline DRAFT comparison
+    // is the one that matches the intended invariant.
+    it("throws when saveJudgeResult returns a non-DRAFT row (invariant guard)", async () => {
+      judgeService.executeJudge.mockResolvedValue({
+        score: 35,
+        breakdown: {},
+        issues: [],
+        strengths: [],
+      });
+      // Override the saveJudgeResult mock so the row comes back APPROVED —
+      // the invariant guard must fire even though service.assertStatusTransition
+      // would have allowed APPROVED → REJECTED. Mirrors the default
+      // mock shape declared at the top of beforeEach (spread the latest
+      // createReport result), but flips status to APPROVED.
+      service.saveJudgeResult.mockImplementationOnce(async (_ctx, id, data) => {
+        const lastCreateCall = service.createReport.mock.results.at(-1);
+        const created = lastCreateCall ? await lastCreateCall.value : null;
+        return {
+          ...(created ?? { id }),
+          status: ReportStatus.APPROVED,
+          judgeScore: data.judgeScore,
+          judgeBreakdown: data.judgeBreakdown,
+          judgeTemplateId: data.judgeTemplateId,
+          coverageJson: data.coverageJson,
+        };
+      });
+
+      // The invariant violation surfaces inside judgeAndPersist's
+      // try/catch and is logged as `report.judge.failed` with reason
+      // `persist_failure`; the outer generateReport completes with the
+      // pre-judge row (status DRAFT) so the user-facing mutation does
+      // not fail just because the auto-reject step did.
+      const result = await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      // updateReportStatus is the auto-reject side effect; the throw
+      // must happen BEFORE it is reached.
+      expect(service.updateReportStatus).not.toHaveBeenCalled();
+      expect(result.__typename).toBe("GenerateReportSuccess");
+    });
+
+    it("leaves the row as DRAFT when judgeScore meets the threshold (no auto-reject)", async () => {
+      // 75 lands in the "quality-only failures" band (60–89). Quality
+      // issues are real but not fabrication — the row stays DRAFT for a
+      // human reviewer.
+      judgeService.executeJudge.mockResolvedValue({
+        score: 75,
+        breakdown: {
+          fabrication: { top_user_names: true, top_user_points: true, chain_depth: true },
+          quality: { actionable_insights: false },
+        },
+        issues: ["来週への具体的アクションが不足"],
+        strengths: ["数値の引用は正確"],
+      });
+
+      const result = await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      expect(service.saveJudgeResult).toHaveBeenCalledTimes(1);
+      // Critical regression guard: at-or-above the threshold must NOT
+      // trigger the reject path. Without these assertions, a future
+      // off-by-one in the comparison (`<` vs `<=`) would silently land.
+      expect(service.assertStatusTransition).not.toHaveBeenCalled();
+      expect(service.updateReportStatus).not.toHaveBeenCalled();
+
+      expect(result.__typename).toBe("GenerateReportSuccess");
+      if (result.__typename === "GenerateReportSuccess") {
+        expect(result.report.status).toBe(ReportStatus.DRAFT);
+      }
+    });
+
+    it("does not auto-reject when judgeScore equals the threshold exactly (60)", async () => {
+      // Boundary check: the comparison is `<` not `<=`, so 60 stays
+      // DRAFT. Pinning this lets a future "make it stricter" change be
+      // an obvious code edit rather than a silent threshold shift.
+      judgeService.executeJudge.mockResolvedValue({
+        score: 60,
+        breakdown: {},
+        issues: [],
+        strengths: [],
+      });
+
+      await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      expect(service.assertStatusTransition).not.toHaveBeenCalled();
+      expect(service.updateReportStatus).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe("ReportUseCase.buildReportPayload retention window", () => {
@@ -541,5 +797,335 @@ describe("ReportUseCase.updateReportTemplate trafficWeight validation (PR-F3)", 
       fakeCtx,
     );
     expect(service.upsertTemplate).toHaveBeenCalled();
+  });
+});
+
+/**
+ * A-3 maintenance contract: when `supersedeParentIfRegenerating`
+ * transitions a parent to SUPERSEDED, the community's denormalized
+ * last-publish pointer (`t_communities.last_published_report_*`) only
+ * needs to be re-derived when the parent was actually PUBLISHED. For
+ * DRAFT / APPROVED / SKIPPED parents the pointer was never on this
+ * row, so the extra UPDATE would be wasted. publishReport itself
+ * always recalcs because it just produced a new PUBLISHED row.
+ */
+describe("ReportUseCase A-3 community last-publish pointer maintenance", () => {
+  const communityId = "kibotcha";
+  const fakeTx = {} as never;
+  const fakeCtx = {
+    communityId,
+    isAdmin: true,
+    issuer: {
+      onlyBelongingCommunity: (
+        _ctx: IContext,
+        fn: (tx: unknown) => Promise<unknown>,
+      ): Promise<unknown> => fn(fakeTx),
+      admin: (_ctx: IContext, fn: (tx: unknown) => Promise<unknown>): Promise<unknown> =>
+        fn(fakeTx),
+    },
+    currentUser: { id: "admin-user" },
+  } as unknown as IContext;
+
+  const stubTemplate = {
+    id: "tpl-1",
+    variant: "WEEKLY_SUMMARY",
+    scope: "SYSTEM",
+    communityId: null,
+    systemPrompt: "sys",
+    userPromptTemplate: "user ${payload_json}",
+    communityContext: null,
+    model: "claude-sonnet-4-6",
+    temperature: 0.5,
+    maxTokens: 8192,
+    stopSequences: [],
+    isEnabled: true,
+    version: 1,
+    isActive: true,
+    kind: "GENERATION",
+  };
+
+  let service: jest.Mocked<Pick<
+    ReportService,
+    | "getTemplate"
+    | "evaluateSkipReason"
+    | "createReport"
+    | "getReportById"
+    | "assertStatusTransition"
+    | "updateReportStatus"
+    | "saveJudgeResult"
+    | "recalculateCommunityLastPublished"
+  >>;
+  let usecase: ReportUseCase;
+  let llmClient: { complete: jest.Mock };
+  let judgeService: { selectJudgeTemplate: jest.Mock; executeJudge: jest.Mock };
+
+  beforeEach(() => {
+    container.reset();
+    service = {
+      getTemplate: jest.fn().mockResolvedValue(stubTemplate),
+      evaluateSkipReason: jest.fn().mockReturnValue("No activity in period: skip"),
+      createReport: jest.fn().mockImplementation(async (_ctx, data) => ({
+        id: "new-report-id",
+        communityId: data.communityId,
+        variant: data.variant,
+        status: data.status ?? ReportStatus.DRAFT,
+        regenerateCount: data.regenerateCount ?? 0,
+        parentRunId: data.parentRunId ?? null,
+        publishedAt: null,
+      })),
+      getReportById: jest.fn(),
+      assertStatusTransition: jest.fn(),
+      updateReportStatus: jest.fn().mockImplementation(async (_ctx, id, status) => ({
+        id,
+        communityId,
+        status,
+        publishedAt: status === ReportStatus.PUBLISHED ? new Date() : null,
+      })),
+      saveJudgeResult: jest.fn(),
+      recalculateCommunityLastPublished: jest.fn().mockResolvedValue(undefined),
+    } as never;
+
+    llmClient = { complete: jest.fn() };
+    judgeService = {
+      selectJudgeTemplate: jest.fn().mockResolvedValue(null),
+      executeJudge: jest.fn(),
+    };
+    const templateSelector = {
+      selectTemplate: jest.fn().mockResolvedValue(stubTemplate),
+    };
+
+    container.register("ReportService", { useValue: service });
+    container.register("LlmClient", { useValue: llmClient });
+    container.register("ReportJudgeService", { useValue: judgeService });
+    container.register("ReportTemplateSelector", { useValue: templateSelector });
+
+    usecase = container.resolve(ReportUseCase);
+
+    // Stub buildReportPayload so tests don't reach into the
+    // repository layer — the SUPERSEDED → recalc behaviour is
+    // independent of the payload contents, and the skip evaluator is
+    // already forced to return "skip" so no LLM call happens.
+    jest.spyOn(usecase, "buildReportPayload").mockResolvedValue({
+      period: { from: "2026-04-11", to: "2026-04-17" },
+      community_id: communityId,
+      community_context: null,
+      deepest_chain: null,
+      daily_summaries: [],
+      daily_active_users: [],
+      top_users: [],
+      highlight_comments: [],
+      previous_period: null,
+      retention: null,
+      aggregate: { tx_count: 0, points_sum: 0 },
+      aggregates_by_reason: {},
+      peak_active_day: null,
+      active_rate_pct: null,
+    });
+  });
+
+  it("publishReport always re-derives the community pointer in the same transaction", async () => {
+    service.getReportById.mockResolvedValue({
+      id: "report-1",
+      communityId,
+      status: ReportStatus.APPROVED,
+    } as never);
+
+    await usecase.publishReport(
+      { id: "report-1", finalContent: "# Final" },
+      fakeCtx,
+    );
+
+    expect(service.recalculateCommunityLastPublished).toHaveBeenCalledTimes(1);
+    expect(service.recalculateCommunityLastPublished).toHaveBeenCalledWith(
+      expect.anything(),
+      communityId,
+      fakeTx,
+    );
+  });
+
+  it("regenerate from PUBLISHED parent triggers recalc (parent's pointer must move on)", async () => {
+    service.evaluateSkipReason.mockReturnValue("skip");
+    service.getReportById.mockResolvedValue({
+      id: "parent-pub",
+      communityId,
+      variant: "WEEKLY_SUMMARY",
+      status: ReportStatus.PUBLISHED,
+      regenerateCount: 0,
+    } as never);
+
+    await usecase.generateReport(
+      {
+        input: {
+          communityId,
+          variant: GqlReportVariant.WeeklySummary,
+          periodFrom: new Date("2026-04-11"),
+          periodTo: new Date("2026-04-17"),
+          parentRunId: "parent-pub",
+        },
+        permission: { communityId },
+      },
+      fakeCtx,
+    );
+
+    expect(service.recalculateCommunityLastPublished).toHaveBeenCalledTimes(1);
+    expect(service.recalculateCommunityLastPublished).toHaveBeenCalledWith(
+      expect.anything(),
+      communityId,
+      fakeTx,
+    );
+  });
+
+  it.each([
+    ["DRAFT", ReportStatus.DRAFT],
+    ["APPROVED", ReportStatus.APPROVED],
+    ["SKIPPED", ReportStatus.SKIPPED],
+  ])(
+    "regenerate from %s parent does NOT trigger recalc (pointer was never on this row)",
+    async (_label, parentStatus) => {
+      service.evaluateSkipReason.mockReturnValue("skip");
+      service.getReportById.mockResolvedValue({
+        id: "parent-x",
+        communityId,
+        variant: "WEEKLY_SUMMARY",
+        status: parentStatus,
+        regenerateCount: 0,
+      } as never);
+
+      await usecase.generateReport(
+        {
+          input: {
+            communityId,
+            variant: GqlReportVariant.WeeklySummary,
+            periodFrom: new Date("2026-04-11"),
+            periodTo: new Date("2026-04-17"),
+            parentRunId: "parent-x",
+          },
+          permission: { communityId },
+        },
+        fakeCtx,
+      );
+
+      expect(service.recalculateCommunityLastPublished).not.toHaveBeenCalled();
+    },
+  );
+});
+
+/**
+ * Phase 1 + Phase 2 admin query orchestration. These tests don't
+ * exercise the SQL paths (those need integration tests with a live
+ * Postgres) — they verify the usecase forwards args correctly and
+ * coalesces nullable codegen args (the GraphQL schema declares
+ * defaults but codegen still emits each arg as `Maybe<T>`, so the
+ * usecase must apply the default itself).
+ */
+describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
+  const communityId = "kibotcha";
+  const fakeCtx = {} as IContext;
+
+  let service: jest.Mocked<Pick<
+    ReportService,
+    "listTemplates" | "getAllReports" | "getCommunityReportSummary"
+  >>;
+  let usecase: ReportUseCase;
+
+  beforeEach(() => {
+    container.reset();
+    service = {
+      listTemplates: jest.fn().mockResolvedValue([]),
+      getAllReports: jest.fn().mockResolvedValue({ items: [], totalCount: 0 }),
+      getCommunityReportSummary: jest.fn().mockResolvedValue({ items: [], totalCount: 0 }),
+    } as never;
+    container.register("ReportService", { useValue: service });
+    container.register("LlmClient", { useValue: { complete: jest.fn() } });
+    container.register("ReportJudgeService", {
+      useValue: { selectJudgeTemplate: jest.fn(), executeJudge: jest.fn() },
+    });
+    container.register("ReportTemplateSelector", {
+      useValue: { selectTemplate: jest.fn() },
+    });
+    usecase = container.resolve(ReportUseCase);
+  });
+
+  it("listReportTemplates defaults kind to GENERATION when caller omits it", async () => {
+    await usecase.listReportTemplates(
+      {
+        variant: GqlReportVariant.WeeklySummary,
+      },
+      fakeCtx,
+    );
+    // Concrete enum value, not undefined / null — repository contract
+    // requires a non-null kind on the where clause.
+    expect(service.listTemplates).toHaveBeenCalledWith(
+      fakeCtx,
+      GqlReportVariant.WeeklySummary,
+      null,
+      "GENERATION",
+      false,
+    );
+  });
+
+  it("listReportTemplates threads explicit JUDGE kind through", async () => {
+    await usecase.listReportTemplates(
+      {
+        variant: GqlReportVariant.WeeklySummary,
+        kind: "JUDGE" as never,
+        includeInactive: true,
+      },
+      fakeCtx,
+    );
+    expect(service.listTemplates).toHaveBeenCalledWith(
+      fakeCtx,
+      GqlReportVariant.WeeklySummary,
+      null,
+      "JUDGE",
+      true,
+    );
+  });
+
+  it("browseAllReports forwards filters and converts ISO strings to Date", async () => {
+    await usecase.browseAllReports(
+      {
+        communityId,
+        status: ReportStatus.PUBLISHED,
+        variant: GqlReportVariant.WeeklySummary,
+        publishedAfter: "2026-01-01T00:00:00Z" as never,
+        publishedBefore: "2026-04-01T00:00:00Z" as never,
+        cursor: "cursor-x",
+        first: 30,
+      },
+      fakeCtx,
+    );
+    expect(service.getAllReports).toHaveBeenCalledWith(
+      fakeCtx,
+      expect.objectContaining({
+        communityId,
+        status: ReportStatus.PUBLISHED,
+        variant: GqlReportVariant.WeeklySummary,
+        publishedAfter: expect.any(Date),
+        publishedBefore: expect.any(Date),
+        cursor: "cursor-x",
+        first: 30,
+      }),
+    );
+  });
+
+  it("browseAllReports clamps `first` to defaults when omitted and rejects out-of-range values", async () => {
+    await usecase.browseAllReports({}, fakeCtx);
+    expect(service.getAllReports.mock.calls[0][1].first).toBe(20);
+
+    await expect(
+      usecase.browseAllReports({ first: 500 }, fakeCtx),
+    ).rejects.toThrow(/first must be an integer between 1 and 100/);
+  });
+
+  it("viewReportSummaries clamps `first` and forwards cursor", async () => {
+    await usecase.viewReportSummaries(
+      { cursor: "comm-cursor", first: 50 },
+      fakeCtx,
+    );
+    expect(service.getCommunityReportSummary).toHaveBeenCalledWith(
+      fakeCtx,
+      { cursor: "comm-cursor", first: 50 },
+    );
   });
 });

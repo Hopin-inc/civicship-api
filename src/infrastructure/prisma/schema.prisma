@@ -200,9 +200,26 @@ model Community {
   reportTemplates ReportTemplate[]
   reports         Report[]
 
+  // Denormalized pointer to the community's most recent PUBLISHED report.
+  // Powers `adminReportSummary` cursor pagination + sort order ("dormant
+  // communities float to the top" via NULLS FIRST). Maintained by the
+  // `recalculateCommunityLastPublished` helper, which is invoked from both
+  // `publishReport` (after a PUBLISHED transition) and
+  // `supersedeParentIfRegenerating` (after a PUBLISHED → SUPERSEDED
+  // transition). The `Report` relation is intentionally NOT declared here
+  // — these columns are admin-internal and exposing them on the GraphQL
+  // `Community` type would push a join cost onto every community read.
+  lastPublishedReportAt DateTime? @map("last_published_report_at")
+  lastPublishedReportId String?   @map("last_published_report_id")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  // `nulls: First` makes the index ordering match the
+  // `adminReportSummary` query's `last_published_report_at ASC NULLS
+  // FIRST` (dormant-first) so the sort is index-served — ASC defaults
+  // to NULLS LAST in PostgreSQL, which would force a re-sort.
+  @@index([lastPublishedReportAt(sort: Asc, nulls: First)], map: "idx_t_communities_last_published_report_at")
   @@map("t_communities")
 }
 
@@ -528,6 +545,27 @@ model Membership {
   headline String?
   bio      String?
 
+  // Operator-recorded context for members who were active in the
+  // community before civicship was introduced. Used by GRANT_APPLICATION
+  // / sales-facing reports to distinguish "civicship 導入前から動いて
+  // いた古参" from members who joined after onboarding. All three
+  // columns are nullable: existing rows backfill to NULL, and the
+  // bulk-import workflow (scripts/import-prior-activity.ts) writes
+  // them in batches as managers fill in a CSV.
+  //
+  // We deliberately store a `priorActivityClass` enum rather than a
+  // `priorActiveFrom` date because community managers usually do not
+  // know precise start dates — forcing a date field would either get
+  // skipped or fabricated, both of which corrupt downstream
+  // aggregation. The "before / after civicship" boolean is what the
+  // report actually consumes; richer narrative ("2019 年から農業に
+  // 参加") lands in the free-text `note`. `note` is capped to 500
+  // chars so a runaway paste from a spreadsheet cell cannot bloat
+  // the row.
+  priorActivityClass      MemberPriorActivityClass? @map("prior_activity_class")
+  priorActivityNote       String?                   @map("prior_activity_note") @db.VarChar(500)
+  priorActivityRecordedBy String?                   @map("prior_activity_recorded_by")
+
   status MembershipStatus
   reason MembershipStatusReason
   role   Role                   @default(MEMBER)
@@ -612,6 +650,17 @@ enum MembershipStatusReason {
   REMOVED
 
   ASSIGNED
+}
+
+/// Coarse classification for a member's pre-civicship activity. NULL
+/// means the operator has not recorded a judgement yet.
+/// PRE_CIVICSHIP_ACTIVE — the member was already active in the
+/// community / region before civicship was introduced (古参).
+/// POST_CIVICSHIP_ENGAGED — the member became engaged in community
+/// activity through civicship itself (新規).
+enum MemberPriorActivityClass {
+  PRE_CIVICSHIP_ACTIVE
+  POST_CIVICSHIP_ENGAGED
 }
 
 enum ParticipationType {
@@ -1859,6 +1908,39 @@ model Report {
   @@index([communityId, variant, periodFrom(sort: Desc)])
   @@index([communityId, status])
   @@index([parentRunId])
+  // Cross-community admin browse (`adminBrowseReports`) sorts by
+  // publishedAt DESC NULLS LAST, createdAt DESC. The community-scoped
+  // indexes above don't help when communityId is unfiltered, so this
+  // dedicated index backs the sysAdmin sweep.
+  // `nulls: Last` makes the index ordering match the
+  // `adminBrowseReports` query's `publishedAt DESC NULLS LAST,
+  // createdAt DESC` so PostgreSQL can satisfy the sort directly from
+  // the index — without it the planner has to re-sort because DESC's
+  // default is NULLS FIRST.
+  @@index([publishedAt(sort: Desc, nulls: Last), createdAt(sort: Desc)], map: "idx_t_reports_published_at_created_at")
+  // Backs both `recalculateCommunityLastPublished` (per-community
+  // newest PUBLISHED row) and `findCommunityReportSummary`'s 90-day
+  // count subquery. Existing `[communityId, status]` finds the
+  // PUBLISHED rows but loses the published_at range filter / sort to
+  // a heap pass; this index folds published_at into the leading
+  // portion so both the LIMIT 1 lookup and the 90-day range scan are
+  // index-served. Default ASC ordering is fine — Postgres can scan
+  // backwards to satisfy `ORDER BY published_at DESC` without an
+  // explicit `sort: Desc`.
+  @@index([communityId, status, publishedAt], map: "idx_t_reports_community_status_published_at")
+  // Backs the template-scoped admin paths that walk
+  // `t_report_templates → t_reports (template_id) → t_report_feedbacks`:
+  // `adminTemplateFeedbacks` (Phase 1.5), `reportTemplateStatsBreakdown`,
+  // and `reportTemplateStats`. Without this index the join from
+  // template_id requires a sequential scan of t_reports — fine at
+  // current volume, but the cost grows linearly with report count and
+  // these are the queries the sysAdmin prompt-tuning loop hits most
+  // often. Adding the index up-front sidesteps a planner regression
+  // once the table grows past a few thousand rows. SetNull FK already
+  // creates a btree on the column for the constraint, but PG does not
+  // automatically expose that to the planner for non-FK predicates,
+  // so an explicit index is still required.
+  @@index([templateId], map: "idx_t_reports_template_id")
   @@map("t_reports")
 }
 
@@ -1887,6 +1969,16 @@ model ReportFeedback {
   @@unique([reportId, userId])
   @@index([reportId])
   @@index([userId])
+  // Backs `adminTemplateFeedbacks` (Phase 1.5 sysAdmin review list).
+  // The query joins Reports → ReportTemplate to filter by
+  // (variant, version, kind), then orders the resulting feedback rows
+  // by `(createdAt DESC, id DESC)` — without this index PostgreSQL
+  // would have to materialise + sort the entire post-join set even
+  // when the page bound is 20. `id` is included after `createdAt` so
+  // cursor pagination's tie-breaker (`createdAt DESC, id DESC`) can
+  // be served directly from the index ordering rather than re-sorting
+  // matched rows in memory.
+  @@index([createdAt(sort: Desc), id(sort: Desc)], map: "idx_t_report_feedbacks_created_at_id")
   @@map("t_report_feedbacks")
 }
 

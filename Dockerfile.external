@@ -1,8 +1,80 @@
-FROM node:20
-WORKDIR /tmp
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN npm install -g pnpm@10.33.0
-RUN pnpm install --frozen-lockfile
-COPY . ./
-RUN pnpm build
-CMD ["node", "dist/external-api.js"]
+# syntax=docker/dockerfile:1.7
+#
+# Multi-stage build for the External API service.
+#
+# Mirrors `Dockerfile` (internal/main API). See that file's header comment
+# for context on why the builder stage copies pre-built `node_modules` /
+# `dist` from the CI build context instead of running `pnpm install` +
+# `pnpm build` itself.
+
+# ---------------------------------------------------------------------------
+# Builder stage: prune to production deps, preserving Prisma generator output.
+# Mirrors `Dockerfile` builder stage — see that file's header comment for the
+# full rationale on the snapshot/restore around `pnpm prune --prod`.
+# ---------------------------------------------------------------------------
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS builder
+
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+
+COPY node_modules ./node_modules
+COPY dist ./dist
+
+# Snapshot Prisma generator output (`.prisma/` dirs) before prune wipes them.
+# `set -o pipefail` so a real find/tar error surfaces instead of being swallowed
+# by xargs success. dash (debian's /bin/sh) doesn't support pipefail; use
+# bash for this stage. hadolint DL4006. `xargs -0 -r` skips when stdin is
+# empty, so the "no .prisma dirs yet" case still exits 0 — `|| true` would
+# defeat pipefail and is intentionally NOT used (see `Dockerfile` for full
+# rationale).
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+RUN find node_modules -type d -name .prisma -print0 \
+      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar
+
+ENV CI=true
+RUN pnpm prune --prod
+
+# Restore Prisma generator output post-prune.
+RUN if [ -s /tmp/prisma-snapshot.tar ]; then \
+      tar -xf /tmp/prisma-snapshot.tar \
+        && rm /tmp/prisma-snapshot.tar; \
+    fi
+
+# ---------------------------------------------------------------------------
+# Runtime stage: minimal, non-root, HEALTHCHECK enabled.
+# ---------------------------------------------------------------------------
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS runtime
+
+WORKDIR /app
+
+# See `Dockerfile` runtime stage for rationale on installing openssl +
+# ca-certificates (required for Prisma engine detection on node:20-slim).
+# `USER root` は apt-get install のための局所昇格、直後に `USER node` に戻す。
+USER root
+# See `Dockerfile` for why we don't pin openssl / ca-certificates versions.
+# hadolint ignore=DL3008
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssl ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+USER node
+
+ENV NODE_ENV=production \
+    PORT=3000
+
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/package.json ./package.json
+
+EXPOSE 3000
+
+# Same /health endpoint exists in src/external-api.ts.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+# See `Dockerfile` for why `tsconfig-paths/register` and `tsconfig.json` are
+# not needed at runtime (tsc-alias rewrites all `@/` imports during build).
+CMD ["node", "dist/bootstrap/external-api.js"]

@@ -97,6 +97,8 @@ Table t_communities {
   voteTopics t_vote_topics [not null]
   reportTemplates t_report_templates [not null]
   reports t_reports [not null]
+  lastPublishedReportAt DateTime
+  lastPublishedReportId String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -297,6 +299,9 @@ Table t_memberships {
   community t_communities [not null]
   headline String
   bio String
+  priorActivityClass MemberPriorActivityClass
+  priorActivityNote String
+  priorActivityRecordedBy String
   status MembershipStatus [not null]
   reason MembershipStatusReason [not null]
   role Role [not null, default: 'MEMBER']
@@ -1170,6 +1175,11 @@ Enum MembershipStatusReason {
   WITHDRAWN
   REMOVED
   ASSIGNED
+}
+
+Enum MemberPriorActivityClass {
+  PRE_CIVICSHIP_ACTIVE
+  POST_CIVICSHIP_ENGAGED
 }
 
 Enum ParticipationType {

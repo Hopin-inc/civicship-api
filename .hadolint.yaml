@@ -1,0 +1,9 @@
+# Hadolint configuration for civicship-api Dockerfiles.
+#
+# Reference: https://github.com/hadolint/hadolint#configure
+#
+# `ignored` lists rule IDs that should be skipped repo-wide. Keep this list
+# minimal and document why each rule is suppressed; prefer fixing the
+# Dockerfile to ignoring the rule. Rules can also be ignored inline with
+# `# hadolint ignore=DLxxxx` immediately above the offending instruction.
+ignored: []

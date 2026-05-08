@@ -5,7 +5,7 @@ import IncentiveGrantService from "./service";
 import { IIncentiveGrantRepository } from "./data/interface";
 import CommunityService from "@/application/domain/account/community/service";
 import NotificationService from "@/application/domain/notification/service";
-import { clampFirst } from "@/application/domain/utils";
+import { clampFirst, getCommunityIdFromCtx } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import {
@@ -27,6 +27,7 @@ import {
   GqlSortDirection,
   GqlIncentiveGrantRetryPayload,
 } from "@/types/graphql";
+import { toError } from "@/utils/error";
 
 @injectable()
 export default class IncentiveGrantUseCase {
@@ -124,7 +125,8 @@ export default class IncentiveGrantUseCase {
     args: GqlMutationIncentiveGrantRetryArgs,
     ctx: IContext,
   ): Promise<GqlIncentiveGrantRetryPayload> {
-    const { input, permission } = args;
+    const { input } = args;
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
 
     try {
       // Execute retry in transaction
@@ -138,9 +140,9 @@ export default class IncentiveGrantUseCase {
           }
 
           // 2. Security check: Ensure the grant belongs to the community (before retry)
-          if (grant.communityId !== permission.communityId) {
+          if (grant.communityId !== ctxCommunityId) {
             throw new AuthorizationError(
-              `Grant ${input.incentiveGrantId} does not belong to community ${permission.communityId}`,
+              `Grant ${input.incentiveGrantId} does not belong to community ${ctxCommunityId}`,
             );
           }
 
@@ -197,7 +199,7 @@ export default class IncentiveGrantUseCase {
         // Transaction will be resolved by the field resolver using DataLoader
         transaction: null,
       };
-    } catch (error: any) {
+    } catch (error) {
       // Handle business logic errors: persist failure info in a separate transaction
       const isValidationError =
         error instanceof NotFoundError ||
@@ -213,7 +215,7 @@ export default class IncentiveGrantUseCase {
           (updateError) => {
             logger.error("Failed to update grant failure status", {
               incentiveGrantId: input.incentiveGrantId,
-              originalError: error.message || String(error),
+              originalError: toError(error).message,
               error: updateError,
             });
           },
@@ -232,7 +234,7 @@ export default class IncentiveGrantUseCase {
   private async updateFailedGrantStatus(
     ctx: IContext,
     incentiveGrantId: string,
-    error: any,
+    error: unknown,
   ): Promise<void> {
     await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       const grant = await this.repository.findInTransaction(ctx, incentiveGrantId, tx);
@@ -273,6 +275,7 @@ export default class IncentiveGrantUseCase {
       }
 
       // Mark as failed
+      const errorMessage = toError(error).message;
       await this.repository.markAsFailed(
         ctx,
         grant.userId,
@@ -280,7 +283,7 @@ export default class IncentiveGrantUseCase {
         grant.type,
         grant.sourceId,
         failureCode,
-        error.message || "Unknown error",
+        errorMessage || "Unknown error",
         tx,
       );
     });
