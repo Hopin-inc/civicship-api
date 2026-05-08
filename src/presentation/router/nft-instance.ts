@@ -13,10 +13,10 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
 
-const router = express();
+const router = express.Router();
 
 const ETH_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
-const INSTANCE_ID_PATTERN = /^[0-9]+$/;
+const INSTANCE_ID_PATTERN = /^\d+$/;
 
 const isOptionalString = (value: unknown): value is string | undefined =>
   value === undefined || typeof value === "string";
@@ -121,7 +121,7 @@ router.get(
         return res.status(400).json({ error: "Invalid contract address format" });
       }
 
-      const limitParam = typeof req.query.limit === "string" ? Number(req.query.limit) : NaN;
+      const limitParam = typeof req.query.limit === "string" ? Number(req.query.limit) : Number.NaN;
       const limit = Number.isFinite(limitParam)
         ? Math.min(Math.max(Math.floor(limitParam), 1), MAX_INSTANCE_LIST_LIMIT)
         : DEFAULT_INSTANCE_LIST_LIMIT;

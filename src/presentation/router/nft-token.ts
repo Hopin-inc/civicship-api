@@ -11,7 +11,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
 
-const router = express();
+const router = express.Router();
 
 const ETH_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 const NFT_CHAIN_VALUES = Object.values(NftChain);

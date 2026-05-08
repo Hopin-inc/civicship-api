@@ -57,8 +57,8 @@ export default class NftTokenRepository implements INftTokenRepository {
         symbol: data.symbol,
         type: data.type,
         json: data.json,
-        ...(data.issuedByVendor !== undefined ? { issuedByVendor: data.issuedByVendor } : {}),
-        ...(data.chain !== undefined ? { chain: data.chain } : {}),
+        ...(data.issuedByVendor === undefined ? {} : { issuedByVendor: data.issuedByVendor }),
+        ...(data.chain === undefined ? {} : { chain: data.chain }),
       },
       create: {
         address: data.address,

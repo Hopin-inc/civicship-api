@@ -81,7 +81,7 @@ export default class NftInstanceService {
         name: input.name ?? null,
         description: input.description ?? null,
         imageUrl: input.imageUrl ?? null,
-        json: input as unknown as Record<string, unknown>,
+        json: input as Record<string, unknown>,
         nftWalletId: nftWallet.id,
         nftTokenId: nftToken.id,
         communityId: nftToken.communityId,

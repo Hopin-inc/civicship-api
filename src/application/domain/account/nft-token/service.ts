@@ -48,12 +48,12 @@ export default class NftTokenService {
     }
 
     const existing = await this.repository.findByAddress(ctx, address, tx);
-    if (existing && existing.issuedByVendor && existing.issuedByVendor !== vendor) {
+    if (existing?.issuedByVendor && existing.issuedByVendor !== vendor) {
       throw new AuthorizationError(
         `NftToken (address: ${address}) is issued by another vendor`,
       );
     }
-    if (existing && existing.chain && existing.chain !== input.chain) {
+    if (existing?.chain && existing.chain !== input.chain) {
       throw new ValidationError(
         `NftToken (address: ${address}) is already registered on ${existing.chain}, cannot change to ${input.chain}`,
       );
@@ -66,7 +66,7 @@ export default class NftTokenService {
         name: input.name ?? null,
         symbol: input.symbol ?? null,
         type: input.type,
-        json: input as unknown as Record<string, unknown>,
+        json: input as Record<string, unknown>,
         issuedByVendor: vendor,
         chain: input.chain,
       },

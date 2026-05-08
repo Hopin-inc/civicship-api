@@ -35,7 +35,7 @@ async function handleRegister(
     ctx,
     user.id,
     walletAddress,
-    name as string | undefined,
+    name,
     user.name,
   );
 
