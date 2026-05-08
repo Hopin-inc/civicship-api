@@ -85,6 +85,11 @@ runs:
     #     (#943 関連) が前例。同じ轍を踏まない
     #   - hash inputs: schema.prisma + sql/*.sql + pnpm-lock.yaml
     #     (= prisma binary version + 全 generator deps を捕捉)
+    #   - 加えて `runner.os` + `inputs.node-version` も key に含める
+    #     (PR #1075 review 反映)。Prisma 出力は厳密には Node major 非依存
+    #     (N-API) で lockfile hash が @prisma/client version を捕捉する
+    #     ため冗長気味だが、`inputs.node-version` を変えた時に確実に
+    #     invalidate されるよう defense-in-depth として明示。
     #   - cache miss 時は今と同じ挙動 (regen 走る) なので速度退行ゼロ
     #
     # 緊急 invalidation が必要になったら key prefix を `prisma-v1-` →
@@ -98,7 +103,7 @@ runs:
         path: |
           node_modules/.pnpm/@prisma+client@*/node_modules/.prisma
           node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client
-        key: prisma-v1-${{ runner.os }}-${{ hashFiles('src/infrastructure/prisma/schema.prisma', 'src/infrastructure/prisma/sql/**/*.sql', 'pnpm-lock.yaml') }}
+        key: prisma-v1-${{ runner.os }}-node${{ inputs.node-version }}-${{ hashFiles('src/infrastructure/prisma/schema.prisma', 'src/infrastructure/prisma/sql/**/*.sql', 'pnpm-lock.yaml') }}
 
     - name: Apply Prisma migrations (db:deploy)
       if: ${{ inputs.apply-migrations == 'true' && inputs.database-url != '' }}
