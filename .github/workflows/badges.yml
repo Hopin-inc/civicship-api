@@ -1,0 +1,145 @@
+name: Update Badges
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'src/infrastructure/prisma/migrations/**'
+      - 'src/infrastructure/prisma/schema.prisma'
+  schedule:
+    # 週次で master を再集計。push を取りこぼした場合の保険。
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: badges-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # civicship-api 固有の DDD KPI を README バッジ化する。
+  #   - domains:    src/application/domain/ 配下のドメイン数 (utils.ts 除く)
+  #   - graphql_ops: Query + Mutation の合計 operation 数
+  #   - tests:      *.test.ts / *.spec.ts ファイル数
+  #   - migrations: Prisma migration 数
+  #   - usecases:   usecase.ts ファイル数 (Clean Architecture の規模)
+  #
+  # 数値は GIST_ID で指定された secret gist の JSON ファイルに書き込み、
+  # README から `https://img.shields.io/endpoint?url=https://gist.../raw/<file>.json`
+  # で参照する。GIST_SECRET / GIST_ID が未設定なら no-op。
+  update-kpi-badges:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Check GIST_SECRET / GIST_ID presence
+        id: check
+        env:
+          GIST_SECRET: ${{ secrets.GIST_SECRET }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+        run: |
+          if [ -z "${GIST_SECRET:-}" ] || [ -z "${GIST_ID:-}" ]; then
+            echo "::notice::GIST_SECRET or GIST_ID not set; skipping dynamic badge update. Add both secrets to enable."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Compute KPI metrics
+        if: steps.check.outputs.skip == 'false'
+        id: metrics
+        run: |
+          set -euo pipefail
+
+          domains=$(find src/application/domain -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+
+          # Query / Mutation operation を素朴に grep。schema は 1 行 1 op の規約に従っているのでこれで十分。
+          ops=$(grep -hE '^[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(' \
+                  src/application/domain/*/schema/query.graphql \
+                  src/application/domain/*/schema/mutation.graphql 2>/dev/null \
+                  | wc -l | tr -d ' ')
+
+          tests=$(find src -type f \( -name '*.test.ts' -o -name '*.spec.ts' \) | wc -l | tr -d ' ')
+
+          migrations=$(find src/infrastructure/prisma/migrations -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+
+          usecases=$(find src -type f -name 'usecase.ts' | wc -l | tr -d ' ')
+
+          echo "domains=$domains"       | tee -a "$GITHUB_OUTPUT"
+          echo "ops=$ops"                | tee -a "$GITHUB_OUTPUT"
+          echo "tests=$tests"            | tee -a "$GITHUB_OUTPUT"
+          echo "migrations=$migrations"  | tee -a "$GITHUB_OUTPUT"
+          echo "usecases=$usecases"      | tee -a "$GITHUB_OUTPUT"
+
+      - name: Update badge — DDD domains
+        if: steps.check.outputs.skip == 'false'
+        uses: schneegans/dynamic-badges-action@0e50b8bad39e7e1afd3e4e9c2b7dd145fad07501 # v1.8.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ secrets.GIST_ID }}
+          filename: civicship-domains.json
+          label: domains
+          message: ${{ steps.metrics.outputs.domains }}
+          color: blueviolet
+          logoSvg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L19.5 8 12 11.82 4.5 8 12 4.18z"/></svg>'
+
+      - name: Update badge — GraphQL operations
+        if: steps.check.outputs.skip == 'false'
+        uses: schneegans/dynamic-badges-action@0e50b8bad39e7e1afd3e4e9c2b7dd145fad07501 # v1.8.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ secrets.GIST_ID }}
+          filename: civicship-graphql-ops.json
+          label: graphql ops
+          message: ${{ steps.metrics.outputs.ops }}
+          color: e10098
+          namedLogo: graphql
+
+      - name: Update badge — tests
+        if: steps.check.outputs.skip == 'false'
+        uses: schneegans/dynamic-badges-action@0e50b8bad39e7e1afd3e4e9c2b7dd145fad07501 # v1.8.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ secrets.GIST_ID }}
+          filename: civicship-tests.json
+          label: tests
+          message: ${{ steps.metrics.outputs.tests }}
+          color: brightgreen
+          namedLogo: jest
+
+      - name: Update badge — Prisma migrations
+        if: steps.check.outputs.skip == 'false'
+        uses: schneegans/dynamic-badges-action@0e50b8bad39e7e1afd3e4e9c2b7dd145fad07501 # v1.8.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ secrets.GIST_ID }}
+          filename: civicship-migrations.json
+          label: migrations
+          message: ${{ steps.metrics.outputs.migrations }}
+          color: 2D3748
+          namedLogo: prisma
+
+      - name: Update badge — usecases
+        if: steps.check.outputs.skip == 'false'
+        uses: schneegans/dynamic-badges-action@0e50b8bad39e7e1afd3e4e9c2b7dd145fad07501 # v1.8.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ secrets.GIST_ID }}
+          filename: civicship-usecases.json
+          label: usecases
+          message: ${{ steps.metrics.outputs.usecases }}
+          color: 0e7490

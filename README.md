@@ -1,5 +1,53 @@
 # civicship-api
-[![OpenSSF Scorecard supply-chain analysis](https://github.com/Hopin-inc/civicship-api/actions/workflows/scorecard.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/scorecard.yml)
+
+<!-- ─── Project / Stack ─────────────────────────────────────────────── -->
+[![License: GPL v3](https://img.shields.io/github/license/Hopin-inc/civicship-api?color=blue)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Apollo Server](https://img.shields.io/badge/Apollo%20Server-311C87?logo=apollographql&logoColor=white)](https://www.apollographql.com/docs/apollo-server/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
+
+<!-- ─── Build / Deploy ──────────────────────────────────────────────── -->
+[![CI](https://github.com/Hopin-inc/civicship-api/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Hopin-inc/civicship-api/actions/workflows/ci.yml)
+[![Deploy dev](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-dev.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-dev.yml)
+[![Deploy prd](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-prd.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/deploy-to-cloud-run-prd.yml)
+
+<!-- ─── Quality ─────────────────────────────────────────────────────── -->
+[![codecov](https://codecov.io/gh/Hopin-inc/civicship-api/branch/master/graph/badge.svg)](https://codecov.io/gh/Hopin-inc/civicship-api)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Hopin-inc_civicship-api&metric=alert_status)](https://sonarcloud.io/dashboard?id=Hopin-inc_civicship-api)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?logo=prettier)](https://github.com/prettier/prettier)
+[![ESLint](https://img.shields.io/badge/lint-eslint-4B32C3?logo=eslint&logoColor=white)](./eslint.config.mjs)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
+
+<!-- ─── Security / Supply Chain ─────────────────────────────────────── -->
+[![CodeQL](https://github.com/Hopin-inc/civicship-api/actions/workflows/codeql.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Hopin-inc/civicship-api/badge)](https://scorecard.dev/viewer/?uri=github.com/Hopin-inc/civicship-api)
+[![Trivy](https://github.com/Hopin-inc/civicship-api/actions/workflows/trivy-daily.yml/badge.svg)](https://github.com/Hopin-inc/civicship-api/actions/workflows/trivy-daily.yml)
+[![Known Vulnerabilities](https://snyk.io/test/github/Hopin-inc/civicship-api/badge.svg)](https://snyk.io/test/github/Hopin-inc/civicship-api)
+[![StepSecurity](https://img.shields.io/badge/StepSecurity-Harden_Runner-4D7CFF?logo=github&logoColor=white)](https://github.com/step-security/harden-runner)
+[![Dependabot](https://img.shields.io/badge/dependabot-enabled-025e8c?logo=dependabot&logoColor=white)](.github/dependabot.yml)
+[![Hadolint](https://img.shields.io/badge/hadolint-passing-brightgreen?logo=docker&logoColor=white)](.hadolint.yaml)
+
+<!-- ─── DDD KPIs (dynamic — requires GIST_SECRET / GIST_ID) ─────────── -->
+<!-- Setup: create a public Gist + a fine-grained PAT with `gist` scope.
+     Set GIST_SECRET (the PAT) and GIST_ID (the gist ID) as repo secrets,
+     then replace `<GIST_USER>/<GIST_ID>` below with the actual values.
+     The `Update Badges` workflow will populate the JSON files on push to master.
+[![DDD domains](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-domains.json)](#)
+[![GraphQL ops](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-graphql-ops.json)](#)
+[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-tests.json)](#)
+[![Prisma migrations](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-migrations.json)](#)
+[![UseCases](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/<GIST_USER>/<GIST_ID>/raw/civicship-usecases.json)](#)
+-->
+
+<!-- ─── Repo Meta ───────────────────────────────────────────────────── -->
+![Last commit](https://img.shields.io/github/last-commit/Hopin-inc/civicship-api/master)
+![Commit activity](https://img.shields.io/github/commit-activity/m/Hopin-inc/civicship-api)
+![Open Issues](https://img.shields.io/github/issues/Hopin-inc/civicship-api)
+![Open PRs](https://img.shields.io/github/issues-pr/Hopin-inc/civicship-api)
+![Contributors](https://img.shields.io/github/contributors/Hopin-inc/civicship-api)
+![Repo size](https://img.shields.io/github/repo-size/Hopin-inc/civicship-api)
 
 ![logo.svg](./docs/asset/logo.svg)
 
