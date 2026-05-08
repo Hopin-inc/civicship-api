@@ -6,6 +6,7 @@ import logger from "@/infrastructure/logging";
 import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/repository";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
+import { deriveChainForWallet } from "@/application/domain/account/nft-shared/chain";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 import pLimit from "p-limit";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
@@ -56,6 +57,10 @@ export default class NFTWalletService {
     @inject("NftInstanceRepository") private nftInstanceRepository: NftInstanceRepository,
     @inject("NmkrClient") private nmkrClient: NmkrClient,
   ) {}
+  async findByWalletAddress(ctx: IContext, walletAddress: string) {
+    return this.nftWalletRepository.findByWalletAddress(ctx, walletAddress);
+  }
+
   async createOrUpdateWalletAddress(
     ctx: IContext,
     userId: string,
@@ -85,6 +90,7 @@ export default class NFTWalletService {
       {
         walletAddress,
         type: NftWalletType.EXTERNAL,
+        chain: deriveChainForWallet(NftWalletType.EXTERNAL),
         user: { connect: { id: userId } },
       },
       tx,
@@ -343,6 +349,7 @@ export default class NFTWalletService {
     return await this.nftWalletRepository.create(ctx, {
       walletAddress,
       type: NftWalletType.INTERNAL,
+      chain: deriveChainForWallet(NftWalletType.INTERNAL),
       user: { connect: { id: userId } },
     });
   }

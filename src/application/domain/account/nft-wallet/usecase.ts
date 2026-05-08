@@ -26,6 +26,10 @@ export default class NFTWalletUsecase {
     @inject("NFTWalletService") private nftWalletService: NFTWalletService,
   ) {}
 
+  async getByWalletAddress(ctx: IContext, walletAddress: string) {
+    return this.nftWalletService.findByWalletAddress(ctx, walletAddress);
+  }
+
   async registerWallet(
     ctx: IContext,
     userId: string,
