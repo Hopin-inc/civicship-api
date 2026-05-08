@@ -1410,13 +1410,13 @@ enum NftChain {
 }
 
 model ApiKey {
-  id        String    @id @default(cuid())
-  key       String    @unique
+  id        String     @id @default(cuid())
+  key       String     @unique
   name      String
-  isActive  Boolean   @default(true) @map("is_active")
+  isActive  Boolean    @default(true) @map("is_active")
   vendor    NftVendor?
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime?  @updatedAt @map("updated_at")
 
   @@map("m_api_keys")
 }

@@ -27,7 +27,10 @@ router.put(
   async (req, res) => {
     try {
       const { address } = req.params;
-      const vendor = (req as any).apiKey.vendor;
+      const vendor = res.locals.apiKey?.vendor;
+      if (!vendor) {
+        return res.status(403).json({ error: "API key is not associated with a vendor" });
+      }
 
       if (!ETH_ADDRESS_PATTERN.test(address)) {
         return res.status(400).json({ error: "Invalid contract address format" });
