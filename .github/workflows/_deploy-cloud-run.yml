@@ -200,6 +200,18 @@ jobs:
       # docs/handbook/SECURITY.md "Severity Policy" を参照。
       # `ignore-unfixed: true` で fix の出ていない CVE は除外する (上流が
       # 直せない CVE で deploy が永久に止まらないようにする保険)。
+      # `limit-severities-for-sarif: true` は **必須**。trivy-action は
+      # `format: sarif` のときデフォルトで `severity` フィルタを **無視** して
+      # 全 severity を sarif に出力する仕様 (action log に
+      # "Building SARIF report with all severities" が出る)。これを有効化しないと
+      # `severity: CRITICAL` を指定しても HIGH/MEDIUM の CVE で `exit-code: '1'`
+      # が trip し、deploy が誤 block される (#1059 の merge 直後に観測。
+      # CI 側 (`ci.yml` の trivy job) は `format: json` で本 quirk の影響を
+      # 受けず CRITICAL: 0 のまま通っていたが、deploy 側だけ落ちる症状になった)。
+      # 本 flag を入れることで、severity フィルタが json/table と同じく sarif
+      # 出力にも適用され、exit-code 判定が本物の CRITICAL のみに限定される。
+      # HIGH (advisory) 側は exit-code: '0' で fail しないが、Security タブの
+      # category が混ざらないように同様に true に揃える。
       - name: Scan image (Trivy CRITICAL — blocking)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -209,6 +221,7 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-critical.sarif
+          limit-severities-for-sarif: true
 
       - name: Scan image (Trivy HIGH — advisory)
         # CRITICAL が落ちて job が fail した場合でも HIGH の sarif を生成し
@@ -222,6 +235,7 @@ jobs:
           ignore-unfixed: true
           format: sarif
           output: trivy-high.sarif
+          limit-severities-for-sarif: true
 
       # CRITICAL 件数を `::error::` annotation として workflow summary 最上部
       # に上げる (上の scan step が `exit-code: '1'` で既に fail させているが、
