@@ -648,7 +648,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [dependency-review, lint, build, trivy, test]
-    if: always()
+    # `if: !cancelled()` で以下を両立:
+    #   - 通常 fail / skipped (= push 時の dependency-review) でも
+    #     アグリゲータを走らせ status を必ず報告する (`success()` 単独だと
+    #     needs failure で skip され、required check が pending で固まる)
+    #   - **PR の concurrency cancel を superseded run に伝播**: 旧
+    #     `if: always()` は `always()` の仕様 (cancellation を override する)
+    #     で cancel された run でもアグリゲータが走り、`cancelled` の needs
+    #     result を case 句が拾えず exit 1 → required check が `failure`
+    #     報告。後続 commit の run が成功しても UI 上に過去 fail が残り、
+    #     admin override 強制 merge が必要になる。これで 5 PR
+    #     (#1063 / #1066 / #1071 / #1073 / #1075) 連続で踏んだのを修正。
+    #   - `!cancelled()` は workflow 全体の cancellation 時に false を
+    #     返してアグリゲータごと skip させる (status: skipped)。branch
+    #     protection は最新 commit の status を見るので、superseded run の
+    #     skip は merge 可否に影響しない。
+    if: ${{ !cancelled() }}
     permissions:
       contents: read
       # PR への coverage コメント投稿に必要 (marocchino/sticky-pull-request-comment)。
