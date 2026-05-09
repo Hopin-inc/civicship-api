@@ -63,11 +63,11 @@
     "@babel/preset-env": "^7.29.2",
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^9.7.0",
-    "@graphql-codegen/cli": "^7.0.0",
-    "@graphql-codegen/typescript": "6.0.0",
-    "@graphql-codegen/typescript-operations": "6.0.0",
+    "@graphql-codegen/cli": "^5.0.7",
+    "@graphql-codegen/typescript": "^5.0.10",
+    "@graphql-codegen/typescript-operations": "^5.1.0",
     "@graphql-codegen/typescript-react-apollo": "^4.4.2",
-    "@graphql-codegen/typescript-resolvers": "^6.0.0",
+    "@graphql-codegen/typescript-resolvers": "^5.1.8",
     "@mermaid-js/mermaid-cli": "^11.14.0",
     "@ngneat/falso": "^7.3.0",
     "@prisma/generator-helper": "^5.22.0",
@@ -131,9 +131,6 @@
       "@smithy/config-resolver": ">=4.4.5",
       "validator": ">=13.15.23",
       "protobufjs": "^7.5.5"
-    },
-    "patchedDependencies": {
-      "@graphql-codegen/visitor-plugin-common@7.0.0": "patches/@graphql-codegen__visitor-plugin-common@7.0.0.patch"
     }
   },
   "dependencies": {
