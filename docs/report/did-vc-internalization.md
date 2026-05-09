@@ -598,6 +598,7 @@ Cardano transaction metadata には次の制約があり、設計はこれを考
 ```jsonc
 {
   "v": 1,                                // schema version
+  "bid": "ckxxxxxxxxxxxx",               // batch idempotency key（§5.3.1 対応、cuid）
   "ts": 1746336034,                      // unix ts
   "tx": {
     // Transaction Merkle root（§5.1.7 の Blake2b-256 木）
@@ -1832,6 +1833,7 @@ backfill 月のみ ~$1 加算、それ以降は通常運用コストに戻る。
 - [ ] 6 項目すべて pass
 - [ ] 上記 3 つの技術的懸念について「採用案で動く」または「fallback 案を確定」
 - [ ] preprod 上の検証 tx 数 1 件 ＋ 100 ユーザー分のサンプル backfill が完走
+- [ ] **Q13: KMS 鍵リング `civicship-issuer` を `global` location で作成可能か、GCP プロジェクト権限を確認**（§9.1.5、リージョン障害耐性のため必須）
 - [ ] PoC 用コードは throwaway として明記（Phase 1 で書き直す前提）
 
 ### Phase 1: 内製発行（フラグ OFF 配置、2 週間）
