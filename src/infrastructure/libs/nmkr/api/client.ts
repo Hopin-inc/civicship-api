@@ -27,7 +27,9 @@ export class NmkrClient {
       if (error instanceof NmkrApiError) {
         throw error;
       }
-      throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : String(error)}`, {
+        cause: error,
+      });
     }
   }
 
