@@ -114,6 +114,7 @@
     "overrides": {
       "@escape.tech/graphql-armor-max-depth": "^2.4.2",
       "ajv": "^6.12.6",
+      "axios": ">=1.15.2",
       "bn.js": ">=4.12.3",
       "diff": ">=4.0.4",
       "fast-xml-parser": "^4.5.4",

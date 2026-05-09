@@ -7,6 +7,7 @@ settings:
 overrides:
   '@escape.tech/graphql-armor-max-depth': ^2.4.2
   ajv: ^6.12.6
+  axios: '>=1.15.2'
   bn.js: '>=4.12.3'
   diff: '>=4.0.4'
   fast-xml-parser: ^4.5.4
@@ -125,7 +126,7 @@ importers:
         specifier: ^17.0.0
         version: 17.0.0
       axios:
-        specifier: 1.15.2
+        specifier: '>=1.15.2'
         version: 1.15.2
       busboy:
         specifier: ^1.6.0
@@ -4015,9 +4016,6 @@ packages:
   aws-ssl-profiles@1.1.2:
     resolution: {integrity: sha512-NZKeq9AfyQvEeNlN0zSYAaWrmBffJh3IELMZfRpJVWgrpEbtEpnjvzqBPf+mxoI287JohRDoa+/nsfqqiZmF6g==}
     engines: {node: '>= 6.0.0'}
-
-  axios@1.15.0:
-    resolution: {integrity: sha512-wWyJDlAatxk30ZJer+GeCWS209sA42X+N5jU2jy6oHTp7ufw8uzUTVFBX9+wTfAlhiJXGS0Bq7X6efruWjuK9Q==}
 
   axios@1.15.2:
     resolution: {integrity: sha512-wLrXxPtcrPTsNlJmKjkPnNPK2Ihe0hn0wGSaTEiHRPxwjvJwT3hKmXF4dpqxmPO9SoNb2FsYXj/xEo0gHN+D5A==}
@@ -13970,14 +13968,6 @@ snapshots:
 
   aws-ssl-profiles@1.1.2: {}
 
-  axios@1.15.0:
-    dependencies:
-      follow-redirects: 1.16.0
-      form-data: 4.0.5
-      proxy-from-env: 2.1.0
-    transitivePeerDependencies:
-      - debug
-
   axios@1.15.2:
     dependencies:
       follow-redirects: 1.16.0
@@ -14894,7 +14884,7 @@ snapshots:
       '@dbml/core': 7.1.2
       '@oclif/core': 1.26.2
       '@oclif/plugin-help': 6.2.32
-      axios: 1.15.0
+      axios: 1.15.2
       chalk: 3.0.0
       dotenv: 8.6.0
       inquirer: 12.11.1(@types/node@22.16.3)
