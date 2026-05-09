@@ -28,7 +28,6 @@
 /* eslint-disable no-console */
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve as pathResolve } from "node:path";
 
 // -----------------------------------------------------------------------------
 // Patch cross-fetch BEFORE importing web-did-resolver.
@@ -41,7 +40,6 @@ const ISSUER_HOST = "api.civicship.app";
 const LOCAL_BASE = `http://localhost:${SPIKE_PORT}`;
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Use a require rooted at this script so we resolve to the same cross-fetch
 // instance web-did-resolver pulls in (pnpm hoists, but be explicit).
@@ -67,15 +65,20 @@ function patchCrossFetch() {
     );
   }
 
-  const wrappedFetch: typeof fetch = ((url: string, init?: RequestInit) => {
-    let target = url;
-    if (typeof url === "string" && url.startsWith(`https://${ISSUER_HOST}`)) {
-      target = LOCAL_BASE + url.slice(`https://${ISSUER_HOST}`.length);
+  // Accept both `string` and `URL` (the standard fetch API takes either).
+  // web-did-resolver currently passes a string, but if a future version uses
+  // URL objects we still want our redirection to work. `url.toString()`
+  // handles both shapes uniformly.
+  const wrappedFetch: typeof fetch = ((url: string | URL, init?: RequestInit) => {
+    const urlStr = typeof url === "string" ? url : url.toString();
+    let target: string = urlStr;
+    if (urlStr.startsWith(`https://${ISSUER_HOST}`)) {
+      target = LOCAL_BASE + urlStr.slice(`https://${ISSUER_HOST}`.length);
     }
     // Drop CORS mode — node-fetch warns/ignores but cleaner without it
     const safeInit = init ? { ...init } : undefined;
     if (safeInit && (safeInit as any).mode) delete (safeInit as any).mode;
-    console.log(`  [fetch] ${url}  →  ${target}`);
+    console.log(`  [fetch] ${urlStr}  →  ${target}`);
     return originalFetch(target, safeInit);
   }) as unknown as typeof fetch;
 
@@ -234,8 +237,6 @@ async function main() {
   console.log(`All cases PASS`);
   process.exit(0);
 }
-
-void pathResolve(__dirname);
 
 main().catch((err) => {
   console.error(`\n────────────────────────────────────────`);
