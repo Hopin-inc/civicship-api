@@ -39,10 +39,10 @@ export class LIFFService {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const err = error.response?.data;
-        throw new Error(
-          `[LINE Token Verification] ${err?.error}: ${err?.error_description || error.message}`,
-          { cause: error },
-        );
+        const detail = err?.error
+          ? `${err.error}: ${err.error_description || error.message}`
+          : error.message;
+        throw new Error(`[LINE Token Verification] ${detail}`, { cause: error });
       }
       throw new Error(
         `[LINE Token Verification] ${error instanceof Error ? error.message : String(error)}`,
@@ -60,10 +60,10 @@ export class LIFFService {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const err = error.response?.data;
-        throw new Error(
-          `[LINE Profile Fetch] ${err?.error}: ${err?.error_description || error.message}`,
-          { cause: error },
-        );
+        const detail = err?.error
+          ? `${err.error}: ${err.error_description || error.message}`
+          : error.message;
+        throw new Error(`[LINE Profile Fetch] ${detail}`, { cause: error });
       }
       throw new Error(
         `[LINE Profile Fetch] ${error instanceof Error ? error.message : String(error)}`,
