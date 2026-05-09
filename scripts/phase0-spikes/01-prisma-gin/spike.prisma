@@ -1,0 +1,66 @@
+// Phase 0 PoC Spike #1 — Prisma 6 GIN index on text[] for /point/verify
+//
+// This schema is intentionally isolated from the production schema.prisma.
+// It contains a single model that mirrors the relevant shape of
+// `t_transaction_anchors` from docs/report/did-vc-internalization.md §4.1
+// (renamed `_spike` to avoid colliding if the main schema is ever applied to
+// the same database).
+//
+// The goal is to verify the design doc's claim that
+//   `@@index([leafIds], type: Gin)`
+// in Prisma 6.6 produces a working PostgreSQL GIN index on a `text[]` column,
+// and that the `&&` overlap operator picked by /point/verify (§6.2) actually
+// uses it.
+//
+// The `output` for the generated client is local to this directory so the
+// spike can never leak into application code via `@prisma/client`.
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./generated"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("SPIKE_DATABASE_URL")
+}
+
+enum AnchorStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED
+}
+
+enum ChainNetwork {
+  CARDANO_PREPROD
+  CARDANO_MAINNET
+}
+
+/// Mirror of `TransactionAnchor` from §4.1, trimmed to only the fields the
+/// spike exercises. The full production model has more columns and indexes,
+/// but the GIN index behaviour we want to verify only depends on `leafIds`.
+model TransactionAnchorSpike {
+  id            String       @id @default(cuid())
+
+  periodStart   DateTime     @map("period_start")
+  periodEnd     DateTime     @map("period_end")
+
+  rootHash      String       @map("root_hash")
+  leafIds       String[]     @map("leaf_ids")
+  leafCount     Int          @map("leaf_count")
+
+  network       ChainNetwork
+  metadataLabel Int          @default(1985) @map("metadata_label")
+  chainTxHash   String?      @map("chain_tx_hash")
+
+  status        AnchorStatus @default(PENDING)
+
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  // The exact line the design doc relies on; this is what the spike verifies.
+  @@index([leafIds], type: Gin)
+  @@index([status])
+  @@map("t_transaction_anchors_spike")
+}
