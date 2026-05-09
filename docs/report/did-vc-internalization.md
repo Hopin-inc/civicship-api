@@ -119,7 +119,7 @@ gpasswd: cannot lock /etc/group; try again later.
   └─ DID 操作集合 → UserDidAnchor 行を集約
   ↓
   Blockfrost API (HTTPS) で Cardano に tx submit
-  metadata label 674 に root + DID 操作リストを格納
+  metadata label 1985 に root + DID 操作リストを格納
   ↓
   Cardano チェーン
   ↓
@@ -132,7 +132,7 @@ gpasswd: cannot lock /etc/group; try again later.
   → root と Merkle proof が整合 → 検証完了
   
 [civicship.app 消失時の緊急時 fallback]
-  Cardano explorer で metadata 674 を時系列で取得
+  Cardano explorer で metadata 1985 を時系列で取得
   → DID 操作履歴を再構築
   → DID Document を再構築可能
 ```
@@ -144,30 +144,46 @@ gpasswd: cannot lock /etc/group; try again later.
 | 公開台帳 | **Cardano Mainnet** | 助成金条件で固定 |
 | チェーン書込 | **Blockfrost SaaS** | フルノード不要 → 今回の障害クラスを構造ごと排除 |
 | DID method | **`did:web:civicship.app`** | W3C 標準・Universal Resolver 対応・PRISM 非依存 |
-| User DID | **`did:web:civicship.app:users/u_xyz`** | 全ユーザーが同じ method、`did:web` resolver で解決可能 |
-| DID 操作の chain 記録 | **CIP-20 metadata label 674 に直接書込** | `did:prism` 同等の操作履歴・鍵ローテ・deactivate を維持 |
+| User DID | **`did:web:civicship.app:users:u_xyz`** | 全ユーザーが同じ method、`did:web` resolver で解決可能 |
+| DID 操作の chain 記録 | **civicship 専用 metadata label 1985 に直接書込** | `did:prism` 同等の操作履歴・鍵ローテ・deactivate を維持 |
 | Transaction anchor | **Merkle root のみ chain 上に**（leaf 集合は DB 内） | 件数 N に対し tx 数は一定 |
 | バッチ頻度 | **週次** | 月 ~$0.50 のコスト・粒度はあとで細かくできる |
 | VC 形式 | **W3C VC JWT** | 既存と互換、KMS 署名 |
 | 鍵管理 | **GCP KMS Ed25519**（Issuer） ＋ **アプリ生成 Ed25519**（User） | 既存 GCP に統合 |
 | 旧テーブル | `t_merkle_commits` / `t_merkle_proofs` は**死蔵**（新規書込なし） | 完全な世代交代 |
 
-### 3.3 `did:prism` 同等の機能性をどう実現するか
+### 3.3 `did:prism` の機能性を別トラストモデルで再現する hybrid 設計
 
-`did:prism` の主要機能と、本設計での対応:
+> 注: 「`did:prism` と同等」という表現は厳密ではない。`did:prism` は **resolver が直接 chain を見る** 設計、本設計は **HTTPS が一次解決・chain anchor が補助証拠** という異なるトラストモデルを採用する。**機能の網羅性は同等以上、トラストモデルは異なる**。
 
-| `did:prism` 機能 | 本設計での実現 |
-|---|---|
-| DID 操作履歴がチェーン上に残る | UserDidAnchor 行 → 週次バッチ → Cardano metadata 674 に CREATE/UPDATE/DEACTIVATE が記録 |
-| 鍵ローテーション追跡 | UPDATE 操作が `previousAnchorTxHash` を持ち、hash chain を形成 |
-| DID deactivation | DEACTIVATE 操作を chain に記録、resolver は最新状態を判定 |
-| chain 単独で resolve 可能 | metadata 674 内の `did_op_compact` フィールドに DID Document の核心情報を格納 → civicship.app 失効時も Cardano explorer のみで再構築可能 |
-| Cardano 上の改ざん耐性 | 同等（同じチェーンに直接書く） |
+本設計のポジショニング:
 
-**違い**:
+> **平常時は `did:web` の単純さ、有事は chain anchor で監査可能** という hybrid 設計
 
-- `did:prism` は PRISM 専用 resolver 必須、こちらは **`did:web` resolver（標準）** で 1 次解決、proof 部分のみ任意で chain 検証
-- `did:prism` は IOG/PRISM スタックに依存、こちらは **W3C 標準と Cardano 公開チェーンのみ**に依存（ベンダロックインゼロ）
+各機能の比較:
+
+| 機能 | `did:prism` | 本設計 (`did:web` + Cardano anchor) |
+|---|---|---|
+| DID 操作履歴の chain 記録 | resolver が chain から直接取得 | UserDidAnchor → 週次バッチで Cardano metadata 1985 に CREATE/UPDATE/DEACTIVATE 記録 |
+| 鍵ローテーション追跡 | chain 上の DID Document 履歴 | UPDATE 操作が `prev` で前 tx hash 参照 → hash chain 形成 |
+| DID deactivation | chain 上で deactivate event | DEACTIVATE op を chain に記録、resolver は HTTPS doc または chain history で判定 |
+| ベンダ消失時の resolve | chain＋PRISM resolver があれば可能 | civicship.app 消失時、Cardano metadata 1985 から op 履歴を時系列スキャン → DID Document 再構築可能 |
+| Cardano 上の改ざん耐性 | 同等 | 同等（同じチェーンに直接書く） |
+| 平常時の resolve 速度 | chain クエリ必須 | HTTPS GET 1 回（速い） |
+| 必要なクライアント | PRISM SDK / IDENTUS resolver | 標準 did:web resolver（あらゆるツール） |
+
+**重要な前提**: 本設計の「chain 単独 resolve」は**専用ツール**を要する（CSL でメタデータ展開＋ CBOR デコード＋ hash chain 検証）。一般 verifier は HTTPS で resolve、chain anchor は audit / 改ざん検知用途。
+
+#### トラストモデルの違い
+
+| 想定 | `did:prism` | 本設計 |
+|---|---|---|
+| civicship が DID Document を改竄 | 困難（chain に直接書込のため） | 可能（HTTPS なので）、ただし **chain anchor の hash と不整合** で検出可能 |
+| `civicship.app` の DNS / TLS 乗っ取り | 該当しない（HTTPS 不要） | あり得る、ただし **chain anchor で検出可能**（§8.6 参照） |
+| IOG / Atala プロジェクトの停止 | resolver メンテ停止 → 困難 | 影響なし |
+| Cardano チェーンの停止 | resolve 不可 | HTTPS 解決のみ可能、chain audit は不可 |
+
+→ 各失敗モードで完全な耐性を持つわけではないが、**現実的な脅威分布の幅広いカバレッジ**を持つのがこの hybrid 設計の特徴。
 
 ### 3.4 採用ライブラリ（npm）
 
@@ -238,12 +254,12 @@ model TransactionAnchor {
   periodStart   DateTime     @map("period_start")
   periodEnd     DateTime     @map("period_end")
 
-  rootHash      String       @map("root_hash")
-  leafIds       String[]     @map("leaf_ids")        // Transaction.id を正規順序（ASC）で保持
+  rootHash      String       @map("root_hash")          // 32-byte Blake2b-256 (Cardano-native), hex 64 chars (no 0x prefix)
+  leafIds       String[]     @map("leaf_ids")            // Transaction.id を正規順序（cuid ASC）で保持
   leafCount     Int          @map("leaf_count")
 
   network       ChainNetwork
-  metadataLabel Int          @default(674) @map("metadata_label")
+  metadataLabel Int          @default(1985) @map("metadata_label")  // civicship 専用 label。674 (CIP-20 messages) は wallet が "メッセージ" として表示してしまうため避ける
   chainTxHash   String?      @map("chain_tx_hash")
   blockHeight   Int?         @map("block_height")
 
@@ -259,6 +275,7 @@ model TransactionAnchor {
 
   @@index([status])
   @@index([periodEnd])
+  @@index([leafIds], type: Gin)        // /point/verify の `leaf_ids && $1::text[]` 検索を高速化（必須）
   @@map("t_transaction_anchors")
 }
 
@@ -270,7 +287,7 @@ model TransactionAnchor {
 model UserDidAnchor {
   id              String       @id @default(cuid())
 
-  did             String                                          // "did:web:civicship.app:users/u_xyz"
+  did             String                                          // "did:web:civicship.app:users:u_xyz"
   operation       DidOperation                                    // CREATE / UPDATE / DEACTIVATE
 
   documentHash    String       @map("document_hash")              // 該当バージョン DID Document の hash (32B hex)
@@ -282,7 +299,7 @@ model UserDidAnchor {
 
   // chain 書込状態
   network         ChainNetwork
-  metadataLabel   Int          @default(674) @map("metadata_label")
+  metadataLabel   Int          @default(1985) @map("metadata_label")  // civicship 専用（674 回避、§5.1.6 参照）
   chainTxHash     String?      @map("chain_tx_hash")              // CONFIRMED 後に確定
   chainOpIndex    Int?         @map("chain_op_index")             // 同一 tx 内の何番目の op か
 
@@ -363,7 +380,7 @@ DDD/Clean Architecture 規約（`CLAUDE.md` 準拠）厳守。
 - 鍵ローテ時: 旧鍵を `verificationMethod` に残し、新鍵を `assertionMethod` の先頭に置く
 
 #### 5.1.3 新規: `src/infrastructure/libs/did/userDidGenerator.ts`
-- ユーザー鍵 (Ed25519) を生成 → `did:web:civicship.app:users/{userId}` 形式で返す
+- ユーザー鍵 (Ed25519) を生成 → `did:web:civicship.app:users:{userId}` 形式で返す
 - DID Document を構築（id, verificationMethod, assertionMethod, authentication）
 - 戻り値: `{ did, document, publicKey }`（**秘密鍵は生成直後に破棄**）
 - **platform-issued モデルの前提**: civicship が VC の Issuer であり、ユーザーは Verifiable Presentation (VP) を提示する役割を持たない。よってユーザー側で秘密鍵を保持・使用する場面が存在しないため、**秘密鍵を生成・保持しない**設計とする
@@ -385,48 +402,166 @@ DDD/Clean Architecture 規約（`CLAUDE.md` 準拠）厳守。
 - リトライ・指数バックオフ内蔵
 
 #### 5.1.6 新規: `src/infrastructure/libs/cardano/txBuilder.ts`
+
+##### 概要
 - `@emurgo/cardano-serialization-lib-nodejs` のラッパ
 - `buildAnchorTx(input: { utxos, root, didOps, signKey, params }): SignedTx`
-- メタデータ構造（label 674）:
 
-```json
+##### Cardano metadata の制約（重要）
+
+Cardano transaction metadata には次の制約があり、設計はこれを考慮する必要がある:
+
+| 制約 | 値 | 対応 |
+|---|---|---|
+| 1 transaction の metadata 全体サイズ | **16 KB** | バッチ件数で調整、超過時は分割 tx |
+| **1 文字列要素の長さ** | **64 byte** | hex 32 byte (= 64 chars) は OK だが `0x` prefix 付き 66 chars は NG |
+| バイト列要素の長さ | 64 byte | bytes 型を使う場合の制約 |
+| ネスト深さ | 任意 | 配列 / map のネストは可 |
+
+→ **長い文字列（64 byte 超）は配列に分割するか、bytes として CBOR 直接エンコードする**。Cardano Serialization Lib (CSL) には `TransactionMetadatum.new_bytes` / `new_text` があり、長すぎる場合はリスト化する API がある。
+
+##### 採用する metadata label
+
+**label = `1985`**（civicship 専用、後から CIP 提案する想定）
+
+❌ label 674 は CIP-20 で **transaction messages/comments** 用に予約されており、Daedalus / Eternl 等の wallet が "メッセージ" として表示してしまう → DID anchor に使うとユーザーに混乱を招くため避ける。
+
+##### メタデータ構造（label 1985 配下）
+
+```jsonc
 {
-  "v": 1,
-  "ts": 1746336034,
-  "transactions": {
-    "root": "0x4a7b3c8d9e2f...",
+  "v": 1,                                // schema version
+  "ts": 1746336034,                      // unix ts
+  "tx": {
+    // root は 32-byte Blake2b、hex 64 chars (0x prefix なし)
+    "root": "4a7b3c8d9e2f1a0b5c6d7e8f9a0b1c2d3e4f506172839abcdef0123456789ab",
     "count": 5213
   },
-  "did_ops": [
+  "ops": [
     {
-      "op": "create",
-      "did": "did:web:civicship.app:users/u_xyz",
-      "doc_hash": "0xa1b2...",
-      "doc_cbor_b64": "<base64-CBOR>",
+      "k": "c",                          // "c" = create / "u" = update / "d" = deactivate
+      "did": "did:web:civicship.app:users:u_xyz",
+      // doc_hash も 64 chars （0x prefix なし）
+      "h": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678abcdef0123456789abcdef01",
+      // CBOR-encoded DID Document を bytes として記録
+      // CSL の TransactionMetadatum.new_bytes() で書込（64 byte 上限のため、長い場合は配列に分割）
+      "doc": [
+        "<bytes 0..63>",
+        "<bytes 64..127>",
+        "..."
+      ],
       "prev": null
     },
     {
-      "op": "update",
-      "did": "did:web:civicship.app:users/u_abc",
-      "doc_hash": "0xc3d4...",
-      "doc_cbor_b64": "<base64-CBOR>",
-      "prev": "0xprev_tx_hash..."
+      "k": "u",
+      "did": "did:web:civicship.app:users:u_abc",
+      "h": "c3d4...",
+      "doc": ["...", "..."],
+      "prev": "<prev tx hash, 64 chars>"  // 64 chars (Cardano tx hash は 32 byte)
     },
     {
-      "op": "deactivate",
-      "did": "did:web:civicship.app:users/u_def",
-      "prev": "0xprev_tx_hash..."
+      "k": "d",
+      "did": "did:web:civicship.app:users:u_def",
+      "prev": "<prev tx hash, 64 chars>"
     }
   ]
 }
 ```
 
-- 16 KB metadata 上限内に収める（DID Document CBOR 込みで ~30 ops/tx 程度。超過時は次回バッチに繰越）
+##### サイズ見積（修正版）
+
+| 要素 | サイズ |
+|---|---|
+| root（hex 64 chars） | 64 B |
+| count + ts + v | ~30 B |
+| 1 op (create/update + doc 込み) | ~600-800 B（doc サイズ次第） |
+| 1 op (deactivate, doc なし) | ~150 B |
+| **1 tx に乗る op 数** | **~15-20 op**（doc 込み）／ ~80 op（hash のみ） |
+
+→ 5000 件 backfill のコストは §10 Phase 3、§9 で再計算（後述）。
+
+##### CSL での実装パターン
+
+```ts
+import * as CSL from "@emurgo/cardano-serialization-lib-nodejs";
+
+function buildMetadata(root: Uint8Array, ops: DidOp[]): CSL.AuxiliaryData {
+  const general = CSL.GeneralTransactionMetadata.new();
+  const top = CSL.TransactionMetadatum.new_map(buildTopMap(root, ops));
+  general.insert(CSL.BigNum.from_str("1985"), top);
+
+  const aux = CSL.AuxiliaryData.new();
+  aux.set_metadata(general);
+  return aux;
+}
+
+function bytesAsChunkedList(b: Uint8Array): CSL.TransactionMetadatum {
+  // 64-byte 制約のため、64 byte ごとに分割して list に格納
+  if (b.length <= 64) return CSL.TransactionMetadatum.new_bytes(b);
+  const list = CSL.MetadataList.new();
+  for (let i = 0; i < b.length; i += 64) {
+    list.add(CSL.TransactionMetadatum.new_bytes(b.subarray(i, Math.min(i + 64, b.length))));
+  }
+  return CSL.TransactionMetadatum.new_list(list);
+}
+```
 
 #### 5.1.7 新規: `src/infrastructure/libs/merkle/merkleTreeBuilder.ts`
+
+##### 概要
 - `@openzeppelin/merkle-tree` ラッパ
-- `buildRoot(leafIds: string[]): { root, getProof(idx) }`
-- canonical leaf hash: `keccak256(utf8(transaction.id))` 等の固定ルール
+- `buildRoot(leafIds: string[]): { root: Uint8Array; getProof(idx: number): Uint8Array[] }`
+
+##### canonical leaf encoding 仕様（**厳密に固定**）
+
+「正規順序」だけだと曖昧で、**1 bit でもエンコーディングが変わると proof が通らなくなる**。本設計では以下を**仕様として固定**:
+
+```
+1. leafIds は Transaction.id (cuid 文字列) を ASCII byte の昇順 (ORDER BY id ASC) で並べる
+2. 各 leaf の hash = Blake2b-256( utf8_bytes(transaction.id) )
+   ※ "0x" prefix なし、padding なし、トリミングなし
+3. Merkle 木の内部ノード = Blake2b-256( left_node_bytes || right_node_bytes )
+   ※ 32 byte の生 bytes を連結（base16 文字列にしない）
+4. 葉が奇数の場合、最後の葉を複製して右子とする（OZ ライブラリ標準仕様）
+```
+
+##### hash 関数の選択: Blake2b-256
+
+| 候補 | 採用 | 理由 |
+|---|---|---|
+| **Blake2b-256** | ✅ | Cardano-native（チェーン上の hash と整合）、CSL 標準 |
+| keccak256 | ❌ | EVM 慣習、Cardano エコシステムでは異質 |
+| SHA-256 | ❌ | 速度的に劣る、Cardano 用途では非標準 |
+
+→ `@openzeppelin/merkle-tree` のデフォルトは keccak256 だが、本設計では Blake2b に差し替え（OZ ライブラリは hash function を注入可能）。
+
+##### TypeScript 実装
+
+```ts
+import { blake2b } from "@noble/hashes/blake2b";
+import { utf8ToBytes, concatBytes } from "@noble/hashes/utils";
+
+export function canonicalLeafHash(transactionId: string): Uint8Array {
+  return blake2b(utf8ToBytes(transactionId), { dkLen: 32 });
+}
+
+export function buildMerkleTree(leafIds: string[]): {
+  root: Uint8Array;
+  getProof: (idx: number) => Uint8Array[];
+} {
+  // leafIds は呼び出し側で ORDER BY id ASC 済み前提
+  const leaves = leafIds.map(canonicalLeafHash);
+  // ... OZ 互換の Merkle tree 構築 (Blake2b で hashPair)
+}
+
+function hashPair(a: Uint8Array, b: Uint8Array): Uint8Array {
+  return blake2b(concatBytes(a, b), { dkLen: 32 });
+}
+```
+
+##### 第三者検証用の仕様書
+
+外部 verifier が proof を独立検証するために、上記のエンコーディングルールは `docs/specs/civicship-merkle-anchor-2026.md`（独自 cryptosuite spec、§12 Q6 参照）に記載し、GitHub で公開する。
 
 ### 5.2 Application 層
 
@@ -512,7 +647,7 @@ async function run(ctx) {
 1. PENDING な TransactionAnchor を 1 件取得（事前に作成済み or その場で作成）
 2. PENDING な UserDidAnchor 群を集約
 3. Blockfrost で UTXO ＋ プロトコルパラメータ取得
-4. Cardano tx を構築（Merkle root ＋ DID ops を metadata 674 に格納）
+4. Cardano tx を構築（Merkle root ＋ DID ops を metadata 1985 に格納）
 5. KMS で Issuer 鍵に署名（注: Cardano 用の Issuer wallet は別鍵、tx 署名は wallet 鍵）
 6. `txSubmit` 実行 → `chainTxHash` を取得
 7. `TransactionAnchor.status = SUBMITTED`、各 `UserDidAnchor.chainTxHash = ...` 更新
@@ -645,8 +780,8 @@ async getProof(txId: string): Promise<{ root: string; siblings: string[]; chainT
 仮に `civicship.app` が消失しても、以下の手順で DID Document を再構築可能:
 
 ```
-1. 検証者は did:web:civicship.app:users/u_xyz の DID 文字列を持っている
-2. Cardano explorer / Blockfrost で metadata label 674 を時系列スキャン
+1. 検証者は did:web:civicship.app:users:u_xyz の DID 文字列を持っている
+2. Cardano explorer / Blockfrost で metadata label 1985 を時系列スキャン
 3. did=...u_xyz の op を全件抽出
 4. CREATE → UPDATE...→ DEACTIVATE の順に hash chain を辿る
 5. 最新非 DEACTIVATE の op の doc_cbor_b64 を CBOR デコード
@@ -657,17 +792,32 @@ async getProof(txId: string): Promise<{ root: string; siblings: string[]; chainT
 
 ### 7.4 metadata サイズの制約と運用
 
-- Cardano metadata 上限: **16 KB / tx**
-- 1 op あたりサイズ:
-  - CREATE / UPDATE: ~500-800 B（doc_cbor 込み）
-  - DEACTIVATE: ~150 B
-- 1 tx に乗せられる op 数: **概ね 20-30 件**
-- 週次バッチで超過する場合は同じ週で複数 tx に分割（コスト ~$0.10/tx 追加）
+#### 通常運用
 
-実運用想定:
-- 新規ユーザー: 週 ~50 → 2 tx/週（~$0.20/週）
-- 鍵ローテ: 年に 1 回未満 → 無視可能
-- 平均 1 tx/週で十分 ＋ 大規模イベント時のみ分割
+- Cardano metadata 上限: **16 KB / tx**、文字列要素は **64 byte / 要素**（§5.1.6 参照）
+- 1 op あたりサイズ:
+  - CREATE / UPDATE（doc 込み）: ~600-800 B
+  - DEACTIVATE: ~150 B
+- 1 tx に乗せられる op 数: **doc 込みで ~15-20 op、hash のみなら ~80 op**
+- 週次バッチで超過する場合は複数 tx に分割（1 tx 追加 = +0.17 ADA = ~$0.07）
+
+実運用想定（新規ユーザー想定 100 人/週）:
+- 通常週: 2-3 tx/週（~$0.20-$0.30/週）
+- 大規模イベント時のみ分割増
+
+#### Backfill 時（§10 Phase 3 で実施）
+
+5000 ユーザーの初期 backfill では **1 tx に集約は不可能**（metadata 制約のため）:
+
+| 戦略 | tx 数 | コスト |
+|---|---|---|
+| **doc 込みで 17 op/tx** | 5000 ÷ 17 ≒ **295 tx** | ~50 ADA ≒ **~$25** |
+| **hash のみで 80 op/tx**（doc 本体は HTTPS のみ） | 5000 ÷ 80 ≒ **63 tx** | ~11 ADA ≒ **~$5** |
+| **doc 込み Transaction Merkle root と同梱、複数 tx に均等分散** | ~63-100 tx | ~$5-15 |
+
+→ **採用案: doc hash のみを chain に書く軽量 backfill**（~$5）。doc 本体は HTTPS で配信、必要時のみ doc を chain に書く UPDATE op を発行。これにより backfill コストを抑えつつ、運用フェーズに入ってからの新規発行は doc 込み op を採用できる。
+
+→ §9 のコスト試算は **backfill 月のみ別計上**（一回限り ~$5、その後は通常運用 ~$1/月）。
 
 ---
 
@@ -716,13 +866,51 @@ async getProof(txId: string): Promise<{ root: string; siblings: string[]; chainT
 
 → この移行は本設計の Phase 4 完了後の独立タスクとして扱う（本 PR のスコープ外）。
 
-#### 8.1.4 Cardano wallet 鍵の HSM 保管
+#### 8.1.4 Cardano wallet 鍵の HSM 保管と single-payment-key 設計
 
-Cardano tx 署名は KMS 経由で行う:
+##### KMS 経由の tx 署名
 
 - GCP KMS の Ed25519 鍵で `signRaw` を呼び出し → tx hash に対する署名を取得
 - 秘密鍵素材は KMS の HSM 内から一切外に出ない
 - アプリケーションコードは「署名要求」のみ送信、署名結果のみ受け取る
+
+##### CIP-1852 HD wallet ではなく single-payment-key 設計を採用
+
+通常の Cardano wallet は CIP-1852（BIP-32 ベースの階層的決定性鍵）で、master seed から複数アドレスを派生させる。これは KMS の `signRaw` API では実現できない（KMS は固定鍵に対する署名 API のみ提供）。
+
+→ 本設計では **1 つの payment key = 1 つの civicship issuer wallet address**（single-payment-key）を採用:
+
+| 項目 | CIP-1852 HD wallet | **本設計 (single-payment-key)** |
+|---|---|---|
+| アドレス数 | 多数（per-tx で変更可能） | 1 つに固定 |
+| 鍵管理 | seed phrase | KMS の鍵バージョン |
+| プライバシー | アドレスを変えて履歴を分離 | 全 tx が同じアドレスから発信 |
+| 残高管理 | 複数 UTXO 分散 | 1 アドレスに集約 |
+
+##### single-payment-key のトレードオフ
+
+**メリット**:
+- KMS で完結（seed phrase の保管・バックアップが不要）
+- 監査人が「civicship issuer wallet」を 1 アドレスで追跡可能（透明性向上）
+
+**デメリット**:
+- プライバシーがゼロ（civicship が出した全 anchor tx が紐づいて見える）
+  - → ただし civicship の anchor は **公開して構わない** 性質（DID 操作の改ざん検知が目的）なので問題なし
+- アドレスローテ時の影響範囲（後述）
+
+##### 鍵ローテ時のアドレス変更
+
+KMS 鍵バージョンを更新すると Cardano アドレスも変わる。運用上の対応:
+
+1. 旧アドレスから新アドレスに残 ADA を移送（手動 tx 1 回、~$0.10）
+2. 旧アドレスは「歴史的な civicship issuer wallet」として保持（過去 anchor の改ざん検知用）
+3. backfill 整合性: 過去 anchor は旧アドレスから出された事実が chain に残るので、ローテ後も検証可能
+
+##### Issuer wallet ADA 残高管理
+
+- 50 ADA を float として保持（200+ 週分）
+- 残高が 10 ADA 切ったら Slack 通知 → 手動補充
+- 補充頻度: 年に 1-2 回程度
 
 ### 8.2 入力検証
 
@@ -740,6 +928,7 @@ Cardano tx 署名は KMS 経由で行う:
 
 - 同 DID への UPDATE は `previousAnchorId` を直前の CONFIRMED 行に固定
 - 並行更新は楽観ロック（`updatedAt` バージョン比較）
+- chain 上では `prev` フィールドで前 tx hash を参照 → 攻撃者が op を入れ替えると hash chain が破綻して検出
 
 ### 8.5 失敗モード
 
@@ -749,6 +938,42 @@ Cardano tx 署名は KMS 経由で行う:
 | Cardano 一時的混雑 | confirm 遅延 | confirmation 待機タイムアウト延長 |
 | Issuer wallet ADA 残高不足 | submit エラー | Slack 通知＋手動補充 |
 | KMS 障害 | VC 発行不可 | 既存と同等のリスク（GCP 全体障害級） |
+
+### 8.6 DNS / TLS 乗っ取りに対する脅威モデル（did:web 固有）
+
+#### 脅威
+
+`did:web` は HTTPS で DID Document を解決するため、以下の攻撃面が存在する:
+
+| 攻撃 | 結果 |
+|---|---|
+| 攻撃者が `civicship.app` の DNS を乗っ取り、自前サーバに向ける | 攻撃者が任意の DID Document を返す → 偽の公開鍵で署名された VC が「正規」として検証されかねない |
+| TLS 証明書の不正発行（rogue CA） | 同上 |
+| civicship 内部の HTTPS サーバ侵害 | civicship 自身が改竄可能 |
+
+#### 緩和策
+
+**第 1 線: HTTPS インフラ強化**
+- DNSSEC を `civicship.app` に設定
+- CAA レコードで証明書発行 CA を限定（Let's Encrypt のみ等）
+- HSTS preload list 登録
+- 証明書透過性ログ（CT log）の監視
+
+**第 2 線: chain anchor を活用した検出**
+
+これが本設計の重要な強み: **HTTPS で取得した DID Document の hash が、Cardano 上の anchor と一致するか**を verifier が検証可能。
+
+```
+1. verifier が https://civicship.app/users/u_xyz/did.json を取得 → DID Document A
+2. DID Document A の hash を計算 → H_A
+3. Cardano metadata 1985 から該当 DID の最新 op を取得 → H_chain
+4. H_A == H_chain なら正規、不一致なら DNS / TLS 乗っ取りの可能性
+```
+
+**監査人 / セキュリティ意識の高い verifier** には「chain anchor との整合確認」を推奨する運用。一般 verifier は HTTPS のみで運用（速度優先）。
+
+→ これは `did:prism` には存在しない緩和策（`did:prism` は HTTPS を使わないので、そもそも DNS 攻撃面がない代わりに resolver の中央集権性に依存）。
+
 
 ---
 
@@ -773,7 +998,23 @@ Cardano tx 署名は KMS 経由で行う:
 ### 9.4 DID Document HTTPS 配信
 - 既存 civicship-api インフラに乗る → 追加コストなし
 
-### 9.5 合計
+### 9.5 Backfill コスト（一回限り）
+
+§10 Phase 3 で実施する 5000 ユーザー DID の初回 backfill:
+
+| 項目 | 値 |
+|---|---|
+| 戦略 | doc hash のみを chain、doc 本体は HTTPS（§7.4 参照） |
+| tx 数 | ~63 tx（80 op/tx × 63 ≒ 5000） |
+| Cardano 手数料 | ~11 ADA ≒ **~$5** |
+| Blockfrost API 消費 | ~315 call（無料枠の 0.6%、問題なし） |
+| 必要日数 | 1-3 日（連続 submit、エラー時のリトライバッファを取る） |
+
+加えて Transaction の初期 Merkle anchor は **1 tx で 5000 件集約可能**（leafIds は metadata 外の DB に保持、root のみ 32 byte chain 書込）→ ~$0.08。
+
+backfill 月のみ ~$5 加算、それ以降は通常運用コストに戻る。
+
+### 9.6 合計
 
 | 項目 | 月額 |
 |---|---|
@@ -807,12 +1048,29 @@ Cardano tx 署名は KMS 経由で行う:
 - /point/verify は新版 SQL 経路に切替（既に互換性あり）
 - 1 週間運用してエラーログ確認
 
-### Phase 3: 内製カットオーバー（1 日）
+### Phase 3: 内製カットオーバー（3-5 日）
 
-- 全 5000 ユーザーの DID を一括 backfill（INTERNAL 行を新規 INSERT）
-- 全 Transaction の Merkle anchor を 1 tx で backfill submit
+DID backfill は metadata 制約で複数 tx 必要。段階的に実施:
+
+**Day 1**:
+- 全 5000 ユーザーの **DB 上の `DidIssuanceRequest` 行**を `INTERNAL` で一括 INSERT（DB 操作のみ、chain 不問）
+- 全ユーザーの DID Document を HTTPS で配信開始（`/users/{id}/did.json`）
+- Transaction の Merkle anchor を **1 tx で backfill submit**（leafIds は DB に保持、root のみ chain）
 - UI 側で `did:web:...` 表示に切替（DID Issuance Request の最新行が INTERNAL になる）
+
+**Day 2-4**:
+- DID 操作の chain backfill（doc hash のみ）を **63 tx に分けて段階 submit**
+  - 1 日あたり ~20 tx（Blockfrost / Cardano への負荷分散、エラー時のバッファ）
+  - 各 tx confirm 後に該当 UserDidAnchor を CONFIRMED 更新
+- 進捗を Slack で日次通知
+
+**Day 5**:
+- 全 UserDidAnchor が CONFIRMED であることを確認
 - IDENTUS 経路を OFF
+
+**ロールバックポイント**: Day 1 で IDENTUS OFF にせず維持しているため、Day 2-4 のいずれの時点でも feature flag OFF で IDENTUS 経路に戻せる。
+
+**コスト**: backfill 全体で ~$5（§9.5 参照）。
 
 ### Phase 4: IDENTUS 撤去（次スプリント以降）
 
@@ -833,7 +1091,7 @@ Cardano tx 署名は KMS 経由で行う:
 - `kmsSigner`: KMS をモック、署名ペイロード一致を確認
 - `userDidGenerator`: 既知の鍵から既知の `did:web:...` ＋ DID Document が生成されることを RFC ベクトルで検証
 - `merkleTreeBuilder`: leaf 集合 → root 計算、proof 検証
-- `txBuilder`: metadata 674 のサイズ計算、CBOR エンコード結果のバイト一致
+- `txBuilder`: metadata 1985 のサイズ計算、CBOR エンコード結果のバイト一致
 
 ### 11.2 統合
 - VC 発行〜DB 保存〜JWT 検証〜DID Document 解決の E2E
@@ -855,18 +1113,20 @@ Cardano tx 署名は KMS 経由で行う:
 | ~~Q1~~ | ~~`/point/verify` の現実の呼び出し元と使用頻度~~ → **クローズ: `TransactionVerificationService` 単独。Transaction Merkle 検証専用** | ✅ クローズ |
 | ~~Q2~~ | ~~Issuer DID のドメインは civicship.app でよいか~~ → **クローズ: `civicship.app` で確定** | ✅ クローズ |
 | ~~Q3~~ | ~~既発行 IDENTUS DID/VC の表示用 UI~~ → **クローズ: `DidIssuanceRequest` 最新行が `INTERNAL` になることで自動的に新表示**。旧行は履歴として保持 | ✅ クローズ |
-| ~~Q4~~ | ~~アンカリング粒度（1h vs 24h vs 件数閾値）~~ → **クローズ: 週次バッチ。バックフィル分は 5000 件 → 1 tx に集約** | ✅ クローズ |
+| ~~Q4~~ | ~~アンカリング粒度（1h vs 24h vs 件数閾値）~~ → **クローズ: 週次バッチ。Transaction Merkle root バックフィルは 1 tx に集約、DID backfill は metadata 制約で ~63 tx に分割（§7.4 / §10 Phase 3 参照）** | ✅ クローズ |
 | ~~Q5~~ | ~~Solana 過去ネットワーク停止リスクのバックアップ~~ → **クローズ: Cardano 単独で確定（助成金条件）** | ✅ クローズ |
-| Q6 | 独自 cryptosuite `merkle-cardano-anchor-2026` の仕様書を GitHub 公開 → 必要なら W3C registry 登録 | 後回し可（運用上の影響なし） |
+| Q6 | 独自 cryptosuite `civicship-merkle-anchor-2026` の仕様書を `docs/specs/` に公開 → 必要なら W3C registry 登録、CIP 提案 | 後回し可（Cardano explorer ベース運用なら影響なし） |
 | ~~Q7~~ | ~~User DID 秘密鍵の保管方法~~ → **クローズ: platform-issued モデルでは秘密鍵を保持しない（生成直後に破棄、公開鍵のみ DB 保存）。詳細は §8.1.2** | ✅ クローズ |
 | Q8 | DID 鍵ローテのトリガー（年次自動 / 漏洩検知時のみ） | プロダクト判断 |
+| Q9 | metadata label の最終確定（**現在 1985 を仮使用**） | civicship 専用 CIP を提案するか、安定運用後に固定。現時点では 1985 で実装、後から CIP 番号を取得して移行可能 |
+| Q10 | DID Document の chain 格納戦略（doc 込み or hash のみ）の運用後判断 | backfill は hash のみ（§7.4）。新規発行は doc 込み採用。運用 6 ヶ月後に metadata サイズ・コストを評価して見直し |
 
 ---
 
 ## 13. 受け入れチェックリスト
 
 - [ ] Phase 0 PoC で第三者検証スクリプトが pass する（civicship 非依存で chain だけから DID/VC を検証可能）
-- [ ] Cardano explorer で metadata label 674 を見ると root と DID 操作が読める形で表示される
+- [ ] Cardano explorer で metadata label 1985 を見ると root と DID 操作が読める形で表示される
 - [ ] Phase 1 で全コードが main にマージされ、feature flag OFF で既存運用と完全互換
 - [ ] Phase 2 影 dual-write で 7 日間エラーゼロ
 - [ ] Phase 3 cutover で全 5000 ユーザーの DID 表示が `did:web:...` に切替
@@ -904,12 +1164,12 @@ Cardano tx 署名は KMS 経由で行う:
    → Issuer DID Document の verificationMethod を取得
 4. JWT 署名を Issuer 公開鍵で検証 → OK
 5. credentialSubject.id から Subject DID を取得
-   = "did:web:civicship.app:users/u_xyz"
+   = "did:web:civicship.app:users:u_xyz"
 6. https://civicship.app/users/u_xyz/did.json を HTTPS GET
    → Subject DID Document を取得
    → proof フィールドに { anchorTxHash, root, merkleProof, leafIndex } が入っている
 7. Cardano explorer (https://cardanoscan.io/transaction/{anchorTxHash}) を開く
-   → metadata label 674 に { "did_ops": [...] } が表示される
+   → metadata label 1985 に { "did_ops": [...] } が表示される
    → 該当 op の doc_hash が Subject DID Document の hash と一致 → OK
 8. （オプション）VC が anchor 済みかも確認したい場合
    → VC JWT の hash を Transaction Merkle proof で root に再構築 → root が CONFIRMED な TransactionAnchor のものと一致 → OK
