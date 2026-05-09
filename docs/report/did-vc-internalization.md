@@ -79,7 +79,10 @@ gpasswd: cannot lock /etc/group; try again later.
 ### 2.2 主要コード資産
 
 - バッチ:
-  - `src/presentation/batch/requestDIDVC/`（DID/VC 発行要求）
+  - `src/presentation/batch/requestDIDVC/` ← 内部で 2 ファイル構成（注意: feature flag 切替時は両方とも対象）
+    - `index.ts` ← entry
+    - `requestDID.ts` ← DID 発行ジョブ起票
+    - `requestVC.ts` ← VC 発行ジョブ起票
   - `src/presentation/batch/syncDIDVC/`（PROCESSING の同期・タイムアウト判定）
 - ドメインサービス:
   - `src/application/domain/account/identity/didIssuanceRequest/service.ts`
@@ -656,8 +659,9 @@ async function run(ctx) {
 
 #### 5.3.2 既存: `requestDIDVC` / `syncDIDVC`
 
+- `requestDIDVC` は内部で `requestDID.ts` と `requestVC.ts` の 2 ファイル構成。feature flag は **両方に挿入** 必要
 - feature flag OFF 時のみ動作（IDENTUS 経路）
-- 完全移行後に削除
+- 完全移行後（Phase 4）に 3 ファイル一括削除
 
 ### 5.4 公開 API（HTTPS エンドポイント）
 
@@ -1173,7 +1177,7 @@ backfill 月のみ ~$1 加算、それ以降は通常運用コストに戻る。
 | **0-3** | `did:web:civicship.app:users:u_xyz` の DID Document を localhost HTTPS で配信 → 標準 did:web resolver（Veramo / web-did-resolver）で解決確認 | did:web 構文の最終確認 |
 | **0-4** | 第三者検証スクリプト（civicship 非依存 / Blockfrost 不使用、Cardano explorer 経由のみ）で end-to-end 検証 | 「Cardano explorer で確認」運用が成立しない |
 | **0-5** | GIN index 込みの schema migration を localhost PostgreSQL で実走 → `EXPLAIN ANALYZE` で `&&` 検索が GIN index 使用していることを確認 | `/point/verify` が線形スキャンで遅い |
-| **0-6** | metadata label **1985** が CIP-10 (Registered Metadata Labels Registry) で衝突していないことを最終確認（[cardano-foundation/CIPs](https://github.com/cardano-foundation/CIPs/blob/master/CIP-0010/registry.json) の registry.json を直接参照）。衝突時は別番号を再選定（例: civicship 創業年など） | 別 wallet/dApp の metadata 解釈と衝突 |
+| ~~0-6~~ | ~~metadata label 1985 が CIP-10 で衝突していないこと~~ → **完了 (2026-05-09): CIP-10 registry で 1985 未登録を確認済**（46 登録済の中になし、近隣 1983/1984/1988/1989 は使用中、1985 のみ空き） | — |
 
 #### Phase 0 で特に詰めるべき技術的懸念
 
@@ -1270,7 +1274,7 @@ backfill 月のみ ~$1 加算、それ以降は通常運用コストに戻る。
 | Q6 | 独自 cryptosuite `civicship-merkle-anchor-2026` の仕様書を `docs/specs/` に公開 → 必要なら W3C registry 登録、CIP 提案 | 後回し可（Cardano explorer ベース運用なら影響なし） |
 | ~~Q7~~ | ~~User DID 秘密鍵の保管方法~~ → **クローズ: platform-issued モデルでは秘密鍵を保持しない（生成直後に破棄、公開鍵のみ DB 保存）。詳細は §8.1.2** | ✅ クローズ |
 | Q8 | DID 鍵ローテのトリガー（年次自動 / 漏洩検知時のみ） | プロダクト判断 |
-| Q9 | metadata label の最終確定（**現在 1985 を仮使用**） | civicship 専用 CIP を提案するか、安定運用後に固定。現時点では 1985 で実装、後から CIP 番号を取得して移行可能 |
+| ~~Q9~~ | ~~metadata label の最終確定~~ → **クローズ: CIP-10 registry.json (2026-05-09 取得) で label 1985 が未登録であることを確認済。近隣の 1983/1984/1988/1989 は使用中、1985 のみ空き。安定運用後に CIP 番号取得を申請** | ✅ クローズ |
 | Q10 | DID Document の chain 格納戦略（doc 込み or hash のみ）の運用後判断 | backfill は hash のみ（§7.4）。新規発行は doc 込み採用。運用 6 ヶ月後に metadata サイズ・コストを評価して見直し |
 
 ---
