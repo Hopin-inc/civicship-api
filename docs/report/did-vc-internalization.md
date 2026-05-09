@@ -1032,9 +1032,31 @@ backfill 月のみ ~$5 加算、それ以降は通常運用コストに戻る。
 
 ### Phase 0: PoC（1 週間）
 
-- preprod ネットワークで Blockfrost ＋ Cardano tx submit ＋ metadata 確認
-- DID Document 構築・proof 生成・HTTPS 配信を localhost で完結
-- 第三者検証スクリプトで PoC tx の root と DID Document の proof が整合することを確認
+実装着手前に **必ず preprod / localhost で検証する 6 項目**:
+
+| # | 検証内容 | 失敗時の影響 |
+|---|---|---|
+| **0-1** | Cardano preprod で Blockfrost 経由 tx submit → Cardanoscan 等の explorer で metadata 1985 を確認 | submit パス全体が動かない |
+| **0-2** | GCP KMS Ed25519 鍵で Cardano tx の `signRaw` API 動作確認（CSL の `make_vkey_witness` 互換の署名が得られるか） | wallet 鍵管理の前提が崩れる、設計大幅やり直し |
+| **0-3** | `did:web:civicship.app:users:u_xyz` の DID Document を localhost HTTPS で配信 → 標準 did:web resolver（Veramo / web-did-resolver）で解決確認 | did:web 構文の最終確認 |
+| **0-4** | 第三者検証スクリプト（civicship 非依存 / Blockfrost 不使用、Cardano explorer 経由のみ）で end-to-end 検証 | 「Cardano explorer で確認」運用が成立しない |
+| **0-5** | GIN index 込みの schema migration を localhost PostgreSQL で実走 → `EXPLAIN ANALYZE` で `&&` 検索が GIN index 使用していることを確認 | `/point/verify` が線形スキャンで遅い |
+| **0-6** | metadata label **1985** が CIP-10 (Registered Metadata Labels Registry) で衝突していないことを最終確認（[cardano-foundation/CIPs](https://github.com/cardano-foundation/CIPs/blob/master/CIP-0010/registry.json) の registry.json を直接参照）。衝突時は別番号を再選定（例: civicship 創業年など） | 別 wallet/dApp の metadata 解釈と衝突 |
+
+#### Phase 0 で特に詰めるべき技術的懸念
+
+| 懸念 | 検証内容 | 失敗時の代替 |
+|---|---|---|
+| **Prisma の GIN index native syntax** | `@@index([leafIds], type: Gin)` が text[] 列に対して直接動くか確認。動かなければ `previewFeatures = ["postgresqlExtensions"]` を試行、それでもダメなら raw SQL migration（`CREATE INDEX ... USING GIN (leaf_ids)`）に切替 | raw SQL migration（実装上ほぼ同等、Prisma が認識しないだけ） |
+| **Backfill 時の metadata サイズ** | 100 ユーザー分の DID 操作を実際にバッチ化して Cardano preprod に submit、tx あたり実際に何 op 入るかを実測 | metadata 超過時の自動分割ロジックを strengthen |
+| **Cardano CIP-1852 非準拠の影響** | KMS-backed single payment key で生成したアドレスが Daedalus / Eternl / Lace から「正常な civicship issuer wallet」として閲覧可能か確認 | アドレス形式の調整 |
+
+#### Phase 0 受け入れ基準
+
+- [ ] 6 項目すべて pass
+- [ ] 上記 3 つの技術的懸念について「採用案で動く」または「fallback 案を確定」
+- [ ] preprod 上の検証 tx 数 1 件 ＋ 100 ユーザー分のサンプル backfill が完走
+- [ ] PoC 用コードは throwaway として明記（Phase 1 で書き直す前提）
 
 ### Phase 1: 内製発行（フラグ OFF 配置、2 週間）
 
