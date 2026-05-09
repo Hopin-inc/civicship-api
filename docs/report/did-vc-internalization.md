@@ -133,13 +133,16 @@
 
 #### 3.4.2 候補比較
 
-| 候補 | tx 手数料 | 自前ノード必要 | TS SDK | Ed25519 整合 | 障害クラス | 月次コスト概算 |
+| 候補 | tx 手数料 | 自前ノード | TS SDK | Ed25519 整合 | 障害クラス | 月次コスト概算 |
 |---|---|---|---|---|---|---|
-| **Solana Mainnet** ⭐ | ~$0.001/tx | **不要**（Helius等 RPC 委譲） | 成熟 | ◎ ネイティブ | RPC 障害のみ | **~$1〜2** |
+| **Solana Mainnet** ⭐ | ~$0.001/tx | 不要（Helius等 RPC 委譲） | 成熟 | ◎ ネイティブ | RPC 障害のみ | **~$1〜2** |
+| **Cardano (Blockfrost)** ⭐ | ~$0.07-0.10/tx (0.17 ADA) | 不要（Blockfrost に委譲） | 成熟 (`@blockfrost/blockfrost-js`) | ○ Ed25519 | RPC 障害のみ | **$0（STARTER 無料枠）＋ ADA 手数料 ~$2-3** |
 | Polygon PoS | ~$0.01/tx | 不要（Alchemy等 RPC 委譲） | 成熟 | △ secp256k1 経由 | RPC 障害のみ | ~$5 |
 | Base / Arbitrum | ~$0.001/tx | 不要 | 成熟 | △ secp256k1 経由 | RPC 障害のみ | ~$2 |
-| **Cardano 自前運用** | ~$0.20-0.50/tx | **必要**（フルノード = ディスク負債継続） | 弱め | ○ Ed25519 | **再発の可能性高** | $20+ ＋ VM 運用工数 |
-| IDENTUS 継続 | ベンダ依存 | 不要 | 既存 | ○ | **今回の障害そのもの** | 現行費用 |
+| Cardano 自前フルノード | ~$0.07-0.10/tx | **必要**（ディスク負債継続） | 弱め | ○ Ed25519 | **今回の障害が再発** | $20+ ＋ VM 運用工数 |
+| IDENTUS 継続 | ベンダ依存 | （実態は Cardano 自前ノード同居） | 既存 | ○ | **今回の障害そのもの** | 現行費用 |
+
+> Cardano の月次コストは「1 日 1 anchor、メタデータ ~256B」想定。Blockfrost STARTER は 50,000 req/日まで無料・1 プロジェクト・100MB IPFS で本用途には十分。自前フルノードは選択肢から外して良い。
 
 #### 3.4.3 選定の判断軸
 
@@ -148,24 +151,69 @@
 > **「Cardano にアンカしている」ことが外向きの約束（行政・パートナー・補助金申請・プレスリリース等）になっているか？**
 
 - **YES の場合**:
-  - 第一候補は **Cardano 自前運用**（IDENTUS 廃止＋自前 Cardano ノード or Blockfrost 等の Cardano-RPC SaaS 利用で自前運用ノード負債を回避）
-  - Blockfrost の有料プランを使えばノード運用は不要だが、tx 手数料そのものは Solana の数百倍残る
+  - 第一候補は **Cardano (Blockfrost SaaS 経由)**。フルノードは不要で運用負債は Solana と同等
+  - 自前フルノード運用は今回の障害クラスを引きずるため**選択肢から除外**
 - **NO の場合**:
-  - 第一候補は **Solana Mainnet**（コスト・運用・Ed25519 整合の 3 軸で他を圧倒）
+  - 第一候補は **Solana Mainnet**（tx 手数料が Cardano の 1/70〜1/100、Ed25519 ネイティブ整合）
   - 「Cardano から Solana へ」の移行は実装詳細の話であり、外部に説明する必要なし
 
 #### 3.4.4 暫定推奨（要再確認）
 
-事業確認が取れるまでの暫定推奨は **Solana Mainnet**。理由:
+YES / NO どちらでも **運用負債ゼロ＋月コスト 1 桁 USD** が成立する状況になった。事業確認が取れるまで両案併記:
 
-1. 障害発端が「Cardano フルノードのディスク管理破綻」だったため、同じ構造的リスクを切るのが最大の改善
-2. RPC を Helius / QuickNode 等に委譲することで、運用負債の責務を完全外部化
-3. Ed25519 ネイティブで DID/VC の鍵スキーム（`did:key:z6Mk...` も Ed25519）と整合
-4. Memo Program で契約デプロイ不要、TS SDK 成熟、月次 $1〜2
+- **Cardano 約束あり** → Cardano (Blockfrost STARTER) ＋ ADA 手数料 月 ~$3
+- **Cardano 約束なし** → Solana Mainnet ＋ Helius/QuickNode 月 ~$1-2
+
+いずれにせよ「自前 Cardano フルノードを引き継ぐ」案は不採用。
+
+#### 3.4.5 Cardano 採用時の実装スケッチ
+
+採用時は以下のライブラリで構成:
+
+| 用途 | パッケージ | 役割 |
+|---|---|---|
+| Blockfrost API | `@blockfrost/blockfrost-js` | tx submit / metadata 取得 / UTXO 取得 / プロトコルパラメータ取得 |
+| tx 構築 | `@emurgo/cardano-serialization-lib-nodejs` | UTXO 選択、metadata 添付、署名 |
+
+主要メソッド（master ソース確認済み）:
+
+```ts
+import { BlockFrostAPI } from "@blockfrost/blockfrost-js";
+import * as CSL from "@emurgo/cardano-serialization-lib-nodejs";
+
+const api = new BlockFrostAPI({ projectId: process.env.BLOCKFROST_PROJECT_ID });
+
+// 1. プロトコルパラメータ取得（手数料計算に必要）
+const params = await api.epochsLatestParameters();
+
+// 2. メタデータ構築（CIP-20 互換ラベル 674）
+const generalMeta = CSL.GeneralTransactionMetadata.new();
+generalMeta.insert(
+  CSL.BigNum.from_str("674"),
+  CSL.encode_json_str_to_metadatum(
+    JSON.stringify({ root: merkleRootHex, ts: Date.now() }),
+    CSL.MetadataJsonSchema.NoConversions,
+  ),
+);
+const auxData = CSL.AuxiliaryData.new();
+auxData.set_metadata(generalMeta);
+
+// 3. tx 構築 → 署名 → submit
+const txBuilder = CSL.TransactionBuilder.new(/* params から組成 */);
+txBuilder.set_auxiliary_data(auxData);
+// ...inputs/outputs/change を組み build
+const signedTx = signTransaction(txBuilder.build(), signKey);
+const txHash = await api.txSubmit(signedTx.to_bytes());
+
+// 4. 第三者検証: ラベル 674 の全 anchor tx を取得
+const allAnchors = await api.metadataTxsLabel(674);
+```
+
+メタデータ上限 16 KB / tx（Cardano プロトコル制約）— Merkle root 32B には十分。
 
 **確定前のアクション（事業側）**:
 - [ ] 「Cardano にアンカしている」が約束に組み込まれているか確認（pitch deck / 行政提出物 / 補助金 / パートナー契約）
-- [ ] 確認結果を §11 オープンクエスチョンに追記し、本セクションの「⭐」を確定する
+- [ ] 確認結果を §11 オープンクエスチョン Q0 に追記し、本セクションの「⭐」のいずれかを確定する
 
 ---
 
