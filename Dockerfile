@@ -50,11 +50,6 @@ RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 # Copy lockfile + manifests first so subsequent layers cache well.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
-# Patch files referenced by `pnpm.patchedDependencies` in package.json must be
-# present at install/prune time, otherwise `pnpm prune --prod` aborts with
-# `ENOENT: patches/*.patch`. Copy before any pnpm invocation.
-COPY patches ./patches
-
 # Pre-built artifacts copied from the CI runner build context.
 COPY node_modules ./node_modules
 COPY dist ./dist

@@ -20,11 +20,6 @@ RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
-# Patch files referenced by `pnpm.patchedDependencies` in package.json must be
-# present at install/prune time, otherwise `pnpm prune --prod` aborts with
-# `ENOENT: patches/*.patch`. Copy before any pnpm invocation.
-COPY patches ./patches
-
 COPY node_modules ./node_modules
 COPY dist ./dist
 
