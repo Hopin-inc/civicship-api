@@ -206,7 +206,7 @@ describe("ReportUseCase.generateReport", () => {
       {
         input: {
           communityId,
-          variant: GqlReportVariant.WeeklySummary,
+          variant: GqlReportVariant.GqlWeeklySummary,
           periodFrom: new Date("2026-04-11"),
           periodTo: new Date("2026-04-17"),
         },
@@ -247,7 +247,7 @@ describe("ReportUseCase.generateReport", () => {
       {
         input: {
           communityId,
-          variant: GqlReportVariant.WeeklySummary,
+          variant: GqlReportVariant.GqlWeeklySummary,
           periodFrom: new Date("2026-04-11"),
           periodTo: new Date("2026-04-17"),
           parentRunId: parentId,
@@ -337,7 +337,7 @@ describe("ReportUseCase.generateReport", () => {
       {
         input: {
           communityId,
-          variant: GqlReportVariant.WeeklySummary,
+          variant: GqlReportVariant.GqlWeeklySummary,
           periodFrom: new Date("2026-04-11"),
           periodTo: new Date("2026-04-17"),
         },
@@ -414,7 +414,7 @@ describe("ReportUseCase.generateReport", () => {
     };
     const judgeTemplate = {
       id: "judge-tpl-1",
-      variant: GqlReportVariant.WeeklySummary,
+      variant: GqlReportVariant.GqlWeeklySummary,
       kind: "JUDGE",
       systemPrompt: "judge system",
       userPromptTemplate: "${judge_criteria}/${input_payload}/${output_markdown}",
@@ -460,7 +460,7 @@ describe("ReportUseCase.generateReport", () => {
         {
           input: {
             communityId,
-            variant: GqlReportVariant.WeeklySummary,
+            variant: GqlReportVariant.GqlWeeklySummary,
             periodFrom: new Date("2026-04-11"),
             periodTo: new Date("2026-04-17"),
           },
@@ -538,7 +538,7 @@ describe("ReportUseCase.generateReport", () => {
         {
           input: {
             communityId,
-            variant: GqlReportVariant.WeeklySummary,
+            variant: GqlReportVariant.GqlWeeklySummary,
             periodFrom: new Date("2026-04-11"),
             periodTo: new Date("2026-04-17"),
           },
@@ -571,7 +571,7 @@ describe("ReportUseCase.generateReport", () => {
         {
           input: {
             communityId,
-            variant: GqlReportVariant.WeeklySummary,
+            variant: GqlReportVariant.GqlWeeklySummary,
             periodFrom: new Date("2026-04-11"),
             periodTo: new Date("2026-04-17"),
           },
@@ -608,7 +608,7 @@ describe("ReportUseCase.generateReport", () => {
         {
           input: {
             communityId,
-            variant: GqlReportVariant.WeeklySummary,
+            variant: GqlReportVariant.GqlWeeklySummary,
             periodFrom: new Date("2026-04-11"),
             periodTo: new Date("2026-04-17"),
           },
@@ -765,7 +765,7 @@ describe("ReportUseCase.updateReportTemplate trafficWeight validation (PR-F3)", 
       await expect(
         usecase.updateReportTemplate(
           {
-            variant: GqlReportVariant.WeeklySummary,
+            variant: GqlReportVariant.GqlWeeklySummary,
             input: { ...baseInput, trafficWeight } as never,
           },
           fakeCtx,
@@ -779,7 +779,7 @@ describe("ReportUseCase.updateReportTemplate trafficWeight validation (PR-F3)", 
     const { usecase, service } = makeUseCase();
     await usecase.updateReportTemplate(
       {
-        variant: GqlReportVariant.WeeklySummary,
+        variant: GqlReportVariant.GqlWeeklySummary,
         input: { ...baseInput, trafficWeight: 50 } as never,
       },
       fakeCtx,
@@ -791,7 +791,7 @@ describe("ReportUseCase.updateReportTemplate trafficWeight validation (PR-F3)", 
     const { usecase, service } = makeUseCase();
     await usecase.updateReportTemplate(
       {
-        variant: GqlReportVariant.WeeklySummary,
+        variant: GqlReportVariant.GqlWeeklySummary,
         input: baseInput as never,
       },
       fakeCtx,
@@ -957,7 +957,7 @@ describe("ReportUseCase A-3 community last-publish pointer maintenance", () => {
       {
         input: {
           communityId,
-          variant: GqlReportVariant.WeeklySummary,
+          variant: GqlReportVariant.GqlWeeklySummary,
           periodFrom: new Date("2026-04-11"),
           periodTo: new Date("2026-04-17"),
           parentRunId: "parent-pub",
@@ -995,7 +995,7 @@ describe("ReportUseCase A-3 community last-publish pointer maintenance", () => {
         {
           input: {
             communityId,
-            variant: GqlReportVariant.WeeklySummary,
+            variant: GqlReportVariant.GqlWeeklySummary,
             periodFrom: new Date("2026-04-11"),
             periodTo: new Date("2026-04-17"),
             parentRunId: "parent-x",
@@ -1049,7 +1049,7 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
   it("listReportTemplates defaults kind to GENERATION when caller omits it", async () => {
     await usecase.listReportTemplates(
       {
-        variant: GqlReportVariant.WeeklySummary,
+        variant: GqlReportVariant.GqlWeeklySummary,
       },
       fakeCtx,
     );
@@ -1057,7 +1057,7 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
     // requires a non-null kind on the where clause.
     expect(service.listTemplates).toHaveBeenCalledWith(
       fakeCtx,
-      GqlReportVariant.WeeklySummary,
+      GqlReportVariant.GqlWeeklySummary,
       null,
       "GENERATION",
       false,
@@ -1067,7 +1067,7 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
   it("listReportTemplates threads explicit JUDGE kind through", async () => {
     await usecase.listReportTemplates(
       {
-        variant: GqlReportVariant.WeeklySummary,
+        variant: GqlReportVariant.GqlWeeklySummary,
         kind: "JUDGE" as never,
         includeInactive: true,
       },
@@ -1075,7 +1075,7 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
     );
     expect(service.listTemplates).toHaveBeenCalledWith(
       fakeCtx,
-      GqlReportVariant.WeeklySummary,
+      GqlReportVariant.GqlWeeklySummary,
       null,
       "JUDGE",
       true,
@@ -1087,7 +1087,7 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
       {
         communityId,
         status: ReportStatus.PUBLISHED,
-        variant: GqlReportVariant.WeeklySummary,
+        variant: GqlReportVariant.GqlWeeklySummary,
         publishedAfter: "2026-01-01T00:00:00Z" as never,
         publishedBefore: "2026-04-01T00:00:00Z" as never,
         cursor: "cursor-x",
@@ -1100,7 +1100,7 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
       expect.objectContaining({
         communityId,
         status: ReportStatus.PUBLISHED,
-        variant: GqlReportVariant.WeeklySummary,
+        variant: GqlReportVariant.GqlWeeklySummary,
         publishedAfter: expect.any(Date),
         publishedBefore: expect.any(Date),
         cursor: "cursor-x",

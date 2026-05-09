@@ -31,7 +31,7 @@ export default class TicketIssuerConverter {
       owner: { connect: { id: userId } },
       claimLink: {
         create: {
-          status: GqlClaimLinkStatus.Issued,
+          status: GqlClaimLinkStatus.GqlIssued,
         },
       },
     };

@@ -175,7 +175,7 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
           ],
         },
@@ -199,7 +199,7 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
           ],
         },
@@ -226,7 +226,7 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
           ],
         },
@@ -269,7 +269,7 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
           ],
         },
@@ -301,7 +301,7 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
           ],
         },
@@ -329,7 +329,7 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
           ],
         },
@@ -389,12 +389,12 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
             {
               participationId: secondParticipation.id,
               comment: "Second evaluation",
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
           ],
         },
@@ -429,7 +429,7 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: testSetup.comment,
-              status: GqlEvaluationStatus.Failed,
+              status: GqlEvaluationStatus.GqlFailed,
             },
           ],
         },
@@ -476,17 +476,17 @@ describe("Point Reward Tests", () => {
             {
               participationId,
               comment: "Passed evaluation",
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
             {
               participationId: secondParticipation.id,
               comment: "Failed evaluation",
-              status: GqlEvaluationStatus.Failed,
+              status: GqlEvaluationStatus.GqlFailed,
             },
             {
               participationId: thirdParticipation.id,
               comment: "Another passed evaluation",
-              status: GqlEvaluationStatus.Passed,
+              status: GqlEvaluationStatus.GqlPassed,
             },
           ],
         },

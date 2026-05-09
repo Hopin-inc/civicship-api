@@ -283,7 +283,7 @@ export default class IdentityUseCase {
             });
 
             return {
-              status: GqlPhoneUserStatus.ExistingSameCommunity,
+              status: GqlPhoneUserStatus.GqlExistingSameCommunity,
               user: userByLineIdentity,
               membership: existingMembershipForLineUser,
             };
@@ -343,7 +343,7 @@ export default class IdentityUseCase {
             this.sendSignupBonusNotification(ctx, joinResult.signupBonusResult, userByLineIdentity.id);
 
             return {
-              status: GqlPhoneUserStatus.ExistingDifferentCommunity,
+              status: GqlPhoneUserStatus.GqlExistingDifferentCommunity,
               user: userByLineIdentity,
               membership: joinResult.membership,
             };
@@ -356,7 +356,7 @@ export default class IdentityUseCase {
         communityId: ctx.communityId,
       });
       return {
-        status: GqlPhoneUserStatus.NewUser,
+        status: GqlPhoneUserStatus.GqlNewUser,
         user: null,
         membership: null,
       };
@@ -446,7 +446,7 @@ export default class IdentityUseCase {
         membershipCommunityId: existingMembership.communityId,
       });
       return {
-        status: GqlPhoneUserStatus.ExistingSameCommunity,
+        status: GqlPhoneUserStatus.GqlExistingSameCommunity,
         user: existingUser,
         membership: existingMembership,
       };
@@ -588,7 +588,7 @@ export default class IdentityUseCase {
     this.sendSignupBonusNotification(ctx, joinResult.signupBonusResult, existingUser.id);
 
     return {
-      status: GqlPhoneUserStatus.ExistingDifferentCommunity,
+      status: GqlPhoneUserStatus.GqlExistingDifferentCommunity,
       user: existingUser,
       membership: joinResult.membership,
     };

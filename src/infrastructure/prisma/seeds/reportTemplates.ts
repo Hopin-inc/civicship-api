@@ -79,7 +79,7 @@ interface TemplateDefinition {
 
 const TEMPLATES: TemplateDefinition[] = [
   {
-    variant: GqlReportVariant.WeeklySummary,
+    variant: GqlReportVariant.GqlWeeklySummary,
     // PR-C: align seed values to the actual prd state. PR-A's original
     // 90/10 canary design assumed v1 was the production prompt and v2
     // would ramp from 10%; the prd inspection (2026-04-30) showed the
@@ -125,7 +125,7 @@ const TEMPLATES: TemplateDefinition[] = [
 \${payload_json}`,
   },
   {
-    variant: GqlReportVariant.WeeklySummary,
+    variant: GqlReportVariant.GqlWeeklySummary,
     version: 2,
     // PR-C: v2 was already serving 100% of traffic in prd before PR-A
     // (v1 had been retired separately). Keep the 100% weight so re-
@@ -234,7 +234,7 @@ ${COMMON_RULES}`,
 \${payload_json}`,
   },
   {
-    variant: GqlReportVariant.GrantApplication,
+    variant: GqlReportVariant.GqlGrantApplication,
     model: "claude-sonnet-4-6",
     maxTokens: 8192,
     // PR-A v5: 0.5 → 0.3. Reviewers/funders read this as a factual record;
@@ -321,7 +321,7 @@ ${COMMON_RULES}`,
 \${payload_json}`,
   },
   {
-    variant: GqlReportVariant.MediaPr,
+    variant: GqlReportVariant.GqlMediaPr,
     model: "claude-sonnet-4-6",
     maxTokens: 8192,
     // PR-A v5: 0.7 維持。読者を引き込むトーン制御に幅が必要なため、
@@ -397,7 +397,7 @@ ${COMMON_RULES}`,
 \${payload_json}`,
   },
   {
-    variant: GqlReportVariant.WeeklySummary,
+    variant: GqlReportVariant.GqlWeeklySummary,
     kind: ReportTemplateKind.JUDGE,
     // Haiku is intentional: judge runs after every generation and the
     // workload is small (single JSON output) so the price/latency
@@ -455,7 +455,7 @@ ${COMMON_RULES}`,
 上記の形式の JSON のみを出力してください。`,
   },
   {
-    variant: GqlReportVariant.MemberNewsletter,
+    variant: GqlReportVariant.GqlMemberNewsletter,
     model: "claude-sonnet-4-6",
     maxTokens: 4096,
     temperature: 0.7,

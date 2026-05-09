@@ -40,8 +40,8 @@ describe("TicketClaimLinkService", () => {
   describe("validateBeforeClaim", () => {
     const claimLinkId = "claim-link-id";
 
-    const errorStatuses = [GqlClaimLinkStatus.Claimed, GqlClaimLinkStatus.Expired];
-    const validStatuses = [GqlClaimLinkStatus.Issued];
+    const errorStatuses = [GqlClaimLinkStatus.GqlClaimed, GqlClaimLinkStatus.GqlExpired];
+    const validStatuses = [GqlClaimLinkStatus.GqlIssued];
 
     it("should throw NotFoundError if link not found", async () => {
       mockRepository.find.mockResolvedValue(null);

@@ -86,7 +86,7 @@ describe("NftTokenConverter.sort", () => {
   });
 
   it("sorts by createdAt asc", () => {
-    expect(converter.sort({ createdAt: GqlSortDirection.Asc })).toEqual([
+    expect(converter.sort({ createdAt: GqlSortDirection.GqlAsc })).toEqual([
       { createdAt: "asc" },
       { id: "asc" },
     ]);
@@ -94,8 +94,8 @@ describe("NftTokenConverter.sort", () => {
 
   it("combines multiple sort fields in declared order + id asc tiebreaker", () => {
     const result = converter.sort({
-      name: GqlSortDirection.Asc,
-      address: GqlSortDirection.Desc,
+      name: GqlSortDirection.GqlAsc,
+      address: GqlSortDirection.GqlDesc,
     });
     expect(result).toEqual([{ name: "asc" }, { address: "desc" }, { id: "asc" }]);
   });

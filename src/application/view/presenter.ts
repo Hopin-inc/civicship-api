@@ -21,7 +21,7 @@ export default class ViewPresenter {
     return {
       id: article.id,
       title: article.title,
-      source: GqlPortfolioSource.Article,
+      source: GqlPortfolioSource.GqlArticle,
       category: article.category,
       date: article.publishedAt,
       thumbnailUrl,
@@ -60,7 +60,7 @@ function buildFromPersonalRecord(p: PrismaParticipationForPortfolioInclude): Gql
     return {
       id: p.id,
       title: opportunity.title,
-      source: GqlPortfolioSource.Opportunity,
+      source: GqlPortfolioSource.GqlOpportunity,
       category: opportunity.category,
       reservationStatus: null,
       evaluationStatus: e.status,
@@ -78,7 +78,7 @@ function buildFromPersonalRecord(p: PrismaParticipationForPortfolioInclude): Gql
   return {
     id: p.id,
     title: opportunity.title,
-    source: GqlPortfolioSource.Opportunity,
+    source: GqlPortfolioSource.GqlOpportunity,
     category: opportunity.category,
     reservationStatus: null,
     evaluationStatus: e?.status ?? null,
@@ -106,7 +106,7 @@ function buildFromReservation(p: PrismaParticipationForPortfolioInclude): GqlPor
     return {
       id: e.vcIssuanceRequest.id,
       title: opportunity.title,
-      source: GqlPortfolioSource.Opportunity,
+      source: GqlPortfolioSource.GqlOpportunity,
       category: opportunity.category,
       reservationStatus: p.reservation?.status ?? null,
       evaluationStatus: e.status,
@@ -124,7 +124,7 @@ function buildFromReservation(p: PrismaParticipationForPortfolioInclude): GqlPor
   return {
     id: p.id,
     title: opportunity.title,
-    source: GqlPortfolioSource.Opportunity,
+    source: GqlPortfolioSource.GqlOpportunity,
     category: opportunity.category,
     reservationStatus: p.reservation?.status ?? null,
     evaluationStatus: e?.status ?? null,

@@ -59,7 +59,7 @@ interface GoldenCaseDefinition {
 // ---------------------------------------------------------------------------
 
 const sparseCase: GoldenCaseDefinition = {
-  variant: GqlReportVariant.WeeklySummary,
+  variant: GqlReportVariant.GqlWeeklySummary,
   label: "sparse-but-meaningful",
   minJudgeScore: 70,
   judgeCriteria: {
@@ -219,7 +219,7 @@ const sparseCase: GoldenCaseDefinition = {
 // ---------------------------------------------------------------------------
 
 const zeroActivityCase: GoldenCaseDefinition = {
-  variant: GqlReportVariant.WeeklySummary,
+  variant: GqlReportVariant.GqlWeeklySummary,
   label: "zero-activity",
   // minJudgeScore is unused for SKIPPED-expected cases (the CI harness
   // never invokes the judge), but we keep it at 0 so a future
@@ -286,7 +286,7 @@ const zeroActivityCase: GoldenCaseDefinition = {
 // ---------------------------------------------------------------------------
 
 const bustlingCase: GoldenCaseDefinition = {
-  variant: GqlReportVariant.WeeklySummary,
+  variant: GqlReportVariant.GqlWeeklySummary,
   label: "bustling-mixed-reason",
   minJudgeScore: 75,
   judgeCriteria: {
@@ -489,7 +489,7 @@ const bustlingCase: GoldenCaseDefinition = {
 // ---------------------------------------------------------------------------
 
 const sparseCaseV2: GoldenCaseDefinition = {
-  variant: GqlReportVariant.WeeklySummary,
+  variant: GqlReportVariant.GqlWeeklySummary,
   label: "sparse-but-meaningful-v2",
   minJudgeScore: 70,
   templateVersion: 2,
@@ -506,7 +506,7 @@ const sparseCaseV2: GoldenCaseDefinition = {
 };
 
 const bustlingCaseV2: GoldenCaseDefinition = {
-  variant: GqlReportVariant.WeeklySummary,
+  variant: GqlReportVariant.GqlWeeklySummary,
   label: "bustling-mixed-reason-v2",
   minJudgeScore: 75,
   templateVersion: 2,

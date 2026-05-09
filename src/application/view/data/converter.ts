@@ -87,9 +87,9 @@ export default class ViewConverter {
 
   sort(sort?: GqlPortfolioSortInput): Prisma.SortOrder {
     switch (sort?.date) {
-      case GqlSortDirection.Asc:
+      case GqlSortDirection.GqlAsc:
         return "asc";
-      case GqlSortDirection.Desc:
+      case GqlSortDirection.GqlDesc:
         return "desc";
       default:
         return "desc";

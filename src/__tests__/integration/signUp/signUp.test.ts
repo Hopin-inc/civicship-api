@@ -39,7 +39,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
 
     const ctx: IContext = {
       uid: `uid-${uniqueId}`,
-      platform: GqlIdentityPlatform.Line,
+      platform: GqlIdentityPlatform.GqlLine,
       communityId: community.id,
       issuer,
     } as IContext;
@@ -48,7 +48,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
       input: {
         name: "Test User",
         slug: `test-user-${uniqueId}`,
-        currentPrefecture: GqlCurrentPrefecture.Kagawa,
+        currentPrefecture: GqlCurrentPrefecture.GqlKagawa,
         phoneUid: `test-phone-uid-${uniqueId}`,
         phoneAccessToken: "test-phone-access-token",
       },

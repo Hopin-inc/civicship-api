@@ -111,7 +111,7 @@ export default class MembershipService {
     await this.findMembershipOrThrow(ctx, userId, communityId, tx);
 
     const data = this.converter.update(
-      GqlMembershipStatus.Joined,
+      GqlMembershipStatus.GqlJoined,
       MembershipStatusReason.ASSIGNED,
       role,
       currentUserId,

@@ -24,8 +24,8 @@ function makeValidUpdateInput(overrides: Record<string, unknown> = {}) {
     description: "Updated description",
     startsAt: new Date(now.getTime() + 120_000),
     endsAt: new Date(now.getTime() + 7_200_000),
-    gate: { type: GqlVoteGateType.Membership },
-    powerPolicy: { type: GqlVotePowerPolicyType.Flat },
+    gate: { type: GqlVoteGateType.GqlMembership },
+    powerPolicy: { type: GqlVotePowerPolicyType.GqlFlat },
     options: [
       { label: "Updated Option A", orderIndex: 0 },
       { label: "Updated Option B", orderIndex: 1 },
@@ -150,7 +150,7 @@ describe("Vote Integration: VoteTopicUpdate", () => {
     const result = await voteUseCase.managerUpdateVoteTopic(ctx, {
       id: topic.id,
       input: makeValidUpdateInput({
-        gate: { type: GqlVoteGateType.Nft, nftTokenId: nftToken.id },
+        gate: { type: GqlVoteGateType.GqlNft, nftTokenId: nftToken.id },
       }),
       permission: { communityId: community.id },
     });
@@ -182,7 +182,7 @@ describe("Vote Integration: VoteTopicUpdate", () => {
     const result = await voteUseCase.managerUpdateVoteTopic(ctx, {
       id: topic.id,
       input: makeValidUpdateInput({
-        powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: nftToken.id },
+        powerPolicy: { type: GqlVotePowerPolicyType.GqlNftCount, nftTokenId: nftToken.id },
       }),
       permission: { communityId: community.id },
     });
@@ -406,8 +406,8 @@ describe("Vote Integration: VoteTopicUpdate", () => {
       voteUseCase.managerUpdateVoteTopic(ctx, {
         id: topic.id,
         input: makeValidUpdateInput({
-          gate: { type: GqlVoteGateType.Nft, nftTokenId: tokenA.id },
-          powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: tokenB.id },
+          gate: { type: GqlVoteGateType.GqlNft, nftTokenId: tokenA.id },
+          powerPolicy: { type: GqlVotePowerPolicyType.GqlNftCount, nftTokenId: tokenB.id },
         }),
         permission: { communityId: community.id },
       }),

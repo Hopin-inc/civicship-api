@@ -60,7 +60,7 @@ describe("End-to-End User Journey Integration Tests", () => {
 
     const signupCtx: IContext = {
       uid: `uid-${uniqueId}`,
-      platform: GqlIdentityPlatform.Line,
+      platform: GqlIdentityPlatform.GqlLine,
       communityId: community.id,
       issuer,
     } as IContext;
@@ -69,7 +69,7 @@ describe("End-to-End User Journey Integration Tests", () => {
       input: {
         name: "Test User",
         slug: `test-user-${uniqueId}`,
-        currentPrefecture: GqlCurrentPrefecture.Kagawa,
+        currentPrefecture: GqlCurrentPrefecture.GqlKagawa,
         phoneUid: `test-phone-uid-${uniqueId}`,
         phoneAccessToken: "test-phone-access-token",
       },

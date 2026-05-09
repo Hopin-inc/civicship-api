@@ -1,12 +1,10 @@
 diff --git a/cjs/convert-schema-enum-to-declaration-block-string.js b/cjs/convert-schema-enum-to-declaration-block-string.js
-index 4db57412612e478faae6e566a7050a519d6dc1a5..32f5cafec7e5c7a672df94051b3784d596f14e40 100644
+index 4db57412612e478faae6e566a7050a519d6dc1a5..81629bd3a0976b79d214e0cf489f32f40c285355 100644
 --- a/cjs/convert-schema-enum-to-declaration-block-string.js
 +++ b/cjs/convert-schema-enum-to-declaration-block-string.js
-@@ -77,8 +77,9 @@ const convertSchemaEnumToDeclarationBlockString = ({ schema, node, enumName, enu
-             .map(enumOption => {
+@@ -78,7 +78,7 @@ const convertSchemaEnumToDeclarationBlockString = ({ schema, node, enumName, enu
              const optionName = makeValidEnumIdentifier((0, naming_js_1.convertName)({
                  options: {
-+                    useTypesPrefix: false,
                      typesPrefix: naming.options.typesPrefix,
 -                    typesSuffix: naming.options.typesPrefix,
 +                    typesSuffix: naming.options.typesSuffix,
@@ -14,14 +12,12 @@ index 4db57412612e478faae6e566a7050a519d6dc1a5..32f5cafec7e5c7a672df94051b3784d5
                  convert: () => naming.convert(enumOption, {
                      transformUnderscore: true,
 diff --git a/esm/convert-schema-enum-to-declaration-block-string.js b/esm/convert-schema-enum-to-declaration-block-string.js
-index 4d7438f681220e14cca71741f0875934fd70c4a6..5dfded02990584e45c8fb148adfb85a4f89c4bf8 100644
+index 4d7438f681220e14cca71741f0875934fd70c4a6..996ce08ca1696c4140ed353a5865acd64fbb1d6b 100644
 --- a/esm/convert-schema-enum-to-declaration-block-string.js
 +++ b/esm/convert-schema-enum-to-declaration-block-string.js
-@@ -74,8 +74,9 @@ export const convertSchemaEnumToDeclarationBlockString = ({ schema, node, enumNa
-             .map(enumOption => {
+@@ -75,7 +75,7 @@ export const convertSchemaEnumToDeclarationBlockString = ({ schema, node, enumNa
              const optionName = makeValidEnumIdentifier(convertName({
                  options: {
-+                    useTypesPrefix: false,
                      typesPrefix: naming.options.typesPrefix,
 -                    typesSuffix: naming.options.typesPrefix,
 +                    typesSuffix: naming.options.typesSuffix,

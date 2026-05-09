@@ -443,7 +443,7 @@ export default class ReservationUseCase {
     ticketIds?: string[],
   ): Promise<void> {
     if (requiredUtilities.length === 0) return;
-    if (paymentMethod !== GqlReservationPaymentMethod.Ticket) return;
+    if (paymentMethod !== GqlReservationPaymentMethod.GqlTicket) return;
 
     await this.ticketService.reserveManyTickets(ctx, participationIds, tx, ticketIds);
   }
@@ -454,7 +454,7 @@ export default class ReservationUseCase {
     input: GqlReservationCancelInput,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-    if (input.paymentMethod !== GqlReservationPaymentMethod.Ticket) return;
+    if (input.paymentMethod !== GqlReservationPaymentMethod.GqlTicket) return;
     if (!input.ticketIdsIfExists?.length) return;
 
     const tickets = await this.ticketService.fetchTicketsByIds(ctx, input.ticketIdsIfExists);

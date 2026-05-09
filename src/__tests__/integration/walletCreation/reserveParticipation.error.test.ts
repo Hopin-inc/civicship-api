@@ -37,7 +37,7 @@ describe("Reservation Error Handling Tests", () => {
     const input: GqlReservationCreateInput = {
       opportunitySlotId: "non-existent-slot-id",
       totalParticipantCount: 1,
-      paymentMethod: GqlReservationPaymentMethod.Ticket,
+      paymentMethod: GqlReservationPaymentMethod.GqlTicket,
     };
 
     await expect(
@@ -79,7 +79,7 @@ describe("Reservation Error Handling Tests", () => {
     const input: GqlReservationCreateInput = {
       opportunitySlotId: slot.id,
       totalParticipantCount: 0,
-      paymentMethod: GqlReservationPaymentMethod.Ticket,
+      paymentMethod: GqlReservationPaymentMethod.GqlTicket,
     };
 
     const result = await useCase.userReserveParticipation({ input }, ctx);
@@ -120,7 +120,7 @@ describe("Reservation Error Handling Tests", () => {
     const input: GqlReservationCreateInput = {
       opportunitySlotId: slot.id,
       totalParticipantCount: 5, // Exceeds capacity of 2
-      paymentMethod: GqlReservationPaymentMethod.Ticket,
+      paymentMethod: GqlReservationPaymentMethod.GqlTicket,
     };
 
     await expect(
@@ -162,7 +162,7 @@ describe("Reservation Error Handling Tests", () => {
     const input: GqlReservationCreateInput = {
       opportunitySlotId: slot.id,
       totalParticipantCount: 1,
-      paymentMethod: GqlReservationPaymentMethod.Ticket,
+      paymentMethod: GqlReservationPaymentMethod.GqlTicket,
     };
 
     // 実装 (utils.ts:10 AuthorizationError) は "User must be logged in" を投げる
