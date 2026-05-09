@@ -30,8 +30,8 @@ importers:
   .:
     dependencies:
       '@anthropic-ai/sdk':
-        specifier: ^0.90.0
-        version: 0.90.0
+        specifier: ^0.91.1
+        version: 0.91.1
       '@apollo/server':
         specifier: ^4.13.0
         version: 4.13.0(graphql@16.10.0)
@@ -233,7 +233,7 @@ importers:
         version: 5.1.8(graphql@16.10.0)
       '@mermaid-js/mermaid-cli':
         specifier: ^11.14.0
-        version: 11.14.0(@babel/core@7.29.0)(@babel/template@7.28.6)(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.3)
+        version: 11.14.0(@babel/core@7.29.0)(@babel/template@7.28.6)(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.4)
       '@ngneat/falso':
         specifier: ^7.3.0
         version: 7.4.0
@@ -323,7 +323,7 @@ importers:
         version: 0.12.0
       prisma-erd-generator:
         specifier: ^2.4.2
-        version: 2.4.2(@babel/core@7.29.0)(@babel/template@7.28.6)(@prisma/client@6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3))(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.3)
+        version: 2.4.2(@babel/core@7.29.0)(@babel/template@7.28.6)(@prisma/client@6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3))(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.4)
       prisma-json-types-generator:
         specifier: ^3.3.0
         version: 3.5.1(@prisma/client@6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3))(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3)
@@ -368,8 +368,8 @@ packages:
     resolution: {integrity: sha512-O0Uv9LbLDSoEg26fnMDdDRiPwFJnQSoD4WnrflDwKCJm8Cx/0mV4cGxwBLXan5mGIrpK4Dd7vizf4rQm0QCEAA==}
     hasBin: true
 
-  '@anthropic-ai/sdk@0.90.0':
-    resolution: {integrity: sha512-MzZtPabJF1b0FTDl6Z6H5ljphPwACLGP13lu8MTiB8jXaW/YXlpOp+Po2cVou3MPM5+f5toyLnul9whKCy7fBg==}
+  '@anthropic-ai/sdk@0.91.1':
+    resolution: {integrity: sha512-LAmu761tSN9r66ixvmciswUj/ZC+1Q4iAfpedTfSVLeswRwnY3n2Nb6Tsk+cLPP28aLOPWeMgIuTuCcMC6W/iw==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -1277,10 +1277,6 @@ packages:
     resolution: {integrity: sha512-HrcgcIESLm9aIR842yhJ5RWan/gebQUJ6E/E5+rf0y9o6oj7w0Br+sWuL6kEQ/o/AdfvR1Je9jG18/gnpwjEyA==}
     peerDependencies:
       '@babel/core': ^7.0.0-0 || ^8.0.0-0 <8.0.0
-
-  '@babel/runtime@7.27.6':
-    resolution: {integrity: sha512-vbavdySgbTTrmFE+EsiqUTzlOr5bzlnJtUv9PynGCAKvfQqjIXbvFdumPM/GxMDfyuGMJaJAU6TO4zc1Jf1i8Q==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/runtime@7.29.2':
     resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
@@ -7391,6 +7387,9 @@ packages:
   pump@3.0.3:
     resolution: {integrity: sha512-todwxLMY7/heScKmntwQG8CXVkWUOdYxIvY2s0VWAAMh/nd8SoYiRaKjlr7+iCs984f2P8zvrfWcDDYVb73NfA==}
 
+  pump@3.0.4:
+    resolution: {integrity: sha512-VS7sjc6KR7e1ukRFhQSY5LM2uBWAUPiOPa/A3mkKmiMwSmRFUITt0xuj+/lesgnCv+dPIEYlkzrcyXgquIHMcA==}
+
   pumpify@2.0.1:
     resolution: {integrity: sha512-m7KOje7jZxrmutanlkS1daj1dS6z6BgslzOXmcSEpIlCxM3VJH7lG5QLeck/6hgF6F4crFf01UtQmNsJfweTAw==}
 
@@ -8671,6 +8670,11 @@ packages:
     engines: {node: '>= 14.6'}
     hasBin: true
 
+  yaml@2.8.4:
+    resolution: {integrity: sha512-ml/JPOj9fOQK8RNnWojA67GbZ0ApXAUlN2UQclwv2eVgTgn7O9gg9o7paZWKMp4g0H3nTLtS9LVzhkpOFIKzog==}
+    engines: {node: '>= 14.6'}
+    hasBin: true
+
   yargs-parser@20.2.9:
     resolution: {integrity: sha512-y11nGElTIV+CT3Zv9t7VKl+Q3hTQoT9a1Qzezhhl6Rp21gJ/IVTW7Z3y9EWXhuUBC2Shnf+DX0antecpAwSP8w==}
     engines: {node: '>=10'}
@@ -8721,7 +8725,7 @@ snapshots:
 
   '@antfu/ni@0.21.4': {}
 
-  '@anthropic-ai/sdk@0.90.0':
+  '@anthropic-ai/sdk@0.91.1':
     dependencies:
       json-schema-to-ts: 3.1.1
 
@@ -10228,8 +10232,6 @@ snapshots:
       '@babel/types': 7.29.0
       esutils: 2.0.3
 
-  '@babel/runtime@7.27.6': {}
-
   '@babel/runtime@7.29.2': {}
 
   '@babel/template@7.28.6':
@@ -11527,9 +11529,9 @@ snapshots:
       react-dom: 19.2.5(react@19.2.5)
       use-sync-external-store: 1.6.0(react@19.2.5)
 
-  '@headlessui/tailwindcss@0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))':
+  '@headlessui/tailwindcss@0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.4))':
     dependencies:
-      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.4)
 
   '@humanfs/core@0.19.1': {}
 
@@ -11991,10 +11993,10 @@ snapshots:
       elkjs: 0.9.3
       mermaid: 11.14.0
 
-  '@mermaid-js/mermaid-cli@11.14.0(@babel/core@7.29.0)(@babel/template@7.28.6)(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.3)':
+  '@mermaid-js/mermaid-cli@11.14.0(@babel/core@7.29.0)(@babel/template@7.28.6)(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.4)':
     dependencies:
       '@mermaid-js/layout-elk': 0.2.1(mermaid@11.14.0)
-      '@mermaid-js/mermaid-zenuml': 0.2.2(@babel/core@7.29.0)(@babel/template@7.28.6)(mermaid@11.14.0)(tsx@4.21.0)(yaml@2.8.3)
+      '@mermaid-js/mermaid-zenuml': 0.2.2(@babel/core@7.29.0)(@babel/template@7.28.6)(mermaid@11.14.0)(tsx@4.21.0)(yaml@2.8.4)
       chalk: 5.6.2
       commander: 13.1.0
       import-meta-resolve: 4.2.0
@@ -12007,9 +12009,9 @@ snapshots:
       - tsx
       - yaml
 
-  '@mermaid-js/mermaid-zenuml@0.2.2(@babel/core@7.29.0)(@babel/template@7.28.6)(mermaid@11.14.0)(tsx@4.21.0)(yaml@2.8.3)':
+  '@mermaid-js/mermaid-zenuml@0.2.2(@babel/core@7.29.0)(@babel/template@7.28.6)(mermaid@11.14.0)(tsx@4.21.0)(yaml@2.8.4)':
     dependencies:
-      '@zenuml/core': 3.47.2(@babel/core@7.29.0)(@babel/template@7.28.6)(tsx@4.21.0)(yaml@2.8.3)
+      '@zenuml/core': 3.47.2(@babel/core@7.29.0)(@babel/template@7.28.6)(tsx@4.21.0)(yaml@2.8.4)
       mermaid: 11.14.0
     transitivePeerDependencies:
       - '@babel/core'
@@ -13748,11 +13750,11 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@zenuml/core@3.47.2(@babel/core@7.29.0)(@babel/template@7.28.6)(tsx@4.21.0)(yaml@2.8.3)':
+  '@zenuml/core@3.47.2(@babel/core@7.29.0)(@babel/template@7.28.6)(tsx@4.21.0)(yaml@2.8.4)':
     dependencies:
       '@floating-ui/react': 0.27.19(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@headlessui/react': 2.2.10(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@headlessui/tailwindcss': 0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3))
+      '@headlessui/tailwindcss': 0.2.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.4))
       antlr4: 4.11.0
       class-variance-authority: 0.7.1
       clsx: 2.1.1
@@ -13769,7 +13771,7 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
       tailwind-merge: 3.5.0
-      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
+      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.4)
     transitivePeerDependencies:
       - '@babel/core'
       - '@babel/template'
@@ -15648,7 +15650,7 @@ snapshots:
 
   get-stream@5.2.0:
     dependencies:
-      pump: 3.0.3
+      pump: 3.0.4
 
   get-stream@6.0.1: {}
 
@@ -16714,7 +16716,7 @@ snapshots:
 
   json-schema-to-ts@3.1.1:
     dependencies:
-      '@babel/runtime': 7.27.6
+      '@babel/runtime': 7.29.2
       ts-algebra: 2.0.0
 
   json-schema-traverse@0.4.1: {}
@@ -17587,14 +17589,14 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.5.10
 
-  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.10)(tsx@4.21.0)(yaml@2.8.3):
+  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.10)(tsx@4.21.0)(yaml@2.8.4):
     dependencies:
       lilconfig: 3.1.3
     optionalDependencies:
       jiti: 1.21.7
       postcss: 8.5.10
       tsx: 4.21.0
-      yaml: 2.8.3
+      yaml: 2.8.4
 
   postcss-nested@6.2.0(postcss@8.5.10):
     dependencies:
@@ -17660,9 +17662,9 @@ snapshots:
       - encoding
       - supports-color
 
-  prisma-erd-generator@2.4.2(@babel/core@7.29.0)(@babel/template@7.28.6)(@prisma/client@6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3))(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.3):
+  prisma-erd-generator@2.4.2(@babel/core@7.29.0)(@babel/template@7.28.6)(@prisma/client@6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3))(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.4):
     dependencies:
-      '@mermaid-js/mermaid-cli': 11.14.0(@babel/core@7.29.0)(@babel/template@7.28.6)(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.3)
+      '@mermaid-js/mermaid-cli': 11.14.0(@babel/core@7.29.0)(@babel/template@7.28.6)(puppeteer@19.11.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@6.0.5))(tsx@4.21.0)(yaml@2.8.4)
       '@prisma/client': 6.11.1(prisma@6.11.1(typescript@5.8.3))(typescript@5.8.3)
       '@prisma/generator-helper': 7.7.0
       dotenv: 16.6.1
@@ -17738,6 +17740,11 @@ snapshots:
       punycode: 2.3.1
 
   pump@3.0.3:
+    dependencies:
+      end-of-stream: 1.4.5
+      once: 1.4.0
+
+  pump@3.0.4:
     dependencies:
       end-of-stream: 1.4.5
       once: 1.4.0
@@ -18496,7 +18503,7 @@ snapshots:
 
   tailwind-merge@3.5.0: {}
 
-  tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.3):
+  tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.4):
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -18515,7 +18522,7 @@ snapshots:
       postcss: 8.5.10
       postcss-import: 15.1.0(postcss@8.5.10)
       postcss-js: 4.1.0(postcss@8.5.10)
-      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.10)(tsx@4.21.0)(yaml@2.8.3)
+      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.10)(tsx@4.21.0)(yaml@2.8.4)
       postcss-nested: 6.2.0(postcss@8.5.10)
       postcss-selector-parser: 6.1.2
       resolve: 1.22.12
@@ -18532,7 +18539,7 @@ snapshots:
     dependencies:
       chownr: 1.1.4
       mkdirp-classic: 0.5.3
-      pump: 3.0.3
+      pump: 3.0.4
       tar-stream: 2.2.0
 
   tar-stream@2.2.0:
@@ -18804,7 +18811,7 @@ snapshots:
       markdown-it: 14.1.1
       minimatch: 10.2.5
       typescript: 5.8.3
-      yaml: 2.8.3
+      yaml: 2.8.4
 
   typescript-eslint@8.58.1(eslint@10.3.0(jiti@1.21.7))(typescript@5.8.3):
     dependencies:
@@ -19130,6 +19137,8 @@ snapshots:
   yaml-ast-parser@0.0.43: {}
 
   yaml@2.8.3: {}
+
+  yaml@2.8.4: {}
 
   yargs-parser@20.2.9: {}
 
