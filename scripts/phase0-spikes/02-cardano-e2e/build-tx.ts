@@ -78,19 +78,42 @@ function bytesAsChunkedList(b: Uint8Array): CSL.TransactionMetadatum {
   return CSL.TransactionMetadatum.new_list(list);
 }
 
-/** Build a `text`-typed metadatum, chunking >64B inputs into a list of texts. */
+/**
+ * Build a `text`-typed metadatum, chunking >64B inputs into a list of texts.
+ *
+ * Cardano `text` metadata items must be valid UTF-8 strings. A naïve
+ * fixed-byte split will tear multi-byte characters at chunk boundaries
+ * (Japanese in VC claims is a likely real-world case for civicship), producing
+ * malformed UTF-8 that the chain-side serializer rejects. We therefore split
+ * by character ([...s] iterates code points, so a single emoji or kanji is
+ * never broken), accumulating bytes until the next char would push us past
+ * MAX_METADATA_STRING_BYTES (64 B per metadata spec).
+ */
 function textAsChunkedList(s: string): CSL.TransactionMetadatum {
-  const utf8 = new TextEncoder().encode(s);
+  const encoder = new TextEncoder();
+  const utf8 = encoder.encode(s);
   if (utf8.length <= MAX_METADATA_STRING_BYTES) {
     return CSL.TransactionMetadatum.new_text(s);
   }
   const list = CSL.MetadataList.new();
-  for (let i = 0; i < utf8.length; i += MAX_METADATA_STRING_BYTES) {
-    const slice = utf8.subarray(
-      i,
-      Math.min(i + MAX_METADATA_STRING_BYTES, utf8.length),
-    );
-    list.add(CSL.TransactionMetadatum.new_text(new TextDecoder().decode(slice)));
+  let currentChunk = "";
+  let currentByteLength = 0;
+  for (const char of s) {
+    const charByteLength = encoder.encode(char).length;
+    if (
+      currentByteLength + charByteLength > MAX_METADATA_STRING_BYTES &&
+      currentChunk !== ""
+    ) {
+      list.add(CSL.TransactionMetadatum.new_text(currentChunk));
+      currentChunk = char;
+      currentByteLength = charByteLength;
+    } else {
+      currentChunk += char;
+      currentByteLength += charByteLength;
+    }
+  }
+  if (currentChunk !== "") {
+    list.add(CSL.TransactionMetadatum.new_text(currentChunk));
   }
   return CSL.TransactionMetadatum.new_list(list);
 }

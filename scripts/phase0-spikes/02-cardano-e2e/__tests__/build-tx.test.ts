@@ -167,6 +167,56 @@ describe("buildMetadata — 64-byte chunking", () => {
     expect(docMeta.kind()).toBe(CSL.TransactionMetadatumKind.Bytes);
     expect(docMeta.as_bytes().length).toBeLessThanOrEqual(64);
   });
+
+  // Regression test for the textAsChunkedList multibyte bug (Gemini review):
+  // a fixed-byte split on UTF-8 will tear multi-byte chars at chunk boundaries,
+  // producing invalid UTF-8 that Cardano serializers reject. The fix splits at
+  // character boundaries while honouring the 64-byte limit.
+  it("chunks a long DID with multibyte characters at character boundaries", () => {
+    // Each Japanese char is 3 bytes in UTF-8. 30 chars = 90 bytes, exceeds 64.
+    // (Realistic for did:web with `users:` followed by a Japanese identifier in
+    // a future i18n scenario.)
+    const longJa = "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほ";
+    const longDid = `did:web:api.civicship.app:users:${longJa}`;
+    expect(new TextEncoder().encode(longDid).length).toBeGreaterThan(64);
+
+    const op: DidOp = {
+      k: "c",
+      did: longDid,
+      h: "a".repeat(64),
+      doc: { id: longDid },
+      prev: null,
+    };
+    const aux = buildMetadata(makeMinimalInput({ ops: [op] }));
+    const opMap = aux
+      .metadata()!
+      .get(CSL.BigNum.from_str("1985"))!
+      .as_map()
+      .get_str("ops")
+      .as_list()
+      .get(0)
+      .as_map();
+    const didMeta = opMap.get_str("did");
+    expect(didMeta.kind()).toBe(CSL.TransactionMetadatumKind.MetadataList);
+    const chunks = didMeta.as_list();
+
+    // Each chunk must be <= 64 bytes AND a valid UTF-8 string (not torn).
+    let recombined = "";
+    const fatal = new TextDecoder("utf-8", { fatal: true });
+    for (let i = 0; i < chunks.len(); i++) {
+      const chunk = chunks.get(i);
+      expect(chunk.kind()).toBe(CSL.TransactionMetadatumKind.Text);
+      const text = chunk.as_text();
+      expect(new TextEncoder().encode(text).length).toBeLessThanOrEqual(64);
+      // Round-trip through fatal decoder catches torn-multibyte regressions.
+      expect(() =>
+        fatal.decode(new TextEncoder().encode(text)),
+      ).not.toThrow();
+      recombined += text;
+    }
+    // Concatenating the chunks must reproduce the original string exactly.
+    expect(recombined).toBe(longDid);
+  });
 });
 
 describe("buildMetadata — 16KB ceiling", () => {
