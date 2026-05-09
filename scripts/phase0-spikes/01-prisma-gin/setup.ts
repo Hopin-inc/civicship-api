@@ -163,16 +163,11 @@ async function main() {
     console.log("[setup] writing sample leaf id for verify.ts...");
     // Stash the sample leaf id in a side-table so verify.ts doesn't need to
     // re-seed; this also exercises an INSERT path in the same database.
-    await prisma.$executeRawUnsafe(
-      `CREATE TABLE IF NOT EXISTS spike_sample (key text PRIMARY KEY, value text NOT NULL)`,
-    );
-    await prisma.$executeRawUnsafe(`DELETE FROM spike_sample`);
-    await prisma.$executeRawUnsafe(
-      `INSERT INTO spike_sample (key, value) VALUES ('sample_leaf_id', '${sampleLeafId.replace(
-        /'/g,
-        "''",
-      )}')`,
-    );
+    // Use $executeRaw template literal (parameterized) instead of manual
+    // escaping with $executeRawUnsafe (Gemini review + SonarCloud hotspot).
+    await prisma.$executeRaw`CREATE TABLE IF NOT EXISTS spike_sample (key text PRIMARY KEY, value text NOT NULL)`;
+    await prisma.$executeRaw`DELETE FROM spike_sample`;
+    await prisma.$executeRaw`INSERT INTO spike_sample (key, value) VALUES ('sample_leaf_id', ${sampleLeafId})`;
 
     console.log(`[setup] DONE`);
     console.log(`[setup]   sample leaf id  : ${sampleLeafId}`);
