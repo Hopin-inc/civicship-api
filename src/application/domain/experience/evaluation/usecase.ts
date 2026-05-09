@@ -148,13 +148,13 @@ export default class EvaluationUseCase {
       evaluations.map((evaluation) => {
         const reason =
           evaluation.participation.reservation != null
-            ? GqlParticipationStatusReason.GqlReservationAccepted
-            : GqlParticipationStatusReason.GqlPersonalRecord;
+            ? GqlParticipationStatusReason.ReservationAccepted
+            : GqlParticipationStatusReason.PersonalRecord;
 
         return this.participationService.setStatus(
           ctx,
           evaluation.participationId,
-          GqlParticipationStatus.GqlParticipated,
+          GqlParticipationStatus.Participated,
           reason,
           tx,
           currentUserId,
@@ -191,7 +191,7 @@ export default class EvaluationUseCase {
           const user = participation.user;
           const hasPhoneAuth =
             user?.identities.some((i) => i.platform === IdentityPlatform.PHONE) ?? false;
-          const isPassed = evaluation.status === GqlEvaluationStatus.GqlPassed;
+          const isPassed = evaluation.status === GqlEvaluationStatus.Passed;
 
           return { evaluation, userId, hasPhoneAuth, isPassed };
         } catch {

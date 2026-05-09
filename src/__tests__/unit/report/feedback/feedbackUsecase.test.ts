@@ -64,7 +64,7 @@ describe("ReportFeedbackUseCase.submitReportFeedback", () => {
       input: {
         reportId,
         rating: 4,
-        feedbackType: GqlReportFeedbackType.GqlQuality,
+        feedbackType: GqlReportFeedbackType.Quality,
         comment: "great summary",
       },
       permission: { communityId },
@@ -205,16 +205,16 @@ describe("ReportFeedbackUseCase.viewReportTemplateFeedbacks", () => {
   // the default fixture omits optional fields rather than zeroing them.
   // Variant is required.
   function defaultArgs(): Parameters<ReportFeedbackUseCase["viewReportTemplateFeedbacks"]>[0] {
-    return { variant: GqlReportVariant.GqlWeeklySummary };
+    return { variant: GqlReportVariant.WeeklySummary };
   }
 
   it("forwards every filter through to the service unchanged (happy path)", async () => {
     await usecase.viewReportTemplateFeedbacks(
       {
-        variant: GqlReportVariant.GqlWeeklySummary,
+        variant: GqlReportVariant.WeeklySummary,
         version: 2,
         kind: ReportTemplateKind.GENERATION,
-        feedbackType: GqlReportFeedbackType.GqlQuality,
+        feedbackType: GqlReportFeedbackType.Quality,
         maxRating: 3,
         cursor: "feedback-cursor",
         first: 50,
@@ -336,13 +336,13 @@ describe("ReportFeedbackUseCase.viewReportTemplateFeedbackStats", () => {
   function defaultArgs(): Parameters<
     ReportFeedbackUseCase["viewReportTemplateFeedbackStats"]
   >[0] {
-    return { variant: GqlReportVariant.GqlWeeklySummary };
+    return { variant: GqlReportVariant.WeeklySummary };
   }
 
   it("forwards variant / version / kind to the service unchanged", async () => {
     await usecase.viewReportTemplateFeedbackStats(
       {
-        variant: GqlReportVariant.GqlWeeklySummary,
+        variant: GqlReportVariant.WeeklySummary,
         version: 2,
         kind: ReportTemplateKind.GENERATION,
       },

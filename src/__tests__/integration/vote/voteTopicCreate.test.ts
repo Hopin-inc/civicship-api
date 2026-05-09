@@ -20,8 +20,8 @@ function makeValidInput(communityId: string, overrides: Record<string, unknown> 
     title: "Test Vote",
     startsAt: new Date(now.getTime() + 60_000),
     endsAt: new Date(now.getTime() + 3_600_000),
-    gate: { type: GqlVoteGateType.GqlMembership },
-    powerPolicy: { type: GqlVotePowerPolicyType.GqlFlat },
+    gate: { type: GqlVoteGateType.Membership },
+    powerPolicy: { type: GqlVotePowerPolicyType.Flat },
     options: [
       { label: "Option A", orderIndex: 0 },
       { label: "Option B", orderIndex: 1 },
@@ -112,7 +112,7 @@ describe("Vote Integration: VoteTopicCreate", () => {
     } as unknown as IContext;
     const result = await voteUseCase.managerCreateVoteTopic(ctx, {
       input: makeValidInput(community.id, {
-        gate: { type: GqlVoteGateType.GqlNft, nftTokenId: nftToken.id },
+        gate: { type: GqlVoteGateType.Nft, nftTokenId: nftToken.id },
       }),
       permission: { communityId: community.id },
     });
@@ -318,7 +318,7 @@ describe("Vote Integration: VoteTopicCreate", () => {
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
-          gate: { type: GqlVoteGateType.GqlNft }, // nftTokenId なし
+          gate: { type: GqlVoteGateType.Nft }, // nftTokenId なし
         }),
         permission: { communityId: community.id },
       }),
@@ -348,9 +348,9 @@ describe("Vote Integration: VoteTopicCreate", () => {
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
-          gate: { type: GqlVoteGateType.GqlMembership },
+          gate: { type: GqlVoteGateType.Membership },
           powerPolicy: {
-            type: GqlVotePowerPolicyType.GqlNftCount,
+            type: GqlVotePowerPolicyType.NftCount,
             // nftTokenId なし
           },
         }),
@@ -378,8 +378,8 @@ describe("Vote Integration: VoteTopicCreate", () => {
     await expect(
       voteUseCase.managerCreateVoteTopic(ctx, {
         input: makeValidInput(community.id, {
-          gate: { type: GqlVoteGateType.GqlNft, nftTokenId: tokenA.id },
-          powerPolicy: { type: GqlVotePowerPolicyType.GqlNftCount, nftTokenId: tokenB.id },
+          gate: { type: GqlVoteGateType.Nft, nftTokenId: tokenA.id },
+          powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: tokenB.id },
         }),
         permission: { communityId: community.id },
       }),
@@ -399,8 +399,8 @@ describe("Vote Integration: VoteTopicCreate", () => {
     } as unknown as IContext;
     const result = await voteUseCase.managerCreateVoteTopic(ctx, {
       input: makeValidInput(community.id, {
-        gate: { type: GqlVoteGateType.GqlNft, nftTokenId: nftToken.id },
-        powerPolicy: { type: GqlVotePowerPolicyType.GqlNftCount, nftTokenId: nftToken.id },
+        gate: { type: GqlVoteGateType.Nft, nftTokenId: nftToken.id },
+        powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: nftToken.id },
       }),
       permission: { communityId: community.id },
     });
@@ -422,8 +422,8 @@ describe("Vote Integration: VoteTopicCreate", () => {
     } as unknown as IContext;
     const result = await voteUseCase.managerCreateVoteTopic(ctx, {
       input: makeValidInput(community.id, {
-        gate: { type: GqlVoteGateType.GqlMembership },
-        powerPolicy: { type: GqlVotePowerPolicyType.GqlNftCount, nftTokenId: nftToken.id },
+        gate: { type: GqlVoteGateType.Membership },
+        powerPolicy: { type: GqlVotePowerPolicyType.NftCount, nftTokenId: nftToken.id },
       }),
       permission: { communityId: community.id },
     });

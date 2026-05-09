@@ -29,7 +29,7 @@ describe("ReservationValidator", () => {
   describe("validateReservable", () => {
     it("should pass when slot is valid and no conflicts and enough capacity", () => {
       const slot = {
-        hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+        hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
         startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as unknown as ReservableSlot;
@@ -43,7 +43,7 @@ describe("ReservationValidator", () => {
 
     it("should throw if slot is not scheduled", () => {
       const slot = {
-        hostingStatus: GqlOpportunitySlotHostingStatus.GqlCancelled,
+        hostingStatus: GqlOpportunitySlotHostingStatus.Cancelled,
         startsAt: futureDate(),
       } as unknown as ReservableSlot;
 
@@ -54,7 +54,7 @@ describe("ReservationValidator", () => {
 
     it("should throw if slot has already started", () => {
       const slot = {
-        hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+        hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
         startsAt: pastDate(),
         opportunityId: "test-opportunity-id"
       } as unknown as ReservableSlot;
@@ -66,7 +66,7 @@ describe("ReservationValidator", () => {
 
     it("should throw if there are conflicting reservations", () => {
       const slot = {
-        hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+        hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
         startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as unknown as ReservableSlot;
@@ -78,7 +78,7 @@ describe("ReservationValidator", () => {
 
     it("should throw if participant count exceeds capacity", () => {
       const slot = {
-        hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+        hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
         startsAt: futureDate(2), // 2 days in future to avoid advance booking error (default is 1 day)
         opportunityId: "test-opportunity-id"
       } as unknown as ReservableSlot;
@@ -100,7 +100,7 @@ describe("ReservationValidator", () => {
       jest.setSystemTime(mockNow);
 
       const slot = {
-        hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+        hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
         startsAt: eventDate,
         opportunityId: "test-opportunity-id"
       } as unknown as ReservableSlot;
@@ -139,7 +139,7 @@ describe("ReservationValidator", () => {
         jest.setSystemTime(mockNow);
 
         const slot = {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: eventDate,
           opportunityId: "custom-activity-id"
         } as unknown as ReservableSlot;
@@ -162,7 +162,7 @@ describe("ReservationValidator", () => {
         jest.setSystemTime(mockNow);
 
         const slot = {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: eventDate,
           opportunityId: "custom-activity-id"
         } as unknown as ReservableSlot;
@@ -176,7 +176,7 @@ describe("ReservationValidator", () => {
 
       it("should allow booking until start time for activities with 0 advance booking days", () => {
         const slot = {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(0.01), // Just slightly in the future
           opportunityId: "zero-days-activity-id"
         } as unknown as ReservableSlot;
@@ -199,7 +199,7 @@ describe("ReservationValidator", () => {
         jest.setSystemTime(currentTime);
 
         const slot = {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: eventTime,
           opportunityId: "zero-days-activity-id" // 0 advance booking days
         } as unknown as ReservableSlot;
@@ -226,7 +226,7 @@ describe("ReservationValidator", () => {
         jest.setSystemTime(mockNow);
 
         const slot = {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: eventDate,
           opportunityId: "custom-activity-id" // 3 days advance booking
         } as unknown as ReservableSlot;
@@ -254,7 +254,7 @@ describe("ReservationValidator", () => {
         jest.setSystemTime(mockNow);
 
         const slot = {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: eventDate,
           opportunityId: "custom-activity-id" // 3 days advance booking
         } as unknown as ReservableSlot;
@@ -272,9 +272,9 @@ describe("ReservationValidator", () => {
   describe("validateJoinable", () => {
     it("should pass and return availableParticipationId if joinable", () => {
       const reservation = {
-        status: GqlReservationStatus.GqlAccepted,
+        status: GqlReservationStatus.Accepted,
         opportunitySlot: {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(),
         },
         participations: [
@@ -290,9 +290,9 @@ describe("ReservationValidator", () => {
 
     it("should throw if reservation is not accepted", () => {
       const reservation = {
-        status: GqlReservationStatus.GqlApplied,
+        status: GqlReservationStatus.Applied,
         opportunitySlot: {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(),
         },
         participations: [],
@@ -305,9 +305,9 @@ describe("ReservationValidator", () => {
 
     it("should throw if opportunitySlot has already started", () => {
       const reservation = {
-        status: GqlReservationStatus.GqlAccepted,
+        status: GqlReservationStatus.Accepted,
         opportunitySlot: {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: pastDate(),
         },
         participations: [],
@@ -320,9 +320,9 @@ describe("ReservationValidator", () => {
 
     it("should throw if user already joined", () => {
       const reservation = {
-        status: GqlReservationStatus.GqlAccepted,
+        status: GqlReservationStatus.Accepted,
         opportunitySlot: {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(),
         },
         participations: [{ id: "p1", userId: "user-1" }],
@@ -335,9 +335,9 @@ describe("ReservationValidator", () => {
 
     it("should throw if no available participations", () => {
       const reservation = {
-        status: GqlReservationStatus.GqlAccepted,
+        status: GqlReservationStatus.Accepted,
         opportunitySlot: {
-          hostingStatus: GqlOpportunitySlotHostingStatus.GqlScheduled,
+          hostingStatus: GqlOpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(),
         },
         participations: [{ id: "p1", userId: "user-2" }],

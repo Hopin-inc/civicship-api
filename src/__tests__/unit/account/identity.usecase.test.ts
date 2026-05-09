@@ -80,7 +80,7 @@ describe("IdentityUseCase", () => {
 
     mockContext = {
       uid: "test-uid",
-      platform: GqlIdentityPlatform.GqlLine,
+      platform: GqlIdentityPlatform.Line,
       communityId: "test-community",
       issuer: {
         public: jest.fn((ctx, callback) => callback(null)), // Mock public transaction to just execute callback
@@ -130,7 +130,7 @@ describe("IdentityUseCase", () => {
       const result = await useCase.checkPhoneUser(mockContext, { input: { phoneUid: TEST_PHONE_UID } });
 
       // Verify
-      expect(result.status).toBe(GqlPhoneUserStatus.GqlExistingDifferentCommunity);
+      expect(result.status).toBe(GqlPhoneUserStatus.ExistingDifferentCommunity);
       expect(mockIncentiveGrantService.grantSignupBonusIfEnabled).toHaveBeenCalledWith(
         mockContext,
         TEST_USER_ID,
@@ -181,7 +181,7 @@ describe("IdentityUseCase", () => {
       const result = await useCase.checkPhoneUser(mockContext, { input: { phoneUid: TEST_PHONE_UID } });
 
       // Verify
-      expect(result.status).toBe(GqlPhoneUserStatus.GqlExistingDifferentCommunity);
+      expect(result.status).toBe(GqlPhoneUserStatus.ExistingDifferentCommunity);
       expect(mockIncentiveGrantService.grantSignupBonusIfEnabled).toHaveBeenCalledWith(
         mockContext,
         TEST_USER_ID,

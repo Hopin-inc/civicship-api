@@ -220,16 +220,16 @@ async function createNestedEntities(
       for (let i = 0; i < NUM_RESERVATIONS_PER_SLOT; i++) {
         let reservationStatus: ReservationStatus;
 
-        if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.GqlScheduled) {
+        if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Scheduled) {
           reservationStatus =
-            Math.random() > 0.5 ? GqlReservationStatus.GqlApplied : GqlReservationStatus.GqlCanceled;
-        } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.GqlCompleted) {
+            Math.random() > 0.5 ? GqlReservationStatus.Applied : GqlReservationStatus.Canceled;
+        } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed) {
           reservationStatus =
-            Math.random() > 0.5 ? GqlReservationStatus.GqlAccepted : GqlReservationStatus.GqlCanceled;
-        } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.GqlCancelled) {
-          reservationStatus = GqlReservationStatus.GqlRejected;
+            Math.random() > 0.5 ? GqlReservationStatus.Accepted : GqlReservationStatus.Canceled;
+        } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Cancelled) {
+          reservationStatus = GqlReservationStatus.Rejected;
         } else {
-          reservationStatus = GqlReservationStatus.GqlApplied;
+          reservationStatus = GqlReservationStatus.Applied;
         }
 
         reservations.push(
@@ -246,18 +246,18 @@ async function createNestedEntities(
         const now = new Date();
 
         const isFuture = startsAt > now;
-        const isCompleted = slot.hostingStatus === GqlOpportunitySlotHostingStatus.GqlCompleted;
-        const isAccepted = reservation.status === GqlReservationStatus.GqlAccepted;
-        const isApplied = reservation.status === GqlReservationStatus.GqlApplied;
+        const isCompleted = slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed;
+        const isAccepted = reservation.status === GqlReservationStatus.Accepted;
+        const isApplied = reservation.status === GqlReservationStatus.Applied;
 
         let participationStatus: GqlParticipationStatus;
 
         if (isApplied) {
-          participationStatus = GqlParticipationStatus.GqlParticipating;
+          participationStatus = GqlParticipationStatus.Participating;
         } else if (!isFuture && isCompleted && isAccepted) {
-          participationStatus = GqlParticipationStatus.GqlParticipating;
+          participationStatus = GqlParticipationStatus.Participating;
         } else {
-          participationStatus = GqlParticipationStatus.GqlParticipating;
+          participationStatus = GqlParticipationStatus.Participating;
         }
 
         return ParticipationFactory.create({

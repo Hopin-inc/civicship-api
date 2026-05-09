@@ -919,12 +919,12 @@ export const GqlAnalyticsSortOrder = {
    * Ascending — smallest value first (e.g. SEND_RATE ASC puts latent
    * and occasional members before habitual).
    */
-  GqlAsc: 'ASC',
+  Asc: 'ASC',
   /**
    * Descending — largest value first (e.g. SEND_RATE DESC puts habitual
    * members at the top). This is the default.
    */
-  GqlDesc: 'DESC'
+  Desc: 'DESC'
 } as const;
 
 export type GqlAnalyticsSortOrder = typeof GqlAnalyticsSortOrder[keyof typeof GqlAnalyticsSortOrder];
@@ -1088,13 +1088,13 @@ export type GqlAnalyticsUserListSort = {
 /** Sortable columns on the member list. */
 export const GqlAnalyticsUserSortField = {
   /** donationOutMonths (distinct months with a DONATION out). */
-  GqlDonationOutMonths: 'DONATION_OUT_MONTHS',
+  DonationOutMonths: 'DONATION_OUT_MONTHS',
   /** monthsIn (tenure in JST calendar months). */
-  GqlMonthsIn: 'MONTHS_IN',
+  MonthsIn: 'MONTHS_IN',
   /** userSendRate (individual monthly-send rate, 0.0–1.0). */
-  GqlSendRate: 'SEND_RATE',
+  SendRate: 'SEND_RATE',
   /** totalPointsOut (lifetime DONATION points sent). */
-  GqlTotalPointsOut: 'TOTAL_POINTS_OUT'
+  TotalPointsOut: 'TOTAL_POINTS_OUT'
 } as const;
 
 export type GqlAnalyticsUserSortField = typeof GqlAnalyticsUserSortField[keyof typeof GqlAnalyticsUserSortField];
@@ -1190,8 +1190,8 @@ export type GqlArticle = {
 };
 
 export const GqlArticleCategory = {
-  GqlActivityReport: 'ACTIVITY_REPORT',
-  GqlInterview: 'INTERVIEW'
+  ActivityReport: 'ACTIVITY_REPORT',
+  Interview: 'INTERVIEW'
 } as const;
 
 export type GqlArticleCategory = typeof GqlArticleCategory[keyof typeof GqlArticleCategory];
@@ -1290,13 +1290,13 @@ export type GqlAuthZDirectiveDeepCompositeRulesInput = {
 };
 
 export const GqlAuthZRules = {
-  GqlCanManageOpportunity: 'CanManageOpportunity',
-  GqlIsAdmin: 'IsAdmin',
-  GqlIsCommunityManager: 'IsCommunityManager',
-  GqlIsCommunityMember: 'IsCommunityMember',
-  GqlIsCommunityOwner: 'IsCommunityOwner',
-  GqlIsSelf: 'IsSelf',
-  GqlIsUser: 'IsUser'
+  CanManageOpportunity: 'CanManageOpportunity',
+  IsAdmin: 'IsAdmin',
+  IsCommunityManager: 'IsCommunityManager',
+  IsCommunityMember: 'IsCommunityMember',
+  IsCommunityOwner: 'IsCommunityOwner',
+  IsSelf: 'IsSelf',
+  IsUser: 'IsUser'
 } as const;
 
 export type GqlAuthZRules = typeof GqlAuthZRules[keyof typeof GqlAuthZRules];
@@ -1342,9 +1342,9 @@ export type GqlCityEdge = GqlEdge & {
 };
 
 export const GqlClaimLinkStatus = {
-  GqlClaimed: 'CLAIMED',
-  GqlExpired: 'EXPIRED',
-  GqlIssued: 'ISSUED'
+  Claimed: 'CLAIMED',
+  Expired: 'EXPIRED',
+  Issued: 'ISSUED'
 } as const;
 
 export type GqlClaimLinkStatus = typeof GqlClaimLinkStatus[keyof typeof GqlClaimLinkStatus];
@@ -1577,12 +1577,12 @@ export type GqlCurrentPointView = {
 };
 
 export const GqlCurrentPrefecture = {
-  GqlEhime: 'EHIME',
-  GqlKagawa: 'KAGAWA',
-  GqlKochi: 'KOCHI',
-  GqlOutsideShikoku: 'OUTSIDE_SHIKOKU',
-  GqlTokushima: 'TOKUSHIMA',
-  GqlUnknown: 'UNKNOWN'
+  Ehime: 'EHIME',
+  Kagawa: 'KAGAWA',
+  Kochi: 'KOCHI',
+  OutsideShikoku: 'OUTSIDE_SHIKOKU',
+  Tokushima: 'TOKUSHIMA',
+  Unknown: 'UNKNOWN'
 } as const;
 
 export type GqlCurrentPrefecture = typeof GqlCurrentPrefecture[keyof typeof GqlCurrentPrefecture];
@@ -1611,10 +1611,10 @@ export type GqlDidIssuanceRequest = {
 };
 
 export const GqlDidIssuanceStatus = {
-  GqlCompleted: 'COMPLETED',
-  GqlFailed: 'FAILED',
-  GqlPending: 'PENDING',
-  GqlProcessing: 'PROCESSING'
+  Completed: 'COMPLETED',
+  Failed: 'FAILED',
+  Pending: 'PENDING',
+  Processing: 'PROCESSING'
 } as const;
 
 export type GqlDidIssuanceStatus = typeof GqlDidIssuanceStatus[keyof typeof GqlDidIssuanceStatus];
@@ -1629,36 +1629,36 @@ export type GqlError = {
 };
 
 export const GqlErrorCode = {
-  GqlAlreadyEvaluated: 'ALREADY_EVALUATED',
-  GqlAlreadyJoined: 'ALREADY_JOINED',
-  GqlAlreadyStartedReservation: 'ALREADY_STARTED_RESERVATION',
-  GqlAlreadyUsedClaimLink: 'ALREADY_USED_CLAIM_LINK',
-  GqlCannotEvaluateBeforeOpportunityStart: 'CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START',
-  GqlClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
-  GqlConcurrentRetryDetected: 'CONCURRENT_RETRY_DETECTED',
-  GqlForbidden: 'FORBIDDEN',
-  GqlIncentiveDisabled: 'INCENTIVE_DISABLED',
-  GqlInsufficientBalance: 'INSUFFICIENT_BALANCE',
-  GqlInternalServerError: 'INTERNAL_SERVER_ERROR',
-  GqlInvalidGrantStatus: 'INVALID_GRANT_STATUS',
-  GqlInvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
-  GqlMissingWalletInformation: 'MISSING_WALLET_INFORMATION',
-  GqlNotFound: 'NOT_FOUND',
-  GqlNoAvailableParticipationSlots: 'NO_AVAILABLE_PARTICIPATION_SLOTS',
-  GqlPersonalRecordOnlyDeletable: 'PERSONAL_RECORD_ONLY_DELETABLE',
-  GqlRateLimit: 'RATE_LIMIT',
-  GqlReservationAdvanceBookingRequired: 'RESERVATION_ADVANCE_BOOKING_REQUIRED',
-  GqlReservationCancellationTimeout: 'RESERVATION_CANCELLATION_TIMEOUT',
-  GqlReservationFull: 'RESERVATION_FULL',
-  GqlReservationNotAccepted: 'RESERVATION_NOT_ACCEPTED',
-  GqlSlotNotScheduled: 'SLOT_NOT_SCHEDULED',
-  GqlTicketParticipantMismatch: 'TICKET_PARTICIPANT_MISMATCH',
-  GqlUnauthenticated: 'UNAUTHENTICATED',
-  GqlUnknown: 'UNKNOWN',
-  GqlUnsupportedGrantType: 'UNSUPPORTED_GRANT_TYPE',
-  GqlUnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
-  GqlValidationError: 'VALIDATION_ERROR',
-  GqlVoteTopicNotEditable: 'VOTE_TOPIC_NOT_EDITABLE'
+  AlreadyEvaluated: 'ALREADY_EVALUATED',
+  AlreadyJoined: 'ALREADY_JOINED',
+  AlreadyStartedReservation: 'ALREADY_STARTED_RESERVATION',
+  AlreadyUsedClaimLink: 'ALREADY_USED_CLAIM_LINK',
+  CannotEvaluateBeforeOpportunityStart: 'CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START',
+  ClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
+  ConcurrentRetryDetected: 'CONCURRENT_RETRY_DETECTED',
+  Forbidden: 'FORBIDDEN',
+  IncentiveDisabled: 'INCENTIVE_DISABLED',
+  InsufficientBalance: 'INSUFFICIENT_BALANCE',
+  InternalServerError: 'INTERNAL_SERVER_ERROR',
+  InvalidGrantStatus: 'INVALID_GRANT_STATUS',
+  InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
+  MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
+  NotFound: 'NOT_FOUND',
+  NoAvailableParticipationSlots: 'NO_AVAILABLE_PARTICIPATION_SLOTS',
+  PersonalRecordOnlyDeletable: 'PERSONAL_RECORD_ONLY_DELETABLE',
+  RateLimit: 'RATE_LIMIT',
+  ReservationAdvanceBookingRequired: 'RESERVATION_ADVANCE_BOOKING_REQUIRED',
+  ReservationCancellationTimeout: 'RESERVATION_CANCELLATION_TIMEOUT',
+  ReservationFull: 'RESERVATION_FULL',
+  ReservationNotAccepted: 'RESERVATION_NOT_ACCEPTED',
+  SlotNotScheduled: 'SLOT_NOT_SCHEDULED',
+  TicketParticipantMismatch: 'TICKET_PARTICIPANT_MISMATCH',
+  Unauthenticated: 'UNAUTHENTICATED',
+  Unknown: 'UNKNOWN',
+  UnsupportedGrantType: 'UNSUPPORTED_GRANT_TYPE',
+  UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
+  ValidationError: 'VALIDATION_ERROR',
+  VoteTopicNotEditable: 'VOTE_TOPIC_NOT_EDITABLE'
 } as const;
 
 export type GqlErrorCode = typeof GqlErrorCode[keyof typeof GqlErrorCode];
@@ -1751,9 +1751,9 @@ export type GqlEvaluationSortInput = {
 };
 
 export const GqlEvaluationStatus = {
-  GqlFailed: 'FAILED',
-  GqlPassed: 'PASSED',
-  GqlPending: 'PENDING'
+  Failed: 'FAILED',
+  Passed: 'PASSED',
+  Pending: 'PENDING'
 } as const;
 
 export type GqlEvaluationStatus = typeof GqlEvaluationStatus[keyof typeof GqlEvaluationStatus];
@@ -1800,9 +1800,9 @@ export type GqlIdentityCheckPhoneUserPayload = {
 };
 
 export const GqlIdentityPlatform = {
-  GqlFacebook: 'FACEBOOK',
-  GqlLine: 'LINE',
-  GqlPhone: 'PHONE'
+  Facebook: 'FACEBOOK',
+  Line: 'LINE',
+  Phone: 'PHONE'
 } as const;
 
 export type GqlIdentityPlatform = typeof GqlIdentityPlatform[keyof typeof GqlIdentityPlatform];
@@ -1836,11 +1836,11 @@ export type GqlIncentiveGrantEdge = GqlEdge & {
 };
 
 export const GqlIncentiveGrantFailureCode = {
-  GqlDatabaseError: 'DATABASE_ERROR',
-  GqlInsufficientFunds: 'INSUFFICIENT_FUNDS',
-  GqlTimeout: 'TIMEOUT',
-  GqlUnknown: 'UNKNOWN',
-  GqlWalletNotFound: 'WALLET_NOT_FOUND'
+  DatabaseError: 'DATABASE_ERROR',
+  InsufficientFunds: 'INSUFFICIENT_FUNDS',
+  Timeout: 'TIMEOUT',
+  Unknown: 'UNKNOWN',
+  WalletNotFound: 'WALLET_NOT_FOUND'
 } as const;
 
 export type GqlIncentiveGrantFailureCode = typeof GqlIncentiveGrantFailureCode[keyof typeof GqlIncentiveGrantFailureCode];
@@ -1872,15 +1872,15 @@ export type GqlIncentiveGrantSortInput = {
 };
 
 export const GqlIncentiveGrantStatus = {
-  GqlCompleted: 'COMPLETED',
-  GqlFailed: 'FAILED',
-  GqlPending: 'PENDING',
-  GqlRetrying: 'RETRYING'
+  Completed: 'COMPLETED',
+  Failed: 'FAILED',
+  Pending: 'PENDING',
+  Retrying: 'RETRYING'
 } as const;
 
 export type GqlIncentiveGrantStatus = typeof GqlIncentiveGrantStatus[keyof typeof GqlIncentiveGrantStatus];
 export const GqlIncentiveGrantType = {
-  GqlSignup: 'SIGNUP'
+  Signup: 'SIGNUP'
 } as const;
 
 export type GqlIncentiveGrantType = typeof GqlIncentiveGrantType[keyof typeof GqlIncentiveGrantType];
@@ -1892,15 +1892,15 @@ export type GqlIncentiveGrantsConnection = {
 };
 
 export const GqlLanguage = {
-  GqlEn: 'EN',
-  GqlJa: 'JA'
+  En: 'EN',
+  Ja: 'JA'
 } as const;
 
 export type GqlLanguage = typeof GqlLanguage[keyof typeof GqlLanguage];
 export const GqlLineRichMenuType = {
-  GqlAdmin: 'ADMIN',
-  GqlPublic: 'PUBLIC',
-  GqlUser: 'USER'
+  Admin: 'ADMIN',
+  Public: 'PUBLIC',
+  User: 'USER'
 } as const;
 
 export type GqlLineRichMenuType = typeof GqlLineRichMenuType[keyof typeof GqlLineRichMenuType];
@@ -2014,21 +2014,21 @@ export type GqlMembershipSortInput = {
 };
 
 export const GqlMembershipStatus = {
-  GqlJoined: 'JOINED',
-  GqlLeft: 'LEFT',
-  GqlPending: 'PENDING'
+  Joined: 'JOINED',
+  Left: 'LEFT',
+  Pending: 'PENDING'
 } as const;
 
 export type GqlMembershipStatus = typeof GqlMembershipStatus[keyof typeof GqlMembershipStatus];
 export const GqlMembershipStatusReason = {
-  GqlAcceptedInvitation: 'ACCEPTED_INVITATION',
-  GqlAssigned: 'ASSIGNED',
-  GqlCanceledInvitation: 'CANCELED_INVITATION',
-  GqlCreatedCommunity: 'CREATED_COMMUNITY',
-  GqlDeclinedInvitation: 'DECLINED_INVITATION',
-  GqlInvited: 'INVITED',
-  GqlRemoved: 'REMOVED',
-  GqlWithdrawn: 'WITHDRAWN'
+  AcceptedInvitation: 'ACCEPTED_INVITATION',
+  Assigned: 'ASSIGNED',
+  CanceledInvitation: 'CANCELED_INVITATION',
+  CreatedCommunity: 'CREATED_COMMUNITY',
+  DeclinedInvitation: 'DECLINED_INVITATION',
+  Invited: 'INVITED',
+  Removed: 'REMOVED',
+  Withdrawn: 'WITHDRAWN'
 } as const;
 
 export type GqlMembershipStatusReason = typeof GqlMembershipStatusReason[keyof typeof GqlMembershipStatusReason];
@@ -2742,9 +2742,9 @@ export type GqlOpportunitySlotsArgs = {
 };
 
 export const GqlOpportunityCategory = {
-  GqlActivity: 'ACTIVITY',
-  GqlEvent: 'EVENT',
-  GqlQuest: 'QUEST'
+  Activity: 'ACTIVITY',
+  Event: 'EVENT',
+  Quest: 'QUEST'
 } as const;
 
 export type GqlOpportunityCategory = typeof GqlOpportunityCategory[keyof typeof GqlOpportunityCategory];
@@ -2863,9 +2863,9 @@ export type GqlOpportunitySlotFilterInput = {
 };
 
 export const GqlOpportunitySlotHostingStatus = {
-  GqlCancelled: 'CANCELLED',
-  GqlCompleted: 'COMPLETED',
-  GqlScheduled: 'SCHEDULED'
+  Cancelled: 'CANCELLED',
+  Completed: 'COMPLETED',
+  Scheduled: 'SCHEDULED'
 } as const;
 
 export type GqlOpportunitySlotHostingStatus = typeof GqlOpportunitySlotHostingStatus[keyof typeof GqlOpportunitySlotHostingStatus];
@@ -3041,10 +3041,10 @@ export type GqlParticipationSortInput = {
 };
 
 export const GqlParticipationStatus = {
-  GqlNotParticipating: 'NOT_PARTICIPATING',
-  GqlParticipated: 'PARTICIPATED',
-  GqlParticipating: 'PARTICIPATING',
-  GqlPending: 'PENDING'
+  NotParticipating: 'NOT_PARTICIPATING',
+  Participated: 'PARTICIPATED',
+  Participating: 'PARTICIPATING',
+  Pending: 'PENDING'
 } as const;
 
 export type GqlParticipationStatus = typeof GqlParticipationStatus[keyof typeof GqlParticipationStatus];
@@ -3083,19 +3083,19 @@ export type GqlParticipationStatusHistorySortInput = {
 };
 
 export const GqlParticipationStatusReason = {
-  GqlOpportunityCanceled: 'OPPORTUNITY_CANCELED',
-  GqlPersonalRecord: 'PERSONAL_RECORD',
-  GqlReservationAccepted: 'RESERVATION_ACCEPTED',
-  GqlReservationApplied: 'RESERVATION_APPLIED',
-  GqlReservationCanceled: 'RESERVATION_CANCELED',
-  GqlReservationJoined: 'RESERVATION_JOINED',
-  GqlReservationRejected: 'RESERVATION_REJECTED'
+  OpportunityCanceled: 'OPPORTUNITY_CANCELED',
+  PersonalRecord: 'PERSONAL_RECORD',
+  ReservationAccepted: 'RESERVATION_ACCEPTED',
+  ReservationApplied: 'RESERVATION_APPLIED',
+  ReservationCanceled: 'RESERVATION_CANCELED',
+  ReservationJoined: 'RESERVATION_JOINED',
+  ReservationRejected: 'RESERVATION_REJECTED'
 } as const;
 
 export type GqlParticipationStatusReason = typeof GqlParticipationStatusReason[keyof typeof GqlParticipationStatusReason];
 export const GqlParticipationType = {
-  GqlHosted: 'HOSTED',
-  GqlParticipated: 'PARTICIPATED'
+  Hosted: 'HOSTED',
+  Participated: 'PARTICIPATED'
 } as const;
 
 export type GqlParticipationType = typeof GqlParticipationType[keyof typeof GqlParticipationType];
@@ -3107,9 +3107,9 @@ export type GqlParticipationsConnection = {
 };
 
 export const GqlPhoneUserStatus = {
-  GqlExistingDifferentCommunity: 'EXISTING_DIFFERENT_COMMUNITY',
-  GqlExistingSameCommunity: 'EXISTING_SAME_COMMUNITY',
-  GqlNewUser: 'NEW_USER'
+  ExistingDifferentCommunity: 'EXISTING_DIFFERENT_COMMUNITY',
+  ExistingSameCommunity: 'EXISTING_SAME_COMMUNITY',
+  NewUser: 'NEW_USER'
 } as const;
 
 export type GqlPhoneUserStatus = typeof GqlPhoneUserStatus[keyof typeof GqlPhoneUserStatus];
@@ -3218,11 +3218,11 @@ export type GqlPortfolio = {
 };
 
 export const GqlPortfolioCategory = {
-  GqlActivity: 'ACTIVITY',
-  GqlActivityReport: 'ACTIVITY_REPORT',
-  GqlEvent: 'EVENT',
-  GqlInterview: 'INTERVIEW',
-  GqlQuest: 'QUEST'
+  Activity: 'ACTIVITY',
+  ActivityReport: 'ACTIVITY_REPORT',
+  Event: 'EVENT',
+  Interview: 'INTERVIEW',
+  Quest: 'QUEST'
 } as const;
 
 export type GqlPortfolioCategory = typeof GqlPortfolioCategory[keyof typeof GqlPortfolioCategory];
@@ -3243,8 +3243,8 @@ export type GqlPortfolioSortInput = {
 };
 
 export const GqlPortfolioSource = {
-  GqlArticle: 'ARTICLE',
-  GqlOpportunity: 'OPPORTUNITY'
+  Article: 'ARTICLE',
+  Opportunity: 'OPPORTUNITY'
 } as const;
 
 export type GqlPortfolioSource = typeof GqlPortfolioSource[keyof typeof GqlPortfolioSource];
@@ -3263,9 +3263,9 @@ export type GqlPublishReportSuccess = {
 };
 
 export const GqlPublishStatus = {
-  GqlCommunityInternal: 'COMMUNITY_INTERNAL',
-  GqlPrivate: 'PRIVATE',
-  GqlPublic: 'PUBLIC'
+  CommunityInternal: 'COMMUNITY_INTERNAL',
+  Private: 'PRIVATE',
+  Public: 'PUBLIC'
 } as const;
 
 export type GqlPublishStatus = typeof GqlPublishStatus[keyof typeof GqlPublishStatus];
@@ -3909,11 +3909,11 @@ export type GqlReportFeedbackRatingBucket = {
 };
 
 export const GqlReportFeedbackType = {
-  GqlAccuracy: 'ACCURACY',
-  GqlOther: 'OTHER',
-  GqlQuality: 'QUALITY',
-  GqlStructure: 'STRUCTURE',
-  GqlTone: 'TONE'
+  Accuracy: 'ACCURACY',
+  Other: 'OTHER',
+  Quality: 'QUALITY',
+  Structure: 'STRUCTURE',
+  Tone: 'TONE'
 } as const;
 
 export type GqlReportFeedbackType = typeof GqlReportFeedbackType[keyof typeof GqlReportFeedbackType];
@@ -3925,12 +3925,12 @@ export type GqlReportFeedbacksConnection = {
 };
 
 export const GqlReportStatus = {
-  GqlApproved: 'APPROVED',
-  GqlDraft: 'DRAFT',
-  GqlPublished: 'PUBLISHED',
-  GqlRejected: 'REJECTED',
-  GqlSkipped: 'SKIPPED',
-  GqlSuperseded: 'SUPERSEDED'
+  Approved: 'APPROVED',
+  Draft: 'DRAFT',
+  Published: 'PUBLISHED',
+  Rejected: 'REJECTED',
+  Skipped: 'SKIPPED',
+  Superseded: 'SUPERSEDED'
 } as const;
 
 export type GqlReportStatus = typeof GqlReportStatus[keyof typeof GqlReportStatus];
@@ -3959,14 +3959,14 @@ export type GqlReportTemplate = {
 };
 
 export const GqlReportTemplateKind = {
-  GqlGeneration: 'GENERATION',
-  GqlJudge: 'JUDGE'
+  Generation: 'GENERATION',
+  Judge: 'JUDGE'
 } as const;
 
 export type GqlReportTemplateKind = typeof GqlReportTemplateKind[keyof typeof GqlReportTemplateKind];
 export const GqlReportTemplateScope = {
-  GqlCommunity: 'COMMUNITY',
-  GqlSystem: 'SYSTEM'
+  Community: 'COMMUNITY',
+  System: 'SYSTEM'
 } as const;
 
 export type GqlReportTemplateScope = typeof GqlReportTemplateScope[keyof typeof GqlReportTemplateScope];
@@ -4012,11 +4012,11 @@ export type GqlReportTemplateStatsBreakdownRow = {
 };
 
 export const GqlReportVariant = {
-  GqlGrantApplication: 'GRANT_APPLICATION',
-  GqlMediaPr: 'MEDIA_PR',
-  GqlMemberNewsletter: 'MEMBER_NEWSLETTER',
-  GqlPersonalRecap: 'PERSONAL_RECAP',
-  GqlWeeklySummary: 'WEEKLY_SUMMARY'
+  GrantApplication: 'GRANT_APPLICATION',
+  MediaPr: 'MEDIA_PR',
+  MemberNewsletter: 'MEMBER_NEWSLETTER',
+  PersonalRecap: 'PERSONAL_RECAP',
+  WeeklySummary: 'WEEKLY_SUMMARY'
 } as const;
 
 export type GqlReportVariant = typeof GqlReportVariant[keyof typeof GqlReportVariant];
@@ -4117,8 +4117,8 @@ export type GqlReservationHistorySortInput = {
 };
 
 export const GqlReservationPaymentMethod = {
-  GqlFee: 'FEE',
-  GqlTicket: 'TICKET'
+  Fee: 'FEE',
+  Ticket: 'TICKET'
 } as const;
 
 export type GqlReservationPaymentMethod = typeof GqlReservationPaymentMethod[keyof typeof GqlReservationPaymentMethod];
@@ -4139,10 +4139,10 @@ export type GqlReservationSortInput = {
 };
 
 export const GqlReservationStatus = {
-  GqlAccepted: 'ACCEPTED',
-  GqlApplied: 'APPLIED',
-  GqlCanceled: 'CANCELED',
-  GqlRejected: 'REJECTED'
+  Accepted: 'ACCEPTED',
+  Applied: 'APPLIED',
+  Canceled: 'CANCELED',
+  Rejected: 'REJECTED'
 } as const;
 
 export type GqlReservationStatus = typeof GqlReservationStatus[keyof typeof GqlReservationStatus];
@@ -4154,21 +4154,21 @@ export type GqlReservationsConnection = {
 };
 
 export const GqlRole = {
-  GqlManager: 'MANAGER',
-  GqlMember: 'MEMBER',
-  GqlOwner: 'OWNER'
+  Manager: 'MANAGER',
+  Member: 'MEMBER',
+  Owner: 'OWNER'
 } as const;
 
 export type GqlRole = typeof GqlRole[keyof typeof GqlRole];
 export const GqlSortDirection = {
-  GqlAsc: 'asc',
-  GqlDesc: 'desc'
+  Asc: 'asc',
+  Desc: 'desc'
 } as const;
 
 export type GqlSortDirection = typeof GqlSortDirection[keyof typeof GqlSortDirection];
 export const GqlSource = {
-  GqlExternal: 'EXTERNAL',
-  GqlInternal: 'INTERNAL'
+  External: 'EXTERNAL',
+  Internal: 'INTERNAL'
 } as const;
 
 export type GqlSource = typeof GqlSource[keyof typeof GqlSource];
@@ -4225,8 +4225,8 @@ export type GqlSubmitReportFeedbackSuccess = {
 };
 
 export const GqlSysRole = {
-  GqlSysAdmin: 'SYS_ADMIN',
-  GqlUser: 'USER'
+  SysAdmin: 'SYS_ADMIN',
+  User: 'USER'
 } as const;
 
 export type GqlSysRole = typeof GqlSysRole[keyof typeof GqlSysRole];
@@ -4382,8 +4382,8 @@ export type GqlTicketSortInput = {
 };
 
 export const GqlTicketStatus = {
-  GqlAvailable: 'AVAILABLE',
-  GqlDisabled: 'DISABLED'
+  Available: 'AVAILABLE',
+  Disabled: 'DISABLED'
 } as const;
 
 export type GqlTicketStatus = typeof GqlTicketStatus[keyof typeof GqlTicketStatus];
@@ -4424,13 +4424,13 @@ export type GqlTicketStatusHistorySortInput = {
 };
 
 export const GqlTicketStatusReason = {
-  GqlCanceled: 'CANCELED',
-  GqlExpired: 'EXPIRED',
-  GqlGifted: 'GIFTED',
-  GqlPurchased: 'PURCHASED',
-  GqlRefunded: 'REFUNDED',
-  GqlReserved: 'RESERVED',
-  GqlUsed: 'USED'
+  Canceled: 'CANCELED',
+  Expired: 'EXPIRED',
+  Gifted: 'GIFTED',
+  Purchased: 'PURCHASED',
+  Refunded: 'REFUNDED',
+  Reserved: 'RESERVED',
+  Used: 'USED'
 } as const;
 
 export type GqlTicketStatusReason = typeof GqlTicketStatusReason[keyof typeof GqlTicketStatusReason];
@@ -4613,16 +4613,16 @@ export type GqlTransactionIssueCommunityPointSuccess = {
 };
 
 export const GqlTransactionReason = {
-  GqlDonation: 'DONATION',
-  GqlGrant: 'GRANT',
-  GqlOnboarding: 'ONBOARDING',
-  GqlOpportunityReservationCanceled: 'OPPORTUNITY_RESERVATION_CANCELED',
-  GqlOpportunityReservationCreated: 'OPPORTUNITY_RESERVATION_CREATED',
-  GqlOpportunityReservationRejected: 'OPPORTUNITY_RESERVATION_REJECTED',
-  GqlPointIssued: 'POINT_ISSUED',
-  GqlPointReward: 'POINT_REWARD',
-  GqlTicketPurchased: 'TICKET_PURCHASED',
-  GqlTicketRefunded: 'TICKET_REFUNDED'
+  Donation: 'DONATION',
+  Grant: 'GRANT',
+  Onboarding: 'ONBOARDING',
+  OpportunityReservationCanceled: 'OPPORTUNITY_RESERVATION_CANCELED',
+  OpportunityReservationCreated: 'OPPORTUNITY_RESERVATION_CREATED',
+  OpportunityReservationRejected: 'OPPORTUNITY_RESERVATION_REJECTED',
+  PointIssued: 'POINT_ISSUED',
+  PointReward: 'POINT_REWARD',
+  TicketPurchased: 'TICKET_PURCHASED',
+  TicketRefunded: 'TICKET_REFUNDED'
 } as const;
 
 export type GqlTransactionReason = typeof GqlTransactionReason[keyof typeof GqlTransactionReason];
@@ -4897,8 +4897,8 @@ export type GqlUtilityUpdateInfoSuccess = {
 };
 
 export const GqlValueType = {
-  GqlFloat: 'FLOAT',
-  GqlInt: 'INT'
+  Float: 'FLOAT',
+  Int: 'INT'
 } as const;
 
 export type GqlValueType = typeof GqlValueType[keyof typeof GqlValueType];
@@ -4940,18 +4940,18 @@ export type GqlVcIssuanceRequestsConnection = {
 };
 
 export const GqlVcIssuanceStatus = {
-  GqlCompleted: 'COMPLETED',
-  GqlFailed: 'FAILED',
-  GqlPending: 'PENDING',
-  GqlProcessing: 'PROCESSING'
+  Completed: 'COMPLETED',
+  Failed: 'FAILED',
+  Pending: 'PENDING',
+  Processing: 'PROCESSING'
 } as const;
 
 export type GqlVcIssuanceStatus = typeof GqlVcIssuanceStatus[keyof typeof GqlVcIssuanceStatus];
 export const GqlVerificationStatus = {
-  GqlError: 'ERROR',
-  GqlNotVerified: 'NOT_VERIFIED',
-  GqlPending: 'PENDING',
-  GqlVerified: 'VERIFIED'
+  Error: 'ERROR',
+  NotVerified: 'NOT_VERIFIED',
+  Pending: 'PENDING',
+  Verified: 'VERIFIED'
 } as const;
 
 export type GqlVerificationStatus = typeof GqlVerificationStatus[keyof typeof GqlVerificationStatus];
@@ -5020,8 +5020,8 @@ export type GqlVoteGateInput = {
 };
 
 export const GqlVoteGateType = {
-  GqlMembership: 'MEMBERSHIP',
-  GqlNft: 'NFT'
+  Membership: 'MEMBERSHIP',
+  Nft: 'NFT'
 } as const;
 
 export type GqlVoteGateType = typeof GqlVoteGateType[keyof typeof GqlVoteGateType];
@@ -5071,8 +5071,8 @@ export type GqlVotePowerPolicyInput = {
 };
 
 export const GqlVotePowerPolicyType = {
-  GqlFlat: 'FLAT',
-  GqlNftCount: 'NFT_COUNT'
+  Flat: 'FLAT',
+  NftCount: 'NFT_COUNT'
 } as const;
 
 export type GqlVotePowerPolicyType = typeof GqlVotePowerPolicyType[keyof typeof GqlVotePowerPolicyType];
@@ -5143,9 +5143,9 @@ export type GqlVoteTopicEdge = {
  * 精密な期間判定には startsAt / endsAt を直接比較すること。一覧表示などでは phase を利用して構わない。
  */
 export const GqlVoteTopicPhase = {
-  GqlClosed: 'CLOSED',
-  GqlOpen: 'OPEN',
-  GqlUpcoming: 'UPCOMING'
+  Closed: 'CLOSED',
+  Open: 'OPEN',
+  Upcoming: 'UPCOMING'
 } as const;
 
 export type GqlVoteTopicPhase = typeof GqlVoteTopicPhase[keyof typeof GqlVoteTopicPhase];
@@ -5219,8 +5219,8 @@ export type GqlWalletSortInput = {
 };
 
 export const GqlWalletType = {
-  GqlCommunity: 'COMMUNITY',
-  GqlMember: 'MEMBER'
+  Community: 'COMMUNITY',
+  Member: 'MEMBER'
 } as const;
 
 export type GqlWalletType = typeof GqlWalletType[keyof typeof GqlWalletType];

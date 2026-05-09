@@ -27,7 +27,7 @@ overrides:
 
 patchedDependencies:
   '@graphql-codegen/visitor-plugin-common@7.0.0':
-    hash: 9beab89f2eaf52edb9bf07419a0894f6fca17d81b4f827b23758dcf4a166d34c
+    hash: 63a3cfc97e8a5d800913ef5b35e19823489d0e3f3808b6f143e62b41717afd4d
     path: patches/@graphql-codegen__visitor-plugin-common@7.0.0.patch
 
 importers:
@@ -10975,7 +10975,7 @@ snapshots:
       '@graphql-codegen/typed-document-node': 7.0.0(graphql@16.10.0)
       '@graphql-codegen/typescript': 6.0.0(graphql@16.10.0)
       '@graphql-codegen/typescript-operations': 6.0.0(graphql@16.10.0)
-      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=9beab89f2eaf52edb9bf07419a0894f6fca17d81b4f827b23758dcf4a166d34c)(graphql@16.10.0)
+      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=63a3cfc97e8a5d800913ef5b35e19823489d0e3f3808b6f143e62b41717afd4d)(graphql@16.10.0)
       '@graphql-tools/documents': 1.0.1(graphql@16.10.0)
       '@graphql-tools/utils': 11.1.0(graphql@16.10.0)
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.10.0)
@@ -10993,7 +10993,7 @@ snapshots:
   '@graphql-codegen/gql-tag-operations@6.0.0(graphql@16.10.0)':
     dependencies:
       '@graphql-codegen/plugin-helpers': 7.0.0(graphql@16.10.0)
-      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=9beab89f2eaf52edb9bf07419a0894f6fca17d81b4f827b23758dcf4a166d34c)(graphql@16.10.0)
+      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=63a3cfc97e8a5d800913ef5b35e19823489d0e3f3808b6f143e62b41717afd4d)(graphql@16.10.0)
       '@graphql-tools/utils': 11.1.0(graphql@16.10.0)
       auto-bind: 5.0.1
       graphql: 16.10.0
@@ -11027,7 +11027,7 @@ snapshots:
   '@graphql-codegen/typed-document-node@7.0.0(graphql@16.10.0)':
     dependencies:
       '@graphql-codegen/plugin-helpers': 7.0.0(graphql@16.10.0)
-      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=9beab89f2eaf52edb9bf07419a0894f6fca17d81b4f827b23758dcf4a166d34c)(graphql@16.10.0)
+      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=63a3cfc97e8a5d800913ef5b35e19823489d0e3f3808b6f143e62b41717afd4d)(graphql@16.10.0)
       auto-bind: 5.0.1
       change-case-all: 2.1.0
       graphql: 16.10.0
@@ -11037,7 +11037,7 @@ snapshots:
     dependencies:
       '@graphql-codegen/plugin-helpers': 7.0.0(graphql@16.10.0)
       '@graphql-codegen/schema-ast': 6.0.0(graphql@16.10.0)
-      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=9beab89f2eaf52edb9bf07419a0894f6fca17d81b4f827b23758dcf4a166d34c)(graphql@16.10.0)
+      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=63a3cfc97e8a5d800913ef5b35e19823489d0e3f3808b6f143e62b41717afd4d)(graphql@16.10.0)
       auto-bind: 5.0.1
       graphql: 16.10.0
       tslib: 2.8.1
@@ -11055,7 +11055,7 @@ snapshots:
     dependencies:
       '@graphql-codegen/plugin-helpers': 7.0.0(graphql@16.10.0)
       '@graphql-codegen/typescript': 6.0.0(graphql@16.10.0)
-      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=9beab89f2eaf52edb9bf07419a0894f6fca17d81b4f827b23758dcf4a166d34c)(graphql@16.10.0)
+      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=63a3cfc97e8a5d800913ef5b35e19823489d0e3f3808b6f143e62b41717afd4d)(graphql@16.10.0)
       '@graphql-tools/utils': 11.1.0(graphql@16.10.0)
       auto-bind: 5.0.1
       graphql: 16.10.0
@@ -11065,7 +11065,7 @@ snapshots:
     dependencies:
       '@graphql-codegen/plugin-helpers': 7.0.0(graphql@16.10.0)
       '@graphql-codegen/schema-ast': 6.0.0(graphql@16.10.0)
-      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=9beab89f2eaf52edb9bf07419a0894f6fca17d81b4f827b23758dcf4a166d34c)(graphql@16.10.0)
+      '@graphql-codegen/visitor-plugin-common': 7.0.0(patch_hash=63a3cfc97e8a5d800913ef5b35e19823489d0e3f3808b6f143e62b41717afd4d)(graphql@16.10.0)
       auto-bind: 5.0.1
       graphql: 16.10.0
       tslib: 2.6.3
@@ -11084,7 +11084,7 @@ snapshots:
       parse-filepath: 1.0.2
       tslib: 2.8.1
 
-  '@graphql-codegen/visitor-plugin-common@7.0.0(patch_hash=9beab89f2eaf52edb9bf07419a0894f6fca17d81b4f827b23758dcf4a166d34c)(graphql@16.10.0)':
+  '@graphql-codegen/visitor-plugin-common@7.0.0(patch_hash=63a3cfc97e8a5d800913ef5b35e19823489d0e3f3808b6f143e62b41717afd4d)(graphql@16.10.0)':
     dependencies:
       '@graphql-codegen/plugin-helpers': 7.0.0(graphql@16.10.0)
       '@graphql-tools/optimize': 2.0.0(graphql@16.10.0)

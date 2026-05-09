@@ -121,7 +121,7 @@ describe("Reservation Integration Tests", () => {
       const input: GqlReservationCreateInput = {
         opportunitySlotId: slotId,
         totalParticipantCount: 5,
-        paymentMethod: GqlReservationPaymentMethod.GqlTicket,
+        paymentMethod: GqlReservationPaymentMethod.Ticket,
       };
 
       await useCase.userReserveParticipation({ input }, ctx);
@@ -211,7 +211,7 @@ describe("Reservation Integration Tests", () => {
       const input: GqlReservationCreateInput = {
         opportunitySlotId: slotId,
         totalParticipantCount: 5,
-        paymentMethod: GqlReservationPaymentMethod.GqlTicket,
+        paymentMethod: GqlReservationPaymentMethod.Ticket,
       };
 
       await useCase.userReserveParticipation({ input }, ctx);

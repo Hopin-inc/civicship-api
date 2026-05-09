@@ -14,7 +14,7 @@ export default class IdentityConverter {
       ? {
           create: [
             { uid, platform, communityId },
-            { uid: phoneUid, platform: GqlIdentityPlatform.GqlPhone },
+            { uid: phoneUid, platform: GqlIdentityPlatform.Phone },
           ],
         }
       : { create: { uid, platform, communityId } };

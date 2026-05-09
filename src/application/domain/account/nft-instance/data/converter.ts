@@ -93,15 +93,15 @@ export default class NftInstanceConverter {
     const orderBy: Prisma.NftInstanceOrderByWithRelationInput[] = [];
 
     if (input?.createdAt) {
-      orderBy.push({ createdAt: input.createdAt === GqlSortDirection.GqlAsc ? "asc" : "desc" });
+      orderBy.push({ createdAt: input.createdAt === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
     if (input?.name) {
-      orderBy.push({ name: input.name === GqlSortDirection.GqlAsc ? "asc" : "desc" });
+      orderBy.push({ name: input.name === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
     if (input?.instanceId) {
-      orderBy.push({ instanceId: input.instanceId === GqlSortDirection.GqlAsc ? "asc" : "desc" });
+      orderBy.push({ instanceId: input.instanceId === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
     orderBy.push({ id: "asc" });

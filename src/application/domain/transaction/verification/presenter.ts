@@ -10,19 +10,19 @@ export default class TransactionVerificationPresenter {
       status: (() => {
         switch (result.status) {
           case "verified":
-            return GqlVerificationStatus.GqlVerified;
+            return GqlVerificationStatus.Verified;
           case "not_verified":
-            return GqlVerificationStatus.GqlNotVerified;
+            return GqlVerificationStatus.NotVerified;
           case "pending":
-            return GqlVerificationStatus.GqlPending;
+            return GqlVerificationStatus.Pending;
           case "error":
-            return GqlVerificationStatus.GqlError;
+            return GqlVerificationStatus.Error;
           default:
             // 未知のステータスの場合はログ出力して Error として扱う
             logger.warn(
               `[TransactionVerificationPresenter] Unknown verification status received: ${result.status}`,
             );
-            return GqlVerificationStatus.GqlError;
+            return GqlVerificationStatus.Error;
         }
       })(),
       transactionHash: result.transactionHash,

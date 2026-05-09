@@ -50,15 +50,15 @@ export default class NftTokenConverter {
     const orderBy: Prisma.NftTokenOrderByWithRelationInput[] = [];
 
     if (input?.createdAt) {
-      orderBy.push({ createdAt: input.createdAt === GqlSortDirection.GqlAsc ? "asc" : "desc" });
+      orderBy.push({ createdAt: input.createdAt === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
     if (input?.name) {
-      orderBy.push({ name: input.name === GqlSortDirection.GqlAsc ? "asc" : "desc" });
+      orderBy.push({ name: input.name === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
     if (input?.address) {
-      orderBy.push({ address: input.address === GqlSortDirection.GqlAsc ? "asc" : "desc" });
+      orderBy.push({ address: input.address === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
     orderBy.push({ id: "asc" });

@@ -51,10 +51,10 @@ export default class IncentiveGrantUseCase {
     // Build orderBy clause
     const orderBy: Prisma.IncentiveGrantOrderByWithRelationInput[] = [];
     if (sort?.createdAt) {
-      orderBy.push({ createdAt: sort.createdAt === GqlSortDirection.GqlAsc ? "asc" : "desc" });
+      orderBy.push({ createdAt: sort.createdAt === GqlSortDirection.Asc ? "asc" : "desc" });
     }
     if (sort?.updatedAt) {
-      orderBy.push({ updatedAt: sort.updatedAt === GqlSortDirection.GqlAsc ? "asc" : "desc" });
+      orderBy.push({ updatedAt: sort.updatedAt === GqlSortDirection.Asc ? "asc" : "desc" });
     }
     if (orderBy.length === 0) {
       orderBy.push({ createdAt: "desc" });
