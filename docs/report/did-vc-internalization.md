@@ -365,7 +365,9 @@ DDD/Clean Architecture 規約（`CLAUDE.md` 準拠）厳守。
 #### 5.1.3 新規: `src/infrastructure/libs/did/userDidGenerator.ts`
 - ユーザー鍵 (Ed25519) を生成 → `did:web:civicship.app:users/{userId}` 形式で返す
 - DID Document を構築（id, verificationMethod, assertionMethod, authentication）
-- 戻り値: `{ did, document, secretKey }`（秘密鍵は VC 検証用にユーザー側に渡すか、システム側で保持か別途設計）
+- 戻り値: `{ did, document, publicKey }`（**秘密鍵は生成直後に破棄**）
+- **platform-issued モデルの前提**: civicship が VC の Issuer であり、ユーザーは Verifiable Presentation (VP) を提示する役割を持たない。よってユーザー側で秘密鍵を保持・使用する場面が存在しないため、**秘密鍵を生成・保持しない**設計とする
+- 将来 VP 機能が必要になった場合は、ユーザーデバイス側で鍵生成 → 公開鍵のみサーバ送信、というフローに切り替える（§8.1 参照）
 
 #### 5.1.4 新規: `src/infrastructure/libs/did/didDocumentResolver.ts`
 - ユーザー DID から DID Document を生成（DB の最新 UserDidAnchor から）
@@ -441,7 +443,8 @@ async create(ctx, userId): Promise<DidIssuanceRequest> {
 
 // After（INTERNAL）
 async create(ctx, userId, tx?): Promise<DidIssuanceRequest> {
-  const { did, document, secretKey } = userDidGenerator.generate(userId);
+  // 秘密鍵は generate 内で破棄、戻り値には含まれない
+  const { did, document, publicKey } = userDidGenerator.generate(userId);
   await this.repo.create(ctx, {
     userId,
     didMethod: "INTERNAL",
@@ -672,11 +675,54 @@ async getProof(txId: string): Promise<{ root: string; siblings: string[]; chainT
 
 ### 8.1 鍵管理
 
+#### 8.1.1 鍵の種類と保管
+
 | 鍵 | 用途 | 保管場所 | ローテ |
 |---|---|---|---|
-| Issuer VC 署名鍵（Ed25519） | VC JWT 署名 | GCP KMS | 年次（ロード時に最新版を使う） |
-| Cardano wallet 鍵 | tx 署名 | GCP Secret Manager | 半年に 1 回 |
-| User DID 秘密鍵 | ユーザー認証 | DB 暗号化保存 or ユーザーローカル | 必要時 UPDATE 操作で公開鍵を更新 |
+| **Issuer VC 署名鍵**（Ed25519） | VC JWT 署名 | **GCP KMS**（鍵素材は KMS 外に出ない） | 年次（KMS のキーバージョンを切替） |
+| **Cardano wallet 鍵** | tx 署名 | **GCP KMS**（HSM-backed key ring） | 半年に 1 回 |
+| **User DID 公開鍵** | DID Document に掲載・第三者検証 | DB（公開情報のため暗号化不要） | UPDATE 操作で公開鍵を差し替え（旧鍵は履歴として UserDidAnchor に残存） |
+| **User DID 秘密鍵** | （**保持しない**） | — | — |
+
+#### 8.1.2 User DID 秘密鍵を保持しない設計（重要）
+
+**platform-issued モデルの前提**:
+
+- civicship は VC の **Issuer**（発行者）であり、ユーザーは VC の **Subject**（記載対象）
+- ユーザーが Verifiable Presentation (VP) を提示する用途は現状存在しない
+- → ユーザーが自身の秘密鍵で何かに署名する場面が**ない**
+
+よって本設計では:
+
+- `userDidGenerator` は鍵ペアを**生成直後に秘密鍵を破棄**し、公開鍵のみを返す
+- DB / KMS / どこにも秘密鍵を保管しない
+- DID Document の `verificationMethod` には公開鍵のみ掲載
+- VC 発行時の署名は **Issuer 鍵**（KMS 内）で行うため、ユーザー秘密鍵は介在しない
+
+**これにより排除されるリスク**:
+
+- DB 漏洩によるユーザー鍵流出（鍵自体が存在しない）
+- KMS 内の per-user 鍵の管理コスト（5000 ユーザー × 鍵 = KMS では現実的でない）
+- ユーザー鍵の暗号化方式・鍵ローテの複雑化
+
+#### 8.1.3 将来 VP 対応が必要になった場合
+
+「ユーザーが自身の VC を別のサービスに提示し、署名で本人性を示す」要件が出た場合の移行パス:
+
+1. ユーザーデバイス側で鍵ペア生成（ブラウザ Web Crypto API or モバイル Secure Enclave）
+2. 公開鍵のみをサーバに送信、サーバは UserDidAnchor の UPDATE 操作で公開鍵を差し替え
+3. 秘密鍵は**ユーザーデバイス内のみ**に保持（サーバには絶対に送らない）
+4. VP 署名はクライアント側で行い、サーバは公開鍵で検証のみ
+
+→ この移行は本設計の Phase 4 完了後の独立タスクとして扱う（本 PR のスコープ外）。
+
+#### 8.1.4 Cardano wallet 鍵の HSM 保管
+
+Cardano tx 署名は KMS 経由で行う:
+
+- GCP KMS の Ed25519 鍵で `signRaw` を呼び出し → tx hash に対する署名を取得
+- 秘密鍵素材は KMS の HSM 内から一切外に出ない
+- アプリケーションコードは「署名要求」のみ送信、署名結果のみ受け取る
 
 ### 8.2 入力検証
 
@@ -812,7 +858,7 @@ async getProof(txId: string): Promise<{ root: string; siblings: string[]; chainT
 | ~~Q4~~ | ~~アンカリング粒度（1h vs 24h vs 件数閾値）~~ → **クローズ: 週次バッチ。バックフィル分は 5000 件 → 1 tx に集約** | ✅ クローズ |
 | ~~Q5~~ | ~~Solana 過去ネットワーク停止リスクのバックアップ~~ → **クローズ: Cardano 単独で確定（助成金条件）** | ✅ クローズ |
 | Q6 | 独自 cryptosuite `merkle-cardano-anchor-2026` の仕様書を GitHub 公開 → 必要なら W3C registry 登録 | 後回し可（運用上の影響なし） |
-| Q7 | User DID 秘密鍵の保管方法（DB 暗号化 / ユーザーローカル / KMS） | 設計詳細：Phase 0 で確定 |
+| ~~Q7~~ | ~~User DID 秘密鍵の保管方法~~ → **クローズ: platform-issued モデルでは秘密鍵を保持しない（生成直後に破棄、公開鍵のみ DB 保存）。詳細は §8.1.2** | ✅ クローズ |
 | Q8 | DID 鍵ローテのトリガー（年次自動 / 漏洩検知時のみ） | プロダクト判断 |
 
 ---
