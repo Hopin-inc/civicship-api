@@ -41,10 +41,12 @@ export class LIFFService {
         const err = error.response?.data;
         throw new Error(
           `[LINE Token Verification] ${err?.error}: ${err?.error_description || error.message}`,
+          { cause: error },
         );
       }
       throw new Error(
         `[LINE Token Verification] ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
       );
     }
   }
@@ -60,10 +62,12 @@ export class LIFFService {
         const err = error.response?.data;
         throw new Error(
           `[LINE Profile Fetch] ${err?.error}: ${err?.error_description || error.message}`,
+          { cause: error },
         );
       }
       throw new Error(
         `[LINE Profile Fetch] ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
       );
     }
   }
@@ -88,7 +92,7 @@ export class LIFFService {
       return customToken;
     } catch (error) {
       logger.error("Error creating Firebase custom token:", error);
-      throw new Error("Failed to create authentication token");
+      throw new Error("Failed to create authentication token", { cause: error });
     }
   }
 }

@@ -31,8 +31,6 @@ export default [
           ignoreRestSiblings: true,
         },
       ],
-      "preserve-caught-error": "off",
-      "no-useless-assignment": "off",
     },
   },
 ];
