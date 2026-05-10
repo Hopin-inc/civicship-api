@@ -94,8 +94,12 @@ async function explainOverlapQuery(
   // Run inside a transaction so `SET LOCAL` actually applies to the EXPLAIN.
   const result = await prisma.$transaction(async (tx) => {
     if (forceIndex) {
-      await tx.$executeRawUnsafe(`SET LOCAL enable_seqscan = OFF`);
+      await tx.$executeRaw`SET LOCAL enable_seqscan = OFF`;
     }
+    // The ARRAY literal must be inlined (not parameterized) because the planner
+    // treats `$1::text[]` from a string parameter as `cstring`, which forbids the
+    // GIN index. Using $queryRawUnsafe with the escaped sample leaf id keeps the
+    // ARRAY literal in the SQL — EXPLAIN-only, sample id is locally generated.
     return tx.$queryRawUnsafe<Array<{ "QUERY PLAN": ExplainOutput[] }>>(
       `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
        SELECT id, root_hash, chain_tx_hash, metadata_label, status, leaf_ids
@@ -108,9 +112,7 @@ async function explainOverlapQuery(
 }
 
 async function getSampleLeafId(prisma: PrismaClient): Promise<string> {
-  const rows: Array<{ value: string }> = await prisma.$queryRawUnsafe(
-    `SELECT value FROM spike_sample WHERE key = 'sample_leaf_id'`,
-  );
+  const rows = await prisma.$queryRaw<Array<{ value: string }>>`SELECT value FROM spike_sample WHERE key = 'sample_leaf_id'`;
   if (rows.length === 0) {
     throw new Error("spike_sample.sample_leaf_id missing — run setup.ts first");
   }
@@ -157,10 +159,8 @@ async function main() {
 
     // ─── Case 2: drop the GIN index and re-run for comparison ─────────────
     console.log("\n[verify] === Case 2: WITHOUT GIN index (control) ===");
-    await prisma.$executeRawUnsafe(
-      `DROP INDEX IF EXISTS t_transaction_anchors_spike_leaf_ids_idx`,
-    );
-    await prisma.$executeRawUnsafe(`ANALYZE t_transaction_anchors_spike`);
+    await prisma.$executeRaw`DROP INDEX IF EXISTS t_transaction_anchors_spike_leaf_ids_idx`;
+    await prisma.$executeRaw`ANALYZE t_transaction_anchors_spike`;
 
     const planNoIndex = await explainOverlapQuery(prisma, sampleLeafId, false);
     const summaryNoIndex = summarizePlan(planNoIndex);
@@ -172,10 +172,8 @@ async function main() {
 
     // Recreate the index so the database is left in a usable state.
     console.log("\n[verify] recreating GIN index for cleanup...");
-    await prisma.$executeRawUnsafe(
-      `CREATE INDEX t_transaction_anchors_spike_leaf_ids_idx
-       ON t_transaction_anchors_spike USING GIN (leaf_ids)`,
-    );
+    await prisma.$executeRaw`CREATE INDEX t_transaction_anchors_spike_leaf_ids_idx
+       ON t_transaction_anchors_spike USING GIN (leaf_ids)`;
 
     // ─── Verdict ──────────────────────────────────────────────────────────
     console.log("\n[verify] === Full EXPLAIN output ===");

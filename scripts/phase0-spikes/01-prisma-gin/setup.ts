@@ -94,10 +94,7 @@ async function main() {
 
     // Pre-generate all leaf ids so we can deterministically sample one
     // for the verification script and persist it.
-    const allAnchorRows: Array<{
-      id: string;
-      leafIds: string[];
-    }> = [];
+    const allAnchorRows: Array<{ leafIds: string[] }> = [];
 
     let counter = 0;
     const batchSize = 10;
@@ -132,7 +129,7 @@ async function main() {
 
         // Track for later sampling. We don't need the DB-generated id for
         // the verify step (we query by leaf id, not by anchor id).
-        allAnchorRows.push({ id: "", leafIds });
+        allAnchorRows.push({ leafIds });
       }
 
       await prisma.transactionAnchorSpike.createMany({ data: batch });
@@ -152,13 +149,11 @@ async function main() {
     // planner may choose Seq Scan even with a working GIN index — that's a
     // planner choice, not an "index doesn't work" signal.
     console.log("[setup] running ANALYZE on the spike table...");
-    await prisma.$executeRawUnsafe(`ANALYZE "t_transaction_anchors_spike"`);
+    await prisma.$executeRaw`ANALYZE "t_transaction_anchors_spike"`;
 
     // Verify the index actually exists at the SQL level.
     const indexes: Array<{ indexname: string; indexdef: string }> =
-      await prisma.$queryRawUnsafe(
-        `SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 't_transaction_anchors_spike' ORDER BY indexname`,
-      );
+      await prisma.$queryRaw`SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 't_transaction_anchors_spike' ORDER BY indexname`;
     console.log("[setup] indexes on t_transaction_anchors_spike:");
     for (const idx of indexes) {
       console.log(`  - ${idx.indexname}: ${idx.indexdef}`);
