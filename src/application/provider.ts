@@ -136,6 +136,14 @@ import AnalyticsPlatformService from "@/application/domain/analytics/platform/se
 import AnalyticsUseCase from "@/application/domain/analytics/usecase";
 import AnalyticsCommunityService from "@/application/domain/analytics/community/service";
 import AnalyticsCommunityUseCase from "@/application/domain/analytics/community/usecase";
+import AnchorBatchRepository from "@/application/domain/anchor/anchorBatch/data/repository";
+import {
+  AnchorBatchService,
+  type BlockfrostLatestSlotProvider,
+} from "@/application/domain/anchor/anchorBatch/service";
+import AnchorBatchUseCase from "@/application/domain/anchor/anchorBatch/usecase";
+import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
+import { KmsSigner } from "@/infrastructure/libs/kms/kmsSigner";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -403,6 +411,51 @@ export function registerProductionDependencies() {
 
   container.register("NmkrClient", { useClass: NmkrClient });
   container.register("CardanoShopifyAppClient", { useClass: CardanoShopifyAppClient });
+
+  // ------------------------------
+  // ⚓ Anchor (DID/VC internalization, Phase 1)
+  // ------------------------------
+  // BlockfrostClient / KmsSigner は本 PR で初めて DI 登録される。
+  // BlockfrostLatestSlotProvider は currentSlot 取得用の薄い factory
+  // （/blocks/latest を直接叩く。本来は BlockfrostClient に追加すべき
+  //  だが、本 PR では infrastructure/libs を読み取り専用扱いにしている
+  //  ため、provider 側で動的 import → factory として配線する）。
+  container.registerSingleton("BlockfrostClient", BlockfrostClient);
+  container.registerSingleton("KmsSigner", KmsSigner);
+  container.register<BlockfrostLatestSlotProvider>("BlockfrostLatestSlotProvider", {
+    useFactory: () => createBlockfrostLatestSlotProvider(),
+  });
+  container.register("AnchorBatchRepository", { useClass: AnchorBatchRepository });
+  container.register("AnchorBatchService", { useClass: AnchorBatchService });
+  container.register("AnchorBatchUseCase", { useClass: AnchorBatchUseCase });
+}
+
+/**
+ * `@blockfrost/blockfrost-js` の `BlockFrostAPI.blocksLatest()` を直接叩く
+ * 軽量 factory。BlockfrostClient 本体（src/infrastructure/libs/blockfrost）
+ * は本 PR では変更不可なため、provider 側に閉じた配線でカバーする。
+ */
+function createBlockfrostLatestSlotProvider(): BlockfrostLatestSlotProvider {
+  return {
+    async getCurrentSlot(): Promise<number> {
+      // 動的 import で起動時の dependency 評価を避ける（テスト時に DI を
+      // 別 provider に差し替えるためメインのプロセスでは初期化されない）。
+      const { BlockFrostAPI } = await import("@blockfrost/blockfrost-js");
+      const networkRaw = process.env.CARDANO_NETWORK ?? "preprod";
+      const network = networkRaw === "mainnet" ? "mainnet" : "preprod";
+      const projectId = process.env.BLOCKFROST_PROJECT_ID;
+      if (!projectId) {
+        throw new Error("BlockfrostLatestSlotProvider: BLOCKFROST_PROJECT_ID is not set.");
+      }
+      const api = new BlockFrostAPI({ projectId, network });
+      const latest = (await api.blocksLatest()) as { slot?: number | null };
+      const slot = latest?.slot;
+      if (typeof slot !== "number") {
+        throw new Error("BlockfrostLatestSlotProvider: blocksLatest returned no slot.");
+      }
+      return slot;
+    },
+  };
 }
 
 registerProductionDependencies();
