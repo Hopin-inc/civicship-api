@@ -669,6 +669,14 @@ jobs:
       # PR への coverage コメント投稿に必要 (marocchino/sticky-pull-request-comment)。
       pull-requests: write
     steps:
+      # SonarQube Cloud scan が aggregator 内で動くため、source と git 履歴が要る。
+      # fetch-depth: 0 は PR analysis の base..head blame に必要 (新規導入の
+      # rule をいつから違反しているか sonar が時系列で追えなくなる)。
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
       - name: Verify all required jobs passed
         run: |
           dep_review='${{ needs.dependency-review.result }}'
@@ -747,6 +755,20 @@ jobs:
             --reporter=json-summary \
             > coverage-final/text-summary.txt
           echo "has_coverage=true" >> "$GITHUB_OUTPUT"
+
+      # SonarQube Cloud (旧 SonarCloud) scan。merge 済 lcov を直接食わせる。
+      # 別 workflow (sonarcloud.yml) で artifact 経由に二段階構成していたが、
+      # cross-workflow artifact 待ち合わせの不確実性 + PR decoration 用 SHA
+      # ずれで coverage 0% を踏むため、aggregator 内に統合した。
+      # `SONAR_TOKEN` 未設定なら action 自身がエラーになるが
+      # `continue-on-error: true` で advisory 扱いにして CI gate には影響させない。
+      - name: SonarQube Cloud Scan
+        if: steps.merge-coverage.outputs.has_coverage == 'true'
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7.2.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       # Codecov へ aggregated lcov を upload する。tokenless OIDC が public repo
       # では使えるが、private 化や rate-limit 回避のため `CODECOV_TOKEN` (repo
