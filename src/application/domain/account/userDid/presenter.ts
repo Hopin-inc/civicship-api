@@ -27,6 +27,16 @@ const UserDidPresenter = {
    * The local row's `operation` / `status` / `network` are already
    * exact-string unions matching the GraphQL enum string values, so the
    * conversion is a structural projection — no runtime mapping needed.
+   *
+   * `userId` is forwarded onto the returned object even though it is not
+   * part of the surface GraphQL `UserDidAnchor` type (Phase 1.5): the
+   * `UserDidAnchor.user` field resolver reads `parent.userId` and hands
+   * it to the user DataLoader. Carrying the foreign key here lets the
+   * field resolver stay pure / N+1-safe without re-querying the row in
+   * the resolver layer. We cast through `unknown` so callers receive the
+   * declared `GqlUserDidAnchor` shape and TypeScript still flags missing
+   * schema fields, while runtime callers can read `userId` off the
+   * resolver `parent` argument.
    */
   view(row: UserDidAnchorRow): GqlUserDidAnchor {
     return {
@@ -41,7 +51,10 @@ const UserDidPresenter = {
       status: row.status,
       confirmedAt: row.confirmedAt,
       createdAt: row.createdAt,
-    };
+      // Carry userId for the field resolver. Cast keeps the public return
+      // type aligned with the GraphQL schema.
+      userId: row.userId,
+    } as unknown as GqlUserDidAnchor;
   },
 };
 

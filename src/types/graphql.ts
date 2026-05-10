@@ -4883,6 +4883,11 @@ export type GqlUserDidAnchor = {
   network: GqlChainNetwork;
   operation: GqlDidOperation;
   status: GqlAnchorStatus;
+  /**
+   * この DID anchor の所有ユーザー。
+   * Field resolver + DataLoader 経由で解決される (§5.2.1 / Phase 1.5)。
+   */
+  user: GqlUser;
 };
 
 export type GqlUserEdge = GqlEdge & {
@@ -5061,6 +5066,11 @@ export type GqlVcFormat = typeof GqlVcFormat[keyof typeof GqlVcFormat];
 export type GqlVcIssuance = {
   __typename?: 'VcIssuance';
   createdAt: Scalars['Datetime']['output'];
+  /**
+   * この VC が紐付く Evaluation (任意)。
+   * evaluationId が null のときは null。Field resolver + DataLoader 経由で解決される。
+   */
+  evaluation?: Maybe<GqlEvaluation>;
   evaluationId?: Maybe<Scalars['ID']['output']>;
   id: Scalars['ID']['output'];
   issuerDid: Scalars['String']['output'];
@@ -5069,6 +5079,11 @@ export type GqlVcIssuance = {
   statusListCredential?: Maybe<Scalars['String']['output']>;
   statusListIndex?: Maybe<Scalars['Int']['output']>;
   subjectDid: Scalars['String']['output'];
+  /**
+   * この VC の所有ユーザー。
+   * Field resolver + DataLoader 経由で解決される (§5.2.2 / Phase 1.5)。
+   */
+  user: GqlUser;
   userId: Scalars['ID']['output'];
   vcFormat: GqlVcFormat;
   vcJwt: Scalars['String']['output'];
@@ -5964,7 +5979,7 @@ export type GqlResolversTypes = ResolversObject<{
   Upload: ResolverTypeWrapper<Scalars['Upload']['output']>;
   User: ResolverTypeWrapper<User>;
   UserDeletePayload: ResolverTypeWrapper<GqlUserDeletePayload>;
-  UserDidAnchor: ResolverTypeWrapper<GqlUserDidAnchor>;
+  UserDidAnchor: ResolverTypeWrapper<Omit<GqlUserDidAnchor, 'user'> & { user: GqlResolversTypes['User'] }>;
   UserEdge: ResolverTypeWrapper<Omit<GqlUserEdge, 'node'> & { node?: Maybe<GqlResolversTypes['User']> }>;
   UserFilterInput: GqlUserFilterInput;
   UserSignUpInput: GqlUserSignUpInput;
@@ -5991,7 +6006,7 @@ export type GqlResolversTypes = ResolversObject<{
   UtilityUpdateInfoSuccess: ResolverTypeWrapper<Omit<GqlUtilityUpdateInfoSuccess, 'utility'> & { utility: GqlResolversTypes['Utility'] }>;
   ValueType: GqlValueType;
   VcFormat: GqlVcFormat;
-  VcIssuance: ResolverTypeWrapper<GqlVcIssuance>;
+  VcIssuance: ResolverTypeWrapper<Omit<GqlVcIssuance, 'evaluation' | 'user'> & { evaluation?: Maybe<GqlResolversTypes['Evaluation']>, user: GqlResolversTypes['User'] }>;
   VcIssuanceRequest: ResolverTypeWrapper<Omit<GqlVcIssuanceRequest, 'evaluation' | 'user'> & { evaluation?: Maybe<GqlResolversTypes['Evaluation']>, user?: Maybe<GqlResolversTypes['User']> }>;
   VcIssuanceRequestEdge: ResolverTypeWrapper<Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<GqlResolversTypes['VcIssuanceRequest']> }>;
   VcIssuanceRequestFilterInput: GqlVcIssuanceRequestFilterInput;
@@ -6380,7 +6395,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   Upload: Scalars['Upload']['output'];
   User: User;
   UserDeletePayload: GqlUserDeletePayload;
-  UserDidAnchor: GqlUserDidAnchor;
+  UserDidAnchor: Omit<GqlUserDidAnchor, 'user'> & { user: GqlResolversParentTypes['User'] };
   UserEdge: Omit<GqlUserEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['User']> };
   UserFilterInput: GqlUserFilterInput;
   UserSignUpInput: GqlUserSignUpInput;
@@ -6405,7 +6420,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   UtilityUpdateInfoInput: GqlUtilityUpdateInfoInput;
   UtilityUpdateInfoPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityUpdateInfoPayload'];
   UtilityUpdateInfoSuccess: Omit<GqlUtilityUpdateInfoSuccess, 'utility'> & { utility: GqlResolversParentTypes['Utility'] };
-  VcIssuance: GqlVcIssuance;
+  VcIssuance: Omit<GqlVcIssuance, 'evaluation' | 'user'> & { evaluation?: Maybe<GqlResolversParentTypes['Evaluation']>, user: GqlResolversParentTypes['User'] };
   VcIssuanceRequest: Omit<GqlVcIssuanceRequest, 'evaluation' | 'user'> & { evaluation?: Maybe<GqlResolversParentTypes['Evaluation']>, user?: Maybe<GqlResolversParentTypes['User']> };
   VcIssuanceRequestEdge: Omit<GqlVcIssuanceRequestEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['VcIssuanceRequest']> };
   VcIssuanceRequestFilterInput: GqlVcIssuanceRequestFilterInput;
@@ -8200,6 +8215,7 @@ export type GqlUserDidAnchorResolvers<ContextType = any, ParentType extends GqlR
   network?: Resolver<GqlResolversTypes['ChainNetwork'], ParentType, ContextType>;
   operation?: Resolver<GqlResolversTypes['DidOperation'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['AnchorStatus'], ParentType, ContextType>;
+  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
 }>;
 
 export type GqlUserEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UserEdge'] = GqlResolversParentTypes['UserEdge']> = ResolversObject<{
@@ -8289,6 +8305,7 @@ export type GqlUtilityUpdateInfoSuccessResolvers<ContextType = any, ParentType e
 
 export type GqlVcIssuanceResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['VcIssuance'] = GqlResolversParentTypes['VcIssuance']> = ResolversObject<{
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  evaluation?: Resolver<Maybe<GqlResolversTypes['Evaluation']>, ParentType, ContextType>;
   evaluationId?: Resolver<Maybe<GqlResolversTypes['ID']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   issuerDid?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -8297,6 +8314,7 @@ export type GqlVcIssuanceResolvers<ContextType = any, ParentType extends GqlReso
   statusListCredential?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   statusListIndex?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   subjectDid?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
   userId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   vcFormat?: Resolver<GqlResolversTypes['VcFormat'], ParentType, ContextType>;
   vcJwt?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;

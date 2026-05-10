@@ -6,6 +6,14 @@
  * usecase layer immediately and contains no business logic. Authorization
  * is enforced by `@authz` directives in the schema files (`IsUser` for
  * the reads, `IsAdmin` for the issue mutation).
+ *
+ * Phase 1.5 addition: field resolvers for `VcIssuance.user` and
+ * `VcIssuance.evaluation` — both resolve via per-request DataLoaders
+ * registered as `ctx.loaders.userByVcIssuance` and
+ * `ctx.loaders.evaluationByVcIssuance`. `userId` is always present on
+ * the parent (`ID!`) while `evaluationId` is optional, so the
+ * evaluation resolver short-circuits to `null` rather than handing the
+ * loader an undefined key.
  */
 
 import { inject, injectable } from "tsyringe";
@@ -15,6 +23,7 @@ import type {
   GqlMutationIssueVcArgs,
   GqlQueryVcIssuanceArgs,
   GqlQueryVcIssuancesByUserArgs,
+  GqlVcIssuance,
 } from "@/types/graphql";
 
 @injectable()
@@ -33,6 +42,17 @@ export default class VcIssuanceResolver {
   Mutation = {
     issueVc: (_: unknown, args: GqlMutationIssueVcArgs, ctx: IContext) => {
       return this.vcIssuanceUseCase.issueVc(ctx, args.input);
+    },
+  };
+
+  VcIssuance = {
+    user: (parent: GqlVcIssuance, _: unknown, ctx: IContext) => {
+      return ctx.loaders.userByVcIssuance.load(parent.userId);
+    },
+    evaluation: (parent: GqlVcIssuance, _: unknown, ctx: IContext) => {
+      return parent.evaluationId
+        ? ctx.loaders.evaluationByVcIssuance.load(parent.evaluationId)
+        : null;
     },
   };
 }

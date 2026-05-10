@@ -7,6 +7,7 @@ import { createTransactionLoaders } from "@/presentation/graphql/dataloader/doma
 import { createLocationLoaders } from "@/presentation/graphql/dataloader/domain/location";
 import { createVoteLoaders } from "@/presentation/graphql/dataloader/domain/vote";
 import { createReportLoaders } from "@/presentation/graphql/dataloader/domain/report";
+import { createCredentialLoaders } from "@/presentation/graphql/dataloader/domain/credential";
 
 export function createLoaders(prisma: PrismaClient) {
   return {
@@ -18,6 +19,7 @@ export function createLoaders(prisma: PrismaClient) {
     ...createLocationLoaders(prisma),
     ...createVoteLoaders(prisma),
     ...createReportLoaders(prisma),
+    ...createCredentialLoaders(prisma),
   };
 }
 

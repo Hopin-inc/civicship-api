@@ -169,6 +169,9 @@ const resolvers = {
   VotePowerPolicy: vote.VotePowerPolicy,
   VoteBallot: vote.VoteBallot,
 
+  UserDidAnchor: userDid.UserDidAnchor,
+  VcIssuance: vcIssuance.VcIssuance,
+
   Report: { ...report.Report, ...reportFeedback.Report },
   ReportTemplate: report.ReportTemplate,
   AdminReportSummaryRow: report.AdminReportSummaryRow,

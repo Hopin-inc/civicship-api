@@ -17,6 +17,11 @@ type UserDidAnchor {
   status: AnchorStatus!
   confirmedAt: Datetime
   createdAt: Datetime!
+  """
+  この DID anchor の所有ユーザー。
+  Field resolver + DataLoader 経由で解決される (§5.2.1 / Phase 1.5)。
+  """
+  user: User!
 }
 
 """
