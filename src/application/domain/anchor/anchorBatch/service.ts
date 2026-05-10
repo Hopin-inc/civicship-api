@@ -308,7 +308,13 @@ export class AnchorBatchService {
     if (allLeafIds.length === 0) return undefined;
     const jwts = await this.repository.findVcJwtsByVcIssuanceRequestIds(ctx, allLeafIds);
     if (jwts.length === 0) return undefined;
-    const sorted = [...jwts].map((j) => j.vcJwt).sort();
+    // Explicit byte-order comparator: §5.1.7 mandates canonical ASCII byte
+    // ordering for Merkle determinism, which is what JS's `<`/`>` give on
+    // strings (UTF-16 code-unit compare). `String.localeCompare` would
+    // introduce locale-dependent collation and break cross-host hashes.
+    const sorted = [...jwts]
+      .map((j) => j.vcJwt)
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     const root = buildRoot(sorted);
     return { root, count: sorted.length };
   }
@@ -378,8 +384,10 @@ function buildTxRoot(
   if (txAnchors.length === 0) return undefined;
   const all = txAnchors.flatMap((a) => a.leafIds);
   if (all.length === 0) return undefined;
-  // ASCII byte 昇順（§5.1.7 canonical）
-  const sorted = [...all].sort();
+  // §5.1.7 canonical ASCII byte order. Use an explicit code-unit
+  // comparator instead of bare `.sort()` so cross-host runs hash to the
+  // same Merkle root regardless of process locale.
+  const sorted = [...all].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   return { root: buildRoot(sorted), count: sorted.length };
 }
 

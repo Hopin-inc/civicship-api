@@ -397,7 +397,9 @@ describe("AnchorBatchService", () => {
 
   describe("Merkle root determinism", () => {
     it("buildRoot is deterministic for the same sorted JWT inputs", () => {
-      const inputs = ["c.payload.sig", "a.payload.sig", "b.payload.sig"].sort();
+      const inputs = ["c.payload.sig", "a.payload.sig", "b.payload.sig"].sort((a, b) =>
+        a < b ? -1 : a > b ? 1 : 0,
+      );
       const r1 = buildRoot(inputs);
       const r2 = buildRoot([...inputs]);
       expect(Buffer.from(r1).equals(Buffer.from(r2))).toBe(true);
