@@ -109,7 +109,11 @@ export interface BlockfrostTxMetadataRow {
 
 /** Sleep helper for backoff. Module-private, exported for tests only. */
 export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  // The Promise executor must not return a value (typescript:S7034). Wrap
+  // the `setTimeout` call in a block so its handle isn't implicitly returned.
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 /**
