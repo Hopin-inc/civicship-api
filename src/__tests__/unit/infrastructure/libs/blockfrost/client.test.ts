@@ -64,7 +64,9 @@ describe("BlockfrostClient", () => {
     });
 
     it("instantiates BlockFrostAPI with the resolved project_id and network token", () => {
-      new BlockfrostClient({ network: "CARDANO_PREPROD" });
+      // S1848: side-effect is constructor → mocked SDK; mark explicit void so
+      // Sonar doesn't flag the result as discarded.
+      void new BlockfrostClient({ network: "CARDANO_PREPROD" });
       expect(mockBlockFrostAPIConstructor).toHaveBeenCalledWith({
         projectId: "preprodTESTKEY",
         network: "preprod",
@@ -72,7 +74,7 @@ describe("BlockfrostClient", () => {
     });
 
     it("maps CARDANO_MAINNET to the mainnet network token", () => {
-      new BlockfrostClient({
+      void new BlockfrostClient({
         network: "CARDANO_MAINNET",
         projectId: "mainnetXYZ",
       });
