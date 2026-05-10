@@ -323,6 +323,38 @@ export default class VcIssuanceService {
     }
 
     const leaves = await this.repository.findVcJwtsByIds(ctx, anchor.leafIds);
+    // Merkle integrity invariant: every leaf id stored on the anchor must
+    // resolve to a row. A single missing or deleted row shifts the tree
+    // and invalidates EVERY proof in the batch. Treat as 5xx.
+    if (leaves.length !== anchor.leafIds.length) {
+      logger.error(
+        "[VcIssuanceService] generateInclusionProof: anchor leaf count mismatch — Merkle integrity violation",
+        {
+          vcId,
+          vcAnchorId: anchor.id,
+          expected: anchor.leafIds.length,
+          actual: leaves.length,
+        },
+      );
+      throw new Error(
+        `generateInclusionProof: anchor ${anchor.id} integrity violation (leaf count mismatch: expected ${anchor.leafIds.length}, got ${leaves.length})`,
+      );
+    }
+    // Empty vcJwt slots (preserved instead of silently filtered) break sort
+    // determinism — throw rather than serve a corrupt proof.
+    if (leaves.some((l) => l.vcJwt.length === 0)) {
+      logger.error(
+        "[VcIssuanceService] generateInclusionProof: anchor contains a row with empty vcJwt",
+        {
+          vcId,
+          vcAnchorId: anchor.id,
+          emptyCount: leaves.filter((l) => l.vcJwt.length === 0).length,
+        },
+      );
+      throw new Error(
+        `generateInclusionProof: anchor ${anchor.id} integrity violation (empty vcJwt in leaf set)`,
+      );
+    }
     if (leaves.length === 0) {
       logger.warn("[VcIssuanceService] generateInclusionProof: anchor has no resolvable leaves", {
         vcId,

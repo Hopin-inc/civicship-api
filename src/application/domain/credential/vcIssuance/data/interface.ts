@@ -50,9 +50,12 @@ export interface IVcIssuanceRepository {
    * being indexed in the cached row alone because the proof must verify
    * against the full sibling set of the anchor batch.
    *
-   * Rows with a missing/empty `vcJwt` are dropped silently — a corrupt
-   * row at this point would only weaken the proof for OTHER leaves, and
-   * the surface is read-only.
+   * Rows with a missing/empty `vcJwt` are returned with `vcJwt: ""` so the
+   * Service layer can detect the mismatch. Merkle integrity requires the
+   * exact same leaf set as anchor time — even one missing leaf shifts the
+   * tree and invalidates **every** proof in the batch (not just the
+   * affected leaf). Service compares `leaves.length` against
+   * `anchor.leafIds.length` and throws on mismatch.
    */
   findVcJwtsByIds(ctx: IContext, vcIssuanceRequestIds: string[]): Promise<VcJwtLeaf[]>;
 }

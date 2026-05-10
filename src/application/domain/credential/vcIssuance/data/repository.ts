@@ -211,12 +211,15 @@ export default class VcIssuanceRepository implements IVcIssuanceRepository {
         select: { id: true, vcJwt: true },
       }),
     );
-    return rows
-      .filter(
-        (r): r is { id: string; vcJwt: string } =>
-          typeof r.vcJwt === "string" && r.vcJwt.length > 0,
-      )
-      .map((r) => ({ vcIssuanceRequestId: r.id, vcJwt: r.vcJwt }));
+    // Do NOT silently filter rows with missing/empty vcJwt — Merkle root
+    // depends on the exact leaf set used at anchor time; dropping a leaf
+    // here invalidates every proof in the batch, not just the affected
+    // one. Service layer enforces the integrity invariant
+    // (leaves.length === anchor.leafIds.length).
+    return rows.map((r) => ({
+      vcIssuanceRequestId: r.id,
+      vcJwt: typeof r.vcJwt === "string" ? r.vcJwt : "",
+    }));
   }
 }
 
