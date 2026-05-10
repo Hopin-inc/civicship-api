@@ -1,10 +1,14 @@
 /**
- * Unit tests for `VcIssuanceService` (Phase 1 step 7).
+ * Unit tests for `VcIssuanceService` (Phase 1 step 7 + step 8 §D wiring).
  *
  * Strategy A: the repository is a stub but tests inject a `useValue` mock
  * so we can assert the persisted row shape. The KMS signer is also stubbed
  * via the `STUB_SIGNATURE` constant (real signing lands in
  * `claude/phase1-infra-kms-issuer-did`).
+ *
+ * Step 8 update: `StatusListService` is now a constructor dependency. We
+ * inject a fake that returns a deterministic slot so the assertions can
+ * pin the embedded `credentialStatus` block.
  */
 
 import "reflect-metadata";
@@ -17,10 +21,21 @@ import { IContext } from "@/types/server";
 
 const SUBJECT_DID = "did:web:api.civicship.app:users:u_xyz_phase1";
 const SAMPLE_USER_ID = "u_xyz_phase1";
+const FAKE_STATUS_URL = "https://api.civicship.app/credentials/status/1.jwt";
 
 class MockVcIssuanceRepository {
   findById = jest.fn().mockResolvedValue(null);
   create = jest.fn();
+}
+
+class MockStatusListService {
+  // Deterministic slot so JWT assertions can compare exact strings.
+  allocateNextSlot = jest.fn().mockResolvedValue({
+    statusListId: "list-row-cuid",
+    listKey: "1",
+    statusListIndex: 42,
+    statusListCredentialUrl: FAKE_STATUS_URL,
+  });
 }
 
 function decodeJwtSegment(segment: string): unknown {
@@ -29,6 +44,7 @@ function decodeJwtSegment(segment: string): unknown {
 
 describe("VcIssuanceService", () => {
   let mockRepository: MockVcIssuanceRepository;
+  let mockStatusList: MockStatusListService;
   let service: VcIssuanceService;
   const mockCtx = {} as IContext;
 
@@ -37,14 +53,16 @@ describe("VcIssuanceService", () => {
     container.reset();
 
     mockRepository = new MockVcIssuanceRepository();
+    mockStatusList = new MockStatusListService();
     container.register("VcIssuanceRepository", { useValue: mockRepository });
+    container.register("StatusListService", { useValue: mockStatusList });
     container.register("VcIssuanceService", { useClass: VcIssuanceService });
 
     service = container.resolve(VcIssuanceService);
   });
 
   describe("issueVc", () => {
-    it("persists a COMPLETED row with the civicship issuer DID and a JWT-shaped vcJwt", async () => {
+    it("persists a COMPLETED row with the civicship issuer DID, JWT-shaped vcJwt, and §D StatusList slot", async () => {
       mockRepository.create.mockResolvedValue({ ok: true });
 
       await service.issueVc(mockCtx, {
@@ -54,6 +72,7 @@ describe("VcIssuanceService", () => {
         claims: { score: 5, label: "GOOD" },
       });
 
+      expect(mockStatusList.allocateNextSlot).toHaveBeenCalledTimes(1);
       expect(mockRepository.create).toHaveBeenCalledTimes(1);
       const [ctxArg, input, txArg] = mockRepository.create.mock.calls[0];
 
@@ -66,12 +85,12 @@ describe("VcIssuanceService", () => {
       expect(input.vcFormat).toBe("INTERNAL_JWT");
       // §5.2.2: VC body is COMPLETED even before chain anchor.
       expect(input.status).toBe("COMPLETED");
-      // §D StatusList wiring lands in step 9 — null for now.
-      expect(input.statusListIndex).toBeNull();
-      expect(input.statusListCredential).toBeNull();
+      // §D StatusList wiring (Phase 1 step 8) — slot from the mock.
+      expect(input.statusListIndex).toBe(42);
+      expect(input.statusListCredential).toBe(FAKE_STATUS_URL);
     });
 
-    it("emits a JWT with three dot-separated segments, signature stub last", async () => {
+    it("emits a JWT with three dot-separated segments, signature stub last, and embeds §D credentialStatus", async () => {
       mockRepository.create.mockResolvedValue({ ok: true });
 
       await service.issueVc(mockCtx, {
@@ -96,11 +115,19 @@ describe("VcIssuanceService", () => {
       expect(subject.id).toBe(SUBJECT_DID);
       expect(subject.score).toBe(5);
 
+      // §D credentialStatus block — mirrors the slot the StatusList service returned.
+      const credentialStatus = payload.credentialStatus as Record<string, unknown>;
+      expect(credentialStatus.id).toBe(`${FAKE_STATUS_URL}#42`);
+      expect(credentialStatus.type).toBe("StatusList2021Entry");
+      expect(credentialStatus.statusPurpose).toBe("revocation");
+      expect(credentialStatus.statusListIndex).toBe("42");
+      expect(credentialStatus.statusListCredential).toBe(FAKE_STATUS_URL);
+
       // The signature segment is a stub marker; verifiers must reject it.
       expect(segments[2]).toBe("stub-not-signed");
     });
 
-    it("forwards the supplied tx to the repository", async () => {
+    it("forwards the supplied tx to both the repository and the StatusList allocator", async () => {
       mockRepository.create.mockResolvedValue({ ok: true });
       const fakeTx = { sentinel: true } as never;
 
@@ -110,8 +137,12 @@ describe("VcIssuanceService", () => {
         fakeTx,
       );
 
-      const [, , txArg] = mockRepository.create.mock.calls[0];
-      expect(txArg).toBe(fakeTx);
+      const [, , repoTx] = mockRepository.create.mock.calls[0];
+      expect(repoTx).toBe(fakeTx);
+      // StatusList allocation must run inside the same transaction so the
+      // slot reservation and the VC insert are atomic together.
+      const [, slotTx] = mockStatusList.allocateNextSlot.mock.calls[0];
+      expect(slotTx).toBe(fakeTx);
     });
 
     it("defaults evaluationId to null when omitted", async () => {

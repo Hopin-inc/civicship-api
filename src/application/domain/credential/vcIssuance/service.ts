@@ -44,6 +44,7 @@ import type {
   IssueVcInput,
   VcIssuanceRow,
 } from "@/application/domain/credential/vcIssuance/data/type";
+import StatusListService from "@/application/domain/credential/statusList/service";
 
 /**
  * Civicship platform issuer DID. Hardcoded per §B / §5.2.2 — civicship is
@@ -77,8 +78,15 @@ export function buildVcPayload(input: {
   subject: string;
   claims: Record<string, unknown>;
   issuedAt: Date;
+  /**
+   * §D — when supplied, embedded as the W3C `credentialStatus` block so
+   * verifiers can resolve revocation. Optional so legacy / replay paths
+   * can still emit a payload without StatusList wiring (they will skip
+   * persistence of `statusListIndex` / `statusListCredential` separately).
+   */
+  credentialStatus?: Record<string, unknown>;
 }): Record<string, unknown> {
-  return {
+  const payload: Record<string, unknown> = {
     "@context": [
       "https://www.w3.org/2018/credentials/v1",
       "https://w3id.org/security/data-integrity/v2",
@@ -91,6 +99,10 @@ export function buildVcPayload(input: {
       ...input.claims,
     },
   };
+  if (input.credentialStatus) {
+    payload.credentialStatus = input.credentialStatus;
+  }
+  return payload;
 }
 
 /**
@@ -110,6 +122,8 @@ export default class VcIssuanceService {
   constructor(
     @inject("VcIssuanceRepository")
     private readonly repository: IVcIssuanceRepository,
+    @inject("StatusListService")
+    private readonly statusListService: StatusListService,
   ) {}
 
   /** Pass-through for the GraphQL `vcIssuance` query (Phase 1 step 8). */
@@ -126,6 +140,13 @@ export default class VcIssuanceService {
    * §5.2.2: build a VC for the supplied claims, sign-stub it, and persist
    * the resulting row. Anchor wiring (vcAnchorId / anchorLeafIndex) is
    * left to the weekly batch.
+   *
+   * §D wiring (Phase 1 step 8): the StatusList slot is now reserved
+   * inline so the issued VC carries a `credentialStatus` block and the
+   * persisted row records `statusListIndex` / `statusListCredential` for
+   * later revocation. The slot allocation runs inside the same `tx` as
+   * the VC insert when one is supplied — the issuer wrapper at the
+   * UseCase layer (§5.2.4) keeps the two writes consistent.
    */
   async issueVc(
     ctx: IContext,
@@ -139,15 +160,30 @@ export default class VcIssuanceService {
     const issuedAt = input.issuedAt ?? new Date();
     const issuerDid = CIVICSHIP_ISSUER_DID;
 
-    // 1) Build the W3C VC payload. §D `credentialStatus` is intentionally
-    //    NOT embedded here — the StatusList domain lands in Phase 1 step 9
-    //    and will inject the slot via a follow-up service call. Tests
-    //    verify the payload shape independently.
+    // 0) Reserve the next StatusList bit index (§D / §7.2). Done before
+    //    the VC payload build so `credentialStatus` can embed the URL +
+    //    index before signing. The StatusList service handles bootstrap +
+    //    capacity rollover; we just consume the returned slot.
+    const slot = await this.statusListService.allocateNextSlot(ctx, tx);
+
+    // 1) Build the W3C VC payload, now with §D `credentialStatus` so
+    //    verifiers can resolve the revocation list.
     const vcPayload = buildVcPayload({
       issuer: issuerDid,
       subject: input.subjectDid,
       claims: input.claims,
       issuedAt,
+      credentialStatus: {
+        // The fragment binds the bit index to the list URL — verifiers
+        // resolve `statusListCredential` and check bit `statusListIndex`.
+        id: `${slot.statusListCredentialUrl}#${slot.statusListIndex}`,
+        type: "StatusList2021Entry",
+        statusPurpose: "revocation",
+        // String per the W3C spec; integer is also accepted but string
+        // matches the §D example in the design doc.
+        statusListIndex: String(slot.statusListIndex),
+        statusListCredential: slot.statusListCredentialUrl,
+      },
     });
 
     // 2) Build a JWT-shape envelope. KMS-backed signing lands in
@@ -170,6 +206,8 @@ export default class VcIssuanceService {
       // Don't log the full JWT — it includes the (stub) signature segment
       // and would create noise once real signatures arrive.
       jwtLength: vcJwt.length,
+      statusListIndex: slot.statusListIndex,
+      statusListCredential: slot.statusListCredentialUrl,
     });
 
     return this.repository.create(
@@ -181,11 +219,10 @@ export default class VcIssuanceService {
         subjectDid: input.subjectDid,
         vcFormat: "INTERNAL_JWT",
         vcJwt,
-        // §D StatusList slot is reserved by a sibling service in Phase 1
-        // step 9; for now, leave both fields null and let the upgrade path
-        // patch them in.
-        statusListIndex: null,
-        statusListCredential: null,
+        // §D StatusList slot — wired via `StatusListService`. Recorded
+        // here so the revocation flow can find the row by VC id.
+        statusListIndex: slot.statusListIndex,
+        statusListCredential: slot.statusListCredentialUrl,
         // §5.2.2: VC body is COMPLETED even before chain anchor.
         status: "COMPLETED",
       },

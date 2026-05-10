@@ -9,6 +9,7 @@ import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
 import anchorBatchRouter from "@/presentation/router/admin/anchorBatch";
 import didRouter from "@/presentation/router/did";
+import credentialsRouter from "@/presentation/router/credentials";
 import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
@@ -83,6 +84,9 @@ async function startServer() {
   //   /users/:userId/did.json
   //   /vc/:vcId/inclusion-proof
   app.use("/", didRouter);
+  // §5.4.5 — public Bitstring Status List 2021 endpoint. Mounted at the
+  // path that VC verifiers resolve from `credentialStatus.statusListCredential`.
+  app.use("/credentials", credentialsRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });
