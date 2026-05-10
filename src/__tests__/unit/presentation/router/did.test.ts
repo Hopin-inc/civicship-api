@@ -161,7 +161,7 @@ describe("router/did (§5.4)", () => {
       const res = await request(buildApp()).get(`/users/${USER_ID}/did.json`);
 
       expect(res.status).toBe(500);
-      expect(res.body).toMatchObject({ error: "internal_error" });
+      expect(res.body).toMatchObject({ error: "Internal Server Error" });
     });
   });
 

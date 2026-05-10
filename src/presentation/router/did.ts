@@ -39,7 +39,11 @@ import {
   DidDocumentResolver,
   type DidDocumentWithProof,
 } from "@/infrastructure/libs/did/didDocumentResolver";
-import { USER_ID_REGEX, buildUserDid } from "@/infrastructure/libs/did/userDidBuilder";
+import {
+  USER_ID_REGEX,
+  buildUserDid,
+  isValidUserId,
+} from "@/infrastructure/libs/did/userDidBuilder";
 import logger from "@/infrastructure/logging";
 
 const router = express.Router();
@@ -73,23 +77,12 @@ router.get("/.well-known/did.json", (_req: Request, res: Response) => {
 // User DID Document — /users/:userId/did.json
 // ---------------------------------------------------------------------------
 
-/**
- * Validate `userId` against the same regex used by `buildUserDid` (§9.2)
- * BEFORE reaching the resolver, so malformed IDs return 400 — never
- * leaking through to a database query that would always miss anyway.
- */
-function isValidUserId(userId: string): boolean {
-  return (
-    typeof userId === "string" &&
-    userId.length > 0 &&
-    userId.length <= 64 &&
-    USER_ID_REGEX.test(userId)
-  );
-}
-
 router.get("/users/:userId/did.json", async (req: Request, res: Response) => {
   const { userId } = req.params;
 
+  // Re-uses the same predicate as `buildUserDid` / `assertValidUserId`
+  // (`@/infrastructure/libs/did/userDidBuilder`) so the §9.2 regex / length
+  // bounds live in exactly one place.
   if (!isValidUserId(userId)) {
     return res.status(400).json({
       error: "invalid_user_id",
@@ -110,11 +103,15 @@ router.get("/users/:userId/did.json", async (req: Request, res: Response) => {
 
     return res.status(200).json(doc);
   } catch (err) {
+    // Mirror `src/index.ts` global error handler: log message + stack and
+    // surface the same `{ error: "Internal Server Error" }` shape so HTTP
+    // clients see a consistent 5xx contract across the API.
     logger.error("[router/did] failed to build user DID Document", {
       userId,
-      err: err instanceof Error ? err.message : String(err),
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
     });
-    return res.status(500).json({ error: "internal_error" });
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
