@@ -2077,6 +2077,11 @@ model ReportGoldenCase {
 // (A) Transaction Merkle anchoring 用
 // 旧 t_merkle_commits / t_merkle_proofs は死蔵。FK も依存も持たない。
 // proof は問い合わせ時に leafIds から動的生成する（MerkleProof 相当のテーブル不要）
+// 注: prisma-erd-generator は本モデルの `@@index([leafIds], type: Gin)` を
+// 解釈して docs/ERD.md の "t_transaction_anchors" 描画で `leaf_ids` を 🗝️ (PK)
+// として誤表示し `id` が抜ける（同じ GIN を持つ VcAnchor は正常描画される、
+// 順序依存的な generator バグ）。実 DB は migration.sql の `PRIMARY KEY ("id")`
+// 通り `id` が PK で問題なし。doc の cosmetic 不一致は upstream 修正待ち。
 model TransactionAnchor {
   id String @id @default(cuid())
 

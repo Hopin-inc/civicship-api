@@ -1066,7 +1066,7 @@ CARDANO_PREPROD CARDANO_PREPROD
   
 
   "t_transaction_anchors" {
-    String id "🗝️"
+    String leaf_ids "🗝️"
     DateTime period_start 
     DateTime period_end 
     String root_hash 
