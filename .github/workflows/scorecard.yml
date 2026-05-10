@@ -52,7 +52,7 @@ jobs:
       # が dangerous-workflow check で harden-runner の有無を見ているため、
       # 入れておくと自分のスコアにも返ってくる。
       - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
           disable-sudo: true
@@ -84,7 +84,7 @@ jobs:
       # verifier allowlist 反映が遅れ得るため、starter が推奨してない version
       # への先行 bump は推奨しない。
       - name: Run analysis
-        uses: ossf/scorecard-action@f49aabe0b5af0936a0987cfb85d86b75731b0186 # v2.4.1
+        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3
         with:
           results_file: scorecard-results.sarif
           results_format: sarif
