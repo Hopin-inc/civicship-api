@@ -730,11 +730,14 @@ function textAsChunkedList(s: string): CSL.TransactionMetadatum {
 
 ```
 1. leafIds は Transaction.id (cuid 文字列) を ASCII byte の昇順 (ORDER BY id ASC) で並べる
+   （vc.root の場合は vc_jwt 文字列の ASCII 昇順）
 2. 各 leaf の hash = Blake2b-256( utf8_bytes(transaction.id) )
    ※ "0x" prefix なし、padding なし、トリミングなし
 3. Merkle 木の内部ノード = Blake2b-256( left_node_bytes || right_node_bytes )
    ※ 32 byte の生 bytes を連結（base16 文字列にしない）
-4. 葉が奇数の場合、最後の葉を複製して右子とする（OZ ライブラリ標準仕様）
+4. 葉の数が奇数の場合は **複製を行わず**、対の存在しない葉をそのまま親階層へ昇格させる
+   （`@openzeppelin/merkle-tree` JS 実装の carry-up 規則。古典的 Bitcoin 互換の duplicate-last
+    アルゴリズムとは root が一致しないため、verifier も carry-up を実装する）
 ```
 
 ##### hash 関数の選択: Blake2b-256
