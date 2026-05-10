@@ -65,6 +65,17 @@ export interface IssueVcInput {
   subjectDid: string;
   /** Free-form claim payload — opaque to this service, signed by KMS. */
   claims: Record<string, unknown>;
+  /**
+   * Issuance timestamp injected by the caller. Optional — defaults to
+   * `new Date()` inside the service. Exposed so that:
+   *   1. tests can pin the timestamp for deterministic JWT/snapshot assertions
+   *   2. batch / replay flows can preserve the original VC issuance time
+   *      instead of stamping the moment of replay.
+   *
+   * The same instance is used for both the W3C `issuanceDate` claim and the
+   * persistence row, eliminating sub-second drift between the two.
+   */
+  issuedAt?: Date;
 }
 
 /** Inputs to `IVcIssuanceRepository.create`. */

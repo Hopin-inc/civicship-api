@@ -122,7 +122,11 @@ export default class VcIssuanceService {
     input: IssueVcInput,
     tx?: Prisma.TransactionClient,
   ): Promise<VcIssuanceRow> {
-    const issuedAt = new Date();
+    // Capture the issuance instant exactly once: re-using the same `Date`
+    // for both the JWT `issuanceDate` claim and downstream persistence
+    // avoids sub-second drift between payload and DB row. Callers (tests,
+    // replay batches) may override via `input.issuedAt`.
+    const issuedAt = input.issuedAt ?? new Date();
     const issuerDid = CIVICSHIP_ISSUER_DID;
 
     // 1) Build the W3C VC payload. §D `credentialStatus` is intentionally
