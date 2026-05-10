@@ -66,11 +66,25 @@ FAILED FAILED
     
 
 
+        DIDMethod {
+            IDENTUS IDENTUS
+INTERNAL INTERNAL
+        }
+    
+
+
         VCIssuanceStatus {
             PENDING PENDING
 PROCESSING PROCESSING
 COMPLETED COMPLETED
 FAILED FAILED
+        }
+    
+
+
+        VCFormat {
+            IDENTUS_JWT IDENTUS_JWT
+INTERNAL_JWT INTERNAL_JWT
         }
     
 
@@ -333,6 +347,30 @@ STRUCTURE STRUCTURE
 OTHER OTHER
         }
     
+
+
+        DidOperation {
+            CREATE CREATE
+UPDATE UPDATE
+DEACTIVATE DEACTIVATE
+        }
+    
+
+
+        AnchorStatus {
+            PENDING PENDING
+SUBMITTED SUBMITTED
+CONFIRMED CONFIRMED
+FAILED FAILED
+        }
+    
+
+
+        ChainNetwork {
+            CARDANO_MAINNET CARDANO_MAINNET
+CARDANO_PREPROD CARDANO_PREPROD
+        }
+    
   "t_images" {
     String id "🗝️"
     Boolean is_public 
@@ -493,6 +531,8 @@ OTHER OTHER
     String url_youtube "❓"
     String url_tiktok "❓"
     String image_id "❓"
+    DateTime deleted_at "❓"
+    String deleted_reason "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -519,6 +559,7 @@ OTHER OTHER
     String did_value "❓"
     String error_message "❓"
     Int retry_count 
+    DidMethod did_method 
     DateTime requested_at 
     DateTime processed_at "❓"
     DateTime completed_at "❓"
@@ -538,6 +579,14 @@ OTHER OTHER
     String schema_id "❓"
     String error_message "❓"
     Int retry_count 
+    VcFormat vc_format 
+    String vc_jwt "❓"
+    String vc_anchor_id "❓"
+    Int anchor_leaf_index "❓"
+    Int status_list_index "❓"
+    String status_list_credential "❓"
+    DateTime revoked_at "❓"
+    String revocation_reason "❓"
     DateTime requested_at 
     DateTime processed_at "❓"
     DateTime completed_at "❓"
@@ -1016,6 +1065,87 @@ OTHER OTHER
     }
   
 
+  "t_transaction_anchors" {
+    String leaf_ids "🗝️"
+    DateTime period_start 
+    DateTime period_end 
+    String root_hash 
+    String leaf_ids 
+    Int leaf_count 
+    ChainNetwork network 
+    Int metadata_label 
+    String chain_tx_hash "❓"
+    Int block_height "❓"
+    AnchorStatus status 
+    DateTime submitted_at "❓"
+    DateTime confirmed_at "❓"
+    String batch_id "❓"
+    Int attempt_count 
+    String last_error "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_vc_anchors" {
+    String id "🗝️"
+    DateTime period_start 
+    DateTime period_end 
+    String root_hash 
+    String leaf_ids 
+    Int leaf_count 
+    ChainNetwork network 
+    Int metadata_label 
+    String chain_tx_hash "❓"
+    Int block_height "❓"
+    AnchorStatus status 
+    DateTime submitted_at "❓"
+    DateTime confirmed_at "❓"
+    String batch_id "❓"
+    Int attempt_count 
+    String last_error "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_user_did_anchors" {
+    String id "🗝️"
+    String did 
+    DidOperation operation 
+    String document_hash 
+    Bytes document_cbor "❓"
+    String previous_anchor_id "❓"
+    ChainNetwork network 
+    Int metadata_label 
+    String chain_tx_hash "❓"
+    Int chain_op_index "❓"
+    AnchorStatus status 
+    DateTime submitted_at "❓"
+    DateTime confirmed_at "❓"
+    String batch_id "❓"
+    Int version 
+    String user_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_status_list_credentials" {
+    String id "🗝️"
+    String list_key 
+    Bytes encoded_list 
+    String vc_jwt 
+    Int next_index 
+    Int capacity 
+    Boolean frozen 
+    Int updated_version 
+    DateTime last_issued_at 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "v_place_public_opportunity_count" {
     String placeId "🗝️"
     Int currentPublicCount 
@@ -1181,8 +1311,11 @@ OTHER OTHER
     "t_identities" }o--|| t_users : "user"
     "t_identities" }o--|o t_communities : "community"
     "t_did_issuance_requests" |o--|| "DidIssuanceStatus" : "enum:status"
+    "t_did_issuance_requests" |o--|| "DidMethod" : "enum:did_method"
     "t_did_issuance_requests" }o--|| t_users : "user"
     "t_vc_issuance_requests" |o--|| "VcIssuanceStatus" : "enum:status"
+    "t_vc_issuance_requests" |o--|| "VcFormat" : "enum:vc_format"
+    "t_vc_issuance_requests" }o--|o t_vc_anchors : "vcAnchor"
     "t_vc_issuance_requests" |o--|| t_evaluations : "evaluation"
     "t_vc_issuance_requests" }o--|| t_users : "user"
     "t_memberships" }o--|| t_users : "user"
@@ -1307,6 +1440,15 @@ OTHER OTHER
     "t_report_feedbacks" }o--|| t_users : "user"
     "t_report_feedbacks" |o--|o "FeedbackType" : "enum:feedback_type"
     "t_report_golden_cases" |o--|o "ReportStatus" : "enum:expected_status"
+    "t_transaction_anchors" |o--|| "ChainNetwork" : "enum:network"
+    "t_transaction_anchors" |o--|| "AnchorStatus" : "enum:status"
+    "t_vc_anchors" |o--|| "ChainNetwork" : "enum:network"
+    "t_vc_anchors" |o--|| "AnchorStatus" : "enum:status"
+    "t_user_did_anchors" |o--|| "DidOperation" : "enum:operation"
+    "t_user_did_anchors" |o--|o t_user_did_anchors : "previousAnchor"
+    "t_user_did_anchors" |o--|| "ChainNetwork" : "enum:network"
+    "t_user_did_anchors" |o--|| "AnchorStatus" : "enum:status"
+    "t_user_did_anchors" }o--|| t_users : "user"
     "v_place_public_opportunity_count" |o--|| t_places : "place"
     "v_place_accumulated_participants" |o--|| t_places : "place"
     "v_membership_participation_geo" |o--|| "ParticipationType" : "enum:type"

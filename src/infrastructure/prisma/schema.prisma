@@ -413,6 +413,14 @@ model User {
   reportTemplatesUpdated ReportTemplate[] @relation("ReportTemplateUpdatedBy")
   reportFeedbacks        ReportFeedback[] @relation("ReportFeedbackAuthor")
 
+  // §9.7 GDPR: 論理削除フェーズ → 物理削除フェーズの 2 段階削除フローを支える
+  // PII カラム匿名化と物理削除 batch のために deletedAt / deletedReason を保持する
+  deletedAt     DateTime? @map("deleted_at")
+  deletedReason String?   @map("deleted_reason")
+
+  // §4.1 / §9.7 DID anchor リレーション。FK は UserDidAnchor 側で onDelete: Restrict 指定
+  didAnchors UserDidAnchor[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -482,6 +490,9 @@ model DidIssuanceRequest {
   errorMessage String?           @map("error_message")
   retryCount   Int               @default(0) @map("retry_count")
 
+  // §4.1: 既発行レコードは IDENTUS のまま、新規は INTERNAL（did:web 自前発行）
+  didMethod DidMethod @default(IDENTUS) @map("did_method")
+
   requestedAt DateTime  @default(now()) @map("requested_at")
   processedAt DateTime? @map("processed_at")
   completedAt DateTime? @map("completed_at")
@@ -494,6 +505,13 @@ model DidIssuanceRequest {
 
   @@index([userId])
   @@map("t_did_issuance_requests")
+}
+
+enum DidMethod {
+  IDENTUS // 既発行レコードの後方互換用
+  INTERNAL // did:web 自前発行
+
+  @@map("DIDMethod")
 }
 
 enum VcIssuanceStatus {
@@ -517,6 +535,22 @@ model VcIssuanceRequest {
   errorMessage     String?          @map("error_message")
   retryCount       Int              @default(0) @map("retry_count")
 
+  // §4.1: 自前発行 VC のフォーマットと本体（JWT 文字列）
+  vcFormat VcFormat @default(IDENTUS_JWT) @map("vc_format")
+  vcJwt    String?  @map("vc_jwt")
+
+  // §4.1 / §A: VC anchor との紐付け（VC は Merkle anchor する）
+  vcAnchorId      String?   @map("vc_anchor_id")
+  vcAnchor        VcAnchor? @relation(fields: [vcAnchorId], references: [id])
+  anchorLeafIndex Int?      @map("anchor_leaf_index") // バッチ内の VC リーフ位置（proof 動的生成）
+
+  // §4.1 / §D: VC revocation（StatusList 2021 / Bitstring Status List 互換）
+  // statusListIndex はビット位置、StatusListCredential.id を経由して状態取得
+  statusListIndex      Int?      @map("status_list_index")
+  statusListCredential String?   @map("status_list_credential") // どのリストに含めるか（URL or ID）
+  revokedAt            DateTime? @map("revoked_at")
+  revocationReason     String?   @map("revocation_reason")
+
   requestedAt DateTime  @default(now()) @map("requested_at")
   processedAt DateTime? @map("processed_at")
   completedAt DateTime? @map("completed_at")
@@ -531,7 +565,16 @@ model VcIssuanceRequest {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@index([userId])
+  @@index([vcAnchorId])
+  @@index([statusListCredential, statusListIndex])
   @@map("t_vc_issuance_requests")
+}
+
+enum VcFormat {
+  IDENTUS_JWT // 既存
+  INTERNAL_JWT // 自前
+
+  @@map("VCFormat")
 }
 
 // ------------------------------ Membership Domain ------------------------------
@@ -2023,4 +2066,201 @@ model ReportGoldenCase {
 
   @@unique([variant, label])
   @@map("t_report_golden_cases")
+}
+
+// ------------------------------ DID / VC Internalization Domain ------------------------------
+// §4.1 docs/report/did-vc-internalization.md
+// Phase 1 Step 1: schema-only addition.
+// すべての追加は backwards compatible（NULL 許容 / デフォルト値あり）。
+// 旧 t_merkle_commits / t_merkle_proofs は §4.2 に従い死蔵のまま触らない。
+
+// (A) Transaction Merkle anchoring 用
+// 旧 t_merkle_commits / t_merkle_proofs は死蔵。FK も依存も持たない。
+// proof は問い合わせ時に leafIds から動的生成する（MerkleProof 相当のテーブル不要）
+model TransactionAnchor {
+  id String @id @default(cuid())
+
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+
+  rootHash  String   @map("root_hash") // 32-byte Blake2b-256 (Cardano-native), hex 64 chars (no 0x prefix)
+  leafIds   String[] @map("leaf_ids") // Transaction.id を正規順序（cuid ASC）で保持
+  leafCount Int      @map("leaf_count")
+
+  network       ChainNetwork
+  metadataLabel Int          @default(1985) @map("metadata_label") // civicship 専用 label。674 (CIP-20 messages) は wallet が "メッセージ" として表示してしまうため避ける
+  chainTxHash   String?      @map("chain_tx_hash")
+  blockHeight   Int?         @map("block_height")
+
+  status      AnchorStatus @default(PENDING)
+  submittedAt DateTime?    @map("submitted_at")
+  confirmedAt DateTime?    @map("confirmed_at")
+
+  // §5.3.1 idempotency 対応：本 anchor がどの batch 実行で submit されたかを CAS で固定
+  // PENDING 中は NULL、batch 取得時に SELECT ... FOR UPDATE 相当で batchId を埋める
+  batchId String? @map("batch_id")
+
+  attemptCount Int     @default(0) @map("attempt_count")
+  lastError    String? @map("last_error") @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([periodEnd])
+  @@index([batchId])
+  @@index([leafIds], type: Gin) // /point/verify の `leaf_ids && $1::text[]` 検索を高速化（必須）
+  @@map("t_transaction_anchors")
+}
+
+// (A') VC Merkle anchoring 用（新設、レビュー指摘の Critical A 対応）
+// VC は IDENTUS 時代に Cardano に anchor されており、内製化後も同等の改ざん不能性を維持する必要がある。
+// 設計上は TransactionAnchor と並列、leafIds は VcIssuanceRequest.id を保持。
+// 同じバッチ tx の中で Transaction root と並んで VC root が metadata に格納される。
+model VcAnchor {
+  id String @id @default(cuid())
+
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+
+  rootHash  String   @map("root_hash")
+  // VC リーフは VcIssuanceRequest.id（cuid）を ASC で並べる
+  // canonical leaf hash = Blake2b-256(utf8_bytes(vc_jwt)) — JWT 文字列全体の hash
+  leafIds   String[] @map("leaf_ids")
+  leafCount Int      @map("leaf_count")
+
+  network       ChainNetwork
+  metadataLabel Int          @default(1985) @map("metadata_label")
+  chainTxHash   String?      @map("chain_tx_hash")
+  blockHeight   Int?         @map("block_height")
+
+  status      AnchorStatus @default(PENDING)
+  submittedAt DateTime?    @map("submitted_at")
+  confirmedAt DateTime?    @map("confirmed_at")
+
+  // §5.3.1 idempotency 対応
+  batchId String? @map("batch_id")
+
+  attemptCount Int     @default(0) @map("attempt_count")
+  lastError    String? @map("last_error") @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  vcRequests VcIssuanceRequest[]
+
+  @@index([status])
+  @@index([periodEnd])
+  @@index([batchId])
+  @@index([leafIds], type: Gin)
+  @@map("t_vc_anchors")
+}
+
+// (B) DID 操作の chain 記録（did:prism の機能性を hybrid モデルで再現）
+// 各 DID の各操作（create/update/deactivate）を 1 行で表現。
+// 同じ tx に複数行が乗る（バッチ submit のため）。
+// previousAnchorId で hash chain を形成し、版履歴を追跡可能。
+//
+// 注: DID Document には User の verificationMethod は含めない（§B 対応：
+// platform-issued + VP なしのため、user 鍵は不要）。
+// documentCbor はオプションで、最小構成は { id, deactivated? } のみ。
+model UserDidAnchor {
+  id String @id @default(cuid())
+
+  did       String // "did:web:api.civicship.app:users:u_xyz"
+  operation DidOperation // CREATE / UPDATE / DEACTIVATE
+
+  documentHash String @map("document_hash") // 該当バージョン DID Document の hash (32B hex)
+  documentCbor Bytes? @map("document_cbor") // CBOR 圧縮した DID Document（chain 単独 resolve 用、§3.3）
+  // §U: 通常 CREATE/UPDATE は含む、Backfill / DEACTIVATE / metadata 超過時は NULL
+  // 規模見積: 1 op ~600B × 年 100 ops × 5 年 = 300 KB（無視できる）
+  // 10 年以上の運用で気になる場合は古い行を archive 化（Phase 4 後検討）
+
+  previousAnchorId String?         @map("previous_anchor_id") // 前バージョンへのリンク（hash chain）
+  previousAnchor   UserDidAnchor?  @relation("DidVersionChain", fields: [previousAnchorId], references: [id])
+  nextAnchors      UserDidAnchor[] @relation("DidVersionChain")
+
+  // chain 書込状態
+  network       ChainNetwork
+  metadataLabel Int          @default(1985) @map("metadata_label")
+  chainTxHash   String?      @map("chain_tx_hash") // CONFIRMED 後に確定
+  chainOpIndex  Int?         @map("chain_op_index") // 同一 tx 内の何番目の op か（DID 操作の chain inclusion proof）
+
+  status      AnchorStatus @default(PENDING)
+  submittedAt DateTime?    @map("submitted_at")
+  confirmedAt DateTime?    @map("confirmed_at")
+
+  // §5.3.1 idempotency 対応
+  batchId String? @map("batch_id")
+
+  // §H 楽観的ロック（@updatedAt は CAS 不可なので明示 version 列）
+  version Int @default(0)
+
+  // §9.7 / §N ユーザー紐付け：Cascade ではなく Restrict
+  // User 削除は明示的な DEACTIVATE workflow を経るため、Prisma 側では FK 制約のみ
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@index([did, createdAt])
+  @@index([userId])
+  @@index([status])
+  @@index([batchId])
+  @@map("t_user_did_anchors")
+}
+
+enum DidOperation {
+  CREATE
+  UPDATE // 鍵ローテ等
+  DEACTIVATE
+}
+
+// (C) Status List 2021 / Bitstring Status List 配信用（§D 対応：VC revocation）
+// 1 つの StatusListCredential は最大 131,072 ビット（16 KB）の bitstring を保持し、
+// それぞれのビットが 1 つの VC の revoked 状態を表す。
+// civicship.app の運用想定（年間 ~10,000 VC 発行）では 1-2 リストで十分。
+// list 自体も VC として KMS で署名して配信（自己参照型）。
+model StatusListCredential {
+  id String @id @default(cuid())
+
+  // 配信 URL の path 部分。例: "1" → /status/list/1
+  listKey String @unique @map("list_key")
+
+  encodedList Bytes  @map("encoded_list") // GZIP 圧縮 bitstring (Multibase base64url で配信時にエンコード)
+  vcJwt       String @map("vc_jwt") @db.Text // この list 自体の VC JWT (再生成のたびに更新)
+
+  // 次の発行で使う index（追加発行ごとに増分）
+  nextIndex Int @default(0) @map("next_index")
+  capacity  Int @default(131072) // 1 list あたりの最大 VC 数
+
+  // §7.3 capacity 到達時の rotation：true なら新規発行は別 list に向かう
+  // ただし revoked bit の更新と HTTPS 配信は継続（過去 VC の検証用に永久 live）
+  frozen Boolean @default(false)
+
+  // 直近の更新（revocation 反映時）
+  updatedVersion Int      @default(0) @map("updated_version")
+  lastIssuedAt   DateTime @default(now()) @map("last_issued_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_status_list_credentials")
+}
+
+// =========================================================
+// 共有 enum
+// =========================================================
+
+enum AnchorStatus {
+  PENDING // 計算済み・未送信
+  SUBMITTED // tx 送信済み・confirm 待機
+  CONFIRMED // 確定（不可逆）
+  FAILED
+}
+
+enum ChainNetwork {
+  CARDANO_MAINNET
+  CARDANO_PREPROD
 }

@@ -48,6 +48,10 @@ import type { ReportTemplate } from "@prisma/client";
 import type { Report } from "@prisma/client";
 import type { ReportFeedback } from "@prisma/client";
 import type { ReportGoldenCase } from "@prisma/client";
+import type { TransactionAnchor } from "@prisma/client";
+import type { VcAnchor } from "@prisma/client";
+import type { UserDidAnchor } from "@prisma/client";
+import type { StatusListCredential } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -69,7 +73,9 @@ import type { CurrentPrefecture } from "@prisma/client";
 import type { Language } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
 import type { DidIssuanceStatus } from "@prisma/client";
+import type { DidMethod } from "@prisma/client";
 import type { VcIssuanceStatus } from "@prisma/client";
+import type { VcFormat } from "@prisma/client";
 import type { MemberPriorActivityClass } from "@prisma/client";
 import type { MembershipStatus } from "@prisma/client";
 import type { MembershipStatusReason } from "@prisma/client";
@@ -101,6 +107,9 @@ import type { ReportTemplateScope } from "@prisma/client";
 import type { ReportTemplateKind } from "@prisma/client";
 import type { ReportStatus } from "@prisma/client";
 import type { FeedbackType } from "@prisma/client";
+import type { ChainNetwork } from "@prisma/client";
+import type { AnchorStatus } from "@prisma/client";
+import type { DidOperation } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
@@ -452,6 +461,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "reportFeedbacks",
                 type: "ReportFeedback",
                 relationName: "ReportFeedbackAuthor"
+            }, {
+                name: "didAnchors",
+                type: "UserDidAnchor",
+                relationName: "UserToUserDidAnchor"
             }]
     }, {
         name: "Identity",
@@ -474,6 +487,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "VcIssuanceRequest",
         fields: [{
+                name: "vcAnchor",
+                type: "VcAnchor",
+                relationName: "VcAnchorToVcIssuanceRequest"
+            }, {
                 name: "evaluation",
                 type: "Evaluation",
                 relationName: "EvaluationToVcIssuanceRequest"
@@ -1122,6 +1139,34 @@ const modelFieldDefinitions: ModelWithFields[] = [{
             }]
     }, {
         name: "ReportGoldenCase",
+        fields: []
+    }, {
+        name: "TransactionAnchor",
+        fields: []
+    }, {
+        name: "VcAnchor",
+        fields: [{
+                name: "vcRequests",
+                type: "VcIssuanceRequest",
+                relationName: "VcAnchorToVcIssuanceRequest"
+            }]
+    }, {
+        name: "UserDidAnchor",
+        fields: [{
+                name: "previousAnchor",
+                type: "UserDidAnchor",
+                relationName: "DidVersionChain"
+            }, {
+                name: "nextAnchors",
+                type: "UserDidAnchor",
+                relationName: "DidVersionChain"
+            }, {
+                name: "user",
+                type: "User",
+                relationName: "UserToUserDidAnchor"
+            }]
+    }, {
+        name: "StatusListCredential",
         fields: []
     }, {
         name: "PlacePublicOpportunityCountView",
@@ -3136,6 +3181,8 @@ type UserFactoryDefineInput = {
     urlInstagram?: string | null;
     urlYoutube?: string | null;
     urlTiktok?: string | null;
+    deletedAt?: Date | null;
+    deletedReason?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     image?: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput;
@@ -3167,6 +3214,7 @@ type UserFactoryDefineInput = {
     reportsPublished?: Prisma.ReportCreateNestedManyWithoutPublishedByUserInput;
     reportTemplatesUpdated?: Prisma.ReportTemplateCreateNestedManyWithoutUpdatedByUserInput;
     reportFeedbacks?: Prisma.ReportFeedbackCreateNestedManyWithoutUserInput;
+    didAnchors?: Prisma.UserDidAnchorCreateNestedManyWithoutUserInput;
 };
 
 type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
@@ -3495,6 +3543,7 @@ type DidIssuanceRequestFactoryDefineInput = {
     didValue?: string | null;
     errorMessage?: string | null;
     retryCount?: number;
+    didMethod?: DidMethod;
     requestedAt?: Date;
     processedAt?: Date | null;
     completedAt?: Date | null;
@@ -3642,6 +3691,11 @@ type VcIssuanceRequestScalarOrEnumFields = {
     claims: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
 };
 
+type VcIssuanceRequestvcAnchorFactory = {
+    _factoryFor: "VcAnchor";
+    build: () => PromiseLike<Prisma.VcAnchorCreateNestedOneWithoutVcRequestsInput["create"]>;
+};
+
 type VcIssuanceRequestevaluationFactory = {
     _factoryFor: "Evaluation";
     build: () => PromiseLike<Prisma.EvaluationCreateNestedOneWithoutVcIssuanceRequestInput["create"]>;
@@ -3662,11 +3716,19 @@ type VcIssuanceRequestFactoryDefineInput = {
     schemaId?: string | null;
     errorMessage?: string | null;
     retryCount?: number;
+    vcFormat?: VcFormat;
+    vcJwt?: string | null;
+    anchorLeafIndex?: number | null;
+    statusListIndex?: number | null;
+    statusListCredential?: string | null;
+    revokedAt?: Date | null;
+    revocationReason?: string | null;
     requestedAt?: Date;
     processedAt?: Date | null;
     completedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date | null;
+    vcAnchor?: VcIssuanceRequestvcAnchorFactory | Prisma.VcAnchorCreateNestedOneWithoutVcRequestsInput;
     evaluation: VcIssuanceRequestevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutVcIssuanceRequestInput;
     user: VcIssuanceRequestuserFactory | Prisma.UserCreateNestedOneWithoutVcIssuanceRequestsInput;
 };
@@ -3683,6 +3745,10 @@ type VcIssuanceRequestFactoryDefineOptions<TTransients extends Record<string, un
         [traitName: string | symbol]: VcIssuanceRequestFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<VcIssuanceRequest, Prisma.VcIssuanceRequestCreateInput, TTransients>;
+
+function isVcIssuanceRequestvcAnchorFactory(x: VcIssuanceRequestvcAnchorFactory | Prisma.VcAnchorCreateNestedOneWithoutVcRequestsInput | undefined): x is VcIssuanceRequestvcAnchorFactory {
+    return (x as any)?._factoryFor === "VcAnchor";
+}
 
 function isVcIssuanceRequestevaluationFactory(x: VcIssuanceRequestevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutVcIssuanceRequestInput | undefined): x is VcIssuanceRequestevaluationFactory {
     return (x as any)?._factoryFor === "Evaluation";
@@ -3752,6 +3818,9 @@ function defineVcIssuanceRequestFactoryInternal<TTransients extends Record<strin
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
+                vcAnchor: isVcIssuanceRequestvcAnchorFactory(defaultData.vcAnchor) ? {
+                    create: await defaultData.vcAnchor.build()
+                } : defaultData.vcAnchor,
                 evaluation: isVcIssuanceRequestevaluationFactory(defaultData.evaluation) ? {
                     create: await defaultData.evaluation.build()
                 } : defaultData.evaluation,
@@ -10100,6 +10169,668 @@ export const defineReportGoldenCaseFactory = (<TOptions extends ReportGoldenCase
 }) as ReportGoldenCaseFactoryBuilder;
 
 defineReportGoldenCaseFactory.withTransientFields = defaultTransientFieldValues => options => defineReportGoldenCaseFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type TransactionAnchorScalarOrEnumFields = {
+    periodStart: Date;
+    periodEnd: Date;
+    rootHash: string;
+    leafCount: number;
+    network: ChainNetwork;
+};
+
+type TransactionAnchorFactoryDefineInput = {
+    id?: string;
+    periodStart?: Date;
+    periodEnd?: Date;
+    rootHash?: string;
+    leafIds?: Prisma.TransactionAnchorCreateleafIdsInput | Array<string>;
+    leafCount?: number;
+    network?: ChainNetwork;
+    metadataLabel?: number;
+    chainTxHash?: string | null;
+    blockHeight?: number | null;
+    status?: AnchorStatus;
+    submittedAt?: Date | null;
+    confirmedAt?: Date | null;
+    batchId?: string | null;
+    attemptCount?: number;
+    lastError?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+};
+
+type TransactionAnchorTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionAnchorFactoryDefineInput, never>>;
+
+type TransactionAnchorFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<TransactionAnchorFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TransactionAnchor, Prisma.TransactionAnchorCreateInput, TTransients>;
+
+type TransactionAnchorFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<TransactionAnchorFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: TransactionAnchorFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<TransactionAnchor, Prisma.TransactionAnchorCreateInput, TTransients>;
+
+type TransactionAnchorTraitKeys<TOptions extends TransactionAnchorFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TransactionAnchorFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "TransactionAnchor";
+    build(inputData?: Partial<Prisma.TransactionAnchorCreateInput & TTransients>): PromiseLike<Prisma.TransactionAnchorCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.TransactionAnchorCreateInput & TTransients>): PromiseLike<Prisma.TransactionAnchorCreateInput>;
+    buildList(list: readonly Partial<Prisma.TransactionAnchorCreateInput & TTransients>[]): PromiseLike<Prisma.TransactionAnchorCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.TransactionAnchorCreateInput & TTransients>): PromiseLike<Prisma.TransactionAnchorCreateInput[]>;
+    pickForConnect(inputData: TransactionAnchor): Pick<TransactionAnchor, "id">;
+    create(inputData?: Partial<Prisma.TransactionAnchorCreateInput & TTransients>): PromiseLike<TransactionAnchor>;
+    createList(list: readonly Partial<Prisma.TransactionAnchorCreateInput & TTransients>[]): PromiseLike<TransactionAnchor[]>;
+    createList(count: number, item?: Partial<Prisma.TransactionAnchorCreateInput & TTransients>): PromiseLike<TransactionAnchor[]>;
+    createForConnect(inputData?: Partial<Prisma.TransactionAnchorCreateInput & TTransients>): PromiseLike<Pick<TransactionAnchor, "id">>;
+}
+
+export interface TransactionAnchorFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TransactionAnchorFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): TransactionAnchorFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTransactionAnchorScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): TransactionAnchorScalarOrEnumFields {
+    return {
+        periodStart: getScalarFieldValueGenerator().DateTime({ modelName: "TransactionAnchor", fieldName: "periodStart", isId: false, isUnique: false, seq }),
+        periodEnd: getScalarFieldValueGenerator().DateTime({ modelName: "TransactionAnchor", fieldName: "periodEnd", isId: false, isUnique: false, seq }),
+        rootHash: getScalarFieldValueGenerator().String({ modelName: "TransactionAnchor", fieldName: "rootHash", isId: false, isUnique: false, seq }),
+        leafCount: getScalarFieldValueGenerator().Int({ modelName: "TransactionAnchor", fieldName: "leafCount", isId: false, isUnique: false, seq }),
+        network: "CARDANO_MAINNET"
+    };
+}
+
+function defineTransactionAnchorFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TransactionAnchorFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): TransactionAnchorFactoryInterface<TTransients, TransactionAnchorTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly TransactionAnchorTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("TransactionAnchor", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.TransactionAnchorCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateTransactionAnchorScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<TransactionAnchorFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<TransactionAnchorFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.TransactionAnchorCreateInput;
+            const data: Prisma.TransactionAnchorCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionAnchorCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: TransactionAnchor) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.TransactionAnchorCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().transactionAnchor.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TransactionAnchorCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.TransactionAnchorCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "TransactionAnchor" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: TransactionAnchorTraitKeys<TOptions>, ...names: readonly TransactionAnchorTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface TransactionAnchorFactoryBuilder {
+    <TOptions extends TransactionAnchorFactoryDefineOptions>(options?: TOptions): TransactionAnchorFactoryInterface<{}, TransactionAnchorTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends TransactionAnchorTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TransactionAnchorFactoryDefineOptions<TTransients>>(options?: TOptions) => TransactionAnchorFactoryInterface<TTransients, TransactionAnchorTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TransactionAnchor} model.
+ *
+ * @param options
+ * @returns factory {@link TransactionAnchorFactoryInterface}
+ */
+export const defineTransactionAnchorFactory = (<TOptions extends TransactionAnchorFactoryDefineOptions>(options?: TOptions): TransactionAnchorFactoryInterface<TOptions> => {
+    return defineTransactionAnchorFactoryInternal(options ?? {}, {});
+}) as TransactionAnchorFactoryBuilder;
+
+defineTransactionAnchorFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionAnchorFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type VcAnchorScalarOrEnumFields = {
+    periodStart: Date;
+    periodEnd: Date;
+    rootHash: string;
+    leafCount: number;
+    network: ChainNetwork;
+};
+
+type VcAnchorFactoryDefineInput = {
+    id?: string;
+    periodStart?: Date;
+    periodEnd?: Date;
+    rootHash?: string;
+    leafIds?: Prisma.VcAnchorCreateleafIdsInput | Array<string>;
+    leafCount?: number;
+    network?: ChainNetwork;
+    metadataLabel?: number;
+    chainTxHash?: string | null;
+    blockHeight?: number | null;
+    status?: AnchorStatus;
+    submittedAt?: Date | null;
+    confirmedAt?: Date | null;
+    batchId?: string | null;
+    attemptCount?: number;
+    lastError?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    vcRequests?: Prisma.VcIssuanceRequestCreateNestedManyWithoutVcAnchorInput;
+};
+
+type VcAnchorTransientFields = Record<string, unknown> & Partial<Record<keyof VcAnchorFactoryDefineInput, never>>;
+
+type VcAnchorFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<VcAnchorFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<VcAnchor, Prisma.VcAnchorCreateInput, TTransients>;
+
+type VcAnchorFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<VcAnchorFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: VcAnchorFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<VcAnchor, Prisma.VcAnchorCreateInput, TTransients>;
+
+type VcAnchorTraitKeys<TOptions extends VcAnchorFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface VcAnchorFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "VcAnchor";
+    build(inputData?: Partial<Prisma.VcAnchorCreateInput & TTransients>): PromiseLike<Prisma.VcAnchorCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.VcAnchorCreateInput & TTransients>): PromiseLike<Prisma.VcAnchorCreateInput>;
+    buildList(list: readonly Partial<Prisma.VcAnchorCreateInput & TTransients>[]): PromiseLike<Prisma.VcAnchorCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.VcAnchorCreateInput & TTransients>): PromiseLike<Prisma.VcAnchorCreateInput[]>;
+    pickForConnect(inputData: VcAnchor): Pick<VcAnchor, "id">;
+    create(inputData?: Partial<Prisma.VcAnchorCreateInput & TTransients>): PromiseLike<VcAnchor>;
+    createList(list: readonly Partial<Prisma.VcAnchorCreateInput & TTransients>[]): PromiseLike<VcAnchor[]>;
+    createList(count: number, item?: Partial<Prisma.VcAnchorCreateInput & TTransients>): PromiseLike<VcAnchor[]>;
+    createForConnect(inputData?: Partial<Prisma.VcAnchorCreateInput & TTransients>): PromiseLike<Pick<VcAnchor, "id">>;
+}
+
+export interface VcAnchorFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends VcAnchorFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): VcAnchorFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateVcAnchorScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): VcAnchorScalarOrEnumFields {
+    return {
+        periodStart: getScalarFieldValueGenerator().DateTime({ modelName: "VcAnchor", fieldName: "periodStart", isId: false, isUnique: false, seq }),
+        periodEnd: getScalarFieldValueGenerator().DateTime({ modelName: "VcAnchor", fieldName: "periodEnd", isId: false, isUnique: false, seq }),
+        rootHash: getScalarFieldValueGenerator().String({ modelName: "VcAnchor", fieldName: "rootHash", isId: false, isUnique: false, seq }),
+        leafCount: getScalarFieldValueGenerator().Int({ modelName: "VcAnchor", fieldName: "leafCount", isId: false, isUnique: false, seq }),
+        network: "CARDANO_MAINNET"
+    };
+}
+
+function defineVcAnchorFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends VcAnchorFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): VcAnchorFactoryInterface<TTransients, VcAnchorTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly VcAnchorTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("VcAnchor", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.VcAnchorCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateVcAnchorScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<VcAnchorFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<VcAnchorFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.VcAnchorCreateInput;
+            const data: Prisma.VcAnchorCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VcAnchorCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: VcAnchor) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.VcAnchorCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().vcAnchor.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VcAnchorCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.VcAnchorCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "VcAnchor" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: VcAnchorTraitKeys<TOptions>, ...names: readonly VcAnchorTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface VcAnchorFactoryBuilder {
+    <TOptions extends VcAnchorFactoryDefineOptions>(options?: TOptions): VcAnchorFactoryInterface<{}, VcAnchorTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends VcAnchorTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends VcAnchorFactoryDefineOptions<TTransients>>(options?: TOptions) => VcAnchorFactoryInterface<TTransients, VcAnchorTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link VcAnchor} model.
+ *
+ * @param options
+ * @returns factory {@link VcAnchorFactoryInterface}
+ */
+export const defineVcAnchorFactory = (<TOptions extends VcAnchorFactoryDefineOptions>(options?: TOptions): VcAnchorFactoryInterface<TOptions> => {
+    return defineVcAnchorFactoryInternal(options ?? {}, {});
+}) as VcAnchorFactoryBuilder;
+
+defineVcAnchorFactory.withTransientFields = defaultTransientFieldValues => options => defineVcAnchorFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type UserDidAnchorScalarOrEnumFields = {
+    did: string;
+    operation: DidOperation;
+    documentHash: string;
+    network: ChainNetwork;
+};
+
+type UserDidAnchorpreviousAnchorFactory = {
+    _factoryFor: "UserDidAnchor";
+    build: () => PromiseLike<Prisma.UserDidAnchorCreateNestedOneWithoutNextAnchorsInput["create"]>;
+};
+
+type UserDidAnchoruserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutDidAnchorsInput["create"]>;
+};
+
+type UserDidAnchorFactoryDefineInput = {
+    id?: string;
+    did?: string;
+    operation?: DidOperation;
+    documentHash?: string;
+    documentCbor?: Buffer | null;
+    network?: ChainNetwork;
+    metadataLabel?: number;
+    chainTxHash?: string | null;
+    chainOpIndex?: number | null;
+    status?: AnchorStatus;
+    submittedAt?: Date | null;
+    confirmedAt?: Date | null;
+    batchId?: string | null;
+    version?: number;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    previousAnchor?: UserDidAnchorpreviousAnchorFactory | Prisma.UserDidAnchorCreateNestedOneWithoutNextAnchorsInput;
+    nextAnchors?: Prisma.UserDidAnchorCreateNestedManyWithoutPreviousAnchorInput;
+    user: UserDidAnchoruserFactory | Prisma.UserCreateNestedOneWithoutDidAnchorsInput;
+};
+
+type UserDidAnchorTransientFields = Record<string, unknown> & Partial<Record<keyof UserDidAnchorFactoryDefineInput, never>>;
+
+type UserDidAnchorFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<UserDidAnchorFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<UserDidAnchor, Prisma.UserDidAnchorCreateInput, TTransients>;
+
+type UserDidAnchorFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<UserDidAnchorFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: UserDidAnchorFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<UserDidAnchor, Prisma.UserDidAnchorCreateInput, TTransients>;
+
+function isUserDidAnchorpreviousAnchorFactory(x: UserDidAnchorpreviousAnchorFactory | Prisma.UserDidAnchorCreateNestedOneWithoutNextAnchorsInput | undefined): x is UserDidAnchorpreviousAnchorFactory {
+    return (x as any)?._factoryFor === "UserDidAnchor";
+}
+
+function isUserDidAnchoruserFactory(x: UserDidAnchoruserFactory | Prisma.UserCreateNestedOneWithoutDidAnchorsInput | undefined): x is UserDidAnchoruserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type UserDidAnchorTraitKeys<TOptions extends UserDidAnchorFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface UserDidAnchorFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "UserDidAnchor";
+    build(inputData?: Partial<Prisma.UserDidAnchorCreateInput & TTransients>): PromiseLike<Prisma.UserDidAnchorCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.UserDidAnchorCreateInput & TTransients>): PromiseLike<Prisma.UserDidAnchorCreateInput>;
+    buildList(list: readonly Partial<Prisma.UserDidAnchorCreateInput & TTransients>[]): PromiseLike<Prisma.UserDidAnchorCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.UserDidAnchorCreateInput & TTransients>): PromiseLike<Prisma.UserDidAnchorCreateInput[]>;
+    pickForConnect(inputData: UserDidAnchor): Pick<UserDidAnchor, "id">;
+    create(inputData?: Partial<Prisma.UserDidAnchorCreateInput & TTransients>): PromiseLike<UserDidAnchor>;
+    createList(list: readonly Partial<Prisma.UserDidAnchorCreateInput & TTransients>[]): PromiseLike<UserDidAnchor[]>;
+    createList(count: number, item?: Partial<Prisma.UserDidAnchorCreateInput & TTransients>): PromiseLike<UserDidAnchor[]>;
+    createForConnect(inputData?: Partial<Prisma.UserDidAnchorCreateInput & TTransients>): PromiseLike<Pick<UserDidAnchor, "id">>;
+}
+
+export interface UserDidAnchorFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UserDidAnchorFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): UserDidAnchorFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateUserDidAnchorScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): UserDidAnchorScalarOrEnumFields {
+    return {
+        did: getScalarFieldValueGenerator().String({ modelName: "UserDidAnchor", fieldName: "did", isId: false, isUnique: false, seq }),
+        operation: "CREATE",
+        documentHash: getScalarFieldValueGenerator().String({ modelName: "UserDidAnchor", fieldName: "documentHash", isId: false, isUnique: false, seq }),
+        network: "CARDANO_MAINNET"
+    };
+}
+
+function defineUserDidAnchorFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UserDidAnchorFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UserDidAnchorFactoryInterface<TTransients, UserDidAnchorTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly UserDidAnchorTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("UserDidAnchor", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.UserDidAnchorCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateUserDidAnchorScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<UserDidAnchorFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<UserDidAnchorFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                previousAnchor: isUserDidAnchorpreviousAnchorFactory(defaultData.previousAnchor) ? {
+                    create: await defaultData.previousAnchor.build()
+                } : defaultData.previousAnchor,
+                user: isUserDidAnchoruserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            } as Prisma.UserDidAnchorCreateInput;
+            const data: Prisma.UserDidAnchorCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserDidAnchorCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: UserDidAnchor) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.UserDidAnchorCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().userDidAnchor.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserDidAnchorCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.UserDidAnchorCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "UserDidAnchor" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: UserDidAnchorTraitKeys<TOptions>, ...names: readonly UserDidAnchorTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface UserDidAnchorFactoryBuilder {
+    <TOptions extends UserDidAnchorFactoryDefineOptions>(options: TOptions): UserDidAnchorFactoryInterface<{}, UserDidAnchorTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends UserDidAnchorTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UserDidAnchorFactoryDefineOptions<TTransients>>(options: TOptions) => UserDidAnchorFactoryInterface<TTransients, UserDidAnchorTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link UserDidAnchor} model.
+ *
+ * @param options
+ * @returns factory {@link UserDidAnchorFactoryInterface}
+ */
+export const defineUserDidAnchorFactory = (<TOptions extends UserDidAnchorFactoryDefineOptions>(options: TOptions): UserDidAnchorFactoryInterface<TOptions> => {
+    return defineUserDidAnchorFactoryInternal(options, {});
+}) as UserDidAnchorFactoryBuilder;
+
+defineUserDidAnchorFactory.withTransientFields = defaultTransientFieldValues => options => defineUserDidAnchorFactoryInternal(options, defaultTransientFieldValues);
+
+type StatusListCredentialScalarOrEnumFields = {
+    listKey: string;
+    encodedList: Buffer;
+    vcJwt: string;
+};
+
+type StatusListCredentialFactoryDefineInput = {
+    id?: string;
+    listKey?: string;
+    encodedList?: Buffer;
+    vcJwt?: string;
+    nextIndex?: number;
+    capacity?: number;
+    frozen?: boolean;
+    updatedVersion?: number;
+    lastIssuedAt?: Date;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+};
+
+type StatusListCredentialTransientFields = Record<string, unknown> & Partial<Record<keyof StatusListCredentialFactoryDefineInput, never>>;
+
+type StatusListCredentialFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<StatusListCredentialFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<StatusListCredential, Prisma.StatusListCredentialCreateInput, TTransients>;
+
+type StatusListCredentialFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<StatusListCredentialFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: StatusListCredentialFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<StatusListCredential, Prisma.StatusListCredentialCreateInput, TTransients>;
+
+type StatusListCredentialTraitKeys<TOptions extends StatusListCredentialFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface StatusListCredentialFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "StatusListCredential";
+    build(inputData?: Partial<Prisma.StatusListCredentialCreateInput & TTransients>): PromiseLike<Prisma.StatusListCredentialCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.StatusListCredentialCreateInput & TTransients>): PromiseLike<Prisma.StatusListCredentialCreateInput>;
+    buildList(list: readonly Partial<Prisma.StatusListCredentialCreateInput & TTransients>[]): PromiseLike<Prisma.StatusListCredentialCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.StatusListCredentialCreateInput & TTransients>): PromiseLike<Prisma.StatusListCredentialCreateInput[]>;
+    pickForConnect(inputData: StatusListCredential): Pick<StatusListCredential, "id">;
+    create(inputData?: Partial<Prisma.StatusListCredentialCreateInput & TTransients>): PromiseLike<StatusListCredential>;
+    createList(list: readonly Partial<Prisma.StatusListCredentialCreateInput & TTransients>[]): PromiseLike<StatusListCredential[]>;
+    createList(count: number, item?: Partial<Prisma.StatusListCredentialCreateInput & TTransients>): PromiseLike<StatusListCredential[]>;
+    createForConnect(inputData?: Partial<Prisma.StatusListCredentialCreateInput & TTransients>): PromiseLike<Pick<StatusListCredential, "id">>;
+}
+
+export interface StatusListCredentialFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends StatusListCredentialFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): StatusListCredentialFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateStatusListCredentialScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): StatusListCredentialScalarOrEnumFields {
+    return {
+        listKey: getScalarFieldValueGenerator().String({ modelName: "StatusListCredential", fieldName: "listKey", isId: false, isUnique: true, seq }),
+        encodedList: getScalarFieldValueGenerator().Bytes({ modelName: "StatusListCredential", fieldName: "encodedList", isId: false, isUnique: false, seq }),
+        vcJwt: getScalarFieldValueGenerator().String({ modelName: "StatusListCredential", fieldName: "vcJwt", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineStatusListCredentialFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends StatusListCredentialFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): StatusListCredentialFactoryInterface<TTransients, StatusListCredentialTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly StatusListCredentialTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("StatusListCredential", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.StatusListCredentialCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateStatusListCredentialScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<StatusListCredentialFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<StatusListCredentialFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.StatusListCredentialCreateInput;
+            const data: Prisma.StatusListCredentialCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.StatusListCredentialCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: StatusListCredential) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.StatusListCredentialCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().statusListCredential.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.StatusListCredentialCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.StatusListCredentialCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "StatusListCredential" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: StatusListCredentialTraitKeys<TOptions>, ...names: readonly StatusListCredentialTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface StatusListCredentialFactoryBuilder {
+    <TOptions extends StatusListCredentialFactoryDefineOptions>(options?: TOptions): StatusListCredentialFactoryInterface<{}, StatusListCredentialTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends StatusListCredentialTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends StatusListCredentialFactoryDefineOptions<TTransients>>(options?: TOptions) => StatusListCredentialFactoryInterface<TTransients, StatusListCredentialTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link StatusListCredential} model.
+ *
+ * @param options
+ * @returns factory {@link StatusListCredentialFactoryInterface}
+ */
+export const defineStatusListCredentialFactory = (<TOptions extends StatusListCredentialFactoryDefineOptions>(options?: TOptions): StatusListCredentialFactoryInterface<TOptions> => {
+    return defineStatusListCredentialFactoryInternal(options ?? {}, {});
+}) as StatusListCredentialFactoryBuilder;
+
+defineStatusListCredentialFactory.withTransientFields = defaultTransientFieldValues => options => defineStatusListCredentialFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;
