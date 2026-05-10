@@ -39,6 +39,11 @@ describe("GET /credentials/status/:statusListId.jwt", () => {
     // by string token in case anyone migrates it later, but the class
     // registration is what matters today.
     container.register("StatusListUseCase", { useValue: fakeUsecase });
+    // The router also resolves "PrismaClientIssuer" from the container
+    // (Minor 4 cleanup) instead of `new`-ing it per request. The issuer
+    // is never actually invoked here because the fake usecase short-circuits
+    // before any database call, so a bare `{}` value is sufficient.
+    container.register("PrismaClientIssuer", { useValue: {} });
   });
 
   it("returns 200 with application/jwt content-type when the list exists", async () => {

@@ -26,10 +26,10 @@
 
 import express from "express";
 import { container } from "tsyringe";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import StatusListUseCase from "@/application/domain/credential/statusList/usecase";
 import { IContext } from "@/types/server";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 const router = express.Router();
 
@@ -57,7 +57,12 @@ router.get("/status/:statusListId.jwt", async (req, res) => {
   }
 
   try {
-    const issuer = new PrismaClientIssuer();
+    // Resolve via the DI container instead of `new`-ing per request: the
+    // issuer is registered as a class in `application/provider.ts` so the
+    // container manages its lifecycle (and tests can register a mock
+    // without monkey-patching the import). The usecase is similarly
+    // resolved so wiring stays uniform with the GraphQL layer.
+    const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
     const ctx = { issuer } as IContext;
     const usecase = container.resolve(StatusListUseCase);
 

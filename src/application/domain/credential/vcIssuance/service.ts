@@ -45,15 +45,14 @@ import type {
   VcIssuanceRow,
 } from "@/application/domain/credential/vcIssuance/data/type";
 import StatusListService from "@/application/domain/credential/statusList/service";
+import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
 
 /**
- * Civicship platform issuer DID. Hardcoded per §B / §5.2.2 — civicship is
- * a platform-issued credential model so there is exactly one issuer.
- *
- * TODO(phase1-final): replace with `IssuerDidService.getActiveIssuerDid()`
- * once the KMS issuer DID PR (`claude/phase1-infra-kms-issuer-did`) lands.
+ * Re-export so the public symbol's path stays stable. The canonical
+ * definition now lives in `credential/shared/constants` — see that module
+ * for the rationale (§B / §5.2.2).
  */
-export const CIVICSHIP_ISSUER_DID = "did:web:api.civicship.app";
+export { CIVICSHIP_ISSUER_DID };
 
 /**
  * Phase 1 step 7 placeholder for the JWT signature. Real signing lives in

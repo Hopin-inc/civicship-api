@@ -38,7 +38,7 @@
 
 import { gzipSync } from "node:zlib";
 import { inject, injectable } from "tsyringe";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
 import type { IStatusListRepository } from "@/application/domain/credential/statusList/data/interface";
@@ -46,7 +46,11 @@ import type {
   AllocatedSlot,
   StatusListCredentialRow,
 } from "@/application/domain/credential/statusList/data/type";
-import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/vcIssuance/service";
+import {
+  CapacityReachedError,
+  StatusListFrozenError,
+} from "@/application/domain/credential/statusList/data/errors";
+import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
 
 /**
  * Public API host. Hard-coded per §B / §5.4 — civicship is a single-issuer
@@ -207,35 +211,68 @@ export default class StatusListService {
    *
    * Behaviour (in order):
    *   1. Find the active (non-frozen) list. If none → bootstrap a new one.
-   *   2. Atomically increment its `nextIndex`. The repository freezes the
-   *      row in the same UPDATE if the increment lands at capacity.
-   *   3. If the active list was already at capacity (rare race), bootstrap
-   *      a fresh list and recurse once.
+   *   2. Atomically increment its `nextIndex` via the repository. The
+   *      repository freezes the row inside the same transaction when the
+   *      allocation lands on the last legitimate slot.
+   *   3. If the repository reports `CapacityReachedError` (race past
+   *      capacity) or `StatusListFrozenError` (a parallel allocator
+   *      froze the row first) we retry: bootstrap or re-resolve the
+   *      active list and try once more. The retry is bounded so a stuck
+   *      lookup cannot loop forever (S2189).
    *
    * Returns the slot metadata that the VC issuance pipeline embeds into
    * `credentialStatus`.
    */
   async allocateNextSlot(ctx: IContext, tx?: Prisma.TransactionClient): Promise<AllocatedSlot> {
-    const active = await this.repository.findActive(ctx, tx);
-    const target = active ?? (await this.bootstrapNewList(ctx, tx));
+    // Bounded so the loop cannot spin under a pathological data condition
+    // (S2189 — must terminate). 5 is plenty: each iteration either
+    // bootstraps a fresh list (1 unique-constraint contention) or
+    // re-resolves the active row (1 capacity contention). Three
+    // contiguous failures across both modes already implies a bug and
+    // not contention, so we want to surface it instead of retrying
+    // silently.
+    const MAX_ATTEMPTS = 5;
+    let lastError: unknown;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+      const active = await this.repository.findActive(ctx, tx);
+      const target = active ?? (await this.bootstrapNewList(ctx, tx));
 
-    if (target.nextIndex >= target.capacity) {
-      // Capacity already reached — `findActive` should have skipped this
-      // row but a concurrent allocation might have raced us through. Mark
-      // it frozen explicitly via the bitstring update (no-op bitstring
-      // change, the row's `frozen` is set by `allocateSlot` below) and
-      // bootstrap a fresh list instead.
-      logger.info("[StatusListService] capacity reached, rolling list", {
-        listKey: target.listKey,
-        capacity: target.capacity,
-      });
-      const fresh = await this.bootstrapNewList(ctx, tx);
-      const allocation = await this.repository.allocateSlot(ctx, fresh.id, tx);
-      return this.buildAllocatedSlot(allocation.row, allocation.allocatedIndex);
+      try {
+        const allocation = await this.repository.allocateSlot(ctx, target.id, tx);
+        return this.buildAllocatedSlot(allocation.row, allocation.allocatedIndex);
+      } catch (e) {
+        if (e instanceof CapacityReachedError) {
+          // Repository already froze the row; bootstrap a successor and
+          // retry the allocation. Logged at info because this is a normal
+          // every-13-years event under our sizing (§7.3) but should still
+          // be visible in the timeline.
+          logger.info("[StatusListService] capacity reached, rolling list", {
+            listKey: e.listKey,
+            attempt,
+          });
+          lastError = e;
+          continue;
+        }
+        if (e instanceof StatusListFrozenError) {
+          // A concurrent allocator froze the row we tried to allocate
+          // from. Re-resolve the active list and try again — the next
+          // `findActive` will pick up the rolled-over row (or bootstrap a
+          // fresh one if rollover hasn't happened yet).
+          logger.info("[StatusListService] active list frozen mid-flight, retrying", {
+            listId: e.listId,
+            attempt,
+          });
+          lastError = e;
+          continue;
+        }
+        throw e;
+      }
     }
-
-    const allocation = await this.repository.allocateSlot(ctx, target.id, tx);
-    return this.buildAllocatedSlot(allocation.row, allocation.allocatedIndex);
+    throw new Error(
+      `StatusListService.allocateNextSlot: exhausted ${MAX_ATTEMPTS} retries — last error: ${
+        lastError instanceof Error ? lastError.message : String(lastError)
+      }`,
+    );
   }
 
   /**
@@ -317,54 +354,78 @@ export default class StatusListService {
 
   /**
    * Bootstrap helper used by `allocateNextSlot` when no active list
-   * exists or capacity rolls over. Generates the next listKey by
-   * counting existing rows + 1 (sufficient for the volumes we expect;
-   * year ~10,000 issuances → 1 list every 13 years).
+   * exists or capacity rolls over. Computes `MAX(listKey) + 1` in a
+   * single round-trip and races on the unique constraint — duplicate
+   * key errors become a bounded retry rather than a 500.
    */
   private async bootstrapNewList(
     ctx: IContext,
     tx?: Prisma.TransactionClient,
   ): Promise<StatusListCredentialRow> {
-    // Use timestamp-derived `listKey` so the URL is human-readable and
-    // strictly increasing without requiring a separate sequence table.
-    // The default capacity matches the schema default, keeping config
-    // surface zero today.
-    const listKey = await this.computeNextListKey(ctx, tx);
+    // 8 attempts is a wide safety margin: production load is ~1
+    // bootstrap per 13 years (§7.3) so any real contention here is
+    // bounded by the number of allocators racing past capacity at the
+    // exact same instant — single-digit concurrency at most. We log at
+    // warn after every retry so contention surfaces in dashboards.
+    //
+    // Why bounded (S2189): a non-terminating loop would mask a unique
+    // constraint mis-configuration (e.g. case sensitivity bug) with a
+    // wedged worker. Throwing at the cap turns it into a paged alert.
+    const MAX_RETRIES = 8;
     const capacity = DEFAULT_STATUS_LIST_CAPACITY;
     const bitstring = emptyBitstring(capacity);
     const compressed = gzipBitstring(bitstring);
 
-    // Build a placeholder VC so the column is non-null (schema requires
-    // it). The first revocation re-signs it with the actual bit-set.
-    const issuedAt = new Date();
-    const vcJwt = this.signBootstrapVc(listKey, compressed, issuedAt);
+    let lastError: unknown;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
+      const listKey = await this.computeNextListKey(ctx, tx);
 
-    return this.repository.create(ctx, { listKey, capacity, encodedList: compressed, vcJwt }, tx);
-  }
+      // Sign the placeholder VC fresh per attempt — the JWT embeds the
+      // listKey so it must be re-rendered if the listKey shifts after a
+      // P2002 retry.
+      const issuedAt = new Date();
+      const vcJwt = this.signBootstrapVc(listKey, compressed, issuedAt);
 
-  /**
-   * Compute the next sequential listKey. Counts existing rows because
-   * the row count is small (1-2 forever per §7.3) and we don't have a
-   * dedicated sequence table. The CAS happens at the unique constraint
-   * on `list_key` — duplicate-key collisions surface as 500s, which is
-   * fine for the bootstrap path (it's exercised at most once per ~13
-   * years per §7.3).
-   */
-  private async computeNextListKey(ctx: IContext, tx?: Prisma.TransactionClient): Promise<string> {
-    // Walk listKey 1..N until we find a free slot. With ≤ 2 lists in
-    // production the loop terminates in O(2). A bounded iteration count
-    // (1024) prevents `S2189` (no truly infinite loop) while still
-    // covering pathological growth.
-    for (let candidate = 1; candidate < 1024; candidate += 1) {
-      const key = String(candidate);
-      const existing = await this.repository.findByListKey(ctx, key, tx);
-      if (!existing) {
-        return key;
+      try {
+        return await this.repository.create(
+          ctx,
+          { listKey, capacity, encodedList: compressed, vcJwt },
+          tx,
+        );
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+          // Concurrent bootstrap won the unique constraint race for this
+          // listKey. Recompute MAX+1 and retry — the next iteration's
+          // computed key will skip the row that just landed.
+          logger.warn("[StatusListService] listKey race, retrying bootstrap", {
+            listKey,
+            attempt,
+          });
+          lastError = e;
+          continue;
+        }
+        throw e;
       }
     }
     throw new Error(
-      "StatusListService.computeNextListKey: 1024 lists exhausted — a real sequence is overdue.",
+      `StatusListService.bootstrapNewList: exhausted ${MAX_RETRIES} retries on listKey unique constraint — last error: ${
+        lastError instanceof Error ? lastError.message : String(lastError)
+      }`,
     );
+  }
+
+  /**
+   * Compute the next sequential listKey via `MAX(list_key::int) + 1` —
+   * a single SQL round-trip. The CAS happens at the unique constraint
+   * on `list_key`; on P2002 the bootstrap loop retries with a fresh MAX
+   * lookup. The previous implementation walked `findByListKey(1..1024)`
+   * which both flooded the DB on bootstrap and was racy under
+   * concurrency (two callers could see the same gap and fight at
+   * insert time, leaking a 500 to issuance).
+   */
+  private async computeNextListKey(ctx: IContext, tx?: Prisma.TransactionClient): Promise<string> {
+    const max = await this.repository.findMaxNumericListKey(ctx, tx);
+    return String((max ?? 0) + 1);
   }
 
   /**

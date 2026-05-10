@@ -55,6 +55,19 @@ export interface IStatusListRepository {
   ): Promise<StatusListCredentialRow | null>;
 
   /**
+   * Returns the largest existing `listKey` interpreted as an integer, or
+   * `null` if the table is empty. Used by the service to compute the
+   * next sequential listKey in a single round-trip (instead of walking
+   * candidates 1..N — see §5.2.4 bootstrap path).
+   *
+   * Semantics: only digit-only listKeys participate in the MAX. If the
+   * column ever holds non-numeric values (which the current writer never
+   * produces) those rows are ignored — the resulting `+ 1` is still
+   * unique because `listKey` itself has a unique constraint.
+   */
+  findMaxNumericListKey(ctx: IContext, tx?: Prisma.TransactionClient): Promise<number | null>;
+
+  /**
    * Bootstrap a new list (§5.2.4 — when `findActive` returns null or the
    * active list is full). The caller supplies the `listKey` (next sequence
    * number) and the empty bitstring; the JWT is filled in by the service

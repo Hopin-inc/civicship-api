@@ -8,11 +8,17 @@
  *
  * Atomicity notes:
  *
- *   - `allocateSlot` does a single conditional UPDATE that combines
- *     "increment nextIndex" with "set frozen=true if we just hit capacity",
- *     so callers never observe an intermediate state. The PostgreSQL update
- *     is atomic at the row level which is enough for the volumes we expect
- *     (year ~10,000 issuances → ~3 / day on average).
+ *   - `allocateSlot` issues a Prisma atomic-increment UPDATE
+ *     (`nextIndex: { increment: 1 }`) under a `frozen=false` guard, so
+ *     two concurrent allocators are serialised by Postgres' row lock and
+ *     receive distinct `nextIndex` values. The previous read-then-write
+ *     implementation under Read Committed was vulnerable to lost-update
+ *     (two callers reading the same `nextIndex`, two writers persisting
+ *     `value+1`); the atomic increment closes that gap without raising
+ *     the isolation level. Capacity rollover surfaces as
+ *     `CapacityReachedError` (caught at the service layer); a
+ *     concurrently-frozen row surfaces as `StatusListFrozenError`
+ *     (mapped from Prisma P2025).
  *
  *   - `updateBitstring` always re-writes the entire bytea blob. The design
  *     (§7.3 "Write amplification") accepts this overhead given expected
@@ -30,13 +36,17 @@
  */
 
 import { injectable } from "tsyringe";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import type {
   IStatusListRepository,
   VcRevocationRow,
 } from "@/application/domain/credential/statusList/data/interface";
 import type { StatusListCredentialRow } from "@/application/domain/credential/statusList/data/type";
+import {
+  CapacityReachedError,
+  StatusListFrozenError,
+} from "@/application/domain/credential/statusList/data/errors";
 
 /**
  * The Prisma model exposes `encodedList` as `Bytes` which the runtime
@@ -129,6 +139,30 @@ export default class StatusListRepository implements IStatusListRepository {
     return ctx.issuer.public(ctx, run);
   }
 
+  async findMaxNumericListKey(
+    ctx: IContext,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number | null> {
+    const run = async (client: Prisma.TransactionClient): Promise<number | null> => {
+      // `list_key` is a TEXT column, but the writer (`computeNextListKey`)
+      // only ever stores digit-only strings. Cast the digit-only subset
+      // to INTEGER and take the MAX in a single round-trip — this
+      // replaces the previous "walk 1..1024" scan that emitted up to
+      // 1023 SELECTs and was racy under concurrent bootstrap.
+      const rows = await client.$queryRaw<{ max: number | null }[]>`
+        SELECT MAX(list_key::int) AS max
+        FROM t_status_list_credentials
+        WHERE list_key ~ '^[0-9]+$'
+      `;
+      const max = rows[0]?.max;
+      return max == null ? null : Number(max);
+    };
+    if (tx) {
+      return run(tx);
+    }
+    return ctx.issuer.public(ctx, run);
+  }
+
   async create(
     ctx: IContext,
     input: {
@@ -165,27 +199,68 @@ export default class StatusListRepository implements IStatusListRepository {
     const run = async (
       client: Prisma.TransactionClient,
     ): Promise<{ row: StatusListCredentialRow; allocatedIndex: number }> => {
-      // Read first so we can compute the post-increment freeze flag in one
-      // UPDATE. The surrounding `ctx.issuer.public` (or the caller's `tx`)
-      // gives us a single transaction so the read + write stay consistent.
-      const before = await client.statusListCredential.findUniqueOrThrow({
-        where: { id },
-      });
-      if (before.frozen) {
-        throw new Error(
-          `StatusListRepository.allocateSlot: list ${id} is frozen — caller must bootstrap a new list.`,
-        );
+      // Atomic increment under a "frozen=false" guard. Postgres takes a row
+      // lock during UPDATE so two concurrent issuers cannot observe the
+      // same `nextIndex`; whichever loses the race either gets a different
+      // (incremented) value back or — if the row froze first — sees P2025
+      // (record-not-found-for-where-clause) which we map to
+      // `StatusListFrozenError`.
+      //
+      // We deliberately do NOT pre-`SELECT … FOR UPDATE` the row before
+      // updating: the previous implementation read first and wrote second
+      // under Read Committed, which leaves the well-known lost-update gap
+      // (two readers see the same `nextIndex`, two writers store the same
+      // value+1). The atomic increment closes that gap without raising the
+      // isolation level.
+      let updated: Prisma.StatusListCredentialGetPayload<true>;
+      try {
+        updated = await client.statusListCredential.update({
+          where: { id, frozen: false },
+          data: { nextIndex: { increment: 1 } },
+        });
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+          // Either the row id is unknown or it was already frozen by a
+          // concurrent allocator. We can't tell from P2025 alone, so we
+          // surface the recoverable failure mode (frozen) — `findById` is
+          // cheap if the service ever needs to disambiguate.
+          throw new StatusListFrozenError(id);
+        }
+        throw e;
       }
-      const allocatedIndex = before.nextIndex;
-      const newNextIndex = allocatedIndex + 1;
-      const willFill = newNextIndex >= before.capacity;
-      const updated = await client.statusListCredential.update({
-        where: { id },
-        data: {
-          nextIndex: newNextIndex,
-          frozen: willFill ? true : undefined,
-        },
-      });
+
+      const allocatedIndex = updated.nextIndex - 1;
+
+      // Two outcomes after the atomic increment:
+      //
+      //   (a) `allocatedIndex >= capacity` — we lost a race past capacity.
+      //       Our increment is invalid (the row is now over-allocated by
+      //       one). Freeze the row so further allocators bail out, then
+      //       throw `CapacityReachedError` so the service rolls into a
+      //       fresh list. The over-allocation is harmless: the bitstring
+      //       column never indexes past `capacity-1`, and the column is
+      //       only consulted for the next allocator's "is this row at
+      //       capacity?" check (which now short-circuits via `frozen`).
+      //
+      //   (b) `allocatedIndex == capacity - 1` — we just consumed the
+      //       last legitimate slot. Freeze the row in the same
+      //       transaction so subsequent `findActive` skips it. The slot
+      //       is still returned to the caller (it is a valid index).
+      if (allocatedIndex >= updated.capacity) {
+        await client.statusListCredential.update({
+          where: { id },
+          data: { frozen: true },
+        });
+        throw new CapacityReachedError(updated.listKey);
+      }
+
+      if (allocatedIndex === updated.capacity - 1) {
+        updated = await client.statusListCredential.update({
+          where: { id },
+          data: { frozen: true },
+        });
+      }
+
       return { row: toRow(updated), allocatedIndex };
     };
     if (tx) {
@@ -249,6 +324,13 @@ export default class StatusListRepository implements IStatusListRepository {
       // anchor / issuance lifecycle stays intact (still `COMPLETED`) — VPs
       // and verifiers learn about revocation via the StatusList JWT, not
       // via the issuance row's `status` column.
+      //
+      // TODO(schema-followup): once the schema PR introduces
+      // `VcIssuanceStatus.REVOKED`, also flip `status = REVOKED` here so
+      // back-office queries can filter without joining `revokedAt IS NOT
+      // NULL`. The StatusList bit remains the source of truth for the
+      // verifier-facing flow regardless. Tracked alongside the schema
+      // PR (#1094 follow-up); intentionally out of scope for this PR.
       await client.vcIssuanceRequest.update({
         where: { id: vcRequestId },
         data: {
