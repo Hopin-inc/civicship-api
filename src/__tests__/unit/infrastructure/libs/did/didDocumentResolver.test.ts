@@ -73,7 +73,7 @@ describe("DidDocumentResolver", () => {
         id: USER_DID,
         proof: {
           type: "DataIntegrityProof",
-          cryptosuite: "civicship-cardano-anchor-2026",
+          cryptosuite: "civicship-merkle-anchor-2026",
           anchorChain: "cardano:mainnet",
           anchorTxHash: TX_HASH,
           opIndexInTx: 0,

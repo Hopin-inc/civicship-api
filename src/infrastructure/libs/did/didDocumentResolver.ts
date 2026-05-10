@@ -119,7 +119,7 @@ export interface UserDidAnchorStore {
  */
 export interface DidDocumentProof {
   type: "DataIntegrityProof";
-  cryptosuite: "civicship-cardano-anchor-2026";
+  cryptosuite: "civicship-merkle-anchor-2026";
   anchorChain: "cardano:mainnet" | "cardano:preprod";
   /** Chain tx hash, or `null` while the anchor is still PENDING (§F). */
   anchorTxHash: string | null;
@@ -192,6 +192,15 @@ function toUint8Array(buf: Buffer | Uint8Array): Uint8Array {
   return new Uint8Array(buf);
 }
 
+/**
+ * `@context` is the minimum signal that the decoded blob is a DID Document
+ * (§B). Without it we can't safely treat the blob as a Document, so the
+ * caller falls back to `buildMinimalDidDocument`.
+ */
+function isDidDocumentLike(decoded: Record<string, unknown> | null): boolean {
+  return decoded !== null && "@context" in decoded;
+}
+
 // ---------------------------------------------------------------------------
 // Resolver
 // ---------------------------------------------------------------------------
@@ -223,10 +232,14 @@ export class DidDocumentResolver {
       return { ...tombstone, proof: this.buildProof(anchor) };
     }
 
-    // §B / §3.3: minimal Document, optionally rehydrated from the on-chain CBOR
-    const baseDocument: DidDocument =
-      (decodeDocumentCbor(anchor.documentCbor) as DidDocument | null) ??
-      buildMinimalDidDocument(userId);
+    // §B / §3.3: minimal Document, optionally rehydrated from the on-chain CBOR.
+    // Require the decoded blob to carry `@context` — otherwise it is not a
+    // DID-spec-conformant Document and we fall back to the minimal form so
+    // that resolvers downstream never see a partially-formed Document.
+    const decoded = decodeDocumentCbor(anchor.documentCbor);
+    const baseDocument: DidDocument = isDidDocumentLike(decoded)
+      ? (decoded as unknown as DidDocument)
+      : buildMinimalDidDocument(userId);
     // Defensive: ensure the `id` matches the canonical did:web string for
     // this user even if the stored CBOR is corrupted or stale.
     const canonicalId = buildUserDid(userId);
@@ -244,7 +257,7 @@ export class DidDocumentResolver {
   private buildProof(anchor: UserDidAnchorRow): DidDocumentProof {
     return {
       type: "DataIntegrityProof",
-      cryptosuite: "civicship-cardano-anchor-2026",
+      cryptosuite: "civicship-merkle-anchor-2026",
       anchorChain: toAnchorChain(anchor.network),
       anchorTxHash: anchor.chainTxHash,
       opIndexInTx: anchor.chainOpIndex,

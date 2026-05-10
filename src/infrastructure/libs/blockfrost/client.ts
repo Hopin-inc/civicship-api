@@ -202,15 +202,24 @@ export class BlockfrostClient {
   /**
    * Run `op` with retry + exponential backoff. Stops retrying for 4xx
    * (except 429) — those are caller-side errors, not transient.
+   *
+   * The infinite loop here always exits via either `return` (success) or
+   * `throw` (final attempt). `attempt` is bounded by `this.maxRetries` and
+   * the final iteration's catch branch unconditionally re-throws, so there
+   * is no unreachable trailing branch.
    */
   private async withRetry<T>(label: string, op: () => Promise<T>): Promise<T> {
-    let lastErr: unknown;
-    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+    if (this.maxRetries < 1) {
+      throw new Error(
+        `BlockfrostClient.withRetry: maxRetries must be >= 1, got ${this.maxRetries}`,
+      );
+    }
+    for (let attempt = 0; ; attempt++) {
       try {
         return await op();
       } catch (err) {
-        lastErr = err;
-        if (!isRetryableError(err) || attempt === this.maxRetries - 1) {
+        const isLastAttempt = attempt >= this.maxRetries - 1;
+        if (!isRetryableError(err) || isLastAttempt) {
           logger.error("[BlockfrostClient] non-retryable error", {
             label,
             attempt,
@@ -228,9 +237,6 @@ export class BlockfrostClient {
         await sleep(backoff);
       }
     }
-    // Unreachable because the final iteration always throws, but the
-    // compiler can't see that.
-    throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
   }
 
   /** §5.1.5 `getProtocolParams()` → `epochsLatestParameters()`. */
