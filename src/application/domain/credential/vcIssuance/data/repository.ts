@@ -32,8 +32,10 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import type { IVcIssuanceRepository } from "@/application/domain/credential/vcIssuance/data/interface";
 import type {
   CreateVcIssuanceInput,
+  VcAnchorRow,
   VcFormatValue,
   VcIssuanceRow,
+  VcJwtLeaf,
   VcStatusValue,
 } from "@/application/domain/credential/vcIssuance/data/type";
 
@@ -166,6 +168,55 @@ export default class VcIssuanceRepository implements IVcIssuanceRepository {
       : await this.issuer.public(ctx, (innerTx) => innerTx.vcIssuanceRequest.create({ data }));
 
     return toRow(persisted, input.issuerDid, input.subjectDid);
+  }
+
+  /**
+   * Read the `VcAnchor` row backing a confirmed batch. Uses
+   * `issuer.internal()` for the same reason `UserDidAnchorRepository`
+   * does on its public-route path: the `/vc/:vcId/inclusion-proof`
+   * endpoint is unauthenticated and there is no community-scoped RLS
+   * decision to apply to global anchor metadata.
+   */
+  async findVcAnchorById(ctx: IContext, vcAnchorId: string): Promise<VcAnchorRow | null> {
+    const persisted = await this.issuer.internal((tx) =>
+      tx.vcAnchor.findUnique({
+        where: { id: vcAnchorId },
+        select: {
+          id: true,
+          rootHash: true,
+          leafIds: true,
+          chainTxHash: true,
+          blockHeight: true,
+          status: true,
+        },
+      }),
+    );
+    if (!persisted) return null;
+    return persisted;
+  }
+
+  /**
+   * Bulk-read VC JWT segments for a list of `VcIssuanceRequest.id`s.
+   * Mirrors `AnchorBatchRepository.findVcJwtsByVcIssuanceRequestIds` but
+   * lives in the vcIssuance domain because the read consumer (inclusion-
+   * proof endpoint) is here. Callers MUST sort the result themselves
+   * (ASCII byte order, §5.1.7) before computing the proof — the
+   * repository layer has no business deciding leaf order.
+   */
+  async findVcJwtsByIds(ctx: IContext, vcIssuanceRequestIds: string[]): Promise<VcJwtLeaf[]> {
+    if (vcIssuanceRequestIds.length === 0) return [];
+    const rows = await this.issuer.internal((tx) =>
+      tx.vcIssuanceRequest.findMany({
+        where: { id: { in: vcIssuanceRequestIds } },
+        select: { id: true, vcJwt: true },
+      }),
+    );
+    return rows
+      .filter(
+        (r): r is { id: string; vcJwt: string } =>
+          typeof r.vcJwt === "string" && r.vcJwt.length > 0,
+      )
+      .map((r) => ({ vcIssuanceRequestId: r.id, vcJwt: r.vcJwt }));
   }
 }
 

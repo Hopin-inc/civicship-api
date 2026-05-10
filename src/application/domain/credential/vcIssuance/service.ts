@@ -34,7 +34,7 @@
  */
 
 import { inject, injectable } from "tsyringe";
-import type { Prisma } from "@prisma/client";
+import { AnchorStatus, type Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
 import type { IVcIssuanceRepository } from "@/application/domain/credential/vcIssuance/data/interface";
@@ -44,6 +44,29 @@ import type {
 } from "@/application/domain/credential/vcIssuance/data/type";
 import StatusListService from "@/application/domain/credential/statusList/service";
 import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
+import { buildProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
+
+/**
+ * Inclusion proof DTO for the `/vc/:vcId/inclusion-proof` REST endpoint
+ * (§5.4.6). Every byte field is hex-encoded to keep the wire format
+ * stable across language clients (the verifier in civicship-portal has
+ * its own Uint8Array adapters).
+ */
+export interface InclusionProof {
+  vcId: string;
+  vcJwt: string;
+  vcAnchorId: string;
+  /** Hex-encoded 32-byte Blake2b-256 root committed on-chain. */
+  rootHash: string;
+  /** Cardano tx hash (hex). Always populated for CONFIRMED anchors. */
+  chainTxHash: string;
+  /** Sibling hashes bottom-up, hex-encoded. */
+  proofPath: string[];
+  /** Index of the target VC JWT in the canonical (ASCII-sorted) leaf set. */
+  leafIndex: number;
+  /** Cardano block height; `null` if confirmation has not stamped one yet. */
+  blockHeight: number | null;
+}
 
 /**
  * Re-export so the public symbol's path stays stable. The canonical
@@ -225,5 +248,119 @@ export default class VcIssuanceService {
       },
       tx,
     );
+  }
+
+  /**
+   * §5.4.6 — Generate the Merkle inclusion proof for an anchored VC.
+   *
+   * Returns `null` when the proof cannot be produced for any of the
+   * "expected, not exceptional" reasons:
+   *
+   *   - `vcId` does not resolve to a row.
+   *   - The row is not yet attached to a `VcAnchor` (e.g. the next
+   *     weekly batch has not run yet).
+   *   - The anchor exists but is not CONFIRMED yet (PENDING / SUBMITTED /
+   *     FAILED).
+   *   - The row's JWT is missing/empty so we cannot identify the leaf.
+   *
+   * Throws on genuinely-impossible states (the row claims membership in
+   * an anchor whose `leafIds` does not contain it). Callers (router) map
+   * `null` to 404 and exceptions to 500.
+   *
+   * Leaf canonicalisation is replayed exactly as in
+   * `AnchorBatchService.buildVcRoot` (§5.1.7): the leaves are the VC
+   * JWT strings themselves, sorted by ASCII byte order. Reusing the
+   * same comparator here is what makes the proof verify against the
+   * anchored root.
+   */
+  async generateInclusionProof(ctx: IContext, vcId: string): Promise<InclusionProof | null> {
+    const vc = await this.repository.findById(ctx, vcId);
+    if (!vc) {
+      logger.debug("[VcIssuanceService] generateInclusionProof: vc not found", { vcId });
+      return null;
+    }
+    if (!vc.vcAnchorId) {
+      logger.debug("[VcIssuanceService] generateInclusionProof: vc not yet anchored", {
+        vcId,
+      });
+      return null;
+    }
+    if (!vc.vcJwt) {
+      // Row exists but JWT is empty — we cannot identify the leaf in the
+      // canonical sorted list, so a proof would be meaningless. Treat as
+      // "not anchored" from the verifier's perspective.
+      logger.warn("[VcIssuanceService] generateInclusionProof: vc has empty vcJwt", {
+        vcId,
+        vcAnchorId: vc.vcAnchorId,
+      });
+      return null;
+    }
+
+    const anchor = await this.repository.findVcAnchorById(ctx, vc.vcAnchorId);
+    if (!anchor) {
+      logger.warn("[VcIssuanceService] generateInclusionProof: anchor row missing", {
+        vcId,
+        vcAnchorId: vc.vcAnchorId,
+      });
+      return null;
+    }
+    if (anchor.status !== AnchorStatus.CONFIRMED) {
+      logger.debug("[VcIssuanceService] generateInclusionProof: anchor not yet confirmed", {
+        vcId,
+        vcAnchorId: anchor.id,
+        anchorStatus: anchor.status,
+      });
+      return null;
+    }
+    if (!anchor.chainTxHash) {
+      // CONFIRMED implies chainTxHash but defensive: the verifier UX
+      // breaks without it, so prefer 404 to a partial response.
+      logger.warn(
+        "[VcIssuanceService] generateInclusionProof: confirmed anchor missing chainTxHash",
+        { vcId, vcAnchorId: anchor.id },
+      );
+      return null;
+    }
+
+    const leaves = await this.repository.findVcJwtsByIds(ctx, anchor.leafIds);
+    if (leaves.length === 0) {
+      logger.warn("[VcIssuanceService] generateInclusionProof: anchor has no resolvable leaves", {
+        vcId,
+        vcAnchorId: anchor.id,
+        leafCount: anchor.leafIds.length,
+      });
+      return null;
+    }
+
+    // §5.1.7 canonical ASCII byte order. Mirror `AnchorBatchService.buildVcRoot`
+    // (`a < b ? -1 : a > b ? 1 : 0`) so the proof verifies against the same
+    // root that was anchored on-chain. SonarCloud S2871: explicit comparator
+    // — never bare `.sort()` on JWT strings.
+    const sortedJwts = leaves.map((l) => l.vcJwt).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+    const leafIndex = sortedJwts.indexOf(vc.vcJwt);
+    if (leafIndex < 0) {
+      // The row claims membership in this anchor but the JWT is not
+      // among the resolved leaves. Either (a) the JWT was rewritten
+      // after anchoring (should never happen — `vcJwt` is immutable
+      // post-issuance), or (b) the anchor's `leafIds` is missing this
+      // row's id. Both are integrity violations, not "happy null" cases.
+      throw new Error(
+        `generateInclusionProof: vcJwt for vc ${vcId} not present in anchor ${anchor.id} leaf set`,
+      );
+    }
+
+    const proofBytes = buildProof(sortedJwts, vc.vcJwt);
+
+    return {
+      vcId: vc.id,
+      vcJwt: vc.vcJwt,
+      vcAnchorId: anchor.id,
+      rootHash: anchor.rootHash,
+      chainTxHash: anchor.chainTxHash,
+      proofPath: proofBytes.map((b) => Buffer.from(b).toString("hex")),
+      leafIndex,
+      blockHeight: anchor.blockHeight,
+    };
   }
 }

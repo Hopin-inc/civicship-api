@@ -21,11 +21,15 @@
  *     state (§F), so we do not need extra branching here.
  *
  *   GET /vc/:vcId/inclusion-proof
- *     Stubbed 501 Not Implemented for this PR. The real handler depends
- *     on the batch worker (Phase 1 step 7) that produces Merkle inclusion
- *     proofs for VCs once their batch is anchored. Returning 501 — rather
- *     than 404 — communicates "endpoint exists but not yet implemented"
- *     and lets clients retry later without changing URL.
+ *     Returns the Merkle inclusion proof for a VC whose batch has been
+ *     anchored on-chain (§5.4.6). Maps:
+ *       - VC not found / not yet anchored / anchor PENDING|SUBMITTED|FAILED
+ *                                                  → 404 (`not_anchored`)
+ *       - CONFIRMED anchor                         → 200 with proof DTO
+ *       - genuine errors (DB, malformed leaf set)  → 500
+ *     The body shape is documented on `InclusionProofResponse` in the
+ *     vcIssuance presenter — every byte field is hex-encoded so the
+ *     verifier in civicship-portal can deserialize without ambiguity.
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.4   (public routes)
@@ -37,6 +41,7 @@
 import express, { Request, Response } from "express";
 import { container } from "tsyringe";
 import IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase";
+import VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
 import {
   DidDocumentResolver,
   type DidDocumentWithProof,
@@ -46,7 +51,9 @@ import {
   buildUserDid,
   isValidUserId,
 } from "@/infrastructure/libs/did/userDidBuilder";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
+import type { IContext } from "@/types/server";
 
 const router = express.Router();
 
@@ -152,7 +159,7 @@ router.get("/users/:userId/did.json", async (req: Request, res: Response) => {
 // VC Inclusion Proof — /vc/:vcId/inclusion-proof
 // ---------------------------------------------------------------------------
 
-router.get("/vc/:vcId/inclusion-proof", (req: Request, res: Response) => {
+router.get("/vc/:vcId/inclusion-proof", async (req: Request, res: Response) => {
   const { vcId } = req.params;
 
   if (typeof vcId !== "string" || vcId.length === 0) {
@@ -162,10 +169,32 @@ router.get("/vc/:vcId/inclusion-proof", (req: Request, res: Response) => {
     });
   }
 
-  return res.status(501).json({
-    error: "not_implemented",
-    message: "VC inclusion-proof endpoint will land in Phase 1 step 7 (batch worker)",
-  });
+  try {
+    // Public route: there is no request-scoped issuer auth (no
+    // session/idToken on `/vc/:id/inclusion-proof`). We construct a
+    // minimal `IContext` carrying just the `PrismaClientIssuer` so the
+    // service layer's `issuer.internal()` calls work — same shape as
+    // the admin anchor-batch route (`router/admin/anchorBatch.ts`).
+    const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
+    const ctx = { issuer } as IContext;
+    const usecase = container.resolve<VcIssuanceUseCase>("VcIssuanceUseCase");
+
+    const proof = await usecase.getInclusionProof(ctx, vcId);
+    if (proof === null) {
+      return res.status(404).json({
+        error: "not_anchored",
+        message: `No confirmed anchor for VC ${vcId}`,
+      });
+    }
+    return res.status(200).json(proof);
+  } catch (err) {
+    logger.error("[router/did] failed to build VC inclusion proof", {
+      vcId,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 export default router;
