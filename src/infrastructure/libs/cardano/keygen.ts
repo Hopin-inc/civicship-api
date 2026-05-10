@@ -48,18 +48,16 @@ const dynamicImport = new Function("s", "return import(s)") as (
 
 let _ed: Promise<NobleEd25519> | null = null;
 async function loadNoble(): Promise<NobleEd25519> {
-  if (!_ed) {
-    _ed = (async () => {
-      const ed = (await dynamicImport("@noble/ed25519")) as NobleEd25519;
-      const { sha512 } = (await dynamicImport(
-        "@noble/hashes/sha2",
-      )) as NobleHashesSha2;
-      // noble v2 needs a sha512 implementation injected for the sync API path.
-      ed.etc.sha512Sync = (...m: Uint8Array[]) =>
-        sha512(ed.etc.concatBytes(...m));
-      return ed;
-    })();
-  }
+  _ed ??= (async () => {
+    const ed = (await dynamicImport("@noble/ed25519")) as NobleEd25519;
+    const { sha512 } = (await dynamicImport(
+      "@noble/hashes/sha2",
+    )) as NobleHashesSha2;
+    // noble v2 needs a sha512 implementation injected for the sync API path.
+    ed.etc.sha512Sync = (...m: Uint8Array[]) =>
+      sha512(ed.etc.concatBytes(...m));
+    return ed;
+  })();
   return _ed;
 }
 
@@ -247,8 +245,8 @@ function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
 
 function bytesToHex(b: Uint8Array): string {
   let s = "";
-  for (let i = 0; i < b.length; i++) {
-    s += b[i].toString(16).padStart(2, "0");
+  for (const byte of b) {
+    s += byte.toString(16).padStart(2, "0");
   }
   return s;
 }
@@ -266,7 +264,7 @@ function hexToBytes(h: string): Uint8Array {
     if (!/^[0-9a-fA-F]{2}$/.test(pair)) {
       throw new Error(`invalid hex char at offset ${i * 2}`);
     }
-    out[i] = parseInt(pair, 16);
+    out[i] = Number.parseInt(pair, 16);
   }
   return out;
 }
