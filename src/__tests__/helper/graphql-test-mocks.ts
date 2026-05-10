@@ -40,6 +40,12 @@
  */
 
 import path from "path";
+import request from "supertest";
+import type { Application } from "express";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { createApolloTestServer } from "@/__tests__/helper/test-server";
 
 /**
  * Factory for `jest.mock("@/presentation/graphql/scalar", ...)`. The
@@ -81,4 +87,60 @@ export function currentUserMockFactory(userId: string) {
   return {
     getCurrentUserId: jest.fn(() => userId),
   };
+}
+
+/**
+ * Wires the per-suite tsyringe container for resolver+loader integration
+ * tests: resets the container, registers production dependencies, resolves
+ * a `PrismaClientIssuer`, and overrides one usecase token with a mock so
+ * the resolver under test is fully isolated from DB / domain logic.
+ *
+ * Returns a getter for the `issuer` since the value is only available
+ * after `beforeAll` has run.
+ */
+export function setupResolverIntegrationTest(
+  useCaseToken: string,
+  mockUseCase: object,
+): { getIssuer: () => PrismaClientIssuer } {
+  let issuer: PrismaClientIssuer;
+
+  beforeAll(() => {
+    container.reset();
+    registerProductionDependencies();
+    issuer = container.resolve(PrismaClientIssuer);
+    container.register(useCaseToken, { useValue: mockUseCase });
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  return { getIssuer: () => issuer };
+}
+
+/**
+ * One-shot Apollo test-server + supertest POST runner. Centralises the
+ * `createApolloTestServer({ currentUser, issuer, loaders })` +
+ * `request(app).post("/graphql").send({ query, variables })` boilerplate
+ * that field-resolver / DataLoader tests repeat per assertion.
+ */
+export async function runGqlQuery({
+  currentUserId = "user-1",
+  issuer,
+  loaders,
+  query,
+  variables,
+}: {
+  currentUserId?: string;
+  issuer: PrismaClientIssuer;
+  loaders: Record<string, unknown>;
+  query: string;
+  variables?: Record<string, unknown>;
+}): Promise<request.Response> {
+  const app: Application = await createApolloTestServer({
+    currentUser: { id: currentUserId },
+    issuer,
+    loaders,
+  });
+  return request(app).post("/graphql").send({ query, variables });
 }

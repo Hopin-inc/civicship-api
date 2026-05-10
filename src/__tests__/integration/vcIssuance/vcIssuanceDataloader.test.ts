@@ -20,17 +20,12 @@
  * and removes the duplicated `prisma.user.findMany(...)` /
  * `prisma.evaluation.findMany(...)` blocks flagged by SonarCloud.
  *
- * The usecase is mocked via tsyringe (Strategy A repository) so the
- * test isolates the resolver+loader wiring from any DB dependency.
+ * Boilerplate (jest.mock factories, container wiring, supertest POST) is
+ * sourced from `@/__tests__/helper/graphql-test-mocks` to keep the
+ * per-suite footprint focused on the assertions under test.
  */
 
 import "reflect-metadata";
-import { container } from "tsyringe";
-import DataLoader from "dataloader";
-import { registerProductionDependencies } from "@/application/provider";
-import { createApolloTestServer } from "@/__tests__/helper/test-server";
-import request from "supertest";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 // Mock factories are required from inside `jest.mock` callbacks because
 // Jest hoists `jest.mock` calls above ES `import`s — outer-scope symbols
@@ -45,6 +40,12 @@ jest.mock("@/presentation/graphql/schema/esmPath", () =>
 jest.mock("@/application/domain/utils", () =>
   jest.requireActual("@/__tests__/helper/graphql-test-mocks").currentUserMockFactory("user-1"),
 );
+
+import DataLoader from "dataloader";
+import {
+  runGqlQuery,
+  setupResolverIntegrationTest,
+} from "@/__tests__/helper/graphql-test-mocks";
 
 const vcIssuanceWithUserQuery = /* GraphQL */ `
   query ($id: ID!) {
@@ -92,8 +93,6 @@ function makeFakeVc(overrides: Partial<{ id: string; userId: string; evaluationI
   };
 }
 
-let issuer: PrismaClientIssuer;
-
 const mockVcIssuanceUseCase = {
   viewVcIssuance: jest.fn(),
   viewVcIssuancesByUser: jest.fn(),
@@ -101,16 +100,7 @@ const mockVcIssuanceUseCase = {
 };
 
 describe("VcIssuance field resolvers (shared loaders)", () => {
-  beforeAll(() => {
-    container.reset();
-    registerProductionDependencies();
-    issuer = container.resolve(PrismaClientIssuer);
-    container.register("VcIssuanceUseCase", { useValue: mockVcIssuanceUseCase });
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  const { getIssuer } = setupResolverIntegrationTest("VcIssuanceUseCase", mockVcIssuanceUseCase);
 
   it("resolves VcIssuance.user via ctx.loaders.user", async () => {
     mockVcIssuanceUseCase.viewVcIssuance.mockResolvedValueOnce(
@@ -120,18 +110,12 @@ describe("VcIssuance field resolvers (shared loaders)", () => {
     const userLoad = jest.fn().mockResolvedValue({ id: "user-1", name: "Test User" });
     const evaluationLoad = jest.fn().mockResolvedValue(null);
 
-    const app = await createApolloTestServer({
-      currentUser: { id: "user-1" },
-      issuer,
-      loaders: {
-        user: { load: userLoad },
-        evaluation: { load: evaluationLoad },
-      },
+    const res = await runGqlQuery({
+      issuer: getIssuer(),
+      loaders: { user: { load: userLoad }, evaluation: { load: evaluationLoad } },
+      query: vcIssuanceWithUserQuery,
+      variables: { id: "vc-1" },
     });
-
-    const res = await request(app)
-      .post("/graphql")
-      .send({ query: vcIssuanceWithUserQuery, variables: { id: "vc-1" } });
 
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.vcIssuance).toMatchObject({
@@ -153,18 +137,12 @@ describe("VcIssuance field resolvers (shared loaders)", () => {
     const userLoad = jest.fn().mockResolvedValue({ id: "user-1", name: "Test User" });
     const evaluationLoad = jest.fn().mockResolvedValue({ id: "eval-1" });
 
-    const app = await createApolloTestServer({
-      currentUser: { id: "user-1" },
-      issuer,
-      loaders: {
-        user: { load: userLoad },
-        evaluation: { load: evaluationLoad },
-      },
+    const res = await runGqlQuery({
+      issuer: getIssuer(),
+      loaders: { user: { load: userLoad }, evaluation: { load: evaluationLoad } },
+      query: vcIssuanceWithUserQuery,
+      variables: { id: "vc-1" },
     });
-
-    const res = await request(app)
-      .post("/graphql")
-      .send({ query: vcIssuanceWithUserQuery, variables: { id: "vc-1" } });
 
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.vcIssuance).toMatchObject({
@@ -186,18 +164,12 @@ describe("VcIssuance field resolvers (shared loaders)", () => {
     const userLoad = jest.fn().mockResolvedValue(null);
     const evaluationLoad = jest.fn().mockResolvedValue(null);
 
-    const app = await createApolloTestServer({
-      currentUser: { id: "user-1" },
-      issuer,
-      loaders: {
-        user: { load: userLoad },
-        evaluation: { load: evaluationLoad },
-      },
+    const res = await runGqlQuery({
+      issuer: getIssuer(),
+      loaders: { user: { load: userLoad }, evaluation: { load: evaluationLoad } },
+      query: vcIssuanceWithUserQuery,
+      variables: { id: "vc-1" },
     });
-
-    const res = await request(app)
-      .post("/graphql")
-      .send({ query: vcIssuanceWithUserQuery, variables: { id: "vc-1" } });
 
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.vcIssuance).toMatchObject({
@@ -224,18 +196,12 @@ describe("VcIssuance field resolvers (shared loaders)", () => {
     );
     const userLoader = new DataLoader<string, { id: string; name: string }>(userBatch);
 
-    const app = await createApolloTestServer({
-      currentUser: { id: "user-1" },
-      issuer,
-      loaders: {
-        user: userLoader,
-        evaluation: { load: jest.fn() },
-      },
+    const res = await runGqlQuery({
+      issuer: getIssuer(),
+      loaders: { user: userLoader, evaluation: { load: jest.fn() } },
+      query: vcIssuancesByUserWithUserQuery,
+      variables: { userId: "user-1" },
     });
-
-    const res = await request(app)
-      .post("/graphql")
-      .send({ query: vcIssuancesByUserWithUserQuery, variables: { userId: "user-1" } });
 
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.vcIssuancesByUser).toHaveLength(10);

@@ -15,16 +15,12 @@
  * `VcIssuance.user`, etc. into a single batch and removes a duplicated
  * `prisma.user.findMany(...)` block flagged by SonarCloud.
  *
- * The usecase is mocked via tsyringe (Strategy A repository) so the
- * test isolates the resolver+loader wiring from any DB dependency.
+ * Boilerplate (jest.mock factories, container wiring, supertest POST) is
+ * sourced from `@/__tests__/helper/graphql-test-mocks` to keep the
+ * per-suite footprint focused on the assertions under test.
  */
 
 import "reflect-metadata";
-import { container } from "tsyringe";
-import { registerProductionDependencies } from "@/application/provider";
-import { createApolloTestServer } from "@/__tests__/helper/test-server";
-import request from "supertest";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 // Mock factories are required from inside `jest.mock` callbacks because
 // Jest hoists `jest.mock` calls above ES `import`s — outer-scope symbols
@@ -39,6 +35,11 @@ jest.mock("@/presentation/graphql/schema/esmPath", () =>
 jest.mock("@/application/domain/utils", () =>
   jest.requireActual("@/__tests__/helper/graphql-test-mocks").currentUserMockFactory("user-1"),
 );
+
+import {
+  runGqlQuery,
+  setupResolverIntegrationTest,
+} from "@/__tests__/helper/graphql-test-mocks";
 
 const userDidWithUserQuery = /* GraphQL */ `
   query ($userId: ID!) {
@@ -70,8 +71,6 @@ const fakeAnchor = {
   userId: "user-1",
 };
 
-let issuer: PrismaClientIssuer;
-
 const mockUserDidUseCase = {
   viewUserDid: jest.fn(),
   createUserDidForUser: jest.fn(),
@@ -79,16 +78,7 @@ const mockUserDidUseCase = {
 };
 
 describe("UserDidAnchor.user (shared ctx.loaders.user)", () => {
-  beforeAll(() => {
-    container.reset();
-    registerProductionDependencies();
-    issuer = container.resolve(PrismaClientIssuer);
-    container.register("UserDidUseCase", { useValue: mockUserDidUseCase });
-  });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  const { getIssuer } = setupResolverIntegrationTest("UserDidUseCase", mockUserDidUseCase);
 
   it("resolves UserDidAnchor.user via ctx.loaders.user", async () => {
     mockUserDidUseCase.viewUserDid.mockResolvedValueOnce(fakeAnchor);
@@ -98,17 +88,12 @@ describe("UserDidAnchor.user (shared ctx.loaders.user)", () => {
       name: "Test User",
     });
 
-    const app = await createApolloTestServer({
-      currentUser: { id: "user-1" },
-      issuer,
-      loaders: {
-        user: { load: userLoad },
-      },
+    const res = await runGqlQuery({
+      issuer: getIssuer(),
+      loaders: { user: { load: userLoad } },
+      query: userDidWithUserQuery,
+      variables: { userId: "user-1" },
     });
-
-    const res = await request(app)
-      .post("/graphql")
-      .send({ query: userDidWithUserQuery, variables: { userId: "user-1" } });
 
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.userDid).toMatchObject({
@@ -126,17 +111,12 @@ describe("UserDidAnchor.user (shared ctx.loaders.user)", () => {
 
     const userLoad = jest.fn().mockResolvedValue(null);
 
-    const app = await createApolloTestServer({
-      currentUser: { id: "user-1" },
-      issuer,
-      loaders: {
-        user: { load: userLoad },
-      },
+    const res = await runGqlQuery({
+      issuer: getIssuer(),
+      loaders: { user: { load: userLoad } },
+      query: userDidWithUserQuery,
+      variables: { userId: "user-1" },
     });
-
-    const res = await request(app)
-      .post("/graphql")
-      .send({ query: userDidWithUserQuery, variables: { userId: "user-1" } });
 
     expect(res.body.errors).toBeUndefined();
     expect(res.body.data.userDid).toMatchObject({
