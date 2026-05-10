@@ -1243,6 +1243,20 @@ type AnalyticsWindowActivity {
   senderCountPrev: Int!
 }
 
+"""
+chain anchor のライフサイクル状態 (§4.1, §F)。
+- PENDING: DB 永続化済み、weekly anchor batch 未投入
+- SUBMITTED: Cardano tx 送信済み、未確定
+- CONFIRMED: tx finalized
+- FAILED: tx 失敗 / 再送対象
+"""
+enum AnchorStatus {
+  CONFIRMED
+  FAILED
+  PENDING
+  SUBMITTED
+}
+
 union ApproveReportPayload = ApproveReportSuccess
 
 type ApproveReportSuccess {
@@ -1371,6 +1385,12 @@ enum AuthZRules {
 }
 
 scalar BigInt
+
+"""chain network 識別子 (§4.1)。Phase 1 は Cardano のみサポート。"""
+enum ChainNetwork {
+  CARDANO_MAINNET
+  CARDANO_PREPROD
+}
 
 input CheckCommunityPermissionInput {
   communityId: ID!
@@ -1620,6 +1640,12 @@ type CommunityUpdateProfileSuccess {
   community: Community!
 }
 
+input CreateUserDidInput {
+  """対象 chain network。未指定時は CARDANO_MAINNET (§5.2.1)。"""
+  network: ChainNetwork
+  userId: ID!
+}
+
 type CurrentPointView {
   currentPoint: BigInt!
   walletId: String
@@ -1665,6 +1691,18 @@ enum DidIssuanceStatus {
   FAILED
   PENDING
   PROCESSING
+}
+
+"""
+DID lifecycle 操作種別 (§4.1)。
+- CREATE: 初回作成
+- UPDATE: 既存 DID Document の差し替え
+- DEACTIVATE: tombstone (§E)
+"""
+enum DidOperation {
+  CREATE
+  DEACTIVATE
+  UPDATE
 }
 
 interface Edge {
@@ -1919,6 +1957,20 @@ type IncentiveGrantsConnection {
   totalCount: Int!
 }
 
+input IssueVcInput {
+  """VC に乗せる claim 群。issuer 側で validation は行わず opaque に署名される。"""
+  claims: JSON!
+
+  """VC を Evaluation に紐づける場合の id。"""
+  evaluationId: ID
+
+  """ユーザーの did:web:api.civicship.app:users:<id> (§B)。"""
+  subjectDid: String!
+
+  """VC を保有するユーザー id。"""
+  userId: ID!
+}
+
 scalar JSON
 
 enum Language {
@@ -2076,10 +2128,29 @@ type Mutation {
   communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
   communityDelete(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): CommunityDeletePayload
   communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): CommunityUpdateProfilePayload
+
+  """
+  ユーザー DID を新規作成する。CREATE-op の UserDidAnchor を PENDING で永続化する。
+  自分の userId のみ許可。`permission.userId` と `input.userId` が一致しなければならない。
+  """
+  createUserDid(input: CreateUserDidInput!, permission: CheckIsSelfPermissionInput!): UserDidAnchor!
+
+  """
+  ユーザー DID を deactivate する。DEACTIVATE-op の UserDidAnchor を PENDING で永続化する。
+  自分の userId のみ許可。
+  """
+  deactivateUserDid(permission: CheckIsSelfPermissionInput!, userId: ID!): UserDidAnchor!
   evaluationBulkCreate(input: EvaluationBulkCreateInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): EvaluationBulkCreatePayload
   generateReport(input: GenerateReportInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): GenerateReportPayload
   identityCheckPhoneUser(input: IdentityCheckPhoneUserInput!): IdentityCheckPhoneUserPayload!
   incentiveGrantRetry(input: IncentiveGrantRetryInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): IncentiveGrantRetryPayload
+
+  """
+  VC を発行する。civicship platform 専用 issuer による単一 issuer モデル (§B)。
+  Phase 1 では admin / system のみが直接呼び出せる。
+  本体は anchor 待ちなしで COMPLETED として永続化される (§5.2.2)。
+  """
+  issueVc(input: IssueVcInput!): VcIssuance!
   linkPhoneAuth(input: LinkPhoneAuthInput!, permission: CheckIsSelfPermissionInput!): LinkPhoneAuthPayload
   membershipAcceptMyInvitation(input: MembershipSetInvitationStatusInput!, permission: CheckIsSelfPermissionInput!): MembershipSetInvitationStatusPayload
   membershipAssignManager(input: MembershipSetRoleInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): MembershipSetRolePayload
@@ -2918,11 +2989,30 @@ type Query {
   transaction(id: ID!): Transaction
   transactions(cursor: String, filter: TransactionFilterInput, first: Int, sort: TransactionSortInput): TransactionsConnection!
   user(id: ID!): User
+
+  """
+  指定ユーザーの最新 UserDidAnchor を返却する。
+  存在しない場合は null。PENDING 状態でも返却される (§F)。
+  認証必須。
+  """
+  userDid(userId: ID!): UserDidAnchor
   users(cursor: String, filter: UserFilterInput, first: Int, sort: UserSortInput): UsersConnection!
   utilities(cursor: String, filter: UtilityFilterInput, first: Int, sort: UtilitySortInput): UtilitiesConnection!
   utility(id: ID!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): Utility
+
+  """
+  単一 VC issuance を id で取得。存在しない場合は null。
+  認証必須。
+  """
+  vcIssuance(id: ID!): VcIssuance
   vcIssuanceRequest(id: ID!): VcIssuanceRequest
   vcIssuanceRequests(cursor: String, filter: VcIssuanceRequestFilterInput, first: Int, sort: VcIssuanceRequestSortInput): VcIssuanceRequestsConnection!
+
+  """
+  指定ユーザーが保有する VC issuance 一覧を返却する。
+  認証必須。
+  """
+  vcIssuancesByUser(userId: ID!): [VcIssuance!]!
 
   """
   Verify transactions against the Cardano blockchain.
@@ -3767,6 +3857,24 @@ type UserDeletePayload {
   userId: ID
 }
 
+"""
+ユーザー DID の chain anchor 1 件を表す。
+PENDING 状態でも返却される（§F: PENDING も resolver で配信）。
+chainTxHash / chainOpIndex / confirmedAt は CONFIRMED で初めて埋まる。
+"""
+type UserDidAnchor {
+  chainOpIndex: Int
+  chainTxHash: String
+  confirmedAt: Datetime
+  createdAt: Datetime!
+  did: String!
+  documentHash: String!
+  id: ID!
+  network: ChainNetwork!
+  operation: DidOperation!
+  status: AnchorStatus!
+}
+
 type UserEdge implements Edge {
   cursor: String!
   node: User
@@ -3913,6 +4021,36 @@ enum ValueType {
   INT
 }
 
+"""
+VC のシリアライゼーション形式 (§4.1)。
+Phase 1 は INTERNAL_JWT のみ (§5.2.2)。
+IDENTUS_VC_PRISM は legacy 互換のため列挙のみ保持。
+"""
+enum VcFormat {
+  IDENTUS_VC_PRISM
+  INTERNAL_JWT
+}
+
+"""
+civicship が発行した内部 VC (§5.2.2)。
+本体は anchor 待ちなしで COMPLETED として配信される。
+chain anchor の状態は別フィールドで管理されており、検証側はそれを参照する。
+"""
+type VcIssuance {
+  createdAt: Datetime!
+  evaluationId: ID
+  id: ID!
+  issuerDid: String!
+  revokedAt: Datetime
+  status: VcIssuanceStatus!
+  statusListCredential: String
+  statusListIndex: Int
+  subjectDid: String!
+  userId: ID!
+  vcFormat: VcFormat!
+  vcJwt: String!
+}
+
 type VcIssuanceRequest {
   completedAt: Datetime
   createdAt: Datetime
@@ -3947,9 +4085,11 @@ type VcIssuanceRequestsConnection {
   totalCount: Int!
 }
 
+"""VC issuance のライフサイクル状態 (§4.1)。"""
 enum VcIssuanceStatus {
   COMPLETED
   FAILED
+  IN_PROGRESS
   PENDING
   PROCESSING
 }
