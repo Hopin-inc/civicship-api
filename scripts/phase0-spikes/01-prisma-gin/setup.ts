@@ -19,6 +19,7 @@
  */
 
 import { execSync } from "node:child_process";
+import * as crypto from "node:crypto";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PrismaClient, ChainNetwork, AnchorStatus } from "./generated";
@@ -48,10 +49,21 @@ function requireEnv(name: string): string {
  * spike all we need is realistic-length random strings — the index
  * operator class on `text[]` is `array_ops`, which doesn't care about
  * the string format, just that they are bytes.
+ *
+ * Uses `crypto.randomBytes` (not `Math.random`) because SonarCloud flags
+ * the latter as a security hotspot even in non-security contexts. The
+ * randomness quality doesn't matter for this spike, but using the secure
+ * generator is free and silences the noise.
  */
 function fakeCuid(seed: number): string {
   // 24 chars of base36 randomness + 1-char prefix; matches cuid length 25.
-  const rand = Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14);
+  // crypto.randomBytes(16) → 32 hex chars; convert each byte to base36 to
+  // get base36 chars, take 24.
+  const bytes = crypto.randomBytes(16);
+  let rand = "";
+  for (const b of bytes) {
+    rand += b.toString(36);
+  }
   return `c${(seed.toString(36) + rand).slice(0, 24)}`;
 }
 
