@@ -127,37 +127,41 @@ KMS が返す PEM は **SubjectPublicKeyInfo (SPKI) / RFC 8410** 形式の Ed255
 hex に。
 
 ```bash
-openssl pkey -in pubkey.pem -pubin -outform DER | tail -c 32 | xxd -p -c 64
-# → 64 char の lowercase hex
+openssl pkey -in pubkey.pem -pubin -outform DER | tail -c 32 | xxd -p -c 64 | tr -d '\n'
+# → 64 char の lowercase hex (改行なし、64 文字ぴったり)
 ```
 
 > **warning**: 得られた hex が **32 byte = 64 chars** であることを必ず確認。
 
-### Step 3: DB に新 key を `PENDING` 状態で追加
+### Step 3: DB に新 key 行を INSERT
 
-> **schema 注**: 現行 Phase 1 の `IssuerDidKeyRow`
-> （`src/application/domain/credential/issuerDid/data/type.ts`）は
-> `id` / `kmsKeyResourceName` / `activatedAt` / `deactivatedAt` のみの
-> minimal shape である。下記 SQL の `status` / `public_key_ed25519_hex`
-> 列は **runbook 上の概念モデル**で、Phase 1.5 schema PR で追加される列を
-> 前提に書かれている。schema PR 反映時に列名を実体に合わせて読み替える
-> （`PENDING` ⇔ `activated_at IS NULL` 相当）。
+現行の `IssuerDidKeyRow`（`src/application/domain/credential/issuerDid/data/type.ts`）は
+`id` / `kmsKeyResourceName` / `activatedAt` / `deactivatedAt` の minimal shape
+で、`status` 列・`public_key_ed25519_hex` 列は持たない。active 判定は
+`deactivatedAt IS NULL` で行う（`IIssuerDidKeyRepository.findActiveKey` の実装）。
+公開鍵は KMS から直接取得するため DB には保存しない（Step 2 で取得した hex は
+`/.well-known/did.json` 検証用の手元控えとしてのみ利用）。
+
+Phase 1.5 は single-active-key の hard cut-over なので、新 key 行は最初から
+`activated_at = NOW()` で INSERT する。旧 key の deactivate は Step 5 で同一
+transaction にまとめる。
 
 ```sql
+-- 新 key 行を INSERT（activated_at は今、deactivated_at は NULL）
 INSERT INTO t_issuer_did_keys (
   kms_key_resource_name,
-  public_key_ed25519_hex,
-  status,
-  activated_at
+  activated_at,
+  deactivated_at
 ) VALUES (
   'projects/<gcp-project-id>/locations/global/keyRings/civicship-issuer/cryptoKeys/did-issuer-key/cryptoKeyVersions/N',
-  '<32 byte hex>',
-  'PENDING',
+  NOW(),
   NULL
 );
 ```
 
-INSERT 後、その行の `id` (cuid) をメモする。
+INSERT 後、その行の `id` (cuid) をメモする。本 step 単体ではまだ旧 key も
+`deactivated_at IS NULL` のままなので、Step 5 へ続けて旧 key を deactivate
+するまで `findActiveKey()` の戻り値が一意でなくなる窓を作らないこと。
 
 ### Step 4: §G overlap window の開始（**Phase 2 で実装予定**）
 
@@ -169,31 +173,35 @@ INSERT 後、その行の `id` (cuid) をメモする。
 > 新鍵にして 24h 経過後に旧鍵を INACTIVE に降格する。Phase 1.5 ではこの猶予
 > を取らず Step 5 で **hard cut-over** する。
 
-### Step 5: 新 key を `ACTIVE` 化、旧 key を `INACTIVE` 化
+### Step 5: 旧 key を deactivate して active を新 key 1 本に絞る
 
-両 UPDATE を **同一 transaction** で実行し、ACTIVE が 1 行のみという
+Step 3 で INSERT した新 key は `deactivated_at IS NULL` のため、この時点
+では旧 key と新 key の **両方** が active 判定対象になっている。Step 5 で
+旧 key の `deactivated_at = NOW()` を更新し、active を新 key 1 本に絞る。
+
+UPDATE を **同一 transaction** で実行し、active な key が 1 行のみという
 invariant を維持する:
 
 ```sql
 BEGIN;
 
+-- 旧 key を deactivate（新 key 以外で deactivated_at が NULL の全行）
 UPDATE t_issuer_did_keys
-SET status = 'ACTIVE',
-    activated_at = NOW()
-WHERE id = '<new-key-id>'
-  AND status = 'PENDING';
-
-UPDATE t_issuer_did_keys
-SET status = 'INACTIVE',
-    deactivated_at = NOW()
-WHERE status = 'ACTIVE'
+SET deactivated_at = NOW()
+WHERE deactivated_at IS NULL
   AND id != '<new-key-id>';
+
+-- invariant 確認: active が 1 行であること
+SELECT count(*) FROM t_issuer_did_keys WHERE deactivated_at IS NULL;
+-- → 1 でなければ ROLLBACK して原因究明
 
 COMMIT;
 ```
 
-> **invariant**: `SELECT count(*) FROM t_issuer_did_keys WHERE status = 'ACTIVE'`
-> は常に 0 または 1。COMMIT 直前にこのクエリで確認すること。
+> **invariant**: `SELECT count(*) FROM t_issuer_did_keys WHERE deactivated_at IS NULL`
+> は常に 1（Step 3 INSERT 直後の transient 状態 = 2 を除く）。COMMIT 直前に
+> 必ず上記クエリで確認すること。これが `IIssuerDidKeyRepository.findActiveKey`
+> の単一行 invariant と一致する。
 
 ### Step 6: `IssuerDidService` の TTL cache を反映
 
