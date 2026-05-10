@@ -137,6 +137,16 @@ import AnalyticsUseCase from "@/application/domain/analytics/usecase";
 import AnalyticsCommunityService from "@/application/domain/analytics/community/service";
 import AnalyticsCommunityUseCase from "@/application/domain/analytics/community/usecase";
 
+// 🪪 User DID (§5.2 internal DID/VC, Phase 1 step 7 — Strategy A stubs)
+import UserDidService from "@/application/domain/account/userDid/service";
+import UserDidUseCase from "@/application/domain/account/userDid/usecase";
+import UserDidAnchorRepositoryStub from "@/application/domain/account/userDid/data/repository";
+
+// 🪪 VC Issuance (§5.2 internal DID/VC, Phase 1 step 7 — Strategy A stubs)
+import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
+import VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
+import VcIssuanceRepositoryStub from "@/application/domain/credential/vcIssuance/data/repository";
+
 export function registerProductionDependencies() {
   // ------------------------------
   // 🏗️ Infrastructure
@@ -235,6 +245,23 @@ export function registerProductionDependencies() {
   container.register("VCIssuanceRequestConverter", { useClass: VCIssuanceRequestConverter });
   container.register("VCIssuanceRequestService", { useClass: VCIssuanceRequestService });
   container.register("VCIssuanceRequestRepository", { useClass: VCIssuanceRequestRepository });
+
+  // 🪪 User DID (§5.2 internal DID/VC) — Strategy A stub repository.
+  // The stub satisfies `UserDidAnchorStore` (resolver, PR #1096) and the
+  // domain interface; Prisma-backed implementation lands after schema
+  // PR #1094 merges (Phase 1 step 8+).
+  container.register("UserDidAnchorRepository", { useClass: UserDidAnchorRepositoryStub });
+  // Alias used by `DidDocumentResolver` (PR #1096) — same instance.
+  container.register("UserDidAnchorStore", { useClass: UserDidAnchorRepositoryStub });
+  container.register("UserDidService", { useClass: UserDidService });
+  container.register("UserDidUseCase", { useClass: UserDidUseCase });
+
+  // 🪪 VC Issuance (§5.2 internal DID/VC) — Strategy A stub repository.
+  // Distinct from the legacy `VCIssuanceRequest*` registrations above:
+  // those wrap the IDENTUS-era model, this wraps the Phase-1 redesign.
+  container.register("VcIssuanceRepository", { useClass: VcIssuanceRepositoryStub });
+  container.register("VcIssuanceService", { useClass: VcIssuanceService });
+  container.register("VcIssuanceUseCase", { useClass: VcIssuanceUseCase });
 
   // ------------------------------
   // 📰 Content
