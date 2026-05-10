@@ -21,13 +21,11 @@
  * separate field (`vcAnchorId`) which the verifier inspects when stronger
  * trust guarantees are needed.
  *
- * Strategy A note (Phase 1 step 7) ----------------------------------------
- *
- * The repository is a stub (see `data/repository.ts`) until schema PR
- * #1094 lands. The signature stub (`vcJwt = "<header>.<payload>.stub-not-signed"`)
- * exists because the KMS signer lives in PR `claude/phase1-infra-kms-issuer-did`.
- * Both will be swapped to real implementations in Phase 1 step 9; the
- * unit tests already verify the JWT shape so the swap is mechanical.
+ * The signature segment of the emitted JWT is currently a deterministic
+ * stub marker (`STUB_SIGNATURE`) because the KMS signer lives in a
+ * separate PR (`claude/phase1-infra-kms-issuer-did`). Real signing will
+ * be wired in Phase 1 step 10; the unit tests already verify the JWT
+ * shape so the swap is mechanical.
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.2.2 (this service)

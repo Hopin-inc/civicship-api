@@ -2,19 +2,12 @@
  * Local type declarations for the `credential/vcIssuance` application
  * domain.
  *
- * Strategy A note (Phase 1 step 7) ----------------------------------------
- *
- * The schema PR (#1094) introduces a new `t_vc_issuance_requests` Prisma
- * model that supersedes the existing IDENTUS-era `vcIssuanceRequest` model
- * with a JWT-shaped column set (vcJwt / vcAnchorId / anchorLeafIndex /
- * statusListIndex / statusListCredential). To keep this PR independent we
- * declare the row shape locally as `VcIssuanceRow` — it intentionally
- * mirrors the design's column set so that, after the schema PR merges,
- * swapping to the generated type is a one-line change:
- *
- *     // TODO(phase1-final): replace with
- *     //   import type { VcIssuanceRequest } from "@prisma/client";
- *     //   export type VcIssuanceRow = VcIssuanceRequest;
+ * `VcIssuanceRow` is the application-layer view of a VC issuance request.
+ * It exposes `issuerDid` / `subjectDid` for downstream consumers even
+ * though the underlying `t_vc_issuance_requests` Prisma model does not
+ * persist them as columns — the canonical source is the JWT payload, which
+ * the repository round-trips on read (see `decodeIssuerSubjectFromJwt` in
+ * `data/repository.ts`).
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §4.1   (VcIssuanceRequest schema)
@@ -22,35 +15,39 @@
  *   docs/report/did-vc-internalization.md §D     (credentialStatus)
  */
 
-/**
- * §4.1 — VC format. Phase 1 only emits `INTERNAL_JWT`; `IDENTUS_VC_PRISM`
- * is retained as a value for legacy compatibility (the GraphQL schema
- * exposes the same values).
- */
-export type VcFormatValue = "INTERNAL_JWT" | "IDENTUS_VC_PRISM";
+import type { VcFormat, VcIssuanceStatus } from "@prisma/client";
 
 /**
- * §4.1 — VC lifecycle status.
- *
- * The values mirror `GqlVcIssuanceStatus`. The legacy `VcIssuanceRequest`
- * model still uses `PROCESSING` so we keep it in the union; new VCs only
- * transition through `PENDING → IN_PROGRESS → COMPLETED / FAILED`.
+ * §4.1 — VC format. Phase 1 only emits `INTERNAL_JWT`. Aliased to the
+ * Prisma `VcFormat` enum so widening (e.g. when new variants land in the
+ * schema) is automatic.
  */
-export type VcStatusValue = "PENDING" | "IN_PROGRESS" | "PROCESSING" | "COMPLETED" | "FAILED";
+export type VcFormatValue = VcFormat;
 
 /**
- * Local row shape standing in for `VcIssuanceRequest` post-schema-PR.
+ * §4.1 — VC lifecycle status. Aliased to the Prisma `VcIssuanceStatus`
+ * enum so the application layer always speaks the persisted vocabulary
+ * (`PENDING` / `IN_PROGRESS` / `PROCESSING` / `COMPLETED` / `FAILED`).
+ */
+export type VcStatusValue = VcIssuanceStatus;
+
+/**
+ * Application-layer view of a VC issuance row. The fields below mirror
+ * the columns the service writes, plus the JWT-payload-derived
+ * `issuerDid` / `subjectDid` accessors.
  *
- * Fields match the design's schema (§4.1) one-for-one. The legacy IDENTUS
- * fields (`jobId`, `errorMessage`, `retryCount`, …) are intentionally
- * omitted — Phase 1 step 7 only needs the columns this service writes.
+ * `issuerDid` / `subjectDid` are `string | null` because the repository
+ * recovers them by parsing the JWT payload on read (`findById`), and that
+ * parse can fail for legacy / corrupt rows. Consumers MUST handle the
+ * `null` case explicitly — previously the repository silently coerced
+ * decode failures to empty strings, which masked malformed JWTs.
  */
 export interface VcIssuanceRow {
   id: string;
   userId: string;
   evaluationId: string | null;
-  issuerDid: string;
-  subjectDid: string;
+  issuerDid: string | null;
+  subjectDid: string | null;
   vcFormat: VcFormatValue;
   vcJwt: string;
   statusListIndex: number | null;

@@ -22,14 +22,6 @@
  * §F compliance: anchors are persisted as PENDING and the resolver serves
  * them immediately — confirmation on chain happens out-of-band.
  *
- * Strategy A note (Phase 1 step 7) ----------------------------------------
- *
- * The repository is a stub (see `data/repository.ts`) until schema PR
- * #1094 lands. The service is fully functional today: callers exercising
- * `createDidForUser` will get back a valid `did` / `documentHash` /
- * `documentCbor` triple — only the persistence call throws. Tests inject a
- * `useValue` mock to verify the upstream pipeline.
- *
  * Design references:
  *   docs/report/did-vc-internalization.md §3.3   (CBOR-encoded DID Document)
  *   docs/report/did-vc-internalization.md §5.2.1 (this service)
