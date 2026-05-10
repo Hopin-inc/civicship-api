@@ -80,6 +80,18 @@ export function assertValidUserId(userId: string): string {
   return userId;
 }
 
+/**
+ * Boolean variant of `assertValidUserId` for code paths that need a
+ * non-throwing check (e.g. the `/users/:userId/did.json` route returning
+ * HTTP 400 instead of throwing). Centralises the validation rule so it
+ * stays in sync with `assertValidUserId` / `buildUserDid`.
+ */
+export function isValidUserId(userId: unknown): userId is string {
+  if (typeof userId !== "string") return false;
+  if (userId.length < USER_ID_MIN || userId.length > USER_ID_MAX) return false;
+  return USER_ID_REGEX.test(userId);
+}
+
 /** Build the canonical did:web string for a civicship user. */
 export function buildUserDid(userId: string): string {
   assertValidUserId(userId);
