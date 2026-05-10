@@ -108,7 +108,6 @@ import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLin
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DidDocumentResolver } from "@/infrastructure/libs/did/didDocumentResolver";
-import { UserDidAnchorStoreStub } from "@/infrastructure/libs/did/userDidAnchorStoreStub";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
@@ -146,18 +145,19 @@ import {
 import AnchorBatchUseCase from "@/application/domain/anchor/anchorBatch/usecase";
 import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
 
-// 🪪 User DID (§5.2 internal DID/VC, Phase 1 step 7 — Strategy A stubs;
-//   step 8 adds the GraphQL resolver registration)
+// 🪪 User DID (§5.2 internal DID/VC, Phase 1 — Strategy A: stubs replaced
+//   with Prisma-backed repository, plus GraphQL resolver registration)
 import UserDidService from "@/application/domain/account/userDid/service";
 import UserDidUseCase from "@/application/domain/account/userDid/usecase";
-import UserDidAnchorRepositoryStub from "@/application/domain/account/userDid/data/repository";
+import UserDidAnchorRepository from "@/application/domain/account/userDid/data/repository";
 import UserDidResolver from "@/application/domain/account/userDid/controller/resolver";
 
-// 🪪 VC Issuance (§5.2 internal DID/VC, Phase 1 step 7 — Strategy A stubs;
-//   step 8 adds the GraphQL resolver registration)
+// 🪪 VC Issuance (§5.2 internal DID/VC, Phase 1 — Strategy A: stubs
+//   replaced with Prisma-backed repository, plus GraphQL resolver
+//   registration)
 import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
 import VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
-import VcIssuanceRepositoryStub from "@/application/domain/credential/vcIssuance/data/repository";
+import VcIssuanceRepository from "@/application/domain/credential/vcIssuance/data/repository";
 import VcIssuanceResolver from "@/application/domain/credential/vcIssuance/controller/resolver";
 
 // 🪪 Issuer DID (§5.4.3 internal DID Document service, Phase 1 step 8)
@@ -266,10 +266,6 @@ export function registerProductionDependencies() {
   container.register("DIDIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
 
   // Phase 1 internalized DID/VC stack (§5.1.4 / §5.4).
-  // TODO(phase1-final): replace UserDidAnchorStoreStub with a Prisma-backed
-  // UserDidAnchorRepository once the schema PR (#1094) merges and the
-  // application service PR wires UserDidDocumentService.
-  container.register("UserDidAnchorStore", { useClass: UserDidAnchorStoreStub });
   container.register("DidDocumentResolver", { useClass: DidDocumentResolver });
 
   container.register("VCIssuanceRequestUseCase", { useClass: VCIssuanceRequestUseCase });
@@ -277,21 +273,21 @@ export function registerProductionDependencies() {
   container.register("VCIssuanceRequestService", { useClass: VCIssuanceRequestService });
   container.register("VCIssuanceRequestRepository", { useClass: VCIssuanceRequestRepository });
 
-  // 🪪 User DID (§5.2 internal DID/VC) — Strategy A stub repository.
-  // The stub satisfies `UserDidAnchorStore` (resolver, PR #1096) and the
-  // domain interface; Prisma-backed implementation lands after schema
-  // PR #1094 merges (Phase 1 step 8+).
-  container.register("UserDidAnchorRepository", { useClass: UserDidAnchorRepositoryStub });
-  // Alias used by `DidDocumentResolver` (PR #1096) — same instance.
-  container.register("UserDidAnchorStore", { useClass: UserDidAnchorRepositoryStub });
+  // 🪪 User DID (§5.2 internal DID/VC) — Prisma-backed repository.
+  // The same class is bound to two DI keys: `UserDidAnchorRepository` for
+  // application services and `UserDidAnchorStore` for `DidDocumentResolver`
+  // (which only consumes the narrower `findLatestByUserId` surface).
+  container.register("UserDidAnchorRepository", { useClass: UserDidAnchorRepository });
+  container.register("UserDidAnchorStore", { useClass: UserDidAnchorRepository });
   container.register("UserDidService", { useClass: UserDidService });
   container.register("UserDidUseCase", { useClass: UserDidUseCase });
   container.register("UserDidResolver", { useClass: UserDidResolver });
 
-  // 🪪 VC Issuance (§5.2 internal DID/VC) — Strategy A stub repository.
+  // 🪪 VC Issuance (§5.2 internal DID/VC) — Prisma-backed repository.
   // Distinct from the legacy `VCIssuanceRequest*` registrations above:
-  // those wrap the IDENTUS-era model, this wraps the Phase-1 redesign.
-  container.register("VcIssuanceRepository", { useClass: VcIssuanceRepositoryStub });
+  // those wrap the IDENTUS-era flow, this wraps the Phase-1 internal-JWT
+  // redesign that backs `t_vc_issuance_requests` directly.
+  container.register("VcIssuanceRepository", { useClass: VcIssuanceRepository });
   container.register("VcIssuanceService", { useClass: VcIssuanceService });
   container.register("VcIssuanceUseCase", { useClass: VcIssuanceUseCase });
   container.register("VcIssuanceResolver", { useClass: VcIssuanceResolver });

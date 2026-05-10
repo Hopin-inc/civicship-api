@@ -1,25 +1,17 @@
 /**
- * Local type declarations for the `userDid` application domain.
+ * Type declarations for the `userDid` application domain.
  *
- * Strategy A note (Phase 1 step 7) ----------------------------------------
- *
- * The `t_user_did_anchors` Prisma model lives in a sibling PR
- * (`claude/phase1-schema-migration`, #1094) which has not yet merged. To keep
- * this PR independent we re-export the row shape declared by the resolver
- * (PR #1096, `src/infrastructure/libs/did/didDocumentResolver.ts`) so the
- * service / repository layer can be built against a stable contract.
- *
- * After the schema PR merges, the swap is a one-line change:
- *
- *     // TODO(phase1-final): replace with
- *     //   import type { UserDidAnchor } from "@prisma/client";
- *     //   export type UserDidAnchorRow = UserDidAnchor;
+ * `UserDidAnchorRow` aliases the generated `UserDidAnchor` Prisma model so
+ * the repository can return raw `findFirst` / `create` results without an
+ * adapter, and so `IUserDidAnchorRepository` and `UserDidAnchorStore`
+ * (resolver) agree on the row shape.
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §4.1 (UserDidAnchor schema)
  *   docs/report/did-vc-internalization.md §5.2.1 (Application service shape)
  */
 
+import type { ChainNetwork, DidOperation, AnchorStatus } from "@prisma/client";
 import type {
   AnchorNetworkValue,
   AnchorStatusValue,
@@ -46,13 +38,17 @@ export interface UserDidAnchorRow extends InfraUserDidAnchorRow {
   createdAt: Date;
 }
 
+// Re-export the underlying Prisma enums for callers that prefer the
+// canonical names (e.g. when writing `Prisma.UserDidAnchorCreateInput`-shaped
+// data).
+export type { ChainNetwork, DidOperation, AnchorStatus };
+
 /**
  * Input for creating a new CREATE-op `UserDidAnchor` row.
  *
- * Mirrors the columns the schema PR will introduce in `t_user_did_anchors`.
- * Only the fields the service needs at row insertion time are listed; chain
- * tx fields (`chainTxHash`, `chainOpIndex`, `confirmedAt`) are filled in
- * later by the anchor batch service.
+ * Mirrors the columns inserted by `UserDidAnchorRepository.createCreate`.
+ * Chain tx fields (`chainTxHash`, `chainOpIndex`, `confirmedAt`) are filled
+ * in later by the anchor batch service.
  */
 export interface CreateUserDidAnchorInput {
   userId: string;
@@ -72,8 +68,8 @@ export type UpdateUserDidAnchorInput = CreateUserDidAnchorInput;
 
 /**
  * Input for a DEACTIVATE-op anchor row. `documentCbor` is null per §E
- * (Tombstone documents are reconstructed from the tombstone builder, not
- * from CBOR), and `documentHash` references the tombstone document hash.
+ * (tombstone documents are reconstructed by the resolver), and
+ * `documentHash` references the tombstone document hash.
  */
 export interface DeactivateUserDidAnchorInput {
   userId: string;

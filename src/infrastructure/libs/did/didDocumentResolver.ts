@@ -18,21 +18,6 @@
  *     Document is `{ "@context", id }` and `documentCbor` (when present)
  *     restores any extra metadata anchored to chain.
  *
- * --- Strategy A note (Phase 1 step 4) -------------------------------------
- *
- * The `t_user_did_anchors` Prisma model lands in a sibling PR (UserDidAnchor
- * schema). To keep this PR independent we declare the row shape locally as
- * `UserDidAnchorRow` — it intentionally mirrors the design's column set so
- * that, after the schema PR merges, swapping to the generated type is a
- * one-line change:
- *
- *     // TODO(phase1-final): replace with
- *     //   import type { UserDidAnchor } from "@prisma/client";
- *     //   type UserDidAnchorRow = UserDidAnchor;
- *
- * Until then the resolver works against any object that satisfies the
- * declared shape, which is exactly what callers (and tests) will pass in.
- *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.1.4 (this resolver)
  *   docs/report/did-vc-internalization.md §5.4.4 (UserDidDocumentService)
@@ -42,6 +27,7 @@
 
 import { decode as cborDecode } from "cbor-x";
 import { inject, injectable } from "tsyringe";
+import type { AnchorStatus, ChainNetwork, DidOperation, UserDidAnchor } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 import {
   buildDeactivatedDidDocument,
@@ -52,47 +38,34 @@ import {
 } from "@/infrastructure/libs/did/userDidBuilder";
 
 // ---------------------------------------------------------------------------
-// Local type declarations (Strategy A)
+// Prisma-backed type aliases
 // ---------------------------------------------------------------------------
 
 /**
- * Status values that can appear on a `UserDidAnchor`. Mirrors the
- * `AnchorStatus` Prisma enum (§4.1):
- *   PENDING / SUBMITTED / CONFIRMED / FAILED
+ * Status values that can appear on a `UserDidAnchor` (`AnchorStatus` Prisma
+ * enum: PENDING / SUBMITTED / CONFIRMED / FAILED).
  */
-export type AnchorStatusValue = "PENDING" | "SUBMITTED" | "CONFIRMED" | "FAILED";
+export type AnchorStatusValue = AnchorStatus;
 
 /**
- * Operation values that can appear on a `UserDidAnchor`. Mirrors the
- * `DidOperation` Prisma enum (§4.1):
- *   CREATE / UPDATE / DEACTIVATE
+ * Operation values that can appear on a `UserDidAnchor` (`DidOperation`
+ * Prisma enum: CREATE / UPDATE / DEACTIVATE).
  */
-export type DidOperationValue = "CREATE" | "UPDATE" | "DEACTIVATE";
+export type DidOperationValue = DidOperation;
 
 /**
- * Network values supported by civicship anchoring (§4.1 ChainNetwork).
- *
- * Only `CARDANO_MAINNET` and `CARDANO_PREPROD` are valid in the design;
- * the resolver picks the explorer URL accordingly.
+ * Network values supported by civicship anchoring (`ChainNetwork` Prisma
+ * enum: CARDANO_MAINNET / CARDANO_PREPROD). The resolver picks the
+ * explorer URL accordingly.
  */
-export type AnchorNetworkValue = "CARDANO_MAINNET" | "CARDANO_PREPROD";
+export type AnchorNetworkValue = ChainNetwork;
 
 /**
- * Local row shape standing in for the `UserDidAnchor` Prisma model. Fields
- * match the design's schema (§4.1) one-for-one. See the file header for
- * the planned post-schema-merge swap to `import type { UserDidAnchor }`.
+ * Row shape consumed by the resolver — alias of the `UserDidAnchor` Prisma
+ * model so the production repository (`UserDidAnchorRepository`) can pass
+ * raw `findFirst` results in without an adapter.
  */
-export interface UserDidAnchorRow {
-  did: string;
-  operation: DidOperationValue;
-  documentHash: string;
-  documentCbor: Buffer | Uint8Array | null;
-  network: AnchorNetworkValue;
-  chainTxHash: string | null;
-  chainOpIndex: number | null;
-  status: AnchorStatusValue;
-  confirmedAt: Date | null;
-}
+export type UserDidAnchorRow = UserDidAnchor;
 
 /**
  * Storage interface the resolver depends on. Kept narrow (one method) so

@@ -6,12 +6,10 @@
  * listing for an admin UI) live behind a separate interface and will be
  * added in a later phase.
  *
- * Strategy A note (Phase 1 step 7) ----------------------------------------
- *
  * `findLatestByUserId` matches the `UserDidAnchorStore` interface declared
  * in `src/infrastructure/libs/did/didDocumentResolver.ts` so a single
- * production repository can satisfy both the resolver (PR #1096) and the
- * service (this PR) once the schema PR (#1094) merges.
+ * production repository (`UserDidAnchorRepository`) satisfies both the
+ * resolver and the application service via two DI bindings.
  *
  * The `tx` argument follows the project-wide branching pattern (see
  * CLAUDE.md "Transaction Handling Pattern"): when `tx` is supplied, the
@@ -35,7 +33,7 @@ export interface IUserDidAnchorRepository extends UserDidAnchorStore {
    * status (PENDING included per §F). Returns `null` when no row exists.
    *
    * Inherited from `UserDidAnchorStore` so the production class can be
-   * reused by `DidDocumentResolver` (PR #1096) without an adapter.
+   * reused by `DidDocumentResolver` without an adapter.
    */
   findLatestByUserId(userId: string): Promise<UserDidAnchorRow | null>;
 

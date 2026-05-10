@@ -38,16 +38,28 @@ function buildStore(row: UserDidAnchorRow | null): UserDidAnchorStore {
 }
 
 function buildAnchor(overrides: Partial<UserDidAnchorRow> = {}): UserDidAnchorRow {
+  // The resolver only inspects a subset of `UserDidAnchor` columns (see
+  // `buildProof`), but `UserDidAnchorRow = UserDidAnchor` post-Strategy-A,
+  // so the factory has to supply every required field.
   return {
+    id: "uda_phase1_test",
     did: USER_DID,
     operation: "CREATE",
     documentHash: DOC_HASH,
     documentCbor: null,
+    previousAnchorId: null,
     network: "CARDANO_MAINNET",
+    metadataLabel: 1985,
     chainTxHash: TX_HASH,
     chainOpIndex: 0,
     status: "CONFIRMED",
+    submittedAt: null,
     confirmedAt: new Date("2026-01-15T12:00:00.000Z"),
+    batchId: null,
+    version: 0,
+    userId: "u_alice",
+    createdAt: new Date("2026-01-15T11:50:00.000Z"),
+    updatedAt: null,
     ...overrides,
   };
 }

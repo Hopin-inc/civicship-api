@@ -1,35 +1,34 @@
 /**
- * Stub repository for `UserDidAnchor`.
+ * Prisma-backed repository for `UserDidAnchor`.
  *
- * Strategy A note (Phase 1 step 7) ----------------------------------------
+ * Implements both `IUserDidAnchorRepository` (consumed by `UserDidService`)
+ * and the narrower `UserDidAnchorStore` (consumed by `DidDocumentResolver`)
+ * — `IUserDidAnchorRepository` extends `UserDidAnchorStore`, so a single
+ * class can satisfy both DI keys (`UserDidAnchorRepository` and
+ * `UserDidAnchorStore`).
  *
- * The `t_user_did_anchors` Prisma model lands in a sibling PR
- * (`claude/phase1-schema-migration`, #1094). Until that merges, we cannot
- * issue real Prisma queries against `tx.userDidAnchor` — the type does not
- * exist yet on `Prisma.TransactionClient`.
+ * Persistence rules (§5.2.1):
+ *   - All anchors are inserted in `PENDING` status. The weekly anchor batch
+ *     (Phase 1 step 9) flips them to `SUBMITTED` / `CONFIRMED`.
+ *   - `metadataLabel` defaults to 1985 in the schema; we leave it implicit.
+ *   - DEACTIVATE rows persist `documentCbor = null` (§E — tombstones are
+ *     reconstructed by the resolver, not pulled from CBOR).
  *
- * To keep the application layer compilable and DI-resolvable today:
- *
- *   - `findLatestByUserId` returns `null` (mirrors "no row" — appropriate
- *     for both DI smoke tests and the resolver fallback to 404).
- *   - `createCreate` / `createUpdate` / `createDeactivate` throw a
- *     `NotImplementedError` with a TODO marker. The service still calls them
- *     so that downstream test doubles can verify the call shape; production
- *     code will get a real implementation when the schema PR merges.
- *
- * After the schema PR merges, the swap is mechanical — replace the bodies
- * with the equivalents already prototyped in `DIDIssuanceRequestRepository`
- * (see `src/application/domain/account/identity/didIssuanceRequest/data/repository.ts`).
+ * Transaction handling follows the project-wide pattern (CLAUDE.md
+ * "Transaction Handling Pattern"): when `tx` is supplied, the write happens
+ * inside that transaction; otherwise we open an issuer-scoped public
+ * transaction.
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §4.1   (UserDidAnchor schema)
- *   docs/report/did-vc-internalization.md §5.2.1 (Application service shape)
- *   docs/report/did-vc-internalization.md §5.1.4 (DidDocumentResolver storage interface)
+ *   docs/report/did-vc-internalization.md §5.2.1 (UserDidService flow)
+ *   docs/report/did-vc-internalization.md §5.1.4 (DidDocumentResolver storage)
  */
 
-import { injectable } from "tsyringe";
-import type { Prisma } from "@prisma/client";
+import { container, injectable } from "tsyringe";
+import { DidOperation, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import type { IUserDidAnchorRepository } from "@/application/domain/account/userDid/data/interface";
 import type {
   CreateUserDidAnchorInput,
@@ -38,58 +37,94 @@ import type {
   UserDidAnchorRow,
 } from "@/application/domain/account/userDid/data/type";
 
-/**
- * Marker error so tests / runtime callers can distinguish "feature not
- * wired up yet" from "feature broken". Keeping it local avoids cross-PR
- * coupling — once the real repository lands this class is deleted.
- */
-export class UserDidAnchorRepositoryNotImplementedError extends Error {
-  constructor(method: string) {
-    super(
-      `UserDidAnchorRepositoryStub.${method}: not implemented yet — depends on ` +
-        "schema PR (#1094, t_user_did_anchors). Replace stub with the production " +
-        "Prisma-backed repository after that PR merges (Phase 1 step 8+).",
-    );
-    this.name = "UserDidAnchorRepositoryNotImplementedError";
-  }
-}
-
 @injectable()
-export default class UserDidAnchorRepositoryStub implements IUserDidAnchorRepository {
-  // findLatestByUserId is the only method that has a meaningful no-op:
-  // returning `null` correctly tells the resolver "no anchor for this user".
-  // The signature matches `UserDidAnchorStore` from the resolver.
-  async findLatestByUserId(_userId: string): Promise<UserDidAnchorRow | null> {
-    return null;
+export default class UserDidAnchorRepository implements IUserDidAnchorRepository {
+  private getIssuer(): PrismaClientIssuer {
+    return container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   }
 
-  // TODO(phase1-final): swap to Prisma-backed implementation once
-  // `t_user_did_anchors` is in the generated client.
+  /**
+   * Return the most recently-created anchor for `userId`, regardless of
+   * status (PENDING included per §F). Returns `null` when no row exists.
+   *
+   * Used by both `DidDocumentResolver` (HTTP `/users/:userId/did.json`) and
+   * `UserDidService` (next-version chaining decisions in future phases).
+   */
+  async findLatestByUserId(userId: string): Promise<UserDidAnchorRow | null> {
+    const issuer = this.getIssuer();
+    // The resolver invokes this without a request-scoped IContext (the
+    // `did:web` route is unauthenticated per §5.4), so we build a minimal
+    // public-only context. `PrismaClientIssuer.public` ignores fields it
+    // does not need; the `issuer` field is the only thing it inspects.
+    const ctx = { issuer } as unknown as IContext;
+    return issuer.public(ctx, (tx) => {
+      return tx.userDidAnchor.findFirst({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+      });
+    });
+  }
+
   async createCreate(
-    _ctx: IContext,
-    _input: CreateUserDidAnchorInput,
-    _tx?: Prisma.TransactionClient,
+    ctx: IContext,
+    input: CreateUserDidAnchorInput,
+    tx?: Prisma.TransactionClient,
   ): Promise<UserDidAnchorRow> {
-    throw new UserDidAnchorRepositoryNotImplementedError("createCreate");
+    const data = this.buildCreateData(input, DidOperation.CREATE, input.documentCbor);
+    if (tx) {
+      return tx.userDidAnchor.create({ data });
+    }
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
   }
 
-  // TODO(phase1-final): swap to Prisma-backed implementation once
-  // `t_user_did_anchors` is in the generated client.
   async createUpdate(
-    _ctx: IContext,
-    _input: UpdateUserDidAnchorInput,
-    _tx?: Prisma.TransactionClient,
+    ctx: IContext,
+    input: UpdateUserDidAnchorInput,
+    tx?: Prisma.TransactionClient,
   ): Promise<UserDidAnchorRow> {
-    throw new UserDidAnchorRepositoryNotImplementedError("createUpdate");
+    const data = this.buildCreateData(input, DidOperation.UPDATE, input.documentCbor);
+    if (tx) {
+      return tx.userDidAnchor.create({ data });
+    }
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
   }
 
-  // TODO(phase1-final): swap to Prisma-backed implementation once
-  // `t_user_did_anchors` is in the generated client.
   async createDeactivate(
-    _ctx: IContext,
-    _input: DeactivateUserDidAnchorInput,
-    _tx?: Prisma.TransactionClient,
+    ctx: IContext,
+    input: DeactivateUserDidAnchorInput,
+    tx?: Prisma.TransactionClient,
   ): Promise<UserDidAnchorRow> {
-    throw new UserDidAnchorRepositoryNotImplementedError("createDeactivate");
+    // §E: DEACTIVATE rows persist `documentCbor = null` because the
+    // tombstone document is fully reconstructed by the resolver from the
+    // canonical did:web string.
+    const data = this.buildCreateData(input, DidOperation.DEACTIVATE, null);
+    if (tx) {
+      return tx.userDidAnchor.create({ data });
+    }
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
+  }
+
+  /**
+   * Build the `Prisma.UserDidAnchorCreateInput` shared by all three
+   * lifecycle entry points. Centralises the user-relation wiring and the
+   * default-network fallback so create / update / deactivate cannot drift.
+   */
+  private buildCreateData(
+    input: CreateUserDidAnchorInput | UpdateUserDidAnchorInput | DeactivateUserDidAnchorInput,
+    operation: DidOperation,
+    documentCbor: Uint8Array | null,
+  ): Prisma.UserDidAnchorCreateInput {
+    const data: Prisma.UserDidAnchorCreateInput = {
+      did: input.did,
+      operation,
+      documentHash: input.documentHash,
+      documentCbor: documentCbor ?? undefined,
+      network: input.network ?? "CARDANO_MAINNET",
+      user: { connect: { id: input.userId } },
+    };
+    return data;
   }
 }
