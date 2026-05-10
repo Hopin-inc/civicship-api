@@ -98,17 +98,21 @@ describe("VcIssuanceRepository (integration)", () => {
 
   describe("create", () => {
     it("throws when evaluationId is missing (schema NOT NULL)", async () => {
-      await expect(
-        repo.create(buildCtx(), {
-          userId,
-          // evaluationId intentionally omitted to cover the explicit guard
-          issuerDid: "did:web:api.civicship.app",
-          subjectDid: `did:web:api.civicship.app:users:${userId}`,
-          vcFormat: VcFormat.INTERNAL_JWT,
-          vcJwt: "h.p.s",
-          status: VcIssuanceStatus.COMPLETED,
-        }),
-      ).rejects.toThrow(/evaluationId/);
+      // `evaluationId` is required by the input type but we deliberately
+      // omit it here to exercise the runtime guard. Cast to `any` so TS
+      // doesn't reject the missing-field shape at compile time.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const inputMissingEvaluationId: any = {
+        userId,
+        issuerDid: "did:web:api.civicship.app",
+        subjectDid: `did:web:api.civicship.app:users:${userId}`,
+        vcFormat: VcFormat.INTERNAL_JWT,
+        vcJwt: "h.p.s",
+        status: VcIssuanceStatus.COMPLETED,
+      };
+      await expect(repo.create(buildCtx(), inputMissingEvaluationId)).rejects.toThrow(
+        /evaluationId/,
+      );
     });
 
     it("persists claims as `{}` for INTERNAL_JWT (canonical claims live in vcJwt)", async () => {
@@ -153,7 +157,11 @@ describe("VcIssuanceRepository (integration)", () => {
       });
 
       expect(persisted.completedAt).not.toBeNull();
-      expect(persisted.completedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1000);
+      // `before` is captured immediately above the `repo.create(...)` call,
+      // so `completedAt` must be on or after `before` — strict comparison
+      // catches stale-timestamp regressions that a `- 1000` buffer would
+      // hide.
+      expect(persisted.completedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
     });
 
     it("leaves completedAt null when status is not COMPLETED", async () => {
@@ -220,7 +228,13 @@ describe("VcIssuanceRepository (integration)", () => {
       expect(fetched).not.toBeNull();
       expect(fetched!.issuerDid).toBeNull();
       expect(fetched!.subjectDid).toBeNull();
-      expect(warnSpy).toHaveBeenCalled();
+      // Verify the warn carried the diagnostic context we expect operators
+      // to grep on (`vcRequestId`) — a bare `toHaveBeenCalled()` would pass
+      // even if a future refactor stripped the structured payload.
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("vcJwt"),
+        expect.objectContaining({ vcRequestId: persisted.id }),
+      );
 
       warnSpy.mockRestore();
     });
@@ -240,35 +254,16 @@ describe("VcIssuanceRepository (integration)", () => {
         status: VcIssuanceStatus.COMPLETED,
       });
 
-      // Schema enforces `evaluationId` UNIQUE, so seed a second user/evaluation
-      // pair to back the second VC issuance row owned by the same user. We
-      // reassign `userId` on the participation so all rows belong to `userId`.
-      const otherUser = await TestDataSourceHelper.createUser({
-        name: "Other User",
-        slug: `other-${Date.now()}`,
-        currentPrefecture: CurrentPrefecture.KAGAWA,
-      });
-      const participation = await prismaClient.participation.create({
-        data: {
-          status: ParticipationStatus.PARTICIPATED,
-          reason: ParticipationStatusReason.PERSONAL_RECORD,
-          source: Source.INTERNAL,
-          user: { connect: { id: otherUser.id } },
-        },
-      });
-      const secondEvaluation = await prismaClient.evaluation.create({
-        data: {
-          status: EvaluationStatus.PASSED,
-          participation: { connect: { id: participation.id } },
-          evaluator: { connect: { id: otherUser.id } },
-        },
-      });
+      // Schema enforces `evaluationId` UNIQUE, so seed a second Evaluation
+      // for the same user via the existing helper — keeps both VC rows
+      // owned by `userId` without an unrelated otherUser hop.
+      const secondEvaluationId = await createEvaluationFor(userId);
 
       await new Promise((r) => setTimeout(r, 10));
 
       const second = await repo.create(ctx, {
         userId,
-        evaluationId: secondEvaluation.id,
+        evaluationId: secondEvaluationId,
         issuerDid: "did:web:api.civicship.app",
         subjectDid: `did:web:api.civicship.app:users:${userId}`,
         vcFormat: VcFormat.INTERNAL_JWT,
