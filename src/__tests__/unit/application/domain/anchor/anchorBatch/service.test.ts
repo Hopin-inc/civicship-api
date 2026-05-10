@@ -177,6 +177,67 @@ describe("AnchorBatchService", () => {
     restoreEnv();
   });
 
+  // Fixture builders — keep test bodies focused on the assertion under test.
+  // Sonar's duplicate detection (≥ 100 token block) was tripping on the
+  // repeated `findPendingAnchors.mockResolvedValue({...})` shape across the
+  // success / awaitConfirmation-fail / submit-fail cases.
+  const PENDING_TX = {
+    id: "tx_anchor_1",
+    leafIds: ["t_aaa"],
+    leafCount: 1,
+    rootHash: "00".repeat(32),
+    network: "CARDANO_PREPROD",
+    status: AnchorStatus.PENDING,
+    batchId: null,
+    periodStart: new Date(),
+    periodEnd: new Date(),
+  };
+
+  const PENDING_VC = {
+    id: "vc_anchor_1",
+    leafIds: ["vc_req_1"],
+    leafCount: 1,
+    rootHash: "00".repeat(32),
+    network: "CARDANO_PREPROD",
+    status: AnchorStatus.PENDING,
+    batchId: null,
+    periodStart: new Date(),
+    periodEnd: new Date(),
+  };
+
+  const PENDING_DID = {
+    id: "did_anchor_1",
+    did: "did:web:api.civicship.app:users:u_xyz",
+    operation: DidOperation.CREATE,
+    documentHash: "ab".repeat(32),
+    documentCbor: null,
+    previousAnchorId: null,
+    network: "CARDANO_PREPROD",
+    status: AnchorStatus.PENDING,
+    batchId: null,
+    userId: "u_xyz",
+  };
+
+  function setupPending(opts: {
+    transactionAnchors?: typeof PENDING_TX[];
+    vcAnchors?: typeof PENDING_VC[];
+    userDidAnchors?: typeof PENDING_DID[];
+  }) {
+    const tx = opts.transactionAnchors ?? [];
+    const vc = opts.vcAnchors ?? [];
+    const did = opts.userDidAnchors ?? [];
+    mockRepository.findPendingAnchors.mockResolvedValue({
+      transactionAnchors: tx,
+      vcAnchors: vc,
+      userDidAnchors: did,
+    });
+    mockRepository.claimPendingAnchors.mockResolvedValue({
+      transactionAnchors: tx.length,
+      vcAnchors: vc.length,
+      userDidAnchors: did.length,
+    });
+  }
+
   describe("isValidWeeklyKey / computeIsoWeeklyKey", () => {
     it("accepts ISO 8601 week format", () => {
       expect(isValidWeeklyKey("2026-W19")).toBe(true);
@@ -250,55 +311,11 @@ describe("AnchorBatchService", () => {
     });
 
     it("submits and marks all anchors SUBMITTED then CONFIRMED on success", async () => {
-      mockRepository.findPendingAnchors.mockResolvedValue({
-        transactionAnchors: [
-          {
-            id: "tx_anchor_1",
-            leafIds: ["t_aaa", "t_bbb"],
-            leafCount: 2,
-            rootHash: "00".repeat(32),
-            network: "CARDANO_PREPROD",
-            status: AnchorStatus.PENDING,
-            batchId: null,
-            periodStart: new Date(),
-            periodEnd: new Date(),
-          },
-        ],
-        vcAnchors: [
-          {
-            id: "vc_anchor_1",
-            leafIds: ["vc_req_1"],
-            leafCount: 1,
-            rootHash: "00".repeat(32),
-            network: "CARDANO_PREPROD",
-            status: AnchorStatus.PENDING,
-            batchId: null,
-            periodStart: new Date(),
-            periodEnd: new Date(),
-          },
-        ],
-        userDidAnchors: [
-          {
-            id: "did_anchor_1",
-            did: "did:web:api.civicship.app:users:u_xyz",
-            operation: DidOperation.CREATE,
-            documentHash: "ab".repeat(32),
-            documentCbor: null,
-            previousAnchorId: null,
-            network: "CARDANO_PREPROD",
-            status: AnchorStatus.PENDING,
-            batchId: null,
-            userId: "u_xyz",
-          },
-        ],
+      setupPending({
+        transactionAnchors: [{ ...PENDING_TX, leafIds: ["t_aaa", "t_bbb"], leafCount: 2 }],
+        vcAnchors: [PENDING_VC],
+        userDidAnchors: [PENDING_DID],
       });
-
-      mockRepository.claimPendingAnchors.mockResolvedValue({
-        transactionAnchors: 1,
-        vcAnchors: 1,
-        userDidAnchors: 1,
-      });
-
       mockRepository.findVcJwtsByVcIssuanceRequestIds.mockResolvedValue([
         { vcIssuanceRequestId: "vc_req_1", vcJwt: "header.payload.signature" },
       ]);
@@ -338,28 +355,7 @@ describe("AnchorBatchService", () => {
     });
 
     it("marks anchors FAILED when awaitConfirmation throws", async () => {
-      mockRepository.findPendingAnchors.mockResolvedValue({
-        transactionAnchors: [
-          {
-            id: "tx_anchor_1",
-            leafIds: ["t_aaa"],
-            leafCount: 1,
-            rootHash: "00".repeat(32),
-            network: "CARDANO_PREPROD",
-            status: AnchorStatus.PENDING,
-            batchId: null,
-            periodStart: new Date(),
-            periodEnd: new Date(),
-          },
-        ],
-        vcAnchors: [],
-        userDidAnchors: [],
-      });
-      mockRepository.claimPendingAnchors.mockResolvedValue({
-        transactionAnchors: 1,
-        vcAnchors: 0,
-        userDidAnchors: 0,
-      });
+      setupPending({ transactionAnchors: [PENDING_TX] });
       mockBlockfrost.awaitConfirmation.mockRejectedValue(
         new Error("awaitConfirmation timed out after 300000ms"),
       );
@@ -380,28 +376,7 @@ describe("AnchorBatchService", () => {
     });
 
     it("marks anchors FAILED when submitTx throws", async () => {
-      mockRepository.findPendingAnchors.mockResolvedValue({
-        transactionAnchors: [
-          {
-            id: "tx_anchor_1",
-            leafIds: ["t_aaa"],
-            leafCount: 1,
-            rootHash: "00".repeat(32),
-            network: "CARDANO_PREPROD",
-            status: AnchorStatus.PENDING,
-            batchId: null,
-            periodStart: new Date(),
-            periodEnd: new Date(),
-          },
-        ],
-        vcAnchors: [],
-        userDidAnchors: [],
-      });
-      mockRepository.claimPendingAnchors.mockResolvedValue({
-        transactionAnchors: 1,
-        vcAnchors: 0,
-        userDidAnchors: 0,
-      });
+      setupPending({ transactionAnchors: [PENDING_TX] });
       mockBlockfrost.submitTx.mockRejectedValue(new Error("submit 5xx"));
 
       const service = container.resolve(AnchorBatchService);
