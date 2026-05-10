@@ -12,7 +12,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
 import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
-import { AuthorizationError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import type { IContext } from "@/types/server";
 import type { VcIssuanceRow } from "@/application/domain/credential/vcIssuance/data/type";
 
@@ -65,6 +65,10 @@ describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
   let mockService: jest.Mocked<
     Pick<VcIssuanceService, "findVcById" | "findVcsByUserId" | "issueVc" | "generateInclusionProof">
   >;
+  // Phase 1.5: the usecase now also depends on StatusListService for the
+  // revoke flow. The legacy authz tests below don't exercise it, but we
+  // still need a registration so the container can construct the usecase.
+  let mockStatusListService: { revokeVc: jest.Mock };
   let usecase: VcIssuanceUseCase;
 
   beforeEach(() => {
@@ -77,8 +81,12 @@ describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
       issueVc: jest.fn(),
       generateInclusionProof: jest.fn(),
     };
+    mockStatusListService = {
+      revokeVc: jest.fn(),
+    };
 
     container.register("VcIssuanceService", { useValue: mockService });
+    container.register("StatusListService", { useValue: mockStatusListService });
     container.register("VcIssuanceUseCase", { useClass: VcIssuanceUseCase });
 
     usecase = container.resolve(VcIssuanceUseCase);
@@ -188,6 +196,71 @@ describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
 
       const result = await usecase.getInclusionProof(ctx, "vc-1");
       expect(result).toEqual(proof);
+    });
+  });
+
+  describe("revokeUserVc (Phase 1.5)", () => {
+    it("invokes StatusListService.revokeVc and returns the updated row", async () => {
+      const liveRow = makeRow({ revokedAt: null });
+      const revokedAt = new Date("2026-05-10T12:00:00Z");
+      const revokedRow = makeRow({ revokedAt });
+
+      mockService.findVcById
+        .mockResolvedValueOnce(liveRow)
+        .mockResolvedValueOnce(revokedRow);
+      mockStatusListService.revokeVc.mockResolvedValueOnce(undefined);
+
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      const result = await usecase.revokeUserVc(ctx, {
+        vcId: "vc-1",
+        reason: "user-requested",
+      });
+
+      expect(mockStatusListService.revokeVc).toHaveBeenCalledTimes(1);
+      expect(mockStatusListService.revokeVc).toHaveBeenCalledWith(
+        ctx,
+        { vcRequestId: "vc-1", reason: "user-requested" },
+        expect.anything(),
+      );
+      expect(result.revokedAt).toEqual(revokedAt);
+    });
+
+    it("is idempotent: already-revoked rows are returned without re-invoking StatusList", async () => {
+      const revokedAt = new Date("2026-05-09T12:00:00Z");
+      const alreadyRevoked = makeRow({ revokedAt });
+      mockService.findVcById.mockResolvedValueOnce(alreadyRevoked);
+
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      const result = await usecase.revokeUserVc(ctx, { vcId: "vc-1" });
+
+      expect(mockStatusListService.revokeVc).not.toHaveBeenCalled();
+      expect(result.revokedAt).toEqual(revokedAt);
+    });
+
+    it("throws NotFoundError when no row matches the supplied vcId", async () => {
+      mockService.findVcById.mockResolvedValueOnce(null);
+
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      await expect(usecase.revokeUserVc(ctx, { vcId: "missing" })).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(mockStatusListService.revokeVc).not.toHaveBeenCalled();
+    });
+
+    it("opens exactly one ctx.issuer.public transaction for the whole flow", async () => {
+      mockService.findVcById
+        .mockResolvedValueOnce(makeRow({ revokedAt: null }))
+        .mockResolvedValueOnce(makeRow({ revokedAt: new Date() }));
+      mockStatusListService.revokeVc.mockResolvedValueOnce(undefined);
+
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      await usecase.revokeUserVc(ctx, { vcId: "vc-1" });
+
+      expect((ctx.issuer.public as jest.Mock).mock.calls).toHaveLength(1);
     });
   });
 });

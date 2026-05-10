@@ -2182,6 +2182,12 @@ type Mutation {
   reservationCreate(input: ReservationCreateInput!): ReservationCreatePayload
   reservationJoin(id: ID!): ReservationSetStatusPayload
   reservationReject(id: ID!, input: ReservationRejectInput!, permission: CheckOpportunityPermissionInput!): ReservationSetStatusPayload
+
+  """
+  VC を revoke する。StatusList の bit を立て、`revokedAt` を更新する。
+  Admin のみ実行可能 (将来 issuer 自身でも可能にする想定)。
+  """
+  revokeUserVc(input: RevokeUserVcInput!): VcIssuance!
   storePhoneAuthToken(input: StorePhoneAuthTokenInput!, permission: CheckIsSelfPermissionInput!): StorePhoneAuthTokenPayload
   submitReportFeedback(input: SubmitReportFeedbackInput!, permission: CheckCommunityPermissionInput @deprecated(reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present.")): SubmitReportFeedbackPayload
   ticketClaim(input: TicketClaimInput!): TicketClaimPayload
@@ -3317,6 +3323,14 @@ type ReservationsConnection {
   edges: [ReservationEdge!]!
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+input RevokeUserVcInput {
+  """Revoke 理由 (audit log 用、任意)。"""
+  reason: String
+
+  """Revoke 対象の VC issuance id。"""
+  vcId: ID!
 }
 
 enum Role {

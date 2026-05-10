@@ -146,9 +146,19 @@ export default class VcIssuanceService {
     private readonly statusListService: StatusListService,
   ) {}
 
-  /** Pass-through for the GraphQL `vcIssuance` query (Phase 1 step 8). */
-  async findVcById(ctx: IContext, id: string): Promise<VcIssuanceRow | null> {
-    return this.repository.findById(ctx, id);
+  /**
+   * Pass-through for the GraphQL `vcIssuance` query (Phase 1 step 8).
+   *
+   * `tx` is forwarded so transactional callers (Phase 1.5 revoke flow)
+   * can re-read a row inside the same commit and observe the just-stamped
+   * `revokedAt` without nesting transactions.
+   */
+  async findVcById(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<VcIssuanceRow | null> {
+    return this.repository.findById(ctx, id, tx);
   }
 
   /** Pass-through for the GraphQL `vcIssuancesByUser` query. */

@@ -33,6 +33,7 @@ import { IContext } from "@/types/server";
 import VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
 import type {
   GqlMutationIssueVcArgs,
+  GqlMutationRevokeUserVcArgs,
   GqlQueryVcIssuanceArgs,
   GqlQueryVcIssuancesByUserArgs,
   GqlVcIssuance,
@@ -54,6 +55,9 @@ export default class VcIssuanceResolver {
   Mutation = {
     issueVc: (_: unknown, args: GqlMutationIssueVcArgs, ctx: IContext) => {
       return this.vcIssuanceUseCase.issueVc(ctx, args.input);
+    },
+    revokeUserVc: (_: unknown, args: GqlMutationRevokeUserVcArgs, ctx: IContext) => {
+      return this.vcIssuanceUseCase.revokeUserVc(ctx, args.input);
     },
   };
 

@@ -8,6 +8,15 @@
  *   - Keeps the existing `issueVc` mutation entry that opens a public
  *     transaction.
  *
+ * Phase 1.5 scope:
+ *   - Adds `revokeUserVc` (`Mutation.revokeUserVc`). Delegates the actual
+ *     bit-flip + `revokedAt` update to `StatusListService.revokeVc`, then
+ *     re-reads the row through the VC issuance service so the GraphQL
+ *     response surfaces the updated `revokedAt`. The two writes commit
+ *     inside the same `ctx.issuer.public` transaction so a partial
+ *     failure cannot leave the StatusList ahead of the VC row (or vice
+ *     versa).
+ *
  * Per CLAUDE.md, the usecase is the only layer that may open a
  * transaction; the service stays unaware of `ctx.issuer.public` etc.
  *
@@ -30,24 +39,31 @@
  *                                    indistinguishable from "no VCs yet"
  *                                    and confusing for clients).
  *
- * `issueVc` is already gated on `IsAdmin` at the schema level (§B —
- * civicship is a single-issuer platform), so no further check is needed.
+ * `issueVc` / `revokeUserVc` are already gated on `IsAdmin` at the schema
+ * level (§B — civicship is a single-issuer platform), so no further check
+ * is needed.
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.2.2
+ *   docs/report/did-vc-internalization.md §5.2.4 (StatusList wiring)
  *   docs/report/did-vc-internalization.md §B (single-issuer model)
  *   CLAUDE.md "Transaction Handling Pattern"
  */
 
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { AuthorizationError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
+import StatusListService from "@/application/domain/credential/statusList/service";
 import VcIssuancePresenter, {
   type InclusionProofResponse,
 } from "@/application/domain/credential/vcIssuance/presenter";
 import type { IssueVcInput as DomainIssueVcInput } from "@/application/domain/credential/vcIssuance/data/type";
-import type { GqlIssueVcInput, GqlVcIssuance } from "@/types/graphql";
+import type {
+  GqlIssueVcInput,
+  GqlRevokeUserVcInput,
+  GqlVcIssuance,
+} from "@/types/graphql";
 
 /**
  * True when the caller is the target user, or when the caller is an
@@ -62,7 +78,10 @@ function isSelfOrAdmin(ctx: IContext, userId: string): boolean {
 
 @injectable()
 export default class VcIssuanceUseCase {
-  constructor(@inject("VcIssuanceService") private readonly service: VcIssuanceService) {}
+  constructor(
+    @inject("VcIssuanceService") private readonly service: VcIssuanceService,
+    @inject("StatusListService") private readonly statusListService: StatusListService,
+  ) {}
 
   /**
    * GraphQL `vcIssuance(id)` resolver entry. Reads outside a write
@@ -138,5 +157,59 @@ export default class VcIssuanceUseCase {
     const proof = await this.service.generateInclusionProof(ctx, vcId);
     if (proof === null) return null;
     return VcIssuancePresenter.toInclusionProofResponse(proof);
+  }
+
+  /**
+   * Phase 1.5 — `Mutation.revokeUserVc` resolver entry. Authorization is
+   * gated on `IsAdmin` at the schema level (single-issuer model, §B), so
+   * no further self-or-admin check is needed here.
+   *
+   * Flow:
+   *   1. Open an issuer-scoped transaction so the StatusList bitstring
+   *      update and the `revokedAt` stamp commit atomically — a partial
+   *      failure must never leave the list bit set while the row still
+   *      reads as live (or vice versa).
+   *   2. Pre-check the row via `findVcById` so a missing id surfaces as
+   *      `NotFoundError` *before* StatusListService throws its own less
+   *      specific `Error("…not found.")`. This keeps the GraphQL error
+   *      shape consistent with the rest of the codebase (`NOT_FOUND`).
+   *   3. Idempotency: if the row is already revoked we re-read and return
+   *      it without invoking the StatusListService (the bit is already
+   *      flipped; touching it again would re-sign the list VC for no
+   *      reason). The original `revokedAt` is preserved.
+   *   4. Otherwise call `StatusListService.revokeVc` (flips bit + stamps
+   *      `revokedAt`) and re-load the row to surface the updated
+   *      timestamp through the presenter.
+   *
+   * `reason` is forwarded to the StatusList service, which currently logs
+   * it but does not persist beyond `revocationReason`. The schema PR
+   * `schema/phase1.5-revoke-and-index` will extend persistence; no
+   * GraphQL change required at that point.
+   */
+  async revokeUserVc(ctx: IContext, input: GqlRevokeUserVcInput): Promise<GqlVcIssuance> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const existing = await this.service.findVcById(ctx, input.vcId, tx);
+      if (!existing) {
+        throw new NotFoundError("VcIssuance", { id: input.vcId });
+      }
+      if (existing.revokedAt) {
+        return VcIssuancePresenter.view(existing);
+      }
+
+      await this.statusListService.revokeVc(
+        ctx,
+        {
+          vcRequestId: input.vcId,
+          reason: input.reason ?? undefined,
+        },
+        tx,
+      );
+
+      const refreshed = await this.service.findVcById(ctx, input.vcId, tx);
+      if (!refreshed) {
+        throw new NotFoundError("VcIssuance", { id: input.vcId });
+      }
+      return VcIssuancePresenter.view(refreshed);
+    });
   }
 }
