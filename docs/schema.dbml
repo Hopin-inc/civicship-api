@@ -232,6 +232,9 @@ Table t_users {
   reportsPublished t_reports [not null]
   reportTemplatesUpdated t_report_templates [not null]
   reportFeedbacks t_report_feedbacks [not null]
+  deletedAt DateTime
+  deletedReason String
+  didAnchors t_user_did_anchors [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -262,6 +265,7 @@ Table t_did_issuance_requests {
   didValue String
   errorMessage String
   retryCount Int [not null, default: 0]
+  didMethod DidMethod [not null, default: 'IDENTUS']
   requestedAt DateTime [default: `now()`, not null]
   processedAt DateTime
   completedAt DateTime
@@ -281,6 +285,15 @@ Table t_vc_issuance_requests {
   schemaId String
   errorMessage String
   retryCount Int [not null, default: 0]
+  vcFormat VcFormat [not null, default: 'IDENTUS_JWT']
+  vcJwt String
+  vcAnchorId String
+  vcAnchor t_vc_anchors
+  anchorLeafIndex Int
+  statusListIndex Int
+  statusListCredential String
+  revokedAt DateTime
+  revocationReason String
   requestedAt DateTime [default: `now()`, not null]
   processedAt DateTime
   completedAt DateTime
@@ -891,6 +904,87 @@ Table t_report_golden_cases {
   }
 }
 
+Table t_transaction_anchors {
+  id String [pk]
+  periodStart DateTime [not null]
+  periodEnd DateTime [not null]
+  rootHash String [not null]
+  leafIds String[] [not null]
+  leafCount Int [not null]
+  network ChainNetwork [not null]
+  metadataLabel Int [not null, default: 1985]
+  chainTxHash String
+  blockHeight Int
+  status AnchorStatus [not null, default: 'PENDING']
+  submittedAt DateTime
+  confirmedAt DateTime
+  batchId String
+  attemptCount Int [not null, default: 0]
+  lastError String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_vc_anchors {
+  id String [pk]
+  periodStart DateTime [not null]
+  periodEnd DateTime [not null]
+  rootHash String [not null]
+  leafIds String[] [not null]
+  leafCount Int [not null]
+  network ChainNetwork [not null]
+  metadataLabel Int [not null, default: 1985]
+  chainTxHash String
+  blockHeight Int
+  status AnchorStatus [not null, default: 'PENDING']
+  submittedAt DateTime
+  confirmedAt DateTime
+  batchId String
+  attemptCount Int [not null, default: 0]
+  lastError String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  vcRequests t_vc_issuance_requests [not null]
+}
+
+Table t_user_did_anchors {
+  id String [pk]
+  did String [not null]
+  operation DidOperation [not null]
+  documentHash String [not null]
+  documentCbor Bytes
+  previousAnchorId String
+  previousAnchor t_user_did_anchors
+  nextAnchors t_user_did_anchors [not null]
+  network ChainNetwork [not null]
+  metadataLabel Int [not null, default: 1985]
+  chainTxHash String
+  chainOpIndex Int
+  status AnchorStatus [not null, default: 'PENDING']
+  submittedAt DateTime
+  confirmedAt DateTime
+  batchId String
+  version Int [not null, default: 0]
+  userId String [not null]
+  user t_users [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_status_list_credentials {
+  id String [pk]
+  listKey String [unique, not null]
+  encodedList Bytes [not null]
+  vcJwt String [not null]
+  nextIndex Int [not null, default: 0]
+  capacity Int [not null, default: 131072]
+  frozen Boolean [not null, default: false]
+  updatedVersion Int [not null, default: 0]
+  lastIssuedAt DateTime [default: `now()`, not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
 Table v_place_public_opportunity_count {
   placeId String [pk]
   place t_places [not null]
@@ -1143,11 +1237,21 @@ Enum DidIssuanceStatus {
   FAILED
 }
 
+Enum DidMethod {
+  IDENTUS
+  INTERNAL
+}
+
 Enum VcIssuanceStatus {
   PENDING
   PROCESSING
   COMPLETED
   FAILED
+}
+
+Enum VcFormat {
+  IDENTUS_JWT
+  INTERNAL_JWT
 }
 
 Enum Role {
@@ -1350,6 +1454,24 @@ Enum FeedbackType {
   OTHER
 }
 
+Enum DidOperation {
+  CREATE
+  UPDATE
+  DEACTIVATE
+}
+
+Enum AnchorStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED
+}
+
+Enum ChainNetwork {
+  CARDANO_MAINNET
+  CARDANO_PREPROD
+}
+
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 
 Ref: t_places.imageId > t_images.id
@@ -1379,6 +1501,8 @@ Ref: t_identities.userId > t_users.id [delete: Cascade]
 Ref: t_identities.communityId > t_communities.id
 
 Ref: t_did_issuance_requests.userId > t_users.id [delete: Cascade]
+
+Ref: t_vc_issuance_requests.vcAnchorId > t_vc_anchors.id
 
 Ref: t_vc_issuance_requests.evaluationId - t_evaluations.id
 
@@ -1535,6 +1659,10 @@ Ref: t_reports.parentRunId - t_reports.id [delete: Set Null]
 Ref: t_report_feedbacks.reportId > t_reports.id [delete: Cascade]
 
 Ref: t_report_feedbacks.userId > t_users.id [delete: Restrict]
+
+Ref: t_user_did_anchors.previousAnchorId - t_user_did_anchors.id
+
+Ref: t_user_did_anchors.userId > t_users.id [delete: Restrict]
 
 Ref: v_place_public_opportunity_count.placeId - t_places.id [delete: Restrict]
 

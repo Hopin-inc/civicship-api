@@ -28,6 +28,11 @@ export const userSelectDetail = Prisma.validator<Prisma.UserSelect>()({
 
   imageId: true,
 
+  // §9.7 GDPR: deletedAt / deletedReason は schema 追加に伴い select に含める。
+  // identity/service.ts が `Promise<User>` を返すため、PrismaUserDetail と Prisma.User の構造的整合が必要。
+  deletedAt: true,
+  deletedReason: true,
+
   createdAt: true,
   updatedAt: true,
 });
