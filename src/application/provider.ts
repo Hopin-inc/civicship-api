@@ -166,6 +166,11 @@ import IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase"
 import IssuerDidKeyRepositoryStub from "@/application/domain/credential/issuerDid/data/repository";
 import { KmsSigner } from "@/infrastructure/libs/kms/kmsSigner";
 
+// 🪪 Status List (§5.2.4 — VC revocation per W3C Bitstring Status List 2021)
+import StatusListService from "@/application/domain/credential/statusList/service";
+import StatusListUseCase from "@/application/domain/credential/statusList/usecase";
+import StatusListRepository from "@/application/domain/credential/statusList/data/repository";
+
 export function registerProductionDependencies() {
   // ------------------------------
   // 🏗️ Infrastructure
@@ -305,6 +310,14 @@ export function registerProductionDependencies() {
   container.register("IssuerDidKeyRepository", { useClass: IssuerDidKeyRepositoryStub });
   container.register("IssuerDidService", { useClass: IssuerDidService });
   container.register("IssuerDidUseCase", { useClass: IssuerDidUseCase });
+
+  // 🪪 Status List (§5.2.4 — Bitstring Status List 2021 / VC revocation).
+  // Backed by Prisma directly (schema PR #1094 already merged on the
+  // parent branch). Wired into VcIssuanceService above so each issued VC
+  // carries a §D `credentialStatus` block.
+  container.register("StatusListRepository", { useClass: StatusListRepository });
+  container.register("StatusListService", { useClass: StatusListService });
+  container.register("StatusListUseCase", { useClass: StatusListUseCase });
 
   // ------------------------------
   // 📰 Content
