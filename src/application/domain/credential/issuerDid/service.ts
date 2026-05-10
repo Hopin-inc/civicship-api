@@ -32,6 +32,20 @@
  *     translates that to the minimal static Document so dev/staging
  *     environments remain operable before the first key is provisioned.
  *
+ * §G key-rotation scope (Phase 1 vs Phase 2):
+ *
+ *   Phase 1 (this PR) intentionally operates in **single-active-key** mode.
+ *   `getActiveIssuerDidDocument()` calls `findActiveKey()` once and emits a
+ *   DID Document carrying exactly one `verificationMethod`. The repository
+ *   interface already declares `listActiveKeys()` (see `data/interface.ts`)
+ *   — that method is reserved for Phase 2 §G overlap-window support, where
+ *   the Document will publish *both* the outgoing and incoming keys for the
+ *   duration of the rotation grace period so verifiers can validate proofs
+ *   signed by either key. Phase 1 deliberately does not consume
+ *   `listActiveKeys()`; rotation in Phase 1 is a hard cut-over (single
+ *   activate-then-deactivate transaction) and the §G overlap window is
+ *   tracked in the design doc as Phase 2 work.
+ *
  * TTL cache rationale:
  *
  *   The KMS public key for a given resource name is **immutable** — once a
@@ -88,6 +102,18 @@ export default class IssuerDidService {
    * rotation that activates a *new* resource name doesn't evict the still-
    * valid entry for the old one — both keys may be needed during the
    * overlap window.
+   *
+   * Memory-growth note: this Map lives for the process lifetime and entries
+   * are never explicitly evicted (only TTL-skipped on read). Unbounded
+   * growth is acceptable in Phase 1 because key rotations are rare events
+   * (target ≤ 1 / quarter per §G) — the steady-state cardinality is 1 and
+   * the worst case during an overlap window is 2. If rotation cadence ever
+   * accelerates (e.g. compromise-driven re-keys), or if this cache is
+   * reused for non-issuer keys, switch to an LRU with a small bound (≤ 16
+   * entries) — every entry is ~80 bytes so memory pressure is theoretical
+   * not practical.
+   * TODO(Phase 2): replace with an LRU once §G overlap is implemented and
+   * `listActiveKeys()` becomes the primary read path.
    */
   private readonly publicKeyCache = new Map<string, CachedPublicKey>();
 
@@ -167,8 +193,11 @@ export default class IssuerDidService {
     if (activeKey === null) {
       throw new Error(
         "IssuerDidService.signWithActiveKey: no active issuer key registered. " +
-          "Run the rotation runbook to activate a KMS key version before " +
-          "enabling internal VC issuance (design §G).",
+          "Activate a KMS key version before enabling internal VC issuance — " +
+          "see runbook at docs/runbooks/issuer-did-key-rotation.md " +
+          "(design §G). NOTE: the runbook itself ships in a separate PR; " +
+          "until it lands, follow the activation sequence outlined in " +
+          "docs/report/did-vc-internalization.md §5.4.3 / §G.",
       );
     }
     return this.kms.signEd25519(activeKey.kmsKeyResourceName, payload);

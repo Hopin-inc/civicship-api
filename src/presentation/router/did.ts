@@ -94,6 +94,14 @@ router.get("/.well-known/did.json", async (_req: Request, res: Response) => {
       message: err instanceof Error ? err.message : String(err),
       stack: err instanceof Error ? err.stack : undefined,
     });
+    // TODO(verifier-DX): consider returning a more specific error code
+    // alongside the existing shape so verifier clients can branch on it
+    // without parsing the message string — e.g.
+    //   { error: "issuer_did_document_unavailable", message: "..." }
+    // This PR keeps `{ error: "Internal Server Error" }` to stay aligned
+    // with the global 5xx contract used elsewhere in the API; switching
+    // shapes is deferred until we audit every 5xx site for consistency
+    // (separate PR).
     return res.status(500).json({ error: "Internal Server Error" });
   }
 });

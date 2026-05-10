@@ -28,6 +28,22 @@ const IssuerDidPresenter = {
    * deliberately do NOT clone. The DID Document is logically immutable
    * once built (single-shot read), and `IssuerDidBuilder` returns a fresh
    * object on every call.
+   *
+   * **Immutability contract**: the value returned by this presenter MUST
+   * be treated as read-only by callers. Mutating it (in-place edits to
+   * `verificationMethod`, `@context`, etc.) would corrupt downstream
+   * serialisation, leak request-scoped data into other callers if a
+   * future Phase 2 change adds caching of the built Document, and break
+   * the §5.1.2 wire-shape contract verifiers depend on. The Express
+   * handler at `src/presentation/router/did.ts` only `res.json()`s the
+   * value — it never mutates — and any new caller added here must follow
+   * the same discipline. We do not call `Object.freeze` because (a) the
+   * cost of a deep freeze on every request is wasteful when the only
+   * caller today is read-only, and (b) `Object.freeze` is shallow, which
+   * would give a false sense of safety against the realistic risk
+   * (mutations of nested arrays like `verificationMethod`). If a future
+   * Phase 2 change introduces a Document cache, prefer building a fresh
+   * object per request rather than retroactively freezing.
    */
   toDocumentResponse(document: IssuerDidDocument): IssuerDidDocument {
     return document;
