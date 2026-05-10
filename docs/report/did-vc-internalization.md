@@ -221,7 +221,7 @@ gpasswd: cannot lock /etc/group; try again later.
 |---|---|---|
 | VC JWT 発行・検証 | `did-jwt-vc` ＋ `did-jwt` | W3C 準拠、アクティブメンテ |
 | DID Resolver | `did-resolver` ＋ `web-did-resolver` | did:web 解決、ライブラリ依存最小 |
-| 鍵生成 (Ed25519) | `@noble/ed25519@^2.x` | 監査済、依存ゼロ。**v2 系で固定**（v1 は sync API、v2 は async — `did-jwt` の v8 系と互換確認済み）（§T 対応） |
+| 鍵生成 (Ed25519) | `@noble/ed25519@^2.x` | 監査済、依存ゼロ。**v2 系で固定**（v1 は sync API、v2 は async — `did-jwt` の v8 系と互換確認済み）（§T 対応）。⚠️ v2 は pure ESM。Jest の ts-jest CJS transformer はランタイム `import()` でも読めないため、テスト側では `new Function('s','return import(s)')` で動的 import を隠すか、Noble 利用箇所をテスト経路から切り出す（spike #2 PR #1092） |
 | Blockfrost API | `@blockfrost/blockfrost-js` | 公式 |
 | Cardano tx 構築 | `@emurgo/cardano-serialization-lib-nodejs` | Cardano 標準 |
 | Merkle 木 | `@openzeppelin/merkle-tree` | OZ 製、proof 検証ロジックが標準的 |
@@ -625,7 +625,7 @@ Cardano transaction metadata には次の制約があり、設計はこれを考
         "<bytes 64..127>",
         "..."
       ],
-      "prev": null
+      "prev": null                       // ADR pending（spike #2 PR #1092）: Cardano CBOR metadata に native null は無く、現状は空 text metadatum で代用。Phase 1 で canonical form（empty text / key 自体を省略 / explicit "none" 文字列）を確定する
     },
     {
       "k": "u",
@@ -657,6 +657,8 @@ Cardano transaction metadata には次の制約があり、設計はこれを考
 
 ##### CSL での実装パターン
 
+CSL v15 で `hash_transaction(body)` が削除され、推奨署名パスは `FixedTransaction.new_with_auxiliary(body, aux)` ＋ `sign_and_add_vkey_signature(privKey)` に変更されている（spike #2 PR #1092 で確認）。
+
 ```ts
 import * as CSL from "@emurgo/cardano-serialization-lib-nodejs";
 
@@ -670,13 +672,48 @@ function buildMetadata(root: Uint8Array, ops: DidOp[]): CSL.AuxiliaryData {
   return aux;
 }
 
+// CSL v15 推奨パス: FixedTransaction で body+aux を一体化し、署名を追加
+function signTx(body: CSL.TransactionBody, aux: CSL.AuxiliaryData, privKey: CSL.PrivateKey): CSL.Transaction {
+  const fixed = CSL.FixedTransaction.new_with_auxiliary(body, aux);
+  fixed.sign_and_add_vkey_signature(privKey);
+  return fixed.transaction();
+}
+
+// 注意: UTF-8 文字列を bytes として 64B チャンクに分割する場合は、
+// 文字境界（code point）で区切って multi-byte 文字を分断しないこと（findings 参照、commit 314c78d）
 function bytesAsChunkedList(b: Uint8Array): CSL.TransactionMetadatum {
   // 64-byte 制約のため、64 byte ごとに分割して list に格納
+  // ※ 任意の bytes を扱う場合は固定長 64 で問題ない。UTF-8 を bytes 化したものを
+  //   分割する場合は textAsChunkedList を使い、文字境界で切ること
   if (b.length <= 64) return CSL.TransactionMetadatum.new_bytes(b);
   const list = CSL.MetadataList.new();
   for (let i = 0; i < b.length; i += 64) {
     list.add(CSL.TransactionMetadatum.new_bytes(b.subarray(i, Math.min(i + 64, b.length))));
   }
+  return CSL.TransactionMetadatum.new_list(list);
+}
+
+// UTF-8 テキストを 64 byte 制約下で安全に分割する（multi-byte 文字を分断しない）
+function textAsChunkedList(s: string): CSL.TransactionMetadatum {
+  const enc = new TextEncoder();
+  const chunks: string[] = [];
+  let buf = "";
+  let bufBytes = 0;
+  for (const char of s) {           // for...of は code point 単位で iterate
+    const cb = enc.encode(char).length;
+    if (bufBytes + cb > 64) {
+      chunks.push(buf);
+      buf = char;
+      bufBytes = cb;
+    } else {
+      buf += char;
+      bufBytes += cb;
+    }
+  }
+  if (buf) chunks.push(buf);
+  if (chunks.length === 1) return CSL.TransactionMetadatum.new_text(chunks[0]);
+  const list = CSL.MetadataList.new();
+  for (const c of chunks) list.add(CSL.TransactionMetadatum.new_text(c));
   return CSL.TransactionMetadatum.new_list(list);
 }
 ```
@@ -1019,6 +1056,8 @@ export class IssuerDidService {
 
 §E（Tombstone）、§F（PENDING serving）、§C（proof は Merkle ではなく op 直接参照）を反映:
 
+> **検証者向けノート（spike #3 PR #1090, RESULTS.md Caveat 1）**: `web-did-resolver@2.0.32` は `deactivated: true` を `didDocumentMetadata.deactivated` に lift せず、DID Document 本体をそのまま返す（Universal Resolver / Veramo も同挙動）。よって検証者は `didDocumentMetadata.deactivated` ではなく `didDocument.deactivated` を直接読む必要がある。本実装は `deactivated` を本体に埋めて返すため設計変更は不要だが、検証者統合の docs にはこの注記を必ず載せる。
+
 ```ts
 @injectable()
 export class UserDidDocumentService {
@@ -1161,11 +1200,18 @@ export class PointVerifyClient {
 
   async verifyTransactions(txIds: string[]): Promise<VerifyResponse[]> {
     // PG の text[] 配列演算子 && (overlap) で、いずれかの txId を含む anchor を検索
-    const anchors = await this.prisma.$queryRaw<TransactionAnchorRow[]>`
-      SELECT id, root_hash, chain_tx_hash, metadata_label, status, leaf_ids
-      FROM t_transaction_anchors
-      WHERE leaf_ids && ${txIds}::text[]
-    `;
+    // 注意（spike #1 PR #1091, RESULTS.md "Caveat B"）: 小規模ヒープでは PG planner が
+    // text[] の TOAST detoast コストを過小評価し、GIN より 17-27 倍遅い Seq Scan を選ぶ
+    // ことがある。トランザクション単位で `enable_seqscan = OFF` を強制し、本クエリにのみ
+    // 効かせる（SET LOCAL なのでセッションへの leak なし）。
+    const anchors = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe("SET LOCAL enable_seqscan = OFF");
+      return tx.$queryRaw<TransactionAnchorRow[]>`
+        SELECT id, root_hash, chain_tx_hash, metadata_label, status, leaf_ids
+        FROM t_transaction_anchors
+        WHERE leaf_ids && ${txIds}::text[]
+      `;
+    });
 
     return txIds.map(txId => {
       const a = anchors.find(x => x.leaf_ids.includes(txId));
@@ -1809,22 +1855,22 @@ backfill 月のみ ~$1 加算、それ以降は通常運用コストに戻る。
 
 ### Phase 0: PoC（1 週間）
 
-実装着手前に **必ず preprod / localhost で検証する 6 項目**:
+実装着手前に **必ず preprod / localhost で検証する 6 項目**（spike #1〜#3 で 0-1/0-3/0-5/0-6 は完了済、残るのは 0-2/0-4）:
 
 | # | 検証内容 | 失敗時の影響 |
 |---|---|---|
-| **0-1** | Cardano preprod で Blockfrost 経由 tx submit → Cardanoscan 等の explorer で metadata 1985 を確認 | submit パス全体が動かない |
-| **0-2** | KMS Ed25519 で Cardano tx 署名と VC JWT 署名の両用検証（§I 対応：詳細項目）。**preprod で実 tx を 1 件出して**:<br/>(a) KMS Ed25519 が **PureEdDSA (no pre-hash)** 仕様か（RFC 8032 §5.1.6、Cardano は pre-hash しない）<br/>(b) `asymmetricSign` payload 上限（数 KB）に Cardano tx body hash (32B) が収まるか<br/>(c) KMS が返す署名が **64 byte raw** か（CSL の `Vkeywitness::new(vkey, ed25519_signature)` で受け取れる形式）<br/>(d) `did-jwt` の `Signer` interface に KMS sign を inject 可能か（JOSE 形式と raw 形式の変換）<br/>→ 1 つでも不整合があれば設計大幅やり直し | wallet 鍵管理の前提が崩れる |
-| **0-3** | `did:web:api.civicship.app:users:u_xyz` の DID Document を localhost HTTPS で配信 → 標準 did:web resolver（Veramo / web-did-resolver）で解決確認 | did:web 構文の最終確認 |
+| ~~0-1~~ | ~~Cardano preprod で Blockfrost 経由 tx submit → Cardanoscan 等の explorer で metadata 1985 を確認~~ → **コード完了 (spike #2 PR #1092): tx 構築・metadata 1985 添付・dry-run PASS**。実 submit はユーザー環境（Blockfrost API key 保有環境）に委譲 | submit パス全体が動かない |
+| **0-2** | KMS Ed25519 で Cardano tx 署名と VC JWT 署名の両用検証（§I 対応：詳細項目）。**preprod で実 tx を 1 件出して**:<br/>(a) KMS Ed25519 が **PureEdDSA (no pre-hash)** 仕様か（RFC 8032 §5.1.6、Cardano は pre-hash しない）<br/>(b) `asymmetricSign` payload 上限（数 KB）に Cardano tx body hash (32B) が収まるか<br/>(c) KMS が返す署名が **64 byte raw** か（CSL の `Vkeywitness::new(vkey, ed25519_signature)` で受け取れる形式）<br/>(d) `did-jwt` の `Signer` interface に KMS sign を inject 可能か（JOSE 形式と raw 形式の変換）<br/>→ 1 つでも不整合があれば設計大幅やり直し<br/>**現状: 未実施。本項目は別 spike に分離**（KMS 環境準備が必要なため、CSL/Blockfrost spike #2 とは独立で進める） | wallet 鍵管理の前提が崩れる |
+| ~~0-3~~ | ~~`did:web:api.civicship.app:users:u_xyz` の DID Document を localhost HTTPS で配信 → 標準 did:web resolver（Veramo / web-did-resolver）で解決確認~~ → **完了 (spike #3 PR #1090): web-did-resolver で resolve PASS**（Tombstone 配置の caveat は §5.4.4 参照） | did:web 構文の最終確認 |
 | **0-4** | 第三者検証スクリプト（civicship 非依存 / Blockfrost 不使用、Cardano explorer 経由のみ）で end-to-end 検証 | 「Cardano explorer で確認」運用が成立しない |
-| **0-5** | GIN index 込みの schema migration を localhost PostgreSQL で実走 → `EXPLAIN ANALYZE` で `&&` 検索が GIN index 使用していることを確認 | `/point/verify` が線形スキャンで遅い |
+| ~~0-5~~ | ~~GIN index 込みの schema migration を localhost PostgreSQL で実走 → `EXPLAIN ANALYZE` で `&&` 検索が GIN index 使用していることを確認~~ → **完了 (spike #1 PR #1091): GIN index 使用確認、ベンチで GIN 採用時 17-27 倍高速化を実測**（Seq Scan 回避は §6.2 の `SET LOCAL enable_seqscan = OFF` で担保） | `/point/verify` が線形スキャンで遅い |
 | ~~0-6~~ | ~~metadata label 1985 が CIP-10 で衝突していないこと~~ → **完了 (2026-05-09): CIP-10 registry で 1985 未登録を確認済**（46 登録済の中になし、近隣 1983/1984/1988/1989 は使用中、1985 のみ空き） | — |
 
 #### Phase 0 で特に詰めるべき技術的懸念
 
 | 懸念 | 検証内容 | 失敗時の代替 |
 |---|---|---|
-| **Prisma の GIN index native syntax** | `@@index([leafIds], type: Gin)` が text[] 列に対して直接動くか確認。動かなければ `previewFeatures = ["postgresqlExtensions"]` を試行、それでもダメなら raw SQL migration（`CREATE INDEX ... USING GIN (leaf_ids)`）に切替 | raw SQL migration（実装上ほぼ同等、Prisma が認識しないだけ） |
+| **Prisma の GIN index native syntax** | `@@index([leafIds], type: Gin)` が text[] 列に対して直接動くか確認。動かなければ `previewFeatures = ["postgresqlExtensions"]` を試行、それでもダメなら raw SQL migration（`CREATE INDEX ... USING GIN (leaf_ids)`）に切替。spike #1（PR #1091）で Prisma 6.x（pnpm 解決値 6.11.1、`package.json` 表記 `^6.6.0`）にて動作確認済（GIN native syntax は Prisma 5.0 以降安定） | raw SQL migration（実装上ほぼ同等、Prisma が認識しないだけ） |
 | **Backfill 時の metadata サイズ** | 100 ユーザー分の DID 操作を実際にバッチ化して Cardano preprod に submit、tx あたり実際に何 op 入るかを実測 | metadata 超過時の自動分割ロジックを strengthen |
 | **Cardano CIP-1852 非準拠の影響** | KMS-backed single payment key で生成したアドレスが Daedalus / Eternl / Lace から「正常な civicship issuer wallet」として閲覧可能か確認 | アドレス形式の調整 |
 
