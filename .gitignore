@@ -31,6 +31,7 @@ coverage
 
 # Claude Code agent isolated worktrees (runtime artifact)
 .claude/worktrees/
+.claude/settings.local.json
 
 # Bower dependency directory (https://bower.io/)
 bower_components
