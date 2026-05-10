@@ -203,39 +203,37 @@ export class BlockfrostClient {
    * Run `op` with retry + exponential backoff. Stops retrying for 4xx
    * (except 429) — those are caller-side errors, not transient.
    *
-   * The infinite loop here always exits via either `return` (success) or
-   * `throw` (final attempt). `attempt` is bounded by `this.maxRetries` and
-   * the final iteration's catch branch unconditionally re-throws, so there
-   * is no unreachable trailing branch.
+   * Implemented recursively so that each call either returns a value or
+   * throws — there is no loop, no unreachable trailing branch, and no
+   * dead-store accumulator. Recursion depth is bounded by `maxRetries`
+   * (default 3), well within stack limits.
    */
-  private async withRetry<T>(label: string, op: () => Promise<T>): Promise<T> {
-    if (this.maxRetries < 1) {
-      throw new Error(
-        `BlockfrostClient.withRetry: maxRetries must be >= 1, got ${this.maxRetries}`,
-      );
-    }
-    for (let attempt = 0; ; attempt++) {
-      try {
-        return await op();
-      } catch (err) {
-        const isLastAttempt = attempt >= this.maxRetries - 1;
-        if (!isRetryableError(err) || isLastAttempt) {
-          logger.error("[BlockfrostClient] non-retryable error", {
-            label,
-            attempt,
-            err: serialiseError(err),
-          });
-          throw err;
-        }
-        const backoff = this.initialBackoffMs * 2 ** attempt;
-        logger.warn("[BlockfrostClient] retry after transient error", {
+  private async withRetry<T>(
+    label: string,
+    op: () => Promise<T>,
+    attempt = 0,
+  ): Promise<T> {
+    try {
+      return await op();
+    } catch (err) {
+      const isLastAttempt = attempt >= this.maxRetries - 1;
+      if (!isRetryableError(err) || isLastAttempt) {
+        logger.error("[BlockfrostClient] non-retryable error", {
           label,
           attempt,
-          backoff,
           err: serialiseError(err),
         });
-        await sleep(backoff);
+        throw err;
       }
+      const backoff = this.initialBackoffMs * 2 ** attempt;
+      logger.warn("[BlockfrostClient] retry after transient error", {
+        label,
+        attempt,
+        backoff,
+        err: serialiseError(err),
+      });
+      await sleep(backoff);
+      return this.withRetry(label, op, attempt + 1);
     }
   }
 
@@ -295,7 +293,7 @@ export class BlockfrostClient {
     while (Date.now() < deadline) {
       try {
         const tx = (await this.api.txs(hash)) as BlockfrostTxResponse;
-        if (tx && tx.block_height !== null) {
+        if (tx.block_height !== null) {
           return tx;
         }
       } catch (err) {
