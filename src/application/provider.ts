@@ -107,6 +107,8 @@ import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
+import { DidDocumentResolver } from "@/infrastructure/libs/did/didDocumentResolver";
+import { UserDidAnchorStoreStub } from "@/infrastructure/libs/did/userDidAnchorStoreStub";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
@@ -157,6 +159,12 @@ import VcIssuanceService from "@/application/domain/credential/vcIssuance/servic
 import VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
 import VcIssuanceRepositoryStub from "@/application/domain/credential/vcIssuance/data/repository";
 import VcIssuanceResolver from "@/application/domain/credential/vcIssuance/controller/resolver";
+
+// 🪪 Issuer DID (§5.4.3 internal DID Document service, Phase 1 step 8)
+import IssuerDidService from "@/application/domain/credential/issuerDid/service";
+import IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase";
+import IssuerDidKeyRepositoryStub from "@/application/domain/credential/issuerDid/data/repository";
+import { KmsSigner } from "@/infrastructure/libs/kms/kmsSigner";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -252,6 +260,13 @@ export function registerProductionDependencies() {
   container.register("DIDIssuanceService", { useClass: DIDIssuanceService });
   container.register("DIDIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
 
+  // Phase 1 internalized DID/VC stack (§5.1.4 / §5.4).
+  // TODO(phase1-final): replace UserDidAnchorStoreStub with a Prisma-backed
+  // UserDidAnchorRepository once the schema PR (#1094) merges and the
+  // application service PR wires UserDidDocumentService.
+  container.register("UserDidAnchorStore", { useClass: UserDidAnchorStoreStub });
+  container.register("DidDocumentResolver", { useClass: DidDocumentResolver });
+
   container.register("VCIssuanceRequestUseCase", { useClass: VCIssuanceRequestUseCase });
   container.register("VCIssuanceRequestConverter", { useClass: VCIssuanceRequestConverter });
   container.register("VCIssuanceRequestService", { useClass: VCIssuanceRequestService });
@@ -275,6 +290,21 @@ export function registerProductionDependencies() {
   container.register("VcIssuanceService", { useClass: VcIssuanceService });
   container.register("VcIssuanceUseCase", { useClass: VcIssuanceUseCase });
   container.register("VcIssuanceResolver", { useClass: VcIssuanceResolver });
+
+  // 🪪 Issuer DID (§5.4.3 internal DID Document service) — Strategy A stub
+  // repository. Drives `/.well-known/did.json` via `IssuerDidUseCase`. The
+  // stub returns `null` for `findActiveKey` until the schema PR adds the
+  // `t_issuer_did_keys` table; the router then falls back to a minimal
+  // static Document, preserving dev/staging UX.
+  //
+  // `KmsSigner` is registered here (not in a dedicated infra section) so
+  // it sits adjacent to its single application-layer consumer for the
+  // lifetime of Phase 1; future consumers (anchor batch worker) can lift
+  // it into a shared "Cryptography" group once they land.
+  container.registerSingleton("KmsSigner", KmsSigner);
+  container.register("IssuerDidKeyRepository", { useClass: IssuerDidKeyRepositoryStub });
+  container.register("IssuerDidService", { useClass: IssuerDidService });
+  container.register("IssuerDidUseCase", { useClass: IssuerDidUseCase });
 
   // ------------------------------
   // 📰 Content
