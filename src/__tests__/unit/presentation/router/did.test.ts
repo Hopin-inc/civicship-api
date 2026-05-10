@@ -1,8 +1,11 @@
 /**
  * Unit tests for `src/presentation/router/did.ts` (§5.4 public routes).
  *
- * Covers the three endpoints shipped in this PR:
- *   - GET /.well-known/did.json          → 200 + minimal issuer document
+ * Covers the three endpoints:
+ *   - GET /.well-known/did.json
+ *       → 200 + full Issuer DID Document when `IssuerDidUseCase` yields one
+ *       → 200 + minimal static fallback when the use case yields `null`
+ *       → 500 when the use case throws
  *   - GET /users/:userId/did.json        → 200 (CONFIRMED / DEACTIVATE)
  *                                          → 404 (no anchor)
  *                                          → 400 (malformed userId)
@@ -13,10 +16,10 @@
  *                                            still assert the shape on
  *                                            valid input)
  *
- * The `DidDocumentResolver` is stubbed via `container.register` so the
- * tests never touch Prisma. Each route is exercised through a real
- * Express app via supertest to catch routing-level regressions
- * (path params, JSON content-type, status codes).
+ * The `DidDocumentResolver` and `IssuerDidUseCase` are both stubbed via
+ * `container.register` so the tests never touch Prisma or KMS. Each route
+ * is exercised through a real Express app via supertest to catch
+ * routing-level regressions (path params, JSON content-type, status codes).
  */
 
 import "reflect-metadata";
@@ -26,6 +29,8 @@ import request from "supertest";
 import { container } from "tsyringe";
 
 import didRouter from "@/presentation/router/did";
+import type IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase";
+import type { IssuerDidDocument } from "@/infrastructure/libs/did/issuerDidBuilder";
 import type {
   DidDocumentResolver,
   DidDocumentWithProof,
@@ -84,13 +89,57 @@ function registerResolverMock(buildDidDocument: jest.Mock): void {
   container.register("DidDocumentResolver", { useValue: mock as DidDocumentResolver });
 }
 
+function registerIssuerDidUseCaseMock(getActiveIssuerDidDocument: jest.Mock): void {
+  const mock: Partial<IssuerDidUseCase> = { getActiveIssuerDidDocument };
+  container.register("IssuerDidUseCase", { useValue: mock as IssuerDidUseCase });
+}
+
+function buildFullIssuerDoc(): IssuerDidDocument {
+  return {
+    "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/multikey/v1"],
+    id: "did:web:api.civicship.app",
+    verificationMethod: [
+      {
+        id: "did:web:api.civicship.app#key-1",
+        type: "Multikey",
+        controller: "did:web:api.civicship.app",
+        publicKeyMultibase: "z6MkfullmockedmultibaseTESTONLY",
+      },
+    ],
+    assertionMethod: ["did:web:api.civicship.app#key-1"],
+    authentication: ["did:web:api.civicship.app#key-1"],
+    service: [
+      {
+        id: "did:web:api.civicship.app#issued-credentials",
+        type: "CivicshipIssuedCredentials",
+        serviceEndpoint: { credentialTypes: ["civicship-attendance-credential-2026"] },
+      },
+    ],
+  };
+}
+
 describe("router/did (§5.4)", () => {
   beforeEach(() => {
     container.clearInstances();
   });
 
   describe("GET /.well-known/did.json", () => {
-    it("returns 200 and a minimal issuer DID Document", async () => {
+    it("returns 200 with the full Issuer DID Document when the use case yields one", async () => {
+      const fullDoc = buildFullIssuerDoc();
+      const getActiveIssuerDidDocument = jest.fn().mockResolvedValue(fullDoc);
+      registerIssuerDidUseCaseMock(getActiveIssuerDidDocument);
+
+      const res = await request(buildApp()).get("/.well-known/did.json");
+
+      expect(res.status).toBe(200);
+      expect(getActiveIssuerDidDocument).toHaveBeenCalledTimes(1);
+      expect(res.body).toEqual(fullDoc);
+    });
+
+    it("falls back to the minimal static Document when the use case yields null", async () => {
+      const getActiveIssuerDidDocument = jest.fn().mockResolvedValue(null);
+      registerIssuerDidUseCaseMock(getActiveIssuerDidDocument);
+
       const res = await request(buildApp()).get("/.well-known/did.json");
 
       expect(res.status).toBe(200);
@@ -100,11 +149,16 @@ describe("router/did (§5.4)", () => {
       });
     });
 
-    it("does not require the resolver (works without DI registration)", async () => {
-      // No `registerResolverMock` call — the issuer endpoint must not
-      // resolve anything from the container.
+    it("returns 500 when the use case throws (genuine misconfiguration, no silent fallback)", async () => {
+      const getActiveIssuerDidDocument = jest
+        .fn()
+        .mockRejectedValue(new Error("KMS PERMISSION_DENIED"));
+      registerIssuerDidUseCaseMock(getActiveIssuerDidDocument);
+
       const res = await request(buildApp()).get("/.well-known/did.json");
-      expect(res.status).toBe(200);
+
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: "Internal Server Error" });
     });
   });
 

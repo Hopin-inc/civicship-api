@@ -4,12 +4,12 @@
  * Exposes three endpoints:
  *
  *   GET /.well-known/did.json
- *     Returns the civicship.app issuer DID Document. This PR ships a
- *     minimal static `{ "@context", id }` body — the full document
- *     (with KMS-backed verificationMethod + service entries) is built
- *     by `IssuerDidBuilder` in a sibling PR (claude/phase1-infra-kms-issuer-did).
- *     We deliberately do NOT import that builder here so this PR builds
- *     standalone; once the builder lands the resolver will switch.
+ *     Returns the civicship.app Issuer DID Document. Phase 1 step 8
+ *     wires this through `IssuerDidUseCase` so the response carries the
+ *     active KMS-backed `verificationMethod` whenever a key has been
+ *     activated. Until then the use case returns `null` and we fall back
+ *     to the minimal static `{ "@context", id }` body — preserving the
+ *     dev/staging UX that existed before the use case landed.
  *
  *   GET /users/:userId/did.json
  *     Returns the User DID Document for `userId`. Delegates to
@@ -29,12 +29,14 @@
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.4   (public routes)
+ *   docs/report/did-vc-internalization.md §5.4.3 (IssuerDidService)
  *   docs/report/did-vc-internalization.md §5.4.4 (UserDidDocumentService)
  *   docs/report/did-vc-internalization.md §B / §E / §F
  */
 
 import express, { Request, Response } from "express";
 import { container } from "tsyringe";
+import IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase";
 import {
   DidDocumentResolver,
   type DidDocumentWithProof,
@@ -53,24 +55,47 @@ const router = express.Router();
 // ---------------------------------------------------------------------------
 
 /**
- * Build the minimal issuer DID Document for civicship.app.
+ * Minimal static fallback Document.
  *
- * This is the static stand-in until `IssuerDidBuilder` (sibling PR
- * claude/phase1-infra-kms-issuer-did) provides the full document with
- * KMS-derived verificationMethod entries.
+ * Served when `IssuerDidUseCase.getActiveIssuerDidDocument()` returns
+ * `null` — i.e. no active KMS key is registered yet (bootstrap state on
+ * dev/staging). The shape is the smallest body every DID-aware verifier
+ * accepts (`@context` + `id`); the absence of `verificationMethod` is
+ * intentional and matches the spec's "no proofs yet" mode.
  *
- * The shape matches what every DID-aware verifier expects at minimum:
- *   `@context` + `id`. Adding fields later is backward-compatible.
+ * Adding fields later is backward-compatible. Switching to the use case
+ * happens automatically as soon as the first key is activated.
  */
-function buildIssuerDidDocument(): { "@context": readonly string[]; id: string } {
-  return {
-    "@context": ["https://www.w3.org/ns/did/v1"],
-    id: "did:web:api.civicship.app",
-  };
-}
+const STATIC_FALLBACK_DOCUMENT = Object.freeze({
+  "@context": ["https://www.w3.org/ns/did/v1"],
+  id: "did:web:api.civicship.app",
+});
 
-router.get("/.well-known/did.json", (_req: Request, res: Response) => {
-  res.status(200).json(buildIssuerDidDocument());
+router.get("/.well-known/did.json", async (_req: Request, res: Response) => {
+  try {
+    const useCase = container.resolve<IssuerDidUseCase>("IssuerDidUseCase");
+    const document = await useCase.getActiveIssuerDidDocument();
+
+    if (document === null) {
+      // Bootstrap fallback — see `STATIC_FALLBACK_DOCUMENT` rationale.
+      // Logged at debug level only; this is the expected steady state on
+      // a freshly-deployed environment until the first key is provisioned.
+      logger.debug("[router/did] no active issuer key — serving static fallback");
+      return res.status(200).json(STATIC_FALLBACK_DOCUMENT);
+    }
+
+    return res.status(200).json(document);
+  } catch (err) {
+    // Genuine misconfiguration (bad KMS resource name, expired ADC, etc.).
+    // Do NOT silently fall back to the static stub here — that would hide
+    // the configuration error from operators and mislead verifiers into
+    // accepting a Document that is missing the active verificationMethod.
+    logger.error("[router/did] failed to build issuer DID Document", {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // ---------------------------------------------------------------------------
