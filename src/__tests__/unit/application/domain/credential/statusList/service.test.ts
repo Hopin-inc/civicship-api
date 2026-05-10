@@ -341,7 +341,9 @@ describe("StatusListService", () => {
       // Each allocation lands on a unique list (1 and 2) OR they both land
       // on the same list "1" if the second caller saw the first's commit
       // before its own bootstrap — both are legal and race-free outcomes.
-      const listKeys = [...repo.rows.values()].map((r) => r.listKey).sort();
+      const listKeys = [...repo.rows.values()]
+        .map((r) => r.listKey)
+        .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
       expect(listKeys).not.toContain(undefined);
       // Crucially: no duplicate listKey persisted.
       const unique = new Set(listKeys);
@@ -377,7 +379,9 @@ describe("StatusListService", () => {
       const second = await service.allocateNextSlot(ctx);
       expect(second.listKey).toBe("2");
 
-      const listKeys = [...repo.rows.values()].map((r) => r.listKey).sort();
+      const listKeys = [...repo.rows.values()]
+        .map((r) => r.listKey)
+        .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
       expect(listKeys).toEqual(["1", "2"]);
     });
   });
