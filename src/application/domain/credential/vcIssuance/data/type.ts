@@ -22,11 +22,21 @@
  *   docs/report/did-vc-internalization.md §D     (credentialStatus)
  */
 
-/** §4.1 — VC format. Phase 1 only emits `INTERNAL_JWT`. */
-export type VcFormatValue = "INTERNAL_JWT" | "INTERNAL_LD";
+/**
+ * §4.1 — VC format. Phase 1 only emits `INTERNAL_JWT`; `IDENTUS_VC_PRISM`
+ * is retained as a value for legacy compatibility (the GraphQL schema
+ * exposes the same values).
+ */
+export type VcFormatValue = "INTERNAL_JWT" | "IDENTUS_VC_PRISM";
 
-/** §4.1 — VC lifecycle status. */
-export type VcStatusValue = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "REVOKED";
+/**
+ * §4.1 — VC lifecycle status.
+ *
+ * The values mirror `GqlVcIssuanceStatus`. The legacy `VcIssuanceRequest`
+ * model still uses `PROCESSING` so we keep it in the union; new VCs only
+ * transition through `PENDING → IN_PROGRESS → COMPLETED / FAILED`.
+ */
+export type VcStatusValue = "PENDING" | "IN_PROGRESS" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 /**
  * Local row shape standing in for `VcIssuanceRequest` post-schema-PR.
@@ -50,6 +60,11 @@ export interface VcIssuanceRow {
   status: VcStatusValue;
   createdAt: Date;
   completedAt: Date | null;
+  /**
+   * Set non-null when the VC has been revoked via the StatusList domain
+   * (Phase 1 step 9). Until then this is always null.
+   */
+  revokedAt: Date | null;
 }
 
 /**

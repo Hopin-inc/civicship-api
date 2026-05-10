@@ -24,11 +24,27 @@ import type {
   AnchorNetworkValue,
   AnchorStatusValue,
   DidOperationValue,
-  UserDidAnchorRow,
+  UserDidAnchorRow as InfraUserDidAnchorRow,
 } from "@/infrastructure/libs/did/didDocumentResolver";
 
 // Re-export so callers in this domain do not need to reach into infrastructure.
-export type { AnchorNetworkValue, AnchorStatusValue, DidOperationValue, UserDidAnchorRow };
+export type { AnchorNetworkValue, AnchorStatusValue, DidOperationValue };
+
+/**
+ * Domain-level row shape for `UserDidAnchor`.
+ *
+ * Strategy A note (Phase 1 step 8): the infrastructure-level
+ * `UserDidAnchorRow` (in `didDocumentResolver`) only declares fields the
+ * resolver needs. The GraphQL schema exposes `id`, `userId`, and `createdAt`
+ * too, so we widen the row here without touching the infra-side type. The
+ * cleanup PR (`claude/phase1-strategy-a-cleanup`) will replace this with
+ * the Prisma-generated `UserDidAnchor` model in one move.
+ */
+export interface UserDidAnchorRow extends InfraUserDidAnchorRow {
+  id: string;
+  userId: string;
+  createdAt: Date;
+}
 
 /**
  * Input for creating a new CREATE-op `UserDidAnchor` row.

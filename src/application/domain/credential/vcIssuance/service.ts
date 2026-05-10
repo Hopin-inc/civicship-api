@@ -112,6 +112,16 @@ export default class VcIssuanceService {
     private readonly repository: IVcIssuanceRepository,
   ) {}
 
+  /** Pass-through for the GraphQL `vcIssuance` query (Phase 1 step 8). */
+  async findVcById(ctx: IContext, id: string): Promise<VcIssuanceRow | null> {
+    return this.repository.findById(ctx, id);
+  }
+
+  /** Pass-through for the GraphQL `vcIssuancesByUser` query. */
+  async findVcsByUserId(ctx: IContext, userId: string): Promise<VcIssuanceRow[]> {
+    return this.repository.findByUserId(ctx, userId);
+  }
+
   /**
    * §5.2.2: build a VC for the supplied claims, sign-stub it, and persist
    * the resulting row. Anchor wiring (vcAnchorId / anchorLeafIndex) is

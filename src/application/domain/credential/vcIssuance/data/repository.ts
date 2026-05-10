@@ -49,6 +49,13 @@ export default class VcIssuanceRepositoryStub implements IVcIssuanceRepository {
     return null;
   }
 
+  // Returning an empty array is the safe no-op for "no rows yet" — the
+  // resolver maps it directly to an empty GraphQL list. The Prisma-backed
+  // implementation will issue a `findMany` ordered by `createdAt desc`.
+  async findByUserId(_ctx: IContext, _userId: string): Promise<VcIssuanceRow[]> {
+    return [];
+  }
+
   // TODO(phase1-final): swap to Prisma-backed implementation once
   // `t_vc_issuance_requests` (Phase-1 redesign) is in the generated client.
   async create(

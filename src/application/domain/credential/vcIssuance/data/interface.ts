@@ -26,6 +26,13 @@ import type {
 export interface IVcIssuanceRepository {
   findById(ctx: IContext, id: string): Promise<VcIssuanceRow | null>;
 
+  /**
+   * Return every VC issuance row owned by `userId`, newest first.
+   * Phase 1 step 8 keeps the list unpaginated — the design only foresees
+   * a handful of VCs per user; pagination can be added when usage demands.
+   */
+  findByUserId(ctx: IContext, userId: string): Promise<VcIssuanceRow[]>;
+
   create(
     ctx: IContext,
     input: CreateVcIssuanceInput,

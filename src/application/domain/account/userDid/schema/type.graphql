@@ -1,0 +1,54 @@
+# ------------------------------
+# UserDidAnchor Type Definitions (§5.2.1)
+# ------------------------------
+"""
+ユーザー DID の chain anchor 1 件を表す。
+PENDING 状態でも返却される（§F: PENDING も resolver で配信）。
+chainTxHash / chainOpIndex / confirmedAt は CONFIRMED で初めて埋まる。
+"""
+type UserDidAnchor {
+  id: ID!
+  did: String!
+  operation: DidOperation!
+  documentHash: String!
+  network: ChainNetwork!
+  chainTxHash: String
+  chainOpIndex: Int
+  status: AnchorStatus!
+  confirmedAt: Datetime
+  createdAt: Datetime!
+}
+
+"""
+DID lifecycle 操作種別 (§4.1)。
+- CREATE: 初回作成
+- UPDATE: 既存 DID Document の差し替え
+- DEACTIVATE: tombstone (§E)
+"""
+enum DidOperation {
+  CREATE
+  UPDATE
+  DEACTIVATE
+}
+
+"""
+chain anchor のライフサイクル状態 (§4.1, §F)。
+- PENDING: DB 永続化済み、weekly anchor batch 未投入
+- SUBMITTED: Cardano tx 送信済み、未確定
+- CONFIRMED: tx finalized
+- FAILED: tx 失敗 / 再送対象
+"""
+enum AnchorStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED
+}
+
+"""
+chain network 識別子 (§4.1)。Phase 1 は Cardano のみサポート。
+"""
+enum ChainNetwork {
+  CARDANO_MAINNET
+  CARDANO_PREPROD
+}

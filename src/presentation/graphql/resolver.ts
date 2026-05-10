@@ -31,6 +31,11 @@ import ReportResolver from "@/application/domain/report/controller/resolver";
 import ReportFeedbackResolver from "@/application/domain/report/feedback/controller/resolver";
 import AnalyticsCommunityResolver from "@/application/domain/analytics/community/controller/resolver";
 import AnalyticsResolver from "@/application/domain/analytics/controller/resolver";
+
+// 🪪 Internal DID/VC (§5.2 — Phase 1 step 8)
+import UserDidResolver from "@/application/domain/account/userDid/controller/resolver";
+import VcIssuanceResolver from "@/application/domain/credential/vcIssuance/controller/resolver";
+
 import scalarResolvers from "@/presentation/graphql/scalar";
 
 const identity = container.resolve(IdentityResolver);
@@ -70,6 +75,9 @@ const reportFeedback = container.resolve(ReportFeedbackResolver);
 const analyticsCommunity = container.resolve(AnalyticsCommunityResolver);
 const analytics = container.resolve(AnalyticsResolver);
 
+const userDid = container.resolve(UserDidResolver);
+const vcIssuance = container.resolve(VcIssuanceResolver);
+
 const resolvers = {
   Query: {
     ...identity.Query,
@@ -102,6 +110,8 @@ const resolvers = {
     ...reportFeedback.Query,
     ...analyticsCommunity.Query,
     ...analytics.Query,
+    ...userDid.Query,
+    ...vcIssuance.Query,
   },
   Mutation: {
     ...identity.Mutation,
@@ -122,6 +132,8 @@ const resolvers = {
     ...vote.Mutation,
     ...report.Mutation,
     ...reportFeedback.Mutation,
+    ...userDid.Mutation,
+    ...vcIssuance.Mutation,
   },
   Identity: identity.Identity,
   User: user.User,

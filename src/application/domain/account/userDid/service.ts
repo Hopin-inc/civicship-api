@@ -93,6 +93,15 @@ export default class UserDidService {
   ) {}
 
   /**
+   * Read pass-through for the GraphQL `userDid(userId)` query (Phase 1
+   * step 8). Returns the latest anchor row regardless of status — §F
+   * mandates that PENDING is served too.
+   */
+  async findLatestForUser(_ctx: IContext, userId: string): Promise<UserDidAnchorRow | null> {
+    return this.repository.findLatestByUserId(userId);
+  }
+
+  /**
    * §5.2.1: enqueue a CREATE-op `UserDidAnchor` for `userId`.
    *
    * Returns the persisted row so the caller (UseCase) can pass it through
