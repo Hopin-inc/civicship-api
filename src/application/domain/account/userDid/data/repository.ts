@@ -25,7 +25,9 @@
  *   docs/report/did-vc-internalization.md §5.1.4 (DidDocumentResolver storage)
  */
 
-import { container, injectable } from "tsyringe";
+// TODO(perf): consider @@index([userId, createdAt(sort: Desc)]) on UserDidAnchor (Phase 1.5)
+
+import { inject, injectable } from "tsyringe";
 import { DidOperation, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -39,9 +41,7 @@ import type {
 
 @injectable()
 export default class UserDidAnchorRepository implements IUserDidAnchorRepository {
-  private getIssuer(): PrismaClientIssuer {
-    return container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
-  }
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
 
   /**
    * Return the most recently-created anchor for `userId`, regardless of
@@ -49,20 +49,19 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
    *
    * Used by both `DidDocumentResolver` (HTTP `/users/:userId/did.json`) and
    * `UserDidService` (next-version chaining decisions in future phases).
+   *
+   * The HTTP route serving did:web is unauthenticated (§5.4) so there is no
+   * request-scoped `IContext` — `internal()` is the appropriate RLS bypass
+   * (a system-level read), and unlike `public(ctx, ...)` it does not depend
+   * on a request context that we cannot honestly construct here.
    */
   async findLatestByUserId(userId: string): Promise<UserDidAnchorRow | null> {
-    const issuer = this.getIssuer();
-    // The resolver invokes this without a request-scoped IContext (the
-    // `did:web` route is unauthenticated per §5.4), so we build a minimal
-    // public-only context. `PrismaClientIssuer.public` ignores fields it
-    // does not need; the `issuer` field is the only thing it inspects.
-    const ctx = { issuer } as unknown as IContext;
-    return issuer.public(ctx, (tx) => {
-      return tx.userDidAnchor.findFirst({
+    return this.issuer.internal((tx) =>
+      tx.userDidAnchor.findFirst({
         where: { userId },
         orderBy: { createdAt: "desc" },
-      });
-    });
+      }),
+    );
   }
 
   async createCreate(
@@ -74,8 +73,7 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
     if (tx) {
       return tx.userDidAnchor.create({ data });
     }
-    const issuer = ctx.issuer || this.getIssuer();
-    return issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
+    return this.issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
   }
 
   async createUpdate(
@@ -87,8 +85,7 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
     if (tx) {
       return tx.userDidAnchor.create({ data });
     }
-    const issuer = ctx.issuer || this.getIssuer();
-    return issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
+    return this.issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
   }
 
   async createDeactivate(
@@ -103,8 +100,7 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
     if (tx) {
       return tx.userDidAnchor.create({ data });
     }
-    const issuer = ctx.issuer || this.getIssuer();
-    return issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
+    return this.issuer.public(ctx, (innerTx) => innerTx.userDidAnchor.create({ data }));
   }
 
   /**

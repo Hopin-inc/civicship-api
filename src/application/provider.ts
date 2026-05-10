@@ -277,8 +277,18 @@ export function registerProductionDependencies() {
   // The same class is bound to two DI keys: `UserDidAnchorRepository` for
   // application services and `UserDidAnchorStore` for `DidDocumentResolver`
   // (which only consumes the narrower `findLatestByUserId` surface).
-  container.register("UserDidAnchorRepository", { useClass: UserDidAnchorRepository });
-  container.register("UserDidAnchorStore", { useClass: UserDidAnchorRepository });
+  //
+  // `useClass` is transient by default in tsyringe — registering the class
+  // as a singleton first and then aliasing both string tokens with
+  // `useToken` is what guarantees that both DI keys resolve the SAME
+  // instance. Without this, `UserDidAnchorRepository` and
+  // `UserDidAnchorStore` would each construct their own repository (and
+  // their own Prisma issuer fan-out), defeating the "single class behind
+  // two interfaces" intent and silently splitting any in-instance state
+  // (e.g. caches added later).
+  container.registerSingleton(UserDidAnchorRepository);
+  container.register("UserDidAnchorRepository", { useToken: UserDidAnchorRepository });
+  container.register("UserDidAnchorStore", { useToken: UserDidAnchorRepository });
   container.register("UserDidService", { useClass: UserDidService });
   container.register("UserDidUseCase", { useClass: UserDidUseCase });
   container.register("UserDidResolver", { useClass: UserDidResolver });
@@ -287,7 +297,8 @@ export function registerProductionDependencies() {
   // Distinct from the legacy `VCIssuanceRequest*` registrations above:
   // those wrap the IDENTUS-era flow, this wraps the Phase-1 internal-JWT
   // redesign that backs `t_vc_issuance_requests` directly.
-  container.register("VcIssuanceRepository", { useClass: VcIssuanceRepository });
+  container.registerSingleton(VcIssuanceRepository);
+  container.register("VcIssuanceRepository", { useToken: VcIssuanceRepository });
   container.register("VcIssuanceService", { useClass: VcIssuanceService });
   container.register("VcIssuanceUseCase", { useClass: VcIssuanceUseCase });
   container.register("VcIssuanceResolver", { useClass: VcIssuanceResolver });

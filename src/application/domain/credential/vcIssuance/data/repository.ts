@@ -24,9 +24,10 @@
  *   docs/report/did-vc-internalization.md §5.2.2 (VcIssuanceService flow)
  */
 
-import { container, injectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import { Prisma, VcFormat, VcIssuanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
+import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import type { IVcIssuanceRepository } from "@/application/domain/credential/vcIssuance/data/interface";
 import type {
@@ -42,6 +43,11 @@ import type {
  * `issuerDid` / `subjectDid` for downstream consumers even though the
  * underlying schema does not store them as columns — they are encoded in
  * the JWT payload and round-tripped via the input here.
+ *
+ * `issuerDid` is `string | null`: `findById` recovers it by parsing the
+ * JWT payload and that parse can fail (legacy / corrupt rows). `null`
+ * forces consumers to handle the missing-issuer case explicitly rather
+ * than silently treating an empty string as a valid DID.
  */
 function toRow(
   persisted: {
@@ -59,8 +65,8 @@ function toRow(
     completedAt: Date | null;
     revokedAt: Date | null;
   },
-  issuerDid: string,
-  subjectDid: string,
+  issuerDid: string | null,
+  subjectDid: string | null,
 ): VcIssuanceRow {
   return {
     id: persisted.id,
@@ -83,9 +89,7 @@ function toRow(
 
 @injectable()
 export default class VcIssuanceRepository implements IVcIssuanceRepository {
-  private getIssuer(): PrismaClientIssuer {
-    return container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
-  }
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
 
   /**
    * `findById` is not yet wired into a caller path in Phase 1 step 7; the
@@ -98,12 +102,11 @@ export default class VcIssuanceRepository implements IVcIssuanceRepository {
    * payload's `issuer` / `credentialSubject.id` instead.
    */
   async findById(ctx: IContext, id: string): Promise<VcIssuanceRow | null> {
-    const issuer = ctx.issuer || this.getIssuer();
-    const persisted = await issuer.public(ctx, (tx) => {
+    const persisted = await this.issuer.public(ctx, (tx) => {
       return tx.vcIssuanceRequest.findUnique({ where: { id } });
     });
     if (!persisted) return null;
-    const { issuerDid, subjectDid } = decodeIssuerSubjectFromJwt(persisted.vcJwt);
+    const { issuerDid, subjectDid } = decodeIssuerSubjectFromJwt(persisted.vcJwt, persisted.id);
     return toRow(persisted, issuerDid, subjectDid);
   }
 
@@ -114,15 +117,14 @@ export default class VcIssuanceRepository implements IVcIssuanceRepository {
    * columns.
    */
   async findByUserId(ctx: IContext, userId: string): Promise<VcIssuanceRow[]> {
-    const issuer = ctx.issuer || this.getIssuer();
-    const persisted = await issuer.public(ctx, (tx) => {
+    const persisted = await this.issuer.public(ctx, (tx) => {
       return tx.vcIssuanceRequest.findMany({
         where: { userId },
         orderBy: { createdAt: "desc" },
       });
     });
     return persisted.map((row) => {
-      const { issuerDid, subjectDid } = decodeIssuerSubjectFromJwt(row.vcJwt);
+      const { issuerDid, subjectDid } = decodeIssuerSubjectFromJwt(row.vcJwt, row.id);
       return toRow(row, issuerDid, subjectDid);
     });
   }
@@ -161,9 +163,7 @@ export default class VcIssuanceRepository implements IVcIssuanceRepository {
 
     const persisted = tx
       ? await tx.vcIssuanceRequest.create({ data })
-      : await (ctx.issuer || this.getIssuer()).public(ctx, (innerTx) =>
-          innerTx.vcIssuanceRequest.create({ data }),
-        );
+      : await this.issuer.public(ctx, (innerTx) => innerTx.vcIssuanceRequest.create({ data }));
 
     return toRow(persisted, input.issuerDid, input.subjectDid);
   }
@@ -171,29 +171,49 @@ export default class VcIssuanceRepository implements IVcIssuanceRepository {
 
 /**
  * Decode the JWT payload segment to recover `issuer` and
- * `credentialSubject.id` for `findById`. Returns empty strings when the
- * JWT is missing or malformed — `findById` callers that depend on those
- * fields should treat them as best-effort for legacy / corrupt rows.
+ * `credentialSubject.id` for `findById`. Returns `null` for whichever
+ * field is missing or unparseable so downstream callers must handle the
+ * absence explicitly (silent empty strings hid corrupt-row issues
+ * previously). Also emits a structured warn log so operators can surface
+ * legacy / corrupt rows in monitoring without paging on read traffic.
  */
-function decodeIssuerSubjectFromJwt(vcJwt: string | null): {
-  issuerDid: string;
-  subjectDid: string;
+function decodeIssuerSubjectFromJwt(
+  vcJwt: string | null,
+  vcRequestId: string,
+): {
+  issuerDid: string | null;
+  subjectDid: string | null;
 } {
-  if (!vcJwt) return { issuerDid: "", subjectDid: "" };
+  if (!vcJwt) {
+    logger.warn("[VcIssuanceRepository] missing vcJwt; cannot decode issuer/subject", {
+      vcRequestId,
+    });
+    return { issuerDid: null, subjectDid: null };
+  }
   const segments = vcJwt.split(".");
-  if (segments.length < 2) return { issuerDid: "", subjectDid: "" };
+  if (segments.length < 2) {
+    logger.warn("[VcIssuanceRepository] malformed vcJwt (segment count)", {
+      vcRequestId,
+      segmentCount: segments.length,
+    });
+    return { issuerDid: null, subjectDid: null };
+  }
   try {
     const payload = JSON.parse(Buffer.from(segments[1], "base64url").toString("utf8")) as {
       issuer?: unknown;
       credentialSubject?: { id?: unknown };
     };
-    const issuerDid = typeof payload.issuer === "string" ? payload.issuer : "";
+    const issuerDid = typeof payload.issuer === "string" ? payload.issuer : null;
     const subjectDid =
       payload.credentialSubject && typeof payload.credentialSubject.id === "string"
         ? payload.credentialSubject.id
-        : "";
+        : null;
     return { issuerDid, subjectDid };
-  } catch {
-    return { issuerDid: "", subjectDid: "" };
+  } catch (error) {
+    logger.warn("[VcIssuanceRepository] failed to decode VC JWT", {
+      vcRequestId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { issuerDid: null, subjectDid: null };
   }
 }

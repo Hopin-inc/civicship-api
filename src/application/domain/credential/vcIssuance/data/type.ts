@@ -35,13 +35,19 @@ export type VcStatusValue = VcIssuanceStatus;
  * Application-layer view of a VC issuance row. The fields below mirror
  * the columns the service writes, plus the JWT-payload-derived
  * `issuerDid` / `subjectDid` accessors.
+ *
+ * `issuerDid` / `subjectDid` are `string | null` because the repository
+ * recovers them by parsing the JWT payload on read (`findById`), and that
+ * parse can fail for legacy / corrupt rows. Consumers MUST handle the
+ * `null` case explicitly — previously the repository silently coerced
+ * decode failures to empty strings, which masked malformed JWTs.
  */
 export interface VcIssuanceRow {
   id: string;
   userId: string;
   evaluationId: string | null;
-  issuerDid: string;
-  subjectDid: string;
+  issuerDid: string | null;
+  subjectDid: string | null;
   vcFormat: VcFormatValue;
   vcJwt: string;
   statusListIndex: number | null;

@@ -27,16 +27,17 @@ import type { GqlVcIssuance } from "@/types/graphql";
 import type { VcIssuanceRow } from "@/application/domain/credential/vcIssuance/data/type";
 
 /**
- * Map the persistence-layer status to the GraphQL enum. Legacy
- * `PROCESSING` rows surface as `IN_PROGRESS` so the GraphQL schema can
- * stay free of the legacy spelling. Defensive default keeps the
- * presenter total over the row union.
+ * Map the persistence-layer status (Prisma `VcIssuanceStatus`) to the
+ * GraphQL enum. The Prisma enum currently lacks `IN_PROGRESS` (it stops
+ * at `PROCESSING` for legacy reasons); we translate `PROCESSING` →
+ * `IN_PROGRESS` so the GraphQL schema can stay free of the legacy
+ * spelling. Defensive default keeps the presenter total over the row
+ * union as it widens.
  */
 function toGqlStatus(status: VcIssuanceRow["status"]): GqlVcIssuance["status"] {
   switch (status) {
     case "PENDING":
       return "PENDING";
-    case "IN_PROGRESS":
     case "PROCESSING":
       return "IN_PROGRESS";
     case "COMPLETED":
@@ -53,12 +54,23 @@ function toGqlStatus(status: VcIssuanceRow["status"]): GqlVcIssuance["status"] {
 }
 
 /**
- * Map the persistence-layer format to the GraphQL enum. The VC format
- * union is intentionally narrow (Phase 1 only emits `INTERNAL_JWT`); the
- * legacy `IDENTUS_VC_PRISM` value passes through unchanged.
+ * Map the persistence-layer format (Prisma `VcFormat`) to the GraphQL
+ * enum. The two enums diverge on the legacy IDENTUS spelling: Prisma uses
+ * `IDENTUS_JWT` while the GraphQL schema exposes the historical
+ * `IDENTUS_VC_PRISM` value. Phase 1 only emits `INTERNAL_JWT` so this
+ * mostly matters for legacy-compat reads.
  */
 function toGqlFormat(format: VcIssuanceRow["vcFormat"]): GqlVcIssuance["vcFormat"] {
-  return format;
+  switch (format) {
+    case "INTERNAL_JWT":
+      return "INTERNAL_JWT";
+    case "IDENTUS_JWT":
+      return "IDENTUS_VC_PRISM";
+    default: {
+      const _exhaustive: never = format;
+      return _exhaustive;
+    }
+  }
 }
 
 const VcIssuancePresenter = {
@@ -68,8 +80,13 @@ const VcIssuancePresenter = {
       id: row.id,
       userId: row.userId,
       evaluationId: row.evaluationId,
-      issuerDid: row.issuerDid,
-      subjectDid: row.subjectDid,
+      // The GraphQL schema declares `issuerDid` / `subjectDid` as `String!`
+      // (non-nullable) — the row may carry `null` when the underlying JWT
+      // payload was missing/corrupt and the repository could not decode it.
+      // We coalesce to `""` so the GraphQL surface stays type-stable; the
+      // empty string is a clear sentinel for "decode failed".
+      issuerDid: row.issuerDid ?? "",
+      subjectDid: row.subjectDid ?? "",
       vcFormat: toGqlFormat(row.vcFormat),
       vcJwt: row.vcJwt,
       status: toGqlStatus(row.status),
