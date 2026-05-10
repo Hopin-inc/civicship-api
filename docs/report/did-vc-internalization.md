@@ -1099,7 +1099,7 @@ export class UserDidDocumentService {
   private buildProof(anchor: UserDidAnchor): DidDocumentProof {
     return {
       type: "DataIntegrityProof",
-      cryptosuite: "civicship-cardano-anchor-2026",
+      cryptosuite: "civicship-merkle-anchor-2026",
       anchorChain: "cardano:mainnet",
       anchorTxHash: anchor.chainTxHash,        // PENDING 時は null
       opIndexInTx: anchor.chainOpIndex,        // metadata.ops[opIndexInTx] が該当 op
