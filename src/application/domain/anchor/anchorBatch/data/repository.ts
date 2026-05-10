@@ -7,7 +7,7 @@
  */
 
 import { container, injectable } from "tsyringe";
-import { AnchorStatus } from "@prisma/client";
+import { AnchorStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IAnchorBatchRepository } from "@/application/domain/anchor/anchorBatch/data/interface";
@@ -181,41 +181,11 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
       userDidAnchorIds: string[];
     },
   ): Promise<void> {
-    const issuer = ctx.issuer ?? this.getIssuer();
     const submittedAt = new Date();
-    await issuer.internal(async (tx) => {
-      await Promise.all([
-        args.transactionAnchorIds.length
-          ? tx.transactionAnchor.updateMany({
-              where: { id: { in: args.transactionAnchorIds } },
-              data: {
-                status: AnchorStatus.SUBMITTED,
-                chainTxHash: args.chainTxHash,
-                submittedAt,
-              },
-            })
-          : Promise.resolve(),
-        args.vcAnchorIds.length
-          ? tx.vcAnchor.updateMany({
-              where: { id: { in: args.vcAnchorIds } },
-              data: {
-                status: AnchorStatus.SUBMITTED,
-                chainTxHash: args.chainTxHash,
-                submittedAt,
-              },
-            })
-          : Promise.resolve(),
-        args.userDidAnchorIds.length
-          ? tx.userDidAnchor.updateMany({
-              where: { id: { in: args.userDidAnchorIds } },
-              data: {
-                status: AnchorStatus.SUBMITTED,
-                chainTxHash: args.chainTxHash,
-                submittedAt,
-              },
-            })
-          : Promise.resolve(),
-      ]);
+    await this.applyToAllAnchors(ctx, args, {
+      txData: { status: AnchorStatus.SUBMITTED, chainTxHash: args.chainTxHash, submittedAt },
+      vcData: { status: AnchorStatus.SUBMITTED, chainTxHash: args.chainTxHash, submittedAt },
+      didData: { status: AnchorStatus.SUBMITTED, chainTxHash: args.chainTxHash, submittedAt },
     });
   }
 
@@ -229,40 +199,12 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
       userDidAnchorIds: string[];
     },
   ): Promise<void> {
-    const issuer = ctx.issuer ?? this.getIssuer();
     const confirmedAt = new Date();
-    await issuer.internal(async (tx) => {
-      await Promise.all([
-        args.transactionAnchorIds.length
-          ? tx.transactionAnchor.updateMany({
-              where: { id: { in: args.transactionAnchorIds } },
-              data: {
-                status: AnchorStatus.CONFIRMED,
-                confirmedAt,
-                blockHeight: args.blockHeight,
-              },
-            })
-          : Promise.resolve(),
-        args.vcAnchorIds.length
-          ? tx.vcAnchor.updateMany({
-              where: { id: { in: args.vcAnchorIds } },
-              data: {
-                status: AnchorStatus.CONFIRMED,
-                confirmedAt,
-                blockHeight: args.blockHeight,
-              },
-            })
-          : Promise.resolve(),
-        args.userDidAnchorIds.length
-          ? tx.userDidAnchor.updateMany({
-              where: { id: { in: args.userDidAnchorIds } },
-              data: {
-                status: AnchorStatus.CONFIRMED,
-                confirmedAt,
-              },
-            })
-          : Promise.resolve(),
-      ]);
+    await this.applyToAllAnchors(ctx, args, {
+      txData: { status: AnchorStatus.CONFIRMED, confirmedAt, blockHeight: args.blockHeight },
+      vcData: { status: AnchorStatus.CONFIRMED, confirmedAt, blockHeight: args.blockHeight },
+      // userDidAnchor has no blockHeight column.
+      didData: { status: AnchorStatus.CONFIRMED, confirmedAt },
     });
   }
 
@@ -276,33 +218,53 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
       userDidAnchorIds: string[];
     },
   ): Promise<void> {
+    await this.applyToAllAnchors(ctx, args, {
+      txData: { status: AnchorStatus.FAILED, lastError: args.failureReason },
+      vcData: { status: AnchorStatus.FAILED, lastError: args.failureReason },
+      // userDidAnchor has no lastError column.
+      didData: { status: AnchorStatus.FAILED },
+    });
+  }
+
+  /**
+   * Fan a status update across all three anchor tables in one
+   * `issuer.internal` transaction. Empty id lists short-circuit to
+   * `Promise.resolve()` so we never issue a no-op `updateMany` (and the
+   * per-table `data` shape stays explicit for the few schema columns
+   * that diverge — e.g. `userDidAnchor` has no `blockHeight` / `lastError`).
+   */
+  private async applyToAllAnchors(
+    ctx: IContext,
+    args: {
+      transactionAnchorIds: string[];
+      vcAnchorIds: string[];
+      userDidAnchorIds: string[];
+    },
+    data: {
+      txData: Prisma.TransactionAnchorUpdateManyMutationInput;
+      vcData: Prisma.VcAnchorUpdateManyMutationInput;
+      didData: Prisma.UserDidAnchorUpdateManyMutationInput;
+    },
+  ): Promise<void> {
     const issuer = ctx.issuer ?? this.getIssuer();
     await issuer.internal(async (tx) => {
       await Promise.all([
         args.transactionAnchorIds.length
           ? tx.transactionAnchor.updateMany({
               where: { id: { in: args.transactionAnchorIds } },
-              data: {
-                status: AnchorStatus.FAILED,
-                lastError: args.failureReason,
-              },
+              data: data.txData,
             })
           : Promise.resolve(),
         args.vcAnchorIds.length
           ? tx.vcAnchor.updateMany({
               where: { id: { in: args.vcAnchorIds } },
-              data: {
-                status: AnchorStatus.FAILED,
-                lastError: args.failureReason,
-              },
+              data: data.vcData,
             })
           : Promise.resolve(),
         args.userDidAnchorIds.length
           ? tx.userDidAnchor.updateMany({
               where: { id: { in: args.userDidAnchorIds } },
-              data: {
-                status: AnchorStatus.FAILED,
-              },
+              data: data.didData,
             })
           : Promise.resolve(),
       ]);
