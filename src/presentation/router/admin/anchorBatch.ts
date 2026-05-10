@@ -12,6 +12,7 @@
  */
 
 import express, { Request, Response } from "express";
+import { timingSafeEqual } from "node:crypto";
 import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import AnchorBatchUseCase from "@/application/domain/anchor/anchorBatch/usecase";
@@ -20,6 +21,21 @@ import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 const router = express.Router();
+
+/**
+ * Timing-safe な token 比較。
+ *
+ * - `provided` / `expected` の長さが異なる場合は `timingSafeEqual` が
+ *   throw するため、長さ違いを先に false で短絡させる。
+ * - `req.header()` は `string | string[] | undefined` を返すため、
+ *   string narrowing も呼び出し側で行う前提。
+ */
+function safeTokenEqual(provided: string, expected: string): boolean {
+  const providedBuf = Buffer.from(provided, "utf8");
+  const expectedBuf = Buffer.from(expected, "utf8");
+  if (providedBuf.length !== expectedBuf.length) return false;
+  return timingSafeEqual(providedBuf, expectedBuf);
+}
 
 /**
  * Cloud Scheduler から呼ばれる internal endpoint。
@@ -35,7 +51,9 @@ router.post("/run", express.json({ limit: "1mb" }), async (req: Request, res: Re
     return;
   }
   const provided = req.header("X-CloudScheduler-Token");
-  if (provided !== expected) {
+  // `req.header()` は `string | string[] | undefined`。配列で渡された場合は
+  // 認可失敗扱い（複数 token は仕様外）。
+  if (typeof provided !== "string" || !safeTokenEqual(provided, expected)) {
     logger.warn("[anchorBatch] unauthorized request: token mismatch");
     res.status(401).json({ error: "Unauthorized" });
     return;

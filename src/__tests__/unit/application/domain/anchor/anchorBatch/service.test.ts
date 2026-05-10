@@ -4,12 +4,15 @@
  * カバレッジ:
  *   - PENDING が 0 件 → early return（submit 走らない）
  *   - 同 weeklyKey の SUBMITTED batch → idempotent early return
+ *   - claimPendingAnchors が 0 件しか claim できなかった場合（並行 batch 競合）
+ *     → submit 走らずに PENDING で early return（§5.3.1 CAS）
  *   - submit 成功 → 全 anchor SUBMITTED
  *   - awaitConfirmation 成功 → CONFIRMED
  *   - awaitConfirmation 失敗 → FAILED + failureReason
  *   - Merkle root が決定論的（同入力 → 同 hex）
  *
- * BlockfrostClient / KmsSigner / SlotProvider はモック。
+ * BlockfrostClient / SlotProvider はモック。
+ * Phase 1 では `KmsSigner` を inject しないため、tsyringe へのモック登録も不要。
  */
 
 import "reflect-metadata";
@@ -22,7 +25,6 @@ import {
 } from "@/application/domain/anchor/anchorBatch/service";
 import { IContext } from "@/types/server";
 import { buildRoot } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
-import { generateCardanoKeypair } from "@/infrastructure/libs/cardano/keygen";
 
 // Cardano serialization は重いので、txBuilder を最小限モック
 const mockBuildAnchorTx = jest.fn();
@@ -95,7 +97,6 @@ describe("AnchorBatchService", () => {
     getNetwork: jest.Mock;
   };
   let mockSlotProvider: { getCurrentSlot: jest.Mock };
-  let mockKmsSigner: { signEd25519: jest.Mock; getPublicKey: jest.Mock };
 
   const ctx = {} as IContext;
 
@@ -154,10 +155,6 @@ describe("AnchorBatchService", () => {
     };
 
     mockSlotProvider = { getCurrentSlot: jest.fn().mockResolvedValue(1_000_000) };
-    mockKmsSigner = {
-      signEd25519: jest.fn().mockResolvedValue(new Uint8Array(64)),
-      getPublicKey: jest.fn().mockResolvedValue(new Uint8Array(32)),
-    };
 
     mockBuildAnchorTx.mockReturnValue({
       tx: { __mock: "Transaction" },
@@ -169,7 +166,6 @@ describe("AnchorBatchService", () => {
     container.register("AnchorBatchRepository", { useValue: mockRepository });
     container.register("BlockfrostClient", { useValue: mockBlockfrost });
     container.register("BlockfrostLatestSlotProvider", { useValue: mockSlotProvider });
-    container.register("KmsSigner", { useValue: mockKmsSigner });
     container.register("AnchorBatchService", { useClass: AnchorBatchService });
   });
 
@@ -219,9 +215,9 @@ describe("AnchorBatchService", () => {
   };
 
   function setupPending(opts: {
-    transactionAnchors?: typeof PENDING_TX[];
-    vcAnchors?: typeof PENDING_VC[];
-    userDidAnchors?: typeof PENDING_DID[];
+    transactionAnchors?: (typeof PENDING_TX)[];
+    vcAnchors?: (typeof PENDING_VC)[];
+    userDidAnchors?: (typeof PENDING_DID)[];
   }) {
     const tx = opts.transactionAnchors ?? [];
     const vc = opts.vcAnchors ?? [];
@@ -270,6 +266,38 @@ describe("AnchorBatchService", () => {
 
       expect(mockRepository.claimPendingAnchors).not.toHaveBeenCalled();
       expect(mockBlockfrost.submitTx).not.toHaveBeenCalled();
+    });
+
+    it("returns early when CAS claims 0 rows (concurrent batch race)", async () => {
+      // findPendingAnchors では行が見えたが、claimPendingAnchors の CAS で
+      // 別 worker に取られて 0 件しか claim できなかったケース。
+      // §5.3.1 の CAS 設計通り、submit は走らずに PENDING で early return する。
+      setupPending({
+        transactionAnchors: [PENDING_TX],
+        vcAnchors: [PENDING_VC],
+        userDidAnchors: [PENDING_DID],
+      });
+      // setupPending の後で claim だけ 0 件に上書き
+      mockRepository.claimPendingAnchors.mockResolvedValue({
+        transactionAnchors: 0,
+        vcAnchors: 0,
+        userDidAnchors: 0,
+      });
+
+      const service = container.resolve(AnchorBatchService);
+      const result = await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      expect(result.submitted).toBe(false);
+      expect(result.txHash).toBeNull();
+      expect(result.anchorCounts).toEqual({ userDid: 0, vc: 0, tx: 0 });
+      expect(result.status).toBe(AnchorStatus.PENDING);
+
+      // 並行 batch 競合では submit / markSubmitted / markFailed のいずれも走らない
+      expect(mockRepository.claimPendingAnchors).toHaveBeenCalledTimes(1);
+      expect(mockBlockfrost.submitTx).not.toHaveBeenCalled();
+      expect(mockRepository.markSubmitted).not.toHaveBeenCalled();
+      expect(mockRepository.markConfirmed).not.toHaveBeenCalled();
+      expect(mockRepository.markFailed).not.toHaveBeenCalled();
     });
 
     it("returns early (idempotent) when the same weeklyKey is already SUBMITTED", async () => {
@@ -393,6 +421,28 @@ describe("AnchorBatchService", () => {
         /YYYY-Www/,
       );
     });
+
+    it("uses CARDANO_AWAIT_CONFIRM_TIMEOUT_MS when set to a positive integer", async () => {
+      // env override が awaitConfirmation の第 2 引数に渡されることを確認。
+      setEnv("CARDANO_AWAIT_CONFIRM_TIMEOUT_MS", "60000");
+      setupPending({ transactionAnchors: [PENDING_TX] });
+
+      const service = container.resolve(AnchorBatchService);
+      await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      expect(mockBlockfrost.awaitConfirmation).toHaveBeenCalledWith(expect.any(String), 60000);
+    });
+
+    it("falls back to the default timeout when CARDANO_AWAIT_CONFIRM_TIMEOUT_MS is invalid", async () => {
+      setEnv("CARDANO_AWAIT_CONFIRM_TIMEOUT_MS", "not-a-number");
+      setupPending({ transactionAnchors: [PENDING_TX] });
+
+      const service = container.resolve(AnchorBatchService);
+      await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      // default は 5 * 60 * 1000 = 300_000ms
+      expect(mockBlockfrost.awaitConfirmation).toHaveBeenCalledWith(expect.any(String), 300_000);
+    });
   });
 
   describe("Merkle root determinism", () => {
@@ -405,12 +455,5 @@ describe("AnchorBatchService", () => {
       expect(Buffer.from(r1).equals(Buffer.from(r2))).toBe(true);
       expect(r1.length).toBe(32);
     });
-  });
-});
-
-describe("generateCardanoKeypair smoke (does not require KMS / network)", () => {
-  it("does not crash when used as a fallback for resolvePlatformSignKey", async () => {
-    // smoke test — we don't actually run it (ESM dynamic import is fragile in Jest)
-    expect(typeof generateCardanoKeypair).toBe("function");
   });
 });

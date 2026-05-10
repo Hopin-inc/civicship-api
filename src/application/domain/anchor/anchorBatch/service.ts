@@ -23,7 +23,6 @@ import {
   type DidOp,
 } from "@/infrastructure/libs/cardano/txBuilder";
 import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
-import { KmsSigner } from "@/infrastructure/libs/kms/kmsSigner";
 import { deriveCardanoKeypair } from "@/infrastructure/libs/cardano/keygen";
 import { IAnchorBatchRepository } from "@/application/domain/anchor/anchorBatch/data/interface";
 import {
@@ -34,8 +33,47 @@ import {
   PendingTransactionAnchor,
 } from "@/application/domain/anchor/anchorBatch/data/type";
 
-/** awaitConfirmation のデフォルト timeout（5 分）。 */
+/**
+ * `awaitConfirmation` のデフォルト timeout（5 分）。
+ *
+ * Cloud Run の default request timeout が 300s であるため、5 分待機 +
+ * tx build/submit を 1 リクエストでこなすと容易にタイムアウトする。
+ * 暫定対応として:
+ *   - 本 PR では Cloud Run timeout >= 600s を deploy gate とし、
+ *     `docs/operations/anchor-batch-deploy-checklist.md` に運用注意を明記する。
+ *   - `CARDANO_AWAIT_CONFIRM_TIMEOUT_MS` で env から override 可能とし、
+ *     prd では 4min、staging では 1min 等にチューニングできるようにする。
+ *
+ * TODO(Phase 1.5 / Phase 2): `runWeeklyBatch` を 2 段階
+ *   `submitBatch` (submit まで → SUBMITTED 永続化で即 return) と
+ *   `confirmBatch` (Cloud Tasks 等で別呼び出し、awaitConfirmation のみ)
+ *   に分離し、router にも 2 endpoint 追加することで fire-and-forget 化する。
+ *   設計参照: docs/report/did-vc-internalization.md §5.3.1。
+ */
 const DEFAULT_CONFIRM_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * `CARDANO_AWAIT_CONFIRM_TIMEOUT_MS` env から timeout(ms) を解決する。
+ *
+ * 不正値（NaN / 負数 / 非数値）は default にフォールバックする。
+ * Cloud Run 側の HTTP request timeout を超える値を設定すると外側で
+ * 503 になり markFailed まで到達できないため、運用ドキュメントで
+ * `Cloud Run timeout > CARDANO_AWAIT_CONFIRM_TIMEOUT_MS + 60s` の
+ * 余裕を持たせるよう周知する。
+ */
+function resolveAwaitConfirmTimeoutMs(): number {
+  const raw = process.env.CARDANO_AWAIT_CONFIRM_TIMEOUT_MS;
+  if (raw === undefined || raw === "") return DEFAULT_CONFIRM_TIMEOUT_MS;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    logger.warn(
+      "[AnchorBatchService] invalid CARDANO_AWAIT_CONFIRM_TIMEOUT_MS; falling back to default",
+      { raw, default: DEFAULT_CONFIRM_TIMEOUT_MS },
+    );
+    return DEFAULT_CONFIRM_TIMEOUT_MS;
+  }
+  return parsed;
+}
 
 /** Cardano slot を取得するための小さなインターフェース。 */
 export interface BlockfrostLatestSlotProvider {
@@ -72,8 +110,6 @@ export interface AnchorBatchServiceDeps {
   repository: IAnchorBatchRepository;
   blockfrost: BlockfrostClient;
   slotProvider: BlockfrostLatestSlotProvider;
-  /** Phase 1 では env から seed を直接渡す。Phase 2 で KmsSigner 経由に切替。 */
-  signer?: KmsSigner;
   /** 設定（platform 鍵 / KMS resource）。 */
   signerConfig: PlatformSignerConfig;
   /** confirmation 待機 timeout (ms)。テスト時短縮用。 */
@@ -84,10 +120,13 @@ export interface AnchorBatchServiceDeps {
 export class AnchorBatchService {
   /**
    * Phase 1 では env 上の raw seed (`CARDANO_PLATFORM_PRIVATE_KEY_HEX`) で
-   * 直接署名する。KmsSigner は将来の Phase 2 切替（KMS 署名）に向けた
-   * 配線を残すため inject だけしておく。実際に呼び出すのは Phase 2 で
-   * tx body hash を `KmsSigner.signEd25519` に渡し、vkey witness を
-   * 手動で attach する経路に差し替える時。
+   * 直接署名する。
+   *
+   * TODO(Phase 2): KMS 経由署名（vkey witness 手動 attach）を導入する PR で
+   *   `KmsSigner` を改めて `@inject("KmsSigner")` する。本 PR では実際に
+   *   利用しないため inject せず、DI 設計負債（`void this._signer` の
+   *   握りつぶし）を残さない方針とする。
+   *   設計参照: docs/report/did-vc-internalization.md §5.1.6 / §5.3.1。
    */
   constructor(
     @inject("AnchorBatchRepository")
@@ -96,12 +135,7 @@ export class AnchorBatchService {
     private readonly blockfrost: BlockfrostClient,
     @inject("BlockfrostLatestSlotProvider")
     private readonly slotProvider: BlockfrostLatestSlotProvider,
-    @inject("KmsSigner")
-    private readonly _signer: KmsSigner,
-  ) {
-    // _signer は Phase 1 では未使用（Phase 2 で利用）。lint 抑制のため void。
-    void this._signer;
-  }
+  ) {}
 
   /**
    * 週次バッチ実行。設計書 §5.3.1 のフローに沿う。
@@ -286,7 +320,7 @@ export class AnchorBatchService {
 
     // 8. awaitConfirmation
     try {
-      const tx = await this.blockfrost.awaitConfirmation(txHash, DEFAULT_CONFIRM_TIMEOUT_MS);
+      const tx = await this.blockfrost.awaitConfirmation(txHash, resolveAwaitConfirmTimeoutMs());
       await this.repository.markConfirmed(ctx, {
         batchId: weeklyKey,
         blockHeight: tx.block_height,
@@ -312,9 +346,7 @@ export class AnchorBatchService {
     // ordering for Merkle determinism, which is what JS's `<`/`>` give on
     // strings (UTF-16 code-unit compare). `String.localeCompare` would
     // introduce locale-dependent collation and break cross-host hashes.
-    const sorted = [...jwts]
-      .map((j) => j.vcJwt)
-      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    const sorted = [...jwts].map((j) => j.vcJwt).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     const root = buildRoot(sorted);
     return { root, count: sorted.length };
   }
@@ -474,14 +506,22 @@ export function resolvePlatformSignKey(config: PlatformSignerConfig): CSL.Privat
   }
   const seed = hexToBytes(config.privateKeyHex);
   if (seed.length !== 32) {
+    // length チェックで弾く前にも seed bytes を握っているため、確実に zeroize する。
+    seed.fill(0);
     throw new Error(
       `CARDANO_PLATFORM_PRIVATE_KEY_HEX must be 32 bytes (64 hex chars), got ${seed.length} bytes.`,
     );
   }
-  // deriveCardanoKeypair で CSL.PrivateKey を取得（network は anchoring に無関係だが
-  // 引数として要求されるため、config.network を渡す）。
-  const kp = deriveCardanoKeypair(seed, config.network);
-  return kp.cslPrivateKey;
+  try {
+    // deriveCardanoKeypair で CSL.PrivateKey を取得（network は anchoring に無関係だが
+    // 引数として要求されるため、config.network を渡す）。CSL.PrivateKey は seed bytes を
+    // 内部的にコピーするため、ここで zeroize しても署名は影響を受けない。
+    const kp = deriveCardanoKeypair(seed, config.network);
+    return kp.cslPrivateKey;
+  } finally {
+    // CSL に渡した直後にプロセス上から seed の痕跡を消す（メモリダンプ対策）。
+    seed.fill(0);
+  }
 }
 
 function hexToBytes(h: string): Uint8Array {

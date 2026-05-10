@@ -66,6 +66,18 @@ describe("POST /admin/anchor-batch/run", () => {
     expect(mockUseCase.runBatch).not.toHaveBeenCalled();
   });
 
+  it("returns 401 when the provided token has a different length (timing-safe pre-check)", async () => {
+    // expected = "secret-token" (12 bytes), provided = "secret" (6 bytes)
+    // crypto.timingSafeEqual は長さ違いで throw するため、長さ違いを先に
+    // 401 で短絡させる pre-check が必要。
+    const res = await request(app)
+      .post("/admin/anchor-batch/run")
+      .set("X-CloudScheduler-Token", "secret")
+      .send({});
+    expect(res.status).toBe(401);
+    expect(mockUseCase.runBatch).not.toHaveBeenCalled();
+  });
+
   it("returns 200 and the result when the token matches", async () => {
     const res = await request(app)
       .post("/admin/anchor-batch/run")

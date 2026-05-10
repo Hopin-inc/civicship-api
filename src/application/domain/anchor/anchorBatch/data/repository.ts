@@ -248,6 +248,11 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
   ): Promise<void> {
     const issuer = ctx.issuer ?? this.getIssuer();
     await issuer.internal(async (tx) => {
+      // NOTE: Prisma の interactive `$transaction` callback 内では
+      // 同一 `tx` を介した発行クエリは serialize される（接続が 1 本のため）。
+      // ここでの `Promise.all` は記述上の集約であって、実際の実行は
+      // 順次（transactionAnchor → vcAnchor → userDidAnchor の順）になる
+      // ことを意図している。並列性を期待した実装ではない点に注意。
       await Promise.all([
         args.transactionAnchorIds.length
           ? tx.transactionAnchor.updateMany({

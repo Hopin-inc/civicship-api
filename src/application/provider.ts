@@ -143,7 +143,6 @@ import {
 } from "@/application/domain/anchor/anchorBatch/service";
 import AnchorBatchUseCase from "@/application/domain/anchor/anchorBatch/usecase";
 import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
-import { KmsSigner } from "@/infrastructure/libs/kms/kmsSigner";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -415,13 +414,15 @@ export function registerProductionDependencies() {
   // ------------------------------
   // ⚓ Anchor (DID/VC internalization, Phase 1)
   // ------------------------------
-  // BlockfrostClient / KmsSigner は本 PR で初めて DI 登録される。
+  // BlockfrostClient は本 PR で初めて DI 登録される。
   // BlockfrostLatestSlotProvider は currentSlot 取得用の薄い factory
   // （/blocks/latest を直接叩く。本来は BlockfrostClient に追加すべき
   //  だが、本 PR では infrastructure/libs を読み取り専用扱いにしている
   //  ため、provider 側で動的 import → factory として配線する）。
+  // KmsSigner は Phase 2 で KMS 経由署名を導入する PR で登録する
+  //  （現時点では誰も `@inject("KmsSigner")` していないため、未使用 DI を
+  //  残さない方針で削除した）。
   container.registerSingleton("BlockfrostClient", BlockfrostClient);
-  container.registerSingleton("KmsSigner", KmsSigner);
   container.register<BlockfrostLatestSlotProvider>("BlockfrostLatestSlotProvider", {
     useFactory: () => createBlockfrostLatestSlotProvider(),
   });
