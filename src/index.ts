@@ -8,6 +8,7 @@ import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
 import anchorBatchRouter from "@/presentation/router/admin/anchorBatch";
+import didRouter from "@/presentation/router/did";
 import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
@@ -77,6 +78,11 @@ async function startServer() {
   );
   app.use("/line", lineRouter);
   app.use("/admin/anchor-batch", anchorBatchRouter);
+  // Phase 1 DID/VC public routes (§5.4):
+  //   /.well-known/did.json
+  //   /users/:userId/did.json
+  //   /vc/:vcId/inclusion-proof
+  app.use("/", didRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });

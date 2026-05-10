@@ -107,6 +107,8 @@ import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
+import { DidDocumentResolver } from "@/infrastructure/libs/did/didDocumentResolver";
+import { UserDidAnchorStoreStub } from "@/infrastructure/libs/did/userDidAnchorStoreStub";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
@@ -251,6 +253,13 @@ export function registerProductionDependencies() {
   container.register("DIDVCServerClient", { useClass: DIDVCServerClient });
   container.register("DIDIssuanceService", { useClass: DIDIssuanceService });
   container.register("DIDIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
+
+  // Phase 1 internalized DID/VC stack (§5.1.4 / §5.4).
+  // TODO(phase1-final): replace UserDidAnchorStoreStub with a Prisma-backed
+  // UserDidAnchorRepository once the schema PR (#1094) merges and the
+  // application service PR wires UserDidDocumentService.
+  container.register("UserDidAnchorStore", { useClass: UserDidAnchorStoreStub });
+  container.register("DidDocumentResolver", { useClass: DidDocumentResolver });
 
   container.register("VCIssuanceRequestUseCase", { useClass: VCIssuanceRequestUseCase });
   container.register("VCIssuanceRequestConverter", { useClass: VCIssuanceRequestConverter });
