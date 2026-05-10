@@ -259,11 +259,14 @@ function hexToBytes(h: string): Uint8Array {
     throw new Error(`hex string must have even length, got ${clean.length}`);
   }
   const out = new Uint8Array(clean.length / 2);
+  // substr は deprecated。slice + 厳密 hex 検証で `parseInt` の loose-parse 挙動
+  // (例: "0z" → 0) を回避（Gemini レビュー指摘）。
   for (let i = 0; i < out.length; i++) {
-    out[i] = parseInt(clean.substr(i * 2, 2), 16);
-    if (Number.isNaN(out[i])) {
+    const pair = clean.slice(i * 2, i * 2 + 2);
+    if (!/^[0-9a-fA-F]{2}$/.test(pair)) {
       throw new Error(`invalid hex char at offset ${i * 2}`);
     }
+    out[i] = parseInt(pair, 16);
   }
   return out;
 }

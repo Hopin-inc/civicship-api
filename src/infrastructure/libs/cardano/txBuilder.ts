@@ -122,11 +122,7 @@ function textAsChunkedList(s: string): CSL.TransactionMetadatum {
   return CSL.TransactionMetadatum.new_list(list);
 }
 
-/** 32-byte raw -> 64-char lowercase hex (no 0x prefix per §5.1.6). */
-function hashHex32(b: Uint8Array): string {
-  if (b.length !== 32) {
-    throw new Error(`expected 32 bytes for root hash, got ${b.length}`);
-  }
+function bytesToHex(b: Uint8Array): string {
   let s = "";
   for (let i = 0; i < b.length; i++) {
     s += b[i].toString(16).padStart(2, "0");
@@ -134,12 +130,12 @@ function hashHex32(b: Uint8Array): string {
   return s;
 }
 
-function bytesToHex(b: Uint8Array): string {
-  let s = "";
-  for (let i = 0; i < b.length; i++) {
-    s += b[i].toString(16).padStart(2, "0");
+/** 32-byte raw -> 64-char lowercase hex (no 0x prefix per §5.1.6). */
+function hashHex32(b: Uint8Array): string {
+  if (b.length !== 32) {
+    throw new Error(`expected 32 bytes for root hash, got ${b.length}`);
   }
-  return s;
+  return bytesToHex(b);
 }
 
 function buildOpMap(op: DidOp): CSL.TransactionMetadatum {
@@ -361,25 +357,57 @@ export function buildAnchorTx(
 
   const txb = CSL.TransactionBuilder.new(cfg);
 
-  // 2. Add UTXOs as inputs (we'll add all and let CIP-2 LargestFirst pick).
+  // 2. UTXO を input として追加（CIP-2 LargestFirst で選ばせる）
+  // 重要: マルチアセット UTXO の native token を Value に含めないと
+  // ValueNotConservedUTxO エラーで tx 構築失敗、または token 消失（burn）の可能性。
+  // Blockfrost の amount 配列は `[{ unit: "lovelace" | "<policy_hex 56><name_hex>", quantity: "..." }]`
+  // 形式なので全エントリを走査して Value/MultiAsset を完全構築する（Gemini レビュー指摘）。
   const issuerAddr = CSL.Address.from_bech32(input.changeAddressBech32);
   const utxoSet = CSL.TransactionUnspentOutputs.new();
   for (const u of input.utxos) {
     const lovelace = u.amount.find((a) => a.unit === "lovelace");
-    if (!lovelace) continue; // skip multi-asset-only utxos
+    // lovelace は CSL.Value 必須。0 以上（min-utxo 制約は CSL builder 側に任せる）
+    const lovelaceQty = lovelace ? lovelace.quantity : "0";
+    const value = CSL.Value.new(CSL.BigNum.from_str(lovelaceQty));
+
+    // 非 lovelace エントリを policy_id ごとにグルーピングして MultiAsset 構築
+    const nonLovelace = u.amount.filter((a) => a.unit !== "lovelace");
+    if (nonLovelace.length > 0) {
+      const ma = CSL.MultiAsset.new();
+      for (const asset of nonLovelace) {
+        // unit 形式: <policy_id (28 bytes / 56 hex chars)><asset_name (任意長 hex)>
+        if (asset.unit.length < 56) {
+          throw new Error(
+            `buildAnchorTx: invalid asset unit '${asset.unit}' (length < 56, expected policy_id + asset_name hex)`,
+          );
+        }
+        const policyHex = asset.unit.slice(0, 56);
+        const nameHex = asset.unit.slice(56);
+        const policyId = CSL.ScriptHash.from_hex(policyHex);
+        const assetName = CSL.AssetName.new(
+          Uint8Array.from(Buffer.from(nameHex, "hex")),
+        );
+        // 同じ policy_id に複数 asset がある場合は既存 Assets に追加
+        const existing = ma.get(policyId);
+        const assets = existing ?? CSL.Assets.new();
+        assets.insert(assetName, CSL.BigNum.from_str(asset.quantity));
+        ma.insert(policyId, assets);
+      }
+      value.set_multiasset(ma);
+    }
+
     const txInput = CSL.TransactionInput.new(
       CSL.TransactionHash.from_hex(u.tx_hash),
       u.output_index,
     );
-    const value = CSL.Value.new(CSL.BigNum.from_str(lovelace.quantity));
     const txOut = CSL.TransactionOutput.new(issuerAddr, value);
     utxoSet.add(CSL.TransactionUnspentOutput.new(txInput, txOut));
   }
   if (utxoSet.len() === 0) {
-    throw new Error(
-      "buildAnchorTx: no usable lovelace UTXOs (all skipped as multi-asset-only).",
-    );
+    throw new Error("buildAnchorTx: no UTXOs supplied.");
   }
+  // add_inputs_from に渡せば multiasset を含めてプランナーが change を計算する。
+  // change output に余剰 native token を載せて burn を防ぐ（add_change_if_needed が処理）。
   txb.add_inputs_from(utxoSet, CSL.CoinSelectionStrategyCIP2.LargestFirst);
 
   // 3. Attach metadata.

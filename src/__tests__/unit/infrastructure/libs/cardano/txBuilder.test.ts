@@ -322,7 +322,9 @@ describe("buildAnchorTx — sign + serialize end-to-end", () => {
     ).toThrow(/no UTXOs/);
   });
 
-  it("rejects when all UTXOs are multi-asset-only (no lovelace)", () => {
+  it("rejects an asset unit shorter than policy_id (28 bytes / 56 hex chars)", () => {
+    // §Gemini 指摘: マルチアセットを処理する際、Blockfrost の unit は
+    // <policy_id (56 hex)><asset_name (任意 hex)> 形式。56 未満は形式違反。
     const kp = deriveCardanoKeypair(new Uint8Array(32).fill(11), "preprod");
     expect(() =>
       buildAnchorTx({
@@ -330,7 +332,10 @@ describe("buildAnchorTx — sign + serialize end-to-end", () => {
           {
             tx_hash: "0".repeat(64),
             output_index: 0,
-            amount: [{ unit: "1234abcd.token", quantity: "1" }],
+            amount: [
+              { unit: "lovelace", quantity: "5000000" },
+              { unit: "1234abcd", quantity: "1" }, // length < 56 → reject
+            ],
           },
         ],
         params: PREPROD_PARAMS,
@@ -339,6 +344,35 @@ describe("buildAnchorTx — sign + serialize end-to-end", () => {
         changeAddressBech32: kp.addressBech32,
         currentSlot: 50_000_000,
       }),
-    ).toThrow(/no usable lovelace UTXOs/);
+    ).toThrow(/invalid asset unit/);
+  });
+
+  it("includes multi-asset native tokens in the Value (no burn)", () => {
+    // §Gemini 指摘の高優先度ケース: マルチアセット UTXO の native token が
+    // input Value に正しく含まれることを確認（含めないと CSL builder が
+    // ValueNotConservedUTxO を投げる、または token 消失する）。
+    const kp = deriveCardanoKeypair(new Uint8Array(32).fill(12), "preprod");
+    const policyHex = "a".repeat(56); // dummy 28-byte policy_id
+    const assetNameHex = "deadbeef"; // dummy 4-byte asset name
+    const unit = policyHex + assetNameHex;
+    expect(() =>
+      buildAnchorTx({
+        utxos: [
+          {
+            tx_hash: "0".repeat(64),
+            output_index: 0,
+            amount: [
+              { unit: "lovelace", quantity: "10000000" }, // 10 ADA, change 用に余裕を持たせる
+              { unit, quantity: "5" },
+            ],
+          },
+        ],
+        params: PREPROD_PARAMS,
+        signKey: kp.cslPrivateKey,
+        auxiliaryData: buildAuxiliaryData(makeMinimalInput()),
+        changeAddressBech32: kp.addressBech32,
+        currentSlot: 50_000_000,
+      }),
+    ).not.toThrow();
   });
 });
