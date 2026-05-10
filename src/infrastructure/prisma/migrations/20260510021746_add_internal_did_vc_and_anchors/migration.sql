@@ -156,6 +156,9 @@ CREATE INDEX "t_user_did_anchors_status_idx" ON "t_user_did_anchors"("status");
 CREATE INDEX "t_user_did_anchors_batch_id_idx" ON "t_user_did_anchors"("batch_id");
 
 -- CreateIndex
+CREATE INDEX "t_user_did_anchors_previous_anchor_id_idx" ON "t_user_did_anchors"("previous_anchor_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "t_status_list_credentials_list_key_key" ON "t_status_list_credentials"("list_key");
 
 -- CreateIndex

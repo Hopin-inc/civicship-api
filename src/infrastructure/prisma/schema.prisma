@@ -2208,6 +2208,9 @@ model UserDidAnchor {
   @@index([userId])
   @@index([status])
   @@index([batchId])
+  // §Gemini: DidVersionChain (自己参照) で nextAnchors を辿る
+  // `WHERE previous_anchor_id = ?` を高速化。Prisma は外部キーを自動 index しない
+  @@index([previousAnchorId])
   @@map("t_user_did_anchors")
 }
 
