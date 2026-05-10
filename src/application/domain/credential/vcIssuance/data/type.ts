@@ -61,8 +61,13 @@ export interface VcIssuanceRow {
   createdAt: Date;
   completedAt: Date | null;
   /**
-   * Set non-null when the VC has been revoked via the StatusList domain
-   * (Phase 1 step 9). Until then this is always null.
+   * Revocation timestamp.
+   *
+   * In Phase 1 (this PR / step 7+8) revocation is not yet wired: the
+   * StatusList domain that flips revocation bits and stamps this column
+   * lands in Phase 1 step 9. Until that step ships this field is
+   * **always `null`** — the schema column exists so the read path is
+   * stable, but no code path writes to it.
    */
   revokedAt: Date | null;
 }
