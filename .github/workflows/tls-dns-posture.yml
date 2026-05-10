@@ -1,0 +1,118 @@
+name: TLS / DNS Posture (civicship.app)
+
+# civicship.app の DNSSEC / CAA / HSTS preload 設定が誰かの誤操作で外れた瞬間
+# に検知する daily monitoring。設計書 §15.3 / §9.6 参照。
+#
+# 背景:
+#   did:web は HTTPS / DNS のセキュリティに依存する (DID Document の真正性が
+#   civicship.app の TLS 証明書 + DNS 解決の正しさで担保される)。DNSSEC が
+#   落ちる、CAA レコードが消える、HSTS preload が外れる、いずれも did:web
+#   verifier に対する攻撃面 (DNS hijack / 不正 CA 経由の TLS MITM) を広げる。
+#   設定変更は通常 Phase 0 で一度行ったあとは誰も触らないので、daily check
+#   で「気付いたら外れていた」を防ぐ。
+#
+# Issue 起票はしない:
+#   trivy-daily と違い、posture 監視は「直す対象が決まっている」(DNS / CDN
+#   設定をロールバックするだけ)。tracking issue を upsert する価値は薄く、
+#   その瞬間の Slack 通知で十分。
+#
+# 関連: docs/report/did-vc-internalization.md §15.3 / §9.6
+
+on:
+  schedule:
+    # 毎日 09:00 JST = 00:00 UTC. JST 業務開始時に「今朝の posture」が
+    # 直近の run としてある状態を作る。
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# 同時刻に schedule + workflow_dispatch が走るのを避ける。
+concurrency:
+  group: tls-dns-posture
+  cancel-in-progress: false
+
+jobs:
+  posture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      # 公開 DNS resolver 経由で civicship.app の DNSSEC DS レコードを引く。
+      # DS が空になっていると親ゾーン (.app) に署名チェーンが繋がらず DNSSEC
+      # が事実上 OFF。DS 公開を Phase 0 で行ったあとは常に存在するべき。
+      - name: DNSSEC DS record check
+        run: |
+          set -euo pipefail
+          ds=$(dig +short DS civicship.app @1.1.1.1)
+          if [ -z "$ds" ]; then
+            echo "::error::DNSSEC DS record missing for civicship.app"
+            exit 1
+          fi
+          echo "DS record: $ds"
+
+      # CAA レコードで「pki.goog (Google Trust Services) 以外で証明書を発行
+      # してはいけない」を宣言しているか確認。CAA が消えると任意の CA で
+      # 証明書発行できてしまう (= TLS MITM の入口になる)。
+      - name: CAA record check
+        run: |
+          set -euo pipefail
+          caa=$(dig CAA civicship.app +short @1.1.1.1)
+          if ! echo "$caa" | grep -q 'pki.goog'; then
+            echo "::error::CAA record does not include pki.goog for civicship.app"
+            echo "Got: $caa"
+            exit 1
+          fi
+          echo "CAA record: $caa"
+
+      # HSTS preload directive が response header に乗っているか確認。
+      # preload リスト登録自体は手動申請が必要だが、`preload` directive を
+      # 削ってしまうと Chrome 等の HSTS preload リストへの登録維持条件
+      # (https://hstspreload.org/) を満たさず将来的に外される。
+      - name: HSTS preload header check
+        run: |
+          set -euo pipefail
+          headers=$(curl -sI --max-time 10 https://civicship.app/)
+          hsts=$(echo "$headers" | grep -i 'strict-transport-security' || true)
+          if [ -z "$hsts" ]; then
+            echo "::error::strict-transport-security header missing on https://civicship.app/"
+            exit 1
+          fi
+          if ! echo "$hsts" | grep -qi 'preload'; then
+            echo "::error::HSTS header missing 'preload' directive"
+            echo "Got: $hsts"
+            exit 1
+          fi
+          echo "HSTS header: $hsts"
+
+      # いずれかの check が失敗した時だけ Slack に投げる。SLACK_WEBHOOK_INFRA
+      # secret が未登録の repo (= Phase 0 で webhook を設定する前) でも step
+      # が無声に skip するように `if` で webhook の有無を確認する。secret は
+      # context にそのまま埋め込めないので env 経由で渡す。
+      - name: Slack notify on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_INFRA: ${{ secrets.SLACK_WEBHOOK_INFRA }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_INFRA:-}" ]; then
+            echo "::warning::SLACK_WEBHOOK_INFRA not set; skipping Slack notify."
+            exit 0
+          fi
+          payload=$(cat <<EOF
+          {"text":":rotating_light: civicship.app TLS/DNS posture broken — see ${RUN_URL}"}
+          EOF
+          )
+          curl -sS -X POST "$SLACK_WEBHOOK_INFRA" \
+            -H 'Content-Type: application/json' \
+            -d "$payload"
