@@ -519,6 +519,7 @@ enum VcIssuanceStatus {
   PROCESSING
   COMPLETED
   FAILED
+  REVOKED
 
   @@map("VCIssuanceStatus")
 }
@@ -2216,6 +2217,11 @@ model UserDidAnchor {
   // §Gemini: DidVersionChain (自己参照) で nextAnchors を辿る
   // `WHERE previous_anchor_id = ?` を高速化。Prisma は外部キーを自動 index しない
   @@index([previousAnchorId])
+  // Phase 1.5 perf #1104: ユーザー単位で最新 anchor を取得する経路
+  // (`WHERE user_id = ? ORDER BY created_at DESC LIMIT 1`) を高速化。
+  // 単独の userId index では sort 段階が seq になり得るため、複合 index で
+  // index-only scan を planner に選ばせる。
+  @@index([userId, createdAt(sort: Desc)])
   @@map("t_user_did_anchors")
 }
 

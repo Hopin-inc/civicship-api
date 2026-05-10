@@ -1247,6 +1247,7 @@ Enum VcIssuanceStatus {
   PROCESSING
   COMPLETED
   FAILED
+  REVOKED
 }
 
 Enum VcFormat {

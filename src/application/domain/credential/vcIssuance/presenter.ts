@@ -44,6 +44,14 @@ function toGqlStatus(status: VcIssuanceRow["status"]): GqlVcIssuance["status"] {
       return "COMPLETED";
     case "FAILED":
       return "FAILED";
+    case "REVOKED":
+      // Phase 1.5 schema PR: Prisma 側に `REVOKED` を追加した時点では GraphQL
+      // 列挙はまだ更新しない。実際の `REVOKED` 書込みは後続の
+      // `feat/did-revoke-mutation` PR で行い、その PR で GraphQL enum 拡張
+      // と `revokedAt` の参照経路を整える。それまでは presenter が新しい
+      // Prisma 値を受け取った場合に備えて防御的に COMPLETED に丸める
+      // (revoke 後でも VC 本体の発行ライフサイクルは終了しているため)。
+      return "COMPLETED";
     default: {
       // Exhaustiveness guard — if a new state is added to the row union
       // and nothing here handles it, TypeScript flags this branch.
