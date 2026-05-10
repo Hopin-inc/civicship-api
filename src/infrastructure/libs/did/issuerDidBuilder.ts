@@ -206,14 +206,23 @@ export function base58btcEncode(bytes: Uint8Array): string {
  * (and only when) the underlying key version rotates — which is exactly the
  * boundary callers need for the §G overlap shape.
  *
- * Falls back to `"key-1"` if the resource name doesn't end with a version
- * (we shouldn't hit this in production because `assertKeyResourceName`
- * enforces the suffix in the signer, but DID-Document construction runs in
- * paths that may have validated the input differently — defensive only).
+ * Throws on missing suffix: silently defaulting to `"key-1"` would produce a
+ * misleading verificationMethod id that doesn't track the underlying key,
+ * breaking §G rotation overlap and §F audit trail. The signer's
+ * `assertKeyResourceName` already enforces the same suffix, so callers that
+ * round-trip through KmsSigner cannot trip this; the duplicated guard exists
+ * because the builder is also reachable from non-signer code paths.
  */
 function keyVersionToFragment(kmsKeyResourceName: string): string {
   const m = /\/cryptoKeyVersions\/(\d+)$/.exec(kmsKeyResourceName);
-  return `key-${m ? m[1] : "1"}`;
+  if (!m) {
+    throw new Error(
+      `Invalid KMS key resource name: "${kmsKeyResourceName}". ` +
+        "Expected to end with /cryptoKeyVersions/<n> so the DID Document " +
+        "verificationMethod id (#key-<n>) can track key rotation (§G).",
+    );
+  }
+  return `key-${m[1]}`;
 }
 
 function hexToBytes(hex: string): Uint8Array {
