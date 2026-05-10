@@ -7,7 +7,6 @@ import * as IdentityLoaders from "@/application/domain/account/identity/controll
 import * as MembershipHistoryLoaders from "@/application/domain/account/membership/history/controller/dataloader";
 import { createDidIssuanceRequestsByUserIdLoader } from "@/application/domain/account/identity/didIssuanceRequest/controller/dataloader";
 import { createNftWalletByUserIdLoader } from "@/application/domain/account/nft-wallet/controller/dataloader";
-import { createUserByUserDidAnchorLoader } from "@/application/domain/account/userDid/controller/dataloader";
 
 export function createAccountLoaders(prisma: PrismaClient) {
   return {
@@ -38,7 +37,5 @@ export function createAccountLoaders(prisma: PrismaClient) {
       MembershipHistoryLoaders.createMembershipStatusHistoriesByMembershipLoader(prisma),
 
     nftWalletByUserId: createNftWalletByUserIdLoader(prisma),
-
-    userByUserDidAnchor: createUserByUserDidAnchorLoader(prisma),
   };
 }

@@ -8,12 +8,24 @@
  * the reads, `IsAdmin` for the issue mutation).
  *
  * Phase 1.5 addition: field resolvers for `VcIssuance.user` and
- * `VcIssuance.evaluation` — both resolve via per-request DataLoaders
- * registered as `ctx.loaders.userByVcIssuance` and
- * `ctx.loaders.evaluationByVcIssuance`. `userId` is always present on
- * the parent (`ID!`) while `evaluationId` is optional, so the
- * evaluation resolver short-circuits to `null` rather than handing the
- * loader an undefined key.
+ * `VcIssuance.evaluation` — both resolve via the **shared** per-request
+ * DataLoaders registered in `dataloader/domain/account.ts` /
+ * `dataloader/domain/experience.ts`:
+ *
+ *   - `VcIssuance.user`        → `ctx.loaders.user`
+ *   - `VcIssuance.evaluation`  → `ctx.loaders.evaluation`
+ *
+ * 共通 loader を使う設計上の理由は `UserDidResolver` と同じで、
+ * `userId → GqlUser` / `evaluationId → GqlEvaluation` はリクエスト内で
+ * 他ドメインの field resolver と相乗りするのが N+1 防止上正しいため。
+ * 専用 loader を 3 本切ると同一 key への重複バッチが発生し、
+ * SonarCloud duplicate-block の温床になる。
+ *
+ * `userId` は `VcIssuance` 型上で `ID!` だが、user 行が削除されている
+ * 履歴行はあり得るので schema 側を `User` (nullable) に揃え、
+ * `ctx.loaders.user` の `null` 戻りをそのまま流す。
+ * `evaluationId` は optional FK なので、`null` のときは loader を呼ばず
+ * 即 `null` を返す (DataLoader に undefined / null を渡さない契約)。
  */
 
 import { inject, injectable } from "tsyringe";
@@ -47,12 +59,10 @@ export default class VcIssuanceResolver {
 
   VcIssuance = {
     user: (parent: GqlVcIssuance, _: unknown, ctx: IContext) => {
-      return ctx.loaders.userByVcIssuance.load(parent.userId);
+      return ctx.loaders.user.load(parent.userId);
     },
     evaluation: (parent: GqlVcIssuance, _: unknown, ctx: IContext) => {
-      return parent.evaluationId
-        ? ctx.loaders.evaluationByVcIssuance.load(parent.evaluationId)
-        : null;
+      return parent.evaluationId ? ctx.loaders.evaluation.load(parent.evaluationId) : null;
     },
   };
 }

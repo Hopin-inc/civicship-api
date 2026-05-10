@@ -19,9 +19,14 @@ type UserDidAnchor {
   createdAt: Datetime!
   """
   この DID anchor の所有ユーザー。
-  Field resolver + DataLoader 経由で解決される (§5.2.1 / Phase 1.5)。
+  Field resolver + 共通 `ctx.loaders.user` (DataLoader) 経由で解決される
+  (§5.2.1 / Phase 1.5)。
+
+  ユーザーが論理削除 / hard-delete されても anchor 行は履歴として残る
+  ため、参照先 user が存在しないケースでは `null` を返す
+  (deletion-safe; nullable)。
   """
-  user: User!
+  user: User
 }
 
 """

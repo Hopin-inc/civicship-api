@@ -2,14 +2,23 @@
  * VcIssuance field-resolver / DataLoader integration test (Phase 1.5).
  *
  * Validates that:
- *   1. `VcIssuance.user` is resolved via the per-request DataLoader
- *      registered as `ctx.loaders.userByVcIssuance`.
- *   2. `VcIssuance.evaluation` is resolved via
- *      `ctx.loaders.evaluationByVcIssuance` when `evaluationId` is set,
- *      and short-circuits to `null` when it is `null`.
+ *   1. `VcIssuance.user` is resolved via the **shared** per-request
+ *      DataLoader `ctx.loaders.user` (the same loader used by every
+ *      other `userId → GqlUser` field resolver in the codebase).
+ *   2. `VcIssuance.evaluation` is resolved via `ctx.loaders.evaluation`
+ *      when `evaluationId` is set, and short-circuits to `null` when it
+ *      is `null`.
  *   3. **N+1 prevention** — querying 10 VcIssuance rows under
  *      `vcIssuancesByUser` triggers exactly **one** call to the user
- *      loader (which batches all 10 user ids into a single fetch).
+ *      loader's batch fn (which batches all 10 user ids into a single
+ *      fetch).
+ *
+ * Sharing `ctx.loaders.user` / `ctx.loaders.evaluation` (instead of
+ * dedicated `userByVcIssuance` / `evaluationByVcIssuance` factories) is
+ * the post-PR-#1113 design — it lets DataLoader coalesce same-tick
+ * `.load()` calls across multiple field resolvers into a single batch
+ * and removes the duplicated `prisma.user.findMany(...)` /
+ * `prisma.evaluation.findMany(...)` blocks flagged by SonarCloud.
  *
  * The usecase is mocked via tsyringe (Strategy A repository) so the
  * test isolates the resolver+loader wiring from any DB dependency.
@@ -21,23 +30,21 @@ import DataLoader from "dataloader";
 import { registerProductionDependencies } from "@/application/provider";
 import { createApolloTestServer } from "@/__tests__/helper/test-server";
 import request from "supertest";
-import path from "path";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
-jest.mock("@/presentation/graphql/scalar", () => ({
-  __esModule: true,
-  default: {},
-}));
-
-jest.mock("@/presentation/graphql/schema/esmPath", () => ({
-  getESMDirname: jest.fn(() =>
-    path.resolve(__dirname, "../../../../src/presentation/graphql/schema"),
-  ),
-}));
-
-jest.mock("@/application/domain/utils", () => ({
-  getCurrentUserId: jest.fn(() => "user-1"),
-}));
+// Mock factories are required from inside `jest.mock` callbacks because
+// Jest hoists `jest.mock` calls above ES `import`s — outer-scope symbols
+// (other than ones prefixed with `mock`) are not yet initialized when
+// the factory runs. `require()` resolves lazily so this is safe.
+jest.mock("@/presentation/graphql/scalar", () =>
+  jest.requireActual("@/__tests__/helper/graphql-test-mocks").scalarMockFactory(),
+);
+jest.mock("@/presentation/graphql/schema/esmPath", () =>
+  jest.requireActual("@/__tests__/helper/graphql-test-mocks").esmPathMockFactory(__dirname),
+);
+jest.mock("@/application/domain/utils", () =>
+  jest.requireActual("@/__tests__/helper/graphql-test-mocks").currentUserMockFactory("user-1"),
+);
 
 const vcIssuanceWithUserQuery = /* GraphQL */ `
   query ($id: ID!) {
@@ -93,7 +100,7 @@ const mockVcIssuanceUseCase = {
   issueVc: jest.fn(),
 };
 
-describe("VcIssuance field resolvers (DataLoader)", () => {
+describe("VcIssuance field resolvers (shared loaders)", () => {
   beforeAll(() => {
     container.reset();
     registerProductionDependencies();
@@ -105,7 +112,7 @@ describe("VcIssuance field resolvers (DataLoader)", () => {
     jest.clearAllMocks();
   });
 
-  it("resolves VcIssuance.user via the userByVcIssuance loader", async () => {
+  it("resolves VcIssuance.user via ctx.loaders.user", async () => {
     mockVcIssuanceUseCase.viewVcIssuance.mockResolvedValueOnce(
       makeFakeVc({ id: "vc-1", userId: "user-1" }),
     );
@@ -117,8 +124,8 @@ describe("VcIssuance field resolvers (DataLoader)", () => {
       currentUser: { id: "user-1" },
       issuer,
       loaders: {
-        userByVcIssuance: { load: userLoad },
-        evaluationByVcIssuance: { load: evaluationLoad },
+        user: { load: userLoad },
+        evaluation: { load: evaluationLoad },
       },
     });
 
@@ -138,7 +145,7 @@ describe("VcIssuance field resolvers (DataLoader)", () => {
     expect(evaluationLoad).not.toHaveBeenCalled();
   });
 
-  it("resolves VcIssuance.evaluation when evaluationId is set", async () => {
+  it("resolves VcIssuance.evaluation via ctx.loaders.evaluation when evaluationId is set", async () => {
     mockVcIssuanceUseCase.viewVcIssuance.mockResolvedValueOnce(
       makeFakeVc({ id: "vc-1", userId: "user-1", evaluationId: "eval-1" }),
     );
@@ -150,8 +157,8 @@ describe("VcIssuance field resolvers (DataLoader)", () => {
       currentUser: { id: "user-1" },
       issuer,
       loaders: {
-        userByVcIssuance: { load: userLoad },
-        evaluationByVcIssuance: { load: evaluationLoad },
+        user: { load: userLoad },
+        evaluation: { load: evaluationLoad },
       },
     });
 
@@ -169,6 +176,37 @@ describe("VcIssuance field resolvers (DataLoader)", () => {
     expect(evaluationLoad).toHaveBeenCalledWith("eval-1");
   });
 
+  it("returns null for VcIssuance.user when the user has been deleted", async () => {
+    // schema が `user: User` (nullable) になっているので、loader が null を
+    // 返した場合 GraphQL 側で例外を投げず、そのまま `null` が伝搬する。
+    mockVcIssuanceUseCase.viewVcIssuance.mockResolvedValueOnce(
+      makeFakeVc({ id: "vc-1", userId: "user-1" }),
+    );
+
+    const userLoad = jest.fn().mockResolvedValue(null);
+    const evaluationLoad = jest.fn().mockResolvedValue(null);
+
+    const app = await createApolloTestServer({
+      currentUser: { id: "user-1" },
+      issuer,
+      loaders: {
+        user: { load: userLoad },
+        evaluation: { load: evaluationLoad },
+      },
+    });
+
+    const res = await request(app)
+      .post("/graphql")
+      .send({ query: vcIssuanceWithUserQuery, variables: { id: "vc-1" } });
+
+    expect(res.body.errors).toBeUndefined();
+    expect(res.body.data.vcIssuance).toMatchObject({
+      id: "vc-1",
+      user: null,
+      evaluation: null,
+    });
+  });
+
   it("batches 10 user lookups into a single underlying fetch (N+1 prevention)", async () => {
     // 10 distinct VC rows, each pointing to its own user. The expectation
     // is that a real DataLoader collapses the 10 `.load()` calls from the
@@ -184,14 +222,14 @@ describe("VcIssuance field resolvers (DataLoader)", () => {
     const userBatch = jest.fn(async (ids: readonly string[]) =>
       ids.map((id) => ({ id, name: `User ${id}` })),
     );
-    const userByVcIssuance = new DataLoader<string, { id: string; name: string }>(userBatch);
+    const userLoader = new DataLoader<string, { id: string; name: string }>(userBatch);
 
     const app = await createApolloTestServer({
       currentUser: { id: "user-1" },
       issuer,
       loaders: {
-        userByVcIssuance,
-        evaluationByVcIssuance: { load: jest.fn() },
+        user: userLoader,
+        evaluation: { load: jest.fn() },
       },
     });
 
