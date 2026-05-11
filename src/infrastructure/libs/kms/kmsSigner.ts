@@ -71,8 +71,10 @@ const RETRYABLE_HTTP_STATUSES = new Set<number>([429, 500, 502, 503, 504]);
  *
  * `listCryptoKeyVersions` is consumed by `KmsSigner.listActiveIssuerKeys`
  * (§G overlap multi-key, Phase 2 PR #1100) — it returns one entry per
- * version with its KMS lifecycle `state`, which the §5.4.3 multi-key
- * Document needs to distinguish ENABLED (signs) from DISABLED (verify-only).
+ * version with its KMS lifecycle `state`. Response shape follows the
+ * Google gax convention `[results, nextRequest|null, rawResponse]`:
+ * `nextRequest === null` (or missing `pageToken`) indicates the final
+ * page; otherwise the caller must re-issue with the carried `pageToken`.
  */
 export interface KmsClientLike {
   asymmetricSign(request: {
@@ -83,8 +85,14 @@ export interface KmsClientLike {
   listCryptoKeyVersions?(request: {
     parent: string;
     filter?: string;
+    pageToken?: string;
+    pageSize?: number;
   }): Promise<
-    [Array<{ name?: string | null; state?: string | null }>, ...unknown[]]
+    [
+      Array<{ name?: string | null; state?: string | null }>,
+      { pageToken?: string | null } | null | undefined,
+      ...unknown[],
+    ]
   >;
 }
 
@@ -195,6 +203,17 @@ export class KmsSigner {
    * suffix — e.g.
    *   `projects/p/locations/global/keyRings/r/cryptoKeys/civicship-issuer-vc`
    *
+   * **Pagination**: `listCryptoKeyVersions` returns at most 100 entries
+   * per page (KMS default). §9.1.3 mandates that DISABLED keys be kept
+   * forever, so a long-lived keyring will eventually exceed one page.
+   * We follow `nextRequest.pageToken` until exhausted before returning;
+   * skipping any page would silently truncate the DID Document.
+   *
+   * **Parallelism**: per-version `getPublicKey` calls are issued via
+   * `Promise.all` after the version list is fully drained. Each call is
+   * independent (one KMS round-trip, ~50-150ms p50) so serial awaiting
+   * would add `O(versions × RTT)` latency on cache-cold paths.
+   *
    * Phase 2 production wiring: real call to `listCryptoKeyVersions` +
    * per-version `getPublicKey`. Phase 1 callers do NOT invoke this
    * method (single-active-key mode); the §G overlap path is being
@@ -232,32 +251,47 @@ export class KmsSigner {
     }
     const listFn = this.client.listCryptoKeyVersions.bind(this.client);
 
-    const [versions] = await this.withRetry(() =>
-      listFn({
-        parent: cryptoKeyParent,
-        // KMS filter syntax: `state = ENABLED OR state = DISABLED`.
-        // Cheaper than fetching all versions and filtering client-side
-        // when the key ring has long rotation history.
-        filter: "state = ENABLED OR state = DISABLED",
-      }),
-    );
+    // -----------------------------------------------------------------
+    // Drain every page first. `nextRequest.pageToken` carries the cursor
+    // for the next call — KMS returns null/undefined for the final page.
+    // -----------------------------------------------------------------
+    const allVersions: Array<{ name?: string | null; state?: string | null }> = [];
+    let pageToken: string | undefined;
+    do {
+      const [page, nextRequest] = await this.withRetry(() =>
+        listFn({
+          parent: cryptoKeyParent,
+          // KMS filter syntax: `state = ENABLED OR state = DISABLED`.
+          // Cheaper than fetching all versions and filtering client-side
+          // when the key ring has long rotation history.
+          filter: "state = ENABLED OR state = DISABLED",
+          pageToken,
+        }),
+      );
+      allVersions.push(...page);
+      pageToken = nextRequest?.pageToken ?? undefined;
+    } while (pageToken);
 
-    const out: IssuerKeyMaterial[] = [];
-    for (const v of versions) {
+    // Defensive client-side filter — the server-side `filter` should
+    // already exclude DESTROY_SCHEDULED / DESTROYED, but a SDK that
+    // ignores the filter must not produce a wire Document containing
+    // an unverifiable key (§9.1.3).
+    const valid: Array<{ name: string; state: IssuerKeyState }> = [];
+    for (const v of allVersions) {
       if (!v.name || !v.state) continue;
-      // Defensive client-side filter — the server-side `filter` should
-      // already exclude DESTROY_SCHEDULED / DESTROYED, but a SDK that
-      // ignores the filter must not produce a wire Document containing
-      // an unverifiable key (§9.1.3).
       if (v.state !== "ENABLED" && v.state !== "DISABLED") continue;
-      const publicKey = await this.getPublicKey(v.name);
-      out.push({
-        kmsKeyResourceName: v.name,
-        publicKey,
-        state: v.state as IssuerKeyState,
-      });
+      valid.push({ name: v.name, state: v.state });
     }
-    return out;
+
+    // Fan-out `getPublicKey` in parallel: each call is independent and
+    // the latency floor is one KMS round-trip per key, not (key × RTT).
+    return Promise.all(
+      valid.map(async (v) => ({
+        kmsKeyResourceName: v.name,
+        publicKey: await this.getPublicKey(v.name),
+        state: v.state,
+      })),
+    );
   }
 
   /**

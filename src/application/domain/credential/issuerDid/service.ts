@@ -220,6 +220,11 @@ export default class IssuerDidService {
    * repository contract pins to `activatedAt ASC`). Stable ordering means
    * `verificationMethod` indices stay constant across re-renders.
    *
+   * **Parallelism**: per-row `fetchPublicKeyHex` calls are issued via
+   * `Promise.all`. Cache hits resolve synchronously; cache misses each
+   * fire one KMS round-trip and parallelizing them keeps cold-start
+   * latency at `O(1 × RTT)` rather than `O(rows × RTT)`.
+   *
    * Design references:
    *   docs/report/did-vc-internalization.md §5.4.3 line 1126-1142
    *   docs/report/did-vc-internalization.md §9.1.2 (24h overlap)
@@ -235,22 +240,23 @@ export default class IssuerDidService {
       return null;
     }
 
-    const activeKeys: IssuerActiveKey[] = [];
-    for (const row of rows) {
-      const publicKeyHex = await this.fetchPublicKeyHex(row.kmsKeyResourceName);
-      // Reuse the same hex → bytes path as `bytesToHex`'s inverse — we
-      // already encoded bytes → hex in the cache; here we decode hex →
-      // bytes for JWK encoding. Keeping the cache value in hex (rather
-      // than as Uint8Array) lets the legacy `buildIssuerDidDocument`
-      // path remain unchanged; the round-trip cost is negligible
-      // (32 bytes) versus invalidating the existing cache shape.
-      const publicKeyBytes = hexToBytes(publicKeyHex);
-      activeKeys.push({
-        kid: kmsResourceNameToKid(row.kmsKeyResourceName),
-        jwk: encodeEd25519Jwk(publicKeyBytes),
-        enabled: row.deactivatedAt === null,
-      });
-    }
+    const activeKeys: IssuerActiveKey[] = await Promise.all(
+      rows.map(async (row) => {
+        const publicKeyHex = await this.fetchPublicKeyHex(row.kmsKeyResourceName);
+        // Reuse the same hex → bytes path as `bytesToHex`'s inverse — we
+        // already encoded bytes → hex in the cache; here we decode hex →
+        // bytes for JWK encoding. Keeping the cache value in hex (rather
+        // than as Uint8Array) lets the legacy `buildIssuerDidDocument`
+        // path remain unchanged; the round-trip cost is negligible
+        // (32 bytes) versus invalidating the existing cache shape.
+        const publicKeyBytes = hexToBytes(publicKeyHex);
+        return {
+          kid: kmsResourceNameToKid(row.kmsKeyResourceName),
+          jwk: encodeEd25519Jwk(publicKeyBytes),
+          enabled: row.deactivatedAt === null,
+        };
+      }),
+    );
 
     return buildMultiKeyIssuerDidDocument(activeKeys);
   }
@@ -332,6 +338,13 @@ function bytesToHex(bytes: Uint8Array): string {
  * cached hex back into raw bytes for JWK encoding. Tolerant of an
  * optional `0x` prefix on the off chance a caller hand-feeds one in
  * (the cache itself never stores a prefix).
+ *
+ * Validates each pair: `Number.parseInt(..., 16)` returns `NaN` for
+ * non-hex characters which would silently coerce to `0` in a
+ * `Uint8Array` and produce a wrong-key disaster downstream. Explicit
+ * `NaN` check surfaces the bad input immediately. (Gemini review on
+ * PR #1120: matches the inline regex check in `issuerDidBuilder.ts`'s
+ * private `hexToBytes`.)
  */
 function hexToBytes(hex: string): Uint8Array {
   const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
@@ -340,7 +353,11 @@ function hexToBytes(hex: string): Uint8Array {
   }
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++) {
-    out[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+    const value = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+    if (Number.isNaN(value)) {
+      throw new Error(`hex string contains non-hex character at offset ${i * 2}`);
+    }
+    out[i] = value;
   }
   return out;
 }
