@@ -55,6 +55,17 @@
  */
 export interface JwtSigner {
   /**
+   * JWS algorithm identifier stamped on the JWT header's `alg` field.
+   *
+   * Civicship runs EdDSA / Ed25519 (§5.2.2, RFC 8037), but pinning it
+   * to the signer instance instead of the call site means the eventual
+   * KMS swap (or any future migration to ES256K / etc.) flips one
+   * implementation property rather than every caller. Service-layer
+   * code MUST read `signer.alg` rather than hard-coding the string.
+   */
+  readonly alg: string;
+
+  /**
    * Produce the signature segment (third JWT component) for the supplied
    * signing input. The signing input is the ASCII string
    * `${headerB64u}.${payloadB64u}` exactly — implementations MUST NOT

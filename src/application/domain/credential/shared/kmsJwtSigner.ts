@@ -46,6 +46,23 @@ import type { JwtSigner } from "@/application/domain/credential/shared/jwtSigner
  */
 export class KmsJwtSigner implements JwtSigner {
   /**
+   * JWS algorithm identifier. Symmetric with the other throwing
+   * getters on this placeholder — accessed at JWT-build time, so
+   * fails fast with the same diagnostic the moment something tries
+   * to use the unwired KMS signer in Phase 1.
+   *
+   * Implemented as a getter so the throw fires on *access*, not on
+   * instantiation, mirroring `kid` / `sign`. Phase 2 will replace this
+   * with a literal `"EdDSA"` (the KMS key is Ed25519 per §5.1.1).
+   */
+  get alg(): string {
+    throw new Error(
+      "KmsJwtSigner.alg: not implemented — Phase 0-2 PoC pending. " +
+        "See docs/report/did-vc-internalization.md §16.",
+    );
+  }
+
+  /**
    * Property is declared (and read by TypeScript at compile time) so
    * the class structurally satisfies `JwtSigner`. Accessing it throws
    * — symmetric with `sign()` — so a misconfigured DI binding fails

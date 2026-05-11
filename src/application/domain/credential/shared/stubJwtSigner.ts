@@ -1,14 +1,16 @@
 /**
  * `StubJwtSigner` — Phase 1 placeholder implementation of `JwtSigner`.
  *
- * Emits a deterministic, non-base64url marker as the JWT signature
+ * Emits a deterministic, non-signature marker as the JWT signature
  * segment so:
  *
  *   1. Tests can assert "this is a stub VC" with a single string
  *      comparison and without false positives against real signatures.
- *   2. Verifiers MUST reject it — it is not a valid base64url string
- *      (contains `-`), which is exactly what we want until the KMS
- *      signer lands.
+ *   2. Verifiers MUST reject it — it is not a valid Ed25519 signature
+ *      (wrong length and format), which is exactly what we want until
+ *      the KMS signer lands. (The `-` chars in the marker are
+ *      base64url-legal, so the failure mode is "signature does not
+ *      verify", not "signature is not parseable".)
  *   3. The grep target is unique enough to find every stub site once
  *      KMS replaces the stub in Phase 2.
  *
@@ -50,10 +52,18 @@ export const STUB_SIGNATURE_STATUS = "stub-status-list-not-signed";
  * marker and a fixed `kid`. Stateless — safe to register as a singleton.
  *
  * `sign()` ignores the signing input deliberately; production verifiers
- * would reject the output anyway because it is not a valid base64url
- * Ed25519 signature.
+ * would reject the output anyway because it is not a valid Ed25519
+ * signature.
  */
 export class StubJwtSigner implements JwtSigner {
+  /**
+   * JWS algorithm advertised on the JWT header. Phase 1 runs EdDSA
+   * (Ed25519, RFC 8037) so the header reflects the algorithm the Phase
+   * 2 KMS signer will eventually produce — the *signature value* is the
+   * only piece that changes when the stub is replaced.
+   */
+  readonly alg: string = "EdDSA";
+
   /**
    * `kid` is read by the service when assembling the JWT header. Phase 1
    * stamps `${issuerDid}#stub` so the verifier path can route to the
