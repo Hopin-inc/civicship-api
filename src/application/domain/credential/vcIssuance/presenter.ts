@@ -25,6 +25,26 @@
 
 import type { GqlVcIssuance } from "@/types/graphql";
 import type { VcIssuanceRow } from "@/application/domain/credential/vcIssuance/data/type";
+import type { InclusionProof } from "@/application/domain/credential/vcIssuance/service";
+
+/**
+ * Wire shape for `GET /vc/:vcId/inclusion-proof` (§5.4.6).
+ *
+ * Mirrors the service-layer `InclusionProof` 1:1 today; declared here
+ * separately so HTTP-shape changes (e.g. snake_case rename, additional
+ * verification metadata) can land in this file without touching the
+ * service contract.
+ */
+export interface InclusionProofResponse {
+  vcId: string;
+  vcJwt: string;
+  vcAnchorId: string;
+  rootHash: string;
+  chainTxHash: string;
+  proofPath: string[];
+  leafIndex: number;
+  blockHeight: number | null;
+}
 
 /**
  * Map the persistence-layer status (Prisma `VcIssuanceStatus`) to the
@@ -102,6 +122,26 @@ const VcIssuancePresenter = {
       statusListCredential: row.statusListCredential,
       revokedAt: row.revokedAt,
       createdAt: row.createdAt,
+    };
+  },
+
+  /**
+   * §5.4.6 — wire shape for the `/vc/:vcId/inclusion-proof` endpoint.
+   *
+   * The transformation is a pure passthrough today; kept as a presenter
+   * call so future schema migrations (e.g. snake_case for HTTP) do not
+   * leak into the service.
+   */
+  toInclusionProofResponse(proof: InclusionProof): InclusionProofResponse {
+    return {
+      vcId: proof.vcId,
+      vcJwt: proof.vcJwt,
+      vcAnchorId: proof.vcAnchorId,
+      rootHash: proof.rootHash,
+      chainTxHash: proof.chainTxHash,
+      proofPath: proof.proofPath,
+      leafIndex: proof.leafIndex,
+      blockHeight: proof.blockHeight,
     };
   },
 };

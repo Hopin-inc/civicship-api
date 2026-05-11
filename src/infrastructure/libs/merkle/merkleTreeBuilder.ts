@@ -100,8 +100,7 @@ export function getProof(leafIds: string[], idx: number): Uint8Array[] {
     const isLeft = cursor % 2 === 0;
     const siblingIdx = isLeft ? cursor + 1 : cursor - 1;
     // Odd-tail: when there is no right sibling at this level, duplicate self.
-    const sibling =
-      siblingIdx < level.length ? level[siblingIdx] : level[cursor];
+    const sibling = siblingIdx < level.length ? level[siblingIdx] : level[cursor];
     proof.push(sibling);
 
     const next: Uint8Array[] = [];
@@ -114,6 +113,38 @@ export function getProof(leafIds: string[], idx: number): Uint8Array[] {
     cursor = Math.floor(cursor / 2);
   }
   return proof;
+}
+
+/**
+ * Compute a proof-of-inclusion for `targetLeaf` in the canonical tree built
+ * from `sortedLeaves`. Convenience wrapper around `getProof` that locates
+ * the target by exact-string match instead of requiring the caller to
+ * thread the index through.
+ *
+ * Used by the public `/vc/:vcId/inclusion-proof` endpoint (§5.4.6): the
+ * caller supplies the VC JWT it wants a proof for and we recover the index
+ * from the canonically-sorted leaf list (`vcAnchor.leafIds` mapped through
+ * `findVcJwtsByVcIssuanceRequestIds` and re-sorted by ASCII byte order).
+ *
+ * Throws when `targetLeaf` is not present in `sortedLeaves` — that is a
+ * caller bug (the row's `vcAnchorId` claims membership but the JWT is
+ * missing from the anchor's `leafIds` set) and silently returning `[]`
+ * would leak as a proof that verifies against an empty path.
+ */
+export function buildProof(sortedLeaves: string[], targetLeaf: string): Uint8Array[] {
+  if (sortedLeaves.length === 0) {
+    throw new Error("buildProof: sortedLeaves must be non-empty");
+  }
+  // `indexOf` is O(n) but the leaf set is tiny (one weekly batch) and a
+  // Map indirection would obscure the comparator semantics — we want the
+  // exact-string match the spec mandates, not a hash-keyed lookup.
+  const idx = sortedLeaves.indexOf(targetLeaf);
+  if (idx < 0) {
+    throw new Error(
+      `buildProof: leaf not in tree (sorted leaf set has ${sortedLeaves.length} entries)`,
+    );
+  }
+  return getProof(sortedLeaves, idx);
 }
 
 /**

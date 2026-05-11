@@ -14,7 +14,9 @@ import type { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import type {
   CreateVcIssuanceInput,
+  VcAnchorRow,
   VcIssuanceRow,
+  VcJwtLeaf,
 } from "@/application/domain/credential/vcIssuance/data/type";
 
 export interface IVcIssuanceRepository {
@@ -32,4 +34,28 @@ export interface IVcIssuanceRepository {
     input: CreateVcIssuanceInput,
     tx?: Prisma.TransactionClient,
   ): Promise<VcIssuanceRow>;
+
+  /**
+   * Look up the `VcAnchor` row that backs a confirmed batch (§5.1.6 /
+   * §5.4.6). Returns `null` for unknown ids so the caller can map the
+   * "VC has `vcAnchorId` but the anchor row is gone" edge case to a 404
+   * rather than crashing.
+   */
+  findVcAnchorById(ctx: IContext, vcAnchorId: string): Promise<VcAnchorRow | null>;
+
+  /**
+   * Return the `vcJwt` strings for the supplied `VcIssuanceRequest.id`
+   * list. Used to re-derive the canonical Merkle leaves for the
+   * `/vc/:vcId/inclusion-proof` endpoint — we cannot rely on `vcJwt`
+   * being indexed in the cached row alone because the proof must verify
+   * against the full sibling set of the anchor batch.
+   *
+   * Rows with a missing/empty `vcJwt` are returned with `vcJwt: ""` so the
+   * Service layer can detect the mismatch. Merkle integrity requires the
+   * exact same leaf set as anchor time — even one missing leaf shifts the
+   * tree and invalidates **every** proof in the batch (not just the
+   * affected leaf). Service compares `leaves.length` against
+   * `anchor.leafIds.length` and throws on mismatch.
+   */
+  findVcJwtsByIds(ctx: IContext, vcIssuanceRequestIds: string[]): Promise<VcJwtLeaf[]>;
 }

@@ -42,9 +42,11 @@ function makeRow(overrides: Partial<VcIssuanceRow> = {}): VcIssuanceRow {
 
 function makeIssuer() {
   return {
-    public: jest.fn().mockImplementation(async (_ctx: IContext, cb: (tx: unknown) => unknown) =>
-      cb({ sentinel: "tx" }),
-    ),
+    public: jest
+      .fn()
+      .mockImplementation(async (_ctx: IContext, cb: (tx: unknown) => unknown) =>
+        cb({ sentinel: "tx" }),
+      ),
   };
 }
 
@@ -61,7 +63,7 @@ function makeCtx(overrides: Partial<IContext> = {}): IContext {
 
 describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
   let mockService: jest.Mocked<
-    Pick<VcIssuanceService, "findVcById" | "findVcsByUserId" | "issueVc">
+    Pick<VcIssuanceService, "findVcById" | "findVcsByUserId" | "issueVc" | "generateInclusionProof">
   >;
   let usecase: VcIssuanceUseCase;
 
@@ -73,6 +75,7 @@ describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
       findVcById: jest.fn(),
       findVcsByUserId: jest.fn(),
       issueVc: jest.fn(),
+      generateInclusionProof: jest.fn(),
     };
 
     container.register("VcIssuanceService", { useValue: mockService });
@@ -157,6 +160,34 @@ describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
       const result = await usecase.viewVcIssuancesByUser(ctx, OTHER_USER_ID);
 
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe("getInclusionProof (§5.4.6)", () => {
+    it("returns null when the service yields null (PENDING / missing)", async () => {
+      mockService.generateInclusionProof.mockResolvedValueOnce(null);
+      const ctx = makeCtx();
+
+      const result = await usecase.getInclusionProof(ctx, "vc-x");
+      expect(result).toBeNull();
+    });
+
+    it("returns the presented proof when the service yields one", async () => {
+      const proof = {
+        vcId: "vc-1",
+        vcJwt: "h.p.s",
+        vcAnchorId: "vca-1",
+        rootHash: "ab".repeat(32),
+        chainTxHash: "cd".repeat(32),
+        proofPath: ["ee".repeat(32)],
+        leafIndex: 0,
+        blockHeight: 999,
+      };
+      mockService.generateInclusionProof.mockResolvedValueOnce(proof);
+      const ctx = makeCtx();
+
+      const result = await usecase.getInclusionProof(ctx, "vc-1");
+      expect(result).toEqual(proof);
     });
   });
 });

@@ -15,6 +15,7 @@
 
 import { blake2b } from "@noble/hashes/blake2b";
 import {
+  buildProof,
   buildRoot,
   canonicalLeafHash,
   getProof,
@@ -62,10 +63,7 @@ describe("merkleTreeBuilder — Blake2b-256 vectors", () => {
   it("hashPair concatenates raw bytes (NOT hex)", () => {
     const a = new Uint8Array(32).fill(0x11);
     const b = new Uint8Array(32).fill(0x22);
-    const expected = blake2b(
-      new Uint8Array([...a, ...b]),
-      { dkLen: MERKLE_NODE_BYTES },
-    );
+    const expected = blake2b(new Uint8Array([...a, ...b]), { dkLen: MERKLE_NODE_BYTES });
     expect(bytesToHex(hashPair(a, b))).toBe(bytesToHex(expected));
   });
 });
@@ -161,5 +159,40 @@ describe("merkleTreeBuilder — proof round-trip", () => {
     expect(() => getProof(["a", "b"], 5)).toThrow(/out of range/);
     expect(() => getProof(["a", "b"], -1)).toThrow(/out of range/);
     expect(() => getProof([], 0)).toThrow(/non-empty/);
+  });
+});
+
+describe("merkleTreeBuilder — buildProof (target-leaf wrapper, §5.4.6)", () => {
+  it("returns the same proof as getProof when the target index is known", () => {
+    const sorted = ["a", "b", "c", "d", "e"];
+    for (let i = 0; i < sorted.length; i++) {
+      const expected = getProof(sorted, i);
+      const actual = buildProof(sorted, sorted[i]);
+      expect(actual.length).toBe(expected.length);
+      for (let j = 0; j < expected.length; j++) {
+        expect(bytesToHex(actual[j])).toBe(bytesToHex(expected[j]));
+      }
+    }
+  });
+
+  it("verifies against the anchored root for every leaf in a 7-leaf (odd-tail) tree", () => {
+    const sorted = ["a", "b", "c", "d", "e", "f", "g"];
+    const root = buildRoot(sorted);
+    for (let i = 0; i < sorted.length; i++) {
+      const proof = buildProof(sorted, sorted[i]);
+      expect(verifyProof(sorted[i], i, proof, root)).toBe(true);
+    }
+  });
+
+  it("returns an empty proof for the single-leaf case", () => {
+    expect(buildProof(["only"], "only")).toEqual([]);
+  });
+
+  it("throws when the target leaf is not in the sorted list", () => {
+    expect(() => buildProof(["a", "b", "c"], "WRONG")).toThrow(/not in tree/);
+  });
+
+  it("throws on empty input", () => {
+    expect(() => buildProof([], "a")).toThrow(/non-empty/);
   });
 });

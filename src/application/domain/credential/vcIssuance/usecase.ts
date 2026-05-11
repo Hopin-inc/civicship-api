@@ -43,7 +43,9 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { AuthorizationError } from "@/errors/graphql";
 import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
-import VcIssuancePresenter from "@/application/domain/credential/vcIssuance/presenter";
+import VcIssuancePresenter, {
+  type InclusionProofResponse,
+} from "@/application/domain/credential/vcIssuance/presenter";
 import type { IssueVcInput as DomainIssueVcInput } from "@/application/domain/credential/vcIssuance/data/type";
 import type { GqlIssueVcInput, GqlVcIssuance } from "@/types/graphql";
 
@@ -116,5 +118,25 @@ export default class VcIssuanceUseCase {
       return this.service.issueVc(ctx, serviceInput, tx);
     });
     return VcIssuancePresenter.view(row);
+  }
+
+  /**
+   * §5.4.6 — Resolve the Merkle inclusion proof for the supplied VC.
+   *
+   * Public REST endpoint backing this method (`/vc/:vcId/inclusion-proof`)
+   * is unauthenticated, so we do not enforce an ownership check here:
+   * the proof reveals only the on-chain anchor metadata + the canonical
+   * leaf path, both of which are public information once the batch tx
+   * is on-chain. The router maps `null` to 404; exceptions to 500.
+   *
+   * No transaction is opened — every read goes through `issuer.internal`
+   * inside the repository (matching the precedent set by
+   * `UserDidAnchorRepository.findLatestByUserId` for the sibling
+   * `/users/:userId/did.json` route).
+   */
+  async getInclusionProof(ctx: IContext, vcId: string): Promise<InclusionProofResponse | null> {
+    const proof = await this.service.generateInclusionProof(ctx, vcId);
+    if (proof === null) return null;
+    return VcIssuancePresenter.toInclusionProofResponse(proof);
   }
 }

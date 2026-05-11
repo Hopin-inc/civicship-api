@@ -13,10 +13,17 @@
 
 import "reflect-metadata";
 import { container } from "tsyringe";
+import { AnchorStatus } from "@prisma/client";
 import VcIssuanceService, {
   CIVICSHIP_ISSUER_DID,
   buildVcPayload,
 } from "@/application/domain/credential/vcIssuance/service";
+import { buildRoot, verifyProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
+import type {
+  VcAnchorRow,
+  VcIssuanceRow,
+  VcJwtLeaf,
+} from "@/application/domain/credential/vcIssuance/data/type";
 import { IContext } from "@/types/server";
 
 const SUBJECT_DID = "did:web:api.civicship.app:users:u_xyz_phase1";
@@ -25,7 +32,31 @@ const FAKE_STATUS_URL = "https://api.civicship.app/credentials/status/1.jwt";
 
 class MockVcIssuanceRepository {
   findById = jest.fn().mockResolvedValue(null);
+  findByUserId = jest.fn().mockResolvedValue([]);
   create = jest.fn();
+  findVcAnchorById = jest.fn().mockResolvedValue(null);
+  findVcJwtsByIds = jest.fn().mockResolvedValue([]);
+}
+
+function makeVcRow(overrides: Partial<VcIssuanceRow> = {}): VcIssuanceRow {
+  return {
+    id: "vc-1",
+    userId: "u_1",
+    evaluationId: "eval-1",
+    issuerDid: CIVICSHIP_ISSUER_DID,
+    subjectDid: SUBJECT_DID,
+    vcFormat: "INTERNAL_JWT",
+    vcJwt: "header.payload.sig-1",
+    statusListIndex: 0,
+    statusListCredential: FAKE_STATUS_URL,
+    vcAnchorId: null,
+    anchorLeafIndex: null,
+    status: "COMPLETED",
+    createdAt: new Date("2026-05-01T00:00:00Z"),
+    completedAt: new Date("2026-05-01T00:00:00Z"),
+    revokedAt: null,
+    ...overrides,
+  };
 }
 
 class MockStatusListService {
@@ -181,6 +212,180 @@ describe("VcIssuanceService", () => {
         score: 5,
         label: "GOOD",
       });
+    });
+  });
+
+  describe("generateInclusionProof (§5.4.6)", () => {
+    /**
+     * Helper: build the canonical sorted-leaf set for a fixture batch and
+     * compute the on-chain root via `buildRoot`. The test then asserts
+     * that the proof returned by the service verifies against THIS root,
+     * which is what the design guarantees end-to-end.
+     */
+    function buildAnchoredFixture(jwts: string[]): {
+      sorted: string[];
+      rootHex: string;
+      anchor: VcAnchorRow;
+      leafRows: VcJwtLeaf[];
+    } {
+      const sorted = [...jwts].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      const rootBytes = buildRoot(sorted);
+      const rootHex = Buffer.from(rootBytes).toString("hex");
+      // VcAnchor.leafIds carry VcIssuanceRequest ids — use synthetic ids
+      // 1:1 with each JWT so the repository mock can resolve them back.
+      const leafRows = jwts.map((jwt, i) => ({
+        vcIssuanceRequestId: `vc-${i}`,
+        vcJwt: jwt,
+      }));
+      const anchor: VcAnchorRow = {
+        id: "vca-1",
+        rootHash: rootHex,
+        leafIds: leafRows.map((r) => r.vcIssuanceRequestId),
+        chainTxHash: "ab".repeat(32),
+        blockHeight: 12345,
+        status: AnchorStatus.CONFIRMED,
+      };
+      return { sorted, rootHex, anchor, leafRows };
+    }
+
+    it("returns a proof that verifies against the anchored root for a CONFIRMED batch", async () => {
+      const jwts = ["d.payload", "a.payload", "c.payload", "b.payload", "e.payload"];
+      const { anchor, leafRows, rootHex } = buildAnchoredFixture(jwts);
+      const targetJwt = "c.payload";
+      const targetVcId = leafRows.find((r) => r.vcJwt === targetJwt)!.vcIssuanceRequestId;
+
+      mockRepository.findById.mockResolvedValueOnce(
+        makeVcRow({ id: targetVcId, vcJwt: targetJwt, vcAnchorId: anchor.id }),
+      );
+      mockRepository.findVcAnchorById.mockResolvedValueOnce(anchor);
+      mockRepository.findVcJwtsByIds.mockResolvedValueOnce(leafRows);
+
+      const proof = await service.generateInclusionProof(mockCtx, targetVcId);
+
+      expect(proof).not.toBeNull();
+      expect(proof!.vcId).toBe(targetVcId);
+      expect(proof!.vcJwt).toBe(targetJwt);
+      expect(proof!.vcAnchorId).toBe(anchor.id);
+      expect(proof!.rootHash).toBe(rootHex);
+      expect(proof!.chainTxHash).toBe(anchor.chainTxHash);
+      expect(proof!.blockHeight).toBe(anchor.blockHeight);
+
+      // Verifier round-trip: rebuild bytes from hex and run verifyProof
+      // against the same root the service published.
+      const proofBytes = proof!.proofPath.map((h) => Buffer.from(h, "hex"));
+      const rootBytes = Buffer.from(proof!.rootHash, "hex");
+      expect(verifyProof(targetJwt, proof!.leafIndex, proofBytes, rootBytes)).toBe(true);
+    });
+
+    it("returns a verifying proof for a 7-leaf (odd) batch (last-leaf-duplication path)", async () => {
+      // 7 leaves exercises the §5.1.7 odd-tail rule at multiple layers.
+      const jwts = ["a", "b", "c", "d", "e", "f", "g"];
+      const { anchor, leafRows } = buildAnchoredFixture(jwts);
+      const targetJwt = "g"; // last leaf — sibling-self at the leaf layer
+      const targetVcId = leafRows.find((r) => r.vcJwt === targetJwt)!.vcIssuanceRequestId;
+
+      mockRepository.findById.mockResolvedValueOnce(
+        makeVcRow({ id: targetVcId, vcJwt: targetJwt, vcAnchorId: anchor.id }),
+      );
+      mockRepository.findVcAnchorById.mockResolvedValueOnce(anchor);
+      mockRepository.findVcJwtsByIds.mockResolvedValueOnce(leafRows);
+
+      const proof = await service.generateInclusionProof(mockCtx, targetVcId);
+      expect(proof).not.toBeNull();
+      const proofBytes = proof!.proofPath.map((h) => Buffer.from(h, "hex"));
+      const rootBytes = Buffer.from(proof!.rootHash, "hex");
+      expect(verifyProof(targetJwt, proof!.leafIndex, proofBytes, rootBytes)).toBe(true);
+    });
+
+    it("returns null when the VC row is missing", async () => {
+      mockRepository.findById.mockResolvedValueOnce(null);
+      const result = await service.generateInclusionProof(mockCtx, "missing");
+      expect(result).toBeNull();
+      expect(mockRepository.findVcAnchorById).not.toHaveBeenCalled();
+    });
+
+    it("returns null when the VC has no vcAnchorId yet", async () => {
+      mockRepository.findById.mockResolvedValueOnce(makeVcRow({ id: "vc-1", vcAnchorId: null }));
+      const result = await service.generateInclusionProof(mockCtx, "vc-1");
+      expect(result).toBeNull();
+      expect(mockRepository.findVcAnchorById).not.toHaveBeenCalled();
+    });
+
+    it("returns null when the VC's JWT is empty (unidentifiable leaf)", async () => {
+      mockRepository.findById.mockResolvedValueOnce(
+        makeVcRow({ id: "vc-1", vcJwt: "", vcAnchorId: "vca-1" }),
+      );
+      const result = await service.generateInclusionProof(mockCtx, "vc-1");
+      expect(result).toBeNull();
+      expect(mockRepository.findVcAnchorById).not.toHaveBeenCalled();
+    });
+
+    it("returns null when the anchor row is missing (VC points at vanished anchor)", async () => {
+      mockRepository.findById.mockResolvedValueOnce(
+        makeVcRow({ id: "vc-1", vcJwt: "j", vcAnchorId: "vca-missing" }),
+      );
+      mockRepository.findVcAnchorById.mockResolvedValueOnce(null);
+      const result = await service.generateInclusionProof(mockCtx, "vc-1");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when the anchor is PENDING (not yet anchored on-chain)", async () => {
+      const { leafRows } = buildAnchoredFixture(["a", "b"]);
+      const pending: VcAnchorRow = {
+        id: "vca-pending",
+        rootHash: "00".repeat(32),
+        leafIds: leafRows.map((r) => r.vcIssuanceRequestId),
+        chainTxHash: null,
+        blockHeight: null,
+        status: AnchorStatus.PENDING,
+      };
+      mockRepository.findById.mockResolvedValueOnce(
+        makeVcRow({ id: leafRows[0].vcIssuanceRequestId, vcJwt: "a", vcAnchorId: pending.id }),
+      );
+      mockRepository.findVcAnchorById.mockResolvedValueOnce(pending);
+
+      const result = await service.generateInclusionProof(mockCtx, leafRows[0].vcIssuanceRequestId);
+      expect(result).toBeNull();
+      // We never reach the leaf re-fetch when the anchor is not CONFIRMED.
+      expect(mockRepository.findVcJwtsByIds).not.toHaveBeenCalled();
+    });
+
+    it("returns null when the anchor is SUBMITTED (chain not finalised)", async () => {
+      const { leafRows } = buildAnchoredFixture(["a", "b"]);
+      const submitted: VcAnchorRow = {
+        id: "vca-submitted",
+        rootHash: "11".repeat(32),
+        leafIds: leafRows.map((r) => r.vcIssuanceRequestId),
+        chainTxHash: "cd".repeat(32),
+        blockHeight: null,
+        status: AnchorStatus.SUBMITTED,
+      };
+      mockRepository.findById.mockResolvedValueOnce(
+        makeVcRow({
+          id: leafRows[0].vcIssuanceRequestId,
+          vcJwt: "a",
+          vcAnchorId: submitted.id,
+        }),
+      );
+      mockRepository.findVcAnchorById.mockResolvedValueOnce(submitted);
+
+      const result = await service.generateInclusionProof(mockCtx, leafRows[0].vcIssuanceRequestId);
+      expect(result).toBeNull();
+    });
+
+    it("throws when the row's JWT is not present in the anchor's leaf set (integrity violation)", async () => {
+      const { anchor, leafRows } = buildAnchoredFixture(["a", "b", "c"]);
+      // Row claims membership but its JWT is foreign — should NOT be a
+      // happy null (that would silently produce a misleading 404).
+      mockRepository.findById.mockResolvedValueOnce(
+        makeVcRow({ id: leafRows[0].vcIssuanceRequestId, vcJwt: "FOREIGN", vcAnchorId: anchor.id }),
+      );
+      mockRepository.findVcAnchorById.mockResolvedValueOnce(anchor);
+      mockRepository.findVcJwtsByIds.mockResolvedValueOnce(leafRows);
+
+      await expect(
+        service.generateInclusionProof(mockCtx, leafRows[0].vcIssuanceRequestId),
+      ).rejects.toThrow(/not present in anchor/);
     });
   });
 });

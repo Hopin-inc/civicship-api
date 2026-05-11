@@ -30,11 +30,14 @@ import { container } from "tsyringe";
 
 import didRouter from "@/presentation/router/did";
 import type IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase";
+import type VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
 import type { IssuerDidDocument } from "@/infrastructure/libs/did/issuerDidBuilder";
 import type {
   DidDocumentResolver,
   DidDocumentWithProof,
 } from "@/infrastructure/libs/did/didDocumentResolver";
+import type { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import type { InclusionProofResponse } from "@/application/domain/credential/vcIssuance/presenter";
 
 const USER_ID = "u_alice";
 const USER_DID = "did:web:api.civicship.app:users:u_alice";
@@ -92,6 +95,21 @@ function registerResolverMock(buildDidDocument: jest.Mock): void {
 function registerIssuerDidUseCaseMock(getActiveIssuerDidDocument: jest.Mock): void {
   const mock: Partial<IssuerDidUseCase> = { getActiveIssuerDidDocument };
   container.register("IssuerDidUseCase", { useValue: mock as IssuerDidUseCase });
+}
+
+function registerVcIssuanceUseCaseMock(getInclusionProof: jest.Mock): void {
+  const mock: Partial<VcIssuanceUseCase> = { getInclusionProof };
+  container.register("VcIssuanceUseCase", { useValue: mock as VcIssuanceUseCase });
+}
+
+/**
+ * `PrismaClientIssuer` is resolved by the inclusion-proof handler to
+ * build the anonymous `IContext`. We never reach into it (the use case
+ * mock short-circuits the call), so a sentinel object is enough.
+ */
+function registerPrismaIssuerStub(): void {
+  const stub = { __sentinel: "PrismaClientIssuer" } as unknown as PrismaClientIssuer;
+  container.register("PrismaClientIssuer", { useValue: stub });
 }
 
 function buildFullIssuerDoc(): IssuerDidDocument {
@@ -220,14 +238,54 @@ describe("router/did (§5.4)", () => {
   });
 
   describe("GET /vc/:vcId/inclusion-proof", () => {
-    it("returns 501 not_implemented for any vcId until the batch worker lands", async () => {
+    function buildSampleProof(): InclusionProofResponse {
+      return {
+        vcId: "vc_123",
+        vcJwt: "header.payload.sig",
+        vcAnchorId: "vca_abc",
+        rootHash: "ab".repeat(32),
+        chainTxHash: "cd".repeat(32),
+        proofPath: ["ee".repeat(32), "ff".repeat(32)],
+        leafIndex: 1,
+        blockHeight: 12345,
+      };
+    }
+
+    it("returns 200 with the proof DTO when the use case yields one (CONFIRMED anchor)", async () => {
+      registerPrismaIssuerStub();
+      const sample = buildSampleProof();
+      const getInclusionProof = jest.fn().mockResolvedValue(sample);
+      registerVcIssuanceUseCaseMock(getInclusionProof);
+
       const res = await request(buildApp()).get("/vc/vc_123/inclusion-proof");
 
-      expect(res.status).toBe(501);
-      expect(res.body).toMatchObject({
-        error: "not_implemented",
-        message: expect.stringContaining("Phase 1 step 7"),
-      });
+      expect(res.status).toBe(200);
+      expect(getInclusionProof).toHaveBeenCalledTimes(1);
+      const [, vcIdArg] = getInclusionProof.mock.calls[0];
+      expect(vcIdArg).toBe("vc_123");
+      expect(res.body).toEqual(sample);
+    });
+
+    it("returns 404 not_anchored when the use case yields null (PENDING / missing)", async () => {
+      registerPrismaIssuerStub();
+      const getInclusionProof = jest.fn().mockResolvedValue(null);
+      registerVcIssuanceUseCaseMock(getInclusionProof);
+
+      const res = await request(buildApp()).get("/vc/vc_pending/inclusion-proof");
+
+      expect(res.status).toBe(404);
+      expect(res.body).toMatchObject({ error: "not_anchored" });
+    });
+
+    it("returns 500 when the use case throws (integrity violation / DB error)", async () => {
+      registerPrismaIssuerStub();
+      const getInclusionProof = jest.fn().mockRejectedValue(new Error("boom"));
+      registerVcIssuanceUseCaseMock(getInclusionProof);
+
+      const res = await request(buildApp()).get("/vc/vc_err/inclusion-proof");
+
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: "Internal Server Error" });
     });
   });
 });

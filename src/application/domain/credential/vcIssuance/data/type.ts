@@ -15,7 +15,7 @@
  *   docs/report/did-vc-internalization.md §D     (credentialStatus)
  */
 
-import type { VcFormat, VcIssuanceStatus } from "@prisma/client";
+import type { AnchorStatus, VcFormat, VcIssuanceStatus } from "@prisma/client";
 
 /**
  * §4.1 — VC format. Phase 1 only emits `INTERNAL_JWT`. Aliased to the
@@ -93,6 +93,37 @@ export interface IssueVcInput {
    * persistence row, eliminating sub-second drift between the two.
    */
   issuedAt?: Date;
+}
+
+/**
+ * Application-layer view of a `VcAnchor` row, narrowed to the columns the
+ * `/vc/:vcId/inclusion-proof` endpoint needs (§5.4.6).
+ *
+ * Lives in the vcIssuance domain because the consumer is here — the
+ * anchor batch domain owns the *write* side and exposes its own anchor
+ * row type internally; this is the read-side projection.
+ */
+export interface VcAnchorRow {
+  id: string;
+  rootHash: string;
+  /** ASC-sorted (caller responsibility) `VcIssuanceRequest.id` array. */
+  leafIds: string[];
+  /** `null` until the batch has been submitted to the chain. */
+  chainTxHash: string | null;
+  /** `null` until the chain confirmation cycle yields a block height. */
+  blockHeight: number | null;
+  status: AnchorStatus;
+}
+
+/**
+ * Pair of `VcIssuanceRequest.id` and its `vcJwt`. Used to rebuild the
+ * canonical (ASCII-byte sorted) leaf list for inclusion-proof generation
+ * — the proof must verify against the same leaves the batch hashed at
+ * anchor time.
+ */
+export interface VcJwtLeaf {
+  vcIssuanceRequestId: string;
+  vcJwt: string;
 }
 
 /** Inputs to `IVcIssuanceRepository.create`. */
