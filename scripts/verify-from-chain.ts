@@ -104,6 +104,20 @@ type Args = {
   help: boolean;
 };
 
+/**
+ * Strip trailing `/` characters from a URL without using a regex.
+ *
+ * Linear-time, no backtracking. Replaces the earlier `.replace(/\/+$/, "")`
+ * which SonarCloud flagged as `typescript:S5852` (slow regex / DoS hotspot);
+ * even though that anchored pattern is provably linear, avoiding the regex
+ * altogether is simpler and side-steps the rule entirely.
+ */
+function stripTrailingSlash(s: string): string {
+  let end = s.length;
+  while (end > 0 && s.charCodeAt(end - 1) === 47 /* '/' */) end--;
+  return s.substring(0, end);
+}
+
 function parseArgs(argv: string[]): Args {
   const args: Args = {
     baseUrl: "https://api.civicship.app",
@@ -127,10 +141,10 @@ function parseArgs(argv: string[]): Args {
         args.vc = next();
         break;
       case "--base-url":
-        args.baseUrl = next().replace(/\/+$/, "");
+        args.baseUrl = stripTrailingSlash(next());
         break;
       case "--koios-url":
-        args.koiosUrl = next().replace(/\/+$/, "");
+        args.koiosUrl = stripTrailingSlash(next());
         break;
       case "--network":
         args.network = next();
