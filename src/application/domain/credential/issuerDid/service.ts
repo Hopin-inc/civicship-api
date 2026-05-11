@@ -34,17 +34,24 @@
  *
  * §G key-rotation scope (Phase 1 vs Phase 2):
  *
- *   Phase 1 (this PR) intentionally operates in **single-active-key** mode.
- *   `getActiveIssuerDidDocument()` calls `findActiveKey()` once and emits a
- *   DID Document carrying exactly one `verificationMethod`. The repository
- *   interface already declares `listActiveKeys()` (see `data/interface.ts`)
- *   — that method is reserved for Phase 2 §G overlap-window support, where
- *   the Document will publish *both* the outgoing and incoming keys for the
- *   duration of the rotation grace period so verifiers can validate proofs
- *   signed by either key. Phase 1 deliberately does not consume
- *   `listActiveKeys()`; rotation in Phase 1 is a hard cut-over (single
- *   activate-then-deactivate transaction) and the §G overlap window is
- *   tracked in the design doc as Phase 2 work.
+ *   Phase 1 shipped **single-active-key** mode via
+ *   `getActiveIssuerDidDocument()` — one row from `findActiveKey()`, one
+ *   `verificationMethod` entry, hard cut-over rotation.
+ *
+ *   Phase 2 (this layer, PR #1100) adds `buildDidDocument()` — the §G
+ *   overlap multi-key shape per spec §5.4.3 line 1131-1142. It calls
+ *   `repository.listActiveKeys()` and publishes **every** key in the
+ *   overlap window (ENABLED + DISABLED) so verifiers can validate VCs
+ *   signed by either the new or the rotating-out key during the 24-hour
+ *   grace period (§9.1.2). `assertionMethod` / `authentication`
+ *   reference only ENABLED rows — DISABLED rows are verification-only
+ *   tails kept forever (§9.1.3, no DESTROYED).
+ *
+ *   The single-key entry point `getActiveIssuerDidDocument()` is
+ *   preserved for backward compatibility (existing router wiring, admin
+ *   GraphQL Phase 1 contract). The router will migrate to
+ *   `buildDidDocument()` once §G is fully exercised in staging
+ *   (`docs/runbooks/issuer-did-key-rotation.md`).
  *
  * TTL cache rationale:
  *
@@ -71,7 +78,12 @@ import type { IIssuerDidKeyRepository } from "@/application/domain/credential/is
 import {
   CIVICSHIP_ISSUER_DID,
   buildIssuerDidDocument,
+  buildMultiKeyIssuerDidDocument,
+  encodeEd25519Jwk,
+  kmsResourceNameToKid,
+  type IssuerActiveKey,
   type IssuerDidDocument,
+  type IssuerMultiKeyDidDocument,
 } from "@/infrastructure/libs/did/issuerDidBuilder";
 import { KmsSigner } from "@/infrastructure/libs/kms/kmsSigner";
 
@@ -179,6 +191,71 @@ export default class IssuerDidService {
   }
 
   /**
+   * Build the §G overlap multi-key Issuer DID Document (spec §5.4.3
+   * line 1131-1142 / Phase 2 PR #1100).
+   *
+   * Combines every row in the §G overlap window (`listActiveKeys()` —
+   * ENABLED + DISABLED) with their KMS-fetched public-key bytes and
+   * emits the spec's `JsonWebKey2020` shape:
+   *
+   *   - `verificationMethod[]`: every key (ENABLED + DISABLED) so past
+   *     VCs signed by a rotating-out key remain verifiable (§9.1.3).
+   *   - `assertionMethod` / `authentication`: ENABLED only — DISABLED
+   *     keys MUST NOT be advertised as signable (§9.1.2).
+   *
+   * Returns `null` when no keys are registered. The router falls back to
+   * the same minimal static Document as `getActiveIssuerDidDocument()`,
+   * preserving dev/staging UX during bootstrap.
+   *
+   * ENABLED vs DISABLED mapping: the repository contract says a row's
+   * `deactivatedAt IS NULL` ↔ KMS state ENABLED, and `deactivatedAt IS NOT
+   * NULL` ↔ KMS state DISABLED (rotating-out, retained for verification).
+   * We trust the row state here rather than re-querying KMS lifecycle on
+   * every `/.well-known/did.json` hit — the rotation runbook is the
+   * single writer of both `deactivatedAt` and the KMS state transition,
+   * and the public-key bytes (which are the part KMS authoritatively
+   * owns) are still fetched per-key via the existing TTL cache.
+   *
+   * Ordering: rows are emitted in `listActiveKeys()` order (which the
+   * repository contract pins to `activatedAt ASC`). Stable ordering means
+   * `verificationMethod` indices stay constant across re-renders.
+   *
+   * Design references:
+   *   docs/report/did-vc-internalization.md §5.4.3 line 1126-1142
+   *   docs/report/did-vc-internalization.md §9.1.2 (24h overlap)
+   *   docs/report/did-vc-internalization.md §9.1.3 (旧鍵永続保持)
+   *   docs/report/did-vc-internalization.md §16    (Phase 2 持ち越し)
+   */
+  async buildDidDocument(): Promise<IssuerMultiKeyDidDocument | null> {
+    const rows = await this.repository.listActiveKeys();
+    if (rows.length === 0) {
+      // Same bootstrap signal as `findActiveKey() === null`. The router
+      // maps null to the minimal static Document.
+      logger.debug("[IssuerDidService.buildDidDocument] no keys in §G overlap window");
+      return null;
+    }
+
+    const activeKeys: IssuerActiveKey[] = [];
+    for (const row of rows) {
+      const publicKeyHex = await this.fetchPublicKeyHex(row.kmsKeyResourceName);
+      // Reuse the same hex → bytes path as `bytesToHex`'s inverse — we
+      // already encoded bytes → hex in the cache; here we decode hex →
+      // bytes for JWK encoding. Keeping the cache value in hex (rather
+      // than as Uint8Array) lets the legacy `buildIssuerDidDocument`
+      // path remain unchanged; the round-trip cost is negligible
+      // (32 bytes) versus invalidating the existing cache shape.
+      const publicKeyBytes = hexToBytes(publicKeyHex);
+      activeKeys.push({
+        kid: kmsResourceNameToKid(row.kmsKeyResourceName),
+        jwk: encodeEd25519Jwk(publicKeyBytes),
+        enabled: row.deactivatedAt === null,
+      });
+    }
+
+    return buildMultiKeyIssuerDidDocument(activeKeys);
+  }
+
+  /**
    * Sign `payload` with the currently-active KMS key.
    *
    * Used by `VcIssuanceService` (Phase 1 step 9) and the anchor batch
@@ -246,6 +323,24 @@ function bytesToHex(bytes: Uint8Array): string {
     const b = bytes[i];
     out += (b >>> 4).toString(16);
     out += (b & 0x0f).toString(16);
+  }
+  return out;
+}
+
+/**
+ * Inverse of `bytesToHex`. Used by `buildDidDocument` to round-trip the
+ * cached hex back into raw bytes for JWK encoding. Tolerant of an
+ * optional `0x` prefix on the off chance a caller hand-feeds one in
+ * (the cache itself never stores a prefix).
+ */
+function hexToBytes(hex: string): Uint8Array {
+  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+  if (clean.length % 2 !== 0) {
+    throw new Error(`hex string must have even length, got ${clean.length}`);
+  }
+  const out = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < out.length; i++) {
+    out[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
   }
   return out;
 }
