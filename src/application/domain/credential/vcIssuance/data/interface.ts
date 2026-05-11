@@ -20,7 +20,17 @@ import type {
 } from "@/application/domain/credential/vcIssuance/data/type";
 
 export interface IVcIssuanceRepository {
-  findById(ctx: IContext, id: string): Promise<VcIssuanceRow | null>;
+  /**
+   * Look up a VC issuance row by id.
+   *
+   * `tx` is optional: callers running inside an outer transaction (e.g.
+   * the revoke flow which composes a StatusList write + `revokedAt`
+   * stamp + a re-read in a single commit) supply it so the read happens
+   * on the same client and observes the in-progress writes. Read-only
+   * callers (the `vcIssuance` query resolver) omit it and the repository
+   * opens an issuer-scoped public transaction.
+   */
+  findById(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<VcIssuanceRow | null>;
 
   /**
    * Return every VC issuance row owned by `userId`, newest first.

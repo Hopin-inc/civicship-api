@@ -103,10 +103,22 @@ export default class VcIssuanceRepository implements IVcIssuanceRepository {
    * but to keep this method purely persistence-bound we decode the JWT
    * payload's `issuer` / `credentialSubject.id` instead.
    */
-  async findById(ctx: IContext, id: string): Promise<VcIssuanceRow | null> {
-    const persisted = await this.issuer.public(ctx, (tx) => {
-      return tx.vcIssuanceRequest.findUnique({ where: { id } });
-    });
+  async findById(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<VcIssuanceRow | null> {
+    // When a caller-supplied `tx` is present we MUST read on it so the
+    // lookup observes in-progress writes from the same transaction
+    // (Phase 1.5: the revoke flow stamps `revokedAt` then re-reads the
+    // row to surface the new timestamp through the GraphQL response).
+    // Without a `tx`, fall back to an issuer-scoped public transaction
+    // so RLS stays applied for the standalone query path.
+    const persisted = tx
+      ? await tx.vcIssuanceRequest.findUnique({ where: { id } })
+      : await this.issuer.public(ctx, (innerTx) =>
+          innerTx.vcIssuanceRequest.findUnique({ where: { id } }),
+        );
     if (!persisted) return null;
     const { issuerDid, subjectDid } = decodeIssuerSubjectFromJwt(persisted.vcJwt, persisted.id);
     return toRow(persisted, issuerDid, subjectDid);
