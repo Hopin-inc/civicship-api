@@ -23,7 +23,16 @@ export default class TestDataSourceHelper {
 
     await this.db.participationStatusHistory.deleteMany();
 
+    // Phase 1 (DID / VC internalization): anchors and StatusList rows must be
+    // cleaned up before users/evaluations because:
+    //   - UserDidAnchor.user is `onDelete: Restrict`
+    //   - VcIssuanceRequest references VcAnchor (FK; nullable but row-bound)
+    //   - StatusListCredential is independent but cleared for hygiene
+    await this.db.userDidAnchor.deleteMany();
     await this.db.vcIssuanceRequest.deleteMany();
+    await this.db.vcAnchor.deleteMany();
+    await this.db.transactionAnchor.deleteMany();
+    await this.db.statusListCredential.deleteMany();
     await this.db.didIssuanceRequest.deleteMany();
     await this.db.evaluation.deleteMany();
     await this.db.participation.deleteMany();
