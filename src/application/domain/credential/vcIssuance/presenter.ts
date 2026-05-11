@@ -102,6 +102,19 @@ function toGqlFormat(format: VcIssuanceRow["vcFormat"]): GqlVcIssuance["vcFormat
 }
 
 const VcIssuancePresenter = {
+  /**
+   * Phase 1.5 note: `user` and `evaluation` are now declared on the
+   * `VcIssuance` GraphQL type but populated by field resolvers that
+   * read `parent.userId` / `parent.evaluationId` and call into the
+   * per-request DataLoaders (see `controller/resolver.ts`,
+   * `controller/dataloader.ts`). The presenter therefore returns the
+   * scalar foreign keys only and casts through `unknown` so callers
+   * still receive the declared `GqlVcIssuance` shape — TypeScript
+   * still flags missing scalar fields, while the resolver layer is
+   * responsible for filling in the relations on demand. This mirrors
+   * the convention used by `OpportunityPresenter.get` for
+   * `createdByUser`, `community`, etc.
+   */
   view(row: VcIssuanceRow): GqlVcIssuance {
     return {
       __typename: "VcIssuance",
@@ -122,7 +135,7 @@ const VcIssuancePresenter = {
       statusListCredential: row.statusListCredential,
       revokedAt: row.revokedAt,
       createdAt: row.createdAt,
-    };
+    } as unknown as GqlVcIssuance;
   },
 
   /**
