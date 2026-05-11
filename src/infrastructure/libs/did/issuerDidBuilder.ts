@@ -63,6 +63,195 @@ export interface IssuerDidDocument {
   service: readonly IssuerService[];
 }
 
+// ---------------------------------------------------------------------------
+// §G overlap multi-key shape (Phase 2 / spec §5.4.3 line 1131-1142)
+// ---------------------------------------------------------------------------
+
+/**
+ * Ed25519 JWK as published in a multi-key Issuer DID Document
+ * (`type: "JsonWebKey2020"`).
+ *
+ * The spec sample in `docs/report/did-vc-internalization.md` §5.4.3 (line
+ * 1131-1142) embeds public keys as RFC 7517 JWK rather than Multikey when
+ * the Document publishes more than one key for the §G overlap window. The
+ * civicship Issuer is exclusively Ed25519, so we narrow the JWK shape to
+ * `kty: "OKP"` / `crv: "Ed25519"` with the single 32-byte coordinate
+ * `x` base64url-encoded (no padding).
+ *
+ * See `encodeEd25519Jwk` below for the canonical builder.
+ */
+export interface Ed25519PublicJwk {
+  kty: "OKP";
+  crv: "Ed25519";
+  /** base64url-encoded (no padding) raw 32-byte Ed25519 public key. */
+  x: string;
+}
+
+/**
+ * One entry of `verificationMethod[]` in the multi-key Document shape.
+ *
+ * Distinct from `IssuerVerificationMethod` (which is single-key + Multikey)
+ * because the wire types are different on purpose: `JsonWebKey2020` +
+ * `publicKeyJwk` is the form §5.4.3 line 1133-1138 specifies for the §G
+ * overlap-window Document.
+ */
+export interface IssuerJwkVerificationMethod {
+  id: string;
+  type: "JsonWebKey2020";
+  controller: string;
+  publicKeyJwk: Ed25519PublicJwk;
+}
+
+/**
+ * Multi-key Issuer DID Document — the §G overlap-window shape.
+ *
+ * Carries every still-valid key (ENABLED + DISABLED rotation tail) so
+ * verifiers can validate VCs signed by either the new or the outgoing
+ * key during the 24-hour overlap. `assertionMethod` / `authentication`
+ * reference only currently-signable (ENABLED) keys.
+ *
+ * Design references:
+ *   docs/report/did-vc-internalization.md §5.4.3 (line 1131-1142)
+ *   docs/report/did-vc-internalization.md §9.1.2 (rotation overlap)
+ *   docs/report/did-vc-internalization.md §9.1.3 (旧鍵永続保持)
+ *   docs/report/did-vc-internalization.md §16    (Phase 2 持ち越し)
+ */
+export interface IssuerMultiKeyDidDocument {
+  "@context": readonly string[];
+  id: string;
+  verificationMethod: readonly IssuerJwkVerificationMethod[];
+  assertionMethod: readonly string[];
+  authentication: readonly string[];
+}
+
+/**
+ * One key in the §G overlap window. Produced by `IssuerDidService.buildDidDocument`
+ * by combining repository rows (`t_issuer_did_keys`) with KMS public-key bytes.
+ *
+ * `enabled === true`  → ENABLED in KMS → signs new VCs, lands in `assertionMethod`
+ * `enabled === false` → DISABLED in KMS → past-VC verification only, NOT in `assertionMethod`
+ *
+ * `kid` is the verificationMethod fragment (e.g. `"key-7"`) — derived once
+ * via `keyVersionToFragment` and passed in pre-formatted so the builder
+ * stays a pure transform with no string-parsing side effects.
+ */
+export interface IssuerActiveKey {
+  /** Stable per-version fragment, e.g. `"key-7"`. */
+  kid: string;
+  /** Public-key JWK (Ed25519 OKP). */
+  jwk: Ed25519PublicJwk;
+  /** Whether KMS reports the version as ENABLED (signs) vs DISABLED (verify-only). */
+  enabled: boolean;
+}
+
+/**
+ * Build the multi-key Issuer DID Document per spec §5.4.3 line 1131-1142.
+ *
+ * Output shape (input from one ENABLED + one DISABLED key):
+ *
+ *   {
+ *     "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1"],
+ *     "id": "did:web:api.civicship.app",
+ *     "verificationMethod": [
+ *       { id: "...#key-7", type: "JsonWebKey2020", controller: "...", publicKeyJwk: { kty, crv, x } },
+ *       { id: "...#key-6", type: "JsonWebKey2020", controller: "...", publicKeyJwk: { ... } }
+ *     ],
+ *     "assertionMethod": ["...#key-7"],   // ENABLED only
+ *     "authentication":  ["...#key-7"]    // ENABLED only
+ *   }
+ *
+ * Ordering is preserved from the input — callers (`IssuerDidService`) sort
+ * by `activatedAt ASC` so the wire output is stable across re-renders.
+ *
+ * Throws when `activeKeys` is empty: every caller of this builder already
+ * checks `listActiveKeys()` length and falls back to the minimal static
+ * Document in the bootstrap state, so reaching here with `[]` is a
+ * programming error worth surfacing.
+ */
+export function buildMultiKeyIssuerDidDocument(
+  activeKeys: readonly IssuerActiveKey[],
+): IssuerMultiKeyDidDocument {
+  if (activeKeys.length === 0) {
+    throw new Error(
+      "buildMultiKeyIssuerDidDocument: activeKeys must contain at least one entry. " +
+        "Callers MUST check listActiveKeys().length and fall back to the minimal " +
+        "static Document in the bootstrap state (design §5.4.3 / §G).",
+    );
+  }
+  const did = CIVICSHIP_ISSUER_DID;
+  const vmRefId = (kid: string) => `${did}#${kid}`;
+
+  const verificationMethod: IssuerJwkVerificationMethod[] = activeKeys.map((k) => ({
+    id: vmRefId(k.kid),
+    type: "JsonWebKey2020",
+    controller: did,
+    publicKeyJwk: k.jwk,
+  }));
+
+  // ENABLED-only: only signable keys belong in assertionMethod /
+  // authentication (§5.4.3 line 1139-1141). DISABLED keys stay in
+  // verificationMethod for past-VC verification (§9.1.3 / §G).
+  const enabledRefs: string[] = activeKeys
+    .filter((k) => k.enabled)
+    .map((k) => vmRefId(k.kid));
+
+  return {
+    "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1"],
+    id: did,
+    verificationMethod,
+    assertionMethod: enabledRefs,
+    authentication: enabledRefs,
+  };
+}
+
+/**
+ * Encode a raw 32-byte Ed25519 public key as an RFC 7517 / RFC 8037 JWK.
+ *
+ * Format:
+ *   {
+ *     kty: "OKP",       -- RFC 8037 §2 (Octet Key Pair)
+ *     crv: "Ed25519",   -- RFC 8037 §3.1
+ *     x:   <base64url>  -- raw 32 bytes, no padding (RFC 7515 §2)
+ *   }
+ *
+ * Throws on wrong-length input — symmetric with `encodeMultikeyEd25519`'s
+ * guard so callers that swap encodings get the same error shape.
+ */
+export function encodeEd25519Jwk(rawPubKey: Uint8Array): Ed25519PublicJwk {
+  if (rawPubKey.length !== 32) {
+    throw new Error(`Ed25519 public key must be 32 bytes, got ${rawPubKey.length}`);
+  }
+  return {
+    kty: "OKP",
+    crv: "Ed25519",
+    x: base64UrlEncode(rawPubKey),
+  };
+}
+
+/**
+ * Derive the `#fragment` for a KMS resource name (re-exported helper so
+ * `IssuerDidService` can build `IssuerActiveKey.kid` without duplicating
+ * the regex).
+ */
+export function kmsResourceNameToKid(kmsKeyResourceName: string): string {
+  return keyVersionToFragment(kmsKeyResourceName);
+}
+
+/**
+ * base64url encoder (RFC 7515 §2 / RFC 4648 §5) — no padding, `-` and `_`
+ * instead of `+` and `/`. Hand-rolled rather than reaching for `Buffer`
+ * because the encoder is the entire spec-defined contract and we want a
+ * single, audit-friendly definition.
+ */
+function base64UrlEncode(bytes: Uint8Array): string {
+  // Node 18+: `Buffer.from(bytes).toString("base64url")` would also work,
+  // but the manual transform keeps this module portable to Workers /
+  // Edge runtimes if we ever extract it (same rationale as `bytesToHex`
+  // in `service.ts`).
+  const std = Buffer.from(bytes).toString("base64");
+  return std.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 /**
  * Return the canonical Issuer DID. Argument-less by design: civicship has
  * exactly one Issuer DID and it is bound to the API host.
