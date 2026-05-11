@@ -20,6 +20,9 @@ import { buildRoot } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 import {
   buildAnchorTx,
   buildAuxiliaryData,
+  MAX_METADATA_TX_BYTES,
+  measureMetadataSize,
+  type BuildAuxiliaryDataInput,
   type DidOp,
 } from "@/infrastructure/libs/cardano/txBuilder";
 import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
@@ -271,17 +274,19 @@ export class AnchorBatchService {
     // 4. Merkle root 計算 + ops 構築
     const txRoot = buildTxRoot(pending.transactionAnchors);
     const vcRoot = await this.buildVcRoot(ctx, pending.vcAnchors);
-    const ops = await this.buildDidOps(ctx, pending.userDidAnchors);
+    const rawOps = await this.buildDidOps(ctx, pending.userDidAnchors);
 
-    // 5. AuxiliaryData を組み立て
-    const aux = buildAuxiliaryData({
+    // 5. AuxiliaryData を組み立て（§8.4 size budget — documentCbor を含めると
+    //    16 KB を超える場合は末尾の op から順次 docCbor を脱落させる）
+    const baseInput: Omit<BuildAuxiliaryDataInput, "ops"> = {
       v: 1,
       bid: weeklyKey,
       ts: Math.floor(Date.now() / 1000),
       tx: txRoot,
       vc: vcRoot,
-      ops,
-    });
+    };
+    const ops = trimDocCborForSizeBudget(baseInput, rawOps);
+    const aux = buildAuxiliaryData({ ...baseInput, ops });
 
     // 6. UTXO + 鍵
     const config = resolvePlatformSignerConfig();
@@ -381,7 +386,7 @@ export class AnchorBatchService {
   }
 }
 
-/** UserDidAnchor → DidOp 変換。 */
+/** UserDidAnchor → DidOp 変換（§8 / §8.3 — chain inclusion）。 */
 function buildOp(a: PendingUserDidAnchor, prevByAnchorId: Map<string, string | null>): DidOp {
   const prevHash = a.previousAnchorId ? (prevByAnchorId.get(a.previousAnchorId) ?? null) : null;
 
@@ -394,19 +399,105 @@ function buildOp(a: PendingUserDidAnchor, prevByAnchorId: Map<string, string | n
     };
   }
 
-  // CREATE / UPDATE: documentCbor は DB に保存済の CBOR bytes だが、
-  // txBuilder.buildOpMap が `cborEncode(op.doc)` を呼ぶため plain object を
-  // 渡す必要がある。Phase 1 では最小 doc（id のみ）を渡し、改ざん検知は
-  // metadata の `h` (Blake2b-256 hash) で担保する（§5.1.6 注釈）。
-  const minimalDoc: Record<string, unknown> = { id: a.did };
-
+  // CREATE / UPDATE: §8.3 / §8.4 に従い documentCbor を chain metadata に
+  // 同梱して chain 単独で DID Document を再構築可能にする（Phase 2）。
+  // documentCbor は DB に保存済の Bytes 列を **そのまま** 渡し、txBuilder
+  // 側でも再 encode しない。これにより `documentHash` (Blake2b-256) が
+  // chain 上の bytes と一致することが保証される。
+  //
+  // documentCbor が NULL の場合は Phase 1 の最小 doc（{ id }）に fallback。
+  // 主に Phase 3 backfill 行や、§U の "size 超過時に NULL 保存" を想定。
+  const docCbor = normalizeDocumentCbor(a.documentCbor);
+  if (docCbor) {
+    return {
+      k: a.operation === DidOperation.CREATE ? "c" : "u",
+      did: a.did,
+      h: a.documentHash,
+      docCbor,
+      prev: prevHash ?? null,
+    };
+  }
   return {
     k: a.operation === DidOperation.CREATE ? "c" : "u",
     did: a.did,
     h: a.documentHash,
-    doc: minimalDoc,
+    doc: { id: a.did },
     prev: prevHash ?? null,
   };
+}
+
+/**
+ * Normalize `documentCbor` from Prisma (Buffer | Uint8Array | null) to a
+ * plain Uint8Array, or undefined when the row has no CBOR blob persisted.
+ *
+ * Prisma's `Bytes` field is typed as `Buffer` in @prisma/client; tests pass
+ * Uint8Array directly. Buffer is already a Uint8Array subclass, but we
+ * defensively re-wrap so downstream `.subarray()` semantics in the chunker
+ * are uniform across runtimes.
+ */
+function normalizeDocumentCbor(
+  blob: Buffer | Uint8Array | null | undefined,
+): Uint8Array | undefined {
+  if (!blob) return undefined;
+  if (blob.length === 0) return undefined;
+  return blob instanceof Uint8Array ? blob : new Uint8Array(blob);
+}
+
+/**
+ * §8.4 size-budget enforcement.
+ *
+ * `documentCbor` を全 op に同梱した状態で AuxiliaryData CBOR size が
+ * `MAX_METADATA_TX_BYTES` (16 KB) を超えた場合、末尾の c/u op から順に
+ * `docCbor` を取り外し、最小 doc に置換することで超過分を吸収する。
+ * Phase 2 では分割 tx ではなくシンプルなフォールバックで対応する
+ * （複数 tx 分割は Phase 4 でルーター層に持たせる予定）。
+ *
+ * 取り外す順序: anchor は did 昇順で sort 済 (§5.3.1) なので、末尾から
+ * 削っても順序の決定性は維持される（同入力 → 同 metadata bytes）。
+ *
+ * Returns the (possibly mutated) ops array — original ops are not modified.
+ */
+export function trimDocCborForSizeBudget(
+  base: Omit<BuildAuxiliaryDataInput, "ops">,
+  ops: DidOp[],
+): DidOp[] {
+  let candidate = ops;
+  let size = measureMetadataSize({ ...base, ops: candidate });
+  if (size <= MAX_METADATA_TX_BYTES) return candidate;
+
+  // Find c/u ops with docCbor; deactivate ops carry no doc so they're skipped.
+  const trimmableIndexes: number[] = [];
+  for (let i = 0; i < candidate.length; i++) {
+    const op = candidate[i];
+    if (op.k !== "d" && op.docCbor !== undefined) {
+      trimmableIndexes.push(i);
+    }
+  }
+
+  // Trim from the tail (highest did) so earlier ops keep their CBOR.
+  for (let i = trimmableIndexes.length - 1; i >= 0; i--) {
+    const idx = trimmableIndexes[i];
+    const op = candidate[idx];
+    if (op.k === "d") continue; // type guard for narrowing
+    const replaced: DidOp = {
+      k: op.k,
+      did: op.did,
+      h: op.h,
+      doc: { id: op.did },
+      prev: op.prev ?? null,
+    };
+    candidate = [...candidate.slice(0, idx), replaced, ...candidate.slice(idx + 1)];
+    size = measureMetadataSize({ ...base, ops: candidate });
+    logger.warn(
+      "[AnchorBatchService] documentCbor dropped for size budget (§8.4)",
+      { did: op.did, remainingBytes: MAX_METADATA_TX_BYTES - size },
+    );
+    if (size <= MAX_METADATA_TX_BYTES) return candidate;
+  }
+
+  // Even with all docCbor dropped we still exceed 16 KB → let txBuilder
+  // throw the precise error, the caller's markFailed will surface it.
+  return candidate;
 }
 
 /** TransactionAnchor の leafIds を全結合して merkle root を計算。 */
