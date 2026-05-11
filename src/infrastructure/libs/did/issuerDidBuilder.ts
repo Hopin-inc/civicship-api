@@ -238,18 +238,15 @@ export function kmsResourceNameToKid(kmsKeyResourceName: string): string {
 }
 
 /**
- * base64url encoder (RFC 7515 §2 / RFC 4648 §5) — no padding, `-` and `_`
- * instead of `+` and `/`. Hand-rolled rather than reaching for `Buffer`
- * because the encoder is the entire spec-defined contract and we want a
- * single, audit-friendly definition.
+ * base64url encoder (RFC 7515 §2 / RFC 4648 §5) — no padding, `-` / `_`
+ * substitution. Uses Node 18+'s native `Buffer.toString("base64url")`
+ * rather than a manual replace chain: the previous regex chain tripped
+ * SonarCloud `typescript:S5852` on the trailing `/=+$/g` anchor (false
+ * positive — the pattern is linear — but the native API is clearer
+ * regardless).
  */
 function base64UrlEncode(bytes: Uint8Array): string {
-  // Node 18+: `Buffer.from(bytes).toString("base64url")` would also work,
-  // but the manual transform keeps this module portable to Workers /
-  // Edge runtimes if we ever extract it (same rationale as `bytesToHex`
-  // in `service.ts`).
-  const std = Buffer.from(bytes).toString("base64");
-  return std.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return Buffer.from(bytes).toString("base64url");
 }
 
 /**
