@@ -41,7 +41,7 @@ import {
  *
  * Cloud Run の default request timeout が 300s であるため、5 分待機 +
  * tx build/submit を 1 リクエストでこなすと容易にタイムアウトする。
- * 暫定対応として:
+ * 暖定対応として:
  *   - 本 PR では Cloud Run timeout >= 600s を deploy gate とし、
  *     `docs/operations/anchor-batch-deploy-checklist.md` に運用注意を明記する。
  *   - `CARDANO_AWAIT_CONFIRM_TIMEOUT_MS` で env から override 可能とし、
@@ -88,7 +88,7 @@ export interface BlockfrostLatestSlotProvider {
  * Anchoring に必要な platform 鍵情報。env 変数から組み立てる。
  *
  * - `CARDANO_PLATFORM_PRIVATE_KEY_HEX`: 32-byte ed25519 seed の hex (raw)。
- *   KMS 経由で署名する Phase 2 までの暫定。Phase 1 では env から直接読む
+ *   KMS 経由で署名する Phase 2 までの暖定。Phase 1 では env から直接読む
  *   （§I 0-2: Phase 0 で生成した seed を Secret Manager で配信）。
  * - `CARDANO_PLATFORM_ADDRESS`: bech32 enterprise address（preprod / mainnet）。
  * - `CARDANO_PLATFORM_KMS_KEY_RESOURCE_NAME`: KMS 経由署名時のリソース名
@@ -276,7 +276,7 @@ export class AnchorBatchService {
     const vcRoot = await this.buildVcRoot(ctx, pending.vcAnchors);
     const rawOps = await this.buildDidOps(ctx, pending.userDidAnchors);
 
-    // 5. AuxiliaryData を組み立て（§8.4 size budget — documentCbor を含めると
+    // 5. AuxiliaryData を組み立てる（§8.4 size budget — documentCbor を含めると
     //    16 KB を超える場合は末尾の op から順次 docCbor を脱落させる）
     const baseInput: Omit<BuildAuxiliaryDataInput, "ops"> = {
       v: 1,
@@ -431,16 +431,19 @@ function buildOp(a: PendingUserDidAnchor, prevByAnchorId: Map<string, string | n
  * plain Uint8Array, or undefined when the row has no CBOR blob persisted.
  *
  * Prisma's `Bytes` field is typed as `Buffer` in @prisma/client; tests pass
- * Uint8Array directly. Buffer is already a Uint8Array subclass, but we
- * defensively re-wrap so downstream `.subarray()` semantics in the chunker
- * are uniform across runtimes.
+ * Uint8Array directly. `Buffer` is a subclass of `Uint8Array`, so
+ * `instanceof Uint8Array` would short-circuit to the Buffer branch and
+ * the chunker's `.subarray()` would inherit Buffer-flavoured semantics
+ * (which return Buffer slices, not plain Uint8Array). Compare
+ * constructors directly so Buffer is always copied into a plain
+ * Uint8Array and downstream behaviour is uniform.
  */
 function normalizeDocumentCbor(
   blob: Buffer | Uint8Array | null | undefined,
 ): Uint8Array | undefined {
   if (!blob) return undefined;
   if (blob.length === 0) return undefined;
-  return blob instanceof Uint8Array ? blob : new Uint8Array(blob);
+  return blob.constructor === Uint8Array ? (blob as Uint8Array) : new Uint8Array(blob);
 }
 
 /**
@@ -455,17 +458,27 @@ function normalizeDocumentCbor(
  * 取り外す順序: anchor は did 昇順で sort 済 (§5.3.1) なので、末尾から
  * 削っても順序の決定性は維持される（同入力 → 同 metadata bytes）。
  *
- * Returns the (possibly mutated) ops array — original ops are not modified.
+ * Implementation note (Gemini review): replace the per-iteration spread
+ * `[...candidate.slice(0, idx), replaced, ...candidate.slice(idx + 1)]`
+ * with an in-place mutation of a single working copy. We still call
+ * `measureMetadataSize` once per trimmed op (it has to rebuild the
+ * AuxiliaryData to know the new size), but the surrounding array work
+ * drops from O(N²) memory traffic to O(1) per iteration.
+ *
+ * Returns the (possibly mutated) ops array — original `ops` is not
+ * touched (we copy it once up front).
  */
 export function trimDocCborForSizeBudget(
   base: Omit<BuildAuxiliaryDataInput, "ops">,
   ops: DidOp[],
 ): DidOp[] {
-  let candidate = ops;
-  let size = measureMetadataSize({ ...base, ops: candidate });
-  if (size <= MAX_METADATA_TX_BYTES) return candidate;
+  let size = measureMetadataSize({ ...base, ops });
+  if (size <= MAX_METADATA_TX_BYTES) return ops;
 
-  // Find c/u ops with docCbor; deactivate ops carry no doc so they're skipped.
+  // Single working copy: mutated in place during trim.
+  const candidate: DidOp[] = [...ops];
+
+  // Find c/u ops with docCbor; DEACTIVATE ops carry no doc so they're skipped.
   const trimmableIndexes: number[] = [];
   for (let i = 0; i < candidate.length; i++) {
     const op = candidate[i];
@@ -479,14 +492,13 @@ export function trimDocCborForSizeBudget(
     const idx = trimmableIndexes[i];
     const op = candidate[idx];
     if (op.k === "d") continue; // type guard for narrowing
-    const replaced: DidOp = {
+    candidate[idx] = {
       k: op.k,
       did: op.did,
       h: op.h,
       doc: { id: op.did },
       prev: op.prev ?? null,
     };
-    candidate = [...candidate.slice(0, idx), replaced, ...candidate.slice(idx + 1)];
     size = measureMetadataSize({ ...base, ops: candidate });
     logger.warn(
       "[AnchorBatchService] documentCbor dropped for size budget (§8.4)",
@@ -563,7 +575,7 @@ export function computeIsoWeeklyKey(date: Date = new Date()): string {
   return `${utc.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
-/** env から platform signer 設定を組み立てる（Phase 1 暫定）。 */
+/** env から platform signer 設定を組み立てる（Phase 1 暖定）。 */
 export function resolvePlatformSignerConfig(): PlatformSignerConfig {
   const networkRaw = process.env.CARDANO_NETWORK ?? "preprod";
   const network = networkRaw === "mainnet" ? "mainnet" : "preprod";

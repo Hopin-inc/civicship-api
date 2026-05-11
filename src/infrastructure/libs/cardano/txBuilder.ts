@@ -223,16 +223,21 @@ function buildUtxoSet(
  * what lands on chain. Fall back to `cborEncode(op.doc)` for callers that
  * have not yet migrated. Throws when neither is provided — c/u ops without
  * a doc are not representable in metadata-1985.
+ *
+ * Buffer vs Uint8Array note (Gemini PR #1119 review): `Buffer` is a
+ * subclass of `Uint8Array`, so `instanceof Uint8Array` returns `true` for
+ * a Buffer and the no-op branch wins. That leaks `Buffer`-flavoured
+ * `.subarray()` semantics (which return a Buffer slice) into the chunker.
+ * Compare constructors directly so a real Buffer is always copied into
+ * a plain `Uint8Array` and the downstream chunking is byte-for-byte
+ * predictable across runtimes.
  */
 function resolveDocCborBytes(
   op: Extract<DidOp, { k: "c" | "u" }>,
 ): Uint8Array {
   if (op.docCbor) {
-    // Defensive: cbor-x can hand us a Node Buffer in some paths. Buffer is
-    // already a Uint8Array, but normalize to be explicit so the chunker's
-    // `.subarray()` semantics are predictable.
-    return op.docCbor instanceof Uint8Array
-      ? op.docCbor
+    return op.docCbor.constructor === Uint8Array
+      ? (op.docCbor as Uint8Array)
       : new Uint8Array(op.docCbor);
   }
   if (op.doc === undefined) {
