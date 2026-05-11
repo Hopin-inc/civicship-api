@@ -188,7 +188,7 @@ function hexToBytes(hex: string): Uint8Array {
   if (clean.length % 2 !== 0) throw new Error(`invalid hex length: ${hex}`);
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++) {
-    const byte = clean.substr(i * 2, 2);
+    const byte = clean.slice(i * 2, i * 2 + 2);
     const v = parseInt(byte, 16);
     if (Number.isNaN(v)) throw new Error(`invalid hex char in: ${hex}`);
     out[i] = v;
@@ -217,19 +217,22 @@ function hashPair(a: Uint8Array, b: Uint8Array): Uint8Array {
 // ----------------------------------------------------------------------------
 // Merkle proof verification (§5.1.7)
 //
-// civicship Merkle tree uses the @openzeppelin/merkle-tree "carry-up"
-// algorithm: when a layer has an odd number of nodes, the unpaired node is
-// promoted directly to the next layer (no duplicate-last like Bitcoin).
+// civicship Merkle tree uses the **duplicate-last** odd-leaf rule, matching
+// `src/infrastructure/libs/merkle/merkleTreeBuilder.ts` (`buildRoot` /
+// `getProof`): when a layer has an odd number of nodes, the last node is
+// hashed with itself — `hashPair(last, last)`. Note that `@openzeppelin/
+// merkle-tree` JS uses a *carry-up* promotion instead; we deliberately
+// diverge from that for a simpler verifier loop where every level always has
+// one sibling.
 //
-// `siblings` is the list of sibling hashes from leaf -> root. At each level,
-// pairing position is decided by `(index >> level) & 1`:
-//   - bit == 0  → current node is LEFT,  sibling is RIGHT  → hashPair(cur, sib)
-//   - bit == 1  → current node is RIGHT, sibling is LEFT   → hashPair(sib, cur)
+// Consequence: `siblings.length === ceil(log2(n))` exactly. The loop below
+// walks one sibling per level without skipping; at the position whose
+// sibling was self-duplicated, the server returns that same node and
+// `hashPair(cur, cur)` reproduces the parent.
 //
-// When the node was carried up alone (no sibling at that level), the proof
-// simply skips that level — i.e. siblings.length < tree depth and the index
-// shifts past empty levels. This matches the OZ JS implementation when the
-// hash function is swapped to Blake2b.
+// At each level, pairing position is decided by `cursor % 2`:
+//   - even (LEFT)  → sibling is RIGHT → hashPair(cur, sib)
+//   - odd  (RIGHT) → sibling is LEFT  → hashPair(sib, cur)
 // ----------------------------------------------------------------------------
 
 function verifyMerkleProof(

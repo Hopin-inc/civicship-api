@@ -66,8 +66,10 @@ node --experimental-strip-types scripts/verify-from-chain.ts --vc <vcId>
 **For `--vc <vcId>` (付録 B.2 step 9):**
 1. Fetches `${baseUrl}/vc/{vcId}/inclusion-proof` →
    `{ leafHash, leafIndex, siblings[], root, chainTxHash }`
-2. Locally reconstructs the Merkle root using Blake2b-256 with the carry-up
-   rule (§5.1.7 — OZ-compatible, NOT Bitcoin-style duplicate-last)
+2. Locally reconstructs the Merkle root using Blake2b-256 with the
+   **duplicate-last** odd-leaf rule (§5.1.7 — matches
+   `src/infrastructure/libs/merkle/merkleTreeBuilder.ts`; this is distinct
+   from `@openzeppelin/merkle-tree` JS, which uses carry-up promotion)
 3. Confirms the locally computed root equals the API-returned root
 4. Calls Koios for the on-chain `metadata["1985"].vc.root`
 5. Asserts the on-chain root matches the locally computed root
