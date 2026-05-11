@@ -244,7 +244,11 @@ export default class VcIssuanceService {
     //    exactly `${header}.${payload}` per the JWS spec so the Phase 2
     //    swap requires no service-side change.
     const header = base64urlEncodeJson({
-      alg: "EdDSA",
+      // `alg` is read off the signer (Phase 1 stub returns "EdDSA"; the
+      // future KMS signer returns the same string for the Ed25519 key,
+      // or whatever JWS alg KMS ends up advertising). Keeps service-side
+      // code agnostic to the JWS algorithm choice.
+      alg: this.signer.alg,
       typ: "JWT",
       // `kid` is read off the signer so the stub path and the future
       // KMS path stamp the same header field without service-side

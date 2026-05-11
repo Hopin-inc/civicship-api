@@ -27,8 +27,9 @@
  * (`credential/shared/kmsJwtSigner.ts`, placeholder for Phase 2 — design
  * §16). Until Phase 0-2 PoC graduates, the bound `StatusListJwtSigner`
  * DI token resolves to a `StubJwtSigner` that returns the constant
- * `STUB_SIGNATURE_STATUS` so verifiers reject it (it is not a valid
- * base64url signature) and so we can grep every stub site post-hoc.
+ * `STUB_SIGNATURE_STATUS` so verifiers reject it (the bytes don't form
+ * a valid Ed25519 signature) and so we can grep every stub site
+ * post-hoc.
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §4.1   (StatusListCredential schema)
@@ -194,10 +195,16 @@ export function buildStatusListVcPayload(input: {
  * the produced JWT byte-matches the pre-extraction version. The
  * signing input fed to `signer.sign()` is exactly `${header}.${body}`
  * per the JWS spec — Phase 2 KMS swap requires no rendering change.
+ *
+ * `alg` is read off the signer (Phase 1 stub returns "EdDSA"; the
+ * future KMS signer pins whatever JWS alg the Ed25519 key advertises).
+ * Keeping the algorithm pinned to the signer instance means a future
+ * migration (e.g. ES256K) flips a single property rather than this
+ * call site.
  */
 async function renderJwt(payload: Record<string, unknown>, signer: JwtSigner): Promise<string> {
   const header = base64urlEncodeJson({
-    alg: "EdDSA",
+    alg: signer.alg,
     typ: "JWT",
     kid: signer.kid,
   });
