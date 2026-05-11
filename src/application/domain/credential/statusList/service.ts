@@ -23,8 +23,10 @@
  * re-zip on every read; the base64url wrapper is only applied at JWT
  * build time.
  *
- * KMS signing: production signing lives in `IssuerDidService.signWithActiveKey`
- * (sibling PR). Until that lands the JWT signature segment is the constant
+ * KMS signing: production signing will live in `KmsJwtSigner`
+ * (`credential/shared/kmsJwtSigner.ts`, placeholder for Phase 2 — design
+ * §16). Until Phase 0-2 PoC graduates, the bound `StatusListJwtSigner`
+ * DI token resolves to a `StubJwtSigner` that returns the constant
  * `STUB_SIGNATURE_STATUS` so verifiers reject it (it is not a valid
  * base64url signature) and so we can grep every stub site post-hoc.
  *
@@ -51,6 +53,8 @@ import {
   StatusListFrozenError,
 } from "@/application/domain/credential/statusList/data/errors";
 import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
+import type { JwtSigner } from "@/application/domain/credential/shared/jwtSigner";
+import { STUB_SIGNATURE_STATUS } from "@/application/domain/credential/shared/stubJwtSigner";
 
 /**
  * Public API host. Hard-coded per §B / §5.4 — civicship is a single-issuer
@@ -83,12 +87,13 @@ export function buildStatusListUrl(listKey: string): string {
 export const DEFAULT_STATUS_LIST_CAPACITY = 131_072;
 
 /**
- * Stub signature for the StatusList VC. Distinct from the VC issuance
- * stub so post-hoc grep can pin which stub a JWT came from. Replaced with
- * a real KMS-backed signature once `IssuerDidService.signWithActiveKey`
- * lands (sibling PR).
+ * Re-export so the public symbol's path stays stable for existing unit
+ * tests. The canonical definition now lives in
+ * `credential/shared/stubJwtSigner.ts` next to the `StubJwtSigner`
+ * implementation that emits it; this module keeps the export name so
+ * `service.test.ts` continues to compile unchanged.
  */
-export const STUB_SIGNATURE_STATUS = "stub-status-list-not-signed";
+export { STUB_SIGNATURE_STATUS };
 
 /**
  * Build the standard W3C contexts + types for a `StatusList2021Credential`
@@ -181,22 +186,25 @@ export function buildStatusListVcPayload(input: {
 }
 
 /**
- * Render a JWT from header/payload/signature. Currently signature is a
- * stub; swap to KMS once available.
+ * Render a JWT from header/payload/signature.
+ *
+ * Phase 2 prep: the signing step is delegated to a `JwtSigner` instance
+ * supplied by the caller. In Phase 1 the bound `StatusListJwtSigner` is
+ * a `StubJwtSigner` whose `sign()` returns `STUB_SIGNATURE_STATUS`, so
+ * the produced JWT byte-matches the pre-extraction version. The
+ * signing input fed to `signer.sign()` is exactly `${header}.${body}`
+ * per the JWS spec — Phase 2 KMS swap requires no rendering change.
  */
-function renderJwt(payload: Record<string, unknown>, kid: string): string {
+async function renderJwt(payload: Record<string, unknown>, signer: JwtSigner): Promise<string> {
   const header = base64urlEncodeJson({
     alg: "EdDSA",
     typ: "JWT",
-    kid,
+    kid: signer.kid,
   });
   const body = base64urlEncodeJson(payload);
-  // TODO(phase1-final): replace `STUB_SIGNATURE_STATUS` with the output of
-  // `IssuerDidService.signWithActiveKey(`${header}.${body}`)`. The function
-  // signature lives in the sibling KMS PR; tests assert on the stub
-  // marker today and will move to a structural shape check once signing
-  // lands.
-  return `${header}.${body}.${STUB_SIGNATURE_STATUS}`;
+  const signingInput = `${header}.${body}`;
+  const signature = await signer.sign(signingInput);
+  return `${signingInput}.${signature}`;
 }
 
 @injectable()
@@ -204,6 +212,17 @@ export default class StatusListService {
   constructor(
     @inject("StatusListRepository")
     private readonly repository: IStatusListRepository,
+    /**
+     * Phase 2 prep: signing is delegated to a `JwtSigner` rather than
+     * the inline stub constant. In Phase 1 the injected instance is a
+     * `StubJwtSigner` that returns `STUB_SIGNATURE_STATUS`, so the
+     * produced StatusList VC JWT is byte-identical to the
+     * pre-extraction version. The DI token `StatusListJwtSigner` is
+     * intentionally distinct from `VcJwtSigner` so the two paths can
+     * rotate independently once KMS lands (design doc §16).
+     */
+    @inject("StatusListJwtSigner")
+    private readonly signer: JwtSigner,
   ) {}
 
   /**
@@ -323,7 +342,7 @@ export default class StatusListService {
 
     // Re-sign the list VC and persist the new bytes + JWT.
     const issuedAt = new Date();
-    const vcJwt = this.signListVc(list, recompressed, issuedAt);
+    const vcJwt = await this.signListVc(list, recompressed, issuedAt);
 
     await this.repository.updateBitstring(ctx, list.id, { encodedList: recompressed, vcJwt }, tx);
     await this.repository.markVcRevoked(ctx, input.vcRequestId, { reason: input.reason }, tx);
@@ -384,7 +403,7 @@ export default class StatusListService {
       // listKey so it must be re-rendered if the listKey shifts after a
       // P2002 retry.
       const issuedAt = new Date();
-      const vcJwt = this.signBootstrapVc(listKey, compressed, issuedAt);
+      const vcJwt = await this.signBootstrapVc(listKey, compressed, issuedAt);
 
       try {
         return await this.repository.create(
@@ -431,12 +450,15 @@ export default class StatusListService {
   /**
    * Sign a list VC. Same path used at bootstrap and at each revocation;
    * the only difference is which bytes go into `encodedList`.
+   *
+   * Async because `JwtSigner.sign` is async (Phase 2 KMS round-trip).
+   * In Phase 1 the stub resolves immediately so the await is free.
    */
-  private signListVc(
+  private async signListVc(
     list: StatusListCredentialRow,
     compressedBitstring: Uint8Array,
     issuedAt: Date,
-  ): string {
+  ): Promise<string> {
     const listUrl = buildStatusListUrl(list.listKey);
     const payload = buildStatusListVcPayload({
       listUrl,
@@ -444,7 +466,7 @@ export default class StatusListService {
       issuer: CIVICSHIP_ISSUER_DID,
       issuedAt,
     });
-    return renderJwt(payload, `${CIVICSHIP_ISSUER_DID}#stub`);
+    return renderJwt(payload, this.signer);
   }
 
   /**
@@ -453,11 +475,11 @@ export default class StatusListService {
    * time). Kept separate to avoid a "fake row" hack in the bootstrap
    * path.
    */
-  private signBootstrapVc(
+  private async signBootstrapVc(
     listKey: string,
     compressedBitstring: Uint8Array,
     issuedAt: Date,
-  ): string {
+  ): Promise<string> {
     const listUrl = buildStatusListUrl(listKey);
     const payload = buildStatusListVcPayload({
       listUrl,
@@ -465,7 +487,7 @@ export default class StatusListService {
       issuer: CIVICSHIP_ISSUER_DID,
       issuedAt,
     });
-    return renderJwt(payload, `${CIVICSHIP_ISSUER_DID}#stub`);
+    return renderJwt(payload, this.signer);
   }
 
   /**
