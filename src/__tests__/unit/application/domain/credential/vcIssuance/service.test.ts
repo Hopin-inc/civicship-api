@@ -18,6 +18,10 @@ import VcIssuanceService, {
   CIVICSHIP_ISSUER_DID,
   buildVcPayload,
 } from "@/application/domain/credential/vcIssuance/service";
+import {
+  StubJwtSigner,
+  STUB_SIGNATURE,
+} from "@/application/domain/credential/shared/stubJwtSigner";
 import { buildRoot, verifyProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 import type {
   VcAnchorRow,
@@ -87,6 +91,17 @@ describe("VcIssuanceService", () => {
     mockStatusList = new MockStatusListService();
     container.register("VcIssuanceRepository", { useValue: mockRepository });
     container.register("StatusListService", { useValue: mockStatusList });
+    // Phase 2 prep: VcIssuanceService now resolves `VcJwtSigner` from DI
+    // rather than reaching for the inline `STUB_SIGNATURE` constant. We
+    // bind the same `StubJwtSigner` used in production so the JWT output
+    // stays byte-identical and the existing assertions
+    // (`expect(segments[2]).toBe("stub-not-signed")`) keep passing.
+    container.register("VcJwtSigner", {
+      useValue: new StubJwtSigner({
+        kid: `${CIVICSHIP_ISSUER_DID}#stub`,
+        stubSignature: STUB_SIGNATURE,
+      }),
+    });
     container.register("VcIssuanceService", { useClass: VcIssuanceService });
 
     service = container.resolve(VcIssuanceService);
