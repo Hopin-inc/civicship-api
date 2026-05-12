@@ -2,9 +2,10 @@
  * `IssuerDidPresenter` — pure transform from internal types to the wire
  * shape served at `/.well-known/did.json`.
  *
- * Today the wire shape *is* the internal type (`IssuerDidDocument` is
- * already the W3C JSON-LD form built by `IssuerDidBuilder`). The presenter
- * therefore looks like an identity function — but it exists so that:
+ * Today the wire shape *is* the internal type (`IssuerDidDocument` /
+ * `IssuerMultiKeyDidDocument` are already the W3C JSON-LD forms built by
+ * `IssuerDidBuilder`). The presenter therefore looks like an identity
+ * function — but it exists so that:
  *
  *   1. The architectural pattern (UseCase always invokes a presenter
  *      before returning) holds uniformly across domains.
@@ -14,12 +15,21 @@
  *   3. Tests can import the presenter alone to assert the wire contract
  *      without the service / KMS layers.
  *
+ * Phase 2 (PR #1124) adds `toMultiKeyDocumentResponse` for the §G
+ * overlap-window shape (spec §5.4.3 line 1131-1142). Same identity-pass
+ * rationale — the multi-key Document is already in wire form when the
+ * service hands it over.
+ *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.1.2 (DID Document shape)
+ *   docs/report/did-vc-internalization.md §5.4.3 (multi-key shape)
  *   CLAUDE.md "Layer Responsibilities" (Presenter — pure functions only)
  */
 
-import type { IssuerDidDocument } from "@/infrastructure/libs/did/issuerDidBuilder";
+import type {
+  IssuerDidDocument,
+  IssuerMultiKeyDidDocument,
+} from "@/infrastructure/libs/did/issuerDidBuilder";
 
 const IssuerDidPresenter = {
   /**
@@ -46,6 +56,22 @@ const IssuerDidPresenter = {
    * object per request rather than retroactively freezing.
    */
   toDocumentResponse(document: IssuerDidDocument): IssuerDidDocument {
+    return document;
+  },
+
+  /**
+   * Identity transform for the §G overlap multi-key shape. Same
+   * read-only / no-clone discipline as `toDocumentResponse`.
+   *
+   * Distinct method (rather than overloading `toDocumentResponse`) so
+   * that future per-shape adjustments (e.g. omitting the rotating-out
+   * `verificationMethod` from a future admin-only audit endpoint) have
+   * a dedicated injection point and TypeScript can statically guarantee
+   * the wire shape at the call site.
+   */
+  toMultiKeyDocumentResponse(
+    document: IssuerMultiKeyDidDocument,
+  ): IssuerMultiKeyDidDocument {
     return document;
   },
 };

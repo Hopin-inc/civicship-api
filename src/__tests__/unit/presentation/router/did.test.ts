@@ -3,18 +3,20 @@
  *
  * Covers the three endpoints:
  *   - GET /.well-known/did.json
- *       → 200 + full Issuer DID Document when `IssuerDidUseCase` yields one
+ *       → 200 + §G overlap multi-key Document when
+ *         `IssuerDidUseCase.buildDidDocument()` yields one
  *       → 200 + minimal static fallback when the use case yields `null`
  *       → 500 when the use case throws
+ *       → response carries `Content-Type: application/did+json` and
+ *         `Cache-Control: public, max-age=300` per §5.4.1
  *   - GET /users/:userId/did.json        → 200 (CONFIRMED / DEACTIVATE)
  *                                          → 404 (no anchor)
  *                                          → 400 (malformed userId)
  *                                          → 500 (resolver throws)
- *   - GET /vc/:vcId/inclusion-proof      → 501 not_implemented
- *                                          → 400 (empty vcId — guarded by
- *                                            Express's own routing, but we
- *                                            still assert the shape on
- *                                            valid input)
+ *   - GET /vc/:vcId/inclusion-proof      → 200 (CONFIRMED)
+ *                                          → 404 (not_anchored)
+ *                                          → 400 (invalid_vc_id)
+ *                                          → 500 (use case throws)
  *
  * The `DidDocumentResolver` and `IssuerDidUseCase` are both stubbed via
  * `container.register` so the tests never touch Prisma or KMS. Each route
@@ -31,7 +33,7 @@ import { container } from "tsyringe";
 import didRouter from "@/presentation/router/did";
 import type IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase";
 import type VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
-import type { IssuerDidDocument } from "@/infrastructure/libs/did/issuerDidBuilder";
+import type { IssuerMultiKeyDidDocument } from "@/infrastructure/libs/did/issuerDidBuilder";
 import type {
   DidDocumentResolver,
   DidDocumentWithProof,
@@ -92,8 +94,13 @@ function registerResolverMock(buildDidDocument: jest.Mock): void {
   container.register("DidDocumentResolver", { useValue: mock as DidDocumentResolver });
 }
 
-function registerIssuerDidUseCaseMock(getActiveIssuerDidDocument: jest.Mock): void {
-  const mock: Partial<IssuerDidUseCase> = { getActiveIssuerDidDocument };
+/**
+ * Phase 2: the router consumes `buildDidDocument()` (§G overlap multi-key
+ * shape). The legacy `getActiveIssuerDidDocument` is preserved on the use
+ * case for backward compat but the router no longer calls it.
+ */
+function registerIssuerDidUseCaseMock(buildDidDocument: jest.Mock): void {
+  const mock: Partial<IssuerDidUseCase> = { buildDidDocument };
   container.register("IssuerDidUseCase", { useValue: mock as IssuerDidUseCase });
 }
 
@@ -112,25 +119,53 @@ function registerPrismaIssuerStub(): void {
   container.register("PrismaClientIssuer", { useValue: stub });
 }
 
-function buildFullIssuerDoc(): IssuerDidDocument {
+/**
+ * Build a §G overlap multi-key Document with one ENABLED key (key-7) and
+ * one DISABLED key (key-6). Mirrors the spec §5.4.3 line 1131-1142
+ * sample: every key in `verificationMethod`, ENABLED-only refs in
+ * `assertionMethod` / `authentication`, plus the
+ * `CivicshipIssuedCredentials` discovery `service` block (Gemini review
+ * on PR #1124 — must remain present in both single- and multi-key
+ * shapes so verifiers can resolve issued credential types uniformly).
+ */
+function buildMultiKeyIssuerDoc(): IssuerMultiKeyDidDocument {
+  const did = "did:web:api.civicship.app";
   return {
-    "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/multikey/v1"],
-    id: "did:web:api.civicship.app",
+    "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1"],
+    id: did,
     verificationMethod: [
       {
-        id: "did:web:api.civicship.app#key-1",
-        type: "Multikey",
-        controller: "did:web:api.civicship.app",
-        publicKeyMultibase: "z6MkfullmockedmultibaseTESTONLY",
+        id: `${did}#key-7`,
+        type: "JsonWebKey2020",
+        controller: did,
+        publicKeyJwk: {
+          kty: "OKP",
+          crv: "Ed25519",
+          x: "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+        },
+      },
+      {
+        id: `${did}#key-6`,
+        type: "JsonWebKey2020",
+        controller: did,
+        publicKeyJwk: {
+          kty: "OKP",
+          crv: "Ed25519",
+          x: "VCpo2LydsNZm0e7uLCyfKmYO2GMyfV-Z0nL3-bKBR_w",
+        },
       },
     ],
-    assertionMethod: ["did:web:api.civicship.app#key-1"],
-    authentication: ["did:web:api.civicship.app#key-1"],
+    // ENABLED-only — key-6 is the rotating-out tail and MUST NOT be
+    // advertised as signable per §9.1.2.
+    assertionMethod: [`${did}#key-7`],
+    authentication: [`${did}#key-7`],
     service: [
       {
-        id: "did:web:api.civicship.app#issued-credentials",
+        id: `${did}#issued-credentials`,
         type: "CivicshipIssuedCredentials",
-        serviceEndpoint: { credentialTypes: ["civicship-attendance-credential-2026"] },
+        serviceEndpoint: {
+          credentialTypes: ["civicship-attendance-credential-2026"],
+        },
       },
     ],
   };
@@ -142,21 +177,59 @@ describe("router/did (§5.4)", () => {
   });
 
   describe("GET /.well-known/did.json", () => {
-    it("returns 200 with the full Issuer DID Document when the use case yields one", async () => {
-      const fullDoc = buildFullIssuerDoc();
-      const getActiveIssuerDidDocument = jest.fn().mockResolvedValue(fullDoc);
-      registerIssuerDidUseCaseMock(getActiveIssuerDidDocument);
+    it("returns 200 with the §G overlap multi-key Document when the use case yields one", async () => {
+      const fullDoc = buildMultiKeyIssuerDoc();
+      const buildDidDocument = jest.fn().mockResolvedValue(fullDoc);
+      registerIssuerDidUseCaseMock(buildDidDocument);
 
       const res = await request(buildApp()).get("/.well-known/did.json");
 
       expect(res.status).toBe(200);
-      expect(getActiveIssuerDidDocument).toHaveBeenCalledTimes(1);
+      expect(buildDidDocument).toHaveBeenCalledTimes(1);
+      // Wire shape: every key in verificationMethod, ENABLED-only in
+      // assertionMethod / authentication (§5.4.3 line 1131-1142).
       expect(res.body).toEqual(fullDoc);
+      expect(res.body.verificationMethod).toHaveLength(2);
+      expect(res.body.verificationMethod[0]).toMatchObject({
+        type: "JsonWebKey2020",
+        publicKeyJwk: { kty: "OKP", crv: "Ed25519" },
+      });
+      expect(res.body.assertionMethod).toEqual([
+        "did:web:api.civicship.app#key-7",
+      ]);
+      expect(res.body.authentication).toEqual([
+        "did:web:api.civicship.app#key-7",
+      ]);
+      // `service` parity with the single-key Document so verifiers can
+      // discover what credential types this issuer publishes regardless
+      // of which shape they hit (Gemini review on PR #1124).
+      expect(res.body.service).toEqual([
+        {
+          id: "did:web:api.civicship.app#issued-credentials",
+          type: "CivicshipIssuedCredentials",
+          serviceEndpoint: {
+            credentialTypes: ["civicship-attendance-credential-2026"],
+          },
+        },
+      ]);
+    });
+
+    it("sets Content-Type application/did+json and Cache-Control max-age=300 per §5.4.1", async () => {
+      const buildDidDocument = jest.fn().mockResolvedValue(buildMultiKeyIssuerDoc());
+      registerIssuerDidUseCaseMock(buildDidDocument);
+
+      const res = await request(buildApp()).get("/.well-known/did.json");
+
+      expect(res.status).toBe(200);
+      // Express normalises charset onto the Content-Type — match by
+      // prefix so the assertion stays robust if Express ever appends one.
+      expect(res.headers["content-type"]).toMatch(/^application\/did\+json/);
+      expect(res.headers["cache-control"]).toBe("public, max-age=300");
     });
 
     it("falls back to the minimal static Document when the use case yields null", async () => {
-      const getActiveIssuerDidDocument = jest.fn().mockResolvedValue(null);
-      registerIssuerDidUseCaseMock(getActiveIssuerDidDocument);
+      const buildDidDocument = jest.fn().mockResolvedValue(null);
+      registerIssuerDidUseCaseMock(buildDidDocument);
 
       const res = await request(buildApp()).get("/.well-known/did.json");
 
@@ -165,13 +238,16 @@ describe("router/did (§5.4)", () => {
         "@context": ["https://www.w3.org/ns/did/v1"],
         id: "did:web:api.civicship.app",
       });
+      // Headers still applied on the bootstrap fallback.
+      expect(res.headers["content-type"]).toMatch(/^application\/did\+json/);
+      expect(res.headers["cache-control"]).toBe("public, max-age=300");
     });
 
     it("returns 500 when the use case throws (genuine misconfiguration, no silent fallback)", async () => {
-      const getActiveIssuerDidDocument = jest
+      const buildDidDocument = jest
         .fn()
         .mockRejectedValue(new Error("KMS PERMISSION_DENIED"));
-      registerIssuerDidUseCaseMock(getActiveIssuerDidDocument);
+      registerIssuerDidUseCaseMock(buildDidDocument);
 
       const res = await request(buildApp()).get("/.well-known/did.json");
 

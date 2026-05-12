@@ -110,6 +110,13 @@ export interface IssuerJwkVerificationMethod {
  * key during the 24-hour overlap. `assertionMethod` / `authentication`
  * reference only currently-signable (ENABLED) keys.
  *
+ * `service` carries the same `CivicshipIssuedCredentials` block as the
+ * single-key shape (`IssuerDidDocument`) so verifiers using the
+ * multi-key Document can still discover what credential types this
+ * issuer publishes — dropping the field would force them to keep a
+ * fallback path against the legacy Multikey response. (Gemini review on
+ * PR #1124.)
+ *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.4.3 (line 1131-1142)
  *   docs/report/did-vc-internalization.md §9.1.2 (rotation overlap)
@@ -122,6 +129,7 @@ export interface IssuerMultiKeyDidDocument {
   verificationMethod: readonly IssuerJwkVerificationMethod[];
   assertionMethod: readonly string[];
   authentication: readonly string[];
+  service: readonly IssuerService[];
 }
 
 /**
@@ -157,11 +165,17 @@ export interface IssuerActiveKey {
  *       { id: "...#key-6", type: "JsonWebKey2020", controller: "...", publicKeyJwk: { ... } }
  *     ],
  *     "assertionMethod": ["...#key-7"],   // ENABLED only
- *     "authentication":  ["...#key-7"]    // ENABLED only
+ *     "authentication":  ["...#key-7"],   // ENABLED only
+ *     "service": [{ id: "...#issued-credentials", type: "CivicshipIssuedCredentials", ... }]
  *   }
  *
  * Ordering is preserved from the input — callers (`IssuerDidService`) sort
  * by `activatedAt ASC` so the wire output is stable across re-renders.
+ *
+ * `service` mirrors `buildIssuerDidDocument` so verifiers see an
+ * identical `CivicshipIssuedCredentials` discovery block regardless of
+ * whether they hit the legacy single-key shape or the §G overlap
+ * multi-key shape.
  *
  * Throws when `activeKeys` is empty: every caller of this builder already
  * checks `listActiveKeys()` length and falls back to the minimal static
@@ -201,6 +215,18 @@ export function buildMultiKeyIssuerDidDocument(
     verificationMethod,
     assertionMethod: enabledRefs,
     authentication: enabledRefs,
+    // Keep parity with the single-key Document so verifiers always see
+    // the same `CivicshipIssuedCredentials` discovery block regardless
+    // of which shape they hit (§5.4.3, Gemini review on PR #1124).
+    service: [
+      {
+        id: `${did}#issued-credentials`,
+        type: "CivicshipIssuedCredentials",
+        serviceEndpoint: {
+          credentialTypes: [CIVICSHIP_ATTENDANCE_VC_TYPE],
+        },
+      },
+    ],
   };
 }
 
