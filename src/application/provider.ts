@@ -360,6 +360,11 @@ export function registerProductionDependencies() {
   // lifetime of Phase 1; future consumers (anchor batch worker) can lift
   // it into a shared "Cryptography" group once they land.
   container.registerSingleton("KmsSigner", KmsSigner);
+  // Default clock for `IssuerDidService.now` (public-key TTL cache). Tests
+  // can override via `container.register("IssuerDidClock", { useValue: ... })`.
+  // Required: the constructor parameter is decorated with @inject because
+  // tsyringe cannot otherwise reflect a function-typed optional parameter.
+  container.register("IssuerDidClock", { useValue: Date.now });
   container.register("IssuerDidKeyRepository", { useClass: IssuerDidKeyRepository });
   container.register("IssuerDidService", { useClass: IssuerDidService });
   container.register("IssuerDidUseCase", { useClass: IssuerDidUseCase });
