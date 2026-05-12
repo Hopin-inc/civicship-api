@@ -111,6 +111,14 @@ function makeKmsSignerStub(map: Record<string, Uint8Array>): KmsSigner {
 describe("[§14.2] Issuer DID /.well-known/did.json — §G overlap multi-key serving", () => {
   jest.setTimeout(30_000);
 
+  // `setupAcceptanceTest()` calls `container.reset()` AND re-runs
+  // `registerProductionDependencies()` before every test, so any
+  // `container.register(...)` override done inside one test (e.g.
+  // `wireOverlapKeys()` below) is wiped before the next one runs.
+  // The bootstrap-fallback test relies on this — it MUST see the
+  // production `IssuerDidKeyRepositoryStub` (which returns `[]`), not
+  // a stub left behind by a prior test. Do not move this reset into a
+  // less aggressive lifecycle hook (e.g. `beforeAll`).
   beforeEach(async () => {
     await setupAcceptanceTest();
   });

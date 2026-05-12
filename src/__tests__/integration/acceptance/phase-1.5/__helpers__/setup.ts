@@ -18,6 +18,7 @@
 
 import "reflect-metadata";
 import { container } from "tsyringe";
+import { gunzipSync } from "node:zlib";
 import {
   ChainNetwork,
   CurrentPrefecture,
@@ -313,6 +314,50 @@ export interface SeedPendingVcAnchorOptions {
   periodEnd?: Date;
   rootHash?: string;
   network?: ChainNetwork;
+}
+
+// ---------------------------------------------------------------------------
+// StatusList bitstring helpers (shared between phase14_vc_revocation and
+// phase14_did_deactivate_vc_cascade — extracted to keep SonarCloud's
+// new-code duplication metric under the 3% threshold).
+// ---------------------------------------------------------------------------
+
+/**
+ * Read bit `index` from a Status List 2021 bitstring. Bit ordering: bit 0
+ * is the MSB of byte 0 (mirrors `setBit` in `StatusListService`).
+ */
+export function readStatusListBit(bitstring: Uint8Array, index: number): number {
+  const byteIdx = Math.floor(index / 8);
+  const bitOffset = index % 8;
+  const mask = 0x80 >> bitOffset;
+  return (bitstring[byteIdx] & mask) === 0 ? 0 : 1;
+}
+
+/**
+ * Decode the payload of a StatusList VC JWT (3-segment, base64url payload).
+ * Returns the raw JSON claims — callers narrow the shape themselves.
+ */
+export function decodeStatusListJwt(jwt: string): Record<string, unknown> {
+  const [, payloadSeg] = jwt.split(".");
+  return JSON.parse(Buffer.from(payloadSeg, "base64url").toString("utf8")) as Record<
+    string,
+    unknown
+  >;
+}
+
+/**
+ * Decompress the `credentialSubject.encodedList` from a StatusList JWT
+ * payload back to the raw bitstring bytes.
+ */
+export function decodeStatusListBitstring(jwt: string): Uint8Array {
+  const payload = decodeStatusListJwt(jwt) as {
+    credentialSubject?: { encodedList?: string };
+  };
+  const encoded = payload.credentialSubject?.encodedList;
+  if (typeof encoded !== "string") {
+    throw new Error("decodeStatusListBitstring: payload has no credentialSubject.encodedList");
+  }
+  return new Uint8Array(gunzipSync(Buffer.from(encoded, "base64url")));
 }
 
 /** Seed a PENDING VcAnchor that wraps the given VcIssuanceRequest leafIds. */

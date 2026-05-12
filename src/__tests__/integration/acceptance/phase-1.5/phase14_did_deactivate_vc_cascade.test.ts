@@ -43,7 +43,6 @@
 
 import "reflect-metadata";
 import { container } from "tsyringe";
-import { gunzipSync } from "node:zlib";
 import express from "express";
 import request from "supertest";
 import {
@@ -60,7 +59,9 @@ import StatusListUseCase from "@/application/domain/credential/statusList/usecas
 import credentialsRouter from "@/presentation/router/credentials";
 import {
   buildCtx,
+  decodeStatusListBitstring,
   fakeVcJwt,
+  readStatusListBit,
   seedUserParticipationEvaluation,
   seedVcRequest,
   setupAcceptanceTest,
@@ -68,31 +69,10 @@ import {
 } from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
 
 /**
- * Read bit `index` from a Status List 2021 bitstring. Bit ordering: bit 0
- * is the MSB of byte 0 (mirrors `setBit` in `StatusListService`).
- * Duplicated from `phase14_vc_revocation.test.ts` — kept local rather than
- * promoted to the shared helper because it is only used by these two
- * StatusList-bit tests and lifting it to the helper would obscure what
- * each test is really asserting.
- */
-function readBit(bitstring: Uint8Array, index: number): number {
-  const byteIdx = Math.floor(index / 8);
-  const bitOffset = index % 8;
-  const mask = 0x80 >> bitOffset;
-  return (bitstring[byteIdx] & mask) === 0 ? 0 : 1;
-}
-
-function decodeStatusListJwt(jwt: string): Record<string, unknown> {
-  const [, payloadSeg] = jwt.split(".");
-  return JSON.parse(Buffer.from(payloadSeg, "base64url").toString("utf8")) as Record<
-    string,
-    unknown
-  >;
-}
-
-/**
- * Pull the encoded bitstring out of the freshly re-signed StatusList JWT
- * served at `/credentials/status/:listKey.jwt` and return the raw bytes.
+ * Wrap the shared `decodeStatusListBitstring` helper with the router
+ * round-trip this test wants to exercise — going through the real Express
+ * + credentials router catches wire-layer regressions a direct
+ * `StatusListService.buildStatusListVc()` call would miss.
  */
 async function fetchListBitstring(listKey: string): Promise<Uint8Array> {
   const app = express();
@@ -100,13 +80,7 @@ async function fetchListBitstring(listKey: string): Promise<Uint8Array> {
   const res = await request(app).get(`/credentials/status/${listKey}.jwt`);
   expect(res.status).toBe(200);
   expect(res.headers["content-type"]).toMatch(/application\/jwt/);
-  const payload = decodeStatusListJwt(res.text) as {
-    credentialSubject?: { encodedList?: string };
-  };
-  const encoded = payload.credentialSubject?.encodedList;
-  expect(typeof encoded).toBe("string");
-  const compressed = Buffer.from(encoded!, "base64url");
-  return new Uint8Array(gunzipSync(compressed));
+  return decodeStatusListBitstring(res.text);
 }
 
 describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7)", () => {
@@ -194,9 +168,9 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     //    bit 2 stays 0 so we know we didn't accidentally flip the whole
     //    bitstring.
     const bitstring = await fetchListBitstring(slotA.listKey);
-    expect(readBit(bitstring, slotA.statusListIndex)).toBe(1);
-    expect(readBit(bitstring, slotB.statusListIndex)).toBe(1);
-    expect(readBit(bitstring, slotB.statusListIndex + 1)).toBe(0);
+    expect(readStatusListBit(bitstring, slotA.statusListIndex)).toBe(1);
+    expect(readStatusListBit(bitstring, slotB.statusListIndex)).toBe(1);
+    expect(readStatusListBit(bitstring, slotB.statusListIndex + 1)).toBe(0);
 
     // 6. The DEACTIVATE anchor row landed (still PENDING — no batch ran
     //    in this test, §F serves the tombstone immediately anyway).
@@ -235,7 +209,7 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     expect(afterFirst).toMatchObject({ revocationReason: "did-deactivated" });
 
     const bitstringAfterFirst = await fetchListBitstring(slot.listKey);
-    expect(readBit(bitstringAfterFirst, slot.statusListIndex)).toBe(1);
+    expect(readStatusListBit(bitstringAfterFirst, slot.statusListIndex)).toBe(1);
 
     // Second DEACTIVATE — must be a no-op for the VC row. The repository
     // filter `where: { userId, revokedAt: null }` excludes the row, so
@@ -252,7 +226,7 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
 
     // StatusList bit is still 1 — not flipped twice into 0.
     const bitstringAfterSecond = await fetchListBitstring(slot.listKey);
-    expect(readBit(bitstringAfterSecond, slot.statusListIndex)).toBe(1);
+    expect(readStatusListBit(bitstringAfterSecond, slot.statusListIndex)).toBe(1);
 
     // Both DEACTIVATE invocations recorded their own anchor rows: this is
     // by design — the DID lifecycle is append-only and an audit must be
@@ -324,6 +298,6 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
 
     // The wired bit landed in the re-signed StatusList JWT.
     const bitstring = await fetchListBitstring(slot.listKey);
-    expect(readBit(bitstring, slot.statusListIndex)).toBe(1);
+    expect(readStatusListBit(bitstring, slot.statusListIndex)).toBe(1);
   });
 });
