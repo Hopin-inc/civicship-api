@@ -3,12 +3,18 @@
  *
  * Covers:
  *   - `getActiveIssuerDid()`        → constant, sync, no I/O
- *   - `getActiveIssuerDidDocument()`
+ *   - `getActiveIssuerDidDocument()` (Phase 1, single-active-key)
  *       - active key present → builds full Document via IssuerDidBuilder
  *       - active key absent  → returns null (router-side fallback)
  *       - public-key cache TTL → second call within TTL skips KMS
  *       - public-key cache TTL → second call after TTL refetches KMS
  *       - distinct resource names cached independently
+ *   - `buildDidDocument()` (Phase 2 §G overlap multi-key, spec §5.4.3)
+ *       - 1 ENABLED + 1 DISABLED → 2 verificationMethod, 1 assertionMethod
+ *       - empty repository       → returns null (bootstrap)
+ *       - JWK shape (kty/crv/x)  → matches RFC 8037 OKP / Ed25519
+ *       - ordering preserved from listActiveKeys
+ *       - assertionMethod / authentication contain only ENABLED rows
  *   - `signWithActiveKey()`
  *       - active key present → delegates to KmsSigner.signEd25519
  *       - active key absent  → throws (no fallback for signing)
@@ -207,6 +213,181 @@ describe("IssuerDidService", () => {
       expect(signer.getPublicKey).toHaveBeenCalledTimes(2);
       expect(signer.getPublicKey).toHaveBeenNthCalledWith(1, KMS_KEY_RESOURCE);
       expect(signer.getPublicKey).toHaveBeenNthCalledWith(2, KMS_KEY_RESOURCE_V2);
+    });
+  });
+
+  describe("buildDidDocument — §G overlap multi-key (Phase 2)", () => {
+    it("emits one verificationMethod per row (ENABLED + DISABLED) and ENABLED-only assertionMethod", async () => {
+      // Scenario: a rotation in progress. v2 is the new ENABLED key
+      // (assertionMethod target), v1 is DISABLED but still published in
+      // verificationMethod so verifiers can validate VCs signed with v1
+      // (design §9.1.3 — DISABLED retained forever, never DESTROYED).
+      const rowV1Disabled = makeRow({
+        id: "key_v1",
+        kmsKeyResourceName: KMS_KEY_RESOURCE,
+        deactivatedAt: new Date("2026-06-01T00:00:00Z"),
+      });
+      const rowV2Enabled = makeRow({
+        id: "key_v2",
+        kmsKeyResourceName: KMS_KEY_RESOURCE_V2,
+        activatedAt: new Date("2026-06-01T00:00:00Z"),
+        deactivatedAt: null,
+      });
+      const repo: RepoStub = {
+        findActiveKey: jest.fn().mockResolvedValue(rowV2Enabled),
+        // Repository contract: ordered by activatedAt ASC. Older
+        // (DISABLED) row first, newer (ENABLED) row last.
+        listActiveKeys: jest.fn().mockResolvedValue([rowV1Disabled, rowV2Enabled]),
+      };
+      const signer: SignerStub = {
+        signEd25519: jest.fn(),
+        // v1 returns ZERO_PUBKEY, v2 returns ALT_PUBKEY — distinct bytes
+        // so the test can verify the JWK `x` differs per row.
+        getPublicKey: jest
+          .fn()
+          .mockImplementation((name: string) =>
+            name === KMS_KEY_RESOURCE
+              ? Promise.resolve(ZERO_PUBKEY)
+              : Promise.resolve(ALT_PUBKEY),
+          ),
+      };
+      const svc = buildService({ repo, signer });
+
+      const doc = await svc.buildDidDocument();
+
+      expect(doc).not.toBeNull();
+      expect(doc!.id).toBe("did:web:api.civicship.app");
+
+      // verificationMethod: both keys (DISABLED v1 first per listActiveKeys order)
+      expect(doc!.verificationMethod).toHaveLength(2);
+      expect(doc!.verificationMethod[0].id).toBe("did:web:api.civicship.app#key-1");
+      expect(doc!.verificationMethod[0].type).toBe("JsonWebKey2020");
+      expect(doc!.verificationMethod[0].controller).toBe("did:web:api.civicship.app");
+      expect(doc!.verificationMethod[0].publicKeyJwk.kty).toBe("OKP");
+      expect(doc!.verificationMethod[0].publicKeyJwk.crv).toBe("Ed25519");
+      expect(doc!.verificationMethod[1].id).toBe("did:web:api.civicship.app#key-2");
+
+      // assertionMethod / authentication: ENABLED only (§9.1.2)
+      expect(doc!.assertionMethod).toEqual(["did:web:api.civicship.app#key-2"]);
+      expect(doc!.authentication).toEqual(["did:web:api.civicship.app#key-2"]);
+
+      // DISABLED key MUST NOT appear in assertionMethod (signs == false)
+      expect(doc!.assertionMethod).not.toContain("did:web:api.civicship.app#key-1");
+    });
+
+    it("returns null when no keys are registered (bootstrap state)", async () => {
+      const repo: RepoStub = {
+        findActiveKey: jest.fn().mockResolvedValue(null),
+        listActiveKeys: jest.fn().mockResolvedValue([]),
+      };
+      const signer = makeSigner();
+      const svc = buildService({ repo, signer });
+
+      const doc = await svc.buildDidDocument();
+
+      expect(doc).toBeNull();
+      // No KMS roundtrip when the repo says "no keys".
+      expect(signer.getPublicKey).not.toHaveBeenCalled();
+    });
+
+    it("encodes the public-key JWK as RFC 8037 Ed25519 OKP (kty/crv/x)", async () => {
+      const row = makeRow({ kmsKeyResourceName: KMS_KEY_RESOURCE });
+      const repo: RepoStub = {
+        findActiveKey: jest.fn().mockResolvedValue(row),
+        listActiveKeys: jest.fn().mockResolvedValue([row]),
+      };
+      // Use ALT_PUBKEY (bytes 1..32) so the base64url result has
+      // non-trivial characters (catches a `+` / `-` swap regression).
+      const signer: SignerStub = {
+        signEd25519: jest.fn(),
+        getPublicKey: jest.fn().mockResolvedValue(ALT_PUBKEY),
+      };
+      const svc = buildService({ repo, signer });
+
+      const doc = await svc.buildDidDocument();
+
+      expect(doc).not.toBeNull();
+      const jwk = doc!.verificationMethod[0].publicKeyJwk;
+      expect(jwk.kty).toBe("OKP");
+      expect(jwk.crv).toBe("Ed25519");
+      // base64url: no padding (`=`), `-` / `_` instead of `+` / `/`.
+      expect(jwk.x).not.toMatch(/[+/=]/);
+      // Length: ceil(32 / 3) * 4 = 44, minus 1 byte padding tail → 43.
+      expect(jwk.x).toHaveLength(43);
+    });
+
+    it("uses the @context that includes the JWK security vocab", async () => {
+      const row = makeRow();
+      const repo: RepoStub = {
+        findActiveKey: jest.fn().mockResolvedValue(row),
+        listActiveKeys: jest.fn().mockResolvedValue([row]),
+      };
+      const signer = makeSigner();
+      const svc = buildService({ repo, signer });
+
+      const doc = await svc.buildDidDocument();
+
+      expect(doc!["@context"]).toEqual([
+        "https://www.w3.org/ns/did/v1",
+        "https://w3id.org/security/jwk/v1",
+      ]);
+    });
+
+    it("treats deactivatedAt === null as ENABLED and a Date as DISABLED", async () => {
+      // Two ENABLED rows — both must appear in assertionMethod.
+      const rowA = makeRow({
+        id: "a",
+        kmsKeyResourceName: KMS_KEY_RESOURCE,
+        deactivatedAt: null,
+      });
+      const rowB = makeRow({
+        id: "b",
+        kmsKeyResourceName: KMS_KEY_RESOURCE_V2,
+        deactivatedAt: null,
+      });
+      const repo: RepoStub = {
+        findActiveKey: jest.fn().mockResolvedValue(rowA),
+        listActiveKeys: jest.fn().mockResolvedValue([rowA, rowB]),
+      };
+      const signer: SignerStub = {
+        signEd25519: jest.fn(),
+        getPublicKey: jest
+          .fn()
+          .mockImplementation((name: string) =>
+            name === KMS_KEY_RESOURCE
+              ? Promise.resolve(ZERO_PUBKEY)
+              : Promise.resolve(ALT_PUBKEY),
+          ),
+      };
+      const svc = buildService({ repo, signer });
+
+      const doc = await svc.buildDidDocument();
+
+      expect(doc!.assertionMethod).toEqual([
+        "did:web:api.civicship.app#key-1",
+        "did:web:api.civicship.app#key-2",
+      ]);
+      expect(doc!.authentication).toEqual(doc!.assertionMethod);
+    });
+
+    it("reuses the public-key TTL cache across single-key and multi-key paths", async () => {
+      // Calling getActiveIssuerDidDocument first should populate the
+      // cache so buildDidDocument's later read does not re-hit KMS for
+      // the same resource name. Same-process consistency: the cache is
+      // intentionally per-resource-name (not per-method).
+      const row = makeRow({ kmsKeyResourceName: KMS_KEY_RESOURCE });
+      const repo: RepoStub = {
+        findActiveKey: jest.fn().mockResolvedValue(row),
+        listActiveKeys: jest.fn().mockResolvedValue([row]),
+      };
+      const signer = makeSigner();
+      const svc = buildService({ repo, signer, now: () => 1_000_000 });
+
+      await svc.getActiveIssuerDidDocument();
+      await svc.buildDidDocument();
+
+      // One KMS call total — the second read hits the TTL cache.
+      expect(signer.getPublicKey).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -20,8 +20,12 @@ import {
   CIVICSHIP_ATTENDANCE_VC_TYPE,
   buildIssuerDid,
   buildIssuerDidDocument,
+  buildMultiKeyIssuerDidDocument,
+  encodeEd25519Jwk,
   encodeMultikeyEd25519,
   base58btcEncode,
+  kmsResourceNameToKid,
+  type IssuerActiveKey,
 } from "@/infrastructure/libs/did/issuerDidBuilder";
 
 const KEY_RESOURCE_V1 =
@@ -150,6 +154,102 @@ describe("encodeMultikeyEd25519 — multibase prefix and multicodec", () => {
     const raw = new Uint8Array(32);
     for (let i = 0; i < 32; i++) raw[i] = (i * 7) & 0xff;
     expect(encodeMultikeyEd25519(raw)).toBe("z6MkeTNHUstoHASz3Q54jYAWPGMwiNF97JgneipczvRF9vLx");
+  });
+});
+
+describe("buildMultiKeyIssuerDidDocument — §G overlap multi-key (Phase 2)", () => {
+  function jwk(byteFill: number): IssuerActiveKey["jwk"] {
+    return encodeEd25519Jwk(new Uint8Array(32).fill(byteFill));
+  }
+
+  it("emits @context with the JWK security vocab (spec §5.4.3 line 1131)", () => {
+    const doc = buildMultiKeyIssuerDidDocument([
+      { kid: "key-1", jwk: jwk(0x01), enabled: true },
+    ]);
+    expect(doc["@context"]).toEqual([
+      "https://www.w3.org/ns/did/v1",
+      "https://w3id.org/security/jwk/v1",
+    ]);
+  });
+
+  it("emits one JsonWebKey2020 verificationMethod per active key, preserving order", () => {
+    const doc = buildMultiKeyIssuerDidDocument([
+      { kid: "key-1", jwk: jwk(0x01), enabled: false },
+      { kid: "key-2", jwk: jwk(0x02), enabled: true },
+    ]);
+    expect(doc.verificationMethod).toHaveLength(2);
+    expect(doc.verificationMethod[0]).toEqual({
+      id: "did:web:api.civicship.app#key-1",
+      type: "JsonWebKey2020",
+      controller: "did:web:api.civicship.app",
+      publicKeyJwk: jwk(0x01),
+    });
+    expect(doc.verificationMethod[1].id).toBe("did:web:api.civicship.app#key-2");
+  });
+
+  it("references ENABLED keys (only) from assertionMethod and authentication", () => {
+    const doc = buildMultiKeyIssuerDidDocument([
+      { kid: "key-1", jwk: jwk(0x01), enabled: false }, // DISABLED rotation tail
+      { kid: "key-2", jwk: jwk(0x02), enabled: true },  // ENABLED — signs new VCs
+    ]);
+    expect(doc.assertionMethod).toEqual(["did:web:api.civicship.app#key-2"]);
+    expect(doc.authentication).toEqual(["did:web:api.civicship.app#key-2"]);
+  });
+
+  it("returns empty assertionMethod when all keys are DISABLED (edge case)", () => {
+    // Defensive: a fully-DISABLED state shouldn't happen in practice
+    // (rotation runbook activates the new key before deactivating the
+    // old), but the builder must still be lossless — it advertises zero
+    // signable keys rather than fabricating one.
+    const doc = buildMultiKeyIssuerDidDocument([
+      { kid: "key-1", jwk: jwk(0x01), enabled: false },
+    ]);
+    expect(doc.assertionMethod).toEqual([]);
+    expect(doc.authentication).toEqual([]);
+    expect(doc.verificationMethod).toHaveLength(1);
+  });
+
+  it("throws when activeKeys is empty (caller must fall back to static stub)", () => {
+    expect(() => buildMultiKeyIssuerDidDocument([])).toThrow(/at least one entry/);
+  });
+});
+
+describe("encodeEd25519Jwk — RFC 8037 OKP / Ed25519", () => {
+  it("encodes a 32-byte key as { kty: 'OKP', crv: 'Ed25519', x: base64url }", () => {
+    const raw = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) raw[i] = i + 1;
+    const jwk = encodeEd25519Jwk(raw);
+    expect(jwk.kty).toBe("OKP");
+    expect(jwk.crv).toBe("Ed25519");
+    // base64url: no `+` / `/` / padding `=`.
+    expect(jwk.x).not.toMatch(/[+/=]/);
+    expect(jwk.x).toHaveLength(43); // ceil(32 * 4 / 3) - padding
+  });
+
+  it("produces a stable reference vector for an all-zero pubkey", () => {
+    // base64url("\0" × 32) → 43 `A`s (no padding).
+    expect(encodeEd25519Jwk(new Uint8Array(32)).x).toBe("A".repeat(43));
+  });
+
+  it("rejects a wrong-length raw key", () => {
+    expect(() => encodeEd25519Jwk(new Uint8Array(16))).toThrow(/32 bytes/);
+    expect(() => encodeEd25519Jwk(new Uint8Array(48))).toThrow(/32 bytes/);
+  });
+});
+
+describe("kmsResourceNameToKid", () => {
+  it("derives '#key-<n>' from a pinned cryptoKeyVersion", () => {
+    expect(
+      kmsResourceNameToKid(
+        "projects/p/locations/global/keyRings/r/cryptoKeys/civicship-issuer-vc/cryptoKeyVersions/7",
+      ),
+    ).toBe("key-7");
+  });
+
+  it("throws on a missing cryptoKeyVersions suffix", () => {
+    expect(() =>
+      kmsResourceNameToKid("projects/p/locations/global/keyRings/r/cryptoKeys/x"),
+    ).toThrow(/cryptoKeyVersions/);
   });
 });
 

@@ -293,6 +293,103 @@ describe("KmsSigner.getPublicKey", () => {
   });
 });
 
+describe("KmsSigner.listActiveIssuerKeys — §G overlap multi-key (Phase 2)", () => {
+  const PARENT = "projects/p/locations/global/keyRings/r/cryptoKeys/civicship-issuer-vc";
+
+  function spkiPemFor(rawKey: Uint8Array): string {
+    const spki = new Uint8Array(44);
+    spki.set([0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00], 0);
+    spki.set(rawKey, 12);
+    return `-----BEGIN PUBLIC KEY-----\n${Buffer.from(spki).toString(
+      "base64",
+    )}\n-----END PUBLIC KEY-----`;
+  }
+
+  it("returns ENABLED + DISABLED versions with their raw public keys", async () => {
+    const v1Pub = new Uint8Array(32).fill(0x01);
+    const v2Pub = new Uint8Array(32).fill(0x02);
+    const listFn = jest.fn().mockResolvedValue([
+      [
+        { name: `${PARENT}/cryptoKeyVersions/1`, state: "DISABLED" },
+        { name: `${PARENT}/cryptoKeyVersions/2`, state: "ENABLED" },
+      ],
+      {},
+    ]);
+    const getPubFn = jest.fn().mockImplementation(({ name }: { name: string }) => {
+      const raw = name.endsWith("/1") ? v1Pub : v2Pub;
+      return Promise.resolve([{ pem: spkiPemFor(raw) }, {}, {}]);
+    });
+    const signer = new KmsSigner({
+      asymmetricSign: () => Promise.reject(new Error("unused")),
+      getPublicKey: getPubFn,
+      listCryptoKeyVersions: listFn,
+    });
+
+    const out = await signer.listActiveIssuerKeys(PARENT);
+
+    expect(out).toHaveLength(2);
+    expect(out[0].state).toBe("DISABLED");
+    expect(out[1].state).toBe("ENABLED");
+    expect(Array.from(out[0].publicKey)).toEqual(Array.from(v1Pub));
+    expect(Array.from(out[1].publicKey)).toEqual(Array.from(v2Pub));
+    // KMS server-side filter narrows the listing to ENABLED + DISABLED only.
+    expect(listFn).toHaveBeenCalledWith({
+      parent: PARENT,
+      filter: "state = ENABLED OR state = DISABLED",
+    });
+  });
+
+  it("client-side filters DESTROY_SCHEDULED / DESTROYED defensively", async () => {
+    // Even if the server-side filter is ignored / buggy, the client
+    // must NOT surface a version whose public key may not be retrievable.
+    const goodPub = new Uint8Array(32).fill(0x33);
+    const listFn = jest.fn().mockResolvedValue([
+      [
+        { name: `${PARENT}/cryptoKeyVersions/1`, state: "DESTROY_SCHEDULED" },
+        { name: `${PARENT}/cryptoKeyVersions/2`, state: "ENABLED" },
+        { name: `${PARENT}/cryptoKeyVersions/3`, state: "DESTROYED" },
+      ],
+      {},
+    ]);
+    const getPubFn = jest
+      .fn()
+      .mockResolvedValue([{ pem: spkiPemFor(goodPub) }, {}, {}]);
+    const signer = new KmsSigner({
+      asymmetricSign: () => Promise.reject(new Error("unused")),
+      getPublicKey: getPubFn,
+      listCryptoKeyVersions: listFn,
+    });
+
+    const out = await signer.listActiveIssuerKeys(PARENT);
+
+    expect(out).toHaveLength(1);
+    expect(out[0].state).toBe("ENABLED");
+    // Critically: getPublicKey was NOT called for DESTROYED (would fail).
+    expect(getPubFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects when the parent path includes a cryptoKeyVersions suffix", async () => {
+    const signer = new KmsSigner({
+      asymmetricSign: () => Promise.reject(new Error("unused")),
+      getPublicKey: () => Promise.reject(new Error("unused")),
+      listCryptoKeyVersions: () => Promise.resolve([[], {}]),
+    });
+    await expect(
+      signer.listActiveIssuerKeys(`${PARENT}/cryptoKeyVersions/1`),
+    ).rejects.toThrow(/must NOT end with/);
+  });
+
+  it("throws when the underlying client does not implement listCryptoKeyVersions", async () => {
+    const signer = new KmsSigner({
+      asymmetricSign: () => Promise.reject(new Error("unused")),
+      getPublicKey: () => Promise.reject(new Error("unused")),
+    });
+    await expect(signer.listActiveIssuerKeys(PARENT)).rejects.toThrow(
+      /does not implement listCryptoKeyVersions/,
+    );
+  });
+});
+
 describe("KmsSigner construction (S1848 lint guard)", () => {
   it("can be constructed with no arguments without exploding at import time", () => {
     // We don't actually call .signEd25519 here — that would require ADC.
