@@ -596,9 +596,13 @@ export function registerProductionDependencies() {
   // tsyringe が auto-resolve できない (`TypeInfo not known for "Object"`)。
   // 引数なしで構築すれば env (`BLOCKFROST_PROJECT_ID`) から値を引くため、
   // factory + instanceCachingFactory で singleton 化する。
-  container.register("BlockfrostClient", {
-    useFactory: instanceCachingFactory(() => new BlockfrostClient()),
-  });
+  //
+  // dual-binding: クラス自体 (`@inject(BlockfrostClient)`) と string token
+  // (`@inject("BlockfrostClient")`) の両方で同じ singleton インスタンスに
+  // 解決させる。precedent は L304-306 の UserDidAnchorRepository。
+  const blockfrostFactory = instanceCachingFactory(() => new BlockfrostClient());
+  container.register(BlockfrostClient, { useFactory: blockfrostFactory });
+  container.register("BlockfrostClient", { useToken: BlockfrostClient });
   container.register<BlockfrostLatestSlotProvider>("BlockfrostLatestSlotProvider", {
     useFactory: () => createBlockfrostLatestSlotProvider(),
   });
