@@ -27,6 +27,16 @@
  * be wired in Phase 1 step 10; the unit tests already verify the JWT
  * shape so the swap is mechanical.
  *
+ * Phase 2 prep (signer interface extraction)
+ * ------------------------------------------
+ * The signature production step has been hoisted behind a `JwtSigner`
+ * interface (`credential/shared/jwtSigner.ts`). This service is now
+ * injected with a `VcJwtSigner` token rather than reaching for the
+ * inline `STUB_SIGNATURE` constant. Behaviour is unchanged in Phase 1
+ * because the bound implementation is `StubJwtSigner` and its output is
+ * exactly `STUB_SIGNATURE`; the indirection only matters once
+ * `KmsJwtSigner` replaces the stub in Phase 2 (design doc §16).
+ *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.2.2 (this service)
  *   docs/report/did-vc-internalization.md §D     (BitstringStatusList)
@@ -44,6 +54,8 @@ import type {
 } from "@/application/domain/credential/vcIssuance/data/type";
 import StatusListService from "@/application/domain/credential/statusList/service";
 import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
+import type { JwtSigner } from "@/application/domain/credential/shared/jwtSigner";
+import { STUB_SIGNATURE } from "@/application/domain/credential/shared/stubJwtSigner";
 import { buildProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 
 /**
@@ -76,16 +88,14 @@ export interface InclusionProof {
 export { CIVICSHIP_ISSUER_DID };
 
 /**
- * Phase 1 step 7 placeholder for the JWT signature. Real signing lives in
- * a sibling PR (`claude/phase1-infra-kms-issuer-did`) — we emit a
- * deterministic non-base64url marker so:
- *
- *   1. Tests can assert "this is a stub VC" without false positives.
- *   2. Verifiers will reject it (it's not a valid base64url signature).
- *   3. The grep target is unique enough to find every stub site once
- *      KMS lands.
+ * Re-export so the public symbol's path stays stable for existing unit
+ * tests (`__tests__/unit/application/domain/credential/vcIssuance/service.test.ts`
+ * imports the marker indirectly via the JWT's signature segment). The
+ * canonical definition now lives in
+ * `credential/shared/stubJwtSigner.ts` alongside the `StubJwtSigner`
+ * implementation that emits it.
  */
-const STUB_SIGNATURE = "stub-not-signed";
+export { STUB_SIGNATURE };
 
 /**
  * Build the unsigned VC payload (§5.2.2 `buildVcPayload`).
@@ -144,6 +154,17 @@ export default class VcIssuanceService {
     private readonly repository: IVcIssuanceRepository,
     @inject("StatusListService")
     private readonly statusListService: StatusListService,
+    /**
+     * Phase 2 prep: signing is delegated to a `JwtSigner` rather than
+     * the inline stub. In Phase 1 the injected instance is a
+     * `StubJwtSigner` that returns `STUB_SIGNATURE`, so the produced
+     * JWT is byte-identical to the pre-extraction version. The DI
+     * token `VcJwtSigner` is intentionally distinct from
+     * `StatusListJwtSigner` so the two paths can rotate independently
+     * once KMS lands (design doc §16).
+     */
+    @inject("VcJwtSigner")
+    private readonly signer: JwtSigner,
   ) {}
 
   /**
@@ -191,6 +212,18 @@ export default class VcIssuanceService {
    *     only ever invoked from inside the DEACTIVATE transaction; a
    *     standalone caller would risk leaving a half-revoked StatusList
    *     and a still-active DID.
+   *
+   * Performance / scaling (Gemini review on PR #1128, Phase 2 deferred):
+   * the per-VC `revokeVc` call re-decodes, flips, re-compresses, and
+   * **re-signs** the StatusList VC every iteration. When a single user
+   * holds many VCs that all sit on the same StatusList (steady-state
+   * for civicship: one list per ~13 years, §7.3) this re-signs the same
+   * list N times. Acceptable now because cascades fire on user-delete
+   * (low frequency) and N is single-digit per user; revisit with a
+   * `revokeVcsBulk(listKey, indexes[])` repository write + single re-sign
+   * in Phase 2 once admin bulk-purge tooling is in scope. TODO marker
+   * lives next to `statusListService.revokeVc` below for grep
+   * traceability.
    */
   async cascadeRevokeForUser(
     ctx: IContext,
@@ -216,6 +249,12 @@ export default class VcIssuanceService {
         );
         continue;
       }
+      // TODO(Phase 2 — Gemini PR #1128): batch by listKey and call a
+      // single `StatusListService.revokeVcsBulk` so the StatusList VC
+      // is decoded / re-signed once per list rather than once per VC.
+      // Out of scope for the cascade-revoke PR (deferred until admin
+      // bulk-purge tooling lands; cascade frequency is low enough that
+      // the loop is fine for the user-delete trigger).
       await this.statusListService.revokeVc(
         ctx,
         { vcRequestId: vc.id, reason },
@@ -284,16 +323,27 @@ export default class VcIssuanceService {
     });
 
     // 2) Build a JWT-shape envelope. KMS-backed signing lands in
-    //    `claude/phase1-infra-kms-issuer-did`; until then the signature
-    //    segment is a deterministic stub marker (see `STUB_SIGNATURE`).
+    //    Phase 2 (`KmsJwtSigner`); until then the signer is a
+    //    `StubJwtSigner` that returns the deterministic marker
+    //    `STUB_SIGNATURE`. The signing input fed to `signer.sign()` is
+    //    exactly `${header}.${payload}` per the JWS spec so the Phase 2
+    //    swap requires no service-side change.
     const header = base64urlEncodeJson({
-      alg: "EdDSA",
+      // `alg` is read off the signer (Phase 1 stub returns "EdDSA"; the
+      // future KMS signer returns the same string for the Ed25519 key,
+      // or whatever JWS alg KMS ends up advertising). Keeps service-side
+      // code agnostic to the JWS algorithm choice.
+      alg: this.signer.alg,
       typ: "JWT",
-      // `kid` will reference the active KMS key id once it lands.
-      kid: `${issuerDid}#stub`,
+      // `kid` is read off the signer so the stub path and the future
+      // KMS path stamp the same header field without service-side
+      // branching. Phase 1 stub kid: `${issuerDid}#stub`.
+      kid: this.signer.kid,
     });
     const payload = base64urlEncodeJson(vcPayload);
-    const vcJwt = `${header}.${payload}.${STUB_SIGNATURE}`;
+    const signingInput = `${header}.${payload}`;
+    const signature = await this.signer.sign(signingInput);
+    const vcJwt = `${signingInput}.${signature}`;
 
     logger.debug("[VcIssuanceService] issueVc", {
       userId: input.userId,
