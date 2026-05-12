@@ -27,16 +27,6 @@
  * be wired in Phase 1 step 10; the unit tests already verify the JWT
  * shape so the swap is mechanical.
  *
- * Phase 2 prep (signer interface extraction)
- * ------------------------------------------
- * The signature production step has been hoisted behind a `JwtSigner`
- * interface (`credential/shared/jwtSigner.ts`). This service is now
- * injected with a `VcJwtSigner` token rather than reaching for the
- * inline `STUB_SIGNATURE` constant. Behaviour is unchanged in Phase 1
- * because the bound implementation is `StubJwtSigner` and its output is
- * exactly `STUB_SIGNATURE`; the indirection only matters once
- * `KmsJwtSigner` replaces the stub in Phase 2 (design doc §16).
- *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.2.2 (this service)
  *   docs/report/did-vc-internalization.md §D     (BitstringStatusList)
@@ -54,8 +44,6 @@ import type {
 } from "@/application/domain/credential/vcIssuance/data/type";
 import StatusListService from "@/application/domain/credential/statusList/service";
 import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
-import type { JwtSigner } from "@/application/domain/credential/shared/jwtSigner";
-import { STUB_SIGNATURE } from "@/application/domain/credential/shared/stubJwtSigner";
 import { buildProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 
 /**
@@ -88,14 +76,16 @@ export interface InclusionProof {
 export { CIVICSHIP_ISSUER_DID };
 
 /**
- * Re-export so the public symbol's path stays stable for existing unit
- * tests (`__tests__/unit/application/domain/credential/vcIssuance/service.test.ts`
- * imports the marker indirectly via the JWT's signature segment). The
- * canonical definition now lives in
- * `credential/shared/stubJwtSigner.ts` alongside the `StubJwtSigner`
- * implementation that emits it.
+ * Phase 1 step 7 placeholder for the JWT signature. Real signing lives in
+ * a sibling PR (`claude/phase1-infra-kms-issuer-did`) — we emit a
+ * deterministic non-base64url marker so:
+ *
+ *   1. Tests can assert "this is a stub VC" without false positives.
+ *   2. Verifiers will reject it (it's not a valid base64url signature).
+ *   3. The grep target is unique enough to find every stub site once
+ *      KMS lands.
  */
-export { STUB_SIGNATURE };
+const STUB_SIGNATURE = "stub-not-signed";
 
 /**
  * Build the unsigned VC payload (§5.2.2 `buildVcPayload`).
@@ -154,17 +144,6 @@ export default class VcIssuanceService {
     private readonly repository: IVcIssuanceRepository,
     @inject("StatusListService")
     private readonly statusListService: StatusListService,
-    /**
-     * Phase 2 prep: signing is delegated to a `JwtSigner` rather than
-     * the inline stub. In Phase 1 the injected instance is a
-     * `StubJwtSigner` that returns `STUB_SIGNATURE`, so the produced
-     * JWT is byte-identical to the pre-extraction version. The DI
-     * token `VcJwtSigner` is intentionally distinct from
-     * `StatusListJwtSigner` so the two paths can rotate independently
-     * once KMS lands (design doc §16).
-     */
-    @inject("VcJwtSigner")
-    private readonly signer: JwtSigner,
   ) {}
 
   /**
@@ -185,6 +164,73 @@ export default class VcIssuanceService {
   /** Pass-through for the GraphQL `vcIssuancesByUser` query. */
   async findVcsByUserId(ctx: IContext, userId: string): Promise<VcIssuanceRow[]> {
     return this.repository.findByUserId(ctx, userId);
+  }
+
+  /**
+   * §14.2 / §E — DID DEACTIVATE cascade revoke.
+   *
+   * Used by `UserDidUseCase.deactivateDid*` to revoke every still-live VC
+   * issued for the deactivated user's subject DID. Looks up unrevoked
+   * rows via the repository's `revokedAt IS NULL` filter, then delegates
+   * each bit-flip + `revokedAt` stamp to `StatusListService.revokeVc` so
+   * the StatusList side stays the single owner of the revocation
+   * mechanics.
+   *
+   * Behaviour notes:
+   *   - Idempotent: rows with a non-null `revokedAt` are filtered at the
+   *     repository layer, so a second cascade for the same user is a
+   *     no-op (no StatusList re-sign churn).
+   *   - Skips rows that were issued before §D StatusList wiring
+   *     (statusListIndex / statusListCredential null). These rows have
+   *     no bit to flip; logging avoids silent data loss while keeping
+   *     the cascade unblockable.
+   *   - Returns the count of rows whose StatusList bit was actually
+   *     flipped — useful for the caller to log "revoked N VCs for user
+   *     X" without re-querying.
+   *   - `tx` is REQUIRED rather than optional because the cascade is
+   *     only ever invoked from inside the DEACTIVATE transaction; a
+   *     standalone caller would risk leaving a half-revoked StatusList
+   *     and a still-active DID.
+   */
+  async cascadeRevokeForUser(
+    ctx: IContext,
+    userId: string,
+    tx: Prisma.TransactionClient,
+    reason: string = "did-deactivated",
+  ): Promise<number> {
+    const active = await this.repository.findActiveByUserId(ctx, userId, tx);
+    if (active.length === 0) {
+      logger.debug("[VcIssuanceService] cascadeRevokeForUser: no active VCs", { userId });
+      return 0;
+    }
+
+    let revoked = 0;
+    for (const vc of active) {
+      if (vc.statusListIndex === null || vc.statusListCredential === null) {
+        // Pre-§D legacy / replay rows have no StatusList wiring — nothing
+        // to flip. Log so operators can backfill if needed; do NOT throw
+        // because that would block the DEACTIVATE for unrelated rows.
+        logger.warn(
+          "[VcIssuanceService] cascadeRevokeForUser: skipping VC without StatusList wiring",
+          { userId, vcRequestId: vc.id },
+        );
+        continue;
+      }
+      await this.statusListService.revokeVc(
+        ctx,
+        { vcRequestId: vc.id, reason },
+        tx,
+      );
+      revoked += 1;
+    }
+
+    logger.debug("[VcIssuanceService] cascadeRevokeForUser", {
+      userId,
+      candidateCount: active.length,
+      revokedCount: revoked,
+      reason,
+    });
+    return revoked;
   }
 
   /**
@@ -238,27 +284,16 @@ export default class VcIssuanceService {
     });
 
     // 2) Build a JWT-shape envelope. KMS-backed signing lands in
-    //    Phase 2 (`KmsJwtSigner`); until then the signer is a
-    //    `StubJwtSigner` that returns the deterministic marker
-    //    `STUB_SIGNATURE`. The signing input fed to `signer.sign()` is
-    //    exactly `${header}.${payload}` per the JWS spec so the Phase 2
-    //    swap requires no service-side change.
+    //    `claude/phase1-infra-kms-issuer-did`; until then the signature
+    //    segment is a deterministic stub marker (see `STUB_SIGNATURE`).
     const header = base64urlEncodeJson({
-      // `alg` is read off the signer (Phase 1 stub returns "EdDSA"; the
-      // future KMS signer returns the same string for the Ed25519 key,
-      // or whatever JWS alg KMS ends up advertising). Keeps service-side
-      // code agnostic to the JWS algorithm choice.
-      alg: this.signer.alg,
+      alg: "EdDSA",
       typ: "JWT",
-      // `kid` is read off the signer so the stub path and the future
-      // KMS path stamp the same header field without service-side
-      // branching. Phase 1 stub kid: `${issuerDid}#stub`.
-      kid: this.signer.kid,
+      // `kid` will reference the active KMS key id once it lands.
+      kid: `${issuerDid}#stub`,
     });
     const payload = base64urlEncodeJson(vcPayload);
-    const signingInput = `${header}.${payload}`;
-    const signature = await this.signer.sign(signingInput);
-    const vcJwt = `${signingInput}.${signature}`;
+    const vcJwt = `${header}.${payload}.${STUB_SIGNATURE}`;
 
     logger.debug("[VcIssuanceService] issueVc", {
       userId: input.userId,
