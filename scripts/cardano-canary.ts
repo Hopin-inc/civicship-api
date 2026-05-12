@@ -46,12 +46,8 @@
  */
 
 import { BlockFrostAPI } from "@blockfrost/blockfrost-js";
-import { blake2b } from "@noble/hashes/blake2b";
-import {
-  buildAuxiliaryData,
-  MAX_METADATA_TX_BYTES,
-  type DidOp,
-} from "../src/infrastructure/libs/cardano/txBuilder.ts";
+import { MAX_METADATA_TX_BYTES } from "../src/infrastructure/libs/cardano/txBuilder.ts";
+import { buildSampleAuxiliaryData } from "./lib/sampleAnchorMetadata.ts";
 
 /**
  * Length of the public `preprod` prefix on Blockfrost project IDs. Used to
@@ -175,52 +171,10 @@ async function checkProtocolParams(api: BlockFrostAPI): Promise<string> {
  * regression, 16 KB ceiling overshoot) this throws and the canary fails.
  */
 function buildSampleMetadata(): string {
-  const sampleRoot = blake2b(new TextEncoder().encode("canary-tx"), { dkLen: 32 });
-  const sampleVcRoot = blake2b(new TextEncoder().encode("canary-vc"), { dkLen: 32 });
-  const sampleDocHash = blake2b(new TextEncoder().encode("canary-doc"), { dkLen: 32 });
-
-  const ops: DidOp[] = [
-    {
-      k: "c",
-      did: "did:web:api.civicship.app:users:canary-create",
-      h: bytesToHex(sampleDocHash),
-      doc: {
-        "@context": ["https://www.w3.org/ns/did/v1"],
-        id: "did:web:api.civicship.app:users:canary-create",
-        verificationMethod: [
-          {
-            id: "did:web:api.civicship.app:users:canary-create#key-1",
-            type: "Ed25519VerificationKey2020",
-            controller: "did:web:api.civicship.app:users:canary-create",
-            publicKeyMultibase: "z6Mk" + "x".repeat(44),
-          },
-        ],
-      },
-      prev: null,
-    },
-    {
-      k: "u",
-      did: "did:web:api.civicship.app:users:canary-update",
-      h: bytesToHex(sampleDocHash),
-      doc: {
-        "@context": ["https://www.w3.org/ns/did/v1"],
-        id: "did:web:api.civicship.app:users:canary-update",
-      },
-      prev: bytesToHex(sampleRoot),
-    },
-  ];
-
-  const aux = buildAuxiliaryData({
-    bid: `canary_${Date.now().toString(36)}`,
-    ts: Math.floor(Date.now() / 1000),
-    tx: { root: sampleRoot, count: 1 },
-    vc: { root: sampleVcRoot, count: 1 },
-    ops,
-  });
+  const aux = buildSampleAuxiliaryData({ prefix: "canary", includeUpdate: true });
 
   // Serialize to CBOR bytes — this is the same path the chain will see.
-  const cborBytes = aux.to_bytes();
-  const sizeBytes = cborBytes.length;
+  const sizeBytes = aux.to_bytes().length;
   if (sizeBytes >= MAX_METADATA_TX_BYTES) {
     throw new Error(
       `sample metadata is ${sizeBytes}B (>= ceiling ${MAX_METADATA_TX_BYTES}B). ` +
@@ -228,12 +182,6 @@ function buildSampleMetadata(): string {
     );
   }
   return `AuxiliaryData CBOR size=${sizeBytes}B (ceiling ${MAX_METADATA_TX_BYTES}B), 2 ops, 1 tx root, 1 vc root`;
-}
-
-function bytesToHex(b: Uint8Array): string {
-  let s = "";
-  for (let i = 0; i < b.length; i++) s += b[i].toString(16).padStart(2, "0");
-  return s;
 }
 
 // ---------------------------------------------------------------------------

@@ -40,7 +40,6 @@
  */
 
 import { BlockFrostAPI } from "@blockfrost/blockfrost-js";
-import { blake2b } from "@noble/hashes/blake2b";
 
 import {
   BlockfrostClient,
@@ -51,15 +50,13 @@ import { deriveCardanoKeypair } from "../src/infrastructure/libs/cardano/keygen.
 import {
   buildAnchorTx,
   type BuildAnchorTxOutput,
-  buildAuxiliaryData,
-  type DidOp,
 } from "../src/infrastructure/libs/cardano/txBuilder.ts";
 import {
-  bytesToHex,
   parseFixedLengthHex,
   runStep,
   type StepResult,
 } from "./lib/cardanoScriptHelpers.ts";
+import { buildSampleAuxiliaryData } from "./lib/sampleAnchorMetadata.ts";
 
 const DEFAULT_AWAIT_TIMEOUT_MS = 6 * 60 * 1000;
 const PREPROD_EXPLORER_TX = "https://preprod.cardanoscan.io/transaction";
@@ -112,34 +109,6 @@ function sumLovelace(utxos: BlockfrostUtxoResponse[]): bigint {
     }
   }
   return total;
-}
-
-function buildSampleAuxiliaryData() {
-  const sampleRoot = blake2b(new TextEncoder().encode("preprod-e2e-tx"), { dkLen: 32 });
-  const sampleVcRoot = blake2b(new TextEncoder().encode("preprod-e2e-vc"), { dkLen: 32 });
-  const sampleDocHash = blake2b(new TextEncoder().encode("preprod-e2e-doc"), { dkLen: 32 });
-
-  const ops: DidOp[] = [
-    {
-      k: "c",
-      did: "did:web:api.civicship.app:users:preprod-e2e",
-      h: bytesToHex(sampleDocHash),
-      doc: {
-        "@context": ["https://www.w3.org/ns/did/v1"],
-        id: "did:web:api.civicship.app:users:preprod-e2e",
-      },
-      prev: null,
-    },
-  ];
-
-  return buildAuxiliaryData({
-    v: 1,
-    bid: `e2e_${Date.now().toString(36)}`,
-    ts: Math.floor(Date.now() / 1000),
-    tx: { root: sampleRoot, count: 1 },
-    vc: { root: sampleVcRoot, count: 1 },
-    ops,
-  });
 }
 
 function resolveAwaitTimeoutMs(): number {
@@ -222,7 +191,7 @@ async function main(): Promise<number> {
   }
 
   // Step 5 — build + sign tx (single build; reuse the CBOR for submit)
-  const aux = buildSampleAuxiliaryData();
+  const aux = buildSampleAuxiliaryData({ prefix: "preprod-e2e", bidPrefix: "e2e" });
   const builtStep = await runStep<BuildAnchorTxOutput>(
     "txBuilder: build + sign anchor tx",
     async () => {
