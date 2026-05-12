@@ -1,7 +1,7 @@
-name: TLS / DNS Posture (civicship.app)
+name: TLS / DNS Posture (civicship.app + api.civicship.app)
 
-# civicship.app の DNSSEC / CAA / HSTS preload 設定が誰かの誤操作で外れた瞬間
-# に検知する daily monitoring。設計書 §15.3 / §9.6 参照。
+# civicship.app / api.civicship.app の DNSSEC / CAA / HSTS preload 設定が
+# 誰かの誤操作で外れた瞬間に検知する daily monitoring。設計書 §15.3 / §9.6 参照。
 #
 # 背景:
 #   did:web は HTTPS / DNS のセキュリティに依存する (DID Document の真正性が
@@ -11,12 +11,20 @@ name: TLS / DNS Posture (civicship.app)
 #   設定変更は通常 Phase 0 で一度行ったあとは誰も触らないので、daily check
 #   で「気付いたら外れていた」を防ぐ。
 #
+# 対象ホスト:
+#   - civicship.app           did Document の親ドメイン (well-known/did.json)
+#   - api.civicship.app       per-user DID (/users/:id/did.json) と VC
+#                             credentialStatus / inclusion-proof エンドポイント
+#   どちらが落ちても verifier 体験が壊れる (DID resolution が止まる) ため
+#   両方を独立して check する。Apex のみ check していると subdomain だけ CAA
+#   が消えた事故を拾えない。
+#
 # Issue 起票はしない:
 #   trivy-daily と違い、posture 監視は「直す対象が決まっている」(DNS / CDN
 #   設定をロールバックするだけ)。tracking issue を upsert する価値は薄く、
 #   その瞬間の Slack 通知で十分。
 #
-# 関連: docs/report/did-vc-internalization.md §15.3 / §9.6
+# 関連: docs/report/did-vc-internalization.md §15.3 / §9.6 / 18 章 運用要件
 
 on:
   schedule:
@@ -40,69 +48,167 @@ jobs:
     permissions:
       contents: read
 
+    # matrix で apex / api を独立 job 化。片側が落ちてももう片側まで走り、
+    # Slack 通知で「どちらが壊れているか」が一発で分かる。両方落ちている
+    # ケース (= apex zone 障害) でも notification は 2 本飛ぶ。
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - civicship.app
+          - api.civicship.app
+
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
         with:
+          # 公開 DNS resolver (1.1.1.1) と https://hstspreload.org / 対象 host
+          # への egress が必須なので audit に留める (block にすると dig も死ぬ)。
           egress-policy: audit
           disable-sudo: true
 
-      # 公開 DNS resolver 経由で civicship.app の DNSSEC DS レコードを引く。
-      # DS が空になっていると親ゾーン (.app) に署名チェーンが繋がらず DNSSEC
-      # が事実上 OFF。DS 公開を Phase 0 で行ったあとは常に存在するべき。
-      - name: DNSSEC DS record check
+      # delv は権威 resolver からの DNSSEC chain を再検証して "fully validated"
+      # を返す (`dig +dnssec` だけだと AD bit を信用するしかなく、再帰
+      # resolver 側の bug を拾い損なう)。delv は ubuntu-latest の bind9-dnsutils
+      # に同梱されているのでインストール 1 行で済む。
+      - name: Install delv (bind9-dnsutils)
         run: |
           set -euo pipefail
-          ds=$(dig +short DS civicship.app @1.1.1.1)
+          if ! command -v delv >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq bind9-dnsutils
+          fi
+          delv -V | head -n1
+
+      # 公開 DNS resolver 経由で DNSSEC DS レコードを引く。DS が空になっていると
+      # 親ゾーン (.app) に署名チェーンが繋がらず DNSSEC が事実上 OFF。
+      # api.civicship.app は通常 CNAME → apex なので apex 側の DS が引ければ
+      # 両方 OK の扱い、ただし matrix で個別に引いて誤設定を可視化する。
+      - name: DNSSEC DS record check (${{ matrix.host }})
+        run: |
+          set -euo pipefail
+          ds=$(dig +short DS ${{ matrix.host }} @1.1.1.1)
           if [ -z "$ds" ]; then
-            echo "::error::DNSSEC DS record missing for civicship.app"
+            # subdomain は親 (apex) の DS でカバーされるケースがある。subdomain
+            # 側が空なら apex に fallback して chain の存在を確認する。
+            apex=$(echo "${{ matrix.host }}" | awk -F. '{print $(NF-1)"."$NF}')
+            if [ "${{ matrix.host }}" = "$apex" ]; then
+              echo "::error::DNSSEC DS record missing for ${{ matrix.host }}"
+              exit 1
+            fi
+            ds_apex=$(dig +short DS "$apex" @1.1.1.1)
+            if [ -z "$ds_apex" ]; then
+              echo "::error::DNSSEC DS record missing for ${{ matrix.host }} and parent zone $apex"
+              exit 1
+            fi
+            echo "DS via parent zone $apex: $ds_apex"
+          else
+            echo "DS record: $ds"
+          fi
+
+      # delv で DNSSEC chain 全体を検証。"fully validated" を含まなければ
+      # chain 切断 (= DS / RRSIG mismatch、KSK ローテ失敗等)。
+      - name: DNSSEC chain validation via delv (${{ matrix.host }})
+        run: |
+          set -euo pipefail
+          # delv は失敗時 stderr に "validation failure" を出す。+rtrace は
+          # path を残してデバッグしやすくする。
+          out=$(delv +rtrace @1.1.1.1 ${{ matrix.host }} A 2>&1 || true)
+          echo "$out"
+          if ! echo "$out" | grep -q 'fully validated'; then
+            echo "::error::delv could not fully validate DNSSEC chain for ${{ matrix.host }}"
             exit 1
           fi
-          echo "DS record: $ds"
 
       # CAA レコードで「pki.goog (Google Trust Services) 以外で証明書を発行
-      # してはいけない」を宣言しているか確認。CAA が消えると任意の CA で
-      # 証明書発行できてしまう (= TLS MITM の入口になる)。
-      - name: CAA record check
+      # してはいけない」を宣言しているか確認。CAA が消える / issuer が
+      # 想定外に増えると、任意の CA で証明書発行できてしまう (= TLS MITM の
+      # 入口になる)。subdomain の CAA は親ドメインから継承されうるので
+      # 親側も併せて確認。
+      - name: CAA record check (${{ matrix.host }})
         run: |
           set -euo pipefail
-          caa=$(dig CAA civicship.app +short @1.1.1.1)
+          caa=$(dig CAA ${{ matrix.host }} +short @1.1.1.1)
+          if [ -z "$caa" ]; then
+            apex=$(echo "${{ matrix.host }}" | awk -F. '{print $(NF-1)"."$NF}')
+            if [ "${{ matrix.host }}" != "$apex" ]; then
+              caa=$(dig CAA "$apex" +short @1.1.1.1)
+              echo "Falling back to parent zone $apex CAA"
+            fi
+          fi
+          echo "CAA records:"
+          echo "$caa"
           if ! echo "$caa" | grep -q 'pki.goog'; then
-            echo "::error::CAA record does not include pki.goog for civicship.app"
-            echo "Got: $caa"
+            echo "::error::CAA record does not include expected issuer pki.goog for ${{ matrix.host }}"
             exit 1
           fi
-          echo "CAA record: $caa"
 
       # HSTS preload directive が response header に乗っているか確認。
       # preload リスト登録自体は手動申請が必要だが、`preload` directive を
       # 削ってしまうと Chrome 等の HSTS preload リストへの登録維持条件
       # (https://hstspreload.org/) を満たさず将来的に外される。
-      - name: HSTS preload header check
+      - name: HSTS response header check (${{ matrix.host }})
         run: |
           set -euo pipefail
-          headers=$(curl -sI --max-time 10 https://civicship.app/)
+          headers=$(curl -sI --max-time 10 https://${{ matrix.host }}/)
           hsts=$(echo "$headers" | grep -i 'strict-transport-security' || true)
           if [ -z "$hsts" ]; then
-            echo "::error::strict-transport-security header missing on https://civicship.app/"
+            echo "::error::strict-transport-security header missing on https://${{ matrix.host }}/"
             exit 1
           fi
           if ! echo "$hsts" | grep -qi 'preload'; then
-            echo "::error::HSTS header missing 'preload' directive"
+            echo "::error::HSTS header missing 'preload' directive for ${{ matrix.host }}"
             echo "Got: $hsts"
             exit 1
           fi
           echo "HSTS header: $hsts"
 
+      # https://hstspreload.org/api/v2/status?domain=... で preload list 上の
+      # 公式 status を確認。response の `status` が "preloaded" 以外だと
+      # Chrome に登録されていない (= preload 効果なし)。header check と独立
+      # して走らせるのは、header だけ正しくて公式 list から外れた状態を
+      # 拾えるようにするため。
+      - name: HSTS preload list status (${{ matrix.host }})
+        run: |
+          set -euo pipefail
+          json=$(curl -sS --max-time 15 \
+            "https://hstspreload.org/api/v2/status?domain=${{ matrix.host }}")
+          echo "Response: $json"
+          status=$(echo "$json" | jq -r '.status // empty')
+          if [ -z "$status" ]; then
+            echo "::error::hstspreload.org returned no status field for ${{ matrix.host }}"
+            exit 1
+          fi
+          # preloaded = Chrome に焼き込み済 / 完全 OK
+          # pending   = 申請中だが Chrome rollout 待ち (warning のみ、fail させない)
+          # その他 (unknown / removed / rejected) は posture broken。
+          case "$status" in
+            preloaded)
+              echo "preload status OK: $status"
+              ;;
+            pending)
+              echo "::warning::HSTS preload status is 'pending' for ${{ matrix.host }} — Chrome rollout 待ち"
+              ;;
+            *)
+              echo "::error::HSTS preload status is '$status' for ${{ matrix.host }} (expected 'preloaded')"
+              exit 1
+              ;;
+          esac
+
       # いずれかの check が失敗した時だけ Slack に投げる。SLACK_WEBHOOK_INFRA
       # secret が未登録の repo (= Phase 0 で webhook を設定する前) でも step
       # が無声に skip するように `if` で webhook の有無を確認する。secret は
       # context にそのまま埋め込めないので env 経由で渡す。
+      #
+      # secrets:
+      #   SLACK_WEBHOOK_INFRA  infra channel 宛 Slack incoming webhook URL。
+      #                        repo secret 名は `SLACK_WEBHOOK_INFRA`。
       - name: Slack notify on failure
         if: failure()
         env:
           SLACK_WEBHOOK_INFRA: ${{ secrets.SLACK_WEBHOOK_INFRA }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HOST: ${{ matrix.host }}
         run: |
           set -euo pipefail
           if [ -z "${SLACK_WEBHOOK_INFRA:-}" ]; then
@@ -110,7 +216,7 @@ jobs:
             exit 0
           fi
           payload=$(cat <<EOF
-          {"text":":rotating_light: civicship.app TLS/DNS posture broken — see ${RUN_URL}"}
+          {"text":":rotating_light: ${HOST} TLS/DNS posture broken — see ${RUN_URL}"}
           EOF
           )
           curl -sS -X POST "$SLACK_WEBHOOK_INFRA" \

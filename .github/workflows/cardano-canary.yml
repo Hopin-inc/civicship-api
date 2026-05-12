@@ -1,0 +1,101 @@
+name: Cardano Preprod Canary (anchor batch dry-run)
+
+# Weekly dry-run of the anchor batch external dependencies (Blockfrost preprod
+# reachability, protocol params fetch, metadata 1985 construction). Does NOT
+# submit a transaction — it only proves the *external* surface that the real
+# Sunday batch will hit. 設計書 §15.4 / §5.1.5 / §5.1.6 参照。
+#
+# 背景:
+#   weekly anchor batch は Blockfrost preprod / mainnet を叩く前提で組まれて
+#   いる (§5.1.5)。Blockfrost の API key 失効、preprod の wedge、metadata 1985
+#   serializer の regression (CSL アップグレードや 64B / 16KB 境界の崩れ) は、
+#   いずれも本番 Sunday batch まで気付けないと数日 anchor 遅延になる。
+#   weekly canary を batch 実行の **1 時間前** に走らせ、外部依存が壊れた
+#   状態で本番 batch に突っ込むのを防ぐ。
+#
+# 設計通り「実 submit はしない」:
+#   - platform wallet UTXO / signing key は CI に持ち込まない (mainnet 鍵漏洩
+#     リスク回避、preprod でもオペが faucet refill を要する)
+#   - Prisma を読まない (DB schema drift と canary を結合させない)
+#   - KMS は ci.yml integration test で別途検証
+#   よって canary が拾うのは「外部 SaaS / 公開ライブラリの状態」だけ。
+#
+# 関連: docs/report/did-vc-internalization.md §15.4 / §5.1.5 / §5.1.6
+
+on:
+  schedule:
+    # 毎週土曜 23:00 UTC = 日曜 08:00 JST. 設計 §5.3 の Sunday weekly anchor
+    # batch (JST 09:00 想定) のおよそ 1 時間前に走らせ、外部依存が落ちて
+    # いれば本番 batch トリガー前に Slack 通知で運用が手動 hold をかけられる
+    # 余裕を作る。
+    - cron: '0 23 * * 6'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# schedule + workflow_dispatch が同時刻に走るのを抑止する。
+concurrency:
+  group: cardano-canary
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          # Blockfrost preprod API + npm registry へ egress 必須なので audit
+          # に留める (block にすると依存 install で死ぬ)。trivy-daily / tls-dns
+          # と同じ運用。
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # composite action 経由で pnpm + Node + frozen-lockfile install を再利用
+      # (DB は不要なので database-url / migrations / gql-generate は全部 off)。
+      - name: Setup civicship environment
+        uses: ./.github/actions/setup-civicship
+
+      # script は scripts/cardano-canary.ts (本 PR で追加)。Blockfrost preprod
+      # health → block freshness → protocol params → metadata 1985 構築を
+      # 順に検証し、いずれかで failure すれば exit 1。実 tx submit は **しない**。
+      #
+      # secrets:
+      #   BLOCKFROST_PROJECT_ID  Blockfrost preprod API key (prefix `preprod`)。
+      #                          repo secret 名は `BLOCKFROST_PROJECT_ID`。
+      #                          mainnet 鍵を誤って入れた場合は script 側で
+      #                          prefix チェック (preprod 以外は即 exit 1)。
+      - name: Run Cardano preprod canary (no submit)
+        env:
+          BLOCKFROST_PROJECT_ID: ${{ secrets.BLOCKFROST_PROJECT_ID }}
+        run: pnpm tsx scripts/cardano-canary.ts
+
+      # 失敗時 Slack 通知。SLACK_WEBHOOK_ENG が未登録の repo (= secret 設定前)
+      # では step を skip して silent fail を防ぐ。env 経由で値を渡す
+      # (context 直接埋め込みは避ける)。tls-dns-posture と同じパターン。
+      - name: Slack notify on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_ENG: ${{ secrets.SLACK_WEBHOOK_ENG }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_ENG:-}" ]; then
+            echo "::warning::SLACK_WEBHOOK_ENG not set; skipping Slack notify."
+            exit 0
+          fi
+          payload=$(cat <<EOF
+          {"text":":x: Cardano preprod canary failed — anchor batch externals unhealthy. See ${RUN_URL}"}
+          EOF
+          )
+          curl -sS -X POST "$SLACK_WEBHOOK_ENG" \
+            -H 'Content-Type: application/json' \
+            -d "$payload"
