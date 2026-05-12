@@ -39,6 +39,11 @@
  *   docs/operations/anchor-batch-deploy-checklist.md
  */
 
+// `BlockfrostClient` is `@injectable()`; importing it loads `tsyringe`, which
+// asserts that `reflect-metadata` has been loaded before any decorator
+// metadata is read. Must be the FIRST import in this entrypoint.
+import "reflect-metadata";
+
 import { BlockFrostAPI } from "@blockfrost/blockfrost-js";
 
 import {
