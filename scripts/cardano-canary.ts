@@ -53,6 +53,14 @@ import {
   type DidOp,
 } from "../src/infrastructure/libs/cardano/txBuilder.ts";
 
+/**
+ * Length of the public `preprod` prefix on Blockfrost project IDs. Used to
+ * cap any logged slice — slicing one byte further would expose the first
+ * char of the secret payload, which Gemini security review flagged on PR
+ * #1126.
+ */
+const BLOCKFROST_PROJECT_ID_PUBLIC_PREFIX_LENGTH = "preprod".length;
+
 // ---------------------------------------------------------------------------
 // Tiny step runner — no external deps, just a "PASS / FAIL" log line per step
 // so the GitHub Actions log surfaces precisely which dependency broke.
@@ -91,7 +99,7 @@ function requirePreprodProjectId(): string {
   if (!projectId.startsWith("preprod")) {
     throw new Error(
       "BLOCKFROST_PROJECT_ID does not look like a preprod key " +
-        `(expected prefix "preprod", got "${projectId.slice(0, 8)}..."). ` +
+        `(expected prefix "preprod", got "${projectId.slice(0, BLOCKFROST_PROJECT_ID_PUBLIC_PREFIX_LENGTH)}..."). ` +
         "The canary must run against preprod, never mainnet.",
     );
   }
@@ -239,7 +247,9 @@ async function main(): Promise<number> {
 
   const envStep = await runStep("env: BLOCKFROST_PROJECT_ID is preprod*", async () => {
     const id = requirePreprodProjectId();
-    return `project_id prefix OK (${id.slice(0, 8)}...)`;
+    // Log only the public `preprod` prefix — never expose the secret payload
+    // (Gemini security review on PR #1126).
+    return `project_id prefix OK (${id.slice(0, BLOCKFROST_PROJECT_ID_PUBLIC_PREFIX_LENGTH)}...)`;
   });
   results.push(envStep);
   if (!envStep.ok) return summarize(results);
