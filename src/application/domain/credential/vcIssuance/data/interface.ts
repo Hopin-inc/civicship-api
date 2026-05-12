@@ -39,6 +39,24 @@ export interface IVcIssuanceRepository {
    */
   findByUserId(ctx: IContext, userId: string): Promise<VcIssuanceRow[]>;
 
+  /**
+   * Return every *unrevoked* VC issuance row owned by `userId`. Used by
+   * the DID DEACTIVATE → cascade-revoke flow (§14.2 / §E): when a user's
+   * DID is tombstoned every still-live VC issued for that subject must
+   * be revoked atomically. The filter is `revokedAt IS NULL` so already-
+   * revoked rows are skipped and the cascade stays idempotent.
+   *
+   * `tx` is forwarded so the caller (UserDidUseCase) reads inside the
+   * same transaction that flips the StatusList bits — without that, a
+   * race between two concurrent DEACTIVATE calls could double-revoke a
+   * row (harmless, but noisy).
+   */
+  findActiveByUserId(
+    ctx: IContext,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<VcIssuanceRow[]>;
+
   create(
     ctx: IContext,
     input: CreateVcIssuanceInput,
