@@ -181,6 +181,11 @@ import {
 } from "@/application/domain/credential/shared/stubJwtSigner";
 import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
 
+// 🗑️ GDPR (§9.7 — 個人情報削除と chain 整合性) — Phase 4+ 実装の scaffold。
+//    interface のみ提供し、実 deletion ロジックは Phase 4+ の別 PR で実装。
+//    詳細は src/application/domain/gdpr/service.ts 先頭コメントを参照。
+import { GdprDeletionService } from "@/application/domain/gdpr/service";
+
 export function registerProductionDependencies() {
   // ------------------------------
   // 🏗️ Infrastructure
@@ -364,6 +369,22 @@ export function registerProductionDependencies() {
   container.register("StatusListRepository", { useClass: StatusListRepository });
   container.register("StatusListService", { useClass: StatusListService });
   container.register("StatusListUseCase", { useClass: StatusListUseCase });
+
+  // ------------------------------
+  // 🗑️ GDPR (§9.7 — 個人情報削除と chain 整合性)
+  // ------------------------------
+  //
+  // Phase 4+ 実装の scaffold。`GdprDeletionService.deleteUserData` は
+  // 現状 `not implemented — §9.7 Phase 4+ task` を throw する。Phase 4+
+  // で本実装を別 PR として追加する際、本 DI 登録はそのまま再利用される。
+  //
+  // singleton 登録の理由: Phase 4+ 実装で監査ログテーブル
+  // (t_gdpr_deletion_audit) を保持する場合、prepared statement の再利用や
+  // 内部 cache を検討するため、一貫したインスタンスで扱う。
+  //
+  // Open question (Q12 / §9.7 末尾): EU ユーザー対応時の admin endpoint /
+  // GraphQL mutation 配線は本 scaffold の範囲外。Phase 4+ で追加する。
+  container.registerSingleton("GdprDeletionService", GdprDeletionService);
 
   // ------------------------------
   // 📰 Content
