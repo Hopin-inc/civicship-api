@@ -328,6 +328,10 @@ export default class VcIssuanceService {
     //    `STUB_SIGNATURE`. The signing input fed to `signer.sign()` is
     //    exactly `${header}.${payload}` per the JWS spec so the Phase 2
     //    swap requires no service-side change.
+    // `prepare()` refreshes the signer's active-key snapshot when it is
+    // KMS-backed (no-op for the stub) so the synchronous `kid` reads
+    // below land on the same key the subsequent `sign()` uses.
+    await this.signer.prepare();
     const header = base64urlEncodeJson({
       // `alg` is read off the signer (Phase 1 stub returns "EdDSA"; the
       // future KMS signer returns the same string for the Ed25519 key,

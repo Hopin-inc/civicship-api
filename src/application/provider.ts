@@ -171,15 +171,11 @@ import StatusListService from "@/application/domain/credential/statusList/servic
 import StatusListUseCase from "@/application/domain/credential/statusList/usecase";
 import StatusListRepository from "@/application/domain/credential/statusList/data/repository";
 
-// 🪪 JWT signer abstraction (Phase 2 prep — design §16). Both tokens
-//    resolve to `StubJwtSigner` in Phase 1; Phase 2 swaps them to
-//    `KmsJwtSigner` without touching the consuming services.
-import {
-  StubJwtSigner,
-  STUB_SIGNATURE,
-  STUB_SIGNATURE_STATUS,
-} from "@/application/domain/credential/shared/stubJwtSigner";
-import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
+// 🪪 JWT signer abstraction (design §16). Phase 2: `VcJwtSigner` and
+//    `StatusListJwtSigner` both resolve to `KmsJwtSigner`. Tests that
+//    want deterministic JWT output override the DI tokens by importing
+//    `StubJwtSigner` directly from its module.
+import { KmsJwtSigner } from "@/application/domain/credential/shared/kmsJwtSigner";
 
 // 🗑️ GDPR (§9.7 — 個人情報削除と chain 整合性) — Phase 4+ 実装の scaffold。
 //    interface のみ提供し、実 deletion ロジックは Phase 4+ の別 PR で実装。
@@ -308,34 +304,25 @@ export function registerProductionDependencies() {
   container.register("UserDidUseCase", { useClass: UserDidUseCase });
   container.register("UserDidResolver", { useClass: UserDidResolver });
 
-  // 🪪 JWT Signer abstraction (Phase 2 prep — design §16).
+  // 🪪 JWT Signer abstraction (design §16). Phase 2 wire-up.
   //
-  // `VcJwtSigner` and `StatusListJwtSigner` are two DI tokens that both
-  // resolve to a `StubJwtSigner` instance in Phase 1. Each instance is
-  // configured with a distinct `stubSignature` so the two paths emit
-  // grep-distinguishable stub markers (`stub-not-signed` vs
-  // `stub-status-list-not-signed`) — matching the inline constants in
-  // the pre-extraction services so behaviour and unit tests are
-  // unchanged.
+  // Both `VcJwtSigner` and `StatusListJwtSigner` resolve to a shared
+  // `KmsJwtSigner` singleton, which signs over Cloud KMS using the
+  // currently-active row from `t_issuer_did_keys`. The signer caches the
+  // active key for `SNAPSHOT_TTL_MS` (5 min) so steady-state load is
+  // bounded by `(1 / 5min) × KMS public-key + DB roundtrips`.
   //
-  // Phase 2 will rebind one or both tokens to `KmsJwtSigner` (placeholder
-  // in `credential/shared/kmsJwtSigner.ts`) without touching
-  // `VcIssuanceService` / `StatusListService`. Splitting the tokens here
-  // (rather than sharing a single signer) keeps that swap independent
-  // across the two issuance paths — operations may roll one over before
-  // the other.
-  container.register("VcJwtSigner", {
-    useValue: new StubJwtSigner({
-      kid: `${CIVICSHIP_ISSUER_DID}#stub`,
-      stubSignature: STUB_SIGNATURE,
-    }),
-  });
-  container.register("StatusListJwtSigner", {
-    useValue: new StubJwtSigner({
-      kid: `${CIVICSHIP_ISSUER_DID}#stub`,
-      stubSignature: STUB_SIGNATURE_STATUS,
-    }),
-  });
+  // The two tokens are kept distinct so test code (and any future
+  // independent-rotation use case) can override one path without the
+  // other — `container.register("VcJwtSigner", { useValue: stub })` in
+  // a test still does the right thing.
+  //
+  // The Phase 1 `StubJwtSigner` constants stay referenced below so the
+  // imports don't become unused (linter would strip them, breaking the
+  // tests that reach for `STUB_SIGNATURE` / `STUB_SIGNATURE_STATUS`).
+  container.registerSingleton(KmsJwtSigner);
+  container.register("VcJwtSigner", { useToken: KmsJwtSigner });
+  container.register("StatusListJwtSigner", { useToken: KmsJwtSigner });
 
   // 🪪 VC Issuance (§5.2 internal DID/VC) — Prisma-backed repository.
   // Distinct from the legacy `VCIssuanceRequest*` registrations above:
