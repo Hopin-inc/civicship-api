@@ -18,6 +18,7 @@
 
 import "reflect-metadata";
 import { container } from "tsyringe";
+import { gunzipSync } from "node:zlib";
 import {
   ChainNetwork,
   CurrentPrefecture,
@@ -246,9 +247,39 @@ export interface SeedUserOptions {
  * Seed a User → Participation → Evaluation chain (the foundation that every
  * §14.2 test builds on). Each test then attaches VC / anchor rows on top.
  */
+/**
+ * Seed one extra PASSED Evaluation (with its own Participation) for an
+ * existing user. Used both as the building block for the higher-level
+ * `seedUserParticipationEvaluation` (which prepends a User row) and
+ * directly by tests that already have a user and need a second VC slot
+ * (`VcIssuanceRequest.evaluationId` is `@unique`).
+ */
+export async function seedExtraEvaluationForUser(userId: string): Promise<{ evaluationId: string }> {
+  const evaluation = await prismaClient.evaluation.create({
+    data: {
+      status: EvaluationStatus.PASSED,
+      participation: {
+        create: {
+          status: ParticipationStatus.PARTICIPATED,
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          source: Source.INTERNAL,
+          user: { connect: { id: userId } },
+        },
+      },
+      evaluator: { connect: { id: userId } },
+    },
+  });
+  return { evaluationId: evaluation.id };
+}
+
+/**
+ * Seed a User → Participation → Evaluation chain (the foundation every
+ * §14.2 test builds on). Delegates the Participation + Evaluation pair
+ * to `seedExtraEvaluationForUser` so the participation/evaluation create
+ * shape lives in exactly one place.
+ */
 export async function seedUserParticipationEvaluation(opts: SeedUserOptions = {}): Promise<{
   userId: string;
-  participationId: string;
   evaluationId: string;
 }> {
   const user = await TestDataSourceHelper.createUser({
@@ -256,26 +287,8 @@ export async function seedUserParticipationEvaluation(opts: SeedUserOptions = {}
     slug: `${opts.slugPrefix ?? "acc"}-${Date.now()}`,
     currentPrefecture: CurrentPrefecture.KAGAWA,
   });
-  const participation = await prismaClient.participation.create({
-    data: {
-      status: ParticipationStatus.PARTICIPATED,
-      reason: ParticipationStatusReason.PERSONAL_RECORD,
-      source: Source.INTERNAL,
-      user: { connect: { id: user.id } },
-    },
-  });
-  const evaluation = await prismaClient.evaluation.create({
-    data: {
-      status: EvaluationStatus.PASSED,
-      participation: { connect: { id: participation.id } },
-      evaluator: { connect: { id: user.id } },
-    },
-  });
-  return {
-    userId: user.id,
-    participationId: participation.id,
-    evaluationId: evaluation.id,
-  };
+  const { evaluationId } = await seedExtraEvaluationForUser(user.id);
+  return { userId: user.id, evaluationId };
 }
 
 export interface SeedVcRequestOptions {
@@ -313,6 +326,108 @@ export interface SeedPendingVcAnchorOptions {
   periodEnd?: Date;
   rootHash?: string;
   network?: ChainNetwork;
+}
+
+// ---------------------------------------------------------------------------
+// High-level "seed user + bootstrap one VC against a StatusList slot"
+// fixture. Used by every §14.2 StatusList-bit test (phase14_vc_revocation
+// + phase14_did_deactivate_vc_cascade) to skip the repeated
+// `seedUserParticipationEvaluation` → `allocateNextSlot` → `seedVcRequest`
+// chain that SonarCloud's duplication detector kept flagging.
+// ---------------------------------------------------------------------------
+
+export interface SeedUserWithVcOptions {
+  /** Display name on the seeded User row. */
+  name: string;
+  /** Slug prefix on the seeded User row (a timestamp suffix is appended). */
+  slugPrefix: string;
+  /** JWT to persist on the VC row. */
+  vcJwt: string;
+}
+
+export interface SeededUserWithVc {
+  userId: string;
+  evaluationId: string;
+  slot: Awaited<ReturnType<import("@/application/domain/credential/statusList/usecase").default["allocateNextSlot"]>>;
+  vc: Awaited<ReturnType<typeof seedVcRequest>>;
+}
+
+/**
+ * Bootstrap a fresh User → Participation → Evaluation → StatusList slot
+ * → VcIssuanceRequest chain for a §14.2 test that only needs one VC.
+ *
+ * Pulls the four-line preamble (`buildCtx` → seed → allocate → seed VC)
+ * into one call so individual tests no longer reproduce the structural
+ * block — they only express the *behaviour* being asserted on top.
+ */
+export async function seedUserWithVcOnStatusList(
+  ctx: IContext,
+  opts: SeedUserWithVcOptions,
+): Promise<SeededUserWithVc> {
+  // Import lazily to avoid a circular cycle between this helper module
+  // and the StatusList usecase (which transitively pulls the same DI
+  // container that `setupAcceptanceTest()` resets).
+  const { default: StatusListUseCase } = await import(
+    "@/application/domain/credential/statusList/usecase"
+  );
+  const { userId, evaluationId } = await seedUserParticipationEvaluation({
+    name: opts.name,
+    slugPrefix: opts.slugPrefix,
+  });
+  const statusListUseCase = container.resolve(StatusListUseCase);
+  const slot = await statusListUseCase.allocateNextSlot(ctx);
+  const vc = await seedVcRequest({
+    userId,
+    evaluationId,
+    vcJwt: opts.vcJwt,
+    statusListIndex: slot.statusListIndex,
+    statusListCredential: slot.statusListCredentialUrl,
+  });
+  return { userId, evaluationId, slot, vc };
+}
+
+// ---------------------------------------------------------------------------
+// StatusList bitstring helpers (shared between phase14_vc_revocation and
+// phase14_did_deactivate_vc_cascade — extracted to keep SonarCloud's
+// new-code duplication metric under the 3% threshold).
+// ---------------------------------------------------------------------------
+
+/**
+ * Read bit `index` from a Status List 2021 bitstring. Bit ordering: bit 0
+ * is the MSB of byte 0 (mirrors `setBit` in `StatusListService`).
+ */
+export function readStatusListBit(bitstring: Uint8Array, index: number): number {
+  const byteIdx = Math.floor(index / 8);
+  const bitOffset = index % 8;
+  const mask = 0x80 >> bitOffset;
+  return (bitstring[byteIdx] & mask) === 0 ? 0 : 1;
+}
+
+/**
+ * Decode the payload of a StatusList VC JWT (3-segment, base64url payload).
+ * Returns the raw JSON claims — callers narrow the shape themselves.
+ */
+export function decodeStatusListJwt(jwt: string): Record<string, unknown> {
+  const [, payloadSeg] = jwt.split(".");
+  return JSON.parse(Buffer.from(payloadSeg, "base64url").toString("utf8")) as Record<
+    string,
+    unknown
+  >;
+}
+
+/**
+ * Decompress the `credentialSubject.encodedList` from a StatusList JWT
+ * payload back to the raw bitstring bytes.
+ */
+export function decodeStatusListBitstring(jwt: string): Uint8Array {
+  const payload = decodeStatusListJwt(jwt) as {
+    credentialSubject?: { encodedList?: string };
+  };
+  const encoded = payload.credentialSubject?.encodedList;
+  if (typeof encoded !== "string") {
+    throw new Error("decodeStatusListBitstring: payload has no credentialSubject.encodedList");
+  }
+  return new Uint8Array(gunzipSync(Buffer.from(encoded, "base64url")));
 }
 
 /** Seed a PENDING VcAnchor that wraps the given VcIssuanceRequest leafIds. */

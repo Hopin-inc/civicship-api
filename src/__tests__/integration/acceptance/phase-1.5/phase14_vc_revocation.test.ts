@@ -18,7 +18,6 @@
 
 import "reflect-metadata";
 import { container } from "tsyringe";
-import { gunzipSync } from "node:zlib";
 import express from "express";
 import request from "supertest";
 import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -27,30 +26,13 @@ import StatusListUseCase from "@/application/domain/credential/statusList/usecas
 import credentialsRouter from "@/presentation/router/credentials";
 import {
   buildCtx,
+  decodeStatusListBitstring,
+  readStatusListBit,
   seedUserParticipationEvaluation,
   seedVcRequest,
   setupAcceptanceTest,
   teardownAcceptanceTest,
 } from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
-
-/**
- * Read bit `index` from a Status List 2021 bitstring. Bit ordering: bit 0 is
- * the MSB of byte 0 (mirrors `setBit` in StatusListService).
- */
-function readBit(bitstring: Uint8Array, index: number): number {
-  const byteIdx = Math.floor(index / 8);
-  const bitOffset = index % 8;
-  const mask = 0x80 >> bitOffset;
-  return (bitstring[byteIdx] & mask) === 0 ? 0 : 1;
-}
-
-function decodeStatusListJwt(jwt: string): Record<string, unknown> {
-  const [, payloadSeg] = jwt.split(".");
-  return JSON.parse(Buffer.from(payloadSeg, "base64url").toString("utf8")) as Record<
-    string,
-    unknown
-  >;
-}
 
 describe("[§14.2] VC revocation — revokeVc flips StatusList bit and re-signs the list JWT", () => {
   jest.setTimeout(30_000);
@@ -100,16 +82,10 @@ describe("[§14.2] VC revocation — revokeVc flips StatusList bit and re-signs 
     expect(typeof jwt).toBe("string");
     expect(jwt.split(".").length).toBe(3);
 
-    const payload = decodeStatusListJwt(jwt) as {
-      credentialSubject?: { encodedList?: string };
-    };
-    const encodedListB64Url = payload.credentialSubject?.encodedList;
-    expect(typeof encodedListB64Url).toBe("string");
-    const compressed = Buffer.from(encodedListB64Url!, "base64url");
-    const bitstring = new Uint8Array(gunzipSync(compressed));
-    expect(readBit(bitstring, slot.statusListIndex)).toBe(1);
+    const bitstring = decodeStatusListBitstring(jwt);
+    expect(readStatusListBit(bitstring, slot.statusListIndex)).toBe(1);
     // Sanity: a neighbouring bit stays 0.
-    expect(readBit(bitstring, slot.statusListIndex + 1)).toBe(0);
+    expect(readStatusListBit(bitstring, slot.statusListIndex + 1)).toBe(0);
 
     // 5. the issuance row records revocation locally so back-office queries
     //    can filter without scanning the StatusList JWT.
