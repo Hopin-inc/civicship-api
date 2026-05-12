@@ -18,10 +18,6 @@ import VcIssuanceService, {
   CIVICSHIP_ISSUER_DID,
   buildVcPayload,
 } from "@/application/domain/credential/vcIssuance/service";
-import {
-  StubJwtSigner,
-  STUB_SIGNATURE,
-} from "@/application/domain/credential/shared/stubJwtSigner";
 import { buildRoot, verifyProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 import type {
   VcAnchorRow,
@@ -37,6 +33,10 @@ const FAKE_STATUS_URL = "https://api.civicship.app/credentials/status/1.jwt";
 class MockVcIssuanceRepository {
   findById = jest.fn().mockResolvedValue(null);
   findByUserId = jest.fn().mockResolvedValue([]);
+  // Phase 2: cascadeRevokeForUser drives the DID DEACTIVATE → VC revoke
+  // flow (§14.2). Default to "no active VCs" so unrelated tests don't
+  // accidentally enter the revoke loop.
+  findActiveByUserId = jest.fn().mockResolvedValue([]);
   create = jest.fn();
   findVcAnchorById = jest.fn().mockResolvedValue(null);
   findVcJwtsByIds = jest.fn().mockResolvedValue([]);
@@ -71,6 +71,9 @@ class MockStatusListService {
     statusListIndex: 42,
     statusListCredentialUrl: FAKE_STATUS_URL,
   });
+  // Phase 2: cascadeRevokeForUser delegates to revokeVc per VC. Default
+  // to a no-op so the call counter is meaningful in tests that opt in.
+  revokeVc = jest.fn().mockResolvedValue(undefined);
 }
 
 function decodeJwtSegment(segment: string): unknown {
@@ -91,17 +94,6 @@ describe("VcIssuanceService", () => {
     mockStatusList = new MockStatusListService();
     container.register("VcIssuanceRepository", { useValue: mockRepository });
     container.register("StatusListService", { useValue: mockStatusList });
-    // Phase 2 prep: VcIssuanceService now resolves `VcJwtSigner` from DI
-    // rather than reaching for the inline `STUB_SIGNATURE` constant. We
-    // bind the same `StubJwtSigner` used in production so the JWT output
-    // stays byte-identical and the existing assertions
-    // (`expect(segments[2]).toBe("stub-not-signed")`) keep passing.
-    container.register("VcJwtSigner", {
-      useValue: new StubJwtSigner({
-        kid: `${CIVICSHIP_ISSUER_DID}#stub`,
-        stubSignature: STUB_SIGNATURE,
-      }),
-    });
     container.register("VcIssuanceService", { useClass: VcIssuanceService });
 
     service = container.resolve(VcIssuanceService);
@@ -401,6 +393,103 @@ describe("VcIssuanceService", () => {
       await expect(
         service.generateInclusionProof(mockCtx, leafRows[0].vcIssuanceRequestId),
       ).rejects.toThrow(/not present in anchor/);
+    });
+  });
+
+  describe("cascadeRevokeForUser (Phase 2 §14.2 / §E)", () => {
+    // Sentinel `tx` so we can assert the same client is forwarded to both
+    // the repository read and every StatusList write.
+    const tx = { sentinel: "tx" } as never;
+
+    it("revokes every active VC for the user via StatusListService.revokeVc", async () => {
+      const rows = [
+        makeVcRow({ id: "vc-a", statusListIndex: 1 }),
+        makeVcRow({ id: "vc-b", statusListIndex: 2 }),
+      ];
+      mockRepository.findActiveByUserId.mockResolvedValueOnce(rows);
+
+      const count = await service.cascadeRevokeForUser(mockCtx, "u_1", tx);
+
+      expect(count).toBe(2);
+      expect(mockRepository.findActiveByUserId).toHaveBeenCalledWith(mockCtx, "u_1", tx);
+      expect(mockStatusList.revokeVc).toHaveBeenCalledTimes(2);
+      expect(mockStatusList.revokeVc).toHaveBeenNthCalledWith(
+        1,
+        mockCtx,
+        { vcRequestId: "vc-a", reason: "did-deactivated" },
+        tx,
+      );
+      expect(mockStatusList.revokeVc).toHaveBeenNthCalledWith(
+        2,
+        mockCtx,
+        { vcRequestId: "vc-b", reason: "did-deactivated" },
+        tx,
+      );
+    });
+
+    it("returns 0 and does not call the StatusList when the user has no active VCs", async () => {
+      mockRepository.findActiveByUserId.mockResolvedValueOnce([]);
+
+      const count = await service.cascadeRevokeForUser(mockCtx, "u_lonely", tx);
+
+      expect(count).toBe(0);
+      expect(mockStatusList.revokeVc).not.toHaveBeenCalled();
+    });
+
+    it("is idempotent because findActiveByUserId filters revokedAt IS NULL at the repo layer", async () => {
+      // Simulate the second cascade call: every prior revocation already
+      // stamped revokedAt, so the repo returns nothing.
+      mockRepository.findActiveByUserId.mockResolvedValueOnce([]);
+
+      const count = await service.cascadeRevokeForUser(mockCtx, "u_already_revoked", tx);
+
+      expect(count).toBe(0);
+      expect(mockStatusList.revokeVc).not.toHaveBeenCalled();
+    });
+
+    it("skips rows that have no §D StatusList wiring without blocking the cascade", async () => {
+      const rows = [
+        // Pre-§D row — no statusListIndex / statusListCredential. Must be
+        // skipped (we have no bit to flip) but must not stop later rows.
+        makeVcRow({ id: "vc-legacy", statusListIndex: null, statusListCredential: null }),
+        makeVcRow({ id: "vc-modern", statusListIndex: 7 }),
+      ];
+      mockRepository.findActiveByUserId.mockResolvedValueOnce(rows);
+
+      const count = await service.cascadeRevokeForUser(mockCtx, "u_mixed", tx);
+
+      expect(count).toBe(1);
+      expect(mockStatusList.revokeVc).toHaveBeenCalledTimes(1);
+      expect(mockStatusList.revokeVc).toHaveBeenCalledWith(
+        mockCtx,
+        { vcRequestId: "vc-modern", reason: "did-deactivated" },
+        tx,
+      );
+    });
+
+    it("respects a custom reason when supplied", async () => {
+      mockRepository.findActiveByUserId.mockResolvedValueOnce([makeVcRow({ id: "vc-a" })]);
+
+      await service.cascadeRevokeForUser(mockCtx, "u_1", tx, "operator-purge");
+
+      expect(mockStatusList.revokeVc).toHaveBeenCalledWith(
+        mockCtx,
+        { vcRequestId: "vc-a", reason: "operator-purge" },
+        tx,
+      );
+    });
+
+    it("propagates errors from StatusListService.revokeVc so the surrounding tx rolls back", async () => {
+      mockRepository.findActiveByUserId.mockResolvedValueOnce([
+        makeVcRow({ id: "vc-a" }),
+        makeVcRow({ id: "vc-b" }),
+      ]);
+      mockStatusList.revokeVc.mockRejectedValueOnce(new Error("KMS down"));
+
+      await expect(service.cascadeRevokeForUser(mockCtx, "u_1", tx)).rejects.toThrow(/KMS down/);
+      // The second VC must NOT be revoked — leaving the tx half-applied
+      // is exactly what the surrounding usecase transaction prevents.
+      expect(mockStatusList.revokeVc).toHaveBeenCalledTimes(1);
     });
   });
 });
