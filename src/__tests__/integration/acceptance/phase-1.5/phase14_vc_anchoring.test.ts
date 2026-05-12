@@ -35,8 +35,6 @@ import {
   buildCtx,
   createMockBlockfrostClient,
   createMockSlotProvider,
-  cslKeygenMockFactory,
-  cslTxBuilderMockFactory,
   fakeVcJwt,
   registerBlockfrostMocks,
   restoreEnv,
@@ -49,13 +47,18 @@ import {
 } from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
 
 // CSL は native 依存が重いので、テスト時のみ tx 構築を mock 化する。
-// jest.mock は hoist されるため、call site は各 test file に残す必要がある
-// が、factory 本体は共通 helper から import している。
-jest.mock(
-  "@/infrastructure/libs/cardano/txBuilder",
-  cslTxBuilderMockFactory({ txHashHex: "ab".repeat(32) }),
-);
-jest.mock("@/infrastructure/libs/cardano/keygen", cslKeygenMockFactory());
+// jest.mock は ES `import` より上に hoist されるため、factory から
+// import バインディングを直接参照できない (TDZ で "Cannot access 'setup_1'
+// before initialization" になる)。factory 内で `require()` することで、
+// import 解決後の helper module を遅延ロードする。
+jest.mock("@/infrastructure/libs/cardano/txBuilder", () => {
+  const setup = require("@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup");
+  return setup.cslTxBuilderMockFactory({ txHashHex: "ab".repeat(32) })();
+});
+jest.mock("@/infrastructure/libs/cardano/keygen", () => {
+  const setup = require("@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup");
+  return setup.cslKeygenMockFactory()();
+});
 
 describe("[§14.2] VC anchoring — pending VcAnchor → CONFIRMED via batch", () => {
   jest.setTimeout(30_000);

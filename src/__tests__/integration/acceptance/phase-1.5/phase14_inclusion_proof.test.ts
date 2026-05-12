@@ -25,6 +25,7 @@ import didRouter from "@/presentation/router/did";
 import { buildRoot, verifyProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 import {
   fakeVcJwt,
+  seedExtraEvaluationForUser,
   seedUserParticipationEvaluation,
   seedVcRequest,
   setupAcceptanceTest,
@@ -50,12 +51,20 @@ describe("[§14.2] VC inclusion proof — GET /vc/:vcId/inclusion-proof returns 
 
   /** Seed `count` VC issuance rows owned by a fresh user. Returns the rows. */
   async function seedVcRequests(count: number) {
-    const { userId, evaluationId } = await seedUserParticipationEvaluation({
+    // `VcIssuanceRequest.evaluationId` is `@unique` (schema.prisma) — each
+    // VC needs its own Evaluation row. The first one comes from
+    // `seedUserParticipationEvaluation` (which also creates the User);
+    // subsequent ones use `seedExtraEvaluationForUser`.
+    const { userId, evaluationId: firstEvaluationId } = await seedUserParticipationEvaluation({
       name: "Inclusion Proof User",
       slugPrefix: "incl",
     });
     const rows: { id: string; vcJwt: string }[] = [];
     for (let i = 0; i < count; i += 1) {
+      const evaluationId =
+        i === 0
+          ? firstEvaluationId
+          : (await seedExtraEvaluationForUser(userId)).evaluationId;
       // Deterministic salt (no Math.random — fixes Sonar S2245).
       // The index already guarantees uniqueness across rows in this seed call,
       // and `setupAcceptanceTest` wipes the DB before each test, so collision

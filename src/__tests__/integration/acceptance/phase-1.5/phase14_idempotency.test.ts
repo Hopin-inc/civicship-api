@@ -25,8 +25,6 @@ import {
   buildCtx,
   createMockBlockfrostClient,
   createMockSlotProvider,
-  cslKeygenMockFactory,
-  cslTxBuilderMockFactory,
   fakeVcJwt,
   registerBlockfrostMocks,
   restoreEnv,
@@ -39,13 +37,19 @@ import {
 } from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
 
 // Mock CSL-heavy modules (same approach as the unit-test suite).
-// jest.mock is hoisted, so the call sites must stay in this file — but the
-// factory bodies live in the shared helper.
-jest.mock(
-  "@/infrastructure/libs/cardano/txBuilder",
-  cslTxBuilderMockFactory({ txHashHex: "12".repeat(32) }),
-);
-jest.mock("@/infrastructure/libs/cardano/keygen", cslKeygenMockFactory());
+// jest.mock is hoisted above the ES `import`s, so the factory cannot
+// reference an imported binding directly (TDZ → "Cannot access 'setup_1'
+// before initialization"). Use `require()` inside the lazily-evaluated
+// factory so the helper is loaded at mock-construction time, after imports
+// have been bound.
+jest.mock("@/infrastructure/libs/cardano/txBuilder", () => {
+  const setup = require("@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup");
+  return setup.cslTxBuilderMockFactory({ txHashHex: "12".repeat(32) })();
+});
+jest.mock("@/infrastructure/libs/cardano/keygen", () => {
+  const setup = require("@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup");
+  return setup.cslKeygenMockFactory()();
+});
 
 describe("[§14.2] AnchorBatch idempotency — re-running the same batchId is a no-op", () => {
   jest.setTimeout(30_000);
