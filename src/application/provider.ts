@@ -171,11 +171,18 @@ import StatusListService from "@/application/domain/credential/statusList/servic
 import StatusListUseCase from "@/application/domain/credential/statusList/usecase";
 import StatusListRepository from "@/application/domain/credential/statusList/data/repository";
 
-// 🪪 JWT signer abstraction (design §16). Phase 2: `VcJwtSigner` and
-//    `StatusListJwtSigner` both resolve to `KmsJwtSigner`. Tests that
-//    want deterministic JWT output override the DI tokens by importing
-//    `StubJwtSigner` directly from its module.
+// 🪪 JWT signer abstraction (design §16). Phase 2: in production
+//    `VcJwtSigner` / `StatusListJwtSigner` resolve to `KmsJwtSigner`.
+//    Under Jest the same tokens are bound to a `StubJwtSigner` instead
+//    so the test suite doesn't require GCP KMS credentials nor a seeded
+//    `t_issuer_did_keys` row to render JWT-shaped output.
+import {
+  StubJwtSigner,
+  STUB_SIGNATURE,
+  STUB_SIGNATURE_STATUS,
+} from "@/application/domain/credential/shared/stubJwtSigner";
 import { KmsJwtSigner } from "@/application/domain/credential/shared/kmsJwtSigner";
+import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
 
 // 🗑️ GDPR (§9.7 — 個人情報削除と chain 整合性) — Phase 4+ 実装の scaffold。
 //    interface のみ提供し、実 deletion ロジックは Phase 4+ の別 PR で実装。
@@ -306,23 +313,41 @@ export function registerProductionDependencies() {
 
   // 🪪 JWT Signer abstraction (design §16). Phase 2 wire-up.
   //
-  // Both `VcJwtSigner` and `StatusListJwtSigner` resolve to a shared
-  // `KmsJwtSigner` singleton, which signs over Cloud KMS using the
-  // currently-active row from `t_issuer_did_keys`. The signer caches the
-  // active key for `SNAPSHOT_TTL_MS` (5 min) so steady-state load is
-  // bounded by `(1 / 5min) × KMS public-key + DB roundtrips`.
+  // Production: both `VcJwtSigner` and `StatusListJwtSigner` resolve to a
+  // shared `KmsJwtSigner` singleton, which signs every JWT over Cloud KMS
+  // using the active row from `t_issuer_did_keys`. The 5-min snapshot TTL
+  // (`KmsJwtSigner.SNAPSHOT_TTL_MS`) bounds the **DB active-key lookup**
+  // rate, not the KMS sign rate — every VC issuance / StatusList rebuild
+  // performs one `asymmetricSign` round-trip regardless.
   //
-  // The two tokens are kept distinct so test code (and any future
-  // independent-rotation use case) can override one path without the
-  // other — `container.register("VcJwtSigner", { useValue: stub })` in
-  // a test still does the right thing.
+  // Tests (`JEST_WORKER_ID` set): bind a deterministic `StubJwtSigner` per
+  // token so the integration suite doesn't require GCP credentials nor a
+  // seeded `t_issuer_did_keys` row. Each token gets its own stub instance
+  // with a distinct marker so grep-distinguishable JWT output is preserved
+  // for the existing snapshot-style assertions.
   //
-  // The Phase 1 `StubJwtSigner` constants stay referenced below so the
-  // imports don't become unused (linter would strip them, breaking the
-  // tests that reach for `STUB_SIGNATURE` / `STUB_SIGNATURE_STATUS`).
+  // Splitting the tokens (rather than sharing one binding) leaves the
+  // door open for tests to override a single path (`container.register
+  // ("VcJwtSigner", { useValue: customStub })`) without disturbing the
+  // other.
   container.registerSingleton(KmsJwtSigner);
-  container.register("VcJwtSigner", { useToken: KmsJwtSigner });
-  container.register("StatusListJwtSigner", { useToken: KmsJwtSigner });
+  if (process.env.JEST_WORKER_ID !== undefined) {
+    container.register("VcJwtSigner", {
+      useValue: new StubJwtSigner({
+        kid: `${CIVICSHIP_ISSUER_DID}#stub`,
+        stubSignature: STUB_SIGNATURE,
+      }),
+    });
+    container.register("StatusListJwtSigner", {
+      useValue: new StubJwtSigner({
+        kid: `${CIVICSHIP_ISSUER_DID}#stub`,
+        stubSignature: STUB_SIGNATURE_STATUS,
+      }),
+    });
+  } else {
+    container.register("VcJwtSigner", { useToken: KmsJwtSigner });
+    container.register("StatusListJwtSigner", { useToken: KmsJwtSigner });
+  }
 
   // 🪪 VC Issuance (§5.2 internal DID/VC) — Prisma-backed repository.
   // Distinct from the legacy `VCIssuanceRequest*` registrations above:

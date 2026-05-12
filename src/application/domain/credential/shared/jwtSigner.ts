@@ -117,9 +117,12 @@ export interface JwtSigner {
    * fragment portion becomes the `verificationMethod` id in the DID
    * Document.
    *
-   * Implementations MUST throw on access before the first `prepare()` so
+   * Implementations whose `kid` is resolved asynchronously (e.g.
+   * `KmsJwtSigner`) MUST throw on access before the first `prepare()` so
    * misuse fails loudly rather than producing a JWT stamped with a stale
-   * / undefined key id.
+   * / undefined key id. Implementations with a construction-time-fixed
+   * `kid` (e.g. `StubJwtSigner`) MAY skip that guard — `prepare()` is a
+   * no-op for them and the property is always safe to read.
    */
   readonly kid: string;
 }
