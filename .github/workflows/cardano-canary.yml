@@ -43,6 +43,11 @@ jobs:
   canary:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # `BLOCKFROST_PROJECT_ID` を repo secret ではなく `dev` environment から引く。
+    # mainnet 切替は別 environment (co-creation-dao-prod) を別 workflow が指す形
+    # で行い、本 canary は preprod 専用のまま固定する。env 経由にすることで
+    # 同名 secret を環境ごとに別値で持てるようになる。
+    environment: dev
     permissions:
       contents: read
 
