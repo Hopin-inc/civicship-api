@@ -34,6 +34,12 @@ export default class TestDataSourceHelper {
     await this.db.transactionAnchor.deleteMany();
     await this.db.statusListCredential.deleteMany();
     await this.db.didIssuanceRequest.deleteMany();
+    // IssuerDidKey rows (KMS key registry) have a UNIQUE constraint on
+    // `kms_key_resource_name` and persisted across tests prior to this — the
+    // repository tests reuse the same KMS resource names, and the multi-key
+    // serving acceptance test routes through the production KmsSigner when
+    // stale rows remain, which fails without GCP credentials in CI.
+    await this.db.issuerDidKey.deleteMany();
     await this.db.evaluation.deleteMany();
     await this.db.participation.deleteMany();
 
