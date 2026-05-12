@@ -258,20 +258,19 @@ export class BlockfrostClient {
    * "freshly-funded / never-funded" boundary case.
    */
   async getUtxos(address: string): Promise<BlockfrostUtxoResponse[]> {
-    try {
-      return await this.withRetry(
-        "getUtxos",
-        () => this.api.addressesUtxosAll(address) as Promise<BlockfrostUtxoResponse[]>,
-      );
-    } catch (err) {
-      if (isLikelyNotFound(err)) {
-        logger.info("[BlockfrostClient] getUtxos: address has no UTXOs (404 → [])", {
-          address,
-        });
-        return [];
+    return this.withRetry("getUtxos", async () => {
+      try {
+        return (await this.api.addressesUtxosAll(address)) as BlockfrostUtxoResponse[];
+      } catch (err) {
+        if (isLikelyNotFound(err)) {
+          logger.info("[BlockfrostClient] getUtxos: address has no UTXOs (404 → [])", {
+            address,
+          });
+          return [];
+        }
+        throw err;
       }
-      throw err;
-    }
+    });
   }
 
   /**
