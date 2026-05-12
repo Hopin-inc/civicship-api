@@ -384,7 +384,17 @@ export function registerProductionDependencies() {
   //
   // Open question (Q12 / §9.7 末尾): EU ユーザー対応時の admin endpoint /
   // GraphQL mutation 配線は本 scaffold の範囲外。Phase 4+ で追加する。
-  container.registerSingleton("GdprDeletionService", GdprDeletionService);
+  //
+  // Singleton via class + string-token alias: `registerSingleton(token, class)`
+  // would scope the singleton only to lookups by `"GdprDeletionService"`.
+  // A `container.resolve(GdprDeletionService)` (used in service.test.ts
+  // and any future class-direct injector) would construct a *new*
+  // instance because tsyringe treats `@injectable()` classes as transient
+  // by default. Same dual-binding pattern as `UserDidAnchorRepository`
+  // above — register the class as singleton, then alias the string token
+  // via `useToken` so both resolution paths return the same instance.
+  container.registerSingleton(GdprDeletionService);
+  container.register("GdprDeletionService", { useToken: GdprDeletionService });
 
   // ------------------------------
   // 📰 Content
