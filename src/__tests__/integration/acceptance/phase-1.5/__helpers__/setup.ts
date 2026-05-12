@@ -247,45 +247,12 @@ export interface SeedUserOptions {
  * Seed a User → Participation → Evaluation chain (the foundation that every
  * §14.2 test builds on). Each test then attaches VC / anchor rows on top.
  */
-export async function seedUserParticipationEvaluation(opts: SeedUserOptions = {}): Promise<{
-  userId: string;
-  participationId: string;
-  evaluationId: string;
-}> {
-  const user = await TestDataSourceHelper.createUser({
-    name: opts.name ?? "Acceptance Test User",
-    slug: `${opts.slugPrefix ?? "acc"}-${Date.now()}`,
-    currentPrefecture: CurrentPrefecture.KAGAWA,
-  });
-  const participation = await prismaClient.participation.create({
-    data: {
-      status: ParticipationStatus.PARTICIPATED,
-      reason: ParticipationStatusReason.PERSONAL_RECORD,
-      source: Source.INTERNAL,
-      user: { connect: { id: user.id } },
-    },
-  });
-  const evaluation = await prismaClient.evaluation.create({
-    data: {
-      status: EvaluationStatus.PASSED,
-      participation: { connect: { id: participation.id } },
-      evaluator: { connect: { id: user.id } },
-    },
-  });
-  return {
-    userId: user.id,
-    participationId: participation.id,
-    evaluationId: evaluation.id,
-  };
-}
-
 /**
- * Seed one extra Participation + Evaluation for an existing user.
- *
- * Use when a single test needs multiple VCs for the same user — each
- * `VcIssuanceRequest.evaluationId` is `@unique`, so every additional VC
- * needs its own Participation/Evaluation pair. Pairs land in the EvaluationStatus.PASSED state
- * (the only status that VC issuance/cascade tests care about).
+ * Seed one extra PASSED Evaluation (with its own Participation) for an
+ * existing user. Used both as the building block for the higher-level
+ * `seedUserParticipationEvaluation` (which prepends a User row) and
+ * directly by tests that already have a user and need a second VC slot
+ * (`VcIssuanceRequest.evaluationId` is `@unique`).
  */
 export async function seedExtraEvaluationForUser(userId: string): Promise<{ evaluationId: string }> {
   const evaluation = await prismaClient.evaluation.create({
@@ -303,6 +270,25 @@ export async function seedExtraEvaluationForUser(userId: string): Promise<{ eval
     },
   });
   return { evaluationId: evaluation.id };
+}
+
+/**
+ * Seed a User → Participation → Evaluation chain (the foundation every
+ * §14.2 test builds on). Delegates the Participation + Evaluation pair
+ * to `seedExtraEvaluationForUser` so the participation/evaluation create
+ * shape lives in exactly one place.
+ */
+export async function seedUserParticipationEvaluation(opts: SeedUserOptions = {}): Promise<{
+  userId: string;
+  evaluationId: string;
+}> {
+  const user = await TestDataSourceHelper.createUser({
+    name: opts.name ?? "Acceptance Test User",
+    slug: `${opts.slugPrefix ?? "acc"}-${Date.now()}`,
+    currentPrefecture: CurrentPrefecture.KAGAWA,
+  });
+  const { evaluationId } = await seedExtraEvaluationForUser(user.id);
+  return { userId: user.id, evaluationId };
 }
 
 export interface SeedVcRequestOptions {
