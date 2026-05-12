@@ -39,10 +39,12 @@
  *   docs/operations/anchor-batch-deploy-checklist.md
  */
 
+import { BlockFrostAPI } from "@blockfrost/blockfrost-js";
 import { blake2b } from "@noble/hashes/blake2b";
 
 import {
   BlockfrostClient,
+  type BlockfrostProtocolParamsResponse,
   type BlockfrostUtxoResponse,
 } from "../src/infrastructure/libs/blockfrost/client.ts";
 import { deriveCardanoKeypair } from "../src/infrastructure/libs/cardano/keygen.ts";
@@ -52,33 +54,29 @@ import {
   buildAuxiliaryData,
   type DidOp,
 } from "../src/infrastructure/libs/cardano/txBuilder.ts";
+import {
+  bytesToHex,
+  parseFixedLengthHex,
+  runStep,
+  type StepResult,
+} from "./lib/cardanoScriptHelpers.ts";
 
 const DEFAULT_AWAIT_TIMEOUT_MS = 6 * 60 * 1000;
 const PREPROD_EXPLORER_TX = "https://preprod.cardanoscan.io/transaction";
 
-type StepResult = { name: string; ok: boolean; detail: string };
-
-async function runStep(
-  name: string,
-  fn: () => Promise<string>,
-): Promise<StepResult> {
-  process.stdout.write(`-> ${name} ...\n`);
-  try {
-    const detail = await fn();
-    process.stdout.write(`   PASS: ${detail}\n`);
-    return { name, ok: true, detail };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    process.stdout.write(`   FAIL: ${msg}\n`);
-    return { name, ok: false, detail: msg };
-  }
-}
-
-function requirePreprodEnv(): {
+interface PreprodEnv {
   projectId: string;
   seedHex: string;
   address: string;
-} {
+}
+
+interface ChainSnapshot {
+  params: BlockfrostProtocolParamsResponse;
+  utxos: BlockfrostUtxoResponse[];
+  currentSlot: number;
+}
+
+function requirePreprodEnv(): PreprodEnv {
   const projectId = process.env.BLOCKFROST_PROJECT_ID;
   if (!projectId) {
     throw new Error("BLOCKFROST_PROJECT_ID is unset.");
@@ -104,29 +102,6 @@ function requirePreprodEnv(): {
     throw new Error("CARDANO_PLATFORM_ADDRESS is unset.");
   }
   return { projectId, seedHex, address };
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
-  if (clean.length !== 64) {
-    throw new Error(
-      `CARDANO_PLATFORM_PRIVATE_KEY_HEX must be 64 hex chars (32 bytes), got ${clean.length}`,
-    );
-  }
-  if (!/^[0-9a-fA-F]+$/.test(clean)) {
-    throw new Error("CARDANO_PLATFORM_PRIVATE_KEY_HEX contains non-hex characters");
-  }
-  const out = new Uint8Array(32);
-  for (let i = 0; i < 32; i++) {
-    out[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
-  }
-  return out;
-}
-
-function bytesToHex(b: Uint8Array): string {
-  let s = "";
-  for (const byte of b) s += byte.toString(16).padStart(2, "0");
-  return s;
 }
 
 function sumLovelace(utxos: BlockfrostUtxoResponse[]): bigint {
@@ -178,60 +153,66 @@ function resolveAwaitTimeoutMs(): number {
 async function main(): Promise<number> {
   process.stdout.write("Cardano preprod e2e submit (anchor-batch shape)\n\n");
 
-  const results: StepResult[] = [];
+  const results: StepResult<unknown>[] = [];
 
-  // Step 1 — env
-  const envStep = await runStep("env: preprod creds present", async () => {
-    const { projectId, address } = requirePreprodEnv();
-    return `BLOCKFROST_PROJECT_ID=preprod*** (${projectId.length} chars), CARDANO_PLATFORM_ADDRESS=${address}`;
+  // Step 1 — env (parsed once, threaded through subsequent steps via the step value)
+  const envStep = await runStep<PreprodEnv>("env: preprod creds present", async () => {
+    const env = requirePreprodEnv();
+    return {
+      value: env,
+      detail: `BLOCKFROST_PROJECT_ID=preprod*** (${env.projectId.length} chars), CARDANO_PLATFORM_ADDRESS=${env.address}`,
+    };
   });
   results.push(envStep);
   if (!envStep.ok) return 1;
-
-  const { projectId, seedHex, address } = requirePreprodEnv();
+  const { projectId, seedHex, address } = envStep.value;
 
   // Step 2 — derive + verify keypair
-  const seed = hexToBytes(seedHex);
-  const kp = deriveCardanoKeypair(seed, "preprod");
   const keyStep = await runStep("key: derived address matches env", async () => {
-    if (kp.addressBech32 !== address) {
+    const seed = parseFixedLengthHex(seedHex, 32, "CARDANO_PLATFORM_PRIVATE_KEY_HEX");
+    const derived = deriveCardanoKeypair(seed, "preprod");
+    if (derived.addressBech32 !== address) {
       throw new Error(
-        `derived "${kp.addressBech32}" != CARDANO_PLATFORM_ADDRESS "${address}". ` +
+        `derived "${derived.addressBech32}" != CARDANO_PLATFORM_ADDRESS "${address}". ` +
           "Seed and address env don't pair — refusing to submit.",
       );
     }
-    return `payment key hash ${kp.paymentKeyHashHex}`;
+    return {
+      value: derived,
+      detail: `payment key hash ${derived.paymentKeyHashHex}`,
+    };
   });
   results.push(keyStep);
   if (!keyStep.ok) return 1;
+  const kp = keyStep.value;
 
   // Step 3 — BlockfrostClient
   const client = new BlockfrostClient({ network: "CARDANO_PREPROD" });
 
   // Step 4 — protocol params + utxos + slot in parallel
-  let params: Awaited<ReturnType<BlockfrostClient["getProtocolParams"]>>;
-  let utxos: BlockfrostUtxoResponse[];
-  let currentSlot: number;
-  const fetchStep = await runStep("blockfrost: fetch params + utxos + latest slot", async () => {
-    const { BlockFrostAPI } = await import("@blockfrost/blockfrost-js");
-    const api = new BlockFrostAPI({ projectId, network: "preprod" });
-    const [p, u, latest] = await Promise.all([
-      client.getProtocolParams(),
-      client.getUtxos(address),
-      api.blocksLatest() as Promise<{ slot?: number | null }>,
-    ]);
-    params = p;
-    utxos = u;
-    const slot = latest?.slot;
-    if (typeof slot !== "number") {
-      throw new Error("blocksLatest returned no slot");
-    }
-    currentSlot = slot;
-    return `slot=${currentSlot}, utxos=${utxos.length}, lovelace=${sumLovelace(utxos).toString()}`;
-  });
+  const fetchStep = await runStep<ChainSnapshot>(
+    "blockfrost: fetch params + utxos + latest slot",
+    async () => {
+      const api = new BlockFrostAPI({ projectId, network: "preprod" });
+      const [params, utxos, latest] = await Promise.all([
+        client.getProtocolParams(),
+        client.getUtxos(address),
+        api.blocksLatest() as Promise<{ slot?: number | null }>,
+      ]);
+      const slot = latest?.slot;
+      if (typeof slot !== "number") {
+        throw new Error("blocksLatest returned no slot");
+      }
+      return {
+        value: { params, utxos, currentSlot: slot },
+        detail: `slot=${slot}, utxos=${utxos.length}, lovelace=${sumLovelace(utxos).toString()}`,
+      };
+    },
+  );
   results.push(fetchStep);
   if (!fetchStep.ok) return 1;
-  if (utxos!.length === 0) {
+  const { params, utxos, currentSlot } = fetchStep.value;
+  if (utxos.length === 0) {
     process.stdout.write(
       `\nWallet ${address} has no UTXOs on preprod. Fund it via\n` +
         "  https://docs.cardano.org/cardano-testnets/tools/faucet/\n" +
@@ -242,37 +223,43 @@ async function main(): Promise<number> {
 
   // Step 5 — build + sign tx (single build; reuse the CBOR for submit)
   const aux = buildSampleAuxiliaryData();
-  let tx: BuildAnchorTxOutput | undefined;
-  const built = await runStep("txBuilder: build + sign anchor tx", async () => {
-    tx = buildAnchorTx({
-      utxos: utxos!,
-      params: {
-        min_fee_a: params!.min_fee_a,
-        min_fee_b: params!.min_fee_b,
-        pool_deposit: params!.pool_deposit,
-        key_deposit: params!.key_deposit,
-        max_val_size: params!.max_val_size,
-        max_tx_size: params!.max_tx_size,
-        coins_per_utxo_size: params!.coins_per_utxo_size,
-      },
-      signKey: kp.cslPrivateKey,
-      auxiliaryData: aux,
-      changeAddressBech32: address,
-      currentSlot: currentSlot!,
-    });
-    return `txHash=${tx.txHashHex}, size=${tx.txCborBytes.length}B`;
-  });
-  results.push(built);
-  if (!built.ok || !tx) return 1;
+  const builtStep = await runStep<BuildAnchorTxOutput>(
+    "txBuilder: build + sign anchor tx",
+    async () => {
+      const tx = buildAnchorTx({
+        utxos,
+        params: {
+          min_fee_a: params.min_fee_a,
+          min_fee_b: params.min_fee_b,
+          pool_deposit: params.pool_deposit,
+          key_deposit: params.key_deposit,
+          max_val_size: params.max_val_size,
+          max_tx_size: params.max_tx_size,
+          coins_per_utxo_size: params.coins_per_utxo_size,
+        },
+        signKey: kp.cslPrivateKey,
+        auxiliaryData: aux,
+        changeAddressBech32: address,
+        currentSlot,
+      });
+      return {
+        value: tx,
+        detail: `txHash=${tx.txHashHex}, size=${tx.txCborBytes.length}B`,
+      };
+    },
+  );
+  results.push(builtStep);
+  if (!builtStep.ok) return 1;
+  const tx = builtStep.value;
 
   // Step 6 — submit (uses the CBOR bytes signed above)
-  let submittedHash = "";
-  const submitStep = await runStep("blockfrost: submitTx", async () => {
-    submittedHash = await client.submitTx(tx!.txCborBytes);
-    return `submitted hash=${submittedHash}`;
+  const submitStep = await runStep<string>("blockfrost: submitTx", async () => {
+    const hash = await client.submitTx(tx.txCborBytes);
+    return { value: hash, detail: `submitted hash=${hash}` };
   });
   results.push(submitStep);
   if (!submitStep.ok) return 1;
+  const submittedHash = submitStep.value;
 
   // Step 7 — await confirmation
   const awaitMs = resolveAwaitTimeoutMs();
@@ -280,7 +267,10 @@ async function main(): Promise<number> {
     `blockfrost: awaitConfirmation (timeout=${awaitMs}ms)`,
     async () => {
       const confirmed = await client.awaitConfirmation(submittedHash, awaitMs);
-      return `block_height=${confirmed.block_height ?? "null"}, block_time=${confirmed.block_time ?? "null"}`;
+      return {
+        value: undefined,
+        detail: `block_height=${confirmed.block_height ?? "null"}, block_time=${confirmed.block_time ?? "null"}`,
+      };
     },
   );
   results.push(confirmStep);
