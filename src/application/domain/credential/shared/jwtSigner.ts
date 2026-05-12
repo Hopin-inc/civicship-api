@@ -66,6 +66,29 @@ export interface JwtSigner {
   readonly alg: string;
 
   /**
+   * Refresh / acquire any state required for `alg` and `kid` to be safe
+   * to read synchronously. Callers MUST `await signer.prepare()` before
+   * reading those properties for a new operation.
+   *
+   * Why this exists
+   * ---------------
+   * The KMS-backed signer resolves the active key version from
+   * `t_issuer_did_keys` to derive its `kid`. That lookup is async, but
+   * the JWT-building call site (`vcIssuance/service.ts`,
+   * `statusList/service.ts`) reads `signer.kid` synchronously when
+   * assembling the JWS header. `prepare()` lets the signer snapshot the
+   * active key once per logical operation (and rotate on a TTL) without
+   * forcing every caller through `await getKid()` plumbing.
+   *
+   * `StubJwtSigner` implements this as a no-op since its `kid` is
+   * configured at construction time.
+   *
+   * Idempotent — repeated calls within the implementation's snapshot TTL
+   * are cheap (no KMS / DB round-trips).
+   */
+  prepare(): Promise<void>;
+
+  /**
    * Produce the signature segment (third JWT component) for the supplied
    * signing input. The signing input is the ASCII string
    * `${headerB64u}.${payloadB64u}` exactly — implementations MUST NOT
@@ -77,19 +100,29 @@ export interface JwtSigner {
    * Stubs may ignore the input and return a constant marker; real
    * implementations MUST sign over the raw bytes of `signingInput` using
    * the JWS algorithm declared in the JWT header (currently EdDSA /
-   * Ed25519 per §5.2.2).
+   * Ed25519 per §5.2.2). Implementations MAY internally re-invoke
+   * `prepare()` to guarantee a fresh snapshot before signing.
    */
   sign(signingInput: string): Promise<string>;
 
   /**
-   * `kid` (key id) to stamp on the JWT header. Stable for the lifetime
-   * of a signer instance — Phase 2 rotation will hand the service a
-   * *new* signer instance rather than mutating this field, so callers
-   * may read it eagerly.
+   * `kid` (key id) to stamp on the JWT header. Safe to read synchronously
+   * **after `await prepare()`** for the current operation. Phase 2 rotation
+   * updates this on the next `prepare()` call, NOT mid-operation, so a
+   * single VC issuance always stamps and signs with the same key.
    *
    * Format: `${issuerDid}#${keyFragment}` — e.g.
-   * `did:web:api.civicship.app#stub` for the Phase 1 stub. The fragment
-   * portion becomes the `verificationMethod` id in the DID Document.
+   * `did:web:api.civicship.app#stub` for the Phase 1 stub or
+   * `did:web:api.civicship.app#key-3` for the Phase 2 KMS signer. The
+   * fragment portion becomes the `verificationMethod` id in the DID
+   * Document.
+   *
+   * Implementations whose `kid` is resolved asynchronously (e.g.
+   * `KmsJwtSigner`) MUST throw on access before the first `prepare()` so
+   * misuse fails loudly rather than producing a JWT stamped with a stale
+   * / undefined key id. Implementations with a construction-time-fixed
+   * `kid` (e.g. `StubJwtSigner`) MAY skip that guard — `prepare()` is a
+   * no-op for them and the property is always safe to read.
    */
   readonly kid: string;
 }

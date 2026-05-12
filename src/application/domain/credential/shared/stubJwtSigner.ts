@@ -84,6 +84,14 @@ export class StubJwtSigner implements JwtSigner {
   }
 
   /**
+   * No-op. The stub's `kid` is fixed at construction so there is no
+   * active-key snapshot to refresh. Present only to satisfy the
+   * `JwtSigner` contract (Phase 2 KMS-backed signer needs an awaitable
+   * hook to resolve the active KMS key version).
+   */
+  async prepare(): Promise<void> {}
+
+  /**
    * Returns the configured stub marker. The `signingInput` argument is
    * preserved on the interface (rather than being optional) because the
    * Phase 2 `KmsJwtSigner` MUST receive it — making it optional would

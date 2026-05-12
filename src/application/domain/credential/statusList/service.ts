@@ -203,6 +203,10 @@ export function buildStatusListVcPayload(input: {
  * call site.
  */
 async function renderJwt(payload: Record<string, unknown>, signer: JwtSigner): Promise<string> {
+  // `prepare()` refreshes the signer's active-key snapshot when it is
+  // KMS-backed; `kid` becomes safe to read synchronously below. Stub
+  // signer's `prepare()` is a no-op.
+  await signer.prepare();
   const header = base64urlEncodeJson({
     alg: signer.alg,
     typ: "JWT",
