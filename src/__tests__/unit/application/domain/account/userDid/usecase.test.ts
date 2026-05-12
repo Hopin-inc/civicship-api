@@ -15,6 +15,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import UserDidUseCase from "@/application/domain/account/userDid/usecase";
 import UserDidService from "@/application/domain/account/userDid/service";
+import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
 import { AuthorizationError } from "@/errors/graphql";
 import type { IContext } from "@/types/server";
 
@@ -45,6 +46,11 @@ function makeCtx(overrides: Partial<IContext> = {}): IContext {
 
 describe("UserDidUseCase (authz hardening for PR #1101)", () => {
   let mockService: jest.Mocked<Pick<UserDidService, "findLatestForUser" | "createDidForUser" | "deactivateDid">>;
+  // Phase 2: the usecase now also depends on VcIssuanceService for the
+  // DID DEACTIVATE → cascade-revoke flow (§14.2). Authz tests below
+  // don't drive the deactivate path far enough to exercise it, but the
+  // container still needs a registration to construct the usecase.
+  let mockVcIssuanceService: { cascadeRevokeForUser: jest.Mock };
   let usecase: UserDidUseCase;
 
   beforeEach(() => {
@@ -56,8 +62,12 @@ describe("UserDidUseCase (authz hardening for PR #1101)", () => {
       createDidForUser: jest.fn(),
       deactivateDid: jest.fn(),
     };
+    mockVcIssuanceService = {
+      cascadeRevokeForUser: jest.fn().mockResolvedValue(0),
+    };
 
     container.register("UserDidService", { useValue: mockService });
+    container.register("VcIssuanceService", { useValue: mockVcIssuanceService });
     container.register("UserDidUseCase", { useClass: UserDidUseCase });
 
     usecase = container.resolve(UserDidUseCase);
@@ -133,6 +143,79 @@ describe("UserDidUseCase (authz hardening for PR #1101)", () => {
         AuthorizationError,
       );
       expect(mockService.deactivateDid).not.toHaveBeenCalled();
+      // Authz failure must short-circuit before the cascade — otherwise a
+      // forbidden caller could still revoke another user's VCs.
+      expect(mockVcIssuanceService.cascadeRevokeForUser).not.toHaveBeenCalled();
+    });
+
+    it("invokes cascade-revoke after the DID anchor is enqueued (§14.2)", async () => {
+      const anchor = {
+        id: "anchor-1",
+        userId: SELF_USER_ID,
+        did: `did:web:api.civicship.app:users:${SELF_USER_ID}`,
+        operation: "DEACTIVATE",
+        documentHash: "0".repeat(64),
+        documentCbor: null,
+        network: "CARDANO_MAINNET",
+        chainTxHash: null,
+        chainOpIndex: null,
+        status: "PENDING",
+        confirmedAt: null,
+        createdAt: new Date(),
+      } as never;
+      mockService.deactivateDid.mockResolvedValueOnce(anchor);
+      mockVcIssuanceService.cascadeRevokeForUser.mockResolvedValueOnce(2);
+      const ctx = makeCtx();
+
+      await usecase.deactivateUserDidForUser(ctx, SELF_USER_ID);
+
+      // Both writes commit inside the same `ctx.issuer.public` block — the
+      // sentinel tx is forwarded to the cascade so it shares the snapshot.
+      expect(mockService.deactivateDid).toHaveBeenCalledWith(
+        ctx,
+        SELF_USER_ID,
+        expect.objectContaining({ sentinel: "tx" }),
+      );
+      expect(mockVcIssuanceService.cascadeRevokeForUser).toHaveBeenCalledWith(
+        ctx,
+        SELF_USER_ID,
+        expect.objectContaining({ sentinel: "tx" }),
+        "did-deactivated",
+      );
+
+      // Ordering matters: revoking VCs *before* the DEACTIVATE anchor is
+      // enqueued would leave a window where the DID still verifies live
+      // but the VCs are already dead. Assert the DEACTIVATE call lands
+      // before the cascade.
+      const deactivateOrder = mockService.deactivateDid.mock.invocationCallOrder[0];
+      const cascadeOrder = mockVcIssuanceService.cascadeRevokeForUser.mock.invocationCallOrder[0];
+      expect(deactivateOrder).toBeLessThan(cascadeOrder);
+    });
+
+    it("admin path also runs the cascade", async () => {
+      mockService.deactivateDid.mockResolvedValueOnce({} as never);
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      await usecase.deactivateUserDidForUser(ctx, OTHER_USER_ID);
+
+      expect(mockVcIssuanceService.cascadeRevokeForUser).toHaveBeenCalledWith(
+        ctx,
+        OTHER_USER_ID,
+        expect.anything(),
+        "did-deactivated",
+      );
+    });
+  });
+
+  describe("deactivateDid service-level wrapper", () => {
+    it("also runs the cascade so non-GraphQL callers cannot bypass it", async () => {
+      mockService.deactivateDid.mockResolvedValueOnce({} as never);
+      mockVcIssuanceService.cascadeRevokeForUser.mockResolvedValueOnce(0);
+      const ctx = makeCtx();
+
+      await usecase.deactivateDid(ctx, SELF_USER_ID);
+
+      expect(mockVcIssuanceService.cascadeRevokeForUser).toHaveBeenCalledTimes(1);
     });
   });
 });
