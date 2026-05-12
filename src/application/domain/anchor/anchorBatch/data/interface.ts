@@ -110,6 +110,14 @@ export interface IAnchorBatchRepository {
   /** 既存 batch の終端ステータス（idempotency 早期 return 判定用）。 */
   getBatchTerminalStatus(ctx: IContext, batchId: string): Promise<AnchorStatus | null>;
 
+  /**
+   * idempotency 早期 return 時に txHash を回復するため、3 つの anchor テーブル
+   * 全体から最初に見つかった chainTxHash を返す。一部 batch (VcAnchor のみ等)
+   * は TransactionAnchor 行を持たないため、`findExistingBatchTransactionAnchors`
+   * 単独では txHash が null になり、test の txHashFirst 一致期待が崩れる。
+   */
+  findFirstChainTxHashByBatchId(ctx: IContext, batchId: string): Promise<string | null>;
+
   /** 任意：batchId に紐づく PENDING な VcAnchor を返す（resume パス用、未使用でも interface に含める）。 */
   findPendingVcAnchorsByBatchId?(ctx: IContext, batchId: string): Promise<PendingVcAnchor[]>;
 

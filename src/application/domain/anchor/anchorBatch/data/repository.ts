@@ -41,12 +41,18 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
 
   async getBatchTerminalStatus(ctx: IContext, batchId: string): Promise<AnchorStatus | null> {
     const issuer = ctx.issuer ?? this.getIssuer();
-    const rows = await issuer.internal((tx) =>
-      tx.transactionAnchor.findMany({
-        where: { batchId },
-        select: { status: true },
-      }),
-    );
+    // 終端ステータス判定は 3 つの anchor テーブル全てを横断的に見る。
+    // 一部の batch (e.g. VcAnchor のみ) は TransactionAnchor 行を持たないため、
+    // transactionAnchor 単独で見ると「rows 0 → null」となり idempotency の
+    // 早期 return が抜ける（同 weeklyKey の再実行が二重 submit になる）。
+    const rows = await issuer.internal(async (tx) => {
+      const [txRows, vcRows, didRows] = await Promise.all([
+        tx.transactionAnchor.findMany({ where: { batchId }, select: { status: true } }),
+        tx.vcAnchor.findMany({ where: { batchId }, select: { status: true } }),
+        tx.userDidAnchor.findMany({ where: { batchId }, select: { status: true } }),
+      ]);
+      return [...txRows, ...vcRows, ...didRows];
+    });
     if (rows.length === 0) return null;
     // 1 batch 内に異なる status が混在することは通常ないが、
     // 「終端ステータス」の判定として SUBMITTED / CONFIRMED / FAILED が
@@ -56,6 +62,27 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
     if (statuses.has(AnchorStatus.SUBMITTED)) return AnchorStatus.SUBMITTED;
     if (statuses.has(AnchorStatus.FAILED)) return AnchorStatus.FAILED;
     return AnchorStatus.PENDING;
+  }
+
+  async findFirstChainTxHashByBatchId(ctx: IContext, batchId: string): Promise<string | null> {
+    const issuer = ctx.issuer ?? this.getIssuer();
+    return issuer.internal(async (tx) => {
+      const [txRow, vcRow, didRow] = await Promise.all([
+        tx.transactionAnchor.findFirst({
+          where: { batchId, chainTxHash: { not: null } },
+          select: { chainTxHash: true },
+        }),
+        tx.vcAnchor.findFirst({
+          where: { batchId, chainTxHash: { not: null } },
+          select: { chainTxHash: true },
+        }),
+        tx.userDidAnchor.findFirst({
+          where: { batchId, chainTxHash: { not: null } },
+          select: { chainTxHash: true },
+        }),
+      ]);
+      return txRow?.chainTxHash ?? vcRow?.chainTxHash ?? didRow?.chainTxHash ?? null;
+    });
   }
 
   async findPendingAnchors(ctx: IContext): Promise<AnchorBatchPendingSet> {
