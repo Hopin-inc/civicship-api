@@ -281,4 +281,83 @@ describe("VcIssuanceRepository (integration)", () => {
       expect(rows).toEqual([]);
     });
   });
+
+  describe("findActiveByUserId (Phase 2 §14.2 cascade revoke)", () => {
+    it("returns only rows where revokedAt IS NULL, oldest first", async () => {
+      const ctx = buildCtx();
+
+      const evalA = await createEvaluationFor(userId);
+      const a = await repo.create(ctx, {
+        userId,
+        evaluationId: evalA,
+        issuerDid: "did:web:api.civicship.app",
+        subjectDid: `did:web:api.civicship.app:users:${userId}`,
+        vcFormat: VcFormat.INTERNAL_JWT,
+        vcJwt: "h.p.s",
+        status: VcIssuanceStatus.COMPLETED,
+      });
+
+      // Stamp `revokedAt` on `a` so the cascade should skip it.
+      await prismaClient.vcIssuanceRequest.update({
+        where: { id: a.id },
+        data: { revokedAt: new Date() },
+      });
+
+      // Wait so `createdAt` ordering is deterministic across PostgreSQL's
+      // sub-millisecond timestamp resolution.
+      await new Promise((r) => setTimeout(r, 10));
+      const evalB = await createEvaluationFor(userId);
+      const b = await repo.create(ctx, {
+        userId,
+        evaluationId: evalB,
+        issuerDid: "did:web:api.civicship.app",
+        subjectDid: `did:web:api.civicship.app:users:${userId}`,
+        vcFormat: VcFormat.INTERNAL_JWT,
+        vcJwt: "h.p.s",
+        status: VcIssuanceStatus.COMPLETED,
+      });
+
+      await new Promise((r) => setTimeout(r, 10));
+      const evalC = await createEvaluationFor(userId);
+      const c = await repo.create(ctx, {
+        userId,
+        evaluationId: evalC,
+        issuerDid: "did:web:api.civicship.app",
+        subjectDid: `did:web:api.civicship.app:users:${userId}`,
+        vcFormat: VcFormat.INTERNAL_JWT,
+        vcJwt: "h.p.s",
+        status: VcIssuanceStatus.COMPLETED,
+      });
+
+      const rows = await repo.findActiveByUserId(ctx, userId);
+      expect(rows.map((r) => r.id)).toEqual([b.id, c.id]);
+    });
+
+    it("returns empty array when every VC for the user is already revoked", async () => {
+      const ctx = buildCtx();
+      const evaluationId = await createEvaluationFor(userId);
+      const persisted = await repo.create(ctx, {
+        userId,
+        evaluationId,
+        issuerDid: "did:web:api.civicship.app",
+        subjectDid: `did:web:api.civicship.app:users:${userId}`,
+        vcFormat: VcFormat.INTERNAL_JWT,
+        vcJwt: "h.p.s",
+        status: VcIssuanceStatus.COMPLETED,
+      });
+      await prismaClient.vcIssuanceRequest.update({
+        where: { id: persisted.id },
+        data: { revokedAt: new Date() },
+      });
+
+      const rows = await repo.findActiveByUserId(ctx, userId);
+      expect(rows).toEqual([]);
+    });
+
+    it("returns empty array for a user with no VCs at all (no-op cascade)", async () => {
+      const ctx = buildCtx();
+      const rows = await repo.findActiveByUserId(ctx, userId);
+      expect(rows).toEqual([]);
+    });
+  });
 });
