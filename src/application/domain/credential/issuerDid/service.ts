@@ -142,9 +142,15 @@ export default class IssuerDidService {
     @inject("KmsSigner")
     private readonly kms: KmsSigner,
     /**
-     * Optional time source. Defaulted in the body so tsyringe doesn't try
-     * to resolve a `now` token from the container.
+     * Optional time source. `@inject("IssuerDidClock")` is required so
+     * tsyringe routes through the registered token (defaulted to `Date.now`
+     * in `registerProductionDependencies()`) instead of trying to resolve
+     * the parameter's reflected type, which is `Function` and unresolvable
+     * — TS's `emitDecoratorMetadata` emits `Function` for function-typed
+     * parameters and tsyringe throws `TypeInfo not known for "Function"`
+     * when no token is supplied.
      */
+    @inject("IssuerDidClock")
     now?: () => number,
   ) {
     this.now = now ?? Date.now;
