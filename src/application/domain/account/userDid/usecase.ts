@@ -43,6 +43,9 @@ import { IContext } from "@/types/server";
 import { AuthorizationError } from "@/errors/graphql";
 import UserDidService from "@/application/domain/account/userDid/service";
 import UserDidPresenter from "@/application/domain/account/userDid/presenter";
+import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
+import logger from "@/infrastructure/logging";
+import type { Prisma } from "@prisma/client";
 import type {
   AnchorNetworkValue,
   UserDidAnchorRow,
@@ -60,9 +63,48 @@ function isSelfOrAdmin(ctx: IContext, userId: string): boolean {
   return ctx.currentUser?.id === userId;
 }
 
+/**
+ * Reason string passed to `StatusListService.revokeVc` (via
+ * `VcIssuanceService.cascadeRevokeForUser`) for every VC revoked as a
+ * side-effect of a DID DEACTIVATE. Persisted to `revocation_reason` so
+ * audit log queries can distinguish operator-initiated revocations from
+ * the lifecycle cascade (§14.2 / §E).
+ */
+const DID_DEACTIVATE_REASON = "did-deactivated";
+
 @injectable()
 export default class UserDidUseCase {
-  constructor(@inject("UserDidService") private readonly service: UserDidService) {}
+  constructor(
+    @inject("UserDidService") private readonly service: UserDidService,
+    @inject("VcIssuanceService") private readonly vcIssuanceService: VcIssuanceService,
+  ) {}
+
+  /**
+   * §14.2 / §E — cascade-revoke every still-live VC for `userId` inside
+   * the supplied transaction. Pulled out so both the GraphQL-facing
+   * (`deactivateUserDidForUser`) and service-level (`deactivateDid`)
+   * entry points share a single cascade implementation; behavioural
+   * drift between the two would let one path leave dangling VCs.
+   *
+   * Logs a single line with the revoked count so the cascade is visible
+   * in audit traces without re-querying the StatusList.
+   */
+  private async cascadeRevokeUserVcs(
+    ctx: IContext,
+    userId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    const revoked = await this.vcIssuanceService.cascadeRevokeForUser(
+      ctx,
+      userId,
+      tx,
+      DID_DEACTIVATE_REASON,
+    );
+    logger.info("[UserDidUseCase] DID DEACTIVATE → cascade-revoked VCs", {
+      userId,
+      revokedCount: revoked,
+    });
+  }
 
   /**
    * GraphQL `userDid(userId)` resolver entry. Reads outside a write
@@ -121,8 +163,14 @@ export default class UserDidUseCase {
     if (!isSelfOrAdmin(ctx, userId)) {
       throw new AuthorizationError("userId must match the authenticated user");
     }
+    // §14.2 — DID DEACTIVATE + VC cascade revoke commit in the SAME
+    // transaction. Splitting them would create a "DID is tombstoned but
+    // a freshly-fetched VC still verifies as live" window that the
+    // design's acceptance check (line 2123) explicitly forbids.
     const row = await ctx.issuer.public(ctx, async (tx) => {
-      return this.service.deactivateDid(ctx, userId, tx);
+      const anchor = await this.service.deactivateDid(ctx, userId, tx);
+      await this.cascadeRevokeUserVcs(ctx, userId, tx);
+      return anchor;
     });
     return UserDidPresenter.view(row);
   }
@@ -144,8 +192,13 @@ export default class UserDidUseCase {
   }
 
   async deactivateDid(ctx: IContext, userId: string): Promise<UserDidAnchorRow> {
+    // §14.2 — same cascade as `deactivateUserDidForUser` so non-GraphQL
+    // callers (admin tooling, batch hooks) cannot bypass the VC revoke
+    // step by reaching for the service-level wrapper.
     return ctx.issuer.public(ctx, async (tx) => {
-      return this.service.deactivateDid(ctx, userId, tx);
+      const anchor = await this.service.deactivateDid(ctx, userId, tx);
+      await this.cascadeRevokeUserVcs(ctx, userId, tx);
+      return anchor;
     });
   }
 }
