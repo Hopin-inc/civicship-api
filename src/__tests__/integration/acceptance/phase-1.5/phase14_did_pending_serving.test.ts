@@ -21,34 +21,30 @@ import { container } from "tsyringe";
 import express from "express";
 import request from "supertest";
 import { AnchorStatus, CurrentPrefecture } from "@prisma/client";
-import { registerProductionDependencies } from "@/application/provider";
 import TestDataSourceHelper from "@/__tests__/helper/test-data-source-helper";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import UserDidService from "@/application/domain/account/userDid/service";
 import didRouter from "@/presentation/router/did";
-import { IContext } from "@/types/server";
+import {
+  buildCtx,
+  setupAcceptanceTest,
+  teardownAcceptanceTest,
+} from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
 
 describe("[§14.2] PENDING DID serving — fresh anchor returns 200 with proof.anchorStatus pending (§F)", () => {
   jest.setTimeout(30_000);
   let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
-    await TestDataSourceHelper.deleteAll();
-    container.reset();
-    registerProductionDependencies();
-    issuer = container.resolve(PrismaClientIssuer);
+    ({ issuer } = await setupAcceptanceTest());
   });
 
   afterAll(async () => {
-    await TestDataSourceHelper.disconnect();
+    await teardownAcceptanceTest();
   });
 
-  function buildCtx(): IContext {
-    return { issuer } as unknown as IContext;
-  }
-
   it("returns 200 with proof.anchorStatus pending immediately after createDid", async () => {
-    const ctx = buildCtx();
+    const ctx = buildCtx(issuer);
     const user = await TestDataSourceHelper.createUser({
       name: "Pending DID Acceptance User",
       slug: `pend-${Date.now()}`,
@@ -60,9 +56,11 @@ describe("[§14.2] PENDING DID serving — fresh anchor returns 200 with proof.a
 
     // Sanity: row is PENDING (no batch has run yet).
     const row = await prismaClient.userDidAnchor.findUnique({ where: { id: created.id } });
-    expect(row!.status).toBe(AnchorStatus.PENDING);
-    expect(row!.chainTxHash).toBeNull();
-    expect(row!.confirmedAt).toBeNull();
+    expect(row).toMatchObject({
+      status: AnchorStatus.PENDING,
+      chainTxHash: null,
+      confirmedAt: null,
+    });
 
     const app = express();
     app.use("/", didRouter);

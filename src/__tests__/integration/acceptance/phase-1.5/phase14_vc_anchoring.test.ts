@@ -28,121 +28,50 @@
 
 import "reflect-metadata";
 import { container } from "tsyringe";
-import {
-  AnchorStatus,
-  ChainNetwork,
-  CurrentPrefecture,
-  EvaluationStatus,
-  ParticipationStatus,
-  ParticipationStatusReason,
-  Source,
-  VcFormat,
-  VcIssuanceStatus,
-} from "@prisma/client";
-import { registerProductionDependencies } from "@/application/provider";
-import TestDataSourceHelper from "@/__tests__/helper/test-data-source-helper";
-import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
+import { AnchorStatus } from "@prisma/client";
+import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { AnchorBatchService } from "@/application/domain/anchor/anchorBatch/service";
-import { IContext } from "@/types/server";
+import {
+  buildCtx,
+  createMockBlockfrostClient,
+  createMockSlotProvider,
+  cslKeygenMockFactory,
+  cslTxBuilderMockFactory,
+  fakeVcJwt,
+  registerBlockfrostMocks,
+  restoreEnv,
+  seedPendingVcAnchor,
+  seedUserParticipationEvaluation,
+  seedVcRequest,
+  setupAcceptanceTest,
+  teardownAcceptanceTest,
+  wireCardanoTestEnv,
+} from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
 
-// CSL は native 依存が重いので、テスト時のみ tx 構築を mock 化する
-jest.mock("@/infrastructure/libs/cardano/txBuilder", () => {
-  const actual = jest.requireActual("@/infrastructure/libs/cardano/txBuilder");
-  return {
-    ...actual,
-    buildAnchorTx: jest.fn(() => ({
-      tx: { __mock: "Transaction" },
-      txHashHex: "ab".repeat(32),
-      txCborBytes: new Uint8Array([0x01, 0x02, 0x03]),
-    })),
-    buildAuxiliaryData: jest.fn(() => ({ __mock: "AuxiliaryData" })),
-  };
-});
-
-jest.mock("@/infrastructure/libs/cardano/keygen", () => {
-  const actual = jest.requireActual("@/infrastructure/libs/cardano/keygen");
-  return {
-    ...actual,
-    deriveCardanoKeypair: jest.fn(() => ({
-      cslPrivateKey: { __mock: "PrivateKey" },
-      cslPublicKey: { __mock: "PublicKey" },
-      addressBech32: "addr_test1mock",
-      paymentKeyHashHex: "00".repeat(28),
-      privateKeySeed: new Uint8Array(32),
-      publicKey: new Uint8Array(32),
-      network: "preprod" as const,
-    })),
-  };
-});
-
-const TEST_SEED_HEX = "11".repeat(32);
-const TEST_BECH32 = "addr_test1mock";
-const ENV_BACKUP: Record<string, string | undefined> = {};
-
-function setEnv(key: string, value: string | undefined): void {
-  if (!(key in ENV_BACKUP)) ENV_BACKUP[key] = process.env[key];
-  if (value === undefined) delete process.env[key];
-  else process.env[key] = value;
-}
-
-function restoreEnv(): void {
-  for (const k of Object.keys(ENV_BACKUP)) {
-    const v = ENV_BACKUP[k];
-    if (v === undefined) delete process.env[k];
-    else process.env[k] = v;
-  }
-}
-
-function fakeVcJwt(payload: Record<string, unknown>): string {
-  const header = Buffer.from(JSON.stringify({ alg: "ES256K", typ: "JWT" })).toString("base64url");
-  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  return `${header}.${body}.sig`;
-}
+// CSL は native 依存が重いので、テスト時のみ tx 構築を mock 化する。
+// jest.mock は hoist されるため、call site は各 test file に残す必要がある
+// が、factory 本体は共通 helper から import している。
+jest.mock(
+  "@/infrastructure/libs/cardano/txBuilder",
+  cslTxBuilderMockFactory({ txHashHex: "ab".repeat(32) }),
+);
+jest.mock("@/infrastructure/libs/cardano/keygen", cslKeygenMockFactory());
 
 describe("[§14.2] VC anchoring — pending VcAnchor → CONFIRMED via batch", () => {
   jest.setTimeout(30_000);
   let issuer: PrismaClientIssuer;
 
-  const mockBlockfrost = {
-    getProtocolParams: jest.fn().mockResolvedValue({
-      min_fee_a: 44,
-      min_fee_b: 155381,
-      pool_deposit: "500000000",
-      key_deposit: "2000000",
-      max_val_size: "5000",
-      max_tx_size: 16384,
-      coins_per_utxo_size: "4310",
-    }),
-    getUtxos: jest.fn().mockResolvedValue([
-      {
-        tx_hash: "cd".repeat(32),
-        output_index: 0,
-        amount: [{ unit: "lovelace", quantity: "10000000" }],
-      },
-    ]),
-    submitTx: jest.fn().mockResolvedValue("ab".repeat(32)),
-    awaitConfirmation: jest.fn().mockResolvedValue({
-      hash: "ab".repeat(32),
-      block_height: 9_876_543,
-      block_time: 1_700_000_000,
-    }),
-    getNetwork: jest.fn().mockReturnValue("CARDANO_PREPROD"),
-  };
-  const mockSlotProvider = { getCurrentSlot: jest.fn().mockResolvedValue(1_000_000) };
+  const mockBlockfrost = createMockBlockfrostClient({
+    submittedTxHash: "ab".repeat(32),
+    blockHeight: 9_876_543,
+  });
+  const mockSlotProvider = createMockSlotProvider();
 
   beforeEach(async () => {
-    await TestDataSourceHelper.deleteAll();
-    container.reset();
-    registerProductionDependencies();
+    ({ issuer } = await setupAcceptanceTest());
 
-    setEnv("CARDANO_PLATFORM_PRIVATE_KEY_HEX", TEST_SEED_HEX);
-    setEnv("CARDANO_PLATFORM_ADDRESS", TEST_BECH32);
-    setEnv("CARDANO_NETWORK", "preprod");
-
-    container.register("BlockfrostClient", { useValue: mockBlockfrost });
-    container.register("BlockfrostLatestSlotProvider", { useValue: mockSlotProvider });
-
-    issuer = container.resolve(PrismaClientIssuer);
+    wireCardanoTestEnv();
+    registerBlockfrostMocks(mockBlockfrost, mockSlotProvider);
     jest.clearAllMocks();
   });
 
@@ -151,12 +80,8 @@ describe("[§14.2] VC anchoring — pending VcAnchor → CONFIRMED via batch", (
   });
 
   afterAll(async () => {
-    await TestDataSourceHelper.disconnect();
+    await teardownAcceptanceTest();
   });
-
-  function buildCtx(): IContext {
-    return { issuer } as unknown as IContext;
-  }
 
   /** Seed: User → Participation → Evaluation → VcIssuanceRequest → VcAnchor (PENDING). */
   async function seedVcWithPendingAnchor(): Promise<{
@@ -164,62 +89,31 @@ describe("[§14.2] VC anchoring — pending VcAnchor → CONFIRMED via batch", (
     vcRequestId: string;
     vcAnchorId: string;
   }> {
-    const user = await TestDataSourceHelper.createUser({
+    const { userId, evaluationId } = await seedUserParticipationEvaluation({
       name: "Anchor Acceptance User",
-      slug: `anc-${Date.now()}`,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      slugPrefix: "anc",
     });
-    const participation = await prismaClient.participation.create({
-      data: {
-        status: ParticipationStatus.PARTICIPATED,
-        reason: ParticipationStatusReason.PERSONAL_RECORD,
-        source: Source.INTERNAL,
-        user: { connect: { id: user.id } },
-      },
+    const vcRequest = await seedVcRequest({
+      userId,
+      evaluationId,
+      vcJwt: fakeVcJwt({
+        issuer: "did:web:api.civicship.app",
+        credentialSubject: { id: `did:web:api.civicship.app:users:${userId}` },
+      }),
     });
-    const evaluation = await prismaClient.evaluation.create({
-      data: {
-        status: EvaluationStatus.PASSED,
-        participation: { connect: { id: participation.id } },
-        evaluator: { connect: { id: user.id } },
-      },
-    });
-    const vcRequest = await prismaClient.vcIssuanceRequest.create({
-      data: {
-        user: { connect: { id: user.id } },
-        evaluation: { connect: { id: evaluation.id } },
-        vcFormat: VcFormat.INTERNAL_JWT,
-        vcJwt: fakeVcJwt({
-          issuer: "did:web:api.civicship.app",
-          credentialSubject: { id: `did:web:api.civicship.app:users:${user.id}` },
-        }),
-        status: VcIssuanceStatus.COMPLETED,
-        completedAt: new Date(),
-        claims: {},
-      },
-    });
-    const vcAnchor = await prismaClient.vcAnchor.create({
-      data: {
-        periodStart: new Date("2026-05-01T00:00:00Z"),
-        periodEnd: new Date("2026-05-08T00:00:00Z"),
-        rootHash: "0".repeat(64),
-        leafIds: [vcRequest.id],
-        leafCount: 1,
-        network: ChainNetwork.CARDANO_PREPROD,
-      },
-    });
+    const vcAnchor = await seedPendingVcAnchor({ vcRequestIds: [vcRequest.id] });
     // Wire VcIssuanceRequest → VcAnchor (Phase 1.5: linkage is set up at
     // batch-prepare time; we set it in seed since the prep-step is out of scope).
     await prismaClient.vcIssuanceRequest.update({
       where: { id: vcRequest.id },
       data: { vcAnchorId: vcAnchor.id, anchorLeafIndex: 0 },
     });
-    return { userId: user.id, vcRequestId: vcRequest.id, vcAnchorId: vcAnchor.id };
+    return { userId, vcRequestId: vcRequest.id, vcAnchorId: vcAnchor.id };
   }
 
   it("submits and confirms the pending VcAnchor; chainTxHash and blockHeight are stamped", async () => {
     const { vcAnchorId, vcRequestId } = await seedVcWithPendingAnchor();
-    const ctx = buildCtx();
+    const ctx = buildCtx(issuer);
 
     const service = container.resolve(AnchorBatchService);
     const result = await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
@@ -231,17 +125,20 @@ describe("[§14.2] VC anchoring — pending VcAnchor → CONFIRMED via batch", (
     expect(result.anchorCounts.vc).toBeGreaterThanOrEqual(1);
 
     const vcAnchorAfter = await prismaClient.vcAnchor.findUnique({ where: { id: vcAnchorId } });
-    expect(vcAnchorAfter).not.toBeNull();
-    expect(vcAnchorAfter!.status).toBe(AnchorStatus.CONFIRMED);
-    expect(vcAnchorAfter!.chainTxHash).toBe("ab".repeat(32));
-    expect(vcAnchorAfter!.blockHeight).toBe(9_876_543);
-    expect(vcAnchorAfter!.batchId).toBe("2026-W19");
+    expect(vcAnchorAfter).toMatchObject({
+      status: AnchorStatus.CONFIRMED,
+      chainTxHash: "ab".repeat(32),
+      blockHeight: 9_876_543,
+      batchId: "2026-W19",
+    });
 
     // The VcIssuanceRequest linkage (set at seed) survives the batch and
     // resolves to the now-confirmed anchor — i.e. the per-row Phase 1.5
     // contract `vcAnchorId / anchorLeafIndex` reads back.
     const vcRow = await prismaClient.vcIssuanceRequest.findUnique({ where: { id: vcRequestId } });
-    expect(vcRow!.vcAnchorId).toBe(vcAnchorId);
-    expect(vcRow!.anchorLeafIndex).toBe(0);
+    expect(vcRow).toMatchObject({
+      vcAnchorId,
+      anchorLeafIndex: 0,
+    });
   });
 });

@@ -21,31 +21,27 @@ import { container } from "tsyringe";
 import express from "express";
 import request from "supertest";
 import { CurrentPrefecture } from "@prisma/client";
-import { registerProductionDependencies } from "@/application/provider";
 import TestDataSourceHelper from "@/__tests__/helper/test-data-source-helper";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import UserDidService from "@/application/domain/account/userDid/service";
 import didRouter from "@/presentation/router/did";
-import { IContext } from "@/types/server";
+import {
+  buildCtx,
+  setupAcceptanceTest,
+  teardownAcceptanceTest,
+} from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
 
 describe("[§14.2] DID Tombstone — DEACTIVATE returns 200 with deactivated:true", () => {
   jest.setTimeout(30_000);
   let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
-    await TestDataSourceHelper.deleteAll();
-    container.reset();
-    registerProductionDependencies();
-    issuer = container.resolve(PrismaClientIssuer);
+    ({ issuer } = await setupAcceptanceTest());
   });
 
   afterAll(async () => {
-    await TestDataSourceHelper.disconnect();
+    await teardownAcceptanceTest();
   });
-
-  function buildCtx(): IContext {
-    return { issuer } as unknown as IContext;
-  }
 
   function makeApp(): express.Express {
     const app = express();
@@ -54,7 +50,7 @@ describe("[§14.2] DID Tombstone — DEACTIVATE returns 200 with deactivated:tru
   }
 
   it("CREATE → DEACTIVATE → GET /users/:userId/did.json returns 200 with deactivated:true (§E)", async () => {
-    const ctx = buildCtx();
+    const ctx = buildCtx(issuer);
     const user = await TestDataSourceHelper.createUser({
       name: "Tombstone Acceptance User",
       slug: `tomb-${Date.now()}`,
@@ -75,9 +71,8 @@ describe("[§14.2] DID Tombstone — DEACTIVATE returns 200 with deactivated:tru
     });
     expect(res.body.proof).toBeDefined();
     // §F still applies — even on tombstones, anchorStatus reflects the row state.
-    expect(["pending", "submitted", "confirmed", "failed"]).toContain(
-      res.body.proof.anchorStatus,
-    );
+    // No batch has been run in this test, so the deactivate anchor stays PENDING.
+    expect(res.body.proof.anchorStatus).toBe("pending");
   });
 
   it("returns 404 (did_not_found) when no anchor exists for the user", async () => {

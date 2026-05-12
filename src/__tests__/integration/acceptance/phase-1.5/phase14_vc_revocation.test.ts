@@ -21,22 +21,17 @@ import { container } from "tsyringe";
 import { gunzipSync } from "node:zlib";
 import express from "express";
 import request from "supertest";
-import {
-  CurrentPrefecture,
-  EvaluationStatus,
-  ParticipationStatus,
-  ParticipationStatusReason,
-  Source,
-  VcFormat,
-  VcIssuanceStatus,
-} from "@prisma/client";
-import { registerProductionDependencies } from "@/application/provider";
-import TestDataSourceHelper from "@/__tests__/helper/test-data-source-helper";
-import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
+import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import StatusListService from "@/application/domain/credential/statusList/service";
 import StatusListUseCase from "@/application/domain/credential/statusList/usecase";
 import credentialsRouter from "@/presentation/router/credentials";
-import { IContext } from "@/types/server";
+import {
+  buildCtx,
+  seedUserParticipationEvaluation,
+  seedVcRequest,
+  setupAcceptanceTest,
+  teardownAcceptanceTest,
+} from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
 
 /**
  * Read bit `index` from a Status List 2021 bitstring. Bit ordering: bit 0 is
@@ -62,47 +57,19 @@ describe("[§14.2] VC revocation — revokeVc flips StatusList bit and re-signs 
   let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
-    await TestDataSourceHelper.deleteAll();
-    container.reset();
-    registerProductionDependencies();
-    issuer = container.resolve(PrismaClientIssuer);
+    ({ issuer } = await setupAcceptanceTest());
   });
 
   afterAll(async () => {
-    await TestDataSourceHelper.disconnect();
+    await teardownAcceptanceTest();
   });
 
-  function buildCtx(): IContext {
-    return { issuer } as unknown as IContext;
-  }
-
-  async function seedUserAndEvaluation(): Promise<{ userId: string; evaluationId: string }> {
-    const user = await TestDataSourceHelper.createUser({
-      name: "Revocation Acceptance User",
-      slug: `rev-${Date.now()}`,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    const participation = await prismaClient.participation.create({
-      data: {
-        status: ParticipationStatus.PARTICIPATED,
-        reason: ParticipationStatusReason.PERSONAL_RECORD,
-        source: Source.INTERNAL,
-        user: { connect: { id: user.id } },
-      },
-    });
-    const evaluation = await prismaClient.evaluation.create({
-      data: {
-        status: EvaluationStatus.PASSED,
-        participation: { connect: { id: participation.id } },
-        evaluator: { connect: { id: user.id } },
-      },
-    });
-    return { userId: user.id, evaluationId: evaluation.id };
-  }
-
   it("revokeVc flips the bit, /credentials/status/:listKey.jwt reflects it, revokedAt is stamped", async () => {
-    const ctx = buildCtx();
-    const { userId, evaluationId } = await seedUserAndEvaluation();
+    const ctx = buildCtx(issuer);
+    const { userId, evaluationId } = await seedUserParticipationEvaluation({
+      name: "Revocation Acceptance User",
+      slugPrefix: "rev",
+    });
 
     // 1. allocate a real slot (this also bootstraps a fresh StatusList).
     const statusListUseCase = container.resolve(StatusListUseCase);
@@ -111,18 +78,12 @@ describe("[§14.2] VC revocation — revokeVc flips StatusList bit and re-signs 
     expect(slot.listKey).toBe("1");
 
     // 2. seed VC pointing at the slot.
-    const vc = await prismaClient.vcIssuanceRequest.create({
-      data: {
-        user: { connect: { id: userId } },
-        evaluation: { connect: { id: evaluationId } },
-        vcFormat: VcFormat.INTERNAL_JWT,
-        vcJwt: "header.payload.sig",
-        status: VcIssuanceStatus.COMPLETED,
-        completedAt: new Date(),
-        claims: {},
-        statusListIndex: slot.statusListIndex,
-        statusListCredential: slot.statusListCredentialUrl,
-      },
+    const vc = await seedVcRequest({
+      userId,
+      evaluationId,
+      vcJwt: "header.payload.sig",
+      statusListIndex: slot.statusListIndex,
+      statusListCredential: slot.statusListCredentialUrl,
     });
 
     // 3. revoke via the public usecase.
@@ -153,24 +114,23 @@ describe("[§14.2] VC revocation — revokeVc flips StatusList bit and re-signs 
     // 5. the issuance row records revocation locally so back-office queries
     //    can filter without scanning the StatusList JWT.
     const after = await prismaClient.vcIssuanceRequest.findUnique({ where: { id: vc.id } });
-    expect(after!.revokedAt).not.toBeNull();
-    expect(after!.revocationReason).toBe("test-revoke");
+    expect(after).toMatchObject({
+      revocationReason: "test-revoke",
+    });
+    expect(after?.revokedAt).not.toBeNull();
   });
 
   it("StatusListService.revokeVc throws when the VC has no statusList wiring", async () => {
-    const ctx = buildCtx();
-    const { userId, evaluationId } = await seedUserAndEvaluation();
-    const vc = await prismaClient.vcIssuanceRequest.create({
-      data: {
-        user: { connect: { id: userId } },
-        evaluation: { connect: { id: evaluationId } },
-        vcFormat: VcFormat.INTERNAL_JWT,
-        vcJwt: "h.p.s",
-        status: VcIssuanceStatus.COMPLETED,
-        completedAt: new Date(),
-        claims: {},
-        // statusListIndex / statusListCredential intentionally null.
-      },
+    const ctx = buildCtx(issuer);
+    const { userId, evaluationId } = await seedUserParticipationEvaluation({
+      name: "Revocation Acceptance User",
+      slugPrefix: "rev",
+    });
+    const vc = await seedVcRequest({
+      userId,
+      evaluationId,
+      vcJwt: "h.p.s",
+      // statusListIndex / statusListCredential intentionally omitted.
     });
 
     const service = container.resolve<StatusListService>("StatusListService");

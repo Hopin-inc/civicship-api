@@ -17,45 +17,29 @@
  */
 
 import "reflect-metadata";
-import { container } from "tsyringe";
 import express from "express";
 import request from "supertest";
-import {
-  AnchorStatus,
-  ChainNetwork,
-  CurrentPrefecture,
-  EvaluationStatus,
-  ParticipationStatus,
-  ParticipationStatusReason,
-  Source,
-  VcFormat,
-  VcIssuanceStatus,
-} from "@prisma/client";
-import { registerProductionDependencies } from "@/application/provider";
-import TestDataSourceHelper from "@/__tests__/helper/test-data-source-helper";
-import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
+import { AnchorStatus, ChainNetwork } from "@prisma/client";
+import { prismaClient } from "@/infrastructure/prisma/client";
 import didRouter from "@/presentation/router/did";
 import { buildRoot, verifyProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
-
-function fakeVcJwt(payload: Record<string, unknown>, salt: string): string {
-  const header = Buffer.from(JSON.stringify({ alg: "ES256K", typ: "JWT", salt })).toString(
-    "base64url",
-  );
-  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  return `${header}.${body}.sig-${salt}`;
-}
+import {
+  fakeVcJwt,
+  seedUserParticipationEvaluation,
+  seedVcRequest,
+  setupAcceptanceTest,
+  teardownAcceptanceTest,
+} from "@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup";
 
 describe("[§14.2] VC inclusion proof — GET /vc/:vcId/inclusion-proof returns a verifying Merkle proof", () => {
   jest.setTimeout(30_000);
 
   beforeEach(async () => {
-    await TestDataSourceHelper.deleteAll();
-    container.reset();
-    registerProductionDependencies();
+    await setupAcceptanceTest();
   });
 
   afterAll(async () => {
-    await TestDataSourceHelper.disconnect();
+    await teardownAcceptanceTest();
   });
 
   function makeApp(): express.Express {
@@ -66,46 +50,24 @@ describe("[§14.2] VC inclusion proof — GET /vc/:vcId/inclusion-proof returns 
 
   /** Seed `count` VC issuance rows owned by a fresh user. Returns the rows. */
   async function seedVcRequests(count: number) {
-    const user = await TestDataSourceHelper.createUser({
+    const { userId, evaluationId } = await seedUserParticipationEvaluation({
       name: "Inclusion Proof User",
-      slug: `incl-${Date.now()}`,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      slugPrefix: "incl",
     });
     const rows: { id: string; vcJwt: string }[] = [];
     for (let i = 0; i < count; i += 1) {
-      const participation = await prismaClient.participation.create({
-        data: {
-          status: ParticipationStatus.PARTICIPATED,
-          reason: ParticipationStatusReason.PERSONAL_RECORD,
-          source: Source.INTERNAL,
-          user: { connect: { id: user.id } },
-        },
-      });
-      const evaluation = await prismaClient.evaluation.create({
-        data: {
-          status: EvaluationStatus.PASSED,
-          participation: { connect: { id: participation.id } },
-          evaluator: { connect: { id: user.id } },
-        },
-      });
+      // Deterministic salt (no Math.random — fixes Sonar S2245).
+      // The index already guarantees uniqueness across rows in this seed call,
+      // and `setupAcceptanceTest` wipes the DB before each test, so collision
+      // across tests is impossible.
       const vcJwt = fakeVcJwt(
         {
           issuer: "did:web:api.civicship.app",
-          credentialSubject: { id: `did:web:api.civicship.app:users:${user.id}`, idx: i },
+          credentialSubject: { id: `did:web:api.civicship.app:users:${userId}`, idx: i },
         },
-        `${i}-${Math.random().toString(36).slice(2, 8)}`,
+        `incl-${i}`,
       );
-      const vcRequest = await prismaClient.vcIssuanceRequest.create({
-        data: {
-          user: { connect: { id: user.id } },
-          evaluation: { connect: { id: evaluation.id } },
-          vcFormat: VcFormat.INTERNAL_JWT,
-          vcJwt,
-          status: VcIssuanceStatus.COMPLETED,
-          completedAt: new Date(),
-          claims: {},
-        },
-      });
+      const vcRequest = await seedVcRequest({ userId, evaluationId, vcJwt });
       rows.push({ id: vcRequest.id, vcJwt });
     }
     return rows;
