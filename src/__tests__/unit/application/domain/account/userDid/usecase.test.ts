@@ -15,7 +15,6 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import UserDidUseCase from "@/application/domain/account/userDid/usecase";
 import UserDidService from "@/application/domain/account/userDid/service";
-import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
 import { AuthorizationError } from "@/errors/graphql";
 import type { IContext } from "@/types/server";
 

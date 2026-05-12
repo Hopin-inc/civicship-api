@@ -1132,6 +1132,16 @@ CARDANO_PREPROD CARDANO_PREPROD
     }
   
 
+  "t_issuer_did_keys" {
+    String id "🗝️"
+    String kms_key_resource_name 
+    DateTime activated_at 
+    DateTime deactivated_at "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_status_list_credentials" {
     String id "🗝️"
     String list_key 

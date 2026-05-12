@@ -971,6 +971,15 @@ Table t_user_did_anchors {
   updatedAt DateTime
 }
 
+Table t_issuer_did_keys {
+  id String [pk]
+  kmsKeyResourceName String [unique, not null]
+  activatedAt DateTime [default: `now()`, not null]
+  deactivatedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
 Table t_status_list_credentials {
   id String [pk]
   listKey String [unique, not null]

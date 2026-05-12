@@ -202,7 +202,22 @@ describe("AnchorBatchService", () => {
     periodEnd: new Date(),
   };
 
-  const PENDING_DID = {
+  // `operation` is widened to `DidOperation` (not the inferred literal
+  // `"CREATE"`) so the DEACTIVATE / UPDATE cases below can spread this
+  // fixture and override `operation` without TS narrowing the field to
+  // `"CREATE"` forever (TS2322 — see `service.test.ts` build error log).
+  const PENDING_DID: {
+    id: string;
+    did: string;
+    operation: DidOperation;
+    documentHash: string;
+    documentCbor: Uint8Array | null;
+    previousAnchorId: string | null;
+    network: string;
+    status: AnchorStatus;
+    batchId: string | null;
+    userId: string;
+  } = {
     id: "did_anchor_1",
     did: "did:web:api.civicship.app:users:u_xyz",
     operation: DidOperation.CREATE,

@@ -2280,7 +2280,6 @@ model IssuerDidKey {
   // partial index 相当の最適化：deactivated_at IS NULL の絞り込みは findActiveKey の
   // hot path なので、複合 index で seq scan を回避。
   @@index([deactivatedAt, activatedAt])
-
   @@map("t_issuer_did_keys")
 }
 

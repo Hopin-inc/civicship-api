@@ -57,6 +57,7 @@ import {
   readStatusListBit,
   seedExtraEvaluationForUser,
   seedUserParticipationEvaluation,
+  seedUserWithVcOnStatusList,
   seedVcRequest,
   setupAcceptanceTest,
   teardownAcceptanceTest,

@@ -141,7 +141,15 @@ export class KmsSigner {
    * problems surface as a 4xx on the first sign and propagate immediately.
    */
   constructor(client?: KmsClientLike) {
-    this.client = client ?? new KeyManagementServiceClient();
+    // Cast: `KeyManagementServiceClient.listCryptoKeyVersions` returns
+    // `ICryptoKeyVersion[]` whose `state` field is the proto enum union
+    // (`CryptoKeyVersionState | "ENABLED" | "DISABLED" | ...`), while
+    // `KmsClientLike` narrows to `string | null | undefined`. The runtime
+    // shape is fully compatible (we only ever read string-valued states
+    // in `listActiveIssuerKeys` and ignore everything that isn't
+    // ENABLED / DISABLED), so a structural cast is correct here. Without
+    // it `@google-cloud/kms@^5.5.0` trips TS2322 at construction time.
+    this.client = client ?? (new KeyManagementServiceClient() as unknown as KmsClientLike);
   }
 
   /**

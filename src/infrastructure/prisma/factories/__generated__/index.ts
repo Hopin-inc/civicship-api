@@ -51,6 +51,7 @@ import type { ReportGoldenCase } from "@prisma/client";
 import type { TransactionAnchor } from "@prisma/client";
 import type { VcAnchor } from "@prisma/client";
 import type { UserDidAnchor } from "@prisma/client";
+import type { IssuerDidKey } from "@prisma/client";
 import type { StatusListCredential } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
@@ -1165,6 +1166,9 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "User",
                 relationName: "UserToUserDidAnchor"
             }]
+    }, {
+        name: "IssuerDidKey",
+        fields: []
     }, {
         name: "StatusListCredential",
         fields: []
@@ -10680,6 +10684,148 @@ export const defineUserDidAnchorFactory = (<TOptions extends UserDidAnchorFactor
 }) as UserDidAnchorFactoryBuilder;
 
 defineUserDidAnchorFactory.withTransientFields = defaultTransientFieldValues => options => defineUserDidAnchorFactoryInternal(options, defaultTransientFieldValues);
+
+type IssuerDidKeyScalarOrEnumFields = {
+    kmsKeyResourceName: string;
+};
+
+type IssuerDidKeyFactoryDefineInput = {
+    id?: string;
+    kmsKeyResourceName?: string;
+    activatedAt?: Date;
+    deactivatedAt?: Date | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+};
+
+type IssuerDidKeyTransientFields = Record<string, unknown> & Partial<Record<keyof IssuerDidKeyFactoryDefineInput, never>>;
+
+type IssuerDidKeyFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IssuerDidKeyFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<IssuerDidKey, Prisma.IssuerDidKeyCreateInput, TTransients>;
+
+type IssuerDidKeyFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<IssuerDidKeyFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: IssuerDidKeyFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<IssuerDidKey, Prisma.IssuerDidKeyCreateInput, TTransients>;
+
+type IssuerDidKeyTraitKeys<TOptions extends IssuerDidKeyFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface IssuerDidKeyFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "IssuerDidKey";
+    build(inputData?: Partial<Prisma.IssuerDidKeyCreateInput & TTransients>): PromiseLike<Prisma.IssuerDidKeyCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IssuerDidKeyCreateInput & TTransients>): PromiseLike<Prisma.IssuerDidKeyCreateInput>;
+    buildList(list: readonly Partial<Prisma.IssuerDidKeyCreateInput & TTransients>[]): PromiseLike<Prisma.IssuerDidKeyCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IssuerDidKeyCreateInput & TTransients>): PromiseLike<Prisma.IssuerDidKeyCreateInput[]>;
+    pickForConnect(inputData: IssuerDidKey): Pick<IssuerDidKey, "id">;
+    create(inputData?: Partial<Prisma.IssuerDidKeyCreateInput & TTransients>): PromiseLike<IssuerDidKey>;
+    createList(list: readonly Partial<Prisma.IssuerDidKeyCreateInput & TTransients>[]): PromiseLike<IssuerDidKey[]>;
+    createList(count: number, item?: Partial<Prisma.IssuerDidKeyCreateInput & TTransients>): PromiseLike<IssuerDidKey[]>;
+    createForConnect(inputData?: Partial<Prisma.IssuerDidKeyCreateInput & TTransients>): PromiseLike<Pick<IssuerDidKey, "id">>;
+}
+
+export interface IssuerDidKeyFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IssuerDidKeyFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IssuerDidKeyFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateIssuerDidKeyScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): IssuerDidKeyScalarOrEnumFields {
+    return {
+        kmsKeyResourceName: getScalarFieldValueGenerator().String({ modelName: "IssuerDidKey", fieldName: "kmsKeyResourceName", isId: false, isUnique: true, seq })
+    };
+}
+
+function defineIssuerDidKeyFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends IssuerDidKeyFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): IssuerDidKeyFactoryInterface<TTransients, IssuerDidKeyTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly IssuerDidKeyTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("IssuerDidKey", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.IssuerDidKeyCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIssuerDidKeyScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<IssuerDidKeyFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<IssuerDidKeyFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.IssuerDidKeyCreateInput;
+            const data: Prisma.IssuerDidKeyCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IssuerDidKeyCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: IssuerDidKey) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.IssuerDidKeyCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().issuerDidKey.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IssuerDidKeyCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.IssuerDidKeyCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "IssuerDidKey" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: IssuerDidKeyTraitKeys<TOptions>, ...names: readonly IssuerDidKeyTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface IssuerDidKeyFactoryBuilder {
+    <TOptions extends IssuerDidKeyFactoryDefineOptions>(options?: TOptions): IssuerDidKeyFactoryInterface<{}, IssuerDidKeyTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IssuerDidKeyTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IssuerDidKeyFactoryDefineOptions<TTransients>>(options?: TOptions) => IssuerDidKeyFactoryInterface<TTransients, IssuerDidKeyTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link IssuerDidKey} model.
+ *
+ * @param options
+ * @returns factory {@link IssuerDidKeyFactoryInterface}
+ */
+export const defineIssuerDidKeyFactory = (<TOptions extends IssuerDidKeyFactoryDefineOptions>(options?: TOptions): IssuerDidKeyFactoryInterface<TOptions> => {
+    return defineIssuerDidKeyFactoryInternal(options ?? {}, {});
+}) as IssuerDidKeyFactoryBuilder;
+
+defineIssuerDidKeyFactory.withTransientFields = defaultTransientFieldValues => options => defineIssuerDidKeyFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type StatusListCredentialScalarOrEnumFields = {
     listKey: string;
