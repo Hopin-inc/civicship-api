@@ -81,6 +81,7 @@ function restoreEnv(): void {
 describe("AnchorBatchService", () => {
   let mockRepository: {
     findExistingBatchTransactionAnchors: jest.Mock;
+    findFirstChainTxHashByBatchId: jest.Mock;
     findPendingAnchors: jest.Mock;
     findVcJwtsByVcIssuanceRequestIds: jest.Mock;
     findPreviousAnchorChainTxHashes: jest.Mock;
@@ -111,6 +112,7 @@ describe("AnchorBatchService", () => {
 
     mockRepository = {
       findExistingBatchTransactionAnchors: jest.fn().mockResolvedValue([]),
+      findFirstChainTxHashByBatchId: jest.fn().mockResolvedValue(null),
       findPendingAnchors: jest.fn().mockResolvedValue({
         transactionAnchors: [],
         vcAnchors: [],
@@ -332,6 +334,7 @@ describe("AnchorBatchService", () => {
           periodEnd: new Date(),
         },
       ]);
+      mockRepository.findFirstChainTxHashByBatchId.mockResolvedValue("ff".repeat(32));
 
       const service = container.resolve(AnchorBatchService);
       const result = await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });

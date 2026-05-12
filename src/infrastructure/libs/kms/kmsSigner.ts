@@ -45,7 +45,7 @@
  */
 
 import { KeyManagementServiceClient } from "@google-cloud/kms";
-import { injectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 
 /** Maximum number of attempts (1 initial + 2 retries = 3 attempts total). */
 const MAX_ATTEMPTS = 3;
@@ -139,8 +139,18 @@ export class KmsSigner {
    * The constructor does NOT validate credentials proactively — the gRPC
    * client lazily initializes the auth client on first call, so credential
    * problems surface as a 4xx on the first sign and propagate immediately.
+   *
+   * The `@inject("KmsClient")` token is required because tsyringe cannot
+   * reflect an interface-typed optional parameter — TS's
+   * `emitDecoratorMetadata` emits `Object` for `KmsClientLike` and tsyringe
+   * throws `TypeInfo not known for "Object"` when no token is supplied.
+   * Production registers `useValue: undefined` so the body's
+   * `?? new KeyManagementServiceClient()` fallback kicks in; tests can
+   * inject a stub by either overriding `KmsSigner` itself (preferred) or
+   * registering a `KmsClient` value before resolving. Direct
+   * `new KmsSigner(client)` calls bypass DI entirely.
    */
-  constructor(client?: KmsClientLike) {
+  constructor(@inject("KmsClient") client?: KmsClientLike) {
     // Cast: `KeyManagementServiceClient.listCryptoKeyVersions` returns
     // `ICryptoKeyVersion[]` whose `state` field is the proto enum union
     // (`CryptoKeyVersionState | "ENABLED" | "DISABLED" | ...`), while

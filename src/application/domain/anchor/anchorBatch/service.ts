@@ -374,15 +374,16 @@ export class AnchorBatchService {
     return sorted.map((a) => buildOp(a, prevByAnchorId));
   }
 
-  /** SUBMITTED/CONFIRMED 済 batch から chainTxHash を 1 件取得（idempotency 早期 return 用）。 */
+  /**
+   * SUBMITTED/CONFIRMED 済 batch から chainTxHash を 1 件取得
+   * （idempotency 早期 return 用）。
+   *
+   * 3 つの anchor テーブル全てを横断的に見る。一部の batch
+   * (VcAnchor のみ等) は TransactionAnchor 行を持たず、その場合は
+   * vcAnchor/userDidAnchor 側の chainTxHash を返す必要がある。
+   */
   private async firstChainTxHashOf(ctx: IContext, weeklyKey: string): Promise<string | null> {
-    const rows = await this.repository.findExistingBatchTransactionAnchors(ctx, weeklyKey);
-    for (const r of rows) {
-      if (typeof r.chainTxHash === "string" && r.chainTxHash.length > 0) {
-        return r.chainTxHash;
-      }
-    }
-    return null;
+    return this.repository.findFirstChainTxHashByBatchId(ctx, weeklyKey);
   }
 }
 

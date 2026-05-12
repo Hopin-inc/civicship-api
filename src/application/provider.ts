@@ -359,6 +359,15 @@ export function registerProductionDependencies() {
   // it sits adjacent to its single application-layer consumer for the
   // lifetime of Phase 1; future consumers (anchor batch worker) can lift
   // it into a shared "Cryptography" group once they land.
+  // Default KMS client value for `KmsSigner`. `KmsSigner`'s constructor
+  // parameter is `@inject("KmsClient")`-decorated because tsyringe cannot
+  // reflect an interface-typed optional parameter (`emitDecoratorMetadata`
+  // emits `Object` → "TypeInfo not known for 'Object'" on resolve).
+  // `useFactory: () => undefined` makes the param resolve to undefined and
+  // the constructor body falls back to `new KeyManagementServiceClient()`.
+  // (Plain `useValue: undefined` is rejected by tsyringe — "TypeInfo not
+  // known for 'undefined'" — so the factory form is required.)
+  container.register("KmsClient", { useFactory: () => undefined });
   container.registerSingleton("KmsSigner", KmsSigner);
   // Default clock for `IssuerDidService.now` (public-key TTL cache). Tests
   // can override via `container.register("IssuerDidClock", { useValue: ... })`.
