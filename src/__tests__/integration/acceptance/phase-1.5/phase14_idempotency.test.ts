@@ -43,10 +43,12 @@ import {
 // factory so the helper is loaded at mock-construction time, after imports
 // have been bound.
 jest.mock("@/infrastructure/libs/cardano/txBuilder", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factory is hoisted above ES imports; CommonJS require() is the standard escape hatch to load the helper after imports have been bound.
   const setup = require("@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup");
   return setup.cslTxBuilderMockFactory({ txHashHex: "12".repeat(32) })();
 });
 jest.mock("@/infrastructure/libs/cardano/keygen", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- see comment on cardano/txBuilder mock above.
   const setup = require("@/__tests__/integration/acceptance/phase-1.5/__helpers__/setup");
   return setup.cslKeygenMockFactory()();
 });
