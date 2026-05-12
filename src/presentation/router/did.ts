@@ -4,12 +4,25 @@
  * Exposes three endpoints:
  *
  *   GET /.well-known/did.json
- *     Returns the civicship.app Issuer DID Document. Phase 1 step 8
- *     wires this through `IssuerDidUseCase` so the response carries the
- *     active KMS-backed `verificationMethod` whenever a key has been
- *     activated. Until then the use case returns `null` and we fall back
- *     to the minimal static `{ "@context", id }` body — preserving the
- *     dev/staging UX that existed before the use case landed.
+ *     Returns the civicship.app Issuer DID Document.
+ *
+ *     Phase 1 (PR #1100) wired this through
+ *     `IssuerDidUseCase.getActiveIssuerDidDocument()` — single-key
+ *     Multikey shape. Phase 2 (PR #1124) migrates to
+ *     `IssuerDidUseCase.buildDidDocument()` — the §G overlap multi-key
+ *     shape per spec §5.4.3 line 1131-1142, so verifiers can validate
+ *     VCs signed by either the new or the rotating-out key during the
+ *     24-hour overlap window (§9.1.2).
+ *
+ *     Bootstrap fallback: when the use case yields `null` (no keys
+ *     registered yet) we serve the minimal static `{ "@context", id }`
+ *     body with the same 200 status so dev/staging environments remain
+ *     operable before the first key is provisioned.
+ *
+ *     Wire headers per §5.4.1:
+ *       - `Content-Type: application/did+json`
+ *       - `Cache-Control: public, max-age=300` (5 min — bounded so a
+ *         §G rotation propagates within at most one TTL window)
  *
  *   GET /users/:userId/did.json
  *     Returns the User DID Document for `userId`. Delegates to
@@ -33,8 +46,10 @@
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.4   (public routes)
+ *   docs/report/did-vc-internalization.md §5.4.1 (router contract / headers)
  *   docs/report/did-vc-internalization.md §5.4.3 (IssuerDidService)
  *   docs/report/did-vc-internalization.md §5.4.4 (UserDidDocumentService)
+ *   docs/report/did-vc-internalization.md §9.1.2 (24h overlap rotation)
  *   docs/report/did-vc-internalization.md §B / §E / §F
  */
 
@@ -64,11 +79,11 @@ const router = express.Router();
 /**
  * Minimal static fallback Document.
  *
- * Served when `IssuerDidUseCase.getActiveIssuerDidDocument()` returns
- * `null` — i.e. no active KMS key is registered yet (bootstrap state on
- * dev/staging). The shape is the smallest body every DID-aware verifier
- * accepts (`@context` + `id`); the absence of `verificationMethod` is
- * intentional and matches the spec's "no proofs yet" mode.
+ * Served when `IssuerDidUseCase.buildDidDocument()` returns `null` —
+ * i.e. no KMS keys are registered yet (bootstrap state on dev/staging).
+ * The shape is the smallest body every DID-aware verifier accepts
+ * (`@context` + `id`); the absence of `verificationMethod` is intentional
+ * and matches the spec's "no proofs yet" mode.
  *
  * Adding fields later is backward-compatible. Switching to the use case
  * happens automatically as soon as the first key is activated.
@@ -78,16 +93,39 @@ const STATIC_FALLBACK_DOCUMENT = Object.freeze({
   id: "did:web:api.civicship.app",
 });
 
+/**
+ * Wire-format constants for `/.well-known/did.json` per §5.4.1.
+ *
+ *   - `application/did+json` is the W3C-spec Content-Type for DID
+ *     Documents (DID Core §7.1.2). Verifier libraries branch on this to
+ *     pick the JSON parser path vs JSON-LD; pinning it here keeps us
+ *     conformant regardless of Express's content-negotiation defaults.
+ *   - `public, max-age=300` (5 min) is the bound called out in §5.4.1.
+ *     Rationale: a §G rotation propagates to verifiers within at most
+ *     one TTL window, while the cache is long enough that hot-path
+ *     `/.well-known/did.json` traffic rarely re-hits KMS via the
+ *     service-layer TTL cache (also 1h). 5 min is the shorter of the
+ *     two and therefore the binding constraint on rotation latency.
+ */
+const ISSUER_DID_CONTENT_TYPE = "application/did+json";
+const ISSUER_DID_CACHE_CONTROL = "public, max-age=300";
+
 router.get("/.well-known/did.json", async (_req: Request, res: Response) => {
   try {
     const useCase = container.resolve<IssuerDidUseCase>("IssuerDidUseCase");
-    const document = await useCase.getActiveIssuerDidDocument();
+    // Phase 2: §G overlap multi-key shape (spec §5.4.3 line 1131-1142).
+    // The legacy `getActiveIssuerDidDocument()` is preserved on the use
+    // case for backward compat but is NOT called from this router.
+    const document = await useCase.buildDidDocument();
+
+    res.set("Content-Type", ISSUER_DID_CONTENT_TYPE);
+    res.set("Cache-Control", ISSUER_DID_CACHE_CONTROL);
 
     if (document === null) {
       // Bootstrap fallback — see `STATIC_FALLBACK_DOCUMENT` rationale.
       // Logged at debug level only; this is the expected steady state on
       // a freshly-deployed environment until the first key is provisioned.
-      logger.debug("[router/did] no active issuer key — serving static fallback");
+      logger.debug("[router/did] no issuer keys — serving static fallback");
       return res.status(200).json(STATIC_FALLBACK_DOCUMENT);
     }
 
