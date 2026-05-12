@@ -3,7 +3,6 @@
 `docs/report/did-vc-internalization.md` の §16（Phase 2 / 1.5 持ち越し）/ §11 Phase 0 残課題 0-4 の進捗スナップショット。
 
 **最終更新**: 2026-05-12
-**対象ブランチ**: `claude/did-vc-internalization-review-eptzS`
 
 > 本文 §16 の表自体は本ファイルとは別の小規模 doc PR で更新する予定（main 設計書はサイズが大きいため一括 commit 不可、本ファイルで status のみ先行公開）。
 
@@ -32,8 +31,8 @@ base branch head: `103a7b0f` (Phase 1.5 6 PR + develop merge)
 ### 各 PR の Gemini レビュー対応サマリ
 
 - **#1118**: Merkle 説明を duplicate-last に訂正、`substr` → `slice`
-- **#1119**: `Buffer instanceof Uint8Array` → `constructor === Uint8Array` 比較、`trimDocCborForSizeBudget` の in-place mutation 化
-- **#1120**: `listCryptoKeyVersions` pagination 対応 (HIGH)、`getPublicKey` / `fetchPublicKeyHex` 並列化、`hexToBytes` の NaN ガード、`base64UrlEncode` を Node native `Buffer.toString("base64url")` に置換 (SonarCloud S5852 hotspot 解消)
+- **#1119**: `Buffer` を plain `Uint8Array` に強制変換するため `constructor === Uint8Array` 比較に変更（`Buffer` は `Uint8Array` のサブクラスなので `instanceof Uint8Array` だと再ラップが no-op になり、コメント記載の "normalize to plain Uint8Array" 意図と不一致だった）、`trimDocCborForSizeBudget` の in-place mutation 化
+- **#1120**: `listCryptoKeyVersions` pagination 対応 (HIGH)、`getPublicKey` / `fetchPublicKeyHex` 並列化、`hexToBytes` を per-pair regex (`/^[0-9a-fA-F]{2}$/`) で厳密検証（`Number.isNaN(parseInt(...))` だけだと `"1z"` のような部分一致を見逃すため、issuerDidBuilder.ts の sibling helper と完全に同じ実装に揃えた）、`base64UrlEncode` を Node native `Buffer.toString("base64url")` に置換 (SonarCloud S5852 hotspot 解消)
 - **#1121**: `JwtSigner` に `alg` property 追加、`StubJwtSigner` / `KmsJwtSigner` 実装、`vcIssuance/service.ts` / `statusList/service.ts` の hard-coded `"EdDSA"` を `signer.alg` 参照に統一、base64url 文字説明の訂正
 
 ## Phase 2 で残る項目
