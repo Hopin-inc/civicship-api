@@ -1,4 +1,4 @@
-import { container } from "tsyringe";
+import { container, instanceCachingFactory } from "tsyringe";
 import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
@@ -591,7 +591,18 @@ export function registerProductionDependencies() {
   // KmsSigner は Phase 2 で KMS 経由署名を導入する PR で登録する
   //  （現時点では誰も `@inject("KmsSigner")` していないため、未使用 DI を
   //  残さない方針で削除した）。
-  container.registerSingleton("BlockfrostClient", BlockfrostClient);
+  // BlockfrostClient のコンストラクタは optional 引数 1 つ
+  // (`options: BlockfrostClientOptions = {}`) のみで、interface 型を
+  // tsyringe が auto-resolve できない (`TypeInfo not known for "Object"`)。
+  // 引数なしで構築すれば env (`BLOCKFROST_PROJECT_ID`) から値を引くため、
+  // factory + instanceCachingFactory で singleton 化する。
+  //
+  // dual-binding: クラス自体 (`@inject(BlockfrostClient)`) と string token
+  // (`@inject("BlockfrostClient")`) の両方で同じ singleton インスタンスに
+  // 解決させる。precedent は L304-306 の UserDidAnchorRepository。
+  const blockfrostFactory = instanceCachingFactory(() => new BlockfrostClient());
+  container.register(BlockfrostClient, { useFactory: blockfrostFactory });
+  container.register("BlockfrostClient", { useToken: BlockfrostClient });
   container.register<BlockfrostLatestSlotProvider>("BlockfrostLatestSlotProvider", {
     useFactory: () => createBlockfrostLatestSlotProvider(),
   });
