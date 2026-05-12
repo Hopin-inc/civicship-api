@@ -163,7 +163,7 @@ import VcIssuanceResolver from "@/application/domain/credential/vcIssuance/contr
 // 🪪 Issuer DID (§5.4.3 internal DID Document service, Phase 1 step 8)
 import IssuerDidService from "@/application/domain/credential/issuerDid/service";
 import IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase";
-import IssuerDidKeyRepositoryStub from "@/application/domain/credential/issuerDid/data/repository";
+import IssuerDidKeyRepository from "@/application/domain/credential/issuerDid/data/repository";
 import { KmsSigner } from "@/infrastructure/libs/kms/kmsSigner";
 
 // 🪪 Status List (§5.2.4 — VC revocation per W3C Bitstring Status List 2021)
@@ -347,18 +347,20 @@ export function registerProductionDependencies() {
   container.register("VcIssuanceUseCase", { useClass: VcIssuanceUseCase });
   container.register("VcIssuanceResolver", { useClass: VcIssuanceResolver });
 
-  // 🪪 Issuer DID (§5.4.3 internal DID Document service) — Strategy A stub
-  // repository. Drives `/.well-known/did.json` via `IssuerDidUseCase`. The
-  // stub returns `null` for `findActiveKey` until the schema PR adds the
-  // `t_issuer_did_keys` table; the router then falls back to a minimal
-  // static Document, preserving dev/staging UX.
+  // 🪪 Issuer DID (§5.4.3 internal DID Document service).
+  // Prisma-backed repository against `t_issuer_did_keys` (migration
+  // `20260512060000_add_issuer_did_keys`). Drives `/.well-known/did.json`
+  // via `IssuerDidUseCase`. When the table is empty (freshly-deployed
+  // environment with no key registered yet), `findActiveKey()` returns
+  // `null` and the router falls back to the minimal static Document —
+  // same UX as the prior Phase 1.5 stub.
   //
   // `KmsSigner` is registered here (not in a dedicated infra section) so
   // it sits adjacent to its single application-layer consumer for the
   // lifetime of Phase 1; future consumers (anchor batch worker) can lift
   // it into a shared "Cryptography" group once they land.
   container.registerSingleton("KmsSigner", KmsSigner);
-  container.register("IssuerDidKeyRepository", { useClass: IssuerDidKeyRepositoryStub });
+  container.register("IssuerDidKeyRepository", { useClass: IssuerDidKeyRepository });
   container.register("IssuerDidService", { useClass: IssuerDidService });
   container.register("IssuerDidUseCase", { useClass: IssuerDidUseCase });
 

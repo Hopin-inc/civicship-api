@@ -2231,6 +2231,59 @@ enum DidOperation {
   DEACTIVATE
 }
 
+// (D) Issuer DID 鍵レジストリ（§5.4.3 / §G 鍵 rotation overlap）
+// civicship platform は単一の Issuer DID (`did:web:api.civicship.app`) を持ち、
+// 内部 VC 発行と StatusList VC の署名にこの DID の private key を使う。
+// 鍵自体は GCP Cloud KMS が保管し、本テーブルはどの KMS key version が
+// 「いつ activated / deactivated されたか」の運用 metadata を持つだけ。
+//
+// §G 鍵 rotation の流れ（PR #1100 / docs/runbooks/issuer-did-key-rotation.md）:
+//   1. 新 key version (v2) を KMS で作成
+//   2. 本テーブルに row を 1 件 INSERT（activatedAt = now, deactivatedAt = NULL）
+//   3. /.well-known/did.json は ENABLED + DISABLED 両方を verificationMethod に publish
+//      （`IssuerDidUseCase.buildDidDocument` が listActiveKeys を読む）
+//   4. signWithActiveKey は findActiveKey が返す 1 件（最新 ENABLED）で署名する
+//   5. 24h overlap (§9.1.2) 経過後、旧 key (v1) の row を UPDATE で
+//      deactivatedAt = now にする（KMS 側も DISABLED 状態に遷移）
+//   6. 旧 row は永続保持（§9.1.3：DISABLED は DESTROYED にしない）し、
+//      過去 VC の verifier 検証に対応する verificationMethod として残す
+//
+// なぜ row を残す:
+//   過去 VC を verify するには「その VC を発行したときに使われた public key」
+//   を解決できる必要がある。DID Document はその時点の verificationMethod を
+//   全部 publish するため、DISABLED な行も含めて永続保持する。
+//   行数の規模: 鍵 rotation は ≤ 1 回 / 四半期（§G）→ 10 年で 40 行程度。
+//   無視できる data 量。
+model IssuerDidKey {
+  id String @id @default(cuid())
+
+  // KMS の cryptoKeyVersions リソースの完全名。例:
+  //   "projects/kyoso-dev-453010/locations/asia-northeast1/keyRings/civicship/cryptoKeys/civicship-issuer-vc/cryptoKeyVersions/1"
+  // 末尾の `cryptoKeyVersions/<n>` から DID Document の `#key-<n>` fragment を
+  // 派生する（`issuerDidBuilder.kmsResourceNameToKid`）。重複登録防止のため @unique。
+  kmsKeyResourceName String @unique @map("kms_key_resource_name")
+
+  // この鍵が ENABLED 状態に遷移した時刻。findActiveKey の最新性判定で使う
+  // （複数行が deactivatedAt IS NULL の overlap 状態でも一意に "最新 ENABLED" を選べる）。
+  activatedAt DateTime @default(now()) @map("activated_at")
+
+  // ENABLED 中は NULL、DISABLED 後に値が入る。§9.1.3: 永続保持し DESTROYED にしない。
+  deactivatedAt DateTime? @map("deactivated_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  // findActiveKey は WHERE deactivated_at IS NULL ORDER BY activated_at DESC LIMIT 1。
+  // listActiveKeys は ORDER BY activated_at ASC (DID Document の verificationMethod
+  // 並び順を安定させる)。どちらも activated_at を sort key として使う。
+  @@index([activatedAt])
+  // partial index 相当の最適化：deactivated_at IS NULL の絞り込みは findActiveKey の
+  // hot path なので、複合 index で seq scan を回避。
+  @@index([deactivatedAt, activatedAt])
+
+  @@map("t_issuer_did_keys")
+}
+
 // (C) Status List 2021 / Bitstring Status List 配信用（§D 対応：VC revocation）
 // 1 つの StatusListCredential は最大 131,072 ビット（16 KB）の bitstring を保持し、
 // それぞれのビットが 1 つの VC の revoked 状態を表す。

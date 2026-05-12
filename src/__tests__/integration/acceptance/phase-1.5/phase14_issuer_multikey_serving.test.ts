@@ -116,9 +116,10 @@ describe("[§14.2] Issuer DID /.well-known/did.json — §G overlap multi-key se
   // `container.register(...)` override done inside one test (e.g.
   // `wireOverlapKeys()` below) is wiped before the next one runs.
   // The bootstrap-fallback test relies on this — it MUST see the
-  // production `IssuerDidKeyRepositoryStub` (which returns `[]`), not
-  // a stub left behind by a prior test. Do not move this reset into a
-  // less aggressive lifecycle hook (e.g. `beforeAll`).
+  // production `IssuerDidKeyRepository` against an empty
+  // `t_issuer_did_keys` table (which yields `[]`), not a stub left
+  // behind by a prior test. Do not move this reset into a less
+  // aggressive lifecycle hook (e.g. `beforeAll`).
   beforeEach(async () => {
     await setupAcceptanceTest();
   });
@@ -224,9 +225,11 @@ describe("[§14.2] Issuer DID /.well-known/did.json — §G overlap multi-key se
   });
 
   it("falls back to the minimal static Document when no keys are registered (bootstrap)", async () => {
-    // Default production wiring uses `IssuerDidKeyRepositoryStub`, which
-    // returns [] from listActiveKeys(). No override needed — this exercises
-    // the bootstrap state straight from registerProductionDependencies().
+    // Default production wiring is `IssuerDidKeyRepository` against an
+    // empty `t_issuer_did_keys` table — `listActiveKeys()` returns []
+    // and the router falls through to the static fallback. No DI
+    // override needed; this exercises the bootstrap state straight from
+    // registerProductionDependencies() + the migration's empty table.
     const res = await request(makeApp()).get("/.well-known/did.json");
 
     expect(res.status).toBe(200);
