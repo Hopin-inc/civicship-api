@@ -45,14 +45,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import express from "express";
 import request from "supertest";
-import {
-  AnchorStatus,
-  DidOperation,
-  EvaluationStatus,
-  ParticipationStatus,
-  ParticipationStatusReason,
-  Source,
-} from "@prisma/client";
+import { AnchorStatus, DidOperation } from "@prisma/client";
 import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import UserDidUseCase from "@/application/domain/account/userDid/usecase";
 import StatusListUseCase from "@/application/domain/credential/statusList/usecase";
@@ -62,6 +55,7 @@ import {
   decodeStatusListBitstring,
   fakeVcJwt,
   readStatusListBit,
+  seedExtraEvaluationForUser,
   seedUserParticipationEvaluation,
   seedVcRequest,
   setupAcceptanceTest,
@@ -117,20 +111,7 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     //    via `evaluationId` unique constraint — see VcIssuanceRepository.create).
     //    We already have one evaluation from seedUserParticipationEvaluation;
     //    create one more for the second VC.
-    const secondEval = await prismaClient.evaluation.create({
-      data: {
-        status: EvaluationStatus.PASSED,
-        participation: {
-          create: {
-            status: ParticipationStatus.PARTICIPATED,
-            reason: ParticipationStatusReason.PERSONAL_RECORD,
-            source: Source.INTERNAL,
-            user: { connect: { id: userId } },
-          },
-        },
-        evaluator: { connect: { id: userId } },
-      },
-    });
+    const { evaluationId: secondEvalId } = await seedExtraEvaluationForUser(userId);
 
     const vcA = await seedVcRequest({
       userId,
@@ -141,7 +122,7 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     });
     const vcB = await seedVcRequest({
       userId,
-      evaluationId: secondEval.id,
+      evaluationId: secondEvalId,
       vcJwt: fakeVcJwt({ vc: "B" }),
       statusListIndex: slotB.statusListIndex,
       statusListCredential: slotB.statusListCredentialUrl,
@@ -253,20 +234,7 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     const statusListUseCase = container.resolve(StatusListUseCase);
     const slot = await statusListUseCase.allocateNextSlot(ctx);
 
-    const legacyEval = await prismaClient.evaluation.create({
-      data: {
-        status: EvaluationStatus.PASSED,
-        participation: {
-          create: {
-            status: ParticipationStatus.PARTICIPATED,
-            reason: ParticipationStatusReason.PERSONAL_RECORD,
-            source: Source.INTERNAL,
-            user: { connect: { id: userId } },
-          },
-        },
-        evaluator: { connect: { id: userId } },
-      },
-    });
+    const { evaluationId: legacyEvalId } = await seedExtraEvaluationForUser(userId);
 
     const wiredVc = await seedVcRequest({
       userId,
@@ -277,7 +245,7 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     });
     const legacyVc = await seedVcRequest({
       userId,
-      evaluationId: legacyEval.id,
+      evaluationId: legacyEvalId,
       vcJwt: fakeVcJwt({ vc: "legacy" }),
       // Intentionally omit statusListIndex / statusListCredential — pre-§D
       // legacy shape.

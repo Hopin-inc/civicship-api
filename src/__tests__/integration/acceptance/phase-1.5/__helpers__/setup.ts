@@ -279,6 +279,32 @@ export async function seedUserParticipationEvaluation(opts: SeedUserOptions = {}
   };
 }
 
+/**
+ * Seed one extra Participation + Evaluation for an existing user.
+ *
+ * Use when a single test needs multiple VCs for the same user — each
+ * `VcIssuanceRequest.evaluationId` is `@unique`, so every additional VC
+ * needs its own Participation/Evaluation pair. Pairs land in the EvaluationStatus.PASSED state
+ * (the only status that VC issuance/cascade tests care about).
+ */
+export async function seedExtraEvaluationForUser(userId: string): Promise<{ evaluationId: string }> {
+  const evaluation = await prismaClient.evaluation.create({
+    data: {
+      status: EvaluationStatus.PASSED,
+      participation: {
+        create: {
+          status: ParticipationStatus.PARTICIPATED,
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          source: Source.INTERNAL,
+          user: { connect: { id: userId } },
+        },
+      },
+      evaluator: { connect: { id: userId } },
+    },
+  });
+  return { evaluationId: evaluation.id };
+}
+
 export interface SeedVcRequestOptions {
   userId: string;
   evaluationId: string;
