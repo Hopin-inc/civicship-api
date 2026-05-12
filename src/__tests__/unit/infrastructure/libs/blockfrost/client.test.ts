@@ -150,6 +150,17 @@ describe("BlockfrostClient", () => {
       expect(mockAddressesUtxosAll).toHaveBeenCalledWith("addr_test1xyz");
     });
 
+    it("getUtxos(address) maps Blockfrost 404 (no on-chain activity) to []", async () => {
+      mockAddressesUtxosAll.mockRejectedValueOnce(
+        Object.assign(new Error("The requested component has not been found."), {
+          status_code: 404,
+        }),
+      );
+
+      const client = new BlockfrostClient({ network: "CARDANO_PREPROD" });
+      await expect(client.getUtxos("addr_test1empty")).resolves.toEqual([]);
+    });
+
     it("submitTx(bytes) delegates to txSubmit(bytes) and returns the hash", async () => {
       mockTxSubmit.mockResolvedValueOnce("a".repeat(64));
 
