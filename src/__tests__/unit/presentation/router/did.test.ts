@@ -15,6 +15,7 @@
  *                                          → 500 (resolver throws)
  *   - GET /vc/:vcId/inclusion-proof      → 200 (CONFIRMED)
  *                                          → 404 (not_anchored)
+ *                                          → 400 (invalid_vc_id)
  *                                          → 500 (use case throws)
  *
  * The `DidDocumentResolver` and `IssuerDidUseCase` are both stubbed via
@@ -122,7 +123,10 @@ function registerPrismaIssuerStub(): void {
  * Build a §G overlap multi-key Document with one ENABLED key (key-7) and
  * one DISABLED key (key-6). Mirrors the spec §5.4.3 line 1131-1142
  * sample: every key in `verificationMethod`, ENABLED-only refs in
- * `assertionMethod` / `authentication`.
+ * `assertionMethod` / `authentication`, plus the
+ * `CivicshipIssuedCredentials` discovery `service` block (Gemini review
+ * on PR #1124 — must remain present in both single- and multi-key
+ * shapes so verifiers can resolve issued credential types uniformly).
  */
 function buildMultiKeyIssuerDoc(): IssuerMultiKeyDidDocument {
   const did = "did:web:api.civicship.app";
@@ -155,6 +159,15 @@ function buildMultiKeyIssuerDoc(): IssuerMultiKeyDidDocument {
     // advertised as signable per §9.1.2.
     assertionMethod: [`${did}#key-7`],
     authentication: [`${did}#key-7`],
+    service: [
+      {
+        id: `${did}#issued-credentials`,
+        type: "CivicshipIssuedCredentials",
+        serviceEndpoint: {
+          credentialTypes: ["civicship-attendance-credential-2026"],
+        },
+      },
+    ],
   };
 }
 
@@ -186,6 +199,18 @@ describe("router/did (§5.4)", () => {
       ]);
       expect(res.body.authentication).toEqual([
         "did:web:api.civicship.app#key-7",
+      ]);
+      // `service` parity with the single-key Document so verifiers can
+      // discover what credential types this issuer publishes regardless
+      // of which shape they hit (Gemini review on PR #1124).
+      expect(res.body.service).toEqual([
+        {
+          id: "did:web:api.civicship.app#issued-credentials",
+          type: "CivicshipIssuedCredentials",
+          serviceEndpoint: {
+            credentialTypes: ["civicship-attendance-credential-2026"],
+          },
+        },
       ]);
     });
 
