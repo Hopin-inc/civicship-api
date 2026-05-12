@@ -7,15 +7,15 @@
  * audit trail, historical lookups by activation date) live behind a
  * separate interface and will be added when key rotation tooling lands.
  *
- * Strategy A note (Phase 1 step 8) ----------------------------------------
+ * Schema status -----------------------------------------------------------
  *
- * The Prisma model `IssuerDidKey` is not yet in the schema (§4 redesign in
- * progress). The repository implementation in this PR is a Strategy A stub
- * — `findActiveKey()` returns `null` so the router falls through to the
- * minimal static Document. `listActiveKeys()` returns `[]` for the same
- * reason. Both methods become real Prisma queries once the schema PR adds
- * `t_issuer_did_keys`; the interface itself is forward-compatible with
- * that swap.
+ * Phase 1.5 shipped a Strategy A stub (both methods short-circuited to
+ * `null` / `[]`) because `t_issuer_did_keys` did not exist yet. The
+ * migration `20260512060000_add_issuer_did_keys` adds the table and the
+ * default repository binding is now the Prisma-backed implementation
+ * (`./repository.ts`). The empty-table behaviour is preserved — when no
+ * key row has been registered yet, `findActiveKey()` still returns
+ * `null` and the router falls through to the minimal static Document.
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.4.3 (IssuerDidService)

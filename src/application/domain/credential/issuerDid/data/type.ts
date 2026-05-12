@@ -8,13 +8,14 @@
  * deactivated. The `did:web` Document served at `/.well-known/did.json`
  * exposes every still-active key as a separate `verificationMethod`.
  *
- * Strategy A note (Phase 1 step 8) ----------------------------------------
+ * Schema status -----------------------------------------------------------
  *
- * The Prisma model `IssuerDidKey` is NOT in the schema yet. Until the
- * schema PR adds the table, the repository implementation returns `null`
- * from `findActiveKey()` so the router falls back to the minimal static
- * Document (which preserves dev/staging UX). The shape of `IssuerDidKeyRow`
- * below mirrors the planned columns one-for-one so the swap is mechanical.
+ * The Prisma model `IssuerDidKey` is now in the schema (migration
+ * `20260512060000_add_issuer_did_keys`). `IssuerDidKeyRow` is the
+ * application-layer view of one row from that table — kept as a
+ * dedicated type so the persistence shape (`Prisma.IssuerDidKey`) and
+ * the domain shape can evolve independently if the schema later grows
+ * fields the service doesn't need (e.g. ops-only annotations).
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.1.1 (KMS resource naming)
