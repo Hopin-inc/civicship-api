@@ -335,32 +335,33 @@ function bytesToHex(bytes: Uint8Array): string {
 
 /**
  * Inverse of `bytesToHex`. Used by `buildDidDocument` to round-trip the
- * cached hex back into raw bytes for JWK encoding. Tolerant of an
- * optional `0x` prefix on the off chance a caller hand-feeds one in
- * (the cache itself never stores a prefix).
+ * cached hex back into raw bytes for JWK encoding.
  *
- * Validates each pair with a strict regex (`/^[0-9a-fA-F]{2}$/`). The
- * earlier NaN-only guard had a real defect noted by Gemini on PR #1123:
- * `Number.parseInt("1z", 16)` returns `1` (parseInt stops at the first
- * invalid char), so a non-hex character would slip through and produce a
- * silently truncated value in the resulting `Uint8Array`. Matching the
- * regex used by `issuerDidBuilder.ts`'s sibling `hexToBytes` makes the
- * two sites byte-for-byte equivalent and rejects any non-hex input.
+ * Implementation: `Buffer.from(hex, "hex")` is the canonical Node fast
+ * path, but it silently truncates at the first non-hex character (e.g.
+ * `Buffer.from("1z", "hex").length === 0`) so we cannot rely on it for
+ * input validation. A single whole-string regex test runs before the
+ * decode and rejects any non-hex char up front; the decode itself is
+ * then guaranteed to consume every byte.
+ *
+ * The earlier NaN-only guard (`Number.isNaN(parseInt(pair, 16))`) had
+ * a real defect noted by Gemini on PR #1123: `parseInt("1z", 16)`
+ * returns 1 (parseInt stops at the first invalid char), so a non-hex
+ * character would slip through and produce a silently truncated value.
+ * Switching to a whole-string regex + Buffer decode also avoids the
+ * per-pair loop pattern duplicated in `issuerDidBuilder.ts` (Sonar
+ * duplication detector flagged the byte-identical loop).
  */
 function hexToBytes(hex: string): Uint8Array {
   const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
   if (clean.length % 2 !== 0) {
     throw new Error(`hex string must have even length, got ${clean.length}`);
   }
-  const out = new Uint8Array(clean.length / 2);
-  for (let i = 0; i < out.length; i++) {
-    const pair = clean.slice(i * 2, i * 2 + 2);
-    if (!/^[0-9a-fA-F]{2}$/.test(pair)) {
-      throw new Error(`hex string contains non-hex character at offset ${i * 2}`);
-    }
-    out[i] = Number.parseInt(pair, 16);
+  // Anchored character class with `*` — linear time, no backtracking.
+  if (!/^[0-9a-fA-F]*$/.test(clean)) {
+    throw new Error("hex string contains non-hex characters");
   }
-  return out;
+  return new Uint8Array(Buffer.from(clean, "hex"));
 }
 
 // Exported for tests — see file-header re: TTL cache.
