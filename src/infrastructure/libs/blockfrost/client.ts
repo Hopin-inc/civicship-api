@@ -249,12 +249,29 @@ export class BlockfrostClient {
     );
   }
 
-  /** §5.1.5 `getUtxos(address)` → `addressesUtxosAll`. */
+  /**
+   * §5.1.5 `getUtxos(address)` → `addressesUtxosAll`.
+   *
+   * Blockfrost returns 404 for an address that has no on-chain history at
+   * all (rather than an empty array). Map that to `[]` so callers can
+   * uniformly check `utxos.length === 0` without special-casing the
+   * "freshly-funded / never-funded" boundary case.
+   */
   async getUtxos(address: string): Promise<BlockfrostUtxoResponse[]> {
-    return this.withRetry(
-      "getUtxos",
-      () => this.api.addressesUtxosAll(address) as Promise<BlockfrostUtxoResponse[]>,
-    );
+    try {
+      return await this.withRetry(
+        "getUtxos",
+        () => this.api.addressesUtxosAll(address) as Promise<BlockfrostUtxoResponse[]>,
+      );
+    } catch (err) {
+      if (isLikelyNotFound(err)) {
+        logger.info("[BlockfrostClient] getUtxos: address has no UTXOs (404 → [])", {
+          address,
+        });
+        return [];
+      }
+      throw err;
+    }
   }
 
   /**
