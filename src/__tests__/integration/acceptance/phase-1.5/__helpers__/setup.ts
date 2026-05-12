@@ -343,6 +343,64 @@ export interface SeedPendingVcAnchorOptions {
 }
 
 // ---------------------------------------------------------------------------
+// High-level "seed user + bootstrap one VC against a StatusList slot"
+// fixture. Used by every §14.2 StatusList-bit test (phase14_vc_revocation
+// + phase14_did_deactivate_vc_cascade) to skip the repeated
+// `seedUserParticipationEvaluation` → `allocateNextSlot` → `seedVcRequest`
+// chain that SonarCloud's duplication detector kept flagging.
+// ---------------------------------------------------------------------------
+
+export interface SeedUserWithVcOptions {
+  /** Display name on the seeded User row. */
+  name: string;
+  /** Slug prefix on the seeded User row (a timestamp suffix is appended). */
+  slugPrefix: string;
+  /** JWT to persist on the VC row. */
+  vcJwt: string;
+}
+
+export interface SeededUserWithVc {
+  userId: string;
+  evaluationId: string;
+  slot: Awaited<ReturnType<import("@/application/domain/credential/statusList/usecase").default["allocateNextSlot"]>>;
+  vc: Awaited<ReturnType<typeof seedVcRequest>>;
+}
+
+/**
+ * Bootstrap a fresh User → Participation → Evaluation → StatusList slot
+ * → VcIssuanceRequest chain for a §14.2 test that only needs one VC.
+ *
+ * Pulls the four-line preamble (`buildCtx` → seed → allocate → seed VC)
+ * into one call so individual tests no longer reproduce the structural
+ * block — they only express the *behaviour* being asserted on top.
+ */
+export async function seedUserWithVcOnStatusList(
+  ctx: IContext,
+  opts: SeedUserWithVcOptions,
+): Promise<SeededUserWithVc> {
+  // Import lazily to avoid a circular cycle between this helper module
+  // and the StatusList usecase (which transitively pulls the same DI
+  // container that `setupAcceptanceTest()` resets).
+  const { default: StatusListUseCase } = await import(
+    "@/application/domain/credential/statusList/usecase"
+  );
+  const { userId, evaluationId } = await seedUserParticipationEvaluation({
+    name: opts.name,
+    slugPrefix: opts.slugPrefix,
+  });
+  const statusListUseCase = container.resolve(StatusListUseCase);
+  const slot = await statusListUseCase.allocateNextSlot(ctx);
+  const vc = await seedVcRequest({
+    userId,
+    evaluationId,
+    vcJwt: opts.vcJwt,
+    statusListIndex: slot.statusListIndex,
+    statusListCredential: slot.statusListCredentialUrl,
+  });
+  return { userId, evaluationId, slot, vc };
+}
+
+// ---------------------------------------------------------------------------
 // StatusList bitstring helpers (shared between phase14_vc_revocation and
 // phase14_did_deactivate_vc_cascade — extracted to keep SonarCloud's
 // new-code duplication metric under the 3% threshold).

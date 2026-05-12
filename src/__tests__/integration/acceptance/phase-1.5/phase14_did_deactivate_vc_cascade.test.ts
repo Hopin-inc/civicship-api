@@ -164,18 +164,10 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
 
   it("is idempotent: a second DEACTIVATE for the same user does not re-revoke or change revokedAt", async () => {
     const ctx = buildCtx(issuer);
-    const { userId, evaluationId } = await seedUserParticipationEvaluation({
+    const { userId, slot, vc } = await seedUserWithVcOnStatusList(ctx, {
       name: "Idempotent Cascade User",
       slugPrefix: "casc-idem",
-    });
-    const statusListUseCase = container.resolve(StatusListUseCase);
-    const slot = await statusListUseCase.allocateNextSlot(ctx);
-    const vc = await seedVcRequest({
-      userId,
-      evaluationId,
       vcJwt: fakeVcJwt({ vc: "only" }),
-      statusListIndex: slot.statusListIndex,
-      statusListCredential: slot.statusListCredentialUrl,
     });
 
     const useCase = container.resolve(UserDidUseCase);
@@ -227,22 +219,17 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     // un-wired row would block operator-driven deletions for any user
     // with pre-§D VCs in their history.
     const ctx = buildCtx(issuer);
-    const { userId, evaluationId } = await seedUserParticipationEvaluation({
+    const {
+      userId,
+      slot,
+      vc: wiredVc,
+    } = await seedUserWithVcOnStatusList(ctx, {
       name: "Mixed-Inventory User",
       slugPrefix: "casc-mix",
+      vcJwt: fakeVcJwt({ vc: "wired" }),
     });
-    const statusListUseCase = container.resolve(StatusListUseCase);
-    const slot = await statusListUseCase.allocateNextSlot(ctx);
-
     const { evaluationId: legacyEvalId } = await seedExtraEvaluationForUser(userId);
 
-    const wiredVc = await seedVcRequest({
-      userId,
-      evaluationId,
-      vcJwt: fakeVcJwt({ vc: "wired" }),
-      statusListIndex: slot.statusListIndex,
-      statusListCredential: slot.statusListCredentialUrl,
-    });
     const legacyVc = await seedVcRequest({
       userId,
       evaluationId: legacyEvalId,
