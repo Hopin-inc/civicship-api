@@ -15,6 +15,8 @@ import StatusListService, {
   buildStatusListUrl,
   buildStatusListVcPayload,
 } from "@/application/domain/credential/statusList/service";
+import { StubJwtSigner } from "@/application/domain/credential/shared/stubJwtSigner";
+import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
 import type {
   IStatusListRepository,
   VcRevocationRow,
@@ -203,6 +205,17 @@ describe("StatusListService", () => {
     container.reset();
     repo = new FakeRepository();
     container.register("StatusListRepository", { useValue: repo });
+    // Phase 2 prep: StatusListService now resolves `StatusListJwtSigner`
+    // from DI rather than reaching for the inline `STUB_SIGNATURE_STATUS`
+    // constant. We bind the production stub so JWT output stays
+    // byte-identical and existing assertions on the third segment
+    // (`expect(segments[2]).toBe(STUB_SIGNATURE_STATUS)`) keep passing.
+    container.register("StatusListJwtSigner", {
+      useValue: new StubJwtSigner({
+        kid: `${CIVICSHIP_ISSUER_DID}#stub`,
+        stubSignature: STUB_SIGNATURE_STATUS,
+      }),
+    });
     container.register("StatusListService", { useClass: StatusListService });
     service = container.resolve(StatusListService);
   });
