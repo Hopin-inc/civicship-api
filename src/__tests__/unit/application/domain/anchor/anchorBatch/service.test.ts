@@ -22,6 +22,7 @@ import {
   AnchorBatchService,
   computeIsoWeeklyKey,
   isValidWeeklyKey,
+  trimDocCborForSizeBudget,
 } from "@/application/domain/anchor/anchorBatch/service";
 import { IContext } from "@/types/server";
 import { buildRoot } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
@@ -454,6 +455,142 @@ describe("AnchorBatchService", () => {
       const r2 = buildRoot([...inputs]);
       expect(Buffer.from(r1).equals(Buffer.from(r2))).toBe(true);
       expect(r1.length).toBe(32);
+    });
+  });
+
+  describe("trimDocCborForSizeBudget (§8.4)", () => {
+    // These tests bypass the txBuilder mock so they exercise the real
+    // metadata size calculation. They live inside the `AnchorBatchService`
+    // describe to inherit env restoration, but do NOT depend on the
+    // tsyringe container.
+    const base = {
+      v: 1 as const,
+      bid: "2026-W19",
+      ts: 1746336034,
+    };
+
+    it("returns ops unchanged when metadata is under 16 KB", () => {
+      const small = new Uint8Array(100).fill(0xab);
+      const ops = [
+        {
+          k: "c" as const,
+          did: "did:web:a:b:c",
+          h: "a".repeat(64),
+          docCbor: small,
+          prev: null,
+        },
+      ];
+      const result = trimDocCborForSizeBudget(base, ops);
+      expect(result).toBe(ops);
+      expect((result[0] as { docCbor?: Uint8Array }).docCbor).toBe(small);
+    });
+
+    it("drops docCbor from the tail op when metadata exceeds 16 KB", () => {
+      // Two 9 KB CBOR blobs > 16 KB combined; the second one must lose its
+      // docCbor and fall back to the minimal { id } doc.
+      const fat = new Uint8Array(9 * 1024).fill(0xcd);
+      const ops = [
+        {
+          k: "c" as const,
+          did: "did:web:api.civicship.app:users:u_a",
+          h: "a".repeat(64),
+          docCbor: fat,
+          prev: null,
+        },
+        {
+          k: "c" as const,
+          did: "did:web:api.civicship.app:users:u_b",
+          h: "b".repeat(64),
+          docCbor: fat,
+          prev: null,
+        },
+      ];
+      const result = trimDocCborForSizeBudget(base, ops);
+      // First op keeps its docCbor; tail op switches to fallback minimal doc.
+      expect(result[0].k).toBe("c");
+      expect((result[0] as { docCbor?: Uint8Array }).docCbor).toBeDefined();
+      expect(result[1].k).toBe("c");
+      expect((result[1] as { docCbor?: Uint8Array }).docCbor).toBeUndefined();
+      expect((result[1] as { doc?: Record<string, unknown> }).doc).toEqual({
+        id: "did:web:api.civicship.app:users:u_b",
+      });
+    });
+  });
+
+  describe("documentCbor chain inclusion (§8.3 / Phase 2)", () => {
+    it("forwards documentCbor verbatim as DidOp.docCbor for CREATE/UPDATE", async () => {
+      // Pre-encoded DID Document bytes; the service must pass them straight
+      // through to txBuilder without re-encoding.
+      const cborBytes = new Uint8Array([
+        0xa2, 0x62, 0x69, 0x64, 0x70, 0x64, 0x69, 0x64, 0x3a, 0x77, 0x65, 0x62, 0x3a, 0x61, 0x3a,
+        0x62, 0x3a, 0x63,
+      ]);
+      setupPending({
+        userDidAnchors: [{ ...PENDING_DID, documentCbor: cborBytes as unknown as null }],
+      });
+
+      const service = container.resolve(AnchorBatchService);
+      await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      expect(mockBuildAuxiliaryData).toHaveBeenCalledTimes(1);
+      const auxInput = mockBuildAuxiliaryData.mock.calls[0][0];
+      expect(auxInput.ops).toHaveLength(1);
+      const op = auxInput.ops[0];
+      expect(op.k).toBe("c");
+      expect(op.docCbor).toBeInstanceOf(Uint8Array);
+      expect(Array.from(op.docCbor)).toEqual(Array.from(cborBytes));
+      // doc field must not be present when docCbor is supplied
+      expect(op.doc).toBeUndefined();
+    });
+
+    it("falls back to minimal {id} doc when documentCbor is null (Backfill / §U)", async () => {
+      setupPending({
+        userDidAnchors: [{ ...PENDING_DID, documentCbor: null }],
+      });
+
+      const service = container.resolve(AnchorBatchService);
+      await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      const auxInput = mockBuildAuxiliaryData.mock.calls[0][0];
+      const op = auxInput.ops[0];
+      expect(op.docCbor).toBeUndefined();
+      expect(op.doc).toEqual({ id: PENDING_DID.did });
+    });
+
+    it("treats empty Uint8Array documentCbor as absent (defensive)", async () => {
+      setupPending({
+        userDidAnchors: [
+          { ...PENDING_DID, documentCbor: new Uint8Array(0) as unknown as null },
+        ],
+      });
+
+      const service = container.resolve(AnchorBatchService);
+      await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      const op = mockBuildAuxiliaryData.mock.calls[0][0].ops[0];
+      expect(op.docCbor).toBeUndefined();
+      expect(op.doc).toEqual({ id: PENDING_DID.did });
+    });
+
+    it("DEACTIVATE op never carries doc/docCbor regardless of stored cbor", async () => {
+      setupPending({
+        userDidAnchors: [
+          {
+            ...PENDING_DID,
+            operation: DidOperation.DEACTIVATE,
+            documentCbor: new Uint8Array([0xa0]) as unknown as null,
+            previousAnchorId: null,
+          },
+        ],
+      });
+
+      const service = container.resolve(AnchorBatchService);
+      await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      const op = mockBuildAuxiliaryData.mock.calls[0][0].ops[0];
+      expect(op.k).toBe("d");
+      expect(op.docCbor).toBeUndefined();
+      expect(op.doc).toBeUndefined();
     });
   });
 });

@@ -13,9 +13,11 @@
  */
 
 import * as CSL from "@emurgo/cardano-serialization-lib-nodejs";
+import { encode as cborEncode, decode as cborDecode } from "cbor-x";
 import {
   buildAuxiliaryData,
   buildAnchorTx,
+  measureMetadataSize,
   metadataByteSize,
   MAX_METADATA_TX_BYTES,
   type BuildAuxiliaryDataInput,
@@ -374,5 +376,146 @@ describe("buildAnchorTx — sign + serialize end-to-end", () => {
         currentSlot: 50_000_000,
       }),
     ).not.toThrow();
+  });
+});
+
+describe("DidOp.docCbor — Phase 2 chain inclusion (§8.3)", () => {
+  it("includes raw documentCbor bytes verbatim in metadata (no re-encode)", () => {
+    // Pre-encode a known DID Document; the chain bytes must match exactly.
+    const document = {
+      "@context": ["https://www.w3.org/ns/did/v1"],
+      id: "did:web:api.civicship.app:users:u_phase2",
+      verificationMethod: [
+        { id: "#key-1", type: "Ed25519VerificationKey2020", controller: "x" },
+      ],
+    };
+    const documentCbor = cborEncode(document);
+
+    const op: DidOp = {
+      k: "c",
+      did: "did:web:api.civicship.app:users:u_phase2",
+      h: "a".repeat(64),
+      docCbor: documentCbor,
+      prev: null,
+    };
+    const aux = buildAuxiliaryData(makeMinimalInput({ ops: [op] }));
+    const top = aux.metadata()!.get(CSL.BigNum.from_str("1985"))!.as_map();
+    const opMap = top.get_str("ops").as_list().get(0).as_map();
+    const docMeta = opMap.get_str("doc");
+
+    // Reassemble bytes from the chunked list (or single Bytes element).
+    let reassembled: Uint8Array;
+    if (docMeta.kind() === CSL.TransactionMetadatumKind.Bytes) {
+      reassembled = docMeta.as_bytes();
+    } else {
+      const parts: Uint8Array[] = [];
+      const list = docMeta.as_list();
+      for (let i = 0; i < list.len(); i++) {
+        parts.push(list.get(i).as_bytes());
+      }
+      const total = parts.reduce((n, p) => n + p.length, 0);
+      reassembled = new Uint8Array(total);
+      let off = 0;
+      for (const p of parts) {
+        reassembled.set(p, off);
+        off += p.length;
+      }
+    }
+
+    // Byte-for-byte equality with the source CBOR.
+    expect(Array.from(reassembled)).toEqual(Array.from(documentCbor));
+
+    // Decoding the reassembled bytes restores the original document.
+    const decoded = cborDecode(reassembled);
+    expect(decoded).toEqual(document);
+  });
+
+  it("falls back to cborEncode(doc) when docCbor is not provided", () => {
+    const op: DidOp = {
+      k: "c",
+      did: "did:web:a:b:c",
+      h: "a".repeat(64),
+      doc: { id: "did:web:a:b:c", note: "phase1 fallback" },
+      prev: null,
+    };
+    const aux = buildAuxiliaryData(makeMinimalInput({ ops: [op] }));
+    const opMap = aux
+      .metadata()!
+      .get(CSL.BigNum.from_str("1985"))!
+      .as_map()
+      .get_str("ops")
+      .as_list()
+      .get(0)
+      .as_map();
+    const docMeta = opMap.get_str("doc");
+    expect(docMeta.kind()).toBe(CSL.TransactionMetadatumKind.Bytes);
+    const decoded = cborDecode(docMeta.as_bytes());
+    expect(decoded).toEqual({ id: "did:web:a:b:c", note: "phase1 fallback" });
+  });
+
+  it("rejects c/u ops with neither docCbor nor doc", () => {
+    const op = {
+      k: "c",
+      did: "did:web:a:b:c",
+      h: "a".repeat(64),
+      prev: null,
+    } as unknown as DidOp;
+    expect(() => buildAuxiliaryData(makeMinimalInput({ ops: [op] }))).toThrow(
+      /neither docCbor nor doc/,
+    );
+  });
+
+  it("measureMetadataSize reports a usable budget when stacking docCbor ops", () => {
+    // 5 KB synthetic CBOR blob per op — confirms the helper scales linearly
+    // and is suitable for the §8.4 size-budget loop in AnchorBatchService.
+    const blob = new Uint8Array(5000).fill(0xab);
+    const op: DidOp = {
+      k: "c",
+      did: "did:web:api.civicship.app:users:u_5kb",
+      h: "a".repeat(64),
+      docCbor: blob,
+      prev: null,
+    };
+    const oneOp = measureMetadataSize(makeMinimalInput({ ops: [op] }));
+    const twoOps = measureMetadataSize(
+      makeMinimalInput({
+        ops: [op, { ...op, did: "did:web:api.civicship.app:users:u_5kb_b" }],
+      }),
+    );
+    expect(oneOp).toBeGreaterThan(5000);
+    expect(twoOps).toBeGreaterThan(oneOp);
+    // 2 × 5KB + overhead must still fit in 16KB.
+    expect(twoOps).toBeLessThan(MAX_METADATA_TX_BYTES);
+  });
+
+  it("chunks a large documentCbor blob into <=64B byte segments", () => {
+    // 500-byte CBOR blob → 8 chunks of 64B + tail.
+    const blob = new Uint8Array(500);
+    for (let i = 0; i < blob.length; i++) blob[i] = i & 0xff;
+    const op: DidOp = {
+      k: "c",
+      did: "did:web:a:b:c",
+      h: "a".repeat(64),
+      docCbor: blob,
+      prev: null,
+    };
+    const aux = buildAuxiliaryData(makeMinimalInput({ ops: [op] }));
+    const docMeta = aux
+      .metadata()!
+      .get(CSL.BigNum.from_str("1985"))!
+      .as_map()
+      .get_str("ops")
+      .as_list()
+      .get(0)
+      .as_map()
+      .get_str("doc");
+    expect(docMeta.kind()).toBe(CSL.TransactionMetadatumKind.MetadataList);
+    const chunks = docMeta.as_list();
+    expect(chunks.len()).toBe(Math.ceil(500 / 64));
+    for (let i = 0; i < chunks.len(); i++) {
+      const ch = chunks.get(i);
+      expect(ch.kind()).toBe(CSL.TransactionMetadatumKind.Bytes);
+      expect(ch.as_bytes().length).toBeLessThanOrEqual(64);
+    }
   });
 });

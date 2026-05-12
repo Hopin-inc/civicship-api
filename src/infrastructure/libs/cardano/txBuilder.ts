@@ -39,7 +39,22 @@ export type DidOp =
       k: "c" | "u";
       did: string; // text; chunked when >64B (e.g. very long did:web)
       h: string; // doc_hash, 32B as 64 hex chars (no 0x prefix)
-      doc: Record<string, unknown>; // CBOR-encoded + chunked
+      /**
+       * DID Document body for chain inclusion (§3.3 / §8.3).
+       *
+       * Phase 2: callers SHOULD pass `docCbor` (raw bytes pre-encoded with
+       * `cbor-x` at DB-write time) so the bytes hashed for `h` are the exact
+       * bytes that land on chain (no re-encoding round-trip). When omitted,
+       * `doc` is `cborEncode()`d at metadata build time as a Phase 1
+       * fallback.
+       *
+       * Either `docCbor` or `doc` MUST be provided. When the op was emitted
+       * with `includeCbor=false` (DEACTIVATE / Backfill / metadata-budget
+       * exceeded — see §8.4) the caller should switch `k` to `"d"` or
+       * omit the op entirely; this struct does not encode "doc-less c/u".
+       */
+      docCbor?: Uint8Array;
+      doc?: Record<string, unknown>; // CBOR-encoded + chunked when docCbor absent
       prev?: string | null; // 64 hex chars or null/undefined
     }
   | {
@@ -202,6 +217,38 @@ function buildUtxoSet(
   return utxoSet;
 }
 
+/**
+ * Resolve the CBOR-encoded DID Document bytes for a c/u op. Prefer the raw
+ * `docCbor` blob (stored verbatim from DB, §8.3) so the hashed bytes match
+ * what lands on chain. Fall back to `cborEncode(op.doc)` for callers that
+ * have not yet migrated. Throws when neither is provided — c/u ops without
+ * a doc are not representable in metadata-1985.
+ *
+ * Buffer vs Uint8Array note (Gemini PR #1119 review): `Buffer` is a
+ * subclass of `Uint8Array`, so `instanceof Uint8Array` returns `true` for
+ * a Buffer and the no-op branch wins. That leaks `Buffer`-flavoured
+ * `.subarray()` semantics (which return a Buffer slice) into the chunker.
+ * Compare constructors directly so a real Buffer is always copied into
+ * a plain `Uint8Array` and the downstream chunking is byte-for-byte
+ * predictable across runtimes.
+ */
+function resolveDocCborBytes(
+  op: Extract<DidOp, { k: "c" | "u" }>,
+): Uint8Array {
+  if (op.docCbor) {
+    return op.docCbor.constructor === Uint8Array
+      ? (op.docCbor as Uint8Array)
+      : new Uint8Array(op.docCbor);
+  }
+  if (op.doc === undefined) {
+    throw new Error(
+      `metadata op '${op.k}' for did '${op.did}' has neither docCbor nor doc; ` +
+        "one is required (§5.1.6). Pass DEACTIVATE as k='d' if no doc is intended.",
+    );
+  }
+  return cborEncode(op.doc);
+}
+
 function buildOpMap(op: DidOp): CSL.TransactionMetadatum {
   const map = CSL.MetadataMap.new();
   map.insert_str("k", CSL.TransactionMetadatum.new_text(op.k));
@@ -221,8 +268,10 @@ function buildOpMap(op: DidOp): CSL.TransactionMetadatum {
   }
   map.insert_str("h", CSL.TransactionMetadatum.new_text(op.h));
 
-  // doc — CBOR-encode then chunk to bytes-list (§5.1.6).
-  const docBytes = cborEncode(op.doc);
+  // doc — chunk pre-encoded CBOR bytes (preferred, §8.3 round-trip safe) or
+  // CBOR-encode the supplied `doc` as a Phase 1 fallback. One of the two
+  // MUST be present; otherwise we cannot satisfy §5.1.6 (c/u requires doc).
+  const docBytes = resolveDocCborBytes(op);
   map.insert_str("doc", bytesAsChunkedList(docBytes));
 
   // prev
@@ -323,6 +372,18 @@ export function buildAuxiliaryData(
  */
 export function metadataByteSize(aux: CSL.AuxiliaryData): number {
   return aux.to_bytes().length;
+}
+
+/**
+ * Build AuxiliaryData and immediately measure it.
+ *
+ * Convenience for the size-budget loop in `AnchorBatchService.buildDidOps`
+ * — we need to know "does adding this op's documentCbor still fit under
+ * 16 KB?" without duplicating the metadata layout logic. Pure function;
+ * cheap to call repeatedly with subsets of ops.
+ */
+export function measureMetadataSize(input: BuildAuxiliaryDataInput): number {
+  return metadataByteSize(buildAuxiliaryData(input));
 }
 
 /** Blockfrost UTXO shape (subset, what we need from `addressesUtxosAll`). */
