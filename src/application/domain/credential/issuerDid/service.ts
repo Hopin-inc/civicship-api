@@ -339,12 +339,13 @@ function bytesToHex(bytes: Uint8Array): string {
  * optional `0x` prefix on the off chance a caller hand-feeds one in
  * (the cache itself never stores a prefix).
  *
- * Validates each pair: `Number.parseInt(..., 16)` returns `NaN` for
- * non-hex characters which would silently coerce to `0` in a
- * `Uint8Array` and produce a wrong-key disaster downstream. Explicit
- * `NaN` check surfaces the bad input immediately. (Gemini review on
- * PR #1120: matches the inline regex check in `issuerDidBuilder.ts`'s
- * private `hexToBytes`.)
+ * Validates each pair with a strict regex (`/^[0-9a-fA-F]{2}$/`). The
+ * earlier NaN-only guard had a real defect noted by Gemini on PR #1123:
+ * `Number.parseInt("1z", 16)` returns `1` (parseInt stops at the first
+ * invalid char), so a non-hex character would slip through and produce a
+ * silently truncated value in the resulting `Uint8Array`. Matching the
+ * regex used by `issuerDidBuilder.ts`'s sibling `hexToBytes` makes the
+ * two sites byte-for-byte equivalent and rejects any non-hex input.
  */
 function hexToBytes(hex: string): Uint8Array {
   const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
@@ -353,11 +354,11 @@ function hexToBytes(hex: string): Uint8Array {
   }
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++) {
-    const value = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
-    if (Number.isNaN(value)) {
+    const pair = clean.slice(i * 2, i * 2 + 2);
+    if (!/^[0-9a-fA-F]{2}$/.test(pair)) {
       throw new Error(`hex string contains non-hex character at offset ${i * 2}`);
     }
-    out[i] = value;
+    out[i] = Number.parseInt(pair, 16);
   }
   return out;
 }
