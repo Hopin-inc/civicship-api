@@ -143,6 +143,38 @@ export default class VcIssuanceRepository implements IVcIssuanceRepository {
     });
   }
 
+  /**
+   * §14.2 / §E — DID DEACTIVATE cascade. Returns every VC issuance row
+   * for `userId` whose `revokedAt` is still null, oldest first so the
+   * caller can revoke deterministically (matters for log ordering when a
+   * user has many VCs).
+   *
+   * Uses the caller-supplied `tx` when present so the read shares the
+   * snapshot used by the surrounding StatusList writes; otherwise opens
+   * an issuer-scoped public transaction so RLS still applies.
+   */
+  async findActiveByUserId(
+    ctx: IContext,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<VcIssuanceRow[]> {
+    const persisted = tx
+      ? await tx.vcIssuanceRequest.findMany({
+          where: { userId, revokedAt: null },
+          orderBy: { createdAt: "asc" },
+        })
+      : await this.issuer.public(ctx, (innerTx) =>
+          innerTx.vcIssuanceRequest.findMany({
+            where: { userId, revokedAt: null },
+            orderBy: { createdAt: "asc" },
+          }),
+        );
+    return persisted.map((row) => {
+      const { issuerDid, subjectDid } = decodeIssuerSubjectFromJwt(row.vcJwt, row.id);
+      return toRow(row, issuerDid, subjectDid);
+    });
+  }
+
   async create(
     ctx: IContext,
     input: CreateVcIssuanceInput,

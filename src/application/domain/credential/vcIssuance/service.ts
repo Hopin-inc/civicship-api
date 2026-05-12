@@ -188,6 +188,91 @@ export default class VcIssuanceService {
   }
 
   /**
+   * §14.2 / §E — DID DEACTIVATE cascade revoke.
+   *
+   * Used by `UserDidUseCase.deactivateDid*` to revoke every still-live VC
+   * issued for the deactivated user's subject DID. Looks up unrevoked
+   * rows via the repository's `revokedAt IS NULL` filter, then delegates
+   * each bit-flip + `revokedAt` stamp to `StatusListService.revokeVc` so
+   * the StatusList side stays the single owner of the revocation
+   * mechanics.
+   *
+   * Behaviour notes:
+   *   - Idempotent: rows with a non-null `revokedAt` are filtered at the
+   *     repository layer, so a second cascade for the same user is a
+   *     no-op (no StatusList re-sign churn).
+   *   - Skips rows that were issued before §D StatusList wiring
+   *     (statusListIndex / statusListCredential null). These rows have
+   *     no bit to flip; logging avoids silent data loss while keeping
+   *     the cascade unblockable.
+   *   - Returns the count of rows whose StatusList bit was actually
+   *     flipped — useful for the caller to log "revoked N VCs for user
+   *     X" without re-querying.
+   *   - `tx` is REQUIRED rather than optional because the cascade is
+   *     only ever invoked from inside the DEACTIVATE transaction; a
+   *     standalone caller would risk leaving a half-revoked StatusList
+   *     and a still-active DID.
+   *
+   * Performance / scaling (Gemini review on PR #1128, Phase 2 deferred):
+   * the per-VC `revokeVc` call re-decodes, flips, re-compresses, and
+   * **re-signs** the StatusList VC every iteration. When a single user
+   * holds many VCs that all sit on the same StatusList (steady-state
+   * for civicship: one list per ~13 years, §7.3) this re-signs the same
+   * list N times. Acceptable now because cascades fire on user-delete
+   * (low frequency) and N is single-digit per user; revisit with a
+   * `revokeVcsBulk(listKey, indexes[])` repository write + single re-sign
+   * in Phase 2 once admin bulk-purge tooling is in scope. TODO marker
+   * lives next to `statusListService.revokeVc` below for grep
+   * traceability.
+   */
+  async cascadeRevokeForUser(
+    ctx: IContext,
+    userId: string,
+    tx: Prisma.TransactionClient,
+    reason: string = "did-deactivated",
+  ): Promise<number> {
+    const active = await this.repository.findActiveByUserId(ctx, userId, tx);
+    if (active.length === 0) {
+      logger.debug("[VcIssuanceService] cascadeRevokeForUser: no active VCs", { userId });
+      return 0;
+    }
+
+    let revoked = 0;
+    for (const vc of active) {
+      if (vc.statusListIndex === null || vc.statusListCredential === null) {
+        // Pre-§D legacy / replay rows have no StatusList wiring — nothing
+        // to flip. Log so operators can backfill if needed; do NOT throw
+        // because that would block the DEACTIVATE for unrelated rows.
+        logger.warn(
+          "[VcIssuanceService] cascadeRevokeForUser: skipping VC without StatusList wiring",
+          { userId, vcRequestId: vc.id },
+        );
+        continue;
+      }
+      // TODO(Phase 2 — Gemini PR #1128): batch by listKey and call a
+      // single `StatusListService.revokeVcsBulk` so the StatusList VC
+      // is decoded / re-signed once per list rather than once per VC.
+      // Out of scope for the cascade-revoke PR (deferred until admin
+      // bulk-purge tooling lands; cascade frequency is low enough that
+      // the loop is fine for the user-delete trigger).
+      await this.statusListService.revokeVc(
+        ctx,
+        { vcRequestId: vc.id, reason },
+        tx,
+      );
+      revoked += 1;
+    }
+
+    logger.debug("[VcIssuanceService] cascadeRevokeForUser", {
+      userId,
+      candidateCount: active.length,
+      revokedCount: revoked,
+      reason,
+    });
+    return revoked;
+  }
+
+  /**
    * §5.2.2: build a VC for the supplied claims, sign-stub it, and persist
    * the resulting row. Anchor wiring (vcAnchorId / anchorLeafIndex) is
    * left to the weekly batch.
