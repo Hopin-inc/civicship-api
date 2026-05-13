@@ -978,12 +978,17 @@ export default class ReportUseCase {
     // community. If they pass `communityId`, it has to match the
     // header-bound scope; if they omit it, we inject ctx.communityId so
     // the underlying repo doesn't fan out across the platform.
+    // `getCommunityIdFromCtx` throws when the header is missing — the
+    // IsCommunityOwner rule already rejects that state, but rechecking
+    // here keeps the cross-community guarantee local to this method
+    // rather than implicit in the authz layer.
     let scopedCommunityId = args.communityId ?? undefined;
     if (!ctx.isAdmin) {
-      if (args.communityId && args.communityId !== ctx.communityId) {
+      const ctxCommunityId = getCommunityIdFromCtx(ctx);
+      if (args.communityId && args.communityId !== ctxCommunityId) {
         throw new AuthorizationError("communityId does not match the current scope");
       }
-      scopedCommunityId = ctx.communityId ?? undefined;
+      scopedCommunityId = ctxCommunityId;
     }
 
     const result = await this.service.getAllReports(ctx, {

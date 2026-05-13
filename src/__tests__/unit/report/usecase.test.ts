@@ -1137,6 +1137,13 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
     ).rejects.toThrow(/communityId does not match the current scope/);
   });
 
+  it("browseAllReports rejects non-admin callers with no x-community-id header (defence-in-depth)", async () => {
+    const ownerCtx = {} as IContext;
+    await expect(usecase.browseAllReports({}, ownerCtx)).rejects.toThrow(
+      /communityId is required/,
+    );
+  });
+
   it("viewReportSummaries clamps `first` and forwards cursor", async () => {
     await usecase.viewReportSummaries(
       { cursor: "comm-cursor", first: 50 },
