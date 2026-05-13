@@ -273,48 +273,50 @@ async function main(): Promise<number> {
         const did = buildUserDid(user.id);
         const { cbor, hashHex } = encodeAndHashUserDoc(user.id);
 
-        await prismaClient.$transaction(async (tx) => {
-          // INTERNAL did issuance row (idempotent — should be missing
-          // by virtue of the WHERE in findUsersWithoutInternal, but
-          // race-safe via the `didMethod` filter below)
-          const existing = await tx.didIssuanceRequest.findFirst({
-            where: { userId: user.id, didMethod: DidMethod.INTERNAL },
-            select: { id: true },
-          });
-          if (!existing) {
-            await tx.didIssuanceRequest.create({
-              data: {
-                userId: user.id,
-                didMethod: DidMethod.INTERNAL,
-                status: DidIssuanceStatus.COMPLETED,
-                didValue: did,
-                completedAt: new Date(),
-                processedAt: new Date(),
-              },
-            });
-            insertedDids += 1;
-          }
-          // Skip anchor INSERT if a CREATE anchor already exists for this user
-          // (e.g. backfill was partially run).
-          const existingAnchor = await tx.userDidAnchor.findFirst({
-            where: { userId: user.id, operation: DidOperation.CREATE },
-            select: { id: true },
-          });
-          if (!existingAnchor) {
-            await tx.userDidAnchor.create({
-              data: {
-                userId: user.id,
-                did,
-                operation: DidOperation.CREATE,
-                documentHash: hashHex,
-                documentCbor: Buffer.from(cbor),
-                network: platform.chainNetwork,
-                status: AnchorStatus.PENDING,
-              },
-            });
-            insertedAnchors += 1;
-          }
+        // Idempotent INSERTs without an outer interactive transaction.
+        // Prisma's default `$transaction` timeout is 5 s and we burn it
+        // easily on the first cold-start cycle (4 queries × ~hundreds of
+        // ms each, × dozens of users). Per-user atomicity is not
+        // strictly needed here: there are no unique constraints on
+        // `(userId, didMethod)` or `(userId, operation)`, both create
+        // paths gate on a `findFirst` existence check, and a partial-
+        // state crash is recoverable simply by re-running the script
+        // (the next pass skips the existing row).
+        const existing = await prismaClient.didIssuanceRequest.findFirst({
+          where: { userId: user.id, didMethod: DidMethod.INTERNAL },
+          select: { id: true },
         });
+        if (!existing) {
+          await prismaClient.didIssuanceRequest.create({
+            data: {
+              userId: user.id,
+              didMethod: DidMethod.INTERNAL,
+              status: DidIssuanceStatus.COMPLETED,
+              didValue: did,
+              completedAt: new Date(),
+              processedAt: new Date(),
+            },
+          });
+          insertedDids += 1;
+        }
+        const existingAnchor = await prismaClient.userDidAnchor.findFirst({
+          where: { userId: user.id, operation: DidOperation.CREATE },
+          select: { id: true },
+        });
+        if (!existingAnchor) {
+          await prismaClient.userDidAnchor.create({
+            data: {
+              userId: user.id,
+              did,
+              operation: DidOperation.CREATE,
+              documentHash: hashHex,
+              documentCbor: Buffer.from(cbor),
+              network: platform.chainNetwork,
+              status: AnchorStatus.PENDING,
+            },
+          });
+          insertedAnchors += 1;
+        }
       }
       return {
         value: { inserted: insertedAnchors },
