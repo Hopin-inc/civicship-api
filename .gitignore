@@ -88,6 +88,7 @@ web_modules/
 .env.local
 .env.dev
 .env.prd
+.env.keys
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -161,3 +162,4 @@ tmp/
 
 # NMKR generated files
 /src/infrastructure/libs/nmkr/types/*.d.ts
+kms-poc-sa.json

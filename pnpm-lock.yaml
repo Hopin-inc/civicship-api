@@ -50,9 +50,6 @@ importers:
       '@escape.tech/graphql-armor-types':
         specifier: ^0.7.0
         version: 0.7.0
-      '@google-cloud/kms':
-        specifier: ^5.5.0
-        version: 5.5.0
       '@google-cloud/logging-winston':
         specifier: ^6.0.0
         version: 6.0.1(winston@3.17.0)
@@ -234,6 +231,9 @@ importers:
       '@faker-js/faker':
         specifier: ^9.7.0
         version: 9.9.0
+      '@google-cloud/kms':
+        specifier: ^5.5.0
+        version: 5.5.0
       '@graphql-codegen/cli':
         specifier: ^5.0.7
         version: 5.0.7(@types/node@22.16.3)(bufferutil@4.0.9)(graphql@16.10.0)(typescript@5.8.3)(utf-8-validate@6.0.5)
