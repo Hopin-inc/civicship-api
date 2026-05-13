@@ -15,5 +15,5 @@ extend type Query {
   report conversation.
   """
   analyticsCommunity(input: AnalyticsCommunityInput!): AnalyticsCommunityPayload!
-    @authz(rules: [IsAdmin])
+    @authz(compositeRules: [{ or: [IsCommunityOwner, IsAdmin] }])
 }
