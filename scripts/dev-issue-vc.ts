@@ -71,6 +71,7 @@ interface Flags {
   subjectDid: string;
   claims: Record<string, unknown>;
   api: string;
+  communityId: string;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -82,8 +83,16 @@ function parseFlags(argv: string[]): Flags {
   }
   const uid = map.get("uid");
   const userId = map.get("user-id");
+  const communityId = map.get("community-id");
   if (!uid) throw new Error("--uid=<firebase-uid> is required");
   if (!userId) throw new Error("--user-id=<civicship user.id> is required");
+  if (!communityId) {
+    throw new Error(
+      "--community-id=<civicship Community.id> is required " +
+        "(the API enforces `x-community-id` on authenticated requests, " +
+        "since callers may belong to multiple communities).",
+    );
+  }
 
   const claimsRaw = map.get("claims") ?? "{}";
   let claims: Record<string, unknown>;
@@ -100,6 +109,7 @@ function parseFlags(argv: string[]): Flags {
     subjectDid: map.get("subject-did") ?? `${SUBJECT_DID_PREFIX}${userId}`,
     claims,
     api: map.get("api") ?? DEFAULT_API,
+    communityId,
   };
 }
 
@@ -222,6 +232,10 @@ async function callIssueVc(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${idToken}`,
+      // The auth middleware rejects authenticated calls without an explicit
+      // community context — callers may sit in multiple communities so the
+      // server cannot infer one. Mirror the same header the frontend sends.
+      "x-community-id": flags.communityId,
     },
     body: JSON.stringify({ query, variables }),
   });
