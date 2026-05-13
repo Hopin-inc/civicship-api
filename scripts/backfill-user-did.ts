@@ -330,19 +330,40 @@ async function main(): Promise<number> {
   let chunkIdx = 0;
   let confirmedTotal = 0;
   let failedTotal = 0;
+  let bailOut = false;
 
-  for (;;) {
+  // Drain PENDING anchors one chunk at a time. The outer loop terminates
+  // when `findPendingAnchors` returns an empty array (all CONFIRMED) or
+  // when a chunk fails (set `bailOut=true`; operator must reset FAILED rows
+  // back to PENDING before re-running).
+  while (!bailOut) {
     const chunk = await findPendingAnchors(flags.chunkSize);
     if (chunk.length === 0) break;
     chunkIdx += 1;
 
     const ops: DidOp[] = chunk.map((row) => {
-      const docCbor = row.documentCbor ?? Buffer.alloc(0);
+      if (!row.documentCbor) {
+        // Doc-less CREATE op cannot be represented in metadata-1985
+        // (§5.1.6 — c/u requires `doc`). A null `documentCbor` here
+        // means an upstream insert was buggy; better to fail loud than
+        // anchor a corrupted op.
+        throw new Error(
+          `UserDidAnchor ${row.id} has null documentCbor; cannot anchor CREATE without doc body`,
+        );
+      }
+      // `documentCbor` from Prisma is a `Buffer` (subclass of Uint8Array).
+      // CSL chunking treats Buffer-flavoured slices differently from a
+      // plain Uint8Array, so we coerce to the latter for byte-for-byte
+      // predictability — mirrors `resolveDocCborBytes` in txBuilder.ts.
+      const docCbor =
+        row.documentCbor.constructor === Uint8Array
+          ? (row.documentCbor as Uint8Array)
+          : new Uint8Array(row.documentCbor);
       return {
         k: "c",
         did: row.did,
         h: row.documentHash,
-        docCbor: docCbor instanceof Uint8Array ? new Uint8Array(docCbor) : new Uint8Array(docCbor),
+        docCbor,
         prev: null,
       };
     });
@@ -413,6 +434,7 @@ async function main(): Promise<number> {
       // Bail out — re-running picks up the FAILED rows once the operator
       // resets them to PENDING (manual). Continuing would keep burning
       // ADA on the same broken state.
+      bailOut = true;
       break;
     }
     confirmedTotal += chunk.length;
