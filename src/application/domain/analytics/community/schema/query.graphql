@@ -2,10 +2,12 @@
 # Analytics Community Query Definitions
 #
 # Per-community analytics view (member stats, stage distribution,
-# trailing-window trends, cohort retention, alerts) for admin
-# operators. Bypasses per-community RLS under the hood
-# (ctx.issuer.public) because admins legitimately need to see across
-# every community at once.
+# trailing-window trends, cohort retention, alerts) for community
+# owners (scoped to their own community) and SYS_ADMIN (any community).
+# The usecase pins owners to `ctx.communityId` so cross-community reads
+# stay limited to admins. Internals use `ctx.issuer.public` to bypass
+# per-community RLS — authorization is enforced at the GraphQL layer
+# (`@authz`) plus the usecase's explicit `input.communityId` check.
 # ------------------------------
 extend type Query {
   """
