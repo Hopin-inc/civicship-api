@@ -12,7 +12,20 @@ export default class VCIssuanceRequestConverter {
 
     if (!filter) return {};
 
-    if (filter.status) conditions.push({ status: filter.status });
+    if (filter.status) {
+      // The Phase-1 internal VcIssuance domain (§5.2.2) introduced
+      // `IN_PROGRESS` to the shared `VcIssuanceStatus` GraphQL enum, but the
+      // legacy `VcIssuanceRequest` Prisma model only knows
+      // `PENDING / PROCESSING / COMPLETED / FAILED`. Map the new value to
+      // the closest legacy state so callers filtering with the merged
+      // GraphQL enum still get a sensible result; everything else passes
+      // through unchanged.
+      const status =
+        filter.status === "IN_PROGRESS"
+          ? VcIssuanceStatus.PROCESSING
+          : (filter.status as VcIssuanceStatus);
+      conditions.push({ status });
+    }
     if (filter.userIds?.length) {
       conditions.push({ userId: { in: filter.userIds } });
     }
@@ -29,7 +42,8 @@ export default class VCIssuanceRequestConverter {
   }
 
   toVCIssuanceRequestInput = (evaluation: PrismaEvaluation): EvaluationCredentialPayload => {
-    const { status, opportunity, opportunitySlot, user, evaluator } = this.validateParticipationHasOpportunity(evaluation);
+    const { status, opportunity, opportunitySlot, user, evaluator } =
+      this.validateParticipationHasOpportunity(evaluation);
 
     return {
       claims: {
@@ -58,7 +72,7 @@ export default class VCIssuanceRequestConverter {
     evaluations: Array<{
       evaluation: PrismaEvaluation;
       userId: string;
-    }>
+    }>,
   ): Prisma.VcIssuanceRequestCreateManyInput[] {
     return evaluations.map(({ evaluation, userId }) => {
       const { claims } = this.toVCIssuanceRequestInput(evaluation);

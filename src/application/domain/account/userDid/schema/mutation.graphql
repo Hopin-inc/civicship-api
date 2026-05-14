@@ -1,0 +1,31 @@
+# ------------------------------
+# UserDid Mutation Definitions (§5.2.1)
+# ------------------------------
+extend type Mutation {
+  """
+  ユーザー DID を新規作成する。CREATE-op の UserDidAnchor を PENDING で永続化する。
+  自分の userId のみ許可。`permission.userId` と `input.userId` が一致しなければならない。
+  """
+  createUserDid(
+    input: CreateUserDidInput!
+    permission: CheckIsSelfPermissionInput!
+  ): UserDidAnchor! @authz(rules: [IsSelf])
+
+  """
+  ユーザー DID を deactivate する。DEACTIVATE-op の UserDidAnchor を PENDING で永続化する。
+  自分の userId のみ許可。
+  """
+  deactivateUserDid(userId: ID!, permission: CheckIsSelfPermissionInput!): UserDidAnchor!
+    @authz(rules: [IsSelf])
+}
+
+# ------------------------------
+# UserDid Input Definitions
+# ------------------------------
+input CreateUserDidInput {
+  userId: ID!
+  """
+  対象 chain network。未指定時は CARDANO_MAINNET (§5.2.1)。
+  """
+  network: ChainNetwork
+}

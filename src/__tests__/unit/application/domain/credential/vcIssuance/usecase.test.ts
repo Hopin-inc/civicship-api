@@ -1,0 +1,266 @@
+/**
+ * Unit tests for `VcIssuanceUseCase` authorization (review feedback for
+ * PR #1101).
+ *
+ * The schema gates reads on `IsUser` (logged-in) only, so the usecase
+ * layer enforces the "self-or-admin" rule. We also verify that the
+ * id-based `viewVcIssuance` query goes through `ctx.issuer.public` even
+ * for reads (Minor #5 — RLS consistency).
+ */
+
+import "reflect-metadata";
+import { container } from "tsyringe";
+import VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
+import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
+import type { IContext } from "@/types/server";
+import type { VcIssuanceRow } from "@/application/domain/credential/vcIssuance/data/type";
+
+const SELF_USER_ID = "user-self";
+const OTHER_USER_ID = "user-other";
+
+function makeRow(overrides: Partial<VcIssuanceRow> = {}): VcIssuanceRow {
+  return {
+    id: "vc-1",
+    userId: SELF_USER_ID,
+    evaluationId: null,
+    issuerDid: "did:web:api.civicship.app",
+    subjectDid: `did:web:api.civicship.app:users:${SELF_USER_ID}`,
+    vcFormat: "INTERNAL_JWT",
+    vcJwt: "h.p.s",
+    statusListIndex: null,
+    statusListCredential: null,
+    vcAnchorId: null,
+    anchorLeafIndex: null,
+    status: "COMPLETED",
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    completedAt: null,
+    revokedAt: null,
+    ...overrides,
+  };
+}
+
+function makeIssuer() {
+  return {
+    public: jest
+      .fn()
+      .mockImplementation(async (_ctx: IContext, cb: (tx: unknown) => unknown) =>
+        cb({ sentinel: "tx" }),
+      ),
+  };
+}
+
+function makeCtx(overrides: Partial<IContext> = {}): IContext {
+  return {
+    issuer: makeIssuer(),
+    loaders: {} as never,
+    communityId: "community-1",
+    currentUser: { id: SELF_USER_ID } as never,
+    isAdmin: false,
+    ...overrides,
+  } as IContext;
+}
+
+describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
+  let mockService: jest.Mocked<
+    Pick<VcIssuanceService, "findVcById" | "findVcsByUserId" | "issueVc" | "generateInclusionProof">
+  >;
+  // Phase 1.5: the usecase now also depends on StatusListService for the
+  // revoke flow. The legacy authz tests below don't exercise it, but we
+  // still need a registration so the container can construct the usecase.
+  let mockStatusListService: { revokeVc: jest.Mock };
+  let usecase: VcIssuanceUseCase;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    container.reset();
+
+    mockService = {
+      findVcById: jest.fn(),
+      findVcsByUserId: jest.fn(),
+      issueVc: jest.fn(),
+      generateInclusionProof: jest.fn(),
+    };
+    mockStatusListService = {
+      revokeVc: jest.fn(),
+    };
+
+    container.register("VcIssuanceService", { useValue: mockService });
+    container.register("StatusListService", { useValue: mockStatusListService });
+    container.register("VcIssuanceUseCase", { useClass: VcIssuanceUseCase });
+
+    usecase = container.resolve(VcIssuanceUseCase);
+  });
+
+  describe("viewVcIssuance (ownership check — Major #3)", () => {
+    it("returns null when the row is owned by another user", async () => {
+      mockService.findVcById.mockResolvedValueOnce(makeRow({ userId: OTHER_USER_ID }));
+      const ctx = makeCtx();
+
+      const result = await usecase.viewVcIssuance(ctx, "vc-1");
+
+      expect(result).toBeNull();
+    });
+
+    it("returns the presented row when the caller owns it", async () => {
+      mockService.findVcById.mockResolvedValueOnce(makeRow({ userId: SELF_USER_ID }));
+      const ctx = makeCtx();
+
+      const result = await usecase.viewVcIssuance(ctx, "vc-1");
+
+      expect(result).not.toBeNull();
+      expect(result?.id).toBe("vc-1");
+    });
+
+    it("admins can read any user's VC", async () => {
+      mockService.findVcById.mockResolvedValueOnce(makeRow({ userId: OTHER_USER_ID }));
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      const result = await usecase.viewVcIssuance(ctx, "vc-1");
+
+      expect(result).not.toBeNull();
+    });
+
+    it("returns null when no row matches the id", async () => {
+      mockService.findVcById.mockResolvedValueOnce(null);
+      const ctx = makeCtx();
+
+      const result = await usecase.viewVcIssuance(ctx, "missing");
+
+      expect(result).toBeNull();
+    });
+
+    it("wraps the read in ctx.issuer.public for RLS consistency (Minor #5)", async () => {
+      mockService.findVcById.mockResolvedValueOnce(null);
+      const ctx = makeCtx();
+
+      await usecase.viewVcIssuance(ctx, "vc-1");
+
+      // The fake `public` is invoked exactly once; the row lookup
+      // happens inside its callback.
+      expect((ctx.issuer.public as jest.Mock).mock.calls).toHaveLength(1);
+    });
+  });
+
+  describe("viewVcIssuancesByUser (caller binding — Major #4)", () => {
+    it("throws AuthorizationError when querying another user", async () => {
+      const ctx = makeCtx();
+
+      await expect(usecase.viewVcIssuancesByUser(ctx, OTHER_USER_ID)).rejects.toBeInstanceOf(
+        AuthorizationError,
+      );
+      expect(mockService.findVcsByUserId).not.toHaveBeenCalled();
+    });
+
+    it("returns the list when the caller asks about themselves", async () => {
+      mockService.findVcsByUserId.mockResolvedValueOnce([makeRow()]);
+      const ctx = makeCtx();
+
+      const result = await usecase.viewVcIssuancesByUser(ctx, SELF_USER_ID);
+
+      expect(result).toHaveLength(1);
+    });
+
+    it("admins can list any user's VCs", async () => {
+      mockService.findVcsByUserId.mockResolvedValueOnce([makeRow({ userId: OTHER_USER_ID })]);
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      const result = await usecase.viewVcIssuancesByUser(ctx, OTHER_USER_ID);
+
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe("getInclusionProof (§5.4.6)", () => {
+    it("returns null when the service yields null (PENDING / missing)", async () => {
+      mockService.generateInclusionProof.mockResolvedValueOnce(null);
+      const ctx = makeCtx();
+
+      const result = await usecase.getInclusionProof(ctx, "vc-x");
+      expect(result).toBeNull();
+    });
+
+    it("returns the presented proof when the service yields one", async () => {
+      const proof = {
+        vcId: "vc-1",
+        vcJwt: "h.p.s",
+        vcAnchorId: "vca-1",
+        rootHash: "ab".repeat(32),
+        chainTxHash: "cd".repeat(32),
+        proofPath: ["ee".repeat(32)],
+        leafIndex: 0,
+        blockHeight: 999,
+      };
+      mockService.generateInclusionProof.mockResolvedValueOnce(proof);
+      const ctx = makeCtx();
+
+      const result = await usecase.getInclusionProof(ctx, "vc-1");
+      expect(result).toEqual(proof);
+    });
+  });
+
+  describe("revokeUserVc (Phase 1.5)", () => {
+    it("invokes StatusListService.revokeVc and returns the updated row", async () => {
+      const liveRow = makeRow({ revokedAt: null });
+      const revokedAt = new Date("2026-05-10T12:00:00Z");
+      const revokedRow = makeRow({ revokedAt });
+
+      mockService.findVcById
+        .mockResolvedValueOnce(liveRow)
+        .mockResolvedValueOnce(revokedRow);
+      mockStatusListService.revokeVc.mockResolvedValueOnce(undefined);
+
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      const result = await usecase.revokeUserVc(ctx, {
+        vcId: "vc-1",
+        reason: "user-requested",
+      });
+
+      expect(mockStatusListService.revokeVc).toHaveBeenCalledTimes(1);
+      expect(mockStatusListService.revokeVc).toHaveBeenCalledWith(
+        ctx,
+        { vcRequestId: "vc-1", reason: "user-requested" },
+        expect.anything(),
+      );
+      expect(result.revokedAt).toEqual(revokedAt);
+    });
+
+    it("is idempotent: already-revoked rows are returned without re-invoking StatusList", async () => {
+      const revokedAt = new Date("2026-05-09T12:00:00Z");
+      const alreadyRevoked = makeRow({ revokedAt });
+      mockService.findVcById.mockResolvedValueOnce(alreadyRevoked);
+
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      const result = await usecase.revokeUserVc(ctx, { vcId: "vc-1" });
+
+      expect(mockStatusListService.revokeVc).not.toHaveBeenCalled();
+      expect(result.revokedAt).toEqual(revokedAt);
+    });
+
+    it("throws NotFoundError when no row matches the supplied vcId", async () => {
+      mockService.findVcById.mockResolvedValueOnce(null);
+
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      await expect(usecase.revokeUserVc(ctx, { vcId: "missing" })).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
+      expect(mockStatusListService.revokeVc).not.toHaveBeenCalled();
+    });
+
+    it("opens exactly one ctx.issuer.public transaction for the whole flow", async () => {
+      mockService.findVcById
+        .mockResolvedValueOnce(makeRow({ revokedAt: null }))
+        .mockResolvedValueOnce(makeRow({ revokedAt: new Date() }));
+      mockStatusListService.revokeVc.mockResolvedValueOnce(undefined);
+
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      await usecase.revokeUserVc(ctx, { vcId: "vc-1" });
+
+      expect((ctx.issuer.public as jest.Mock).mock.calls).toHaveLength(1);
+    });
+  });
+});

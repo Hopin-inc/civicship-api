@@ -23,8 +23,23 @@ export default class TestDataSourceHelper {
 
     await this.db.participationStatusHistory.deleteMany();
 
+    // Phase 1 (DID / VC internalization): anchors and StatusList rows must be
+    // cleaned up before users/evaluations because:
+    //   - UserDidAnchor.user is `onDelete: Restrict`
+    //   - VcIssuanceRequest references VcAnchor (FK; nullable but row-bound)
+    //   - StatusListCredential is independent but cleared for hygiene
+    await this.db.userDidAnchor.deleteMany();
     await this.db.vcIssuanceRequest.deleteMany();
+    await this.db.vcAnchor.deleteMany();
+    await this.db.transactionAnchor.deleteMany();
+    await this.db.statusListCredential.deleteMany();
     await this.db.didIssuanceRequest.deleteMany();
+    // IssuerDidKey rows (KMS key registry) have a UNIQUE constraint on
+    // `kms_key_resource_name` and persisted across tests prior to this — the
+    // repository tests reuse the same KMS resource names, and the multi-key
+    // serving acceptance test routes through the production KmsSigner when
+    // stale rows remain, which fails without GCP credentials in CI.
+    await this.db.issuerDidKey.deleteMany();
     await this.db.evaluation.deleteMany();
     await this.db.participation.deleteMany();
 

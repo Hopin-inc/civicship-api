@@ -39,6 +39,7 @@ module.exports = {
     "<rootDir>/src/__tests__/helper/*.*",
     "<rootDir>/src/__tests__/.*/helpers\\.ts",
     "<rootDir>/src/__tests__/.*/fixtures\\.ts",
+    "<rootDir>/src/__tests__/.*/__helpers__/.*",
     "<rootDir>/dist/",
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],

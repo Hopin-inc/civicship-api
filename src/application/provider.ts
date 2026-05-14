@@ -107,6 +107,7 @@ import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
+import { DidDocumentResolver } from "@/infrastructure/libs/did/didDocumentResolver";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
@@ -136,6 +137,54 @@ import AnalyticsPlatformService from "@/application/domain/analytics/platform/se
 import AnalyticsUseCase from "@/application/domain/analytics/usecase";
 import AnalyticsCommunityService from "@/application/domain/analytics/community/service";
 import AnalyticsCommunityUseCase from "@/application/domain/analytics/community/usecase";
+import AnchorBatchRepository from "@/application/domain/anchor/anchorBatch/data/repository";
+import {
+  AnchorBatchService,
+  type BlockfrostLatestSlotProvider,
+} from "@/application/domain/anchor/anchorBatch/service";
+import AnchorBatchUseCase from "@/application/domain/anchor/anchorBatch/usecase";
+import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
+
+// 🪪 User DID (§5.2 internal DID/VC, Phase 1 — Strategy A: stubs replaced
+//   with Prisma-backed repository, plus GraphQL resolver registration)
+import UserDidService from "@/application/domain/account/userDid/service";
+import UserDidUseCase from "@/application/domain/account/userDid/usecase";
+import UserDidAnchorRepository from "@/application/domain/account/userDid/data/repository";
+import UserDidResolver from "@/application/domain/account/userDid/controller/resolver";
+
+// 🪪 VC Issuance (§5.2 internal DID/VC, Phase 1 — Strategy A: stubs
+//   replaced with Prisma-backed repository, plus GraphQL resolver
+//   registration)
+import VcIssuanceService from "@/application/domain/credential/vcIssuance/service";
+import VcIssuanceUseCase from "@/application/domain/credential/vcIssuance/usecase";
+import VcIssuanceRepository from "@/application/domain/credential/vcIssuance/data/repository";
+import VcIssuanceResolver from "@/application/domain/credential/vcIssuance/controller/resolver";
+
+// 🪪 Issuer DID (§5.4.3 internal DID Document service, Phase 1 step 8)
+import IssuerDidService from "@/application/domain/credential/issuerDid/service";
+import IssuerDidUseCase from "@/application/domain/credential/issuerDid/usecase";
+import IssuerDidKeyRepository from "@/application/domain/credential/issuerDid/data/repository";
+import { KmsSigner } from "@/infrastructure/libs/kms/kmsSigner";
+
+// 🪪 Status List (§5.2.4 — VC revocation per W3C Bitstring Status List 2021)
+import StatusListService from "@/application/domain/credential/statusList/service";
+import StatusListUseCase from "@/application/domain/credential/statusList/usecase";
+import StatusListRepository from "@/application/domain/credential/statusList/data/repository";
+
+// 🪪 JWT signer abstraction (Phase 2 prep — design §16). Both tokens
+//    resolve to `StubJwtSigner` in Phase 1; Phase 2 swaps them to
+//    `KmsJwtSigner` without touching the consuming services.
+import {
+  StubJwtSigner,
+  STUB_SIGNATURE,
+  STUB_SIGNATURE_STATUS,
+} from "@/application/domain/credential/shared/stubJwtSigner";
+import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
+
+// 🗑️ GDPR (§9.7 — 個人情報削除と chain 整合性) — Phase 4+ 実装の scaffold。
+//    interface のみ提供し、実 deletion ロジックは Phase 4+ の別 PR で実装。
+//    詳細は src/application/domain/gdpr/service.ts 先頭コメントを参照。
+import { GdprDeletionService } from "@/application/domain/gdpr/service";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -231,10 +280,137 @@ export function registerProductionDependencies() {
   container.register("DIDIssuanceService", { useClass: DIDIssuanceService });
   container.register("DIDIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
 
+  // Phase 1 internalized DID/VC stack (§5.1.4 / §5.4).
+  container.register("DidDocumentResolver", { useClass: DidDocumentResolver });
+
   container.register("VCIssuanceRequestUseCase", { useClass: VCIssuanceRequestUseCase });
   container.register("VCIssuanceRequestConverter", { useClass: VCIssuanceRequestConverter });
   container.register("VCIssuanceRequestService", { useClass: VCIssuanceRequestService });
   container.register("VCIssuanceRequestRepository", { useClass: VCIssuanceRequestRepository });
+
+  // 🪪 User DID (§5.2 internal DID/VC) — Prisma-backed repository.
+  // The same class is bound to two DI keys: `UserDidAnchorRepository` for
+  // application services and `UserDidAnchorStore` for `DidDocumentResolver`
+  // (which only consumes the narrower `findLatestByUserId` surface).
+  //
+  // `useClass` is transient by default in tsyringe — registering the class
+  // as a singleton first and then aliasing both string tokens with
+  // `useToken` is what guarantees that both DI keys resolve the SAME
+  // instance. Without this, `UserDidAnchorRepository` and
+  // `UserDidAnchorStore` would each construct their own repository (and
+  // their own Prisma issuer fan-out), defeating the "single class behind
+  // two interfaces" intent and silently splitting any in-instance state
+  // (e.g. caches added later).
+  container.registerSingleton(UserDidAnchorRepository);
+  container.register("UserDidAnchorRepository", { useToken: UserDidAnchorRepository });
+  container.register("UserDidAnchorStore", { useToken: UserDidAnchorRepository });
+  container.register("UserDidService", { useClass: UserDidService });
+  container.register("UserDidUseCase", { useClass: UserDidUseCase });
+  container.register("UserDidResolver", { useClass: UserDidResolver });
+
+  // 🪪 JWT Signer abstraction (Phase 2 prep — design §16).
+  //
+  // `VcJwtSigner` and `StatusListJwtSigner` are two DI tokens that both
+  // resolve to a `StubJwtSigner` instance in Phase 1. Each instance is
+  // configured with a distinct `stubSignature` so the two paths emit
+  // grep-distinguishable stub markers (`stub-not-signed` vs
+  // `stub-status-list-not-signed`) — matching the inline constants in
+  // the pre-extraction services so behaviour and unit tests are
+  // unchanged.
+  //
+  // Phase 2 will rebind one or both tokens to `KmsJwtSigner` (placeholder
+  // in `credential/shared/kmsJwtSigner.ts`) without touching
+  // `VcIssuanceService` / `StatusListService`. Splitting the tokens here
+  // (rather than sharing a single signer) keeps that swap independent
+  // across the two issuance paths — operations may roll one over before
+  // the other.
+  container.register("VcJwtSigner", {
+    useValue: new StubJwtSigner({
+      kid: `${CIVICSHIP_ISSUER_DID}#stub`,
+      stubSignature: STUB_SIGNATURE,
+    }),
+  });
+  container.register("StatusListJwtSigner", {
+    useValue: new StubJwtSigner({
+      kid: `${CIVICSHIP_ISSUER_DID}#stub`,
+      stubSignature: STUB_SIGNATURE_STATUS,
+    }),
+  });
+
+  // 🪪 VC Issuance (§5.2 internal DID/VC) — Prisma-backed repository.
+  // Distinct from the legacy `VCIssuanceRequest*` registrations above:
+  // those wrap the IDENTUS-era flow, this wraps the Phase-1 internal-JWT
+  // redesign that backs `t_vc_issuance_requests` directly.
+  container.registerSingleton(VcIssuanceRepository);
+  container.register("VcIssuanceRepository", { useToken: VcIssuanceRepository });
+  container.register("VcIssuanceService", { useClass: VcIssuanceService });
+  container.register("VcIssuanceUseCase", { useClass: VcIssuanceUseCase });
+  container.register("VcIssuanceResolver", { useClass: VcIssuanceResolver });
+
+  // 🪪 Issuer DID (§5.4.3 internal DID Document service).
+  // Prisma-backed repository against `t_issuer_did_keys` (migration
+  // `20260512060000_add_issuer_did_keys`). Drives `/.well-known/did.json`
+  // via `IssuerDidUseCase`. When the table is empty (freshly-deployed
+  // environment with no key registered yet), `findActiveKey()` returns
+  // `null` and the router falls back to the minimal static Document —
+  // same UX as the prior Phase 1.5 stub.
+  //
+  // `KmsSigner` is registered here (not in a dedicated infra section) so
+  // it sits adjacent to its single application-layer consumer for the
+  // lifetime of Phase 1; future consumers (anchor batch worker) can lift
+  // it into a shared "Cryptography" group once they land.
+  // Default KMS client value for `KmsSigner`. `KmsSigner`'s constructor
+  // parameter is `@inject("KmsClient")`-decorated because tsyringe cannot
+  // reflect an interface-typed optional parameter (`emitDecoratorMetadata`
+  // emits `Object` → "TypeInfo not known for 'Object'" on resolve).
+  // `useFactory: () => undefined` makes the param resolve to undefined and
+  // the constructor body falls back to `new KeyManagementServiceClient()`.
+  // (Plain `useValue: undefined` is rejected by tsyringe — "TypeInfo not
+  // known for 'undefined'" — so the factory form is required.)
+  container.register("KmsClient", { useFactory: () => undefined });
+  container.registerSingleton("KmsSigner", KmsSigner);
+  // Default clock for `IssuerDidService.now` (public-key TTL cache). Tests
+  // can override via `container.register("IssuerDidClock", { useValue: ... })`.
+  // Required: the constructor parameter is decorated with @inject because
+  // tsyringe cannot otherwise reflect a function-typed optional parameter.
+  container.register("IssuerDidClock", { useValue: Date.now });
+  container.register("IssuerDidKeyRepository", { useClass: IssuerDidKeyRepository });
+  container.register("IssuerDidService", { useClass: IssuerDidService });
+  container.register("IssuerDidUseCase", { useClass: IssuerDidUseCase });
+
+  // 🪪 Status List (§5.2.4 — Bitstring Status List 2021 / VC revocation).
+  // Backed by Prisma directly (schema PR #1094 already merged on the
+  // parent branch). Wired into VcIssuanceService above so each issued VC
+  // carries a §D `credentialStatus` block.
+  container.register("StatusListRepository", { useClass: StatusListRepository });
+  container.register("StatusListService", { useClass: StatusListService });
+  container.register("StatusListUseCase", { useClass: StatusListUseCase });
+
+  // ------------------------------
+  // 🗑️ GDPR (§9.7 — 個人情報削除と chain 整合性)
+  // ------------------------------
+  //
+  // Phase 4+ 実装の scaffold。`GdprDeletionService.deleteUserData` は
+  // 現状 `not implemented — §9.7 Phase 4+ task` を throw する。Phase 4+
+  // で本実装を別 PR として追加する際、本 DI 登録はそのまま再利用される。
+  //
+  // singleton 登録の理由: Phase 4+ 実装で監査ログテーブル
+  // (t_gdpr_deletion_audit) を保持する場合、prepared statement の再利用や
+  // 内部 cache を検討するため、一貫したインスタンスで扱う。
+  //
+  // Open question (Q12 / §9.7 末尾): EU ユーザー対応時の admin endpoint /
+  // GraphQL mutation 配線は本 scaffold の範囲外。Phase 4+ で追加する。
+  //
+  // Singleton via class + string-token alias: `registerSingleton(token, class)`
+  // would scope the singleton only to lookups by `"GdprDeletionService"`.
+  // A `container.resolve(GdprDeletionService)` (used in service.test.ts
+  // and any future class-direct injector) would construct a *new*
+  // instance because tsyringe treats `@injectable()` classes as transient
+  // by default. Same dual-binding pattern as `UserDidAnchorRepository`
+  // above — register the class as singleton, then alias the string token
+  // via `useToken` so both resolution paths return the same instance.
+  container.registerSingleton(GdprDeletionService);
+  container.register("GdprDeletionService", { useToken: GdprDeletionService });
 
   // ------------------------------
   // 📰 Content
@@ -403,6 +579,53 @@ export function registerProductionDependencies() {
 
   container.register("NmkrClient", { useClass: NmkrClient });
   container.register("CardanoShopifyAppClient", { useClass: CardanoShopifyAppClient });
+
+  // ------------------------------
+  // ⚓ Anchor (DID/VC internalization, Phase 1)
+  // ------------------------------
+  // BlockfrostClient は本 PR で初めて DI 登録される。
+  // BlockfrostLatestSlotProvider は currentSlot 取得用の薄い factory
+  // （/blocks/latest を直接叩く。本来は BlockfrostClient に追加すべき
+  //  だが、本 PR では infrastructure/libs を読み取り専用扱いにしている
+  //  ため、provider 側で動的 import → factory として配線する）。
+  // KmsSigner は Phase 2 で KMS 経由署名を導入する PR で登録する
+  //  （現時点では誰も `@inject("KmsSigner")` していないため、未使用 DI を
+  //  残さない方針で削除した）。
+  container.registerSingleton("BlockfrostClient", BlockfrostClient);
+  container.register<BlockfrostLatestSlotProvider>("BlockfrostLatestSlotProvider", {
+    useFactory: () => createBlockfrostLatestSlotProvider(),
+  });
+  container.register("AnchorBatchRepository", { useClass: AnchorBatchRepository });
+  container.register("AnchorBatchService", { useClass: AnchorBatchService });
+  container.register("AnchorBatchUseCase", { useClass: AnchorBatchUseCase });
+}
+
+/**
+ * `@blockfrost/blockfrost-js` の `BlockFrostAPI.blocksLatest()` を直接叩く
+ * 軽量 factory。BlockfrostClient 本体（src/infrastructure/libs/blockfrost）
+ * は本 PR では変更不可なため、provider 側に閉じた配線でカバーする。
+ */
+function createBlockfrostLatestSlotProvider(): BlockfrostLatestSlotProvider {
+  return {
+    async getCurrentSlot(): Promise<number> {
+      // 動的 import で起動時の dependency 評価を避ける（テスト時に DI を
+      // 別 provider に差し替えるためメインのプロセスでは初期化されない）。
+      const { BlockFrostAPI } = await import("@blockfrost/blockfrost-js");
+      const networkRaw = process.env.CARDANO_NETWORK ?? "preprod";
+      const network = networkRaw === "mainnet" ? "mainnet" : "preprod";
+      const projectId = process.env.BLOCKFROST_PROJECT_ID;
+      if (!projectId) {
+        throw new Error("BlockfrostLatestSlotProvider: BLOCKFROST_PROJECT_ID is not set.");
+      }
+      const api = new BlockFrostAPI({ projectId, network });
+      const latest = (await api.blocksLatest()) as { slot?: number | null };
+      const slot = latest?.slot;
+      if (typeof slot !== "number") {
+        throw new Error("BlockfrostLatestSlotProvider: blocksLatest returned no slot.");
+      }
+      return slot;
+    },
+  };
 }
 
 registerProductionDependencies();

@@ -7,6 +7,9 @@ import { createApolloServer } from "@/presentation/graphql/server";
 import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
+import anchorBatchRouter from "@/presentation/router/admin/anchorBatch";
+import didRouter from "@/presentation/router/did";
+import credentialsRouter from "@/presentation/router/credentials";
 import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
@@ -75,6 +78,15 @@ async function startServer() {
     authHandler(apolloServer),
   );
   app.use("/line", lineRouter);
+  app.use("/admin/anchor-batch", anchorBatchRouter);
+  // Phase 1 DID/VC public routes (§5.4):
+  //   /.well-known/did.json
+  //   /users/:userId/did.json
+  //   /vc/:vcId/inclusion-proof
+  app.use("/", didRouter);
+  // §5.4.5 — public Bitstring Status List 2021 endpoint. Mounted at the
+  // path that VC verifiers resolve from `credentialStatus.statusListCredential`.
+  app.use("/credentials", credentialsRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });
@@ -83,22 +95,29 @@ async function startServer() {
   // Error handler — must be registered after all routes.
   // Distinguishes client errors (4xx) from server errors (5xx) so that
   // malformed multipart requests return 400 instead of 500.
-  app.use((err: Error & { status?: number; expose?: boolean }, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    const status = typeof err.status === "number" ? err.status : 500;
-    if (status < 500) {
-      logger.warn("Client error:", {
-        status,
-        message: err.message,
-        url: req.originalUrl,
-      });
-    } else {
-      logger.error("Unhandled Express Error:", {
-        message: err.message,
-        stack: err.stack,
-      });
-    }
-    res.status(status).json({ error: err.expose ? err.message : "Internal Server Error" });
-  });
+  app.use(
+    (
+      err: Error & { status?: number; expose?: boolean },
+      req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction,
+    ) => {
+      const status = typeof err.status === "number" ? err.status : 500;
+      if (status < 500) {
+        logger.warn("Client error:", {
+          status,
+          message: err.message,
+          url: req.originalUrl,
+        });
+      } else {
+        logger.error("Unhandled Express Error:", {
+          message: err.message,
+          stack: err.stack,
+        });
+      }
+      res.status(status).json({ error: err.expose ? err.message : "Internal Server Error" });
+    },
+  );
 
   step("Middleware registered");
 
