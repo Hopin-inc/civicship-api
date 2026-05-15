@@ -510,30 +510,6 @@ export default class AnalyticsCommunityService {
    * against `t_transactions` (which the per-day MV cannot compose into
    * a window-wide DISTINCT).
    */
-  /**
-   * Single-community variant of `getWindowHubMemberCountBulk`. Thin
-   * wrapper over the bulk SQL — the L2 community-detail path is the
-   * only single-community caller, so we share the bulk primitive
-   * instead of duplicating its DISTINCT-recipient aggregation. Returns
-   * 0 for a community with no hub members in the window.
-   */
-  async getWindowHubMemberCount(
-    ctx: IContext,
-    communityId: string,
-    asOf: Date,
-    windowDays: number,
-    hubBreadthThreshold: number,
-  ): Promise<number> {
-    const map = await this.getWindowHubMemberCountBulk(
-      ctx,
-      [communityId],
-      asOf,
-      windowDays,
-      hubBreadthThreshold,
-    );
-    return map.get(communityId) ?? 0;
-  }
-
   async getWindowHubMemberCountBulk(
     ctx: IContext,
     communityIds: string[],
@@ -556,6 +532,30 @@ export default class AnalyticsCommunityService {
       out.set(id, rowsByCommunity.get(id)?.count ?? 0);
     }
     return out;
+  }
+
+  /**
+   * Single-community variant of `getWindowHubMemberCountBulk`. Thin
+   * wrapper over the bulk SQL — the L2 community-detail path is the
+   * only single-community caller, so we share the bulk primitive
+   * instead of duplicating its DISTINCT-recipient aggregation. Returns
+   * 0 for a community with no hub members in the window.
+   */
+  async getWindowHubMemberCount(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+    windowDays: number,
+    hubBreadthThreshold: number,
+  ): Promise<number> {
+    const map = await this.getWindowHubMemberCountBulk(
+      ctx,
+      [communityId],
+      asOf,
+      windowDays,
+      hubBreadthThreshold,
+    );
+    return map.get(communityId) ?? 0;
   }
 
   /**
