@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { NotFoundError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import {
   GqlQueryAnalyticsCommunityArgs,
   GqlAnalyticsCommunityPayload,
@@ -37,6 +37,15 @@ export default class AnalyticsCommunityUseCase {
     { input }: GqlQueryAnalyticsCommunityArgs,
     ctx: IContext,
   ): Promise<GqlAnalyticsCommunityPayload> {
+    // IsCommunityOwner verifies the caller owns `ctx.communityId` but
+    // does not bind `input.communityId` to it — without this check an
+    // owner of community A could read community B's analytics by
+    // passing the foreign id. SYS_ADMIN bypasses scoping because the
+    // role is cross-community by design.
+    if (!ctx.isAdmin && input.communityId !== ctx.communityId) {
+      throw new AuthorizationError("Community does not match the current scope");
+    }
+
     const asOf = input.asOf ?? new Date();
     const thresholds = AnalyticsConverter.resolveThresholds(input.segmentThresholds);
     const dormantThresholdDays = AnalyticsConverter.clampDormantThresholdDays(
