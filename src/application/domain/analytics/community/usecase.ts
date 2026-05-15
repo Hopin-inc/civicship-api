@@ -6,6 +6,7 @@ import {
   GqlAnalyticsCommunityPayload,
 } from "@/types/graphql";
 import AnalyticsCommunityService, {
+  DEFAULT_WINDOW_DAYS,
   DEFAULT_WINDOW_MONTHS,
   MAX_WINDOW_MONTHS,
 } from "@/application/domain/analytics/community/service";
@@ -15,6 +16,7 @@ import {
   computeDormantCount,
   computeStageBreakdown,
   computeStageCounts,
+  computeTenureDistribution,
 } from "@/application/domain/analytics/community/aggregations";
 import { MAX_LIMIT, paginateMembers } from "@/application/domain/analytics/community/pagination";
 import AnalyticsCommunityPresenter from "@/application/domain/analytics/community/presenter";
@@ -80,6 +82,7 @@ export default class AnalyticsCommunityUseCase {
       cohortRetention,
       chainDepthDistribution,
       alerts,
+      hubMemberCount,
     ] = await Promise.all([
       this.service.getMemberStats(ctx, community.communityId, asOf),
       this.service.getMonthlyActivity(
@@ -95,12 +98,24 @@ export default class AnalyticsCommunityUseCase {
       this.service.getCohortRetention(ctx, community.communityId, asOf, windowMonths),
       this.service.getChainDepthDistribution(ctx, community.communityId, asOf),
       this.service.getAlerts(ctx, community.communityId, asOf),
+      // Fixed 28-day window matches L1's default `windowDays` so the
+      // L2 `hubMemberCount` reads directly comparable to L1 for the
+      // same community + `hubBreadthThreshold`. L2's `windowMonths`
+      // input drives trend-array length only, not hub classification.
+      this.service.getWindowHubMemberCount(
+        ctx,
+        community.communityId,
+        asOf,
+        DEFAULT_WINDOW_DAYS,
+        hubBreadthThreshold,
+      ),
     ]);
 
     const stageCounts = computeStageCounts(members, thresholds);
     const stageBreakdown = computeStageBreakdown(members, thresholds);
     const dormantCount = computeDormantCount(members, asOf, dormantThresholdDays);
     const cohortFunnel = computeCohortFunnel(members, asOf, windowMonths, thresholds);
+    const tenureDistribution = computeTenureDistribution(members);
 
     const memberList = paginateMembers(members, {
       minSendRate: input.userFilter?.minSendRate ?? 0.7,
@@ -141,6 +156,8 @@ export default class AnalyticsCommunityUseCase {
       dormantCount,
       chainDepthDistribution,
       cohortFunnel,
+      hubMemberCount,
+      tenureDistribution,
     });
   }
 }
