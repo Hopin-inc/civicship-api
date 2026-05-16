@@ -2,6 +2,12 @@
 
 This document describes civicship-api's security architecture, authentication flow, authorization system, and security best practices.
 
+> **Reporting a security vulnerability?**
+> 本ドキュメントは内部設計書です。脆弱性を発見した場合は
+> [`/.github/SECURITY.md`](../../.github/SECURITY.md) (Vulnerability Disclosure
+> Policy) を参照し、GitHub の Private Vulnerability Reporting で非公開に報告してください。
+> 公開 issue / PR で詳細を開示しないでください。
+
 ## Security Architecture Overview
 
 civicship-api employs a four-tier security architecture:
@@ -394,6 +400,294 @@ app.post('/admin/users', adminController.createUser);
 - Logging Authentication and Authorization Events
 - Auditing Administrator Actions
 - Recording Security Violations
+
+## Container Image Scanning (Trivy)
+
+Cloud Run にデプロイされる image は、`docker push` 直後 / `gcloud run deploy` 前に
+[Trivy](https://github.com/aquasecurity/trivy-action) で vulnerability scan を行う。
+対象 workflow は以下:
+
+- `.github/workflows/_deploy-cloud-run.yml` (internal API + batch)
+- `.github/workflows/_deploy-external-api.yml` (external API)
+
+### Severity Policy
+
+| Severity | exit-code | 振る舞い                                                          |
+| -------- | --------- | ----------------------------------------------------------------- |
+| CRITICAL | `1`       | **blocking** (PR / deploy 双方で fail)。件数を `::error::` annotation で surface + Security タブに sarif upload |
+| HIGH     | `0`       | **advisory** (deploy も PR も block しない)。件数を `::warning::` で surface + Security タブに sarif upload |
+| その他   | -         | scan 対象外 (MEDIUM 以下は雑音になりやすい)                       |
+
+**CRITICAL を blocking にしている理由**: 緩い severity policy は
+「気付かないまま CVE を本番投入する」リスクを直接的に高める。CRITICAL は通常
+upstream で迅速に fix されるか、`ignore-unfixed: true` で除外されるため、
+blocking 化のコストは限定的。一時的な false-positive や緊急 fix 待ちの
+CRITICAL に対しては `.trivyignore` に時限 entry (`expires:` 必須) を追加して
+回避する。
+
+**HIGH を advisory のままにしている理由**: HIGH は CRITICAL に比べて drift
+量が大きく (Trivy DB の日次更新で件数が頻繁に変動)、blocking にすると
+無関係な fix まで含めた deploy が stall しやすい。Security タブと
+`::warning::` annotation で可視化のみ行い、ゲートは CRITICAL に絞る。
+
+両 severity の結果は SARIF として GitHub の **Security → Code scanning alerts**
+タブに upload される (`github/codeql-action/upload-sarif`)。`category` を
+`trivy-critical` / `trivy-high` (external API は `trivy-external-*`) で
+分けることで、severity 別に alert を追える。
+
+`ignore-unfixed: true` を付けているため、upstream で fix が未公開の CVE は
+対象外となる。
+
+#### 3-layer visibility (PR + deploy + Security tab)
+
+同じ Trivy scan を **PR の CI** (`ci.yml:trivy` job) と **deploy workflow**
+(`_deploy-{cloud-run,external-api}.yml`) の両方で走らせ、結果は 3 経路で surface
+する:
+
+1. **PR CI** (`ci.yml:trivy`): build job が `--cache-to` で書いた layer cache
+   を再利用して runtime image を rebuild → scan。CRITICAL 件数 > 0 で
+   `::error::` annotation を出して job を fail させ、aggregator (`ci`) も
+   `failure` で落とす。CI 全体の必須 check として branch protection で要求
+   する。
+2. **Deploy CI**: registry に push した image を再 scan。Trivy DB が PR 時点
+   から更新されて新規 CVE が増えていてもここで surface され、CRITICAL 件数
+   > 0 ならその時点で deploy を中断する (Cloud Run revision は作られない)。
+   HIGH は `::warning::` で警告のみ。
+3. **Security tab**: 両 workflow が sarif を Code Scanning に upload。
+   `if: always()` で CRITICAL fail 後でも upload するので、blocking で落ちた
+   CVE も Security タブで追跡できる。category 別に alert を追える。
+
+#### CRITICAL がヒットしたときの対処フロー (blocking mode)
+
+deploy / PR が落ちている前提で、優先度順に:
+
+1. PR / deploy run の `::error::` annotation または step log で CVE-ID + 該当
+   パッケージを確認。Security タブの該当 category でも同じ情報が見える。
+2. 次のいずれかを実施:
+   - **Fix 可能**: base image / dependency を bump する PR を別途出す
+     (Dependabot が自動で開いている場合あり)。fix が merge されれば次の
+     CI / deploy run で green に戻る。
+   - **Fix 不可 / 不到達 (false-positive 含む)**: `.trivyignore` に時限
+     entry を追加 (下記運用ルール参照)。`expires:` 必須。期限切れ後は
+     月次棚卸しで再評価。
+3. **緊急 deploy で blocking を bypass したいケース** (例: CRITICAL を
+   抱えるが顧客障害で先に別の hotfix を出したい): `.trivyignore` に
+   短期 expiry (例: 翌週) で entry を追加 → 該当 CVE をその場で除外して
+   pipeline を通す → 翌週の棚卸しで根本対応する。`exit-code` の workflow
+   直接書き換えは行わない (政策が無言で advisory に戻る事故を防ぐ)。
+
+#### Rollback conditions (advisory に戻す条件)
+
+blocking に昇格したあとは原則戻さないが、以下のような状況では advisory に
+一時降格する判断もありうる:
+
+- 4 週間以上にわたり CRITICAL の上流 fix が出ず、`.trivyignore` で扱いきれない
+  (大量の transient false-positive など)。
+- Trivy DB / Code Scanning 連携で繰り返し infrastructure failure が出て、
+  blocking が事実上の deploy 不能状態を引き起こしている。
+
+降格手順 (元に戻すときの参照点):
+- `_deploy-cloud-run.yml` / `_deploy-external-api.yml` の
+  `Scan image (Trivy CRITICAL — blocking)` step を `exit-code: '0'` に変更し
+  step 名を "advisory" に戻す。
+- `ci.yml:trivy` の `Surface CRITICAL count + top hits` step を `::warning::`
+  + 末尾の `exit 1` 削除に戻す。
+- aggregator (`ci`) の判定ループから `trivy` を外して advisory 扱いにする。
+- 本表 (Severity Policy) の CRITICAL 行を `0` / "advisory" に戻し、本セクション
+  と上記 blocking フローを advisory フローに置き換える。
+
+### `.trivyignore`
+
+リポジトリ root の [.trivyignore](../../.trivyignore) で、誤検知や対応保留の
+CVE を一時的に除外できる。**追加時は必ず以下を併記**:
+
+1. 1 行 1 CVE (`CVE-YYYY-NNNNN`)。`#` から行末はコメント。
+2. 直前のコメントで影響範囲・ignore 理由・再評価期限 (`expires: YYYY-MM-DD`)
+   を明示する。
+3. 月次で棚卸しし、期限切れまたは不要になったエントリは削除する。
+
+### Local 検証
+
+PR を出す前に手元で同じ scan を回したい場合 (CI と同じ severity policy で
+回す。CRITICAL は `--exit-code 1` で本番同様に fail させる):
+
+```bash
+# CRITICAL — CI と同じ blocking 挙動 (見つかれば exit 1)
+trivy image --severity CRITICAL --exit-code 1 --ignore-unfixed \
+  asia-northeast1-docker.pkg.dev/<project>/<repo>/<image>:latest
+
+# HIGH — advisory なので exit-code 0 で一覧確認
+trivy image --severity HIGH --exit-code 0 --ignore-unfixed \
+  asia-northeast1-docker.pkg.dev/<project>/<repo>/<image>:latest
+```
+
+### CVE 検出時の対処
+
+PR / deploy run で `::error::` (CRITICAL) または `::warning::` (HIGH) が
+出た、または Security タブに新規 alert が追加されたら、以下の優先順で
+対応する。CRITICAL は deploy が止まっているので即対応が必要:
+
+1. **Base image / dependency の bump** で fix 済み version に上げる (推奨)。
+   Dependabot が自動で PR を開いている場合はそれを優先 merge。
+2. **multi-stage build (`Dockerfile`) で当該パッケージを最終ステージから外す**。
+3. 上記が現実的でない場合のみ、`.trivyignore` に時限 entry (`expires:` 必須)
+   を追加して暫定回避し、別 issue で恒久対応をトラックする。CRITICAL の
+   時限 ignore は最長 2 週間目安。
+
+### Image attestation (SBOM + provenance)
+
+deploy workflow の `docker buildx build` は `--sbom=true` と
+`--provenance=mode=max` を付けており、push される image manifest には以下が
+attestation として attach される:
+
+- **SPDX SBOM**: `apt` / `pnpm` 経由で含まれる全パッケージの inventory。
+- **SLSA build provenance**: ビルド source (commit SHA / workflow run / triggered actor)
+  の機械可読な記録。
+
+検証は次のいずれかで行える:
+
+```bash
+# SBOM を取得
+docker buildx imagetools inspect <image>:sha-<sha> --format '{{ json .SBOM }}'
+
+# Provenance を取得
+docker buildx imagetools inspect <image>:sha-<sha> --format '{{ json .Provenance }}'
+
+# Artifact Registry の vulnerability scanning と組み合わせる
+gcloud artifacts docker images describe <image>:sha-<sha> \
+  --show-package-vulnerability
+```
+
+Cosign keyless 署名は将来的に検討するが、現状は GitHub Actions OIDC で
+build provenance を保持する形で十分とする (cosign 署名追加時は
+`sigstore/cosign-installer` + `cosign sign --yes` を deploy workflow に追加)。
+
+## npm Supply Chain Hardening
+
+npm エコシステム由来の脅威 (既知 CVE / postinstall malware / runtime 混入型
+malware / typosquat 等) に対して、**重ね合わせ** で守る方針を取る。各層は
+別の検知ロジック / 起動タイミングを持ち、1 つが空振りしても他が拾う。
+
+### 防御レイヤ一覧
+
+| 層 | ツール / 設定 | 起動 | 役割 |
+|---|---|---|---|
+| (1) PR diff の追加 dep を gate | `actions/dependency-review-action` | PR 時 | 新規追加 dep に既知 CVE (HIGH+) / 不適合 license があれば fail |
+| (2) lockfile 全体の advisory | `pnpm audit --audit-level=high --prod` | CI build job | npm advisory DB ベースで lockfile 全体を継続監視 (warning only、production deps に scope) |
+| (3) image 全体の CVE scan | Trivy CRITICAL=blocking / HIGH=advisory | CI + deploy + daily | OS / Debian package / Node ランタイム |
+| (4) lifecycle script の execution gate | `pnpm-workspace.yaml` の `onlyBuiltDependencies` allowlist | install 時 | allowlist 外の dep の postinstall / preinstall を deny |
+| (5) publish 直後の release を install 拒否 | `pnpm-workspace.yaml` の `minimumReleaseAge: 4320` (= 3 日) | install 時 | 0-day マルウェア混入 release (chalk/debug 型 hijack) の attack window を短縮 |
+| (6) direct dep 自動 bump | Dependabot (cooldown 付き) | weekly | (1)〜(5) で検知された CVE / drift を自動修正 |
+
+(1)〜(3) は **既知 CVE 対策**、(4)〜(5) は **未知 / 0-day malware 対策**、
+(6) は **修正サイクルの自動化**。
+
+### (1) `dependency-review-action` (PR diff gate)
+
+GitHub 公式 action。`base..head` の `package.json` / `pnpm-lock.yaml` 差分を
+GitHub Advisory Database に問い合わせ、**新規追加された dep に HIGH+ CVE が
+含まれていれば PR を fail** させる。`pnpm audit` (advisory) との違いは:
+
+- audit: lockfile 全体を毎回チェック → drift で flaky
+- dep-review: PR で**増えた dep だけ** をチェック → 安定 / blocking 可能
+
+push (master) や手動 dispatch では skip され、aggregator (`ci`) は `skipped` を
+success と等価扱いする。
+
+### (2) `pnpm audit --audit-level=high --prod` (advisory)
+
+`ci.yml` の build job に組み込み済み。`--prod` で devDependencies (jest /
+eslint plugin 等、本番デプロイに乗らない dev tool) を除外し、production 影響を
+切り分けて見る運用に倒している。閾値超えは `::warning::` annotation で surface
+するのみで blocking はしない (lockfile-wide audit は drift で flaky になりがち
+なので gate には使わない、issue #979 と同じ方針)。
+
+### (3) Trivy
+
+詳細は本ドキュメント上部の "Container Image Scanning (Trivy)" 参照。
+image レイヤの CVE 検出を担い、(1)(2) と検出ソースが補完関係にある。
+
+### (4) `onlyBuiltDependencies` allowlist (lifecycle deny by default)
+
+pnpm 10 から `postinstall` / `preinstall` 等の lifecycle script は
+**デフォルトで無効化** され、`onlyBuiltDependencies` に明示 allowlist した
+package のみ走る。本リポジトリでは **`pnpm-workspace.yaml`** で許可 package を
+列挙する形で運用している (該当ファイル参照):
+
+```yaml
+# pnpm-workspace.yaml (抜粋)
+onlyBuiltDependencies:
+  - '@apollo/protobufjs'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - esbuild
+  - prisma
+  - protobufjs
+  - puppeteer
+  - sharp
+  - vue-demi
+```
+
+それ以外の package の lifecycle script はすべて deny される (例: 新たに
+追加された malicious package が postinstall で外部にデータ送出する等の攻撃を
+install 時点で阻止する)。
+
+許可を新規追加する場合は:
+
+1. PR で `pnpm-workspace.yaml` を編集し、commit message に **追加の根拠**
+   (なぜ build script が必要か / 代替手段が無いか / その package を信頼する根拠)
+   を必ず書く
+2. CI レビューで明示的に承認する (現状リストの 9 package はいずれも
+   ビルドツール / native binary 系で必要性が明確、新規追加は同等の妥当性を要求)
+3. pnpm 10 では `pnpm approve-builds` で interactive に追加もできるが、
+   YAML 直編集 + PR の方が レビュー導線として推奨
+
+### (5) `minimumReleaseAge` (release age gate)
+
+`pnpm-workspace.yaml` の `minimumReleaseAge: 4320` (= **3 日**, 分単位) で、
+publish 後 3 日経過していない npm package version は install 対象から
+除外する。これは pnpm 10.16+ の supply chain hardening 機能。
+
+`pnpm audit` / Trivy は **既知 CVE** の検知が前提で、`chalk` / `debug` の hijack
+(2025-09) のように publish 直後で発見前の malware が混入したケースは原理的に
+検知できない。npm の supply chain 攻撃の大半は publish 後 24〜72h 以内に検知 →
+unpublish されるので、3 日待つだけで window の大半を回避できる
+(cf. ua-parser-js, event-stream, eslint-scope, chalk/debug の各事案)。
+
+#### 緊急バイパス: `minimumReleaseAgeExclude`
+
+緊急 CVE で fresh patch を 3 日待たず即時取り込みたい場合は、
+`pnpm-workspace.yaml` に `minimumReleaseAgeExclude` を追加して
+特定 package のみ release age 制限を bypass できる:
+
+```yaml
+# pnpm-workspace.yaml (抜粋)
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - axios
+
+onlyBuiltDependencies:
+  - ...
+```
+
+運用ルール:
+
+1. bypass entry を追加するときは、PR description / commit message に以下を併記する:
+   - 対象 CVE / GHSA ID
+   - なぜ 3 日待てないか (active exploitation / 重大 impact 等)
+   - 該当 fix を取り込む PR / 期限の見込み
+2. fix を取り込んで lockfile が更新できたら、bypass entry は **すぐ削除する**。
+   恒久的な exclude は supply chain hardening を骨抜きにするので避ける。
+3. 月次棚卸しで残存 entry を確認 (`.trivyignore` の expires policy と同じ運用)。
+
+#### 既知の副作用 (`minimumReleaseAge`)
+
+- Dependabot / 手動 bump PR で **publish 直後の version** が指定されると、
+  install が解決失敗相当になることがある。3 日後に自然解消するため
+  運用負荷は小さいが、急ぎの場合は上記 `minimumReleaseAgeExclude` で
+  対象 package を bypass する。
+- 内部 (registry private) package は通常 publish 直後でも信頼できるため、
+  必要なら同じく `minimumReleaseAgeExclude` に追加して対象外化する。
 
 ## Related Documentation
 

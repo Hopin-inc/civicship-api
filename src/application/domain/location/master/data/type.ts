@@ -13,3 +13,9 @@ export type PrismaCityDetail = {
   code: string;
   stateCode: string;
 };
+
+export type PrismaStateDetail = {
+  code: string;
+  name: string;
+  countryCode: string;
+};

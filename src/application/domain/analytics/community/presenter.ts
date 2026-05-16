@@ -264,6 +264,8 @@ export default class AnalyticsCommunityPresenter {
     dormantCount: number;
     chainDepthDistribution: AnalyticsChainDepthBucketRow[];
     cohortFunnel: AnalyticsCohortFunnelPoint[];
+    hubMemberCount: number;
+    tenureDistribution: TenureDistribution;
   }): GqlAnalyticsCommunityPayload {
     return {
       communityId: params.communityId,
@@ -286,6 +288,10 @@ export default class AnalyticsCommunityPresenter {
       // (cohortMonth + 4 stage counts) matches the GraphQL type
       // 1:1.
       cohortFunnel: params.cohortFunnel,
+      hubMemberCount: params.hubMemberCount,
+      tenureDistribution: AnalyticsCommunityPresenter.tenureDistribution(
+        params.tenureDistribution,
+      ),
     };
   }
 }

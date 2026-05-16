@@ -22,7 +22,9 @@ export class CardanoShopifyAppClient {
       if (error instanceof CardanoShopifyAppApiError) {
         throw error;
       }
-      throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : String(error)}`, {
+        cause: error,
+      });
     }
   }
 

@@ -56,7 +56,11 @@ describe("Vote Integration: VoteTopicDelete", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     const result = await voteUseCase.managerDeleteVoteTopic(ctx, {
       id: topic.id,
       permission: { communityId: community.id },
@@ -89,7 +93,11 @@ describe("Vote Integration: VoteTopicDelete", () => {
       role: Role.MANAGER,
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerDeleteVoteTopic(ctx, {
         id: "nonexistent-topic-id",
@@ -130,7 +138,11 @@ describe("Vote Integration: VoteTopicDelete", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: communityB.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerDeleteVoteTopic(ctx, {
         id: topic.id,
@@ -168,7 +180,11 @@ describe("Vote Integration: VoteTopicDelete", () => {
       endsAt: new Date(now.getTime() + 3_600_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerDeleteVoteTopic(ctx, {
         id: topic.id,
@@ -208,7 +224,11 @@ describe("Vote Integration: VoteTopicDelete", () => {
       endsAt: new Date(now.getTime() - 60_000),
     });
 
-    const ctx = { currentUser: { id: manager.id }, issuer } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: manager.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
     await expect(
       voteUseCase.managerDeleteVoteTopic(ctx, {
         id: topic.id,

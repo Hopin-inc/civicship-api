@@ -43,12 +43,6 @@ describe("Transaction GrantCommunityPoint Integration Tests", () => {
     const userInserted = await TestDataSourceHelper.createUser(createUserInput);
     const userId = userInserted.id;
 
-    const ctx = {
-      uid: userId,
-      currentUser: { id: userId },
-      issuer,
-    } as unknown as IContext;
-
     const communityName = "community-1";
     const pointName = "community-1-point";
 
@@ -62,6 +56,13 @@ describe("Transaction GrantCommunityPoint Integration Tests", () => {
     };
     const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
     const communityId = communityInserted.id;
+
+    const ctx = {
+      uid: userId,
+      currentUser: { id: userId },
+      issuer,
+      communityId,
+    } as unknown as IContext;
 
     const createWalletInput = {
       type: WalletType.COMMUNITY,

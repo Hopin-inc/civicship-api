@@ -202,8 +202,8 @@ describe("ParticipationService", () => {
     });
 
     it("should handle null/undefined reason gracefully", () => {
-      const participationWithNullReason = { reason: null } as any;
-      const participationWithUndefinedReason = { reason: undefined } as any;
+      const participationWithNullReason = { reason: null } as unknown as PrismaParticipationDetail;
+      const participationWithUndefinedReason = { reason: undefined } as unknown as PrismaParticipationDetail;
 
       expect(() => {
         service.validateDeletable(participationWithNullReason);
@@ -215,7 +215,7 @@ describe("ParticipationService", () => {
     });
 
     it("should handle edge case with empty participation object", () => {
-      const emptyParticipation = {} as any;
+      const emptyParticipation = {} as unknown as PrismaParticipationDetail;
 
       expect(() => {
         service.validateDeletable(emptyParticipation);
@@ -239,8 +239,8 @@ describe("ParticipationService", () => {
     });
 
     it("should handle null/undefined reason gracefully", () => {
-      const participationWithNullReason = { reason: null } as any;
-      const participationWithUndefinedReason = { reason: undefined } as any;
+      const participationWithNullReason = { reason: null } as unknown as PrismaParticipationDetail;
+      const participationWithUndefinedReason = { reason: undefined } as unknown as PrismaParticipationDetail;
 
       expect(() => {
         service.validateDeletable(participationWithNullReason);
@@ -252,7 +252,7 @@ describe("ParticipationService", () => {
     });
 
     it("should handle edge case with empty participation object", () => {
-      const emptyParticipation = {} as any;
+      const emptyParticipation = {} as unknown as PrismaParticipationDetail;
 
       expect(() => {
         service.validateDeletable(emptyParticipation);

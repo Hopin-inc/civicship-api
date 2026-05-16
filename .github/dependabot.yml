@@ -53,10 +53,11 @@ updates:
       time: "06:00"
       timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
+    # `cooldown.semver-*-days` is npm-specific; `github-actions` only accepts
+    # `default-days` (and `include`/`exclude`). 7 days approximates the weekly
+    # review cadence above.
     cooldown:
-      semver-major-days: 14
-      semver-minor-days: 10
-      semver-patch-days: 5
+      default-days: 7
     groups:
       actions-minor-patch:
         patterns: ["*"]
@@ -68,4 +69,27 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "chore(ci)"
+      include: "scope"
+
+  # Docker base image digest tracking. Both `Dockerfile` and `Dockerfile.external`
+  # pin `node:20-slim@sha256:<digest>` for reproducibility; Dependabot opens a PR
+  # when upstream re-tags `node:20-slim` to a new digest. Cooldown is set so we
+  # don't get woken up by every nightly base re-build.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    # `cooldown.semver-*-days` is npm-specific; `docker` only accepts
+    # `default-days` (and `include`/`exclude`).
+    cooldown:
+      default-days: 7
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
       include: "scope"

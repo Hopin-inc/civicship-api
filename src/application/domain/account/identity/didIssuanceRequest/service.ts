@@ -39,7 +39,7 @@ export class DIDIssuanceService {
     const identity = await this.identityRepository.find(phoneUid);
     if (!identity) throw new Error("No identity found for DID issuance");
 
-    let didRequest: DidIssuanceRequest | null = null;
+    let didRequest: DidIssuanceRequest;
 
     if (existingRequestId) {
       const existing = await this.didIssuanceRequestRepository.findById(ctx, existingRequestId);

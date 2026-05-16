@@ -11,7 +11,10 @@ extend type Mutation {
   """
   voteTopicCreate(
     input: VoteTopicCreateInput!
-    permission: CheckCommunityPermissionInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
   ): VoteTopicCreatePayload! @authz(rules: [IsCommunityManager])
 
   """
@@ -23,7 +26,10 @@ extend type Mutation {
   voteTopicUpdate(
     id: ID!
     input: VoteTopicUpdateInput!
-    permission: CheckCommunityPermissionInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
   ): VoteTopicUpdatePayload! @authz(rules: [IsCommunityManager])
 
   """
@@ -39,8 +45,13 @@ extend type Mutation {
   OPEN / CLOSED フェーズでは `VOTE_TOPIC_NOT_EDITABLE` エラーが返る。
   gate / powerPolicy / options は onDelete: Cascade で自動削除される（UPCOMING 限定なので ballots は存在しない）。
   """
-  voteTopicDelete(id: ID!, permission: CheckCommunityPermissionInput!): VoteTopicDeletePayload!
-    @authz(rules: [IsCommunityManager])
+  voteTopicDelete(
+    id: ID!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): VoteTopicDeletePayload! @authz(rules: [IsCommunityManager])
 }
 
 input VoteTopicCreateInput {

@@ -62,7 +62,8 @@ export const tracingReady = (async () => {
         return url.includes("/health") || req.method === "OPTIONS";
       },
       requestHook: (span, request) => {
-        const communityId = (request as any).headers?.["x-community-id"];
+        const headers = "headers" in request ? request.headers : undefined;
+        const communityId = headers?.["x-community-id"];
         if (communityId) {
           span.setAttribute("app.community_id", communityId);
         }

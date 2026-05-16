@@ -2,80 +2,83 @@
 # Article Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    articleCreate(
-        input: ArticleCreateInput!
-        permission: CheckCommunityPermissionInput!
-    ): ArticleCreatePayload
-    @authz(rules: [IsCommunityManager])
+  articleCreate(
+    input: ArticleCreateInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): ArticleCreatePayload @authz(rules: [IsCommunityManager])
 
-    articleUpdateContent(
-        id: ID!
-        input: ArticleUpdateContentInput!
-        permission: CheckCommunityPermissionInput!
-    ): ArticleUpdateContentPayload
-    @authz(rules: [IsCommunityManager])
+  articleUpdateContent(
+    id: ID!
+    input: ArticleUpdateContentInput!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): ArticleUpdateContentPayload @authz(rules: [IsCommunityManager])
 
-    articleDelete(
-        id: ID!
-        permission: CheckCommunityPermissionInput!
-    ): ArticleDeletePayload
-    @authz(rules: [IsCommunityManager])
+  articleDelete(
+    id: ID!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): ArticleDeletePayload @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------
 # Article Mutation Input Definitions
 # ------------------------------
 input ArticleCreateInput {
-    title: String!
-    introduction: String!
-    body: String
-    thumbnail: ImageInput
-    category: ArticleCategory!
-    publishStatus: PublishStatus!
+  title: String!
+  introduction: String!
+  body: String
+  thumbnail: ImageInput
+  category: ArticleCategory!
+  publishStatus: PublishStatus!
 
-    authorIds: [ID!]!
-    relatedUserIds: [ID!]
-    relatedOpportunityIds: [ID!]
+  authorIds: [ID!]!
+  relatedUserIds: [ID!]
+  relatedOpportunityIds: [ID!]
 }
 
 input ArticleUpdateContentInput {
-    title: String!
-    introduction: String!
-    body: String
-    thumbnail: ImageInput
-    category: ArticleCategory!
+  title: String!
+  introduction: String!
+  body: String
+  thumbnail: ImageInput
+  category: ArticleCategory!
 
-    publishStatus: PublishStatus!
+  publishStatus: PublishStatus!
 
-    authorIds: [ID!]!
-    relatedUserIds: [ID!]
-    relatedOpportunityIds: [ID!]
+  authorIds: [ID!]!
+  relatedUserIds: [ID!]
+  relatedOpportunityIds: [ID!]
 
-    publishedAt: Datetime
+  publishedAt: Datetime
 }
 
 # ------------------------------
 # Article Mutation Success Type Definitions
 # ------------------------------
 type ArticleCreateSuccess {
-    article: Article!
+  article: Article!
 }
 
 type ArticleUpdateContentSuccess {
-    article: Article!
+  article: Article!
 }
 
 type ArticleDeleteSuccess {
-    articleId: ID!
+  articleId: ID!
 }
 # ------------------------------
 # Article Mutation Union (Payload) Definitions
 # ------------------------------
-union ArticleCreatePayload =
-    ArticleCreateSuccess
+union ArticleCreatePayload = ArticleCreateSuccess
 
-union ArticleUpdateContentPayload =
-    ArticleUpdateContentSuccess
+union ArticleUpdateContentPayload = ArticleUpdateContentSuccess
 
-union ArticleDeletePayload =
-    ArticleDeleteSuccess
+union ArticleDeletePayload = ArticleDeleteSuccess

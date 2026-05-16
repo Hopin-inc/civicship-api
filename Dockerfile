@@ -1,4 +1,141 @@
-FROM node:20
+# syntax=docker/dockerfile:1.7
+#
+# Multi-stage build for the internal/main GraphQL API + batch job image.
+#
+# Build flow (see .dockerignore for full context):
+#   The CI runner pre-builds `node_modules/` (incl. Prisma TypedSQL
+#   generator output written by `prisma generate --sql`, which needs a
+#   live DB tunnel) and `dist/`, then invokes `docker buildx build` with
+#   those artifacts in the build context. The builder stage trims the
+#   tree down to production deps; the runtime stage receives only the
+#   slimmed `node_modules` + `dist`.
+#
+# Why we save/restore `.prisma/` around `pnpm prune`:
+#   `prisma generate --sql` writes the schema-bound TypedSQL types to
+#   `node_modules/.pnpm/@prisma+client@<...>/node_modules/.prisma/client/`
+#   (and `.prisma/client/sql/` for TypedSQL). pnpm does NOT track these
+#   generator-output files; `pnpm prune --prod` rewrites the .pnpm store
+#   and silently discards them, which causes runtime crashes for any code
+#   importing from `@prisma/client/sql` or relying on the generated typed
+#   client output. Re-running `prisma generate --sql` inside the runtime
+#   stage isn't viable here (the SQL form needs a DB tunnel that isn't
+#   available from the docker build context), so we tar-snapshot the
+#   `.prisma/` directories before prune and untar them back into the same
+#   paths after. This preserves both the slim production image AND the
+#   required generator output.
+#
+# Why we keep the multi-stage split:
+#   Production image stays slim (devDependencies pruned) and final stage
+#   runs as the non-root `node` user with a HEALTHCHECK. See
+#   docs/handbook/SECURITY.md for the broader hardening rationale.
+#
+# Digest pinning:
+#   `node:20-slim` is pinned via `@sha256:<digest>` to make every build
+#   bit-for-bit reproducible and to defend against silent re-tagging by
+#   the upstream `node` maintainers. Dependabot (`.github/dependabot.yml`,
+#   `package-ecosystem: docker`) bumps the digest on a weekly cadence; the
+#   tag (`node:20-slim`) is kept on the same line as the digest so it
+#   stays human-readable in `docker history` output.
+
+# ---------------------------------------------------------------------------
+# Builder stage: prune to production deps, preserving Prisma generator output.
+# ---------------------------------------------------------------------------
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS builder
+
 WORKDIR /app
-COPY . ./
-CMD ["node", "-r", "tsconfig-paths/register", "dist/bootstrap/index.js"]
+
+# corepack ships pnpm as a shim; pin to the version recorded in package.json.
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+
+# Copy lockfile + manifests first so subsequent layers cache well.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+
+# Pre-built artifacts copied from the CI runner build context.
+COPY node_modules ./node_modules
+COPY dist ./dist
+
+# Save Prisma generator output (`.prisma/` directories under any package's
+# `node_modules`) before pruning. tar preserves the original paths verbatim,
+# so the post-prune restore lands the files back at the exact location node
+# resolves `@prisma/client/sql` from.
+#
+# `set -o pipefail` makes the `find ... | xargs ...` pipe fail loudly if find
+# (or tar) errors. debian's `/bin/sh` is dash and does NOT support
+# `pipefail`, so we switch this stage's shell to bash with `-eo pipefail`.
+# hadolint DL4006 explicitly warns against `/bin/sh` for the same reason.
+#
+# We deliberately do NOT add `|| true`: `xargs -0 -r` skips invocation when
+# its stdin is empty, so the legitimate "no `.prisma` dirs yet" case already
+# exits 0. Adding `|| true` would defeat the pipefail guard by swallowing
+# real find/tar errors (e.g. unreadable node_modules, full /tmp).
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+RUN find node_modules -type d -name .prisma -print0 \
+      | xargs -0 -r tar -cf /tmp/prisma-snapshot.tar
+
+# `pnpm prune --prod` requires `CI=true` (or `--config.confirm-modules-purge=
+# false`) under non-TTY docker buildx, otherwise pnpm 10 bails out with
+# `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`.
+ENV CI=true
+RUN pnpm prune --prod
+
+# Restore the saved `.prisma/` directories. The snapshot was created from
+# `find node_modules ...` (relative paths), and we extract from `WORKDIR
+# /app`, so the directories land back at the same
+# `node_modules/.pnpm/<pkg>/node_modules/.prisma/` locations they came from.
+RUN if [ -s /tmp/prisma-snapshot.tar ]; then \
+      tar -xf /tmp/prisma-snapshot.tar \
+        && rm /tmp/prisma-snapshot.tar; \
+    fi
+
+# ---------------------------------------------------------------------------
+# Runtime stage: minimal, non-root, HEALTHCHECK enabled.
+# ---------------------------------------------------------------------------
+FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS runtime
+
+WORKDIR /app
+
+# Prisma Query Engine 検出のため `openssl` + `ca-certificates` を入れる。
+# `node:20-slim` (debian 12 slim) はベースに openssl を含まないため、libssl
+# が見つからないと Prisma の runtime detection が `debian-openssl-1.1.x` に
+# fallback し、`prisma generate` が生成した `debian-openssl-3.0.x` 用バイナリ
+# とミスマッチして PrismaClientInitializationError で起動失敗する。
+# debian 12 の openssl パッケージは openssl 3.x なので、generate 済バイナリ
+# (binaryTargets = ["native","debian-openssl-3.0.x","linux-arm64-openssl-3.0.x"])
+# とそろう。`ca-certificates` は Cloud SQL / 外部 HTTPS 接続の TLS 検証用。
+# `USER root` は apt-get install のためだけに局所昇格、直後に `USER node` で
+# 非特権に戻す (root 実行時間を最小化)。
+USER root
+# Pinning openssl / ca-certificates to a debian APT version (DL3008) would
+# block security-patch bumps from upstream — debian rolls these forward on
+# a fast cadence specifically because they ARE security-relevant. We pin
+# the base image (`node:20-slim@sha256:...`) for reproducibility and let
+# debian's apt resolve the latest patched openssl / ca-certificates within
+# that frozen distribution snapshot.
+# hadolint ignore=DL3008
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssl ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+USER node
+
+ENV NODE_ENV=production \
+    PORT=3000
+
+# Copy only what's needed at runtime, owned by the non-root user.
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/dist ./dist
+COPY --from=builder --chown=node:node /app/package.json ./package.json
+
+EXPOSE 3000
+
+# HEALTHCHECK is ignored by Cloud Run (which uses its own startup/liveness
+# probes), but it's useful for local debugging via `docker run` /
+# docker-compose / any orchestrator that honours OCI HEALTHCHECK.
+# Node 20 ships a global `fetch`, so no extra runtime dep is required.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+# `tsc-alias` (run during `pnpm build`) rewrites every `@/` import in `dist/`
+# to a relative path, so `tsconfig-paths/register` is not needed at runtime.
+# `tsconfig.json` is also dropped from the runtime stage for the same reason.
+CMD ["node", "dist/bootstrap/index.js"]

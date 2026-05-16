@@ -46,7 +46,6 @@ export default class CommunityConverter {
     data: Prisma.CommunityCreateInput;
     image?: GqlImageInput;
   } {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { originalId, image, config, createdBy, ...prop } = input;
 
     return {

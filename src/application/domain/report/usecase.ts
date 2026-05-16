@@ -1,13 +1,16 @@
 import { Prisma, ReportStatus, ReportTemplateKind } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { ValidationError } from "@/errors/graphql";
+import { AuthorizationError, ValidationError } from "@/errors/graphql";
+import { getCommunityIdFromCtx } from "@/application/domain/utils";
 import logger from "@/infrastructure/logging";
 import ReportService from "@/application/domain/report/service";
-import ReportJudgeService, { JudgeParseError } from "@/application/domain/report/template/judgeService";
+import ReportJudgeService, {
+  JudgeParseError,
+} from "@/application/domain/report/template/judgeService";
 import ReportTemplateSelector from "@/application/domain/report/template/selector";
 import ReportPresenter from "@/application/domain/report/presenter";
-import { WeeklyReportPayload } from "@/application/domain/report/types";
+import { WeeklyReportPayload, ReportVariant } from "@/application/domain/report/types";
 import {
   addDays,
   daysBetweenJst,
@@ -22,7 +25,6 @@ import {
   GqlReportsConnection,
   GqlReport,
   GqlReportTemplate,
-  GqlReportVariant,
   GqlUpdateReportTemplatePayload,
   GqlApproveReportPayload,
   GqlPublishReportPayload,
@@ -87,8 +89,7 @@ const WEEKLY_SUMMARY_JUDGE_CRITERIA = {
       "deepest_chain が null なら true。",
     active_users:
       "community_context.active_users_in_window の値がレポートに正確に記載されているか。",
-    total_members:
-      "community_context.total_members の値がレポートに正確に記載されているか。",
+    total_members: "community_context.total_members の値がレポートに正確に記載されているか。",
     no_phantom_comparison:
       "previous_period が null のとき、前週比・先週比・増加・減少等の比較表現がレポートに含まれていないか。" +
       "previous_period が non-null なら true。",
@@ -97,13 +98,11 @@ const WEEKLY_SUMMARY_JUDGE_CRITERIA = {
     deepest_chain_mentioned:
       "deepest_chain が non-null のとき、そのエピソードがレポートに言及されているか。" +
       "deepest_chain が null なら true。",
-    actionable_insights:
-      "来週に向けた具体的なアクション（「〇〇をする」形式）が含まれているか。",
+    actionable_insights: "来週に向けた具体的なアクション（「〇〇をする」形式）が含まれているか。",
     reason_distinction:
       "活動認定と感謝の贈り合いが正確に区別されているか。" +
       "活動認定をメンバー間の感謝として誤記していたら false。",
-    no_enum_names:
-      "DONATION / GRANT / ONBOARDING 等の内部キー名がそのまま出力されていないか。",
+    no_enum_names: "DONATION / GRANT / ONBOARDING 等の内部キー名がそのまま出力されていないか。",
   },
 } as const;
 
@@ -325,13 +324,13 @@ export default class ReportUseCase {
   // =========================================================================
 
   async generateReport(
-    { input, permission }: GqlMutationGenerateReportArgs,
+    { input }: GqlMutationGenerateReportArgs,
     ctx: IContext,
   ): Promise<GqlGenerateReportPayload> {
-    if (permission.communityId !== input.communityId) {
-      throw new ValidationError("communityId in input does not match permission.communityId", []);
+    const communityId = getCommunityIdFromCtx(ctx);
+    if (communityId !== input.communityId) {
+      throw new ValidationError("communityId in input does not match x-community-id header", []);
     }
-    const communityId = permission.communityId;
 
     const periodFrom = truncateToJstDate(input.periodFrom);
     const periodTo = truncateToJstDate(input.periodTo);
@@ -508,21 +507,26 @@ export default class ReportUseCase {
     const coverage = analyzeCoverage(payload, outputMarkdown);
 
     // Coverage observability: surface top_user_names that the LLM
-    // failed to copy verbatim. Numeric fields (top_user_points etc.)
-    // are intentionally NOT logged here because their substring
-    // matches false-positive too easily (e.g. "21000" appearing as a
-    // fragment of "210000") to be a useful signal — the raw counters
-    // still flow into `coverageJson` for offline analysis.
-    const missedNames = coverage.top_user_names
-      .filter((u) => !u.mentioned)
-      .map((u) => u.name);
-    if (missedNames.length > 0) {
-      logger.warn("report.coverage.top_user_names_missed", {
-        event: "report.coverage.top_user_names_missed",
-        reportId: report.id,
-        variant: report.variant,
-        names: missedNames,
-      });
+    // failed to copy verbatim. Only WEEKLY_SUMMARY is required to
+    // mention top users by name — GRANT_APPLICATION / MEDIA_PR /
+    // MEMBER_NEWSLETTER deliberately omit individual names, so a
+    // "missed name" there is by-design, not a regression. Gating the
+    // warn log by variant prevents false-positive alerts from those
+    // designs. Numeric fields (top_user_points etc.) are intentionally
+    // NOT logged here because their substring matches false-positive
+    // too easily (e.g. "21000" appearing as a fragment of "210000")
+    // to be a useful signal — the raw counters still flow into
+    // `coverageJson` for offline analysis.
+    if (report.variant === ReportVariant.WeeklySummary) {
+      const missedNames = coverage.top_user_names.filter((u) => !u.mentioned).map((u) => u.name);
+      if (missedNames.length > 0) {
+        logger.warn("report.coverage.top_user_names_missed", {
+          event: "report.coverage.top_user_names_missed",
+          reportId: report.id,
+          variant: report.variant,
+          names: missedNames,
+        });
+      }
     }
 
     let judgeTemplate;
@@ -563,9 +567,7 @@ export default class ReportUseCase {
     // either, so this branch is unreachable in practice but keeps the
     // call contract honest for future variants.
     const judgeCriteria =
-      report.variant === GqlReportVariant.WeeklySummary
-        ? WEEKLY_SUMMARY_JUDGE_CRITERIA
-        : undefined;
+      report.variant === ReportVariant.WeeklySummary ? WEEKLY_SUMMARY_JUDGE_CRITERIA : undefined;
 
     let judgeResult;
     try {
@@ -724,8 +726,8 @@ export default class ReportUseCase {
     periodFrom: Date,
     periodTo: Date,
   ): Promise<Prisma.ReportUncheckedCreateInput> {
-    // `communityId` is sourced from the already-authorized
-    // `permission.communityId` upstream, rather than re-reading
+    // `communityId` is sourced from the authorized request context
+    // (`x-community-id` header) upstream, rather than re-reading
     // `payload.community_id`, so the two cannot drift if the payload
     // builder's responsibilities change later.
     const parentRegenerateCount = await this.supersedeParentIfRegenerating(
@@ -795,11 +797,12 @@ export default class ReportUseCase {
   }
 
   async browseReports(
-    { communityId, variant, status, cursor, first, permission }: GqlQueryReportsArgs,
+    { communityId, variant, status, cursor, first }: GqlQueryReportsArgs,
     ctx: IContext,
   ): Promise<GqlReportsConnection> {
-    if (permission.communityId !== communityId) {
-      throw new ValidationError("communityId does not match permission.communityId", []);
+    const ctxCommunityId = getCommunityIdFromCtx(ctx);
+    if (ctxCommunityId !== communityId) {
+      throw new ValidationError("communityId does not match x-community-id header", []);
     }
     const clampedFirst = first
       ? clampInt(first, 1, MAX_REPORTS_PER_PAGE, "first")
@@ -816,7 +819,15 @@ export default class ReportUseCase {
 
   async viewReport({ id }: GqlQueryReportArgs, ctx: IContext): Promise<GqlReport | null> {
     const report = await this.service.getReportById(ctx, id);
-    return report ? ReportPresenter.report(report) : null;
+    if (!report) return null;
+    // Non-admin owners must only see reports of their own community.
+    // The IsCommunityOwner rule verifies ownership of `ctx.communityId`,
+    // but does not bind the report id to that community — without this
+    // check an owner could view another community's report by id.
+    if (!ctx.isAdmin && report.communityId !== ctx.communityId) {
+      return null;
+    }
+    return ReportPresenter.report(report);
   }
 
   async viewReportTemplate(
@@ -892,9 +903,10 @@ export default class ReportUseCase {
     { id }: GqlMutationApproveReportArgs,
     ctx: IContext,
   ): Promise<GqlApproveReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.APPROVED);
       return this.service.updateReportStatus(ctx, id, ReportStatus.APPROVED, undefined, tx);
     });
@@ -905,9 +917,10 @@ export default class ReportUseCase {
     { id, finalContent }: GqlMutationPublishReportArgs,
     ctx: IContext,
   ): Promise<GqlPublishReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.PUBLISHED);
       const updated = await this.service.updateReportStatus(
         ctx,
@@ -936,9 +949,10 @@ export default class ReportUseCase {
     { id }: GqlMutationRejectReportArgs,
     ctx: IContext,
   ): Promise<GqlRejectReportPayload> {
-    const report = await ctx.issuer.admin(ctx, async (tx) => {
+    const report = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const existing = await this.service.getReportById(ctx, id, tx);
       if (!existing) throw new Error(`Report ${id} not found`);
+      this.assertReportInScope(ctx, existing.communityId);
       this.service.assertStatusTransition(existing.status, ReportStatus.REJECTED);
       return this.service.updateReportStatus(ctx, id, ReportStatus.REJECTED, undefined, tx);
     });
@@ -946,10 +960,11 @@ export default class ReportUseCase {
   }
 
   /**
-   * Phase 2 sysAdmin: cross-community report search. The IsAdmin
-   * directive on the GraphQL query is the only authz gate (no
-   * permission.communityId hand-off) — the usecase trusts the
-   * directive and does not re-check sysRole.
+   * Phase 2: cross-community report search. SYS_ADMIN sees every
+   * community (or filters by `args.communityId`); IsCommunityOwner
+   * callers are pinned to their own community — the optional
+   * `communityId` arg, when supplied, must match `ctx.communityId`
+   * to keep the result set from leaking other communities' reports.
    */
   async browseAllReports(
     args: GqlQueryReportsAllArgs,
@@ -958,8 +973,26 @@ export default class ReportUseCase {
     const first = args.first
       ? validateIntInRange(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
       : DEFAULT_REPORTS_PER_PAGE;
+
+    // Non-admin callers (community owners) must stay inside their own
+    // community. If they pass `communityId`, it has to match the
+    // header-bound scope; if they omit it, we inject ctx.communityId so
+    // the underlying repo doesn't fan out across the platform.
+    // `getCommunityIdFromCtx` throws when the header is missing — the
+    // IsCommunityOwner rule already rejects that state, but rechecking
+    // here keeps the cross-community guarantee local to this method
+    // rather than implicit in the authz layer.
+    let scopedCommunityId = args.communityId ?? undefined;
+    if (!ctx.isAdmin) {
+      const ctxCommunityId = getCommunityIdFromCtx(ctx);
+      if (args.communityId && args.communityId !== ctxCommunityId) {
+        throw new AuthorizationError("communityId does not match the current scope");
+      }
+      scopedCommunityId = ctxCommunityId;
+    }
+
     const result = await this.service.getAllReports(ctx, {
-      communityId: args.communityId ?? undefined,
+      communityId: scopedCommunityId,
       status: args.status ?? undefined,
       variant: args.variant ?? undefined,
       publishedAfter: args.publishedAfter ? new Date(args.publishedAfter) : undefined,
@@ -988,11 +1021,7 @@ export default class ReportUseCase {
       cursor: args.cursor ?? undefined,
       first,
     });
-    return ReportPresenter.adminReportSummaryConnection(
-      result.items,
-      result.totalCount,
-      first,
-    );
+    return ReportPresenter.adminReportSummaryConnection(result.items, result.totalCount, first);
   }
 
   // =========================================================================
@@ -1003,6 +1032,17 @@ export default class ReportUseCase {
     await ctx.issuer.internal((tx) => this.service.refreshTransactionSummaryDaily(ctx, tx));
     await ctx.issuer.internal((tx) => this.service.refreshUserTransactionDaily(ctx, tx));
     await ctx.issuer.internal((tx) => this.service.refreshDonationTxEdges(ctx, tx));
+  }
+
+  // IsCommunityOwner gates approve/publish/reject by `ctx.communityId` only;
+  // it does not bind the report `id` to that community. Without this check
+  // an owner of community A could approve/publish/reject a report of
+  // community B by passing the foreign id. SYS_ADMIN bypasses scoping.
+  private assertReportInScope(ctx: IContext, reportCommunityId: string): void {
+    if (ctx.isAdmin) return;
+    if (reportCommunityId !== ctx.communityId) {
+      throw new AuthorizationError("Report does not belong to the current community");
+    }
   }
 }
 
@@ -1026,12 +1066,7 @@ function clampInt(value: number, min: number, max: number, name: string): number
  * legacy `browseReports`) keep their current behaviour to avoid
  * widening this PR's scope into a domain-wide refactor.
  */
-function validateIntInRange(
-  value: number,
-  min: number,
-  max: number,
-  name: string,
-): number {
+function validateIntInRange(value: number, min: number, max: number, name: string): number {
   if (!Number.isInteger(value) || value < min || value > max) {
     throw new ValidationError(
       `${name} must be an integer between ${min} and ${max}, got ${value}`,

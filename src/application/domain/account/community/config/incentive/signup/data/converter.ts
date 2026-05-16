@@ -17,7 +17,6 @@ export default class CommunitySignupBonusConfigConverter {
   ): Prisma.CommunitySignupBonusConfigUncheckedCreateInput {
     // For create operation, we need to handle the community relation differently
     // and convert update operations to simple values
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { community, ...updateData } = data;
 
     // Create a new object for create operation with primitive values

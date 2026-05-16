@@ -14,7 +14,12 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { PublishStatus } from "@prisma/client";
-import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
+import {
+  clampFirst,
+  getCommunityIdFromCtx,
+  getCurrentUserId,
+  getMembershipRolesByCtx,
+} from "@/application/domain/utils";
 import { IUtilityService } from "./data/interface";
 import UtilityPresenter from "./presenter";
 
@@ -56,12 +61,9 @@ export default class UtilityUseCase {
     return UtilityPresenter.query(data, hasNextPage, cursor);
   }
 
-  async visitorViewUtility(
-    ctx: IContext,
-    { id, permission }: GqlQueryUtilityArgs,
-  ): Promise<GqlUtility | null> {
+  async visitorViewUtility(ctx: IContext, { id }: GqlQueryUtilityArgs): Promise<GqlUtility | null> {
     const currentUserId = ctx.currentUser?.id;
-    const communityIds = [permission.communityId];
+    const communityIds = [getCommunityIdFromCtx(ctx)];
 
     const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
 
@@ -78,18 +80,13 @@ export default class UtilityUseCase {
 
   async managerCreateUtility(
     ctx: IContext,
-    { input, permission }: GqlMutationUtilityCreateArgs,
+    { input }: GqlMutationUtilityCreateArgs,
   ): Promise<GqlUtilityCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
+    const communityId = getCommunityIdFromCtx(ctx);
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const res = await this.service.createUtility(
-        ctx,
-        input,
-        currentUserId,
-        permission.communityId,
-        tx,
-      );
+      const res = await this.service.createUtility(ctx, input, currentUserId, communityId, tx);
       return UtilityPresenter.create(res);
     });
   }

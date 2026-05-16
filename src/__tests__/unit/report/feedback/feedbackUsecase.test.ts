@@ -17,6 +17,7 @@ describe("ReportFeedbackUseCase.submitReportFeedback", () => {
   const userId = "user-1";
 
   const fakeCtx = {
+    communityId,
     currentUser: { id: userId, sysRole: "USER" },
     issuer: {
       // Pass-through both variants: the usecase wraps the whole

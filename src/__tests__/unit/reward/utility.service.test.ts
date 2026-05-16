@@ -9,6 +9,7 @@ import {
   GqlMutationUtilityUpdateInfoArgs,
   GqlUtilityUpdateInfoInput,
   GqlCheckCommunityPermissionInput,
+  GqlUtilityFilterInput,
 } from "@/types/graphql";
 import { IUtilityRepository } from "@/application/domain/reward/utility/data/interface";
 import UtilityConverter from "@/application/domain/reward/utility/data/converter";
@@ -283,20 +284,20 @@ describe("UtilityService", () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
       
       expect(() => {
-        service.validatePublishStatus(allowedStatuses, null as any);
+        service.validatePublishStatus(allowedStatuses, undefined);
       }).not.toThrow();
       
       expect(() => {
-        service.validatePublishStatus(allowedStatuses, undefined as any);
+        service.validatePublishStatus(allowedStatuses, undefined);
       }).not.toThrow();
       
       expect(() => {
-        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as any);
+        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as unknown as GqlUtilityFilterInput);
       }).not.toThrow();
     });
 
     it("should handle empty allowed statuses array", () => {
-      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as GqlUtilityFilterInput;
       
       expect(() => {
         service.validatePublishStatus([], filter);
@@ -305,7 +306,7 @@ describe("UtilityService", () => {
 
     it("should handle empty publishStatus array", () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [] } as any;
+      const filter = { publishStatus: [] } as GqlUtilityFilterInput;
 
       expect(() => {
         service.validatePublishStatus(allowedStatuses, filter);
@@ -315,7 +316,7 @@ describe("UtilityService", () => {
     it("should handle very large arrays", () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
       const largeArray = new Array(1000).fill(PublishStatus.PUBLIC);
-      const filter = { publishStatus: largeArray } as any;
+      const filter = { publishStatus: largeArray } as GqlUtilityFilterInput;
 
       expect(() => {
         service.validatePublishStatus(allowedStatuses, filter);
@@ -324,7 +325,7 @@ describe("UtilityService", () => {
 
     it("should validate error message format", () => {
       const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
-      const filter = { publishStatus: [PublishStatus.PRIVATE] } as any;
+      const filter = { publishStatus: [PublishStatus.PRIVATE] } as GqlUtilityFilterInput;
 
       try {
         service.validatePublishStatus(allowedStatuses, filter);
@@ -340,7 +341,7 @@ describe("UtilityService", () => {
 
     it("should handle mixed valid and invalid statuses", () => {
       const allowedStatuses = [PublishStatus.PUBLIC];
-      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PRIVATE, "INVALID"] } as any;
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PRIVATE, "INVALID" as PublishStatus] } as GqlUtilityFilterInput;
 
       try {
         service.validatePublishStatus(allowedStatuses, filter);

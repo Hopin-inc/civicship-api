@@ -56,7 +56,7 @@ export default class ReservationValidator {
     return { availableParticipationId: target.id };
   }
 
-  validateCancellable(slotStartAt: Date, opportunityId?: string) {
+  validateCancellable(slotStartAt: Date, _opportunityId?: string) {
     const now = new Date();
     
     // Use DEFAULT_CANCELLATION_DEADLINE_DAYS (1 day) for all activities

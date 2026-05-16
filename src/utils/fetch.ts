@@ -72,7 +72,7 @@ export const fetchData = async <T = unknown>(
     clearTimeout(timeoutId);
 
     if (isAbortError(error)) {
-      throw new Error(`Request timeout after ${timeout}ms`);
+      throw new Error(`Request timeout after ${timeout}ms`, { cause: error });
     }
 
     throw error;

@@ -87,6 +87,7 @@ describe("ReportUseCase.generateReport", () => {
   // test-only: production IContext pulls in issuer / auth / loader wiring
   // we don't exercise here; the cast keeps the mock shape minimal.
   const fakeCtx = {
+    communityId,
     issuer: {
       onlyBelongingCommunity: (
         _ctx: IContext,
@@ -812,15 +813,15 @@ describe("ReportUseCase A-3 community last-publish pointer maintenance", () => {
   const communityId = "kibotcha";
   const fakeTx = {} as never;
   const fakeCtx = {
+    communityId,
+    isAdmin: true,
     issuer: {
       onlyBelongingCommunity: (
         _ctx: IContext,
         fn: (tx: unknown) => Promise<unknown>,
       ): Promise<unknown> => fn(fakeTx),
-      admin: (
-        _ctx: IContext,
-        fn: (tx: unknown) => Promise<unknown>,
-      ): Promise<unknown> => fn(fakeTx),
+      admin: (_ctx: IContext, fn: (tx: unknown) => Promise<unknown>): Promise<unknown> =>
+        fn(fakeTx),
     },
     currentUser: { id: "admin-user" },
   } as unknown as IContext;
@@ -1019,7 +1020,10 @@ describe("ReportUseCase A-3 community last-publish pointer maintenance", () => {
  */
 describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
   const communityId = "kibotcha";
-  const fakeCtx = {} as IContext;
+  // SYS_ADMIN context for the cross-community admin paths. browseAllReports
+  // pins non-admin callers to ctx.communityId, so the admin variant must
+  // opt out of that scoping explicitly.
+  const fakeCtx = { isAdmin: true } as IContext;
 
   let service: jest.Mocked<Pick<
     ReportService,
@@ -1115,6 +1119,29 @@ describe("ReportUseCase admin queries (Phase 1 + Phase 2)", () => {
     await expect(
       usecase.browseAllReports({ first: 500 }, fakeCtx),
     ).rejects.toThrow(/first must be an integer between 1 and 100/);
+  });
+
+  it("browseAllReports pins owner callers to ctx.communityId when args.communityId is omitted", async () => {
+    const ownerCtx = { communityId } as IContext;
+    await usecase.browseAllReports({}, ownerCtx);
+    expect(service.getAllReports).toHaveBeenLastCalledWith(
+      ownerCtx,
+      expect.objectContaining({ communityId }),
+    );
+  });
+
+  it("browseAllReports rejects owner calls when args.communityId points at a foreign community", async () => {
+    const ownerCtx = { communityId } as IContext;
+    await expect(
+      usecase.browseAllReports({ communityId: "other-community" }, ownerCtx),
+    ).rejects.toThrow(/communityId does not match the current scope/);
+  });
+
+  it("browseAllReports rejects non-admin callers with no x-community-id header (defence-in-depth)", async () => {
+    const ownerCtx = {} as IContext;
+    await expect(usecase.browseAllReports({}, ownerCtx)).rejects.toThrow(
+      /communityId is required/,
+    );
   });
 
   it("viewReportSummaries clamps `first` and forwards cursor", async () => {

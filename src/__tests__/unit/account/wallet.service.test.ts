@@ -6,6 +6,7 @@ import { InsufficientBalanceError, NotFoundError, ValidationError } from "@/erro
 import { IContext } from "@/types/server";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
+import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 
 export class MockWalletRepository implements IWalletRepository {
   query = jest.fn();
@@ -243,7 +244,7 @@ describe("WalletService", () => {
       const walletWithNullView = {
         id: "wallet-1",
         currentPointView: null
-      } as any;
+      } as unknown as PrismaWallet;
 
       const issuerError = new Error("Issuer service unavailable");
       (mockCtx.issuer.public as jest.Mock).mockRejectedValue(issuerError);
@@ -259,9 +260,11 @@ describe("WalletService", () => {
       const walletWithNullView = {
         id: "wallet-1", 
         currentPointView: null
-      } as any;
+      } as unknown as PrismaWallet;
 
-      const mockTransactionService = container.resolve("TransactionService") as any;
+      const mockTransactionService = container.resolve<{ refreshCurrentPoint: jest.Mock }>(
+        "TransactionService",
+      );
       mockTransactionService.refreshCurrentPoint.mockRejectedValue(
         new Error("Transaction refresh failed")
       );
@@ -281,7 +284,7 @@ describe("WalletService", () => {
       const walletWithView = {
         id: "wallet-1",
         currentPointView: { currentPoint: BigInt(1000) }
-      } as any;
+      } as unknown as PrismaWallet;
 
       mockRepository.findFirstExistingMemberWallet.mockResolvedValue(walletWithView);
 
@@ -295,19 +298,21 @@ describe("WalletService", () => {
       const walletWithNullView = {
         id: "wallet-1",
         currentPointView: null
-      } as any;
+      } as unknown as PrismaWallet;
 
       const walletWithView = {
         id: "wallet-1", 
         currentPointView: { currentPoint: BigInt(1000) }
-      } as any;
+      } as unknown as PrismaWallet;
 
       mockRepository.findFirstExistingMemberWallet
         .mockResolvedValueOnce(walletWithNullView)
         .mockResolvedValueOnce(walletWithView);
 
       (mockCtx.issuer.public as jest.Mock).mockResolvedValue(undefined);
-      const mockTransactionService = container.resolve("TransactionService") as any;
+      const mockTransactionService = container.resolve<{ refreshCurrentPoint: jest.Mock }>(
+        "TransactionService",
+      );
       mockTransactionService.refreshCurrentPoint.mockResolvedValue(undefined);
 
       const result = await walletService.findMemberWalletOrThrow(mockCtx, "user-1", "community-1");
@@ -320,14 +325,16 @@ describe("WalletService", () => {
       const walletWithNullView = {
         id: "wallet-1",
         currentPointView: null
-      } as any;
+      } as unknown as PrismaWallet;
 
       mockRepository.findFirstExistingMemberWallet
         .mockResolvedValueOnce(walletWithNullView)
         .mockResolvedValueOnce(null);
 
       (mockCtx.issuer.public as jest.Mock).mockResolvedValue(undefined);
-      const mockTransactionService = container.resolve("TransactionService") as any;
+      const mockTransactionService = container.resolve<{ refreshCurrentPoint: jest.Mock }>(
+        "TransactionService",
+      );
       mockTransactionService.refreshCurrentPoint.mockResolvedValue(undefined);
 
       await expect(

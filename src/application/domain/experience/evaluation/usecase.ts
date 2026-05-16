@@ -17,7 +17,7 @@ import EvaluationPresenter from "@/application/domain/experience/evaluation/pres
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
+import { clampFirst, getCommunityIdFromCtx, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
@@ -65,11 +65,11 @@ export default class EvaluationUseCase {
   }
 
   async managerBulkCreateEvaluations(
-    { input, permission }: GqlMutationEvaluationBulkCreateArgs,
+    { input }: GqlMutationEvaluationBulkCreateArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationBulkCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    const communityId = permission.communityId;
+    const communityId = getCommunityIdFromCtx(ctx);
 
     const createdEvaluations = await this.createEvaluationsAndUpdateStatus(
       ctx,

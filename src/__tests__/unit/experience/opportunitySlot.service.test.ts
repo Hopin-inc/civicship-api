@@ -4,7 +4,11 @@ import OpportunitySlotService from "@/application/domain/experience/opportunityS
 import { NotFoundError } from "@/errors/graphql";
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { GqlOpportunitySlotSetHostingStatusInput } from "@/types/graphql";
+import {
+  GqlOpportunitySlotSetHostingStatusInput,
+  GqlOpportunitySlotCreateInput,
+  GqlOpportunitySlotUpdateInput,
+} from "@/types/graphql";
 
 class MockOpportunitySlotRepository {
   query = jest.fn();
@@ -106,7 +110,7 @@ describe("OpportunitySlotService", () => {
     });
 
     it("should create slots if inputs are provided", async () => {
-      const inputs = [{ startsAt: new Date() }] as any[];
+      const inputs = [{ startsAt: new Date() }] as unknown as GqlOpportunitySlotCreateInput[];
       const converted = [{ startsAt: new Date() }];
 
       mockConverter.createMany.mockReturnValue(converted);
@@ -132,7 +136,7 @@ describe("OpportunitySlotService", () => {
     });
 
     it("should update slots if inputs are provided", async () => {
-      const inputs = [{ id: "slot-1" }] as any[];
+      const inputs = [{ id: "slot-1" }] as unknown as GqlOpportunitySlotUpdateInput[];
 
       mockConverter.update.mockReturnValue({ updated: true });
       mockRepository.update.mockResolvedValue({ id: "slot-1" });

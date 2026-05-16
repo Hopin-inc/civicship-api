@@ -4,9 +4,11 @@
 extend type Mutation {
   incentiveGrantRetry(
     input: IncentiveGrantRetryInput!
-    permission: CheckCommunityPermissionInput!
-  ): IncentiveGrantRetryPayload
-  @authz(rules: [IsCommunityOwner])
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): IncentiveGrantRetryPayload @authz(rules: [IsCommunityOwner])
 }
 
 # ------------------------------
@@ -27,5 +29,4 @@ type IncentiveGrantRetrySuccess {
 # ------------------------------
 # IncentiveGrant Mutation Union (Payload) Definitions
 # ------------------------------
-union IncentiveGrantRetryPayload =
-  IncentiveGrantRetrySuccess
+union IncentiveGrantRetryPayload = IncentiveGrantRetrySuccess

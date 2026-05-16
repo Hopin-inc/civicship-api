@@ -2,47 +2,50 @@
 # Query Definitions
 # ------------------------------
 extend type Query {
-    utilities(
-        filter: UtilityFilterInput
-        sort: UtilitySortInput
-        cursor: String
-        first: Int
-    ): UtilitiesConnection!
-    utility(
-        id: ID!
-        permission: CheckCommunityPermissionInput!
-    ): Utility
+  utilities(
+    filter: UtilityFilterInput
+    sort: UtilitySortInput
+    cursor: String
+    first: Int
+  ): UtilitiesConnection!
+  utility(
+    id: ID!
+    permission: CheckCommunityPermissionInput
+      @deprecated(
+        reason: "Use the `x-community-id` request header instead; this argument is ignored when the header is present."
+      )
+  ): Utility
 }
 
 # ------------------------------
 # Type Definitions for Queries
 # ------------------------------
 type UtilitiesConnection {
-    edges: [UtilityEdge]
-    pageInfo: PageInfo!
-    totalCount: Int!
+  edges: [UtilityEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type UtilityEdge implements Edge {
-    cursor: String!
-    node: Utility
+  cursor: String!
+  node: Utility
 }
 
 # ------------------------------
 # Input Definitions for Queries
 # ------------------------------
 input UtilityFilterInput {
-    communityIds: [ID!]
-    ownerIds: [ID!]
+  communityIds: [ID!]
+  ownerIds: [ID!]
 
-    publishStatus: [PublishStatus!]
+  publishStatus: [PublishStatus!]
 
-    and: [UtilityFilterInput!]
-    or: [UtilityFilterInput!]
-    not: UtilityFilterInput
+  and: [UtilityFilterInput!]
+  or: [UtilityFilterInput!]
+  not: UtilityFilterInput
 }
 
 input UtilitySortInput {
-    createdAt: SortDirection
-    pointsRequired: SortDirection
+  createdAt: SortDirection
+  pointsRequired: SortDirection
 }

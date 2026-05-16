@@ -120,7 +120,7 @@ describe("IncentiveGrantService", () => {
     it("should skip when already granted (P2002 error)", async () => {
       mockConfigService.get.mockResolvedValue({ isEnabled: true, bonusPoint: 100 });
       const p2002Error = new Error("Unique constraint violation");
-      (p2002Error as any).code = "P2002";
+      (p2002Error as Error & { code?: string }).code = "P2002";
       mockRepository.create.mockRejectedValue(p2002Error);
 
       const result = await service.grantSignupBonusIfEnabled(
@@ -266,7 +266,7 @@ describe("IncentiveGrantService", () => {
       const bonusPoint = 100;
       const config = { isEnabled: true, bonusPoint, message: null };
       const error = new Error("Database error");
-      (error as any).code = "P2025";
+      (error as Error & { code?: string }).code = "P2025";
 
       mockConfigService.get.mockResolvedValue(config);
       mockRepository.create.mockResolvedValue({});
@@ -498,7 +498,7 @@ describe("IncentiveGrantService", () => {
     });
 
     it("should throw UnsupportedGrantTypeError for non-SIGNUP type", async () => {
-      const grant = createMockGrant({ type: "REFERRAL" as any });
+      const grant = createMockGrant({ type: "REFERRAL" as PrismaIncentiveGrant["type"] });
       mockRepository.markAsRetrying.mockResolvedValue(true);
 
       await expect(service.retryFailedGrant(mockCtx, grant, mockTx)).rejects.toThrow(

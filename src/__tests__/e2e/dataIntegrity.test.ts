@@ -68,8 +68,16 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const ctx1 = { currentUser: { id: user1.id }, issuer } as IContext;
-    const ctx2 = { currentUser: { id: user2.id }, issuer } as IContext;
+    const ctx1 = {
+      currentUser: { id: user1.id },
+      issuer,
+      communityId: community.id,
+    } as IContext;
+    const ctx2 = {
+      currentUser: { id: user2.id },
+      issuer,
+      communityId: community.id,
+    } as IContext;
 
     await transactionUseCase.ownerGrantCommunityPoint(ctx1, {
       input: { transferPoints: 300, toUserId: user1.id },
@@ -130,7 +138,11 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+      communityId: community.id,
+    } as IContext;
 
     await transactionUseCase.ownerGrantCommunityPoint(ctx, {
       input: { transferPoints: 50, toUserId: user.id },
@@ -159,7 +171,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
   it("should maintain data integrity across complex multi-step workflows", async () => {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    const users: any[] = [];
+    const users: Awaited<ReturnType<typeof TestDataSourceHelper.createUser>>[] = [];
     for (let i = 0; i < 5; i++) {
       const user = await TestDataSourceHelper.createUser({
         name: `User ${i + 1}`,
@@ -179,7 +191,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
       community: { connect: { id: community.id } },
     });
 
-    const userWallets: any[] = [];
+    const userWallets: Awaited<ReturnType<typeof TestDataSourceHelper.createWallet>>[] = [];
     for (const user of users) {
       const wallet = await TestDataSourceHelper.createWallet({
         type: WalletType.MEMBER,
@@ -199,7 +211,11 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
     await TestDataSourceHelper.refreshCurrentPoints();
 
     for (let i = 0; i < users.length; i++) {
-      const ctx = { currentUser: { id: users[i].id }, issuer } as IContext;
+      const ctx = {
+        currentUser: { id: users[i].id },
+        issuer,
+        communityId: community.id,
+      } as IContext;
       await transactionUseCase.ownerGrantCommunityPoint(ctx, {
         input: { transferPoints: 1000, toUserId: users[i].id },
         permission: { communityId: community.id },
@@ -207,7 +223,11 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
     }
 
     for (let i = 0; i < users.length - 1; i++) {
-      const ctx = { currentUser: { id: users[i].id }, issuer } as IContext;
+      const ctx = {
+        currentUser: { id: users[i].id },
+        issuer,
+        communityId: community.id,
+      } as IContext;
       await transactionUseCase.userDonateSelfPointToAnother(ctx, {
         input: {
           communityId: community.id,
@@ -220,7 +240,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const finalWallets: any[] = [];
+    const finalWallets: Awaited<ReturnType<typeof TestDataSourceHelper.findWallet>>[] = [];
     for (const wallet of userWallets) {
       const updated = await TestDataSourceHelper.findWallet(wallet.id);
       finalWallets.push(updated);

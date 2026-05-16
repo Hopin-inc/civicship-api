@@ -48,8 +48,8 @@ export async function validateFirebasePhoneAuth(req: Request, res: Response, nex
       return newUser;
     });
 
-    (req as any).user = user;
-    (req as any).uid = uid;
+    res.locals.user = user;
+    res.locals.uid = uid;
     next();
   } catch (error) {
     logger.error("Firebase phone auth validation error:", error);

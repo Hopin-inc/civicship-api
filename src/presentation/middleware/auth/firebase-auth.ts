@@ -7,6 +7,7 @@ import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta } from "@/types/server";
 import { AuthenticationError } from "@/errors/graphql";
+import { getErrorCode, toError } from "@/utils/error";
 
 export async function handleFirebaseAuth(
   headers: AuthHeaders,
@@ -39,8 +40,8 @@ export async function handleFirebaseAuth(
     const uid = decoded.uid;
     const platform = decoded.platform;
 
-    const provider = (decoded as any).firebase?.sign_in_provider;
-    const decodedTenant = (decoded as any).firebase?.tenant;
+    const provider = decoded.firebase?.sign_in_provider;
+    const decodedTenant = decoded.firebase?.tenant;
 
     if (decodedTenant !== tenantId) {
       logger.warn("🚨 Tenant mismatch detected", {
@@ -103,12 +104,12 @@ export async function handleFirebaseAuth(
     if (err instanceof AuthenticationError) {
       throw err;
     }
-    const error = err as any;
+    const error = toError(err);
     logger.warn("⚠️ Firebase verification failed, falling back to anonymous", {
       method: verificationMethod,
       tenantId,
       communityId,
-      errorCode: error.code || "unknown",
+      errorCode: getErrorCode(err) ?? "unknown",
       errorMessage: error.message,
       tokenLength: idToken.length,
     });

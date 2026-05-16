@@ -13,6 +13,16 @@ export function getCurrentUserId(ctx: IContext, inputUserId?: string): string {
   return currentUserId;
 }
 
+// `x-community-id` ヘッダ由来。auth ミドルウェアで必須化されているため通常は必ず存在するが、
+// バッチ等で空コンテキストが渡る経路があるため明示的にガードする。
+export function getCommunityIdFromCtx(ctx: IContext): string {
+  const communityId = ctx.communityId;
+  if (!communityId) {
+    throw new AuthorizationError("communityId is required (missing x-community-id header)");
+  }
+  return communityId;
+}
+
 export function clampFirst(first: number | null | undefined): number {
   const LIMIT = 500;
   if (typeof first === "number" && first > LIMIT) {
@@ -106,11 +116,7 @@ export function canViewByPublishStatus(
   }
 
   // Check membership role
-  const { isManager, isMember } = getMembershipRolesByCtx(
-    ctx,
-    [communityId],
-    currentUserId,
-  );
+  const { isManager, isMember } = getMembershipRolesByCtx(ctx, [communityId], currentUserId);
 
   // Manager/Owner can view all statuses in their community
   if (isManager[communityId]) {
@@ -120,8 +126,7 @@ export function canViewByPublishStatus(
   // Member can view PUBLIC and COMMUNITY_INTERNAL
   if (isMember[communityId]) {
     return (
-      publishStatus === PublishStatus.PUBLIC ||
-      publishStatus === PublishStatus.COMMUNITY_INTERNAL
+      publishStatus === PublishStatus.PUBLIC || publishStatus === PublishStatus.COMMUNITY_INTERNAL
     );
   }
 
@@ -155,11 +160,7 @@ export function canViewArticleByPublishStatus(
   }
 
   // Check membership role
-  const { isManager, isMember } = getMembershipRolesByCtx(
-    ctx,
-    [communityId],
-    currentUserId,
-  );
+  const { isManager, isMember } = getMembershipRolesByCtx(ctx, [communityId], currentUserId);
 
   // Manager/Owner can view all statuses in their community
   if (isManager[communityId]) {
@@ -169,8 +170,7 @@ export function canViewArticleByPublishStatus(
   // Member can view PUBLIC and COMMUNITY_INTERNAL
   if (isMember[communityId]) {
     return (
-      publishStatus === PublishStatus.PUBLIC ||
-      publishStatus === PublishStatus.COMMUNITY_INTERNAL
+      publishStatus === PublishStatus.PUBLIC || publishStatus === PublishStatus.COMMUNITY_INTERNAL
     );
   }
 

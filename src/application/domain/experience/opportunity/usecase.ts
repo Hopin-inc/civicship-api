@@ -19,6 +19,7 @@ import { PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import {
   clampFirst,
+  getCommunityIdFromCtx,
   getMembershipRolesByCtx,
 } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
@@ -100,11 +101,12 @@ export default class OpportunityUseCase {
   }
 
   async managerCreateOpportunity(
-    { input, permission }: GqlMutationOpportunityCreateArgs,
+    { input }: GqlMutationOpportunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityCreatePayload> {
+    const communityId = getCommunityIdFromCtx(ctx);
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const record = await this.service.createOpportunity(ctx, input, permission.communityId, tx);
+      const record = await this.service.createOpportunity(ctx, input, communityId, tx);
       return OpportunityPresenter.create(record);
     });
   }

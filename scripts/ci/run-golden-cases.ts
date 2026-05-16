@@ -4,7 +4,7 @@ import { container } from "tsyringe";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { AnthropicLlmClient } from "@/infrastructure/libs/llm";
 import ReportService from "@/application/domain/report/service";
-import ReportJudgeService from "@/application/domain/report/judgeService";
+import ReportJudgeService from "@/application/domain/report/template/judgeService";
 import ReportRepository from "@/application/domain/report/data/repository";
 import { renderPromptTemplate } from "@/application/domain/report/util/promptRenderer";
 import { analyzeCoverage } from "@/application/domain/report/util/coverage";
@@ -144,15 +144,16 @@ async function runOneCase(
     };
   }
 
-  const template = pinnedVersion !== null
-    ? await service.getTemplateByVersion(
-        ctx,
-        goldenCase.variant,
-        ReportTemplateKind.GENERATION,
-        pinnedVersion,
-        null,
-      )
-    : await service.getTemplate(ctx, goldenCase.variant, null);
+  const template =
+    pinnedVersion !== null
+      ? await service.getTemplateByVersion(
+          ctx,
+          goldenCase.variant,
+          ReportTemplateKind.GENERATION,
+          pinnedVersion,
+          null,
+        )
+      : await service.getTemplate(ctx, goldenCase.variant, null);
   if (!template) {
     // When no version is pinned, `service.getTemplate` filters by
     // isActive=true, so surface "active" in the failure message — a
@@ -318,7 +319,9 @@ async function main() {
 
   const failed = outcomes.filter((o) => !o.pass);
   console.info(`\n=== Summary ===`);
-  console.info(`Total: ${outcomes.length}, Passed: ${outcomes.length - failed.length}, Failed: ${failed.length}`);
+  console.info(
+    `Total: ${outcomes.length}, Passed: ${outcomes.length - failed.length}, Failed: ${failed.length}`,
+  );
   if (failed.length > 0) {
     console.info(`Failures:`);
     for (const f of failed) {

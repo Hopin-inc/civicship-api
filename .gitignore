@@ -152,6 +152,9 @@ credentials/
 # sciprt result
 .generated/
 
+# Probe / export script artifacts
+tmp/
+
 # NMKR generated files
 /src/infrastructure/libs/nmkr/types/*.d.ts
 

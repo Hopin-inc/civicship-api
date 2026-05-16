@@ -34,15 +34,16 @@ describe("Point Issue Tests", () => {
       slug: "issuer-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const ctx = {
-      currentUser: { id: user.id },
-      issuer,
-    } as unknown as IContext;
-
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-issue",
       pointName: "c-point",
     });
+
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+      communityId: community.id,
+    } as unknown as IContext;
 
     const wallet = await TestDataSourceHelper.createWallet({
       type: WalletType.COMMUNITY,

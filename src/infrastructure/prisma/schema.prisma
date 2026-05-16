@@ -545,6 +545,27 @@ model Membership {
   headline String?
   bio      String?
 
+  // Operator-recorded context for members who were active in the
+  // community before civicship was introduced. Used by GRANT_APPLICATION
+  // / sales-facing reports to distinguish "civicship 導入前から動いて
+  // いた古参" from members who joined after onboarding. All three
+  // columns are nullable: existing rows backfill to NULL, and the
+  // bulk-import workflow (scripts/import-prior-activity.ts) writes
+  // them in batches as managers fill in a CSV.
+  //
+  // We deliberately store a `priorActivityClass` enum rather than a
+  // `priorActiveFrom` date because community managers usually do not
+  // know precise start dates — forcing a date field would either get
+  // skipped or fabricated, both of which corrupt downstream
+  // aggregation. The "before / after civicship" boolean is what the
+  // report actually consumes; richer narrative ("2019 年から農業に
+  // 参加") lands in the free-text `note`. `note` is capped to 500
+  // chars so a runaway paste from a spreadsheet cell cannot bloat
+  // the row.
+  priorActivityClass      MemberPriorActivityClass? @map("prior_activity_class")
+  priorActivityNote       String?                   @map("prior_activity_note") @db.VarChar(500)
+  priorActivityRecordedBy String?                   @map("prior_activity_recorded_by")
+
   status MembershipStatus
   reason MembershipStatusReason
   role   Role                   @default(MEMBER)
@@ -629,6 +650,17 @@ enum MembershipStatusReason {
   REMOVED
 
   ASSIGNED
+}
+
+/// Coarse classification for a member's pre-civicship activity. NULL
+/// means the operator has not recorded a judgement yet.
+/// PRE_CIVICSHIP_ACTIVE — the member was already active in the
+/// community / region before civicship was introduced (古参).
+/// POST_CIVICSHIP_ENGAGED — the member became engaged in community
+/// activity through civicship itself (新規).
+enum MemberPriorActivityClass {
+  PRE_CIVICSHIP_ACTIVE
+  POST_CIVICSHIP_ENGAGED
 }
 
 enum ParticipationType {

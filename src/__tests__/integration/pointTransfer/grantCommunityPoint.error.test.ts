@@ -37,7 +37,11 @@ describe("Point Grant Error Handling Tests", () => {
       pointName: "test-points",
     });
 
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+      communityId: community.id,
+    } as IContext;
 
     const input: GqlTransactionGrantCommunityPointInput = {
       transferPoints: 100,
@@ -59,7 +63,11 @@ describe("Point Grant Error Handling Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+      communityId: "non-existent-community-id",
+    } as IContext;
 
     const input: GqlTransactionGrantCommunityPointInput = {
       transferPoints: 100,
@@ -73,5 +81,4 @@ describe("Point Grant Error Handling Tests", () => {
       }),
     ).rejects.toThrow(/not found/i);
   });
-
 });

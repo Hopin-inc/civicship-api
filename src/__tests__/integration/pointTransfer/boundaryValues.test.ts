@@ -51,7 +51,11 @@ describe("Point Transfer Boundary Value Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+      communityId: community.id,
+    } as IContext;
 
     const input = {
       transferPoints: 1000000, // Large but valid amount
@@ -78,7 +82,7 @@ describe("Point Transfer Boundary Value Tests", () => {
     });
 
     const largeAmount = 1000000000; // 1 billion, within INT4 range
-    
+
     await TestDataSourceHelper.createTransaction({
       toWallet: { connect: { id: communityWallet.id } },
       toPointChange: largeAmount,
@@ -104,7 +108,7 @@ describe("Point Transfer Boundary Value Tests", () => {
     });
 
     const maxInt4 = 2147483647;
-    
+
     await TestDataSourceHelper.createTransaction({
       toWallet: { connect: { id: communityWallet.id } },
       toPointChange: maxInt4,
@@ -175,7 +179,9 @@ describe("Point Transfer Boundary Value Tests", () => {
     const fromWalletUpdated = await TestDataSourceHelper.findWallet(fromWallet.id);
     const toWalletUpdated = await TestDataSourceHelper.findWallet(toWallet.id);
 
-    expect(fromWalletUpdated?.currentPointView?.currentPoint).toBe(BigInt(safeInitialAmount) - BigInt(transferAmount));
+    expect(fromWalletUpdated?.currentPointView?.currentPoint).toBe(
+      BigInt(safeInitialAmount) - BigInt(transferAmount),
+    );
     expect(toWalletUpdated?.currentPointView?.currentPoint).toBe(BigInt(transferAmount));
   });
 
@@ -191,7 +197,7 @@ describe("Point Transfer Boundary Value Tests", () => {
     });
 
     const largeValue = 2000000000; // 2 billion, within INT4 range
-    
+
     await TestDataSourceHelper.createTransaction({
       toWallet: { connect: { id: communityWallet.id } },
       toPointChange: largeValue,

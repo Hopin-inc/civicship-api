@@ -3,6 +3,7 @@ import { injectable, inject } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import logger from "@/infrastructure/logging";
+import { getErrorCode, getErrorType } from "@/utils/error";
 
 export type SyncMetadataResult = {
   success: boolean;
@@ -129,18 +130,19 @@ export default class NFTWalletUsecase {
         });
       }
 
+      const errorCode = getErrorCode(error);
       const errorDetails = {
         walletAddress: wallet.walletAddress,
         durationMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : JSON.stringify(error),
         errorName: error instanceof Error ? error.name : 'Unknown',
-        errorCode: (error as any)?.code,
-        errorType: (error as any)?.type,
+        errorCode,
+        errorType: getErrorType(error),
         errorStack: error instanceof Error ? error.stack : undefined,
       };
 
       // Use warn level for timeout errors (temporary network issues)
-      const isTimeout = !!error && (error as any).code === 'ETIMEDOUT';
+      const isTimeout = errorCode === 'ETIMEDOUT';
       if (isTimeout) {
         logger.warn("⚠️ NFT metadata sync timeout", errorDetails);
       } else {

@@ -3,6 +3,14 @@ import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { GqlIdentityPlatform, GqlPhoneUserStatus } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { Role } from "@prisma/client";
+import IdentityService from "@/application/domain/account/identity/service";
+import MembershipService from "@/application/domain/account/membership/service";
+import WalletService from "@/application/domain/account/wallet/service";
+import ImageService from "@/application/domain/content/image/service";
+import IncentiveGrantService from "@/application/domain/transaction/incentiveGrant/service";
+import TransactionService from "@/application/domain/transaction/service";
+import NotificationService from "@/application/domain/notification/service";
+import CommunityService from "@/application/domain/account/community/service";
 
 describe("IdentityUseCase", () => {
   // Mock dependencies
@@ -60,14 +68,14 @@ describe("IdentityUseCase", () => {
     jest.clearAllMocks();
 
     useCase = new IdentityUseCase(
-      mockIdentityService as any,
-      mockMembershipService as any,
-      mockWalletService as any,
-      mockImageService as any,
-      mockIncentiveGrantService as any,
-      mockTransactionService as any,
-      mockNotificationService as any,
-      mockCommunityService as any,
+      mockIdentityService as unknown as IdentityService,
+      mockMembershipService as unknown as MembershipService,
+      mockWalletService as unknown as WalletService,
+      mockImageService as unknown as ImageService,
+      mockIncentiveGrantService as unknown as IncentiveGrantService,
+      mockTransactionService as unknown as TransactionService,
+      mockNotificationService as unknown as NotificationService,
+      mockCommunityService as unknown as CommunityService,
     );
 
     mockContext = {
@@ -80,7 +88,7 @@ describe("IdentityUseCase", () => {
         onlyBelongingCommunity: jest.fn((ctx, callback) => callback(null)),
       },
       currentUser: { id: "user-1", role: Role.MEMBER },
-    } as any;
+    } as unknown as IContext;
   });
 
   describe("checkPhoneUser", () => {
