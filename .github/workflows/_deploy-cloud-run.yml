@@ -28,7 +28,11 @@ on:
         required: false
         default: ''
       create-git-tag:
-        description: Whether to create + push a timestamp git tag (prd only).
+        description: |
+          DEPRECATED — the create-tag responsibility was moved to the calling
+          workflow's own `create-tag` job (see `deploy-to-cloud-run-prd.yml`)
+          to keep the deploy job free of `contents: write`. Kept here so old
+          callers don't break; the value is ignored.
         type: boolean
         required: false
         default: false
@@ -74,14 +78,15 @@ jobs:
     timeout-minutes: 30
 
     permissions:
+      # OIDC token for Workload Identity Federation auth to GCP. This is the
+      # ONLY write the deploy job needs — the previous `contents: write` (git
+      # tag) and `security-events: write` (Trivy SARIF upload) were moved to
+      # dedicated downstream jobs in the calling workflows to shrink the
+      # GITHUB_TOKEN's blast radius (Scorecard Token-Permissions findings on
+      # PR #1164). SARIF files are uploaded as an artifact here and the
+      # caller's `upload-sarif` job re-uploads them to the Security tab.
       id-token: write
-      # contents:write は git tag push に必要 (prd only)。GHA の `permissions:` は
-      # 式で動的に切り替えできないため、両 stage で write を付与する
-      # (dev でも実質 read しか使わないので影響なし)。
-      contents: write
-      # security-events:write は Trivy scan 結果 (sarif) を Security タブに
-      # upload するために必要 (codeql-action/upload-sarif)。
-      security-events: write
+      contents: read
 
     env:
       STAGE: ${{ inputs.stage }}
@@ -303,19 +308,26 @@ jobs:
             fi
           done
 
-      - name: Upload Trivy CRITICAL results to Security tab
+      # Trivy SARIF を artifact として upload する。`security-events: write` を
+      # 持つ caller 側の `upload-sarif` job がこの artifact を download して
+      # Security タブに publish する責務を担う (Scorecard PR #1164: deploy
+      # job からの write 権限切り出し)。
+      #
+      # `if: always()` で deploy 失敗時にも CRITICAL/HIGH の sarif を残し、
+      # 後続 upload job が Security タブに上げられるようにする (旧 inline
+      # upload と同じ挙動)。`if-no-files-found: warn` で scan step がそもそも
+      # 走らず sarif が無い場合でも artifact upload を fail させない (deploy
+      # job が build phase で死んだケース等)。
+      - name: Upload Trivy SARIF artifacts (consumed by caller's upload-sarif job)
         if: always()
-        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          sarif_file: trivy-critical.sarif
-          category: trivy-critical
-
-      - name: Upload Trivy HIGH results to Security tab
-        if: always()
-        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
-        with:
-          sarif_file: trivy-high.sarif
-          category: trivy-high
+          name: trivy-sarif-${{ inputs.stage }}
+          path: |
+            trivy-critical.sarif
+            trivy-high.sarif
+          retention-days: 5
+          if-no-files-found: warn
 
       # --- Non-canary deploy (dev / 既存挙動) ---------------------------------
       # `enable-canary: false` の場合は従来通り即 100% で切り替える。
@@ -584,19 +596,9 @@ jobs:
           export PATH="$HOME/.rover/bin:$PATH"
           rover graph publish "civicship-api-jq1988@${{ inputs.apollo-variant }}" --schema ./docs/schema.graphql
 
-      - name: Create Git tag
-        # TZ env でプロセス単位に JST を効かせる。tzdata の system-wide install
-        # は不要 (#986) — apt 経由のネット I/O / sudo が消えるので、harden-runner
-        # で `disable-sudo: true` を有効化できる。
-        if: ${{ inputs.create-git-tag }}
-        env:
-          TZ: Asia/Tokyo
-        run: |
-          TAG_NAME=$(date +"%Y%m%d%H%M%S")
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag "$TAG_NAME"
-          git push origin "$TAG_NAME"
+      # NOTE: Git tag 作成は caller の `create-tag` job に移動した (PR #1164,
+      # Scorecard Token-Permissions findings — deploy job から `contents: write`
+      # を外すため)。`deploy-to-cloud-run-prd.yml` の `create-tag` job 参照。
 
       - name: Cleanup SSH Key
         if: always()
