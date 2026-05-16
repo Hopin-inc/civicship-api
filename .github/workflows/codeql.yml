@@ -1,10 +1,12 @@
 name: CodeQL
 
-# CodeQL static analysis for JavaScript/TypeScript.
+# CodeQL static analysis for JavaScript/TypeScript and GitHub Actions workflows.
 # Runs on push / PR against master / develop, plus a weekly schedule
 # (cron は UTC で 21:00 月曜 = JST 火曜 06:00)。
-# branch protection の required check には登録しない (run time が PR feedback
-# loop に乗らない / queue 競合で発見が遅れることへの許容)。
+# branch protection の required check には `Analyze (actions)` のみ登録 (JS/TS
+# 側は run time が PR feedback loop に乗らないため required から外している)。
+# matrix から `actions` を抜くと "Expected — Waiting for status to be reported"
+# で全 PR が pending するので、language は両方を維持する。
 on:
   push:
     branches: [master, develop]
@@ -37,7 +39,12 @@ jobs:
       matrix:
         # JS と TS は同一の analyzer (`javascript-typescript`) で解析する。
         # 旧 `javascript` / `typescript` 個別指定は deprecated で、統合 ID 推奨。
-        language: [javascript-typescript]
+        # `actions` は GitHub Actions workflow / composite action の static
+        # analysis (script injection / over-privileged token / 未 pin の action
+        # など)。branch protection の required check `Analyze (actions)` が
+        # 既に登録されているため、matrix から外すと "Expected — Waiting for
+        # status to be reported" で全 PR が永久 pending する。
+        language: [javascript-typescript, actions]
 
     steps:
       - name: Harden runner
