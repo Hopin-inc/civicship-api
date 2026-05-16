@@ -21,6 +21,64 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # PR で expensive job (trivy / build の docker step) を条件付き skip するため
+  # の changed-files detection。workflow コメント (上部) で「軽量化は job 側の
+  # changed-files filter で行い、aggregator は必ず走らせる」と決めた軌道に沿う。
+  #
+  # `docker` フィルタ: 以下のいずれかが変わった PR でのみ docker image build /
+  # trivy scan を走らせる (code-only PR では skip して ~5-7 分削減)。
+  #   - Dockerfile / Dockerfile.external / .dockerignore  ← image 自体
+  #   - pnpm-lock.yaml / package.json                     ← image layer の npm
+  #   - src/infrastructure/prisma/{schema.prisma,migrations,sql}/**
+  #                                                       ← db:generate 経由で
+  #                                                          image build に影響
+  #   - .github/workflows/ci.yml / .github/actions/setup-civicship/**
+  #                                                       ← CI 自身を触る PR は
+  #                                                          safety net で full
+  #
+  # push (master) では filter step ごと skip されるため、output の `||
+  # 'true'` fallback で `docker=true` を返し、後続 job は無条件 full 実行する。
+  # これにより deploy 前の master push は常にフル CI を担保したまま、PR では
+  # 関係ない job を skip できる。aggregator の case 句が `skipped` を success
+  # 等価扱いするので required check は壊れない。
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      docker: ${{ steps.filter.outputs.docker || 'true' }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # PR 以外 (push to master) では skip し、上の `|| 'true'` fallback で
+      # 全フィルタを true 扱いにする (= full CI 実行)。
+      - name: Detect changed paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        with:
+          filters: |
+            docker:
+              - 'Dockerfile'
+              - 'Dockerfile.external'
+              - '.dockerignore'
+              - 'pnpm-lock.yaml'
+              - 'package.json'
+              - 'src/infrastructure/prisma/schema.prisma'
+              - 'src/infrastructure/prisma/migrations/**'
+              - 'src/infrastructure/prisma/sql/**'
+              - '.github/workflows/ci.yml'
+              - '.github/actions/setup-civicship/**'
+
   # `dependency-review-action` は PR diff (base..head) で **新規追加された**
   # npm 依存に既知 CVE / 不適合 license が含まれていないかを GitHub の
   # advisory DB に問い合わせて gate する。`pnpm audit` (build job 内、
@@ -111,6 +169,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # `changes` を needs に取り、docker step を step-level if で gating する。
+    # tsc / typecheck / generated files check は code 変更で常に走らせたいので
+    # job 全体は skip しない。
+    needs: [changes]
     permissions:
       contents: read
 
@@ -259,10 +321,17 @@ jobs:
       # install / apt-get from scratch. mode=max caches all stages, not just
       # the final runtime stage, since trivy needs runtime + builder layers
       # for full coverage.
+      # docker step 群は changes job が docker-relevant な変更を検出した時
+      # (= push to master では常時 true / PR では Dockerfile・deps・Prisma
+      # 関連変更時のみ true) だけ走る。code-only PR では skip して docker
+      # buildx ×2 + smoke-test 分 (~2 分) を削減。tsc / dist の sanity check
+      # は上で済んでいるので runtime image validation を毎回回す必要はない。
       - name: Set up Docker Buildx
+        if: needs.changes.outputs.docker == 'true'
         uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
 
       - name: Validate Dockerfile build (internal API)
+        if: needs.changes.outputs.docker == 'true'
         run: |
           docker buildx build \
             --file Dockerfile \
@@ -273,6 +342,7 @@ jobs:
             .
 
       - name: Validate Dockerfile build (external API)
+        if: needs.changes.outputs.docker == 'true'
         run: |
           docker buildx build \
             --file Dockerfile.external \
@@ -289,6 +359,7 @@ jobs:
       # under the image's default USER (`node`) and don't connect to a DB,
       # so this is a pure load-time check, not a query check.
       - name: Smoke-test runtime image (Prisma engine load)
+        if: needs.changes.outputs.docker == 'true'
         run: |
           docker run --rm civicship-api:ci-validate \
             node -e "const { PrismaClient } = require('@prisma/client'); new PrismaClient(); console.log('prisma engine loaded');"
@@ -322,6 +393,13 @@ jobs:
   trivy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # docker image を build しない PR では scan する image が存在しないので
+    # job ごと skip して ~5 分削減。push (master) では `changes` の fallback で
+    # docker=true になるため必ず走る (deploy 前の image CVE gate を維持)。
+    # aggregator (`ci` job) は `skipped` を success 等価扱いするので required
+    # check は壊れない。
+    needs: [changes]
+    if: needs.changes.outputs.docker == 'true'
     permissions:
       contents: read
     steps:
@@ -647,7 +725,7 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [dependency-review, lint, build, trivy, test]
+    needs: [changes, dependency-review, lint, build, trivy, test]
     # `if: !cancelled()` で以下を両立:
     #   - 通常 fail / skipped (= push 時の dependency-review) でも
     #     アグリゲータを走らせ status を必ず報告する (`success()` 単独だと
@@ -679,12 +757,13 @@ jobs:
 
       - name: Verify all required jobs passed
         run: |
+          changes='${{ needs.changes.result }}'
           dep_review='${{ needs.dependency-review.result }}'
           lint='${{ needs.lint.result }}'
           build='${{ needs.build.result }}'
           trivy='${{ needs.trivy.result }}'
           test='${{ needs.test.result }}'
-          echo "dep_review=$dep_review lint=$lint build=$build trivy=$trivy test=$test"
+          echo "changes=$changes dep_review=$dep_review lint=$lint build=$build trivy=$trivy test=$test"
           # CRITICAL を blocking 化したので trivy も required ジョブに昇格。
           # trivy job 内部で「scan = exit 0、最後に Surface step が件数 > 0 で
           # exit 1」という構造を取っているので、`failure` は CRITICAL 検出
@@ -694,7 +773,9 @@ jobs:
           # という挙動で十分)。
           # dependency-review は push (master) 時に if-skip するので
           # `skipped` を success と等価扱いする (case 句で吸収)。
-          for j in "$dep_review" "$lint" "$build" "$trivy" "$test"; do
+          # trivy も docker-relevant change がない PR で skip されるため
+          # 同じく `skipped` を success 等価扱いする。
+          for j in "$changes" "$dep_review" "$lint" "$build" "$trivy" "$test"; do
             case "$j" in
               success|skipped) ;;
               *) echo "::error::required job failed: $j"; exit 1 ;;
