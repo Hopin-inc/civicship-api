@@ -535,6 +535,30 @@ export default class AnalyticsCommunityService {
   }
 
   /**
+   * Single-community variant of `getWindowHubMemberCountBulk`. Thin
+   * wrapper over the bulk SQL — the L2 community-detail path is the
+   * only single-community caller, so we share the bulk primitive
+   * instead of duplicating its DISTINCT-recipient aggregation. Returns
+   * 0 for a community with no hub members in the window.
+   */
+  async getWindowHubMemberCount(
+    ctx: IContext,
+    communityId: string,
+    asOf: Date,
+    windowDays: number,
+    hubBreadthThreshold: number,
+  ): Promise<number> {
+    const map = await this.getWindowHubMemberCountBulk(
+      ctx,
+      [communityId],
+      asOf,
+      windowDays,
+      hubBreadthThreshold,
+    );
+    return map.get(communityId) ?? 0;
+  }
+
+  /**
    * DONATION sender retention against the most recently completed ISO
    * week. The asOf-containing week is in progress, so the "latest
    * completed" week is the one starting `latestWeekStart - 7d`. The
