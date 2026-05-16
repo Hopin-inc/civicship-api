@@ -397,6 +397,24 @@ export type GqlAnalyticsCommunityPayload = {
    * member list.
    */
   dormantCount: Scalars['Int']['output'];
+  /**
+   * Number of members classified as a "hub" within a fixed 28-day
+   * window ending at `asOf`. Same semantic as
+   * `AnalyticsCommunityOverview.hubMemberCount` (L1) — a member
+   * qualifies when they sent DONATION to `>= hubBreadthThreshold`
+   * distinct counterparties during the window. Exposed at L2 so the
+   * community-owner analytics surface can render the "ハブユーザー比率"
+   * KPI (`hubMemberCount / totalMembers`) directly from the L2 payload
+   * without falling back to the SYS_ADMIN-only L1 dashboard row.
+   *
+   * The window is fixed at 28 days regardless of the L2-specific
+   * `windowMonths` input (which drives trend-array length, not the
+   * hub classification window). This matches L1's default
+   * `windowDays = 28` so the value is directly comparable to the
+   * L1 dashboard row for the same community and `hubBreadthThreshold`.
+   * The same JOINED-at-asOf membership filter as L1 applies.
+   */
+  hubMemberCount: Scalars['Int']['output'];
   /** Paginated member list — see type doc. */
   memberList: GqlAnalyticsMemberList;
   /**
@@ -418,6 +436,15 @@ export type GqlAnalyticsCommunityPayload = {
   stages: GqlAnalyticsStageDistribution;
   /** Summary card — see type doc. */
   summary: GqlAnalyticsCommunitySummaryCard;
+  /**
+   * Tenure-bucket distribution of members at asOf. See
+   * AnalyticsTenureDistribution. Sum of buckets equals totalMembers.
+   * Exposed at L2 mirroring `AnalyticsCommunityOverview.tenureDistribution`
+   * so the community-owner analytics surface can render the
+   * "3ヶ月以上 在籍率" KPI and the in-tenure histogram directly
+   * from the L2 payload — without the SYS_ADMIN-only L1 dashboard row.
+   */
+  tenureDistribution: GqlAnalyticsTenureDistribution;
   /** Trailing window length in JST months (echoed back). */
   windowMonths: Scalars['Int']['output'];
 };
@@ -6352,11 +6379,13 @@ export type GqlAnalyticsCommunityPayloadResolvers<ContextType = any, ParentType 
   communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   communityName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   dormantCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  hubMemberCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   memberList?: Resolver<GqlResolversTypes['AnalyticsMemberList'], ParentType, ContextType>;
   monthlyActivityTrend?: Resolver<Array<GqlResolversTypes['AnalyticsMonthlyActivityPoint']>, ParentType, ContextType>;
   retentionTrend?: Resolver<Array<GqlResolversTypes['AnalyticsRetentionTrendPoint']>, ParentType, ContextType>;
   stages?: Resolver<GqlResolversTypes['AnalyticsStageDistribution'], ParentType, ContextType>;
   summary?: Resolver<GqlResolversTypes['AnalyticsCommunitySummaryCard'], ParentType, ContextType>;
+  tenureDistribution?: Resolver<GqlResolversTypes['AnalyticsTenureDistribution'], ParentType, ContextType>;
   windowMonths?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
