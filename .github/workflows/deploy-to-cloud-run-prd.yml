@@ -15,16 +15,15 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
-# Caller permissions must be a superset of the reusable workflow's permissions
-# (`_deploy-cloud-run.yml`: id-token:write + contents:write + security-events:write).
-# Setting them explicitly here also silences CodeQL's missing-permissions warning.
+# Workflow-level permissions are intentionally minimal (read-only metadata).
+# Each job declares only the writes it actually needs:
+#   - verify-ci: checks:read + actions:read (gh api on check-runs)
+#   - deploy:    id-token:write + contents:write + security-events:write
+#                (must be a superset of the reusable workflow's permissions)
+# Splitting permissions per job (vs. granting workflow-wide write) satisfies
+# Sonar's least-privilege rule and limits the blast radius of any single step.
 permissions:
-  id-token: write
-  contents: write
-  security-events: write
-  # verify-ci ジョブが gh api 経由で check-runs を読むのに必要。
-  checks: read
-  actions: read
+  contents: read
 
 jobs:
   # CI が緑かを deploy 前に必ず確認するゲート。`pull_request: closed` は
@@ -71,7 +70,7 @@ jobs:
           while :; do
             attempt=$((attempt + 1))
             now=$(date +%s)
-            if [ "$now" -ge "$deadline" ]; then
+            if [[ "$now" -ge "$deadline" ]]; then
               echo "::error::Timed out waiting ${POLL_TIMEOUT_SECONDS}s for CI check '${REQUIRED_CHECK}' on ${MERGE_SHA}. Deploy aborted."
               exit 1
             fi
@@ -83,7 +82,7 @@ jobs:
               "repos/${REPO}/commits/${MERGE_SHA}/check-runs?check_name=${REQUIRED_CHECK}&filter=latest")
 
             count=$(echo "$payload" | jq '.total_count')
-            if [ "$count" -eq 0 ]; then
+            if [[ "$count" -eq 0 ]]; then
               echo "[attempt ${attempt}] CI check '${REQUIRED_CHECK}' not yet reported on ${MERGE_SHA}; sleeping ${POLL_INTERVAL_SECONDS}s..."
               sleep "$POLL_INTERVAL_SECONDS"
               continue
@@ -116,6 +115,14 @@ jobs:
   deploy:
     needs: verify-ci
     if: github.event.pull_request.merged == true
+    # Caller permissions must be a superset of the reusable workflow's
+    # permissions (`_deploy-cloud-run.yml` declares: id-token:write +
+    # contents:write + security-events:write at the job level). Declared
+    # here per job (not workflow-wide) so verify-ci stays read-only.
+    permissions:
+      id-token: write
+      contents: write
+      security-events: write
     uses: ./.github/workflows/_deploy-cloud-run.yml
     with:
       stage: prd

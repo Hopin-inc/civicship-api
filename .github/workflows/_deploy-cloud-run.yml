@@ -127,11 +127,17 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || '' }}
-          # `block-destructive-migrations` の strict scan が `git diff HEAD^1...HEAD`
-          # で migration の追加分を見るために、merge commit の親 (= 直前の master tip)
-          # まで辿れる履歴が必要。fetch-depth: 2 で十分 (squash/rebase merge を含め、
-          # 直前の master tip は常に HEAD^1 として参照できる)。
-          fetch-depth: 2
+          # `block-destructive-migrations` の strict scan が PR base (= PR が
+          # 派生した時点の master tip) から HEAD までを `git diff` するため、
+          # その範囲をすべて含む完全履歴が必要。fetch-depth: 0 を指定する。
+          #
+          # 旧実装は `HEAD^1` を base にしていたが、rebase merge では PR の
+          # 複数 commit が線形に master に追加されるため `HEAD^1` は最後の
+          # 1 commit しか catch せず、PR 内の先行 commit にある destructive
+          # DDL を見逃す (CodeRabbit #1163 指摘)。`pull_request.base.sha` を
+          # 渡すことで squash / rebase / true-merge いずれの戦略でも PR が
+          # 持ち込んだ変更全体をカバーできる。
+          fetch-depth: 0
 
       # Destructive-migration gate. prd では `block-destructive-migrations: true`
       # を渡してこの step が hits を検出した時点で deploy を fail させる
@@ -147,10 +153,11 @@ jobs:
       - name: Block destructive migrations (strict scan)
         if: ${{ inputs.block-destructive-migrations }}
         env:
-          # PR merge 後の checkout なので HEAD は merge commit。HEAD^1 は merge
-          # 直前の master tip (true merge / squash / rebase いずれの merge
-          # strategy でも parent[0] が base branch 側になる)。
-          MIGRATE_DIFF_BASE_REF: HEAD^1
+          # `pull_request.base.sha` は PR が派生した時点の master tip。
+          # squash/rebase/true-merge いずれの merge 戦略でも、この SHA から
+          # HEAD までの diff が PR の持ち込んだ変更全体になる (HEAD^1 だと
+          # rebase merge で先行 commit を取りこぼす — CodeRabbit #1163 指摘)。
+          MIGRATE_DIFF_BASE_REF: ${{ github.event.pull_request.base.sha }}
           MIGRATE_DIFF_STRICT: 'true'
         run: ./scripts/prisma/migrate-diff.sh --ci
 

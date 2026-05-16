@@ -75,7 +75,7 @@ run_developer_mode() {
 }
 
 run_ci_mode() {
-  local STRICT="${MIGRATE_DIFF_STRICT:-false}"
+  local strict="${MIGRATE_DIFF_STRICT:-false}"
   local BASE_REF="${MIGRATE_DIFF_BASE_REF:-origin/develop}"
   local MIGRATIONS_PATH="src/infrastructure/prisma/migrations"
 
@@ -83,23 +83,28 @@ run_ci_mode() {
   # exits 1. Used at the prd deploy entry point to block destructive
   # migrations. Non-strict mode (default) keeps annotations as `::warning::`
   # and always exits 0 (advisory, pre-merge PR check).
-  local ANNOTATION_LEVEL="warning"
-  if [ "$STRICT" = "true" ]; then
-    ANNOTATION_LEVEL="error"
+  local annotation_level="warning"
+  if [[ "$strict" == "true" ]]; then
+    annotation_level="error"
     echo "🚨 strict mode: destructive DDL will fail the job"
   fi
 
   echo "🔍 Scanning Prisma migrations added vs ${BASE_REF} for destructive DDL..."
 
   # Resolve the merge-base so we look only at commits introduced by this PR.
-  # If BASE_REF is unavailable (e.g. shallow clone without develop fetched),
-  # fall back to comparing the working tree against HEAD's parent.
+  # If BASE_REF is unavailable (e.g. shallow clone without the target branch
+  # fetched), strict mode fails closed (cannot verify → block deploy);
+  # non-strict mode skips with a warning (advisory PR check, not load-bearing).
   local MERGE_BASE=""
   if git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
     MERGE_BASE=$(git merge-base "$BASE_REF" HEAD 2>/dev/null || true)
   fi
 
-  if [ -z "$MERGE_BASE" ]; then
+  if [[ -z "$MERGE_BASE" ]]; then
+    if [[ "$strict" == "true" ]]; then
+      echo "::error::base ref '${BASE_REF}' not found locally; cannot run destructive-migration scan in strict mode. Ensure the checkout has enough history (fetch-depth: 0) and that '${BASE_REF}' is reachable." >&2
+      exit 1
+    fi
     echo "::warning::base ref '${BASE_REF}' not found locally; skipping destructive-migration scan"
     exit 0
   fi
@@ -167,7 +172,7 @@ run_ci_mode() {
           # Trim leading whitespace using bash builtin regex.
           [[ "$content" =~ ^[[:space:]]*(.*) ]] && content="${BASH_REMATCH[1]}"
           printf '::%s file=%s,line=%s::Destructive DDL detected (%s): %s\n' \
-            "$ANNOTATION_LEVEL" "$file" "$lineno" "$label" "$content"
+            "$annotation_level" "$file" "$lineno" "$label" "$content"
           file_hits=$((file_hits + 1))
         done <<< "$matches"
       fi
@@ -190,7 +195,7 @@ run_ci_mode() {
         local content="${match_line#*:}"
         [[ "$content" =~ ^[[:space:]]*(.*) ]] && content="${BASH_REMATCH[1]}"
         printf '::%s file=%s,line=%s::Destructive DDL detected (DROP INDEX without CONCURRENTLY locks readers): %s\n' \
-          "$ANNOTATION_LEVEL" "$file" "$lineno" "$content"
+          "$annotation_level" "$file" "$lineno" "$content"
         file_hits=$((file_hits + 1))
       done <<< "$drop_index_matches"
     fi
@@ -207,8 +212,8 @@ run_ci_mode() {
   fi
 
   echo ""
-  if [ "$STRICT" = "true" ]; then
-    echo "::error::Detected ${TOTAL_HITS} destructive DDL pattern(s) across changed migrations. Deploy blocked. See docs/handbook/DB_MIGRATION.md for the safe-migration playbook (2-step migrations, backfill, view-based replacement)."
+  if [[ "$strict" == "true" ]]; then
+    echo "::error::Detected ${TOTAL_HITS} destructive DDL pattern(s) across changed migrations. Deploy blocked. See docs/handbook/DB_MIGRATION.md for the safe-migration playbook (2-step migrations, backfill, view-based replacement)." >&2
     exit 1
   fi
 
@@ -216,10 +221,15 @@ run_ci_mode() {
   exit 0
 }
 
-if [ "$MODE" = "--strict" ]; then
-  MIGRATE_DIFF_STRICT=true
+# `export` is intentional: `run_ci_mode` reads MIGRATE_DIFF_STRICT via
+# `${MIGRATE_DIFF_STRICT:-false}`. A bare assignment would also work for the
+# same shell, but exporting makes the intent explicit and overrides any
+# pre-set env value (e.g. `MIGRATE_DIFF_STRICT=false` in caller env) — Gemini
+# review on this PR flagged the ambiguity, fix it once and forget it.
+if [[ "$MODE" == "--strict" ]]; then
+  export MIGRATE_DIFF_STRICT=true
   run_ci_mode
-elif [ "$MODE" = "--ci" ] || [ -z "$MODE" ]; then
+elif [[ "$MODE" == "--ci" || -z "$MODE" ]]; then
   run_ci_mode
 else
   run_developer_mode "$MODE"
