@@ -11,16 +11,21 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-# Caller permissions must be a superset of the reusable workflow's permissions
-# (`_deploy-cloud-run.yml`: id-token:write + contents:write + security-events:write).
-# Setting them explicitly here also silences CodeQL's missing-permissions warning.
+# Workflow-level permissions are intentionally read-only. Each job declares
+# only the writes it actually needs (PR #1164 / Scorecard Token-Permissions
+# 対応): deploy job は WIF の OIDC のみ、upload-sarif job だけが
+# `security-events: write` を持つ。dev は git tag を打たないので
+# `contents: write` を持つ job は存在しない。
 permissions:
-  id-token: write
-  contents: write
-  security-events: write
+  contents: read
 
 jobs:
   deploy:
+    # 最小権限: reusable deploy job は WIF auth に必要な OIDC token のみ受け
+    # 取る。security-events:write は upload-sarif job に隔離。詳細は prd 側
+    # (`deploy-to-cloud-run-prd.yml`) の同コメント参照。
+    permissions:
+      id-token: write
     uses: ./.github/workflows/_deploy-cloud-run.yml
     with:
       stage: dev
@@ -29,8 +34,47 @@ jobs:
       node-env: development
       extra-env-vars: |
         ENV=dev
-      create-git-tag: false
       # dev は canary を skip し従来通り即 100% で切り替える (ループバック検証
       # を高速化するため)。canary rollout 自体の有効化は prd のみ。
       enable-canary: false
     secrets: inherit
+
+  # Trivy CRITICAL/HIGH の SARIF を Security タブに publish する。prd 側と
+  # 同じ構造 — deploy job が upload した `trivy-sarif-dev` artifact を
+  # download → codeql-action/upload-sarif で再 upload する。本 job だけが
+  # `security-events: write` を持つことで deploy job 本体から書き込み権限を
+  # 取り除いて Scorecard Token-Permissions の指摘を解消する (PR #1164)。
+  upload-sarif:
+    needs: deploy
+    if: ${{ always() && needs.deploy.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      security-events: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Download Trivy SARIF artifacts
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        with:
+          name: trivy-sarif-dev
+
+      - name: Upload Trivy CRITICAL results to Security tab
+        if: ${{ steps.download.outcome == 'success' && hashFiles('trivy-critical.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-critical.sarif
+          category: trivy-critical
+
+      - name: Upload Trivy HIGH results to Security tab
+        if: ${{ steps.download.outcome == 'success' && hashFiles('trivy-high.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        with:
+          sarif_file: trivy-high.sarif
+          category: trivy-high
