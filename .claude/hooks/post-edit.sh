@@ -15,14 +15,26 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 input=$(cat)
+
+# Defense in depth: settings.json already filters to Edit|Write|MultiEdit via
+# the matcher, but guard here too in case the matcher gets misconfigured or
+# the script is invoked manually.
+tool_name=$(printf "%s" "$input" | jq -r '.tool_name // empty')
+case "$tool_name" in
+  Edit|Write|MultiEdit) ;;
+  *) exit 0 ;;
+esac
+
 file_path=$(printf "%s" "$input" | jq -r '.tool_input.file_path // empty')
 
 [[ -z "$file_path" ]] && exit 0
 [[ -f "$file_path" ]] || exit 0
 
 # Limit scope to files under src/ to avoid acting on docs/configs.
+# Accept both absolute paths (/repo/src/foo.ts) and relative paths
+# (src/foo.ts) that Claude Code may pass depending on cwd.
 case "$file_path" in
-  */src/*) ;;
+  */src/*|src/*) ;;
   *) exit 0 ;;
 esac
 

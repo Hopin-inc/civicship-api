@@ -24,9 +24,12 @@ block() {
 }
 
 # git commit / git tag bodies may legitimately mention forbidden patterns
-# (e.g. discussing prd env files or `git push --force` in a commit body).
-# The command itself is recording text, not executing anything dangerous,
-# so skip pattern checks for these.
+# (e.g. discussing prd env files or push variants in a commit body), so
+# this hook exempts the entire command when it starts with one of those.
+# Compound commands like `git commit ... && git push --force` are NOT
+# left unprotected: Claude Code evaluates each subcommand of a compound
+# command independently against settings.json rules, so the chained
+# push variant is still caught by the deny list.
 if [[ "$cmd" =~ ^[[:space:]]*git[[:space:]]+(commit|tag) ]]; then
   exit 0
 fi
@@ -46,9 +49,12 @@ if [[ "$cmd" =~ ^[[:space:]]*DATABASE_URL=[^[:space:]]*prd ]]; then
 fi
 
 # Force-pushes / hard resets even when scoped differently than settings.json
-# can express (e.g. `git -C <path> push --force`). These are real command
-# invocations, not text bodies, so the substring match is safe.
-if [[ "$cmd" =~ git[[:space:]].*push[[:space:]].*--force ]]; then
+# can express (e.g. `git -C <path> push --force`, `git push origin -f branch`).
+# Match in two stages: first confirm it looks like a `git ... push` invocation,
+# then independently check for either `--force` (substring, also matches
+# --force-with-lease) or `-f` as a standalone short flag.
+if [[ "$cmd" =~ git[[:space:]].*push ]] && \
+   [[ "$cmd" =~ (--force|[[:space:]]-f([[:space:]]|$)) ]]; then
   block "git push --force variant is forbidden"
 fi
 if [[ "$cmd" =~ git[[:space:]].*reset[[:space:]]+--hard ]]; then
