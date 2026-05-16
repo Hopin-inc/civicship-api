@@ -20,8 +20,12 @@ they reach review.
 2. **Show what will ship**
 
    - `git status`
-   - `git diff --stat main...HEAD` (if on a feature branch)
-   - `git log --oneline main..HEAD`
+   - `git diff --stat develop...HEAD` (if on a feature branch)
+   - `git log --oneline develop..HEAD`
+
+   Notes:
+   - This repository's base branch is `develop`. If the PR will target a
+     different base, use that branch name instead.
 
    Summarize: how many commits, how many files, primary intent.
 
@@ -38,8 +42,12 @@ they reach review.
 4. **Commit any pending changes**
 
    If `git status` is not clean:
-   - Stage relevant files (avoid catch-all `git add .`)
-   - Commit with the approved message
+   - Stage relevant files (avoid catch-all `git add .`).
+   - Before staging, scan for secrets / config you should never commit
+     (`.env`, `.env.*`, `credentials/`, any file matching `*secret*` /
+     `*token*` / `*.key`). If any appear in the diff, refuse to stage
+     them and ask the human to confirm or move them.
+   - Commit with the approved message.
 
 5. **Push and open PR**
 
@@ -55,6 +63,8 @@ they reach review.
 # Safety
 
 - Never `git push --force`.
-- Never commit `.env*` or `credentials/`.
-- If branch is `main` or `master`, refuse and ask the human to create
-  a feature branch first.
+- Never commit `.env*` or `credentials/`. Run a quick scan of the
+  staged file list before committing and refuse if either pattern
+  is present.
+- If branch is `main`, `master`, or `develop`, refuse and ask the
+  human to create a feature branch first.

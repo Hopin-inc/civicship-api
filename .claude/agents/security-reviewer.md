@@ -12,7 +12,7 @@ Cross-reference findings with docs/handbook/SECURITY.md.
 
 1. Identify changes to review:
    - User-supplied path/file, or
-   - `git diff main...HEAD` (or `git diff --cached`).
+   - `git diff develop...HEAD` (or `git diff --cached`).
 
 2. Map each touched file to its security surface area (auth, RLS,
    secrets, injection, PII, LINE messaging).

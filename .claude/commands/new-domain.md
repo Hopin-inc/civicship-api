@@ -15,6 +15,13 @@ canonical structure documented in CLAUDE.md.
    - One-sentence purpose (ask the user if not obvious)
    - Which existing domain(s) it depends on
 
+   **Validate the domain name** before using it anywhere on disk. The
+   name must match `^[a-z][a-z0-9-]*$` (lowercase, digits, hyphens,
+   starting with a letter). Refuse to proceed if it contains `..`,
+   `/`, whitespace, uppercase letters, or any other character outside
+   that regex; this prevents path traversal and keeps the directory
+   layout consistent with existing domains.
+
    Get a thumbs-up before writing files.
 
 2. **Generate directory layout**

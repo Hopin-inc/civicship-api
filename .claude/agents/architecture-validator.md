@@ -17,7 +17,7 @@ is high (new domains, layer refactors, cross-domain refactors).
 
 1. Determine target:
    - If user passed a domain name or path, validate that scope.
-   - Else validate `git diff main...HEAD` and walk every touched domain.
+   - Else validate `git diff develop...HEAD` and walk every touched domain.
 
 2. Walk each domain's canonical structure:
 

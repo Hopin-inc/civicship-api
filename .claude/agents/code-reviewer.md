@@ -13,7 +13,7 @@ docs/handbook/PATTERNS.md.
 
 1. Identify the scope of changes:
    - If the user gave a file or path, focus there.
-   - Otherwise run `git diff main...HEAD` (or `git diff --cached` for staged
+   - Otherwise run `git diff develop...HEAD` (or `git diff --cached` for staged
      work) and review the diff.
 
 2. For each touched file, read the surrounding domain (resolver, usecase,
