@@ -54,6 +54,18 @@ on:
         type: string
         required: false
         default: '300'
+      block-destructive-migrations:
+        description: |
+          When true, scan Prisma migrations introduced by this deploy for
+          destructive DDL (DROP TABLE/COLUMN, ALTER TYPE, RENAME, TRUNCATE,
+          non-CONCURRENTLY DROP INDEX, …) and **fail the deploy** before
+          `db:deploy` runs against the target DB. Prd sets this true; dev
+          stays false (the same scan still runs as advisory in `ci.yml`).
+          To merge a known-safe destructive migration to prd, split it into a
+          2-step migration per docs/handbook/DB_MIGRATION.md.
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   deploy:
@@ -115,6 +127,32 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || '' }}
+          # `block-destructive-migrations` の strict scan が `git diff HEAD^1...HEAD`
+          # で migration の追加分を見るために、merge commit の親 (= 直前の master tip)
+          # まで辿れる履歴が必要。fetch-depth: 2 で十分 (squash/rebase merge を含め、
+          # 直前の master tip は常に HEAD^1 として参照できる)。
+          fetch-depth: 2
+
+      # Destructive-migration gate. prd では `block-destructive-migrations: true`
+      # を渡してこの step が hits を検出した時点で deploy を fail させる
+      # (`db:deploy` がまだ走っていないので prd DB は無傷)。dev では入力 false
+      # で skip。同じ scan は `ci.yml` の build job 内で advisory として PR レビ
+      # ュアに warning を出している (#1059 経緯) が、advisory は admin override
+      # / protection 設定漏れで素通りしうるため、本 step を deploy 入口に置く
+      # ことで「destructive migration は必ず人間が分解してから merge される」
+      # 不変条件を保証する。
+      #
+      # 既知の安全な destructive 変更 (2-step migration の後半など) を流す手順
+      # は docs/handbook/DB_MIGRATION.md を参照。
+      - name: Block destructive migrations (strict scan)
+        if: ${{ inputs.block-destructive-migrations }}
+        env:
+          # PR merge 後の checkout なので HEAD は merge commit。HEAD^1 は merge
+          # 直前の master tip (true merge / squash / rebase いずれの merge
+          # strategy でも parent[0] が base branch 側になる)。
+          MIGRATE_DIFF_BASE_REF: HEAD^1
+          MIGRATE_DIFF_STRICT: 'true'
+        run: ./scripts/prisma/migrate-diff.sh --ci
 
       - name: Authenticate to Google Cloud (Workload Identity Federation)
         uses: google-github-actions/auth@8254fb75a33b976a221574d287e93919e6a36f70 # v2.1.6

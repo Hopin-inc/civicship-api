@@ -18,8 +18,13 @@
 #    stdout. Exit code is always 0 — this check informs reviewers, it does
 #    not block merge.
 #
-# The two modes are mutually exclusive. If the first argument is `--ci` or no
-# argument is supplied, CI mode runs; otherwise developer mode runs.
+# 3. Strict CI scan mode (`--strict` or MIGRATE_DIFF_STRICT=true):
+#      pnpm db:migrate-diff --strict
+#    Same scan as CI mode, but hits are emitted as `::error::` and the script
+#    exits 1 on any hit. Used at the prd deploy entry point to **block**
+#    destructive migrations from reaching production unreviewed. The pre-merge
+#    PR check stays advisory (mode 2) so reviewers see warnings; the deploy
+#    gate (mode 3) is the actual fail-closed guard.
 
 # `set -e` を加える: pipeline 直外の単独コマンドが失敗した時点で即停止し、
 # 後続を中途半端に走らせない。grep の "no match" は exit 1 を返すが、明示的に
@@ -70,8 +75,19 @@ run_developer_mode() {
 }
 
 run_ci_mode() {
+  local STRICT="${MIGRATE_DIFF_STRICT:-false}"
   local BASE_REF="${MIGRATE_DIFF_BASE_REF:-origin/develop}"
   local MIGRATIONS_PATH="src/infrastructure/prisma/migrations"
+
+  # In strict mode, hits become GHA `::error::` annotations and the script
+  # exits 1. Used at the prd deploy entry point to block destructive
+  # migrations. Non-strict mode (default) keeps annotations as `::warning::`
+  # and always exits 0 (advisory, pre-merge PR check).
+  local ANNOTATION_LEVEL="warning"
+  if [ "$STRICT" = "true" ]; then
+    ANNOTATION_LEVEL="error"
+    echo "🚨 strict mode: destructive DDL will fail the job"
+  fi
 
   echo "🔍 Scanning Prisma migrations added vs ${BASE_REF} for destructive DDL..."
 
@@ -150,8 +166,8 @@ run_ci_mode() {
           local content="${match_line#*:}"
           # Trim leading whitespace using bash builtin regex.
           [[ "$content" =~ ^[[:space:]]*(.*) ]] && content="${BASH_REMATCH[1]}"
-          printf '::warning file=%s,line=%s::Destructive DDL detected (%s): %s\n' \
-            "$file" "$lineno" "$label" "$content"
+          printf '::%s file=%s,line=%s::Destructive DDL detected (%s): %s\n' \
+            "$ANNOTATION_LEVEL" "$file" "$lineno" "$label" "$content"
           file_hits=$((file_hits + 1))
         done <<< "$matches"
       fi
@@ -173,8 +189,8 @@ run_ci_mode() {
         local lineno="${match_line%%:*}"
         local content="${match_line#*:}"
         [[ "$content" =~ ^[[:space:]]*(.*) ]] && content="${BASH_REMATCH[1]}"
-        printf '::warning file=%s,line=%s::Destructive DDL detected (DROP INDEX without CONCURRENTLY locks readers): %s\n' \
-          "$file" "$lineno" "$content"
+        printf '::%s file=%s,line=%s::Destructive DDL detected (DROP INDEX without CONCURRENTLY locks readers): %s\n' \
+          "$ANNOTATION_LEVEL" "$file" "$lineno" "$content"
         file_hits=$((file_hits + 1))
       done <<< "$drop_index_matches"
     fi
@@ -187,16 +203,23 @@ run_ci_mode() {
 
   if [ "$TOTAL_HITS" -eq 0 ]; then
     echo "✅ No destructive DDL patterns detected in changed migrations."
-  else
-    echo ""
-    echo "::warning::Detected ${TOTAL_HITS} destructive DDL pattern(s) across changed migrations. See docs/handbook/DB_MIGRATION.md for the safe-migration playbook (2-step migrations, backfill, view-based replacement)."
+    exit 0
   fi
 
-  # Always succeed — this check informs reviewers, it does not block merge.
+  echo ""
+  if [ "$STRICT" = "true" ]; then
+    echo "::error::Detected ${TOTAL_HITS} destructive DDL pattern(s) across changed migrations. Deploy blocked. See docs/handbook/DB_MIGRATION.md for the safe-migration playbook (2-step migrations, backfill, view-based replacement)."
+    exit 1
+  fi
+
+  echo "::warning::Detected ${TOTAL_HITS} destructive DDL pattern(s) across changed migrations. See docs/handbook/DB_MIGRATION.md for the safe-migration playbook (2-step migrations, backfill, view-based replacement)."
   exit 0
 }
 
-if [ "$MODE" = "--ci" ] || [ -z "$MODE" ]; then
+if [ "$MODE" = "--strict" ]; then
+  MIGRATE_DIFF_STRICT=true
+  run_ci_mode
+elif [ "$MODE" = "--ci" ] || [ -z "$MODE" ]; then
   run_ci_mode
 else
   run_developer_mode "$MODE"

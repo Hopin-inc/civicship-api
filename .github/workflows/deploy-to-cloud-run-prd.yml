@@ -22,9 +22,99 @@ permissions:
   id-token: write
   contents: write
   security-events: write
+  # verify-ci ジョブが gh api 経由で check-runs を読むのに必要。
+  checks: read
+  actions: read
 
 jobs:
+  # CI が緑かを deploy 前に必ず確認するゲート。`pull_request: closed` は
+  # branch protection の required check 状態を一切参照しないため、protection
+  # 設定漏れ・admin override / repo settings 変更などで未テストコードが prd
+  # に流れる経路を塞ぐ (cf. レビュー指摘 #🔴-1)。本ゲートで CI を strict に
+  # 二重検証する。
+  #
+  # ロジック: merge commit SHA (= master 新 tip) に対する `CI` workflow の
+  # check-run を polling し、`success` を確認するまで待つ。`failure` /
+  # `cancelled` / `timed_out` を見たら即 fail。タイムアウト (デフォ 25min)
+  # 内に決着しなければ fail。
+  verify-ci:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      checks: read
+      actions: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Wait for CI to pass on merge commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          REPO: ${{ github.repository }}
+          # `ci.yml` 内 aggregator job 名 (`ci:`)。CI 全体の合否を要約する
+          # 唯一の required check として運用されているため、これだけ見れば良い。
+          # job 名を変えた場合はここも更新する。
+          REQUIRED_CHECK: ci
+          POLL_INTERVAL_SECONDS: '20'
+          # workflow 全体の timeout-minutes (30) より小さく取り、polling
+          # 自体のタイムアウトをジョブ kill より先に走らせる。
+          POLL_TIMEOUT_SECONDS: '1500'
+        run: |
+          set -euo pipefail
+          deadline=$(( $(date +%s) + POLL_TIMEOUT_SECONDS ))
+          attempt=0
+          while :; do
+            attempt=$((attempt + 1))
+            now=$(date +%s)
+            if [ "$now" -ge "$deadline" ]; then
+              echo "::error::Timed out waiting ${POLL_TIMEOUT_SECONDS}s for CI check '${REQUIRED_CHECK}' on ${MERGE_SHA}. Deploy aborted."
+              exit 1
+            fi
+
+            # check-runs API は同名 check の履歴をすべて返す。最新 (= latest)
+            # の 1 件を採用 (master push で rerun された場合は最後の状態が真)。
+            payload=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              "repos/${REPO}/commits/${MERGE_SHA}/check-runs?check_name=${REQUIRED_CHECK}&filter=latest")
+
+            count=$(echo "$payload" | jq '.total_count')
+            if [ "$count" -eq 0 ]; then
+              echo "[attempt ${attempt}] CI check '${REQUIRED_CHECK}' not yet reported on ${MERGE_SHA}; sleeping ${POLL_INTERVAL_SECONDS}s..."
+              sleep "$POLL_INTERVAL_SECONDS"
+              continue
+            fi
+
+            status=$(echo "$payload" | jq -r '.check_runs[0].status')
+            conclusion=$(echo "$payload" | jq -r '.check_runs[0].conclusion')
+            url=$(echo "$payload" | jq -r '.check_runs[0].html_url')
+            echo "[attempt ${attempt}] status=${status} conclusion=${conclusion} url=${url}"
+
+            case "$status" in
+              completed)
+                case "$conclusion" in
+                  success)
+                    echo "✅ CI passed on ${MERGE_SHA}"
+                    exit 0
+                    ;;
+                  *)
+                    echo "::error::CI check '${REQUIRED_CHECK}' on ${MERGE_SHA} concluded '${conclusion}'. Deploy aborted. See ${url}"
+                    exit 1
+                    ;;
+                esac
+                ;;
+              *)
+                sleep "$POLL_INTERVAL_SECONDS"
+                ;;
+            esac
+          done
+
   deploy:
+    needs: verify-ci
     if: github.event.pull_request.merged == true
     uses: ./.github/workflows/_deploy-cloud-run.yml
     with:
@@ -37,4 +127,10 @@ jobs:
       # 失敗時は前 revision に traffic を戻す。dev 側は `enable-canary: false`
       # で従来通り即 100%。詳細は `_deploy-cloud-run.yml` 参照。
       enable-canary: true
+      # destructive DDL (DROP TABLE/COLUMN, ALTER TYPE, RENAME, TRUNCATE,
+      # non-CONCURRENTLY DROP INDEX, …) を含む migration を deploy 入口で
+      # 検出して fail させる (db:deploy 実行前)。CI の同 scan は advisory
+      # なので、prd への fail-closed gate として本入力を true にする。
+      # 2-step migration の正規手順は docs/handbook/DB_MIGRATION.md 参照。
+      block-destructive-migrations: true
     secrets: inherit
