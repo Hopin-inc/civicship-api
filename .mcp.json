@@ -1,0 +1,4 @@
+{
+  "_comment": "Project-scoped MCP servers for civicship-api. The previously declared postgres-local server (@modelcontextprotocol/server-postgres) was removed: the upstream package was deprecated by Anthropic in 2025-05 and has an unpatched SQL injection issue. A replacement is intentionally not committed here so the team can decide on a vetted alternative (e.g. a fork with the SQLi fix) in a follow-up PR. Personal MCP servers (Linear, Notion, Figma, a personal Postgres setup) belong in ~/.claude/mcp.json. The GitHub MCP server is provided by the runtime environment and does not need to be declared here.",
+  "mcpServers": {}
+}

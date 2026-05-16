@@ -501,3 +501,68 @@ Comprehensive documentation available in `docs/handbook/`:
 - `src/presentation/graphql/rule.ts` - Authorization rules
 - `src/presentation/middleware/auth.ts` - Authentication middleware
 - `src/types/graphql.ts` - Generated GraphQL types (auto-generated)
+
+## Claude Code Harness
+
+This repository is configured for Claude Code with shared team settings.
+The harness keeps a human in the loop on remediation: agents are
+read-only reviewers, the Stop and PreToolUse hooks block on errors
+without changing files, and only the PostToolUse hook may auto-format
+the single file Claude just edited. Substantive code changes still
+flow through Claude under human direction.
+
+### Settings and hooks
+
+- `.claude/settings.json` - shared allow/ask/deny lists and hook wiring.
+  Personal overrides go in `.claude/settings.local.json` (gitignored).
+- `.claude/hooks/post-edit.sh` - after every Edit/Write/MultiEdit on a
+  file under `src/`, runs `pnpm exec eslint --fix` and
+  `pnpm exec prettier --write` on the single edited file (auto-format,
+  non-blocking). For `schema.prisma` edits it also runs
+  `pnpm db:generate:local` when the local Postgres container is up,
+  and for `*.graphql` edits it runs `pnpm gql:generate`.
+- `.claude/hooks/pre-tool-use.sh` - regex guardrail on Bash commands
+  for patterns the prefix-based `deny` list cannot express
+  (force-pushes, `.env.prd` loading, destructive `rm -rf`). Blocks
+  via exit 2; does not modify anything.
+- `.claude/hooks/stop.sh` - quality gate before Claude is allowed to
+  finish. Runs `pnpm exec tsc --noEmit` and `pnpm exec eslint src/`;
+  exits 2 with a stderr summary on failure. Honors `stop_hook_active`
+  to avoid loops. Bypass with `CLAUDE_STOP_HOOK_SKIP=1`. Opt in to
+  the full test suite with `CLAUDE_STOP_HOOK_RUN_TESTS=1`.
+
+### Subagents (`.claude/agents/`)
+
+- `code-reviewer` - DDD layer boundaries, type discipline, DataLoader,
+  DI registration (Sonnet, read-only).
+- `security-reviewer` - auth/RLS, secrets, injection, PII in LINE
+  messages (Opus, read-only).
+- `architecture-validator` - canonical domain layout and transaction
+  propagation (Sonnet, read-only).
+
+### Slash commands (`.claude/commands/`)
+
+- `/quality` - run the full quality gate (typecheck + lint + tests).
+- `/new-domain <name>` - scaffold a new domain following the canonical
+  layout, then ask the human to fill in business logic.
+- `/ship` - quality gate, then commit, push, and open a PR with human
+  approval at each step.
+
+### Skills (`.claude/skills/`)
+
+Twenty domain skills cover migration planning, performance analysis,
+PR review, etc. Skills load on demand and stay out of the default
+context. Invoke directly with `/<skill-name>`. The `validate-architecture`
+skill and the `architecture-validator` agent overlap intentionally:
+use the skill for quick checks and the agent for high-risk changes
+(new domains, layer refactors) that benefit from isolated context.
+
+### MCP servers (`.mcp.json`)
+
+Currently empty: a project-scoped Postgres MCP server is intentionally
+not committed pending a vetted alternative (the previous
+`@modelcontextprotocol/server-postgres` reference was removed because
+the upstream was deprecated in 2025-05 with an unpatched SQL injection
+issue). Personal MCP servers (Linear, Notion, Figma, a personal
+Postgres setup) belong in `~/.claude/mcp.json` to stay personal. The
+GitHub MCP server is runtime-provided.
