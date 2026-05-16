@@ -1,0 +1,13 @@
+{
+  "_comment": "Project-scoped MCP servers. Personal MCP servers (Linear, Notion, etc.) belong in ~/.claude/mcp.json instead. The GitHub MCP server is provided by the runtime environment and does not need to be declared here.",
+  "mcpServers": {
+    "postgres-local": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@localhost:15432/civicship_db"
+      ]
+    }
+  }
+}
