@@ -501,3 +501,56 @@ Comprehensive documentation available in `docs/handbook/`:
 - `src/presentation/graphql/rule.ts` - Authorization rules
 - `src/presentation/middleware/auth.ts` - Authentication middleware
 - `src/types/graphql.ts` - Generated GraphQL types (auto-generated)
+
+## Claude Code Harness
+
+This repository is configured for Claude Code with shared team settings.
+The harness keeps a human in the loop on remediation: agents only review
+and hooks only verify; they never silently rewrite the codebase.
+
+### Settings and hooks
+
+- `.claude/settings.json` - shared allow/ask/deny lists and hook wiring.
+  Personal overrides go in `.claude/settings.local.json` (gitignored).
+- `.claude/hooks/post-edit.sh` - after every Edit/Write/MultiEdit, lints
+  the single changed file and triggers `pnpm gql:generate` /
+  `pnpm db:generate:local` when relevant.
+- `.claude/hooks/pre-tool-use.sh` - regex guardrail on Bash commands
+  for patterns the prefix-based `deny` list cannot express.
+- `.claude/hooks/stop.sh` - quality gate before Claude is allowed to
+  finish. Runs `pnpm exec tsc --noEmit` and `pnpm lint`. Honors
+  `stop_hook_active` to avoid loops. Bypass with
+  `CLAUDE_STOP_HOOK_SKIP=1`. Opt in to tests with
+  `CLAUDE_STOP_HOOK_RUN_TESTS=1`.
+
+### Subagents (`.claude/agents/`)
+
+- `code-reviewer` - DDD layer boundaries, type discipline, DataLoader,
+  DI registration (Sonnet, read-only).
+- `security-reviewer` - auth/RLS, secrets, injection, PII in LINE
+  messages (Opus, read-only).
+- `architecture-validator` - canonical domain layout and transaction
+  propagation (Sonnet, read-only).
+
+### Slash commands (`.claude/commands/`)
+
+- `/quality` - run the full quality gate (typecheck + lint + tests).
+- `/new-domain <name>` - scaffold a new domain following the canonical
+  layout, then ask the human to fill in business logic.
+- `/ship` - quality gate, then commit, push, and open a PR with human
+  approval at each step.
+
+### Skills (`.claude/skills/`)
+
+Twenty domain skills cover migration planning, performance analysis,
+PR review, etc. Skills load on demand and stay out of the default
+context. Invoke directly with `/<skill-name>`. The `validate-architecture`
+skill and the `architecture-validator` agent overlap intentionally:
+use the skill for quick checks and the agent for high-risk changes
+(new domains, layer refactors) that benefit from isolated context.
+
+### MCP servers (`.mcp.json`)
+
+- `postgres-local` - direct read access to the local development
+  database on port 15432. Personal MCP servers (Linear, Notion,
+  Figma) belong in `~/.claude/mcp.json` to stay personal.
