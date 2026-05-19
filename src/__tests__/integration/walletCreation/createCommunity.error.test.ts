@@ -39,7 +39,7 @@ describe("Community Creation Error Handling Tests", () => {
 
     await expect(
       useCase.userCreateCommunityAndJoin({
-        input: { name: "Test Community", pointName: "test-points" }
+        input: { originalId: "test-community", name: "Test Community", pointName: "test-points" }
       }, ctx)
     ).rejects.toThrow(/foreign key constraint|user_id_fkey/i);
   });
@@ -49,7 +49,7 @@ describe("Community Creation Error Handling Tests", () => {
 
     await expect(
       useCase.userCreateCommunityAndJoin({
-        input: { name: "Test Community", pointName: "test-points" }
+        input: { originalId: "test-community", name: "Test Community", pointName: "test-points" }
       }, ctx)
     ).rejects.toThrow(/authentication|logged.*in/i);
   });
