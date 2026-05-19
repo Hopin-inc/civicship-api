@@ -28,7 +28,7 @@
 
 | # | 基準 | 達成 | 根拠 |
 |---|---|:---:|---|
-| 1 | `/point/verify` が外部 HTTP 呼び出しゼロでローカル DB 参照のみで応答 | ❌ | `src/infrastructure/libs/point-verify/client.ts:55` が依然 `IDENTUS_API_URL` に call。**未消化、別途 PR 必要** |
+| 1 | `/point/verify` が外部 HTTP 呼び出しゼロでローカル DB 参照のみで応答 | ✅ | `PointVerifyClient` は `t_transaction_anchors.leaf_ids` への GIN index `$queryRaw` overlap lookup に置換済 (PR #1172) |
 | 2 | 新規 DID/VC が IDENTUS API を一切呼ばずに発行される | ✅ | `VcIssuanceService.issueVc` → `KmsJwtSigner`。`DIDVCServerClient` (`src/infrastructure/libs/did.ts`) は呼び出し元なし |
 | 3 | 任意の第三者が Cardano explorer + HTTPS GET だけで DID/VC の存在・内容を独立検証できる | ✅ | metadata label 1985 / `/.well-known/did.json` / `/users/:id/did.json` (proof 付き) / `/vc/:id/inclusion-proof` で確認可能 |
 | 4 | DID の鍵ローテ・deactivate が Cardano 上に追跡可能な履歴として記録 | ✅ | `UserDidAnchor.operation` (CREATE/UPDATE/DEACTIVATE) → metadata 1985 ops[] |
@@ -36,7 +36,7 @@
 | 6 | 既存 GraphQL schema (`DidIssuanceRequest` / `VcIssuanceRequest`) への破壊的変更ゼロ | ✅ | 型・enum 共に保持 (`IDENTUS_VC_PRISM` enum は legacy 互換) |
 | 7 | `/point/verify` レスポンス形 (`{ txId, status, transactionHash, rootHash, label }`) は維持 | ✅ | response shape そのまま |
 
-**合計**: ✅ 6 / ⚠️ 0 / ❌ 1 → **85% 達成**。残るは #1 のみ。
+**合計**: ✅ 7 / ⚠️ 0 / ❌ 0 → **100% 達成**。
 
 ---
 
@@ -79,7 +79,7 @@
 | #1143 | `chore(batch): remove orphan legacy IDENTUS helper modules` — `syncDIDVC/{syncDID,syncVC,utils}.ts` + `requestDIDVC/{requestDID,requestVC}.ts` 計 606 行削除 |
 
 > entry index.ts は保持 (batch.ts から呼び続けるため)。
-> `DIDVCServerClient` (`src/infrastructure/libs/did.ts`) と `IDENTUS_API_URL` const は **未消化** (point-verify と GraphQL schema enum が依存中)。
+> `DIDVCServerClient` (`src/infrastructure/libs/did.ts`) と `IDENTUS_API_URL` const は **GraphQL schema enum (`IDENTUS_VC_PRISM`) と並んで残置**。point-verify からの参照は PR #1172 で外れたが、Phase 4 で `did.ts` 自体を完全削除するまで env / const は残す方針。
 
 ### 3.5 Phase 3 Day 1 — 既存データ backfill
 
@@ -116,7 +116,7 @@
 | **VC 署名** | IDENTUS key | Cloud KMS Ed25519 | ✅ |
 | **VC 失効** | IDENTUS revocation list | W3C Bitstring Status List 2021 | ✅ |
 | **Merkle root commit** | civicship が計算 → IDENTUS が Cardano に書込 | civicship が Blockfrost 経由で直接 Cardano に書込 | ✅ |
-| **`/point/verify`** | IDENTUS API HTTP call | **未置換、IDENTUS_API_URL 参照中** | ❌ |
+| **`/point/verify`** | IDENTUS API HTTP call | `t_transaction_anchors.leaf_ids` への GIN index `$queryRaw` overlap lookup (PR #1172) | ✅ |
 | **第三者検証** | 不可能 (IDENTUS 内部) | Cardano explorer + HTTPS GET で完結 | ✅ |
 | **GraphQL schema (`DidIssuanceRequest` / `VcIssuanceRequest`)** | IDENTUS バックエンド前提 | shape 維持、`didMethod` / `vcFormat` enum で内製区別 | ✅ |
 | **運用コスト** | IDENTUS VM ($数十/月) | Blockfrost + KMS ($1/月) | ✅ |
@@ -140,9 +140,7 @@
 
 ### 6.1 ❌ 致命 (成功基準未達)
 
-| 項目 | 内容 | 推定工数 |
-|---|---|---|
-| **`/point/verify` 内製化** | `src/infrastructure/libs/point-verify/client.ts:55` が `IDENTUS_API_URL` を呼び続けている。`t_transaction_anchors.leaf_ids` の GIN index で local resolve 可能 (PoC §0-5 で 17-27× 高速化を実測済)。`PointVerifyClient` を local lookup に置換する PR が必要 | 0.5〜1 日 |
+**該当なし** — PR #1172 (`/point/verify` 内製化) の merge で全 7 基準達成。
 
 ### 6.2 🟡 中 (運用 readiness)
 
@@ -158,7 +156,7 @@
 
 | 項目 | 状態 |
 |---|---|
-| `DIDVCServerClient` (`src/infrastructure/libs/did.ts`) 完全削除 | `/point/verify` 内製化と同時に実施 |
+| `DIDVCServerClient` (`src/infrastructure/libs/did.ts`) 完全削除 | 呼び出し元なし、Phase 4 cleanup で削除 |
 | `IDENTUS_API_URL` / `IDENTUS_API_KEY` / `IDENTUS_API_SALT` env 撤去 | 同上 |
 | `IDENTUS_VC_PRISM` enum 撤去 | GraphQL breaking change のため major version bump 時 |
 | `identus-cloud-agent-vm` shutdown | Phase 4 確定後 |
@@ -189,7 +187,7 @@ prd リリース時にユーザー側で実施する必要があること:
 - [ ] prd Cloud Scheduler `kyoso-prd-civicship-batch-scheduler-sync-did-vc` を週次 cron で起動
 - [ ] dev で実施した backfill 3 script を prd で順次実行 (Day 1 手順)
 - [ ] DNSSEC / CAA / HSTS preload を `api.civicship.app` で有効化
-- [ ] `/point/verify` 内製化 PR を merge (成功基準 #1 達成)
+- [x] `/point/verify` 内製化 PR を merge (成功基準 #1 達成) — PR #1172
 - [ ] `INTERNAL_DID_VC_ENABLED=true` で prd 切替 (Phase 3 Day 2)
 - [ ] Phase 4 (IDENTUS 完全撤去) を別スプリントで実施
 
