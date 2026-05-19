@@ -58,7 +58,7 @@ export default class CommunityUseCase {
     { input }: GqlMutationCommunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlCommunityCreatePayload> {
-    const tenantId = await this.communityService.createFirebaseTenant(input.name);
+    const tenantId = await this.communityService.createFirebaseTenant(input.originalId);
 
     try {
       return await ctx.issuer.public(ctx, async (tx) => {

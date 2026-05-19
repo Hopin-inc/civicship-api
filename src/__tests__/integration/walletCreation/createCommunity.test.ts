@@ -67,6 +67,7 @@ describe("Community Integration Tests", () => {
       const pointName = `${communityName}-point`;
 
       const createCommunityInput: GqlCommunityCreateInput = {
+        originalId: communityName,
         name: communityName,
         pointName: pointName,
         image: undefined,
