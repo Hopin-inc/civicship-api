@@ -84,7 +84,11 @@ export class PointVerifyClient {
   async verifyTransactions(txIds: string[]): Promise<VerifyResponse[]> {
     if (txIds.length === 0) return [];
 
-    const dedupedIds = Array.from(new Set(txIds));
+    // `requestedIds` は O(1) lookup 用 (anchor row × leaf 二重ループの
+    // 内側で利用するため、batch size × leaves_per_anchor の積で O(N²) に
+    // 跳ねないよう Set を使う)。
+    const requestedIds = new Set(txIds);
+    const dedupedIds = Array.from(requestedIds);
 
     // GIN index を効かせる overlap 検索。Prisma `$queryRaw` の tagged
     // template は parameter 化されるので injection safe。
@@ -107,7 +111,7 @@ export class PointVerifyClient {
     };
     for (const a of anchors) {
       for (const leaf of a.leaf_ids) {
-        if (!dedupedIds.includes(leaf)) continue;
+        if (!requestedIds.has(leaf)) continue;
         const current = anchorByTxId.get(leaf);
         if (!current || priority[a.status] > priority[current.status]) {
           anchorByTxId.set(leaf, a);
