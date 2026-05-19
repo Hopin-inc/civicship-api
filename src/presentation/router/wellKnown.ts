@@ -1,6 +1,6 @@
 import express from "express";
 
-const router = express();
+const router = express.Router();
 
 router.get("/security.txt", (_req, res) => {
   res.type("text/plain");
