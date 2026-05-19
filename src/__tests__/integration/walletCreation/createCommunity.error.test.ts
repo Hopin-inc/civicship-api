@@ -53,4 +53,20 @@ describe("Community Creation Error Handling Tests", () => {
       }, ctx)
     ).rejects.toThrow(/authentication|logged.*in/i);
   });
+
+  it.each([
+    ["empty", ""],
+    ["too short", "abc"],
+    ["leading digit", "1bad"],
+    ["invalid char", "foo_bar"],
+    ["too long", "a".repeat(21)],
+  ])("should fail with ValidationError when originalId is %s", async (_label, originalId) => {
+    const ctx = { currentUser: { id: "any-user-id" }, issuer } as IContext;
+
+    await expect(
+      useCase.userCreateCommunityAndJoin({
+        input: { originalId, name: "Test Community", pointName: "test-points" }
+      }, ctx)
+    ).rejects.toThrow(/originalId/i);
+  });
 });
