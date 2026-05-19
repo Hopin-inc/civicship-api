@@ -16,6 +16,8 @@ import CommunityUseCase from "@/application/domain/account/community/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { ValidationError } from "@/errors/graphql";
+import { CurrentPrefecture } from "@prisma/client";
 
 describe("Community Creation Error Handling Tests", () => {
   let useCase: CommunityUseCase;
@@ -39,7 +41,7 @@ describe("Community Creation Error Handling Tests", () => {
 
     await expect(
       useCase.userCreateCommunityAndJoin({
-        input: { name: "Test Community", pointName: "test-points" }
+        input: { originalId: "test-community", name: "Test Community", pointName: "test-points" }
       }, ctx)
     ).rejects.toThrow(/foreign key constraint|user_id_fkey/i);
   });
@@ -49,8 +51,30 @@ describe("Community Creation Error Handling Tests", () => {
 
     await expect(
       useCase.userCreateCommunityAndJoin({
-        input: { name: "Test Community", pointName: "test-points" }
+        input: { originalId: "test-community", name: "Test Community", pointName: "test-points" }
       }, ctx)
     ).rejects.toThrow(/authentication|logged.*in/i);
+  });
+
+  it.each([
+    ["empty", ""],
+    ["too short", "abc"],
+    ["leading digit", "1bad"],
+    ["invalid char", "foo_bar"],
+    ["too long", "a".repeat(21)],
+  ])("should fail with ValidationError when originalId is %s", async (_label, originalId) => {
+    const user = await TestDataSourceHelper.createUser({
+      name: "Validation Tester",
+      slug: `validation-${crypto.randomUUID().slice(0, 8)}`,
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+
+    const promise = useCase.userCreateCommunityAndJoin({
+      input: { originalId, name: "Test Community", pointName: "test-points" }
+    }, ctx);
+
+    await expect(promise).rejects.toThrow(ValidationError);
+    await expect(promise).rejects.toThrow(/originalId/i);
   });
 });

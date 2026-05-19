@@ -6,7 +6,7 @@ import {
 import CommunityConverter from "@/application/domain/account/community/data/converter";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
 import { inject, injectable } from "tsyringe";
 import ICommunityRepository from "@/application/domain/account/community/data/interface";
@@ -42,7 +42,13 @@ export default class CommunityService {
     return community;
   }
 
-  async createFirebaseTenant(displayName: string): Promise<string> {
+  async createFirebaseTenant(displayName: string | null | undefined): Promise<string> {
+    if (!displayName || !/^[a-zA-Z][a-zA-Z0-9-]{3,19}$/.test(displayName)) {
+      throw new ValidationError(
+        "originalId must start with a letter and consist of letters, digits and hyphens (4-20 characters)",
+        ["originalId"],
+      );
+    }
     const tenant = await auth.tenantManager().createTenant({ displayName });
     return tenant.tenantId;
   }
