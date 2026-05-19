@@ -7,6 +7,7 @@ import { createApolloServer } from "@/presentation/graphql/server";
 import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
+import wellKnownRouter from "@/presentation/router/wellKnown";
 import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
@@ -75,6 +76,7 @@ async function startServer() {
     authHandler(apolloServer),
   );
   app.use("/line", lineRouter);
+  app.use("/.well-known", wellKnownRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });
