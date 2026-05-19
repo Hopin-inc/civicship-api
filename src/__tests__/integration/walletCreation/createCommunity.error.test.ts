@@ -65,7 +65,7 @@ describe("Community Creation Error Handling Tests", () => {
   ])("should fail with ValidationError when originalId is %s", async (_label, originalId) => {
     const user = await TestDataSourceHelper.createUser({
       name: "Validation Tester",
-      slug: `validation-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      slug: `validation-${crypto.randomUUID().slice(0, 8)}`,
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
     const ctx = { currentUser: { id: user.id }, issuer } as IContext;
