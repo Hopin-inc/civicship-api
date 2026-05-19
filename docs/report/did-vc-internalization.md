@@ -1027,7 +1027,7 @@ DID Document は **civicship-api（`api.civicship.app`）側で実装**する。
 
 - civicship-api が DB（UserDidAnchor 等）を持つので動的生成が直接的
 - フロントエンド（Next.js, `civicship.app`）に依存しないので Phase 0 を civicship-api チーム単独で進められる
-- `civicship.app` も `api.civicship.app` も同じ GCP Cloud Load Balancer 配下（`34.8.190.174`）→ TLS / HSTS は共有
+- `civicship.app` も `api.civicship.app` も同じ Cloudflare Proxied → GCP Cloud Load Balancer 配下 → TLS / HSTS / DNSSEC / CAA は共有 (詳細は §9.6 / [`docs/handbook/SECURITY.md` の Edge & TLS Hardening](../handbook/SECURITY.md#edge--tls-hardening))
 
 スタック (実コード確認済): **Express ^4.21.2 + Apollo Server ^4.13.0**。既存の `src/presentation/router/wallet.ts` / `line.ts` を precedent として REST router を追加する。
 
@@ -1755,6 +1755,7 @@ if (result.count === 0) {
    civicship.app. CAA 0 iodef "mailto:info@hopin.co.jp"
    ```
    → 注意: Sectigo / Cloudflare 発行の既存サブドメイン証明書がある場合、それらも CAA に許可するか、サブドメイン別 CAA を切るか判断が必要
+   → **実装結果 (2026-05)**: GCP-managed cert のみで運用する方針が確定したため、CAA は `pki.goog` 単独に絞り込み済 (`letsencrypt.org` は未許可)。下記 "Hardening 完了状態" 参照。
 
 優先度中（Phase 1 で対応）:
 
@@ -1780,10 +1781,38 @@ if (result.count === 0) {
 
 #### Phase 0 受け入れ基準（civicship.app 側）
 
-- [ ] DNSSEC: `dig +dnssec civicship.app DS` で DS レコード確認
-- [ ] CAA: `dig CAA civicship.app +short` で許可 CA リスト確認
-- [ ] SSL Labs: civicship.app が **A 以上** を取得
-- [ ] HSTS preload: 維持（既に登録済み、変更時に外れないよう注意）
+- [x] DNSSEC: `dig +dnssec civicship.app DS` で DS レコード確認 (Cloudflare Registrar 移管 + DS 登録 + resolver の `ad` フラグ確認済、2026-05)
+- [x] CAA: `dig CAA civicship.app +short` で許可 CA リスト確認 (`pki.goog` 単独、2026-05)
+- [ ] SSL Labs: civicship.app が **A 以上** を取得 (GCLB SSL policy MODERN 化未対応のため、TLS 1.0/1.1 / 弱 cipher を残したまま — フォローアップ)
+- [x] HSTS preload: 維持 (`hstspreload.org` で登録維持確認済、2026-05)
+
+#### Hardening 完了状態 (2026-05)
+
+§9.6 の脅威モデルに対する第 1 線 (HTTPS インフラ強化) のうち、ドメイン
+hardening スプリントで以下を完了済:
+
+| 対策 | 状態 | 備考 |
+|---|---|---|
+| DNSSEC 有効化 + DS 登録 | ✅ Done | Cloudflare Registrar に移管後、DS 登録完了。chain of trust は `ad` フラグで確認 |
+| CAA = `pki.goog` のみ | ✅ Done | GCP-managed cert 専用方針に合わせ最狭に絞り込み |
+| Cloudflare SSL モード = Full (Strict) | ✅ Done | 旧 Flexible 設定を廃止。edge↔origin TLS の中間者攻撃面を閉塞 |
+| Cloudflare Proxied (orange-cloud) | ✅ Done | `civicship.app` / `www.civicship.app` / `api.civicship.app` |
+| Always Use HTTPS | ✅ Done | Cloudflare 側で HTTP→HTTPS redirect |
+| Bot Fight Mode | ✅ Done | Cloudflare 側 ON |
+| Cloudflare Registrar 集約 | ✅ Done | レジストラ MFA / 移管ロック / 自動更新を Cloudflare 側で一元管理 |
+| `/.well-known/security.txt` | ✅ Done | `civicship.app` / `api.civicship.app` 両方で配信 (RFC 9116) |
+
+**フォローアップ (Phase 1 以降)**:
+
+- [ ] GCLB SSL policy を MODERN プロファイルに変更 (TLS 1.0/1.1 無効化、3DES / FS なし cipher 削除、SSL Labs A 以上を取得)
+- [ ] OCSP stapling 有効化 (GCLB Backend Service)
+- [ ] CT log の不審発行アラート (Cert Spotter / Google Cert Transparency Monitoring)
+- [ ] ドメイン更新期限を 5-10 年以上前払い
+
+did:web 信頼基盤としては第 1 線の中核 (DNSSEC / CAA / Full-Strict TLS / HSTS preload) が
+揃ったため、`api.civicship.app` 経由の DID Document 解決経路は **設計時に想定した最低
+ラインの脅威モデル耐性を満たす状態** に到達している。残りの TLS policy 強化は SSL Labs
+グレード向上のための追加施策に位置付ける。
 
 ### 9.7 GDPR / 個人情報削除と chain 整合性（§N 対応）
 

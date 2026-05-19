@@ -173,6 +173,14 @@ return new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
 
 ### IDENTUS DID/VC integration
 
+> **Status (as of 2026-05):** 本クライアントを利用するコードパス
+> (`DIDIssuanceService.requestDIDIssuance` / `VCIssuanceRequestService.requestVCIssuance`
+> など) は `epic/replace-identsu` で実呼び出し元が解消されており、
+> 現在 IDENTUS サーバへの実トラフィックは発生していない。`PointVerifyClient`
+> も内製化済 (`t_transaction_anchors` への DB lookup に置換)。
+> `did.ts` / `DIDVCServerClient` / `IDENTUS_API_URL` env / 本節の記述は
+> Phase 4 の cleanup PR でまとめて削除予定。
+
 **Implementation file:** `src/infrastructure/libs/did.ts`
 
 ```typescript
@@ -231,6 +239,32 @@ throw error;
 - Verifiable Credential (VC) Issuance
 - Blockchain Integration
 - Digital Identity Management
+
+## Edge & Network Layer
+
+外部からの HTTPS リクエストは以下のパスを通る:
+
+```
+Client
+  → Cloudflare (Proxied, Bot Fight Mode, Always Use HTTPS, Full Strict TLS)
+  → GCP HTTPS Load Balancer (managed cert + HSTS custom response header)
+  → Cloud Run (civicship-api-internal / civicship-api-external)
+```
+
+公開ホスト名は `civicship.app` / `www.civicship.app` / `api.civicship.app`
+の 3 つで、いずれも Cloudflare Proxied + GCP-managed certificate
+(`pki.goog`) で配信している。詳細な TLS / DNS 設定は
+[Security Guide — Edge & TLS Hardening](./SECURITY.md#edge--tls-hardening)
+を参照。
+
+### Retired domains / resources
+
+過去に存在した以下のリソースは現在は廃止済:
+
+- `cms.civicship.app` — URL map / backend service / DNS レコードすべて
+  削除済
+- 未使用となっていた GCP backend service 9 件、および紐付く NEG を削除
+  (hardening 完了時点でのクリーンアップ)
 
 ## Environment Variable Settings
 

@@ -78,7 +78,7 @@ infrastructure/
 └── libs/ # External service integration
 ├── firebase.ts # Firebase authentication
 ├── storage.ts # Google Cloud Storage
-└── did.ts # Decentralized identity (IDENTUS)
+└── did.ts # Decentralized identity (IDENTUS) — currently unused, Phase 4 で削除予定
 ```
 
 **Key Features**

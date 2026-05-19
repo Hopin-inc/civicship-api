@@ -396,6 +396,11 @@ CMD ["npm", "start"]
 
 ### Network security
 
+公開ドメインの edge / TLS 設定 (Cloudflare Proxied + Full Strict、GCP LB
+での HSTS 配信、DNSSEC / CAA、`/.well-known/security.txt` ほか) は
+[Security Guide — Edge & TLS Hardening](./SECURITY.md#edge--tls-hardening)
+を参照。Cloud Run service 自体の VPC 設定は以下:
+
 ```yaml
 # VPC configuration
 metadata:
