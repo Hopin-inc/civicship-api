@@ -117,11 +117,16 @@ jobs:
     needs: verify-ci
     if: github.event.pull_request.merged == true
     # 最小権限: deploy job (reusable workflow) は WIF auth に必要な OIDC token
-    # だけを受け取る。`security-events: write` (Trivy SARIF upload) と
-    # `contents: write` (git tag) は下流の専用 job (`upload-sarif`,
-    # `create-tag`) に隔離した — 各 job の攻撃面を最小化することで
-    # Scorecard Token-Permissions 0 点を解消する (PR #1164)。
+    # と、reusable workflow 内 `actions/checkout` 用の `contents: read` のみ
+    # 受け取る。caller の permissions が called workflow の envelope (上限)
+    # になるため、`contents: read` を caller でも宣言しないと reusable 側の
+    # checkout が暗黙的に `none` にダウングレードされて失敗する。
+    # `security-events: write` (Trivy SARIF upload) と `contents: write`
+    # (git tag) は下流の専用 job (`upload-sarif`, `create-tag`) に隔離した
+    # — 各 job の攻撃面を最小化することで Scorecard Token-Permissions 0 点
+    # を解消する (PR #1164)。
     permissions:
+      contents: read
       id-token: write
     uses: ./.github/workflows/_deploy-cloud-run.yml
     with:

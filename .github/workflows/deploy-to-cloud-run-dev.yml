@@ -21,10 +21,15 @@ permissions:
 
 jobs:
   deploy:
-    # 最小権限: reusable deploy job は WIF auth に必要な OIDC token のみ受け
-    # 取る。security-events:write は upload-sarif job に隔離。詳細は prd 側
+    # 最小権限: reusable deploy job は WIF auth に必要な OIDC token と、
+    # reusable workflow 内 `actions/checkout` 用の `contents: read` のみ受け
+    # 取る。caller の permissions が called workflow の envelope (上限) に
+    # なるため、`contents: read` を caller でも宣言しないと reusable 側の
+    # checkout が暗黙的に `none` にダウングレードされて失敗する。
+    # security-events:write は upload-sarif job に隔離。詳細は prd 側
     # (`deploy-to-cloud-run-prd.yml`) の同コメント参照。
     permissions:
+      contents: read
       id-token: write
     uses: ./.github/workflows/_deploy-cloud-run.yml
     with:
