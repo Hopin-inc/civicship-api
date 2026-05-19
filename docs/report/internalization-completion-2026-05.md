@@ -183,7 +183,7 @@ prd リリース時にユーザー側で実施する必要があること:
 
 - [ ] prd KMS key version 1 を払い出し、Cloud Run SA に `signerVerifier` 付与
 - [ ] prd `t_issuer_did_keys` に初期 row INSERT
-- [ ] prd Secret Manager に `BLOCKFROST_PROJECT_ID` / `CARDANO_PLATFORM_PRIVATE_KEY_HEX` / `CARDANO_PLATFORM_ADDRESS` / `CARDANO_NETWORK=preprod` 投入
+- [ ] prd Secret Manager に `BLOCKFROST_PROJECT_ID` / `CARDANO_PLATFORM_PRIVATE_KEY_HEX` / `CARDANO_PLATFORM_ADDRESS` / `CARDANO_NETWORK=preprod` 投入 (※ Phase 3 cutover 時点では mainnet 移行は行わず **preprod 接続のまま prd リリース** とする運用判断。mainnet 切替は将来別計画。これに伴い、prd platform wallet も preprod faucet で供給する)
 - [ ] prd Cloud Run Service / Job に env 配線 (`co-creation-dao-prod` GH environment 経由)
 - [ ] prd platform wallet (preprod faucet で 100 tADA 入金推奨、dev wallet と別 address)
 - [ ] prd Cloud Scheduler `kyoso-prd-civicship-batch-scheduler-sync-did-vc` を週次 cron で起動
