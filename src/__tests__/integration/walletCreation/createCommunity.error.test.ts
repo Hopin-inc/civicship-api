@@ -16,6 +16,8 @@ import CommunityUseCase from "@/application/domain/account/community/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { ValidationError } from "@/errors/graphql";
+import { CurrentPrefecture } from "@prisma/client";
 
 describe("Community Creation Error Handling Tests", () => {
   let useCase: CommunityUseCase;
@@ -61,12 +63,18 @@ describe("Community Creation Error Handling Tests", () => {
     ["invalid char", "foo_bar"],
     ["too long", "a".repeat(21)],
   ])("should fail with ValidationError when originalId is %s", async (_label, originalId) => {
-    const ctx = { currentUser: { id: "any-user-id" }, issuer } as IContext;
+    const user = await TestDataSourceHelper.createUser({
+      name: "Validation Tester",
+      slug: `validation-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
 
-    await expect(
-      useCase.userCreateCommunityAndJoin({
-        input: { originalId, name: "Test Community", pointName: "test-points" }
-      }, ctx)
-    ).rejects.toThrow(/originalId/i);
+    const promise = useCase.userCreateCommunityAndJoin({
+      input: { originalId, name: "Test Community", pointName: "test-points" }
+    }, ctx);
+
+    await expect(promise).rejects.toThrow(ValidationError);
+    await expect(promise).rejects.toThrow(/originalId/i);
   });
 });
