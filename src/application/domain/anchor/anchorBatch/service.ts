@@ -275,7 +275,7 @@ export class AnchorBatchService {
     // 4. Merkle root 計算 + ops 構築
     const txRoot = buildTxRoot(pending.transactionAnchors);
     const vcRoot = await this.buildVcRoot(ctx, pending.vcAnchors);
-    const rawOps = await this.buildDidOps(ctx, pending.userDidAnchors);
+    const { ops: rawOps, opIndexByAnchorId } = await this.buildDidOps(ctx, pending.userDidAnchors);
 
     // 5. AuxiliaryData を組み立てる（§8.4 size budget — documentCbor を含めると
     //    16 KB を超える場合は末尾の op から順次 docCbor を脱落させる）
@@ -321,6 +321,13 @@ export class AnchorBatchService {
     await this.repository.markSubmitted(ctx, {
       batchId: weeklyKey,
       chainTxHash: txHash,
+      // Per-anchor DID op position so the persistence layer can stamp
+      // `chainOpIndex` — the verifier locates the operation via
+      // `ops[chainOpIndex]` and a confirmed anchor is unverifiable without it.
+      userDidOpIndexes: [...opIndexByAnchorId].map(([anchorId, opIndex]) => ({
+        anchorId,
+        opIndex,
+      })),
       ...ids,
     });
 
@@ -360,10 +367,17 @@ export class AnchorBatchService {
   private async buildDidOps(
     ctx: IContext,
     userDidAnchors: PendingUserDidAnchor[],
-  ): Promise<DidOp[]> {
-    if (userDidAnchors.length === 0) return [];
-    // 「sorted by did asc」で決定論的出力にする（§5.3.1 の bid + 順序）
-    const sorted = [...userDidAnchors].sort((a, b) => (a.did < b.did ? -1 : a.did > b.did ? 1 : 0));
+  ): Promise<{ ops: DidOp[]; opIndexByAnchorId: Map<string, number> }> {
+    if (userDidAnchors.length === 0) return { ops: [], opIndexByAnchorId: new Map() };
+    // 「sorted by did asc」で決定論的出力にする（§5.3.1 の bid + 順序）。
+    // 同一週内に同一ユーザーの CREATE と UPDATE が両方 PENDING で入る場合、
+    // `did` は同一になるため `id`（cuid, 生成時刻順）を第 2 キーにして
+    // 並びを完全に決定論化する（さもなくば opIndex が入力順依存になる）。
+    const sorted = [...userDidAnchors].sort((a, b) => {
+      if (a.did < b.did) return -1;
+      if (a.did > b.did) return 1;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
     const prevIds = sorted
       .map((a) => a.previousAnchorId)
       .filter((id): id is string => typeof id === "string");
@@ -372,7 +386,14 @@ export class AnchorBatchService {
       : [];
     const prevByAnchorId = new Map(prevs.map((p) => [p.id, p.chainTxHash]));
 
-    return sorted.map((a) => buildOp(a, prevByAnchorId));
+    // `chainOpIndex` は、この anchor が tx metadata の DID `ops[]` 配列の
+    // 何番目かを指す。ここで sort 済の位置を採番し、submit 時に各
+    // UserDidAnchor 行へ書き戻す（§8.3 chain inclusion）。後続の
+    // `trimDocCborForSizeBudget` は docCbor を落とすだけで配列順を変えない
+    // ため、ここで確定した index は最終 metadata の op 位置と一致する。
+    const opIndexByAnchorId = new Map(sorted.map((a, i) => [a.id, i]));
+
+    return { ops: sorted.map((a) => buildOp(a, prevByAnchorId)), opIndexByAnchorId };
   }
 
   /**

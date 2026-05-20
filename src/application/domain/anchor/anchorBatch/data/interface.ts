@@ -14,6 +14,7 @@ import {
   PendingUserDidAnchor,
   PendingVcAnchor,
   PreviousAnchorChainTx,
+  UserDidOpIndex,
   VcJwtLeaf,
 } from "@/application/domain/anchor/anchorBatch/data/type";
 
@@ -71,7 +72,12 @@ export interface IAnchorBatchRepository {
     userDidAnchors: number;
   }>;
 
-  /** 全 anchor 行を SUBMITTED 状態に遷移し、chainTxHash を埋める。 */
+  /**
+   * 全 anchor 行を SUBMITTED 状態に遷移し、chainTxHash を埋める。
+   *
+   * `userDidOpIndexes` は各 UserDidAnchor の tx metadata `ops[]` 内位置で、
+   * `chainOpIndex` 列へ行ごとに書き戻す（chain inclusion proof の特定に必須）。
+   */
   markSubmitted(
     ctx: IContext,
     args: {
@@ -80,6 +86,7 @@ export interface IAnchorBatchRepository {
       transactionAnchorIds: string[];
       vcAnchorIds: string[];
       userDidAnchorIds: string[];
+      userDidOpIndexes: UserDidOpIndex[];
     },
   ): Promise<void>;
 

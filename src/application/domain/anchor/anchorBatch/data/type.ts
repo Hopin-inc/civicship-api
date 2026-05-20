@@ -73,6 +73,19 @@ export interface PreviousAnchorChainTx {
   chainTxHash: string | null;
 }
 
+/**
+ * UserDidAnchor の `chainOpIndex` 書き戻し用エントリ。
+ *
+ * `opIndex` は tx metadata の DID `ops[]` 配列内での 0-origin 位置で、
+ * verifier が `ops[chainOpIndex]` で対象 DID 操作を特定するために使う。
+ */
+export interface UserDidOpIndex {
+  /** UserDidAnchor.id。 */
+  anchorId: string;
+  /** tx metadata の DID `ops[]` 配列内での 0-origin index。 */
+  opIndex: number;
+}
+
 export interface AnchorBatchPendingSet {
   transactionAnchors: PendingTransactionAnchor[];
   vcAnchors: PendingVcAnchor[];

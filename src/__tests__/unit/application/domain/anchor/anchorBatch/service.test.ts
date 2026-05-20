@@ -401,6 +401,67 @@ describe("AnchorBatchService", () => {
       expect(mockRepository.markFailed).not.toHaveBeenCalled();
     });
 
+    it("passes per-anchor chainOpIndex to markSubmitted (sorted-by-did ops[] position)", async () => {
+      // Two DID anchors fed in non-sorted order. The metadata `ops[]` array
+      // is sorted by `did` asc, so the lexicographically smaller did takes
+      // op index 0 — and that index must reach markSubmitted so the
+      // repository can stamp `chainOpIndex` (chain inclusion proof).
+      const didB = {
+        ...PENDING_DID,
+        id: "did_anchor_b",
+        did: "did:web:api.civicship.app:users:u_bbb",
+      };
+      const didA = {
+        ...PENDING_DID,
+        id: "did_anchor_a",
+        did: "did:web:api.civicship.app:users:u_aaa",
+      };
+      setupPending({ userDidAnchors: [didB, didA] });
+
+      const service = container.resolve(AnchorBatchService);
+      await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      expect(mockRepository.markSubmitted).toHaveBeenCalledTimes(1);
+      const submittedArgs = mockRepository.markSubmitted.mock.calls[0][1];
+      expect(submittedArgs.userDidOpIndexes).toEqual(
+        expect.arrayContaining([
+          { anchorId: "did_anchor_a", opIndex: 0 },
+          { anchorId: "did_anchor_b", opIndex: 1 },
+        ]),
+      );
+      expect(submittedArgs.userDidOpIndexes).toHaveLength(2);
+    });
+
+    it("breaks opIndex ties by anchor id when two anchors share a did", async () => {
+      // A user that does createDid then updateDid within one week has two
+      // PENDING anchors with the *same* `did`. The op order — and therefore
+      // chainOpIndex — must be deterministic regardless of DB row order, so
+      // the comparator tie-breaks on `id` (cuid, creation-time ordered).
+      const higherId = {
+        ...PENDING_DID,
+        id: "did_anchor_zzz",
+        did: "did:web:api.civicship.app:users:u_same",
+      };
+      const lowerId = {
+        ...PENDING_DID,
+        id: "did_anchor_aaa",
+        did: "did:web:api.civicship.app:users:u_same",
+      };
+      // Fed in reverse-id order — the comparator must still sort by id.
+      setupPending({ userDidAnchors: [higherId, lowerId] });
+
+      const service = container.resolve(AnchorBatchService);
+      await service.runWeeklyBatch(ctx, { weeklyKey: "2026-W19" });
+
+      const submittedArgs = mockRepository.markSubmitted.mock.calls[0][1];
+      expect(submittedArgs.userDidOpIndexes).toEqual(
+        expect.arrayContaining([
+          { anchorId: "did_anchor_aaa", opIndex: 0 },
+          { anchorId: "did_anchor_zzz", opIndex: 1 },
+        ]),
+      );
+    });
+
     it("marks anchors FAILED when awaitConfirmation throws", async () => {
       setupPending({ transactionAnchors: [PENDING_TX] });
       mockBlockfrost.awaitConfirmation.mockRejectedValue(
@@ -544,7 +605,7 @@ describe("AnchorBatchService", () => {
         0x62, 0x3a, 0x63,
       ]);
       setupPending({
-        userDidAnchors: [{ ...PENDING_DID, documentCbor: cborBytes as unknown as null }],
+        userDidAnchors: [{ ...PENDING_DID, documentCbor: cborBytes }],
       });
 
       const service = container.resolve(AnchorBatchService);
@@ -577,9 +638,7 @@ describe("AnchorBatchService", () => {
 
     it("treats empty Uint8Array documentCbor as absent (defensive)", async () => {
       setupPending({
-        userDidAnchors: [
-          { ...PENDING_DID, documentCbor: new Uint8Array(0) as unknown as null },
-        ],
+        userDidAnchors: [{ ...PENDING_DID, documentCbor: new Uint8Array(0) }],
       });
 
       const service = container.resolve(AnchorBatchService);
@@ -596,7 +655,7 @@ describe("AnchorBatchService", () => {
           {
             ...PENDING_DID,
             operation: DidOperation.DEACTIVATE,
-            documentCbor: new Uint8Array([0xa0]) as unknown as null,
+            documentCbor: new Uint8Array([0xa0]),
             previousAnchorId: null,
           },
         ],

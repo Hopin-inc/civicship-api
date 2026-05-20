@@ -18,12 +18,7 @@
 
 import "reflect-metadata";
 import { container } from "tsyringe";
-import {
-  AnchorStatus,
-  ChainNetwork,
-  CurrentPrefecture,
-  DidOperation,
-} from "@prisma/client";
+import { AnchorStatus, ChainNetwork, CurrentPrefecture, DidOperation } from "@prisma/client";
 import { registerProductionDependencies } from "@/application/provider";
 import TestDataSourceHelper from "@/__tests__/helper/test-data-source-helper";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
@@ -198,6 +193,7 @@ describe("AnchorBatchRepository (integration)", () => {
         transactionAnchorIds: [txId],
         vcAnchorIds: [vcId],
         userDidAnchorIds: [didId],
+        userDidOpIndexes: [{ anchorId: didId, opIndex: 0 }],
       });
 
       const tx = await prismaClient.transactionAnchor.findUnique({ where: { id: txId } });
@@ -208,6 +204,10 @@ describe("AnchorBatchRepository (integration)", () => {
       expect(did!.status).toBe(AnchorStatus.SUBMITTED);
       expect(tx!.chainTxHash).toBe("deadbeef".repeat(8));
       expect(tx!.submittedAt).not.toBeNull();
+      // The DID anchor's metadata `ops[]` position is persisted so the
+      // verifier can locate it via `ops[chainOpIndex]` (chain inclusion).
+      expect(did!.chainTxHash).toBe("deadbeef".repeat(8));
+      expect(did!.chainOpIndex).toBe(0);
     });
 
     it("markConfirmed advances to CONFIRMED with confirmedAt + blockHeight", async () => {

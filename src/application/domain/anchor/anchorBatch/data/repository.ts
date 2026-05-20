@@ -17,6 +17,7 @@ import {
   PendingUserDidAnchor,
   PendingVcAnchor,
   PreviousAnchorChainTx,
+  UserDidOpIndex,
   VcJwtLeaf,
 } from "@/application/domain/anchor/anchorBatch/data/type";
 
@@ -206,13 +207,49 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
       transactionAnchorIds: string[];
       vcAnchorIds: string[];
       userDidAnchorIds: string[];
+      userDidOpIndexes: UserDidOpIndex[];
     },
   ): Promise<void> {
     const submittedAt = new Date();
-    await this.applyToAllAnchors(ctx, args, {
-      txData: { status: AnchorStatus.SUBMITTED, chainTxHash: args.chainTxHash, submittedAt },
-      vcData: { status: AnchorStatus.SUBMITTED, chainTxHash: args.chainTxHash, submittedAt },
-      didData: { status: AnchorStatus.SUBMITTED, chainTxHash: args.chainTxHash, submittedAt },
+    const opIndexByAnchorId = new Map(args.userDidOpIndexes.map((e) => [e.anchorId, e.opIndex]));
+    const issuer = ctx.issuer ?? this.getIssuer();
+    await issuer.internal(async (tx) => {
+      await Promise.all([
+        args.transactionAnchorIds.length
+          ? tx.transactionAnchor.updateMany({
+              where: { id: { in: args.transactionAnchorIds } },
+              data: { status: AnchorStatus.SUBMITTED, chainTxHash: args.chainTxHash, submittedAt },
+            })
+          : Promise.resolve(),
+        args.vcAnchorIds.length
+          ? tx.vcAnchor.updateMany({
+              where: { id: { in: args.vcAnchorIds } },
+              data: { status: AnchorStatus.SUBMITTED, chainTxHash: args.chainTxHash, submittedAt },
+            })
+          : Promise.resolve(),
+      ]);
+      // userDidAnchor は `chainOpIndex` が行ごとに異なるため、`data` を一律に
+      // 適用する `updateMany` では書けない。status 遷移と同一トランザクション内で
+      // 1 行ずつ update し、chain inclusion proof の index を確実に永続化する。
+      for (const id of args.userDidAnchorIds) {
+        const opIndex = opIndexByAnchorId.get(id);
+        if (opIndex === undefined) {
+          // 不変条件: claim した全 UserDidAnchor は op index を持つ。欠落を
+          // `null` で握り潰すと SUBMITTED なのに chainOpIndex 欠落の行が
+          // 再発する（= この書き戻し経路が防ぐはずのバグそのもの）。例外を
+          // 投げてトランザクションごと中断させる。
+          throw new Error(`markSubmitted: missing chainOpIndex for userDidAnchor ${id}`);
+        }
+        await tx.userDidAnchor.update({
+          where: { id },
+          data: {
+            status: AnchorStatus.SUBMITTED,
+            chainTxHash: args.chainTxHash,
+            submittedAt,
+            chainOpIndex: opIndex,
+          },
+        });
+      }
     });
   }
 
