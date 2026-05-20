@@ -1269,7 +1269,7 @@ router.get("/vc/:vcId/inclusion-proof", async (req, res) => {
 - [ ] HSTS preload list 登録（https://hstspreload.org/）
 - [ ] TLS 1.2/1.3 のみ、それ以下は無効化
 - [ ] `/.well-known/did.json` `application/did+json` で配信
-- [ ] CT log（https://crt.sh/?q=civicship.app）の不審な発行に対するアラート設定
+- [x] CT log（https://crt.sh/?q=civicship.app）の不審な発行に対するアラート設定 (GitHub Actions `.github/workflows/ct-log-check.yml` で月次監視、2026-05)
 
 ---
 
@@ -1761,6 +1761,7 @@ if (result.count === 0) {
 
 4. OCSP stapling 有効化（GCLB Backend Service）
 5. CT log の不審な発行アラート設定（Cert Spotter / Google Cert Transparency Monitoring）
+   → **実装結果 (2026-05)**: 外部 SaaS ではなく GitHub Actions workflow (`.github/workflows/ct-log-check.yml`) で crt.sh を月次照会し、Google Trust Services 以外の issuer を検出したら Slack 通知する方式で実装済。下記 "Hardening 完了状態" 参照。
 6. ドメイン更新期限を 5-10 年以上前払いに設定
 7. DNS / レジストラの管理者 MFA 強制
 
@@ -1801,12 +1802,12 @@ hardening スプリントで以下を完了済:
 | Bot Fight Mode | ✅ Done | Cloudflare 側 ON |
 | Cloudflare Registrar 集約 | ✅ Done | レジストラ MFA / 移管ロック / 自動更新を Cloudflare 側で一元管理 |
 | `/.well-known/security.txt` | ✅ Done | `civicship.app` / `api.civicship.app` 両方で配信 (RFC 9116) |
+| CT log 月次監視 (crt.sh) | ✅ Done | GitHub Actions `.github/workflows/ct-log-check.yml`。Google Trust Services 以外の issuer 検出時に job fail + Slack 通知 |
 
 **フォローアップ (Phase 1 以降)**:
 
 - [ ] GCLB SSL policy を MODERN プロファイルに変更 (TLS 1.0/1.1 無効化、3DES / FS なし cipher 削除、SSL Labs A 以上を取得)
 - [ ] OCSP stapling 有効化 (GCLB Backend Service)
-- [ ] CT log の不審発行アラート (Cert Spotter / Google Cert Transparency Monitoring)
 - [ ] ドメイン更新期限を 5-10 年以上前払い
 
 did:web 信頼基盤としては第 1 線の中核 (DNSSEC / CAA / Full-Strict TLS / HSTS preload) が
@@ -1968,7 +1969,7 @@ backfill 月のみ ~$1 加算、それ以降は通常運用コストに戻る。
 | Blockfrost API key ローテ | 年 1 回 | 30 分 |
 | HSTS preload 維持確認 | 年 1 回 | 10 分 |
 | CAA / DNSSEC 設定確認 | 半年 1 回 | 30 分 |
-| CT log 監視 / 不審発行アラート対応 | 月 1 回（チェック） | 10 分/回（通常時） |
+| CT log 監視 / 不審発行アラート対応 | 月次（GitHub Actions 自動） | 0 分（通常時）／ Slack アラート時のみ対応 |
 | Cardano Hard Fork 対応（§P） | 1-2 年に 1 回 | 1-2 日（CSL/SDK 更新、preprod テスト含む） |
 | Blockfrost / Cardano 障害対応 | 年 1-2 回 | 数時間/回 |
 
