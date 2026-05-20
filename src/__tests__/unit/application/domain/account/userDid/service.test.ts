@@ -22,6 +22,9 @@ import {
 const VALID_USER_ID = "u_xyz_phase1";
 const SAMPLE_NETWORK = "CARDANO_PREPROD" as const;
 
+// Captured before any test mutates process.env; restored in afterAll.
+const ORIGINAL_CARDANO_NETWORK = process.env.CARDANO_NETWORK;
+
 class MockUserDidAnchorRepository {
   findLatestByUserId = jest.fn().mockResolvedValue(null);
   findCreateByUserId = jest.fn().mockResolvedValue(null);
@@ -39,11 +42,24 @@ describe("UserDidService", () => {
     jest.clearAllMocks();
     container.reset();
 
+    // `defaultNetwork()` reads CARDANO_NETWORK at call time and process.env
+    // is shared across the test process — unset it so the default-network
+    // assertions below are deterministic regardless of the CI environment.
+    delete process.env.CARDANO_NETWORK;
+
     mockRepository = new MockUserDidAnchorRepository();
     container.register("UserDidAnchorRepository", { useValue: mockRepository });
     container.register("UserDidService", { useClass: UserDidService });
 
     service = container.resolve(UserDidService);
+  });
+
+  afterAll(() => {
+    if (ORIGINAL_CARDANO_NETWORK === undefined) {
+      delete process.env.CARDANO_NETWORK;
+    } else {
+      process.env.CARDANO_NETWORK = ORIGINAL_CARDANO_NETWORK;
+    }
   });
 
   describe("createDidForUser", () => {
@@ -74,6 +90,16 @@ describe("UserDidService", () => {
       // Hash matches manually-computed Blake2b-256 of the same bytes.
       const recomputed = bytesToHex(blake2b(input.documentCbor as Uint8Array, { dkLen: 32 }));
       expect(input.documentHash).toBe(recomputed);
+    });
+
+    it("defaults the anchor network to CARDANO_MAINNET when CARDANO_NETWORK=mainnet", async () => {
+      process.env.CARDANO_NETWORK = "mainnet";
+      mockRepository.createCreate.mockResolvedValue({ ok: true });
+
+      await service.createDidForUser(mockCtx, VALID_USER_ID);
+
+      const [, input] = mockRepository.createCreate.mock.calls[0];
+      expect(input.network).toBe("CARDANO_MAINNET");
     });
 
     it("forwards the supplied tx to the repository", async () => {

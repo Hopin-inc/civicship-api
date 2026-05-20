@@ -52,15 +52,19 @@ import {
 const DOCUMENT_HASH_BYTES = 32;
 
 /**
- * Default chain network for new anchors, derived from the `CARDANO_NETWORK`
- * environment variable (§4.1 ChainNetwork). Anything other than `mainnet`
- * — including an unset env — resolves to `CARDANO_PREPROD`, so dev / preview
- * deployments never mislabel anchors as mainnet and mainnet is never assumed
- * implicitly. Mirrors the `CARDANO_NETWORK` handling in the Blockfrost DI
- * factory and `resolvePlatformSignerConfig`.
+ * Resolve the default chain network for new anchors from the
+ * `CARDANO_NETWORK` environment variable (§4.1 ChainNetwork). Anything
+ * other than `mainnet` — including an unset env — resolves to
+ * `CARDANO_PREPROD`, so dev / preview deployments never mislabel anchors as
+ * mainnet and mainnet is never assumed implicitly.
+ *
+ * Evaluated on each call (not memoised at module load) so it stays
+ * consistent with `resolvePlatformSignerConfig` and the Blockfrost DI
+ * factory, which also read `CARDANO_NETWORK` at invocation time.
  */
-const DEFAULT_NETWORK: AnchorNetworkValue =
-  process.env.CARDANO_NETWORK === "mainnet" ? "CARDANO_MAINNET" : "CARDANO_PREPROD";
+function defaultNetwork(): AnchorNetworkValue {
+  return process.env.CARDANO_NETWORK === "mainnet" ? "CARDANO_MAINNET" : "CARDANO_PREPROD";
+}
 
 /**
  * CBOR-encode a DID Document and return both the bytes and the
@@ -114,7 +118,7 @@ export default class UserDidService {
     ctx: IContext,
     userId: string,
     tx?: Prisma.TransactionClient,
-    network: AnchorNetworkValue = DEFAULT_NETWORK,
+    network: AnchorNetworkValue = defaultNetwork(),
   ): Promise<UserDidAnchorRow> {
     // Idempotency (§5.2.1): a user has exactly one did:web. If a CREATE
     // anchor already exists, return it instead of enqueueing a duplicate
@@ -164,7 +168,7 @@ export default class UserDidService {
     ctx: IContext,
     userId: string,
     tx?: Prisma.TransactionClient,
-    network: AnchorNetworkValue = DEFAULT_NETWORK,
+    network: AnchorNetworkValue = defaultNetwork(),
   ): Promise<UserDidAnchorRow> {
     const did = buildUserDid(userId);
     const document = buildMinimalDidDocument(userId);
@@ -203,7 +207,7 @@ export default class UserDidService {
     ctx: IContext,
     userId: string,
     tx?: Prisma.TransactionClient,
-    network: AnchorNetworkValue = DEFAULT_NETWORK,
+    network: AnchorNetworkValue = defaultNetwork(),
   ): Promise<UserDidAnchorRow> {
     const did = buildUserDid(userId);
     const tombstone = buildDeactivatedDidDocument(userId);
