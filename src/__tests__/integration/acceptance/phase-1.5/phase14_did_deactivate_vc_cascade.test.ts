@@ -136,6 +136,9 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     //    Both must commit together — splitting them would violate §14.2
     //    line 2123 (no "DID tombstoned but VC still live" window).
     const useCase = container.resolve(UserDidUseCase);
+    // A DID must exist before it can be deactivated — §5.1.6 requires the
+    // DEACTIVATE op to chain from a prior anchor. Establish CREATE first.
+    await useCase.createDidForUser(ctx, userId);
     await useCase.deactivateDid(ctx, userId);
 
     // 4. Both VC rows are revoked.
@@ -172,6 +175,9 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     });
 
     const useCase = container.resolve(UserDidUseCase);
+    // A DID must exist before it can be deactivated — §5.1.6 requires the
+    // DEACTIVATE op to chain from a prior anchor. Establish CREATE first.
+    await useCase.createDidForUser(ctx, userId);
 
     // First DEACTIVATE — revokes the single VC.
     await useCase.deactivateDid(ctx, userId);
@@ -240,6 +246,9 @@ describe("[§14.2] DID DEACTIVATE → cascade-revokes the user's live VCs (§9.7
     });
 
     const useCase = container.resolve(UserDidUseCase);
+    // A DID must exist before it can be deactivated — §5.1.6 requires the
+    // DEACTIVATE op to chain from a prior anchor. Establish CREATE first.
+    await useCase.createDidForUser(ctx, userId);
     await useCase.deactivateDid(ctx, userId);
 
     // Wired VC is revoked; legacy VC remains live (revokedAt stays null).
