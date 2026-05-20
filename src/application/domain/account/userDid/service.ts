@@ -96,6 +96,9 @@ export default class UserDidService {
   /**
    * §5.2.1: enqueue a CREATE-op `UserDidAnchor` for `userId`.
    *
+   * Idempotent: if a CREATE anchor already exists for `userId` the
+   * existing row is returned unchanged (a user has exactly one did:web).
+   *
    * Returns the persisted row so the caller (UseCase) can pass it through
    * its presenter. The row is PENDING — it becomes SUBMITTED / CONFIRMED
    * later via the weekly anchor batch.
@@ -110,6 +113,18 @@ export default class UserDidService {
     tx?: Prisma.TransactionClient,
     network: AnchorNetworkValue = DEFAULT_NETWORK,
   ): Promise<UserDidAnchorRow> {
+    // Idempotency (§5.2.1): a user has exactly one did:web. If a CREATE
+    // anchor already exists, return it instead of enqueueing a duplicate
+    // — guards `createUserDid` against double-submit / client retries.
+    const existing = await this.repository.findCreateByUserId(ctx, userId, tx);
+    if (existing) {
+      logger.debug("[UserDidService] createDidForUser: CREATE anchor exists; returning existing", {
+        userId,
+        anchorId: existing.id,
+      });
+      return existing;
+    }
+
     const did = buildUserDid(userId);
     const document = buildMinimalDidDocument(userId);
     const { cbor, hashHex } = encodeAndHash(document);

@@ -248,8 +248,7 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
     await this.applyToAllAnchors(ctx, args, {
       txData: { status: AnchorStatus.FAILED, lastError: args.failureReason },
       vcData: { status: AnchorStatus.FAILED, lastError: args.failureReason },
-      // userDidAnchor has no lastError column.
-      didData: { status: AnchorStatus.FAILED },
+      didData: { status: AnchorStatus.FAILED, lastError: args.failureReason },
     });
   }
 
@@ -258,7 +257,7 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
    * `issuer.internal` transaction. Empty id lists short-circuit to
    * `Promise.resolve()` so we never issue a no-op `updateMany` (and the
    * per-table `data` shape stays explicit for the few schema columns
-   * that diverge — e.g. `userDidAnchor` has no `blockHeight` / `lastError`).
+   * that diverge — e.g. `userDidAnchor` has no `blockHeight` column).
    */
   private async applyToAllAnchors(
     ctx: IContext,

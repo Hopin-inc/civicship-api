@@ -1125,6 +1125,7 @@ CARDANO_PREPROD CARDANO_PREPROD
     DateTime submitted_at "❓"
     DateTime confirmed_at "❓"
     String batch_id "❓"
+    String last_error "❓"
     Int version 
     String user_id 
     DateTime created_at 

@@ -964,6 +964,7 @@ Table t_user_did_anchors {
   submittedAt DateTime
   confirmedAt DateTime
   batchId String
+  lastError String
   version Int [not null, default: 0]
   userId String [not null]
   user t_users [not null]

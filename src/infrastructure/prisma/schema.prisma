@@ -2199,6 +2199,10 @@ model UserDidAnchor {
   // §5.3.1 idempotency 対応
   batchId String? @map("batch_id")
 
+  // anchor batch / backfill が FAILED 遷移時に失敗理由を残す運用監視用カラム
+  // (TransactionAnchor / VcAnchor の last_error と揃える)
+  lastError String? @map("last_error") @db.Text
+
   // §H 楽観的ロック（@updatedAt は CAS 不可なので明示 version 列）
   version Int @default(0)
 
