@@ -70,8 +70,10 @@ export interface InclusionProof {
   vcAnchorId: string;
   /**
    * Hex-encoded Blake2b-256 hash of the VC JWT — i.e. the Merkle *leaf*
-   * (`canonicalLeafHash(vcJwt)`, §5.1.7). The verifier needs this to seed
-   * the proof walk; it must not re-hash the JWT itself.
+   * (`canonicalLeafHash(vcJwt)`, §5.1.7). The verifier seeds its proof
+   * walk with this value; it doesn't need to re-hash the JWT itself
+   * (a verifier MAY still re-derive it from `vcJwt` as an integrity
+   * cross-check — it just isn't a prerequisite).
    */
   leafHash: string;
   /** Hex-encoded 32-byte Blake2b-256 root committed on-chain. */
