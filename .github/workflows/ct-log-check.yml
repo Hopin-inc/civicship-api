@@ -1,0 +1,101 @@
+name: CT Log Check (civicship.app)
+
+# civicship.app とその subdomain に対し、想定外の CA から TLS 証明書が
+# 発行されていないかを Certificate Transparency log (crt.sh) で月次監視する。
+#
+# 背景:
+#   CAA レコードで `pki.goog` (Google Trust Services) のみに発行を制限して
+#   いるが、CAA は「CA がチェックを遵守する前提」の宣言であり、CA 側の
+#   ミス発行や検証バイパスを物理的に防ぐものではない。CT log は公開証明書が
+#   記録される append-only ログなので、「CAA を破って発行された証明書」を
+#   事後検出する最後の砦になる。did:web は civicship.app の TLS 証明書の
+#   真正性に依存するため、不正発行は DID Document の TLS MITM に直結する。
+#
+#   tls-dns-posture.yml が CAA レコード「設定」の存在を毎日見るのに対し、
+#   本 workflow は実際に「発行された証明書」を見る。役割が異なるため別
+#   workflow とし、変化の遅い CT log に合わせて月次で実行する。
+#
+# 関連: docs/report/did-vc-internalization.md §9.6 / docs/handbook/SECURITY.md
+#       (Edge & TLS Hardening)
+
+on:
+  schedule:
+    # 毎月 1 日 09:00 UTC (JST 18:00)。CT log は変化が遅いので月次で十分。
+    - cron: '0 9 1 * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# schedule と workflow_dispatch が同時刻に走るのを避ける。
+concurrency:
+  group: ct-log-check
+  cancel-in-progress: false
+
+jobs:
+  check-ct-logs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          # crt.sh / Slack webhook への HTTPS egress が必須なので audit に留める。
+          egress-policy: audit
+          disable-sudo: true
+
+      # crt.sh の Certificate Transparency 検索 API (output=json) で
+      # civicship.app 関連の全証明書の issuer を取得し、Google Trust Services
+      # 以外が混ざっていないか確認する。想定外 CA を 1 つでも検出したら step を
+      # fail させ、GitHub annotation と (後続 step で) Slack に通知する。
+      #
+      # crt.sh は不安定なため --retry で一時的な 5xx / 接続断を吸収する。
+      # python3 の出力は `result=$(...)` で受けず直接パイプに流す: set -e 環境
+      # では代入が fail した時点で停止し echo 前に抜けるため、`result=$(...)`
+      # だと検出した CA 名がログに残らない。
+      - name: Check CT logs for civicship.app
+        run: |
+          set -euo pipefail
+          curl -sS --max-time 60 --retry 3 --retry-delay 15 --retry-all-errors \
+            "https://crt.sh/?q=civicship.app&output=json" \
+            | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          issuers = {cert.get('issuer_name', '') for cert in data}
+          allowed = ['Google Trust Services']
+          unexpected = sorted(i for i in issuers if not any(a in i for a in allowed))
+          if unexpected:
+              for u in unexpected:
+                  print(f'::error::想定外の CA を検出: {u}')
+              sys.exit(1)
+          print(f'OK: 全 {len(issuers)} issuer が Google Trust Services から発行されています')
+          "
+
+      # check 失敗 (想定外 CA 検出 or crt.sh 取得失敗) のときだけ Slack に投げる。
+      # SLACK_WEBHOOK_INFRA secret 未登録の repo でも step が無声に skip する
+      # ように `if` で webhook の有無を確認する。tls-dns-posture.yml と同じ
+      # secret / 同じ通知パターン。
+      #
+      # secrets:
+      #   SLACK_WEBHOOK_INFRA  infra channel 宛 Slack incoming webhook URL。
+      - name: Slack notify on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_INFRA: ${{ secrets.SLACK_WEBHOOK_INFRA }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_INFRA:-}" ]; then
+            echo "::warning::SLACK_WEBHOOK_INFRA not set; skipping Slack notify."
+            exit 0
+          fi
+          payload=$(cat <<EOF
+          {"text":":rotating_light: civicship.app CT log check failed — 想定外の CA 発行 もしくは crt.sh 取得失敗。see ${RUN_URL}"}
+          EOF
+          )
+          curl -sS -X POST "$SLACK_WEBHOOK_INFRA" \
+            -H 'Content-Type: application/json' \
+            -d "$payload"

@@ -1027,7 +1027,7 @@ DID Document は **civicship-api（`api.civicship.app`）側で実装**する。
 
 - civicship-api が DB（UserDidAnchor 等）を持つので動的生成が直接的
 - フロントエンド（Next.js, `civicship.app`）に依存しないので Phase 0 を civicship-api チーム単独で進められる
-- `civicship.app` も `api.civicship.app` も同じ GCP Cloud Load Balancer 配下（`34.8.190.174`）→ TLS / HSTS は共有
+- `civicship.app` も `api.civicship.app` も同じ Cloudflare Proxied → GCP Cloud Load Balancer 配下 → TLS / HSTS / DNSSEC / CAA は共有 (詳細は §9.6 / [`docs/handbook/SECURITY.md` の Edge & TLS Hardening](../handbook/SECURITY.md#edge--tls-hardening))
 
 スタック (実コード確認済): **Express ^4.21.2 + Apollo Server ^4.13.0**。既存の `src/presentation/router/wallet.ts` / `line.ts` を precedent として REST router を追加する。
 
@@ -1263,13 +1263,13 @@ router.get("/vc/:vcId/inclusion-proof", async (req, res) => {
 
 最小チェックリスト（Phase 0 で確認）:
 
-- [ ] DNSSEC 有効化（`dig +dnssec civicship.app DS` で DS レコード確認）
-- [ ] CAA レコード設定（証明書発行 CA を Let's Encrypt 等に限定）
-- [ ] HSTS ヘッダ送出（`max-age=31536000; includeSubDomains; preload`）
-- [ ] HSTS preload list 登録（https://hstspreload.org/）
-- [ ] TLS 1.2/1.3 のみ、それ以下は無効化
-- [ ] `/.well-known/did.json` `application/did+json` で配信
-- [ ] CT log（https://crt.sh/?q=civicship.app）の不審な発行に対するアラート設定
+- [x] DNSSEC 有効化（`dig +dnssec civicship.app DS` で DS レコード確認） — Cloudflare Registrar 移管 + DS 登録済 (2026-05、§9.6 参照)
+- [x] CAA レコード設定（`pki.goog` 単独に限定。GCP-managed cert 専用方針に合わせ最狭化、2026-05、§9.6 参照）
+- [x] HSTS ヘッダ送出（`max-age=31536000; includeSubDomains; preload`）
+- [x] HSTS preload list 登録（https://hstspreload.org/）
+- [x] TLS 1.2/1.3 のみ、それ以下は無効化 — Cloudflare proxy 化で公開 TLS は edge 終端、min TLS version 1.2 設定済 (2026-05、§9.6 参照)
+- [ ] `/.well-known/did.json` `application/did+json` で配信（did:web 実装時に対応、未着手）
+- [x] CT log（https://crt.sh/?q=civicship.app）の不審な発行に対するアラート設定 (GitHub Actions `.github/workflows/ct-log-check.yml` で月次監視、2026-05)
 
 ---
 
@@ -1744,6 +1744,7 @@ if (result.count === 0) {
      --ssl-policy civicship-modern-tls
    ```
    → TLS 1.0/1.1 無効化、3DES / FS なし cipher 削除、SSL Labs grade A 以上を目指す
+   → **実装結果 (2026-05)**: GCLB SSL policy の MODERN 化は **不要と判断**。Cloudflare proxy 有効化で公開 TLS は Cloudflare edge で終端し、min TLS version を 1.2 に設定済。TLS 1.0/1.1 クライアントは Cloudflare edge でブロックされ GCLB に直接到達しないため。下記 "Hardening 完了状態" 参照。
 
 2. **DNSSEC 有効化** (Cloudflare Dashboard → DNS → DNSSEC → Enable → 表示される DS レコードを `.app` レジストラに登録)
    → 伝播 24-48h、`dig +dnssec civicship.app DS` で確認
@@ -1755,12 +1756,16 @@ if (result.count === 0) {
    civicship.app. CAA 0 iodef "mailto:info@hopin.co.jp"
    ```
    → 注意: Sectigo / Cloudflare 発行の既存サブドメイン証明書がある場合、それらも CAA に許可するか、サブドメイン別 CAA を切るか判断が必要
+   → **実装結果 (2026-05)**: GCP-managed cert のみで運用する方針が確定したため、CAA は `pki.goog` 単独に絞り込み済 (`letsencrypt.org` は未許可)。下記 "Hardening 完了状態" 参照。
 
 優先度中（Phase 1 で対応）:
 
 4. OCSP stapling 有効化（GCLB Backend Service）
+   → **実装結果 (2026-05)**: Cloudflare proxy 有効時は Cloudflare が OCSP stapling を自動処理するため、GCLB 側の個別設定は不要。下記 "Hardening 完了状態" 参照。
 5. CT log の不審な発行アラート設定（Cert Spotter / Google Cert Transparency Monitoring）
+   → **実装結果 (2026-05)**: 外部 SaaS ではなく GitHub Actions workflow (`.github/workflows/ct-log-check.yml`) で crt.sh を月次照会し、Google Trust Services 以外の issuer を検出したら Slack 通知する方式で実装済。下記 "Hardening 完了状態" 参照。
 6. ドメイン更新期限を 5-10 年以上前払いに設定
+   → **実装結果 (2026-05)**: ムームードメインから Cloudflare Registrar へ移管完了、更新期間を延長済。下記 "Hardening 完了状態" 参照。
 7. DNS / レジストラの管理者 MFA 強制
 
 **第 2 線: chain anchor を活用した検出**
@@ -1780,10 +1785,38 @@ if (result.count === 0) {
 
 #### Phase 0 受け入れ基準（civicship.app 側）
 
-- [ ] DNSSEC: `dig +dnssec civicship.app DS` で DS レコード確認
-- [ ] CAA: `dig CAA civicship.app +short` で許可 CA リスト確認
-- [ ] SSL Labs: civicship.app が **A 以上** を取得
-- [ ] HSTS preload: 維持（既に登録済み、変更時に外れないよう注意）
+- [x] DNSSEC: `dig +dnssec civicship.app DS` で DS レコード確認 (Cloudflare Registrar 移管 + DS 登録 + resolver の `ad` フラグ確認済、2026-05)
+- [x] CAA: `dig CAA civicship.app +short` で許可 CA リスト確認 (`pki.goog` 単独、2026-05)
+- [x] SSL Labs: `api.civicship.app` が **A+** を取得 (2026-05 実測)。Cloudflare proxy 化で公開 TLS の終端が Cloudflare edge へ移行し min TLS version 1.2 設定済 → TLS 1.0/1.1 / 弱 cipher の露出は解消 (GCLB SSL policy MODERN 化は不要と判断、下記フォローアップ参照)
+- [x] HSTS preload: 維持 (`hstspreload.org` で登録維持確認済、2026-05)
+
+#### Hardening 完了状態 (2026-05)
+
+§9.6 の脅威モデルに対する第 1 線 (HTTPS インフラ強化) のうち、ドメイン
+hardening スプリントで以下を完了済:
+
+| 対策 | 状態 | 備考 |
+|---|---|---|
+| DNSSEC 有効化 + DS 登録 | ✅ Done | Cloudflare Registrar に移管後、DS 登録完了。chain of trust は `ad` フラグで確認 |
+| CAA = `pki.goog` のみ | ✅ Done | GCP-managed cert 専用方針に合わせ最狭に絞り込み |
+| Cloudflare SSL モード = Full (Strict) | ✅ Done | 旧 Flexible 設定を廃止。edge↔origin TLS の中間者攻撃面を閉塞 |
+| Cloudflare Proxied (orange-cloud) | ✅ Done | `civicship.app` / `www.civicship.app` / `api.civicship.app` |
+| Always Use HTTPS | ✅ Done | Cloudflare 側で HTTP→HTTPS redirect |
+| Bot Fight Mode | ✅ Done | Cloudflare 側 ON |
+| Cloudflare Registrar 集約 | ✅ Done | レジストラ MFA / 移管ロック / 自動更新を Cloudflare 側で一元管理 |
+| `/.well-known/security.txt` | ✅ Done | `civicship.app` / `api.civicship.app` 両方で配信 (RFC 9116) |
+| CT log 月次監視 (crt.sh) | ✅ Done | GitHub Actions `.github/workflows/ct-log-check.yml`。Google Trust Services 以外の issuer 検出時に job fail + Slack 通知 |
+
+**フォローアップ対応状況 (2026-05 時点で全項目クローズ)**:
+
+- [x] GCLB SSL policy MODERN 化 — **不要と判断**。Cloudflare proxy 化で公開 TLS は Cloudflare edge で終端し、min TLS version を 1.2 に設定済。TLS 1.0/1.1 クライアントは Cloudflare edge でブロックされ GCLB に直接到達しないため、GCLB 側 SSL policy の MODERN 化は不要。SSL Labs で `api.civicship.app` の **A+** を実測確認済 (2026-05)。
+- [x] OCSP stapling — **不要と判断**。Cloudflare proxy 有効時は Cloudflare が OCSP stapling を自動処理するため、GCLB 側の個別設定は不要。
+- [x] ドメイン更新期限の長期前払い — **対応済**。ムームードメインから Cloudflare Registrar へ移管完了、更新期間を延長済。
+
+did:web 信頼基盤としては第 1 線の中核 (DNSSEC / CAA / Full-Strict TLS / HSTS preload) が
+揃い、上記フォローアップも全項目クローズしたため、`api.civicship.app` 経由の DID Document
+解決経路は **§9.6 の脅威モデルに対する第 1 線 (HTTPS インフラ強化) の対策を完了した状態**
+に到達している。
 
 ### 9.7 GDPR / 個人情報削除と chain 整合性（§N 対応）
 
@@ -1939,7 +1972,7 @@ backfill 月のみ ~$1 加算、それ以降は通常運用コストに戻る。
 | Blockfrost API key ローテ | 年 1 回 | 30 分 |
 | HSTS preload 維持確認 | 年 1 回 | 10 分 |
 | CAA / DNSSEC 設定確認 | 半年 1 回 | 30 分 |
-| CT log 監視 / 不審発行アラート対応 | 月 1 回（チェック） | 10 分/回（通常時） |
+| CT log 監視 / 不審発行アラート対応 | 月次（GitHub Actions 自動） | 0 分（通常時）／ Slack アラート時のみ対応 |
 | Cardano Hard Fork 対応（§P） | 1-2 年に 1 回 | 1-2 日（CSL/SDK 更新、preprod テスト含む） |
 | Blockfrost / Cardano 障害対応 | 年 1-2 回 | 数時間/回 |
 
