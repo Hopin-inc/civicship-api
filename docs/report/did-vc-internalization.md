@@ -1787,7 +1787,7 @@ if (result.count === 0) {
 
 - [x] DNSSEC: `dig +dnssec civicship.app DS` で DS レコード確認 (Cloudflare Registrar 移管 + DS 登録 + resolver の `ad` フラグ確認済、2026-05)
 - [x] CAA: `dig CAA civicship.app +short` で許可 CA リスト確認 (`pki.goog` 単独、2026-05)
-- [x] SSL Labs: Cloudflare proxy 化で公開 TLS の終端が Cloudflare edge へ移行し min TLS version 1.2 設定済 → TLS 1.0/1.1 / 弱 cipher の露出は解消 (GCLB SSL policy MODERN 化は不要と判断、下記フォローアップ参照)。実 grade は Cloudflare edge 構成に依存するため、移行後に SSL Labs で 1 度実測し A 以上を確認することを推奨
+- [x] SSL Labs: `api.civicship.app` が **A+** を取得 (2026-05 実測)。Cloudflare proxy 化で公開 TLS の終端が Cloudflare edge へ移行し min TLS version 1.2 設定済 → TLS 1.0/1.1 / 弱 cipher の露出は解消 (GCLB SSL policy MODERN 化は不要と判断、下記フォローアップ参照)
 - [x] HSTS preload: 維持 (`hstspreload.org` で登録維持確認済、2026-05)
 
 #### Hardening 完了状態 (2026-05)
@@ -1809,7 +1809,7 @@ hardening スプリントで以下を完了済:
 
 **フォローアップ対応状況 (2026-05 時点で全項目クローズ)**:
 
-- [x] GCLB SSL policy MODERN 化 — **不要と判断**。Cloudflare proxy 化で公開 TLS は Cloudflare edge で終端し、min TLS version を 1.2 に設定済。TLS 1.0/1.1 クライアントは Cloudflare edge でブロックされ GCLB に直接到達しないため、GCLB 側 SSL policy の MODERN 化は不要。
+- [x] GCLB SSL policy MODERN 化 — **不要と判断**。Cloudflare proxy 化で公開 TLS は Cloudflare edge で終端し、min TLS version を 1.2 に設定済。TLS 1.0/1.1 クライアントは Cloudflare edge でブロックされ GCLB に直接到達しないため、GCLB 側 SSL policy の MODERN 化は不要。SSL Labs で `api.civicship.app` の **A+** を実測確認済 (2026-05)。
 - [x] OCSP stapling — **不要と判断**。Cloudflare proxy 有効時は Cloudflare が OCSP stapling を自動処理するため、GCLB 側の個別設定は不要。
 - [x] ドメイン更新期限の長期前払い — **対応済**。ムームードメインから Cloudflare Registrar へ移管完了、更新期間を延長済。
 
