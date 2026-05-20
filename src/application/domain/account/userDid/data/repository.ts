@@ -46,18 +46,37 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
    * status (PENDING included per §F). Returns `null` when no row exists.
    *
    * Used by both `DidDocumentResolver` (HTTP `/users/:userId/did.json`) and
-   * `UserDidService` (next-version chaining decisions in future phases).
+   * `UserDidService` (UPDATE / DEACTIVATE prior-anchor resolution).
    *
-   * The HTTP route serving did:web is unauthenticated (§5.4) so there is no
-   * request-scoped `IContext` — `internal()` is the appropriate RLS bypass
-   * (a system-level read), and unlike `public(ctx, ...)` it does not depend
-   * on a request context that we cannot honestly construct here.
+   * When `tx` is supplied, the read runs inside the caller's write
+   * transaction so the lookup is transaction-consistent (the
+   * UPDATE / DEACTIVATE lifecycle resolves the prior anchor mid-write).
+   * Without `tx` the HTTP route serving did:web is unauthenticated (§5.4)
+   * so there is no request-scoped `IContext` — `internal()` is the
+   * appropriate RLS bypass (a system-level read), and unlike
+   * `public(ctx, ...)` it does not depend on a request context that we
+   * cannot honestly construct here.
    */
-  async findLatestByUserId(userId: string): Promise<UserDidAnchorRow | null> {
-    return this.issuer.internal((tx) =>
-      tx.userDidAnchor.findFirst({
+  async findLatestByUserId(
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UserDidAnchorRow | null> {
+    if (tx) {
+      return tx.userDidAnchor.findFirst({
         where: { userId },
-        orderBy: { createdAt: "desc" },
+        // §5.1.6: `id` (cuid) is the deterministic tie-break so the prior
+        // anchor resolved for `previousAnchorId` is stable even when two
+        // rows share `createdAt` — an ambiguous pick would fork the chain.
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      });
+    }
+    return this.issuer.internal((innerTx) =>
+      innerTx.userDidAnchor.findFirst({
+        where: { userId },
+        // §5.1.6: `id` (cuid) is the deterministic tie-break so the prior
+        // anchor resolved for `previousAnchorId` is stable even when two
+        // rows share `createdAt` — an ambiguous pick would fork the chain.
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
     );
   }
@@ -138,6 +157,12 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
       network: input.network ?? "CARDANO_MAINNET",
       user: { connect: { id: input.userId } },
     };
+    // §5.1.6 hash chain: UPDATE / DEACTIVATE rows link to the user's prior
+    // anchor via the `DidVersionChain` self-relation. CREATE is the genesis
+    // op and leaves `previousAnchorId` null.
+    if (input.previousAnchorId) {
+      data.previousAnchor = { connect: { id: input.previousAnchorId } };
+    }
     return data;
   }
 }

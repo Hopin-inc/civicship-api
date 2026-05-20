@@ -57,6 +57,12 @@ export interface CreateUserDidAnchorInput {
   documentCbor: Uint8Array;
   /** Defaults to `"CARDANO_MAINNET"` per §5.2.1 example when omitted. */
   network?: AnchorNetworkValue;
+  /**
+   * Anchor id of the prior DID version — links the on-chain hash chain
+   * (§5.1.6). Left undefined for the genesis CREATE op (no predecessor);
+   * UPDATE / DEACTIVATE callers populate it with the user's latest anchor.
+   */
+  previousAnchorId?: string;
 }
 
 /**
@@ -76,4 +82,11 @@ export interface DeactivateUserDidAnchorInput {
   did: string;
   documentHash: string;
   network?: AnchorNetworkValue;
+  /**
+   * Anchor id of the prior DID version. The DEACTIVATE op's on-chain
+   * `prev` is mandatory (§5.1.6), so this is **required** — a DID with no
+   * prior anchor cannot be deactivated. `UserDidService.deactivateDid`
+   * resolves it from the user's latest anchor and throws when absent.
+   */
+  previousAnchorId: string;
 }

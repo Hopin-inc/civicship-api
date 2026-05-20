@@ -142,7 +142,12 @@ describe("UserDidService", () => {
   });
 
   describe("updateDid", () => {
+    // updateDid now requires an existing, non-deactivated anchor to chain
+    // from (§5.1.6). Happy-path tests seed one.
+    const PRIOR_CREATE = { id: "uda_prev_create", operation: "CREATE" };
+
     it("re-anchors the minimal Document via createUpdate", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_CREATE);
       mockRepository.createUpdate.mockResolvedValue({ ok: true });
 
       await service.updateDid(mockCtx, VALID_USER_ID);
@@ -158,10 +163,54 @@ describe("UserDidService", () => {
       const decoded = cborDecode(input.documentCbor as Uint8Array);
       expect(decoded).toEqual(buildMinimalDidDocument(VALID_USER_ID));
     });
+
+    it("links previousAnchorId to the user's latest anchor (§5.1.6 hash chain)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_CREATE);
+      mockRepository.createUpdate.mockResolvedValue({ ok: true });
+
+      await service.updateDid(mockCtx, VALID_USER_ID);
+
+      const [, input] = mockRepository.createUpdate.mock.calls[0];
+      expect(input.previousAnchorId).toBe("uda_prev_create");
+    });
+
+    it("resolves the prior anchor inside the supplied transaction", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_CREATE);
+      mockRepository.createUpdate.mockResolvedValue({ ok: true });
+      const fakeTx = { sentinel: true } as never;
+
+      await service.updateDid(mockCtx, VALID_USER_ID, fakeTx);
+
+      expect(mockRepository.findLatestByUserId).toHaveBeenCalledWith(VALID_USER_ID, fakeTx);
+    });
+
+    it("throws when the user has no existing DID anchor", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(null);
+
+      await expect(service.updateDid(mockCtx, VALID_USER_ID)).rejects.toThrow(
+        /no DID anchor to update/,
+      );
+      expect(mockRepository.createUpdate).not.toHaveBeenCalled();
+    });
+
+    it("throws when the DID is already deactivated", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce({
+        id: "uda_dead",
+        operation: "DEACTIVATE",
+      });
+
+      await expect(service.updateDid(mockCtx, VALID_USER_ID)).rejects.toThrow(
+        /already deactivated/,
+      );
+      expect(mockRepository.createUpdate).not.toHaveBeenCalled();
+    });
   });
 
   describe("deactivateDid", () => {
+    const PRIOR_UPDATE = { id: "uda_prev_update", operation: "UPDATE" };
+
     it("hashes the tombstone Document and emits createDeactivate without CBOR", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_UPDATE);
       mockRepository.createDeactivate.mockResolvedValue({ ok: true });
 
       await service.deactivateDid(mockCtx, VALID_USER_ID);
@@ -182,6 +231,50 @@ describe("UserDidService", () => {
         tombstoneCbor instanceof Uint8Array ? tombstoneCbor : new Uint8Array(tombstoneCbor);
       const expectedHash = bytesToHex(blake2b(tombstoneBytes, { dkLen: 32 }));
       expect(input.documentHash).toBe(expectedHash);
+    });
+
+    it("links previousAnchorId to the user's latest anchor (§5.1.6 mandatory prev)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_UPDATE);
+      mockRepository.createDeactivate.mockResolvedValue({ ok: true });
+
+      await service.deactivateDid(mockCtx, VALID_USER_ID);
+
+      const [, input] = mockRepository.createDeactivate.mock.calls[0];
+      expect(input.previousAnchorId).toBe("uda_prev_update");
+    });
+
+    it("resolves the prior anchor inside the supplied transaction", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_UPDATE);
+      mockRepository.createDeactivate.mockResolvedValue({ ok: true });
+      const fakeTx = { sentinel: true } as never;
+
+      await service.deactivateDid(mockCtx, VALID_USER_ID, fakeTx);
+
+      expect(mockRepository.findLatestByUserId).toHaveBeenCalledWith(VALID_USER_ID, fakeTx);
+    });
+
+    it("throws when the user has no existing DID anchor (§5.1.6 prev is mandatory)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(null);
+
+      await expect(service.deactivateDid(mockCtx, VALID_USER_ID)).rejects.toThrow(
+        /no DID anchor to deactivate/,
+      );
+      expect(mockRepository.createDeactivate).not.toHaveBeenCalled();
+    });
+
+    it("allows re-deactivating an already-deactivated DID (append-only lifecycle)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce({
+        id: "uda_dead",
+        operation: "DEACTIVATE",
+      });
+      mockRepository.createDeactivate.mockResolvedValue({ ok: true });
+
+      await service.deactivateDid(mockCtx, VALID_USER_ID);
+
+      // A second DEACTIVATE still chains from the prior DEACTIVATE anchor,
+      // so `prev` stays non-null and §5.1.6 holds.
+      const [, input] = mockRepository.createDeactivate.mock.calls[0];
+      expect(input.previousAnchorId).toBe("uda_dead");
     });
   });
 });

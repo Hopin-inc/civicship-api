@@ -160,10 +160,28 @@ export default class UserDidService {
     const document = buildMinimalDidDocument(userId);
     const { cbor, hashHex } = encodeAndHash(document);
 
+    // §5.1.6 hash chain: the UPDATE op must reference the user's most
+    // recent anchor so verifiers can walk the DID version history. Resolve
+    // it inside the caller's `tx` (transaction-consistent read), and
+    // refuse to update a DID that was never created or is already
+    // deactivated — both would break the chain.
+    const previous = await this.repository.findLatestByUserId(userId, tx);
+    if (!previous) {
+      throw new Error(
+        `updateDid: user ${userId} has no DID anchor to update — create the DID first`,
+      );
+    }
+    if (previous.operation === "DEACTIVATE") {
+      throw new Error(
+        `updateDid: DID for user ${userId} is already deactivated and cannot be updated`,
+      );
+    }
+
     logger.debug("[UserDidService] updateDid", {
       userId,
       did,
       documentHash: hashHex,
+      previousAnchorId: previous.id,
       network,
     });
 
@@ -175,6 +193,7 @@ export default class UserDidService {
         documentHash: hashHex,
         documentCbor: cbor,
         network,
+        previousAnchorId: previous.id,
       },
       tx,
     );
@@ -199,10 +218,25 @@ export default class UserDidService {
     const tombstone = buildDeactivatedDidDocument(userId);
     const { hashHex } = encodeAndHash(tombstone);
 
+    // §5.1.6: the DEACTIVATE op's on-chain `prev` is mandatory — it must
+    // point at the user's most recent anchor so verifiers can confirm the
+    // tombstone terminates a real DID version chain. Resolve it inside the
+    // caller's `tx`, and refuse to deactivate a DID that was never created
+    // (no `prev` to chain from). A repeated DEACTIVATE is intentionally
+    // allowed: the DID lifecycle is append-only, so it simply chains from
+    // the prior DEACTIVATE anchor and `prev` stays non-null.
+    const previous = await this.repository.findLatestByUserId(userId, tx);
+    if (!previous) {
+      throw new Error(
+        `deactivateDid: user ${userId} has no DID anchor to deactivate`,
+      );
+    }
+
     logger.debug("[UserDidService] deactivateDid", {
       userId,
       did,
       documentHash: hashHex,
+      previousAnchorId: previous.id,
       network,
     });
 
@@ -213,6 +247,7 @@ export default class UserDidService {
         did,
         documentHash: hashHex,
         network,
+        previousAnchorId: previous.id,
       },
       tx,
     );
