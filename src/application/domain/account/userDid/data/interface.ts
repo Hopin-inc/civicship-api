@@ -32,10 +32,15 @@ export interface IUserDidAnchorRepository extends UserDidAnchorStore {
    * Return the most recently-created anchor for `userId`, regardless of
    * status (PENDING included per §F). Returns `null` when no row exists.
    *
-   * Inherited from `UserDidAnchorStore` so the production class can be
-   * reused by `DidDocumentResolver` without an adapter.
+   * Widens the `UserDidAnchorStore` signature with an optional `tx`: the
+   * UPDATE / DEACTIVATE lifecycle resolves the prior anchor inside its
+   * own write transaction, so the read must be able to participate in it
+   * (the no-`tx` form keeps the unauthenticated resolver path working).
    */
-  findLatestByUserId(userId: string): Promise<UserDidAnchorRow | null>;
+  findLatestByUserId(
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UserDidAnchorRow | null>;
 
   /**
    * Return the CREATE-op anchor for `userId` if one exists, else `null`.

@@ -96,6 +96,25 @@ describe("UserDidAnchorRepository (integration)", () => {
       expect(latest!.id).not.toBe(first.id);
       expect(latest!.operation).toBe(DidOperation.UPDATE);
     });
+
+    it("reads inside a supplied transaction (tx-aware branch)", async () => {
+      const ctx = buildCtx();
+      const created = await repo.createCreate(ctx, {
+        userId,
+        did: `did:web:api.civicship.app:users:${userId}`,
+        documentHash: "a".repeat(64),
+        documentCbor: new Uint8Array([1, 2, 3]),
+        network: "CARDANO_PREPROD",
+      });
+
+      // The UPDATE / DEACTIVATE lifecycle resolves the prior anchor inside
+      // its own write transaction — exercise that `tx`-aware code path.
+      const seen = await prismaClient.$transaction((tx) =>
+        repo.findLatestByUserId(userId, tx),
+      );
+      expect(seen).not.toBeNull();
+      expect(seen!.id).toBe(created.id);
+    });
   });
 
   describe("createCreate / createUpdate / createDeactivate", () => {
@@ -143,11 +162,21 @@ describe("UserDidAnchorRepository (integration)", () => {
 
     it("persists DEACTIVATE with documentCbor = null (§E tombstone)", async () => {
       const ctx = buildCtx();
+      // DEACTIVATE requires a prior anchor (§5.1.6 — `prev` is mandatory),
+      // so seed a CREATE to chain from.
+      const create = await repo.createCreate(ctx, {
+        userId,
+        did: `did:web:api.civicship.app:users:${userId}`,
+        documentHash: "a".repeat(64),
+        documentCbor: new Uint8Array([1, 2, 3]),
+        network: "CARDANO_PREPROD",
+      });
       const persisted = await repo.createDeactivate(ctx, {
         userId,
         did: `did:web:api.civicship.app:users:${userId}`,
         documentHash: "e".repeat(64),
         network: "CARDANO_PREPROD",
+        previousAnchorId: create.id,
       });
 
       expect(persisted.operation).toBe(DidOperation.DEACTIVATE);

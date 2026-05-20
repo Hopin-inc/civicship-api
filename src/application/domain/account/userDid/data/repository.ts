@@ -46,16 +46,29 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
    * status (PENDING included per §F). Returns `null` when no row exists.
    *
    * Used by both `DidDocumentResolver` (HTTP `/users/:userId/did.json`) and
-   * `UserDidService` (next-version chaining decisions in future phases).
+   * `UserDidService` (UPDATE / DEACTIVATE prior-anchor resolution).
    *
-   * The HTTP route serving did:web is unauthenticated (§5.4) so there is no
-   * request-scoped `IContext` — `internal()` is the appropriate RLS bypass
-   * (a system-level read), and unlike `public(ctx, ...)` it does not depend
-   * on a request context that we cannot honestly construct here.
+   * When `tx` is supplied, the read runs inside the caller's write
+   * transaction so the lookup is transaction-consistent (the
+   * UPDATE / DEACTIVATE lifecycle resolves the prior anchor mid-write).
+   * Without `tx` the HTTP route serving did:web is unauthenticated (§5.4)
+   * so there is no request-scoped `IContext` — `internal()` is the
+   * appropriate RLS bypass (a system-level read), and unlike
+   * `public(ctx, ...)` it does not depend on a request context that we
+   * cannot honestly construct here.
    */
-  async findLatestByUserId(userId: string): Promise<UserDidAnchorRow | null> {
-    return this.issuer.internal((tx) =>
-      tx.userDidAnchor.findFirst({
+  async findLatestByUserId(
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UserDidAnchorRow | null> {
+    if (tx) {
+      return tx.userDidAnchor.findFirst({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+    return this.issuer.internal((innerTx) =>
+      innerTx.userDidAnchor.findFirst({
         where: { userId },
         orderBy: { createdAt: "desc" },
       }),

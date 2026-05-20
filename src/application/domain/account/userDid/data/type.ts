@@ -84,8 +84,9 @@ export interface DeactivateUserDidAnchorInput {
   network?: AnchorNetworkValue;
   /**
    * Anchor id of the prior DID version. The DEACTIVATE op's on-chain
-   * `prev` is mandatory (§5.1.6), so callers must thread the user's
-   * latest anchor here.
+   * `prev` is mandatory (§5.1.6), so this is **required** — a DID with no
+   * prior anchor cannot be deactivated. `UserDidService.deactivateDid`
+   * resolves it from the user's latest anchor and throws when absent.
    */
-  previousAnchorId?: string;
+  previousAnchorId: string;
 }
