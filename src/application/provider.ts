@@ -599,13 +599,22 @@ export function registerProductionDependencies() {
   // BlockfrostClient のコンストラクタは optional 引数 1 つ
   // (`options: BlockfrostClientOptions = {}`) のみで、interface 型を
   // tsyringe が auto-resolve できない (`TypeInfo not known for "Object"`)。
-  // 引数なしで構築すれば env (`BLOCKFROST_PROJECT_ID`) から値を引くため、
+  // network は CARDANO_NETWORK env から導出して明示的に渡す: 省略すると
+  // BlockfrostClient は CARDANO_PREPROD 固定になり、mainnet デプロイで
+  // 誤ったチェーンに anchor してしまう (mainnet キーなら起動時の
+  // assertProjectIdMatchesNetwork で fail-fast する)。projectId は引き続き
+  // env (`BLOCKFROST_PROJECT_ID`) から引く。
   // factory + instanceCachingFactory で singleton 化する。
   //
   // dual-binding: クラス自体 (`@inject(BlockfrostClient)`) と string token
   // (`@inject("BlockfrostClient")`) の両方で同じ singleton インスタンスに
   // 解決させる。precedent は L304-306 の UserDidAnchorRepository。
-  const blockfrostFactory = instanceCachingFactory(() => new BlockfrostClient());
+  const blockfrostFactory = instanceCachingFactory(
+    () =>
+      new BlockfrostClient({
+        network: process.env.CARDANO_NETWORK === "mainnet" ? "CARDANO_MAINNET" : "CARDANO_PREPROD",
+      }),
+  );
   container.register(BlockfrostClient, { useFactory: blockfrostFactory });
   container.register("BlockfrostClient", { useToken: BlockfrostClient });
   container.register<BlockfrostLatestSlotProvider>("BlockfrostLatestSlotProvider", {
