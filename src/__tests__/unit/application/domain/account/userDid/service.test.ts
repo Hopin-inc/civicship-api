@@ -24,6 +24,7 @@ const SAMPLE_NETWORK = "CARDANO_PREPROD" as const;
 
 class MockUserDidAnchorRepository {
   findLatestByUserId = jest.fn().mockResolvedValue(null);
+  findCreateByUserId = jest.fn().mockResolvedValue(null);
   createCreate = jest.fn();
   createUpdate = jest.fn();
   createDeactivate = jest.fn();
@@ -98,6 +99,18 @@ describe("UserDidService", () => {
     it("rejects userIds that violate the §9.2 regex", async () => {
       // `assertValidUserId` (called by `buildUserDid`) throws on uppercase / colons.
       await expect(service.createDidForUser(mockCtx, "BAD:ID")).rejects.toThrow(/§9\.2/);
+      expect(mockRepository.createCreate).not.toHaveBeenCalled();
+    });
+
+    it("is idempotent — returns the existing CREATE anchor without enqueueing a duplicate", async () => {
+      // A user has exactly one did:web (§5.2.1): when a CREATE anchor
+      // already exists, the service returns it and never calls createCreate.
+      const existing = { id: "uda_existing" };
+      mockRepository.findCreateByUserId.mockResolvedValueOnce(existing);
+
+      const result = await service.createDidForUser(mockCtx, VALID_USER_ID);
+
+      expect(result).toBe(existing);
       expect(mockRepository.createCreate).not.toHaveBeenCalled();
     });
   });
