@@ -47,24 +47,10 @@ import {
   type DidDocument,
   type TombstoneDocument,
 } from "@/infrastructure/libs/did/userDidBuilder";
+import { resolveCardanoChainNetwork } from "@/infrastructure/libs/cardano/network";
 
 /** Output length of `documentHash`, in bytes (Blake2b-256 → 32 B). */
 const DOCUMENT_HASH_BYTES = 32;
-
-/**
- * Resolve the default chain network for new anchors from the
- * `CARDANO_NETWORK` environment variable (§4.1 ChainNetwork). Anything
- * other than `mainnet` — including an unset env — resolves to
- * `CARDANO_PREPROD`, so dev / preview deployments never mislabel anchors as
- * mainnet and mainnet is never assumed implicitly.
- *
- * Evaluated on each call (not memoised at module load) so it stays
- * consistent with `resolvePlatformSignerConfig` and the Blockfrost DI
- * factory, which also read `CARDANO_NETWORK` at invocation time.
- */
-function defaultNetwork(): AnchorNetworkValue {
-  return process.env.CARDANO_NETWORK === "mainnet" ? "CARDANO_MAINNET" : "CARDANO_PREPROD";
-}
 
 /**
  * CBOR-encode a DID Document and return both the bytes and the
@@ -118,7 +104,7 @@ export default class UserDidService {
     ctx: IContext,
     userId: string,
     tx?: Prisma.TransactionClient,
-    network: AnchorNetworkValue = defaultNetwork(),
+    network: AnchorNetworkValue = resolveCardanoChainNetwork(),
   ): Promise<UserDidAnchorRow> {
     // Idempotency (§5.2.1): a user has exactly one did:web. If a CREATE
     // anchor already exists, return it instead of enqueueing a duplicate
@@ -168,7 +154,7 @@ export default class UserDidService {
     ctx: IContext,
     userId: string,
     tx?: Prisma.TransactionClient,
-    network: AnchorNetworkValue = defaultNetwork(),
+    network: AnchorNetworkValue = resolveCardanoChainNetwork(),
   ): Promise<UserDidAnchorRow> {
     const did = buildUserDid(userId);
     const document = buildMinimalDidDocument(userId);
@@ -207,7 +193,7 @@ export default class UserDidService {
     ctx: IContext,
     userId: string,
     tx?: Prisma.TransactionClient,
-    network: AnchorNetworkValue = defaultNetwork(),
+    network: AnchorNetworkValue = resolveCardanoChainNetwork(),
   ): Promise<UserDidAnchorRow> {
     const did = buildUserDid(userId);
     const tombstone = buildDeactivatedDidDocument(userId);
