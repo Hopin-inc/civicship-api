@@ -25,8 +25,6 @@
  *   docs/report/did-vc-internalization.md §5.1.4 (DidDocumentResolver storage)
  */
 
-// TODO(perf): consider @@index([userId, createdAt(sort: Desc)]) on UserDidAnchor (Phase 1.5)
-
 import { inject, injectable } from "tsyringe";
 import { DidOperation, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
@@ -61,6 +59,25 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
         where: { userId },
         orderBy: { createdAt: "desc" },
       }),
+    );
+  }
+
+  /**
+   * Return the CREATE-op anchor for `userId` if one exists, else `null`.
+   * `tx`-aware so `UserDidService.createDidForUser` runs the idempotency
+   * check inside its own write transaction.
+   */
+  async findCreateByUserId(
+    ctx: IContext,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UserDidAnchorRow | null> {
+    const where = { userId, operation: DidOperation.CREATE };
+    if (tx) {
+      return tx.userDidAnchor.findFirst({ where, orderBy: { createdAt: "asc" } });
+    }
+    return this.issuer.public(ctx, (innerTx) =>
+      innerTx.userDidAnchor.findFirst({ where, orderBy: { createdAt: "asc" } }),
     );
   }
 

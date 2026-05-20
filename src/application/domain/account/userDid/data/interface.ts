@@ -37,6 +37,18 @@ export interface IUserDidAnchorRepository extends UserDidAnchorStore {
    */
   findLatestByUserId(userId: string): Promise<UserDidAnchorRow | null>;
 
+  /**
+   * Return the CREATE-op anchor for `userId` if one exists, else `null`.
+   * `UserDidService.createDidForUser` uses this to stay idempotent — a
+   * user has exactly one did:web (§5.2.1), so a second CREATE op must
+   * never be enqueued (double-submit / client-retry guard).
+   */
+  findCreateByUserId(
+    ctx: IContext,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<UserDidAnchorRow | null>;
+
   createCreate(
     ctx: IContext,
     input: CreateUserDidAnchorInput,

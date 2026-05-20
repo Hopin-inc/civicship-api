@@ -56,6 +56,7 @@ function buildAnchor(overrides: Partial<UserDidAnchorRow> = {}): UserDidAnchorRo
     submittedAt: null,
     confirmedAt: new Date("2026-01-15T12:00:00.000Z"),
     batchId: null,
+    lastError: null,
     version: 0,
     userId: "u_alice",
     createdAt: new Date("2026-01-15T11:50:00.000Z"),

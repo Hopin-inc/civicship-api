@@ -84,13 +84,10 @@ import {
   metadataByteSize,
   MAX_METADATA_TX_BYTES,
 } from "@/infrastructure/libs/cardano/txBuilder";
-import {
-  buildMinimalDidDocument,
-  buildUserDid,
-} from "@/infrastructure/libs/did/userDidBuilder";
+import { buildMinimalDidDocument, buildUserDid } from "@/infrastructure/libs/did/userDidBuilder";
 import { deriveCardanoKeypair } from "@/infrastructure/libs/cardano/keygen";
 
-import { parseFixedLengthHex, runStep } from "./lib/cardanoScriptHelpers.ts";
+import { bytesToHex, parseFixedLengthHex, runStep } from "./lib/cardanoScriptHelpers.ts";
 
 const DEFAULT_CHUNK_SIZE = 80;
 const DEFAULT_INTER_TX_SLEEP_MS = 5 * 60 * 1000;
@@ -163,9 +160,7 @@ function encodeAndHashUserDoc(userId: string): { cbor: Uint8Array; hashHex: stri
   const raw = cborEncode(doc);
   const cbor = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
   const hash = blake2b(cbor, { dkLen: 32 });
-  let s = "";
-  for (const b of hash) s += b.toString(16).padStart(2, "0");
-  return { cbor, hashHex: s };
+  return { cbor, hashHex: bytesToHex(hash) };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -191,7 +186,10 @@ async function findUsersWithoutInternal(limit?: number): Promise<{ id: string }[
   });
 }
 
-async function fetchCurrentSlot(projectId: string, network: "preprod" | "mainnet"): Promise<number> {
+async function fetchCurrentSlot(
+  projectId: string,
+  network: "preprod" | "mainnet",
+): Promise<number> {
   const api = new BlockFrostAPI({ projectId, network });
   const latest = (await api.blocksLatest()) as { slot?: number | null };
   if (typeof latest?.slot !== "number") {
@@ -332,13 +330,12 @@ async function main(): Promise<number> {
   let chunkIdx = 0;
   let confirmedTotal = 0;
   let failedTotal = 0;
-  let bailOut = false;
 
   // Drain PENDING anchors one chunk at a time. The outer loop terminates
   // when `findPendingAnchors` returns an empty array (all CONFIRMED) or
-  // when a chunk fails (set `bailOut=true`; operator must reset FAILED rows
-  // back to PENDING before re-running).
-  while (!bailOut) {
+  // when a chunk fails (the failure path `break`s out; operator must reset
+  // FAILED rows back to PENDING before re-running).
+  while (true) {
     const chunk = await findPendingAnchors(flags.chunkSize);
     if (chunk.length === 0) break;
     chunkIdx += 1;
@@ -382,7 +379,6 @@ async function main(): Promise<number> {
         `chunk ${chunkIdx} metadata ${size}B exceeds 16KB ceiling; lower --chunk-size and retry\n`,
       );
       await markChunkFailed(chunk, `metadata oversize (${size}B)`);
-      failedTotal += chunk.length;
       return 1;
     }
 
@@ -436,7 +432,6 @@ async function main(): Promise<number> {
       // Bail out — re-running picks up the FAILED rows once the operator
       // resets them to PENDING (manual). Continuing would keep burning
       // ADA on the same broken state.
-      bailOut = true;
       break;
     }
     confirmedTotal += chunk.length;
@@ -453,15 +448,13 @@ async function main(): Promise<number> {
   return failedTotal === 0 ? 0 : 1;
 }
 
-async function markChunkFailed(
-  rows: ReadonlyArray<{ id: string }>,
-  reason: string,
-): Promise<void> {
+async function markChunkFailed(rows: ReadonlyArray<{ id: string }>, reason: string): Promise<void> {
   await prismaClient.userDidAnchor
     .updateMany({
       where: { id: { in: rows.map((r) => r.id) } },
       data: {
         status: AnchorStatus.FAILED,
+        lastError: reason,
       },
     })
     .catch(() => {

@@ -10530,6 +10530,7 @@ type UserDidAnchorFactoryDefineInput = {
     submittedAt?: Date | null;
     confirmedAt?: Date | null;
     batchId?: string | null;
+    lastError?: string | null;
     version?: number;
     createdAt?: Date;
     updatedAt?: Date | null;
