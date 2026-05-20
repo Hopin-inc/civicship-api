@@ -66,7 +66,7 @@ import {
 } from "@/application/domain/anchor/anchorBatch/service";
 import type { AnchorBatchHttpResponse } from "@/application/domain/anchor/anchorBatch/presenter";
 import { buildMinimalDidDocument, buildUserDid } from "@/infrastructure/libs/did/userDidBuilder";
-import { IContext } from "@/types/server";
+import type { IContext } from "@/types/server";
 
 import { bytesToHex, runStep } from "./lib/cardanoScriptHelpers.ts";
 
