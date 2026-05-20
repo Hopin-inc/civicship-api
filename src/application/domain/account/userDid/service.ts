@@ -160,10 +160,17 @@ export default class UserDidService {
     const document = buildMinimalDidDocument(userId);
     const { cbor, hashHex } = encodeAndHash(document);
 
+    // §5.1.6 hash chain: the UPDATE op must reference the user's most
+    // recent anchor so verifiers can walk the DID version history. Without
+    // this link the anchor batch emits `prev: null` and every version
+    // looks like an independent genesis.
+    const previous = await this.repository.findLatestByUserId(userId);
+
     logger.debug("[UserDidService] updateDid", {
       userId,
       did,
       documentHash: hashHex,
+      previousAnchorId: previous?.id ?? null,
       network,
     });
 
@@ -175,6 +182,7 @@ export default class UserDidService {
         documentHash: hashHex,
         documentCbor: cbor,
         network,
+        previousAnchorId: previous?.id,
       },
       tx,
     );
@@ -199,10 +207,16 @@ export default class UserDidService {
     const tombstone = buildDeactivatedDidDocument(userId);
     const { hashHex } = encodeAndHash(tombstone);
 
+    // §5.1.6: the DEACTIVATE op's on-chain `prev` is mandatory — it must
+    // point at the user's most recent anchor so verifiers can confirm the
+    // tombstone terminates a real DID version chain.
+    const previous = await this.repository.findLatestByUserId(userId);
+
     logger.debug("[UserDidService] deactivateDid", {
       userId,
       did,
       documentHash: hashHex,
+      previousAnchorId: previous?.id ?? null,
       network,
     });
 
@@ -213,6 +227,7 @@ export default class UserDidService {
         did,
         documentHash: hashHex,
         network,
+        previousAnchorId: previous?.id,
       },
       tx,
     );

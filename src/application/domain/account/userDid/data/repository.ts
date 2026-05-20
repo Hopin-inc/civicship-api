@@ -138,6 +138,12 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
       network: input.network ?? "CARDANO_MAINNET",
       user: { connect: { id: input.userId } },
     };
+    // §5.1.6 hash chain: UPDATE / DEACTIVATE rows link to the user's prior
+    // anchor via the `DidVersionChain` self-relation. CREATE is the genesis
+    // op and leaves `previousAnchorId` null.
+    if (input.previousAnchorId) {
+      data.previousAnchor = { connect: { id: input.previousAnchorId } };
+    }
     return data;
   }
 }

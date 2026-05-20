@@ -13,9 +13,8 @@
  *      operation marker and the documentCbor / documentHash fields.
  *   3. DEACTIVATE rows persist `documentCbor = null` (§E).
  *   4. `network` is honoured per-row (CARDANO_PREPROD vs CARDANO_MAINNET).
- *   5. The schema-level `previousAnchorId` column defaults to `null` for
- *      every row created by the current repository surface (chain wiring
- *      lands in a follow-up phase, this test pins the current contract).
+ *   5. UPDATE / DEACTIVATE rows persist the `previousAnchorId` hash-chain
+ *      link to the prior anchor (§5.1.6); CREATE (genesis) leaves it `null`.
  *
  * Design references:
  *   docs/report/did-vc-internalization.md §5.2.1
@@ -159,6 +158,45 @@ describe("UserDidAnchorRepository (integration)", () => {
       expect(row).not.toBeNull();
       // §E: tombstones do not persist CBOR; the resolver reconstructs.
       expect(row!.documentCbor).toBeNull();
+    });
+
+    it("persists the previousAnchor hash-chain link for UPDATE / DEACTIVATE (§5.1.6)", async () => {
+      const ctx = buildCtx();
+      const cbor = new Uint8Array([1, 2, 3]);
+      const did = `did:web:api.civicship.app:users:${userId}`;
+
+      const create = await repo.createCreate(ctx, {
+        userId,
+        did,
+        documentHash: "a".repeat(64),
+        documentCbor: cbor,
+        network: "CARDANO_PREPROD",
+      });
+      const update = await repo.createUpdate(ctx, {
+        userId,
+        did,
+        documentHash: "b".repeat(64),
+        documentCbor: cbor,
+        network: "CARDANO_PREPROD",
+        previousAnchorId: create.id,
+      });
+      const deactivate = await repo.createDeactivate(ctx, {
+        userId,
+        did,
+        documentHash: "c".repeat(64),
+        network: "CARDANO_PREPROD",
+        previousAnchorId: update.id,
+      });
+
+      const updateRow = await prismaClient.userDidAnchor.findUnique({
+        where: { id: update.id },
+      });
+      const deactivateRow = await prismaClient.userDidAnchor.findUnique({
+        where: { id: deactivate.id },
+      });
+      // The version chain walks DEACTIVATE → UPDATE → CREATE (genesis).
+      expect(updateRow!.previousAnchorId).toBe(create.id);
+      expect(deactivateRow!.previousAnchorId).toBe(update.id);
     });
   });
 

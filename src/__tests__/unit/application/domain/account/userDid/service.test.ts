@@ -158,6 +158,27 @@ describe("UserDidService", () => {
       const decoded = cborDecode(input.documentCbor as Uint8Array);
       expect(decoded).toEqual(buildMinimalDidDocument(VALID_USER_ID));
     });
+
+    it("links previousAnchorId to the user's latest anchor (§5.1.6 hash chain)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce({ id: "uda_prev_create" });
+      mockRepository.createUpdate.mockResolvedValue({ ok: true });
+
+      await service.updateDid(mockCtx, VALID_USER_ID);
+
+      expect(mockRepository.findLatestByUserId).toHaveBeenCalledWith(VALID_USER_ID);
+      const [, input] = mockRepository.createUpdate.mock.calls[0];
+      expect(input.previousAnchorId).toBe("uda_prev_create");
+    });
+
+    it("leaves previousAnchorId undefined when the user has no prior anchor", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(null);
+      mockRepository.createUpdate.mockResolvedValue({ ok: true });
+
+      await service.updateDid(mockCtx, VALID_USER_ID);
+
+      const [, input] = mockRepository.createUpdate.mock.calls[0];
+      expect(input.previousAnchorId).toBeUndefined();
+    });
   });
 
   describe("deactivateDid", () => {
@@ -182,6 +203,17 @@ describe("UserDidService", () => {
         tombstoneCbor instanceof Uint8Array ? tombstoneCbor : new Uint8Array(tombstoneCbor);
       const expectedHash = bytesToHex(blake2b(tombstoneBytes, { dkLen: 32 }));
       expect(input.documentHash).toBe(expectedHash);
+    });
+
+    it("links previousAnchorId to the user's latest anchor (§5.1.6 mandatory prev)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce({ id: "uda_prev_update" });
+      mockRepository.createDeactivate.mockResolvedValue({ ok: true });
+
+      await service.deactivateDid(mockCtx, VALID_USER_ID);
+
+      expect(mockRepository.findLatestByUserId).toHaveBeenCalledWith(VALID_USER_ID);
+      const [, input] = mockRepository.createDeactivate.mock.calls[0];
+      expect(input.previousAnchorId).toBe("uda_prev_update");
     });
   });
 });
