@@ -64,13 +64,19 @@ export default class UserDidAnchorRepository implements IUserDidAnchorRepository
     if (tx) {
       return tx.userDidAnchor.findFirst({
         where: { userId },
-        orderBy: { createdAt: "desc" },
+        // §5.1.6: `id` (cuid) is the deterministic tie-break so the prior
+        // anchor resolved for `previousAnchorId` is stable even when two
+        // rows share `createdAt` — an ambiguous pick would fork the chain.
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       });
     }
     return this.issuer.internal((innerTx) =>
       innerTx.userDidAnchor.findFirst({
         where: { userId },
-        orderBy: { createdAt: "desc" },
+        // §5.1.6: `id` (cuid) is the deterministic tie-break so the prior
+        // anchor resolved for `previousAnchorId` is stable even when two
+        // rows share `createdAt` — an ambiguous pick would fork the chain.
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
     );
   }
