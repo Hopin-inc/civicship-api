@@ -194,12 +194,8 @@ describe("router/did (§5.4)", () => {
         type: "JsonWebKey2020",
         publicKeyJwk: { kty: "OKP", crv: "Ed25519" },
       });
-      expect(res.body.assertionMethod).toEqual([
-        "did:web:api.civicship.app#key-7",
-      ]);
-      expect(res.body.authentication).toEqual([
-        "did:web:api.civicship.app#key-7",
-      ]);
+      expect(res.body.assertionMethod).toEqual(["did:web:api.civicship.app#key-7"]);
+      expect(res.body.authentication).toEqual(["did:web:api.civicship.app#key-7"]);
       // `service` parity with the single-key Document so verifiers can
       // discover what credential types this issuer publishes regardless
       // of which shape they hit (Gemini review on PR #1124).
@@ -244,9 +240,7 @@ describe("router/did (§5.4)", () => {
     });
 
     it("returns 500 when the use case throws (genuine misconfiguration, no silent fallback)", async () => {
-      const buildDidDocument = jest
-        .fn()
-        .mockRejectedValue(new Error("KMS PERMISSION_DENIED"));
+      const buildDidDocument = jest.fn().mockRejectedValue(new Error("KMS PERMISSION_DENIED"));
       registerIssuerDidUseCaseMock(buildDidDocument);
 
       const res = await request(buildApp()).get("/.well-known/did.json");
@@ -319,10 +313,11 @@ describe("router/did (§5.4)", () => {
         vcId: "vc_123",
         vcJwt: "header.payload.sig",
         vcAnchorId: "vca_abc",
-        rootHash: "ab".repeat(32),
-        chainTxHash: "cd".repeat(32),
-        proofPath: ["ee".repeat(32), "ff".repeat(32)],
+        leafHash: "9a".repeat(32),
         leafIndex: 1,
+        siblings: ["ee".repeat(32), "ff".repeat(32)],
+        root: "ab".repeat(32),
+        chainTxHash: "cd".repeat(32),
         blockHeight: 12345,
       };
     }

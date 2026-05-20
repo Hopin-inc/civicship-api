@@ -10,7 +10,7 @@
  *   1. VcIssuanceRequest (vcJwt 持ち) を複数 seed して Merkle leaf 集合を作る
  *   2. canonical sort + buildRoot で root を計算し、CONFIRMED な VcAnchor として seed
  *   3. Express + did router を立てて `GET /vc/:vcId/inclusion-proof` を叩く
- *   4. レスポンスの proofPath を decode し、`verifyProof` でローカル再計算した
+ *   4. レスポンスの siblings を decode し、`verifyProof` でローカル再計算した
  *      root が anchor の rootHash と一致することを確認
  *
  * Mock 方針: 一切なし（route → usecase → service → repository を real DB で通す）。
@@ -22,7 +22,11 @@ import request from "supertest";
 import { AnchorStatus, ChainNetwork } from "@prisma/client";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import didRouter from "@/presentation/router/did";
-import { buildRoot, verifyProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
+import {
+  buildRoot,
+  canonicalLeafHash,
+  verifyProof,
+} from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 import {
   fakeVcJwt,
   seedExtraEvaluationForUser,
@@ -62,9 +66,7 @@ describe("[§14.2] VC inclusion proof — GET /vc/:vcId/inclusion-proof returns 
     const rows: { id: string; vcJwt: string }[] = [];
     for (let i = 0; i < count; i += 1) {
       const evaluationId =
-        i === 0
-          ? firstEvaluationId
-          : (await seedExtraEvaluationForUser(userId)).evaluationId;
+        i === 0 ? firstEvaluationId : (await seedExtraEvaluationForUser(userId)).evaluationId;
       // Deterministic salt (no Math.random — fixes Sonar S2245).
       // The index already guarantees uniqueness across rows in this seed call,
       // and `setupAcceptanceTest` wipes the DB before each test, so collision
@@ -87,9 +89,7 @@ describe("[§14.2] VC inclusion proof — GET /vc/:vcId/inclusion-proof returns 
 
     // Replay the canonical (ASCII byte order) leaf sort used in
     // AnchorBatchService.buildVcRoot / VcIssuanceService.generateInclusionProof.
-    const sortedJwts = [...rows.map((r) => r.vcJwt)].sort((a, b) =>
-      a < b ? -1 : a > b ? 1 : 0,
-    );
+    const sortedJwts = [...rows.map((r) => r.vcJwt)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     const rootBytes = buildRoot(sortedJwts);
     const rootHex = Buffer.from(rootBytes).toString("hex");
 
@@ -124,12 +124,15 @@ describe("[§14.2] VC inclusion proof — GET /vc/:vcId/inclusion-proof returns 
       vcId: target.id,
       vcJwt: target.vcJwt,
       vcAnchorId: vcAnchor.id,
-      rootHash: rootHex,
+      root: rootHex,
       chainTxHash: "ef".repeat(32),
       blockHeight: 1_111_111,
     });
-    expect(Array.isArray(res.body.proofPath)).toBe(true);
+    expect(Array.isArray(res.body.siblings)).toBe(true);
     expect(typeof res.body.leafIndex).toBe("number");
+    // `leafHash` is the canonical Blake2b-256 of the target VC JWT — the
+    // verifier seeds its proof walk with exactly this value.
+    expect(res.body.leafHash).toBe(Buffer.from(canonicalLeafHash(target.vcJwt)).toString("hex"));
 
     // Local verification: re-compute root from the returned proof and assert
     // it matches the on-chain rootHash. This is exactly the round-trip a
@@ -138,7 +141,7 @@ describe("[§14.2] VC inclusion proof — GET /vc/:vcId/inclusion-proof returns 
     // The §5.1.7 leaf canonicalisation hashes the VC JWT string itself
     // (`canonicalLeafHash(jwt)`); the proof path was computed on
     // `sortedJwts`, so `verifyProof` must receive the JWT at `leafIndex`.
-    const proofBytes = (res.body.proofPath as string[]).map((hex) =>
+    const proofBytes = (res.body.siblings as string[]).map((hex) =>
       Uint8Array.from(Buffer.from(hex, "hex")),
     );
     const ok = verifyProof(
