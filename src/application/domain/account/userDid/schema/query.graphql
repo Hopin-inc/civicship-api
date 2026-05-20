@@ -1,0 +1,11 @@
+# ------------------------------
+# UserDid Query Definitions (§5.2.1)
+# ------------------------------
+extend type Query {
+  """
+  指定ユーザーの最新 UserDidAnchor を返却する。
+  存在しない場合は null。PENDING 状態でも返却される (§F)。
+  認証必須。
+  """
+  userDid(userId: ID!): UserDidAnchor @authz(rules: [IsUser])
+}

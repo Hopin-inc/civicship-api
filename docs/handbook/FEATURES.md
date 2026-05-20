@@ -11,6 +11,12 @@ This document was created for the following purposes:
 
 ## 🌐 Web3 Design Policy (as of April 2025)
 
+> **Note (as of 2026-05):** 以下に記載の IDENTUS ベースの DID/VC 連携は
+> `epic/replace-identsu` で実呼び出し元が解消されており、現在は dead code
+> 状態。Phase 4 の cleanup PR でコード・env・本記述をまとめて整理予定。
+> `/point/verify` 相当の検証経路は `PointVerifyClient` の内製化
+> (`t_transaction_anchors` への DB lookup) に置換済。
+
 1. **Identification (DID - Decentralized Identifier)**
 - A decentralized identifier, a self-sovereign ID that users can generate and manage themselves.
 - Standardized by the W3C, the DID Document describes public keys, service endpoints, etc.
