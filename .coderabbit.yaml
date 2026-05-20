@@ -1,0 +1,96 @@
+# CodeRabbit configuration for civicship-api.
+# Reference: https://docs.coderabbit.ai/reference/configuration
+#
+# 方針:
+#   - 言語は日本語 (Gemini Code Assist と揃える)
+#   - 生成物 / migration は review スコープから除外 (sonar.exclusions と同等)
+#   - DDD レイヤー責務は path_instructions でドメイン別に与え、層違反を
+#     CodeRabbit が拾えるようにする (CLAUDE.md の "Layer Responsibilities" 参照)
+#   - early_access は OFF (UI/挙動の安定優先)
+
+language: "ja-JP"
+early_access: false
+tone_instructions: |
+  日本語で簡潔にレビューする。冗長な前置き / 装飾は避ける。
+  指摘は「層違反」「トランザクション漏れ」「型の取り違え (GqlXxx vs Prisma)」
+  「dataloader 未使用による N+1」「ctx.issuer の選択ミス」など、CLAUDE.md
+  に明文化された規約違反を最優先で挙げる。
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+
+  # 自動レビュー (PR open / sync 時)
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "develop"
+      - "master"
+
+  # 解析対象から外すパス (sonar.exclusions と整合)
+  path_filters:
+    - "!dist/**"
+    - "!node_modules/**"
+    - "!src/types/graphql.ts"
+    - "!src/infrastructure/prisma/migrations/**"
+    - "!src/infrastructure/prisma/factories/__generated__/**"
+    - "!**/*.snap"
+    - "!pnpm-lock.yaml"
+
+  # ドメイン別の責務ヒント (CLAUDE.md "Critical Implementation Rules" を要約)
+  path_instructions:
+    - path: "src/application/domain/**/controller/resolver.ts"
+      instructions: |
+        Resolver は usecase 呼び出しのみ。業務ロジック / repository 直叩き /
+        トランザクション管理が混入していたら指摘する。field resolver は
+        N+1 防止のため dataloader (`ctx.loaders.*`) 経由を必須とする。
+
+    - path: "src/application/domain/**/usecase.ts"
+      instructions: |
+        トランザクション境界は usecase のみで張る (`ctx.issuer.onlyBelongingCommunity`
+        / `ctx.issuer.public` / `ctx.issuer.internal` の選択を確認)。
+        他ドメインの usecase を呼んでいたら循環依存リスクとして指摘する
+        (ドメイン間連携は service 層の read-only 呼び出しに限定)。
+        presenter を通さず Prisma 型を返している箇所は指摘する。
+
+    - path: "src/application/domain/**/service.ts"
+      instructions: |
+        service は GraphQL 型 (`GqlXxx`) を絶対に返さない。Prisma 型のみ。
+        他ドメインの usecase を呼んだら指摘 (service 同士の read-only 呼び出しは可)。
+        `tx?` パラメータを受ける場合は `if (tx)` 分岐の有無を確認する。
+
+    - path: "src/application/domain/**/data/repository.ts"
+      instructions: |
+        repository は Prisma クエリのみ。業務ロジックが混入していたら指摘する。
+        `ctx.issuer` 経由の RLS 適用 + `tx` 分岐の漏れをチェック。
+
+    - path: "src/application/domain/**/data/converter.ts"
+      instructions: |
+        converter は GraphQL input → Prisma 形式の純粋関数。副作用 / DB
+        アクセス / トランザクション依存があれば指摘する。
+
+    - path: "src/application/domain/**/presenter.ts"
+      instructions: |
+        presenter は Prisma → GraphQL 型変換の純粋関数。業務ロジック /
+        DB アクセスが混入していたら指摘する。
+
+    - path: "src/infrastructure/prisma/schema.prisma"
+      instructions: |
+        破壊的変更 (DROP / ALTER COLUMN の型変更 / NOT NULL 化) を見たら
+        既存データの backfill / 二段階 migration の必要性を指摘する。
+
+    - path: "**/*.test.ts"
+      instructions: |
+        DI コンテナのリセット (`container.reset()`) 漏れ、`afterEach`
+        のクリーンアップ漏れ、`--runInBand` 前提の serial 依存を確認する。
+
+  # auto-resolve は OFF (人間が確認してから resolve したい)
+  auto_resolve_threads: false
+
+chat:
+  auto_reply: true

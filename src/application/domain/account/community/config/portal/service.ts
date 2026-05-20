@@ -57,7 +57,7 @@ const PORTAL_CONFIG_CREATE_DEFAULTS: Prisma.CommunityPortalConfigCreateWithoutCo
   squareLogoPath: "",
   ogImagePath: "",
   enableFeatures: DEFAULT_ENABLE_FEATURES,
-  rootPath: "/",
+  rootPath: "/users/me",
   adminRootPath: "/admin",
 };
 

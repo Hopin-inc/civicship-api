@@ -1221,6 +1221,35 @@ type AnalyticsCommunityPayload {
   dormantCount: Int!
 
   """
+  Number of members classified as a "hub" within a fixed 28-day
+  window ending at `asOf`. Same semantic as
+  `AnalyticsCommunityOverview.hubMemberCount` (L1) — a member
+  qualifies when they sent DONATION to `>= hubBreadthThreshold`
+  distinct counterparties during the window. Exposed at L2 so the
+  community-owner analytics surface can render the "ハブユーザー比率"
+  KPI (`hubMemberCount / totalMembers`) directly from the L2 payload
+  without falling back to the SYS_ADMIN-only L1 dashboard row.
+
+  The window is fixed at 28 days regardless of the L2-specific
+  `windowMonths` input (which drives trend-array length, not the
+  hub classification window). This matches L1's default
+  `windowDays = 28` so the value is directly comparable to the
+  L1 dashboard row for the same community and `hubBreadthThreshold`.
+  The same JOINED-at-asOf membership filter as L1 applies.
+  """
+  hubMemberCount: Int!
+
+  """
+  Tenure-bucket distribution of members at asOf. See
+  AnalyticsTenureDistribution. Sum of buckets equals totalMembers.
+  Exposed at L2 mirroring `AnalyticsCommunityOverview.tenureDistribution`
+  so the community-owner analytics surface can render the
+  "3ヶ月以上 在籍率" KPI and the in-tenure histogram directly
+  from the L2 payload — without the SYS_ADMIN-only L1 dashboard row.
+  """
+  tenureDistribution: AnalyticsTenureDistribution!
+
+  """
   Distribution of DONATION `chain_depth` values across all-time
   DONATION transactions in this community. Each bucket counts
   distinct DONATION transactions whose `chain_depth` falls into
