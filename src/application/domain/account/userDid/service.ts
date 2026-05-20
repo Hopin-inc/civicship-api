@@ -52,12 +52,15 @@ import {
 const DOCUMENT_HASH_BYTES = 32;
 
 /**
- * Default chain network for new anchors. The design only ships
- * `CARDANO_MAINNET` and `CARDANO_PREPROD` (§4.1 ChainNetwork) — production
- * defaults to mainnet, callers in dev / preview environments must pass
- * `CARDANO_PREPROD` explicitly.
+ * Default chain network for new anchors, derived from the `CARDANO_NETWORK`
+ * environment variable (§4.1 ChainNetwork). Anything other than `mainnet`
+ * — including an unset env — resolves to `CARDANO_PREPROD`, so dev / preview
+ * deployments never mislabel anchors as mainnet and mainnet is never assumed
+ * implicitly. Mirrors the `CARDANO_NETWORK` handling in the Blockfrost DI
+ * factory and `resolvePlatformSignerConfig`.
  */
-const DEFAULT_NETWORK: AnchorNetworkValue = "CARDANO_MAINNET";
+const DEFAULT_NETWORK: AnchorNetworkValue =
+  process.env.CARDANO_NETWORK === "mainnet" ? "CARDANO_MAINNET" : "CARDANO_PREPROD";
 
 /**
  * CBOR-encode a DID Document and return both the bytes and the

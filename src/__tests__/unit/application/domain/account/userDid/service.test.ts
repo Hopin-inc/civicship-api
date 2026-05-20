@@ -59,8 +59,8 @@ describe("UserDidService", () => {
       expect(txArg).toBeUndefined();
       expect(input.userId).toBe(VALID_USER_ID);
       expect(input.did).toBe(buildUserDid(VALID_USER_ID));
-      // Default network falls back to mainnet per §4.1.
-      expect(input.network).toBe("CARDANO_MAINNET");
+      // DEFAULT_NETWORK は CARDANO_NETWORK 由来。テストでは env 未設定 → preprod。
+      expect(input.network).toBe("CARDANO_PREPROD");
 
       // documentHash is 64 hex chars (32 bytes) of Blake2b-256 over the
       // CBOR-encoded minimal Document.
