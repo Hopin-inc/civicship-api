@@ -132,11 +132,14 @@ function encodeAndHashUserDoc(userId: string): { cbor: Uint8Array; hashHex: stri
   return { cbor, hashHex: bytesToHex(hash) };
 }
 
-/** Next ISO-shaped weekly key; rolls W52 over to the next year's W01. */
+/**
+ * Next ISO-shaped weekly key. ISO 8601 allows week 53, and
+ * `isValidWeeklyKey` accepts 1-53, so roll over only past W53.
+ */
 function nextWeeklyKey(key: string): string {
   const year = Number.parseInt(key.slice(0, 4), 10);
   const week = Number.parseInt(key.slice(6, 8), 10);
-  if (week >= 52) return `${year + 1}-W01`;
+  if (week >= 53) return `${year + 1}-W01`;
   return `${year}-W${String(week + 1).padStart(2, "0")}`;
 }
 
