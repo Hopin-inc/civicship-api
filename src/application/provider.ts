@@ -40,7 +40,6 @@ import { CardanoShopifyAppClient } from "@/infrastructure/libs/cardanoShopifyApp
 import { AnthropicLlmClient } from "@/infrastructure/libs/llm";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
-import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
 import ArticleService from "@/application/domain/content/article/service";
 import ArticleRepository from "@/application/domain/content/article/data/repository";
@@ -106,9 +105,7 @@ import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/usecase";
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
-import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DidDocumentResolver } from "@/infrastructure/libs/did/didDocumentResolver";
-import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
 import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation/vcIssuanceRequest/usecase";
@@ -278,11 +275,6 @@ export function registerProductionDependencies() {
   container.register("IdentityRepository", { useClass: IdentityRepository });
   container.register("IdentityConverter", { useClass: IdentityConverter });
 
-  // DID・VC
-  container.register("DIDVCServerClient", { useClass: DIDVCServerClient });
-  container.register("DIDIssuanceService", { useClass: DIDIssuanceService });
-  container.register("DIDIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
-
   // Phase 1 internalized DID/VC stack (§5.1.4 / §5.4).
   container.register("DidDocumentResolver", { useClass: DidDocumentResolver });
 
@@ -350,8 +342,9 @@ export function registerProductionDependencies() {
   }
 
   // 🪪 VC Issuance (§5.2 internal DID/VC) — Prisma-backed repository.
-  // Distinct from the legacy `VCIssuanceRequest*` registrations above:
-  // those wrap the IDENTUS-era flow, this wraps the Phase-1 internal-JWT
+  // Distinct from the `VCIssuanceRequest*` registrations above: those now
+  // back only the legacy `vcIssuanceRequest(s)` GraphQL read queries and
+  // the evaluation bulk-create path; this wraps the Phase-1 internal-JWT
   // redesign that backs `t_vc_issuance_requests` directly.
   container.registerSingleton(VcIssuanceRepository);
   container.register("VcIssuanceRepository", { useToken: VcIssuanceRepository });
