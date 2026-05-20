@@ -56,7 +56,7 @@ import StatusListService from "@/application/domain/credential/statusList/servic
 import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
 import type { JwtSigner } from "@/application/domain/credential/shared/jwtSigner";
 import { STUB_SIGNATURE } from "@/application/domain/credential/shared/stubJwtSigner";
-import { buildProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
+import { buildProof, canonicalLeafHash } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 
 /**
  * Inclusion proof DTO for the `/vc/:vcId/inclusion-proof` REST endpoint
@@ -68,6 +68,14 @@ export interface InclusionProof {
   vcId: string;
   vcJwt: string;
   vcAnchorId: string;
+  /**
+   * Hex-encoded Blake2b-256 hash of the VC JWT — i.e. the Merkle *leaf*
+   * (`canonicalLeafHash(vcJwt)`, §5.1.7). The verifier seeds its proof
+   * walk with this value; it doesn't need to re-hash the JWT itself
+   * (a verifier MAY still re-derive it from `vcJwt` as an integrity
+   * cross-check — it just isn't a prerequisite).
+   */
+  leafHash: string;
   /** Hex-encoded 32-byte Blake2b-256 root committed on-chain. */
   rootHash: string;
   /** Cardano tx hash (hex). Always populated for CONFIRMED anchors. */
@@ -255,11 +263,7 @@ export default class VcIssuanceService {
       // Out of scope for the cascade-revoke PR (deferred until admin
       // bulk-purge tooling lands; cascade frequency is low enough that
       // the loop is fine for the user-delete trigger).
-      await this.statusListService.revokeVc(
-        ctx,
-        { vcRequestId: vc.id, reason },
-        tx,
-      );
+      await this.statusListService.revokeVc(ctx, { vcRequestId: vc.id, reason }, tx);
       revoked += 1;
     }
 
@@ -519,6 +523,11 @@ export default class VcIssuanceService {
       vcId: vc.id,
       vcJwt: vc.vcJwt,
       vcAnchorId: anchor.id,
+      // §5.1.7: the Merkle leaf is `Blake2b-256(utf8(vcJwt))`. The verifier
+      // seeds its proof walk with this hash, so it must be published
+      // explicitly — re-deriving it from the JWT is the verifier's job
+      // only when it wants to cross-check, not a prerequisite.
+      leafHash: Buffer.from(canonicalLeafHash(vc.vcJwt)).toString("hex"),
       rootHash: anchor.rootHash,
       chainTxHash: anchor.chainTxHash,
       proofPath: proofBytes.map((b) => Buffer.from(b).toString("hex")),

@@ -27,7 +27,11 @@ import {
   StubJwtSigner,
   STUB_SIGNATURE,
 } from "@/application/domain/credential/shared/stubJwtSigner";
-import { buildRoot, verifyProof } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
+import {
+  buildRoot,
+  canonicalLeafHash,
+  verifyProof,
+} from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 import type {
   VcAnchorRow,
   VcIssuanceRow,
@@ -296,6 +300,9 @@ describe("VcIssuanceService", () => {
       expect(proof!.rootHash).toBe(rootHex);
       expect(proof!.chainTxHash).toBe(anchor.chainTxHash);
       expect(proof!.blockHeight).toBe(anchor.blockHeight);
+      // §5.1.7: the published leaf hash must be Blake2b-256(utf8(vcJwt)) so
+      // the verifier can seed its proof walk without re-deriving it.
+      expect(proof!.leafHash).toBe(Buffer.from(canonicalLeafHash(targetJwt)).toString("hex"));
 
       // Verifier round-trip: rebuild bytes from hex and run verifyProof
       // against the same root the service published.

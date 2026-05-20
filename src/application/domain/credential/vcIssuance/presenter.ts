@@ -30,19 +30,34 @@ import type { InclusionProof } from "@/application/domain/credential/vcIssuance/
 /**
  * Wire shape for `GET /vc/:vcId/inclusion-proof` (§5.4.6).
  *
- * Mirrors the service-layer `InclusionProof` 1:1 today; declared here
- * separately so HTTP-shape changes (e.g. snake_case rename, additional
- * verification metadata) can land in this file without touching the
- * service contract.
+ * The field names here are the **public contract** consumed by the
+ * third-party verifier `scripts/verify-from-chain.ts` (and the
+ * civicship-portal verifier UI). They deliberately differ from the
+ * service-layer `InclusionProof`:
+ *
+ *   service `rootHash`  → wire `root`
+ *   service `proofPath` → wire `siblings`
+ *
+ * and the wire format additionally carries `leafHash` (the Merkle leaf
+ * the verifier seeds its proof walk with). Keeping the rename in this
+ * presenter is the whole point of the layer — the verifier's expected
+ * shape and the internal service contract evolve independently.
  */
 export interface InclusionProofResponse {
   vcId: string;
   vcJwt: string;
   vcAnchorId: string;
-  rootHash: string;
-  chainTxHash: string;
-  proofPath: string[];
+  /** Hex-encoded Blake2b-256 hash of the VC JWT — the Merkle leaf (§5.1.7). */
+  leafHash: string;
+  /** Index of the leaf in the canonical (ASCII-sorted) leaf set. */
   leafIndex: number;
+  /** Sibling hashes bottom-up, hex-encoded. */
+  siblings: string[];
+  /** Hex-encoded 32-byte Blake2b-256 Merkle root committed on-chain. */
+  root: string;
+  /** Cardano tx hash (hex). */
+  chainTxHash: string;
+  /** Cardano block height; `null` until confirmation stamps one. */
   blockHeight: number | null;
 }
 
@@ -150,10 +165,11 @@ const VcIssuancePresenter = {
       vcId: proof.vcId,
       vcJwt: proof.vcJwt,
       vcAnchorId: proof.vcAnchorId,
-      rootHash: proof.rootHash,
-      chainTxHash: proof.chainTxHash,
-      proofPath: proof.proofPath,
+      leafHash: proof.leafHash,
       leafIndex: proof.leafIndex,
+      siblings: proof.proofPath,
+      root: proof.rootHash,
+      chainTxHash: proof.chainTxHash,
       blockHeight: proof.blockHeight,
     };
   },

@@ -180,11 +180,12 @@ describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
       expect(result).toBeNull();
     });
 
-    it("returns the presented proof when the service yields one", async () => {
+    it("maps the service proof onto the verifier wire shape", async () => {
       const proof = {
         vcId: "vc-1",
         vcJwt: "h.p.s",
         vcAnchorId: "vca-1",
+        leafHash: "9a".repeat(32),
         rootHash: "ab".repeat(32),
         chainTxHash: "cd".repeat(32),
         proofPath: ["ee".repeat(32)],
@@ -195,7 +196,19 @@ describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
       const ctx = makeCtx();
 
       const result = await usecase.getInclusionProof(ctx, "vc-1");
-      expect(result).toEqual(proof);
+      // The presenter renames the service's `rootHash`/`proofPath` to the
+      // verifier's `root`/`siblings` and carries `leafHash` through.
+      expect(result).toEqual({
+        vcId: "vc-1",
+        vcJwt: "h.p.s",
+        vcAnchorId: "vca-1",
+        leafHash: "9a".repeat(32),
+        leafIndex: 0,
+        siblings: ["ee".repeat(32)],
+        root: "ab".repeat(32),
+        chainTxHash: "cd".repeat(32),
+        blockHeight: 999,
+      });
     });
   });
 
@@ -205,9 +218,7 @@ describe("VcIssuanceUseCase (authz hardening for PR #1101)", () => {
       const revokedAt = new Date("2026-05-10T12:00:00Z");
       const revokedRow = makeRow({ revokedAt });
 
-      mockService.findVcById
-        .mockResolvedValueOnce(liveRow)
-        .mockResolvedValueOnce(revokedRow);
+      mockService.findVcById.mockResolvedValueOnce(liveRow).mockResolvedValueOnce(revokedRow);
       mockStatusListService.revokeVc.mockResolvedValueOnce(undefined);
 
       const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
