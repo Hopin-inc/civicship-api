@@ -27,6 +27,7 @@ import {
 } from "@/infrastructure/libs/cardano/txBuilder";
 import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
 import { deriveCardanoKeypair } from "@/infrastructure/libs/cardano/keygen";
+import { resolveCardanoNetworkToken } from "@/infrastructure/libs/cardano/network";
 import { IAnchorBatchRepository } from "@/application/domain/anchor/anchorBatch/data/interface";
 import {
   AnchorBatchPendingSet,
@@ -501,10 +502,10 @@ export function trimDocCborForSizeBudget(
       prev: op.prev ?? null,
     };
     size = measureMetadataSize({ ...base, ops: candidate });
-    logger.warn(
-      "[AnchorBatchService] documentCbor dropped for size budget (§8.4)",
-      { did: op.did, remainingBytes: MAX_METADATA_TX_BYTES - size },
-    );
+    logger.warn("[AnchorBatchService] documentCbor dropped for size budget (§8.4)", {
+      did: op.did,
+      remainingBytes: MAX_METADATA_TX_BYTES - size,
+    });
     if (size <= MAX_METADATA_TX_BYTES) return candidate;
   }
 
@@ -578,8 +579,7 @@ export function computeIsoWeeklyKey(date: Date = new Date()): string {
 
 /** env から platform signer 設定を組み立てる（Phase 1 暖定）。 */
 export function resolvePlatformSignerConfig(): PlatformSignerConfig {
-  const networkRaw = process.env.CARDANO_NETWORK ?? "preprod";
-  const network = networkRaw === "mainnet" ? "mainnet" : "preprod";
+  const network = resolveCardanoNetworkToken();
   const changeAddressBech32 = process.env.CARDANO_PLATFORM_ADDRESS;
   if (!changeAddressBech32) {
     throw new Error(

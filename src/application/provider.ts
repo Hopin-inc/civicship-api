@@ -141,6 +141,10 @@ import {
 } from "@/application/domain/anchor/anchorBatch/service";
 import AnchorBatchUseCase from "@/application/domain/anchor/anchorBatch/usecase";
 import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
+import {
+  resolveCardanoChainNetwork,
+  resolveCardanoNetworkToken,
+} from "@/infrastructure/libs/cardano/network";
 
 // 🪪 User DID (§5.2 internal DID/VC, Phase 1 — Strategy A: stubs replaced
 //   with Prisma-backed repository, plus GraphQL resolver registration)
@@ -599,21 +603,18 @@ export function registerProductionDependencies() {
   // BlockfrostClient のコンストラクタは optional 引数 1 つ
   // (`options: BlockfrostClientOptions = {}`) のみで、interface 型を
   // tsyringe が auto-resolve できない (`TypeInfo not known for "Object"`)。
-  // network は CARDANO_NETWORK env から導出して明示的に渡す: 省略すると
-  // BlockfrostClient は CARDANO_PREPROD 固定になり、mainnet デプロイで
-  // 誤ったチェーンに anchor してしまう (mainnet キーなら起動時の
-  // assertProjectIdMatchesNetwork で fail-fast する)。projectId は引き続き
-  // env (`BLOCKFROST_PROJECT_ID`) から引く。
+  // network は resolveCardanoChainNetwork() で CARDANO_NETWORK から導出して
+  // 明示的に渡す: 省略すると BlockfrostClient は CARDANO_PREPROD 固定になり、
+  // mainnet デプロイで誤ったチェーンに anchor してしまう (mainnet キーなら
+  // 起動時の assertProjectIdMatchesNetwork で fail-fast する)。projectId は
+  // 引き続き env (`BLOCKFROST_PROJECT_ID`) から引く。
   // factory + instanceCachingFactory で singleton 化する。
   //
   // dual-binding: クラス自体 (`@inject(BlockfrostClient)`) と string token
   // (`@inject("BlockfrostClient")`) の両方で同じ singleton インスタンスに
   // 解決させる。precedent は L304-306 の UserDidAnchorRepository。
   const blockfrostFactory = instanceCachingFactory(
-    () =>
-      new BlockfrostClient({
-        network: process.env.CARDANO_NETWORK === "mainnet" ? "CARDANO_MAINNET" : "CARDANO_PREPROD",
-      }),
+    () => new BlockfrostClient({ network: resolveCardanoChainNetwork() }),
   );
   container.register(BlockfrostClient, { useFactory: blockfrostFactory });
   container.register("BlockfrostClient", { useToken: BlockfrostClient });
@@ -636,8 +637,7 @@ function createBlockfrostLatestSlotProvider(): BlockfrostLatestSlotProvider {
       // 動的 import で起動時の dependency 評価を避ける（テスト時に DI を
       // 別 provider に差し替えるためメインのプロセスでは初期化されない）。
       const { BlockFrostAPI } = await import("@blockfrost/blockfrost-js");
-      const networkRaw = process.env.CARDANO_NETWORK ?? "preprod";
-      const network = networkRaw === "mainnet" ? "mainnet" : "preprod";
+      const network = resolveCardanoNetworkToken();
       const projectId = process.env.BLOCKFROST_PROJECT_ID;
       if (!projectId) {
         throw new Error("BlockfrostLatestSlotProvider: BLOCKFROST_PROJECT_ID is not set.");
