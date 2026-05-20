@@ -1263,12 +1263,12 @@ router.get("/vc/:vcId/inclusion-proof", async (req, res) => {
 
 最小チェックリスト（Phase 0 で確認）:
 
-- [ ] DNSSEC 有効化（`dig +dnssec civicship.app DS` で DS レコード確認）
-- [ ] CAA レコード設定（証明書発行 CA を Let's Encrypt 等に限定）
-- [ ] HSTS ヘッダ送出（`max-age=31536000; includeSubDomains; preload`）
-- [ ] HSTS preload list 登録（https://hstspreload.org/）
-- [ ] TLS 1.2/1.3 のみ、それ以下は無効化
-- [ ] `/.well-known/did.json` `application/did+json` で配信
+- [x] DNSSEC 有効化（`dig +dnssec civicship.app DS` で DS レコード確認） — Cloudflare Registrar 移管 + DS 登録済 (2026-05、§9.6 参照)
+- [x] CAA レコード設定（`pki.goog` 単独に限定。GCP-managed cert 専用方針に合わせ最狭化、2026-05、§9.6 参照）
+- [x] HSTS ヘッダ送出（`max-age=31536000; includeSubDomains; preload`）
+- [x] HSTS preload list 登録（https://hstspreload.org/）
+- [x] TLS 1.2/1.3 のみ、それ以下は無効化 — Cloudflare proxy 化で公開 TLS は edge 終端、min TLS version 1.2 設定済 (2026-05、§9.6 参照)
+- [ ] `/.well-known/did.json` `application/did+json` で配信（did:web 実装時に対応、未着手）
 - [x] CT log（https://crt.sh/?q=civicship.app）の不審な発行に対するアラート設定 (GitHub Actions `.github/workflows/ct-log-check.yml` で月次監視、2026-05)
 
 ---
