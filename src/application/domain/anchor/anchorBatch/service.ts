@@ -369,8 +369,15 @@ export class AnchorBatchService {
     userDidAnchors: PendingUserDidAnchor[],
   ): Promise<{ ops: DidOp[]; opIndexByAnchorId: Map<string, number> }> {
     if (userDidAnchors.length === 0) return { ops: [], opIndexByAnchorId: new Map() };
-    // 「sorted by did asc」で決定論的出力にする（§5.3.1 の bid + 順序）
-    const sorted = [...userDidAnchors].sort((a, b) => (a.did < b.did ? -1 : a.did > b.did ? 1 : 0));
+    // 「sorted by did asc」で決定論的出力にする（§5.3.1 の bid + 順序）。
+    // 同一週内に同一ユーザーの CREATE と UPDATE が両方 PENDING で入る場合、
+    // `did` は同一になるため `id`（cuid, 生成時刻順）を第 2 キーにして
+    // 並びを完全に決定論化する（さもなくば opIndex が入力順依存になる）。
+    const sorted = [...userDidAnchors].sort((a, b) => {
+      if (a.did < b.did) return -1;
+      if (a.did > b.did) return 1;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
     const prevIds = sorted
       .map((a) => a.previousAnchorId)
       .filter((id): id is string => typeof id === "string");

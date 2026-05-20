@@ -232,13 +232,21 @@ export default class AnchorBatchRepository implements IAnchorBatchRepository {
       // 適用する `updateMany` では書けない。status 遷移と同一トランザクション内で
       // 1 行ずつ update し、chain inclusion proof の index を確実に永続化する。
       for (const id of args.userDidAnchorIds) {
+        const opIndex = opIndexByAnchorId.get(id);
+        if (opIndex === undefined) {
+          // 不変条件: claim した全 UserDidAnchor は op index を持つ。欠落を
+          // `null` で握り潰すと SUBMITTED なのに chainOpIndex 欠落の行が
+          // 再発する（= この書き戻し経路が防ぐはずのバグそのもの）。例外を
+          // 投げてトランザクションごと中断させる。
+          throw new Error(`markSubmitted: missing chainOpIndex for userDidAnchor ${id}`);
+        }
         await tx.userDidAnchor.update({
           where: { id },
           data: {
             status: AnchorStatus.SUBMITTED,
             chainTxHash: args.chainTxHash,
             submittedAt,
-            chainOpIndex: opIndexByAnchorId.get(id) ?? null,
+            chainOpIndex: opIndex,
           },
         });
       }
