@@ -18,7 +18,8 @@ import type { IContext } from "@/types/server";
  *
  * Usage:
  *   dotenvx run -f .env.prd -- tsx scripts/probe-reports.ts \
- *     --community=<id1>[,<id2>,...] [--from=YYYY-MM-DD --to=YYYY-MM-DD]
+ *     --community=<id1>[,<id2>,...] [--from=YYYY-MM-DD --to=YYYY-MM-DD] \
+ *     [--variant=WEEKLY_SUMMARY]
  *
  * `--community` accepts one ID or a CSV of IDs. Each (community,
  * variant) pair runs in isolation — an error on one pair logs and
@@ -29,6 +30,10 @@ import type { IContext } from "@/types/server";
  * templates (kind=GENERATION, isActive=true, isEnabled=true), so
  * adding a new variant to `seedReportTemplates` automatically pulls it
  * into the probe — no edit to this file required.
+ *
+ * `--variant` narrows that set to a single variant — used to back-fill
+ * only the weekly report (WEEKLY_SUMMARY) without also regenerating
+ * GRANT_APPLICATION / MEDIA_PR / MEMBER_NEWSLETTER.
  *
  * Default period is the most recent completed 7-day window in JST,
  * matching `generateWeeklyReports.ts`. The `--from` / `--to` overrides
@@ -76,10 +81,14 @@ interface CliArgs {
   communityIds: string[];
   periodFrom: Date;
   periodTo: Date;
+  /** When set, restrict generation to this single variant (e.g.
+   * WEEKLY_SUMMARY) instead of every active GENERATION variant. */
+  variant?: string;
 }
 
 const USAGE =
-  "Usage: tsx scripts/probe-reports.ts --community=<id1>[,<id2>,...] [--from=YYYY-MM-DD --to=YYYY-MM-DD]";
+  "Usage: tsx scripts/probe-reports.ts --community=<id1>[,<id2>,...] " +
+  "[--from=YYYY-MM-DD --to=YYYY-MM-DD] [--variant=WEEKLY_SUMMARY]";
 
 /**
  * Throws on bad input rather than calling `process.exit` directly so the
@@ -106,6 +115,7 @@ function parseArgs(): CliArgs {
   if (communityIds.length === 0) {
     throw new Error("--community must contain at least one non-empty id");
   }
+  const variant = map.get("variant");
   const fromArg = map.get("from");
   const toArg = map.get("to");
   if ((fromArg && !toArg) || (!fromArg && toArg)) {
@@ -116,6 +126,7 @@ function parseArgs(): CliArgs {
       communityIds,
       periodFrom: new Date(`${fromArg}T00:00:00Z`),
       periodTo: new Date(`${toArg}T00:00:00Z`),
+      variant,
     };
   }
   // Default window: yesterday back 6 days, computed against the JST
@@ -127,7 +138,7 @@ function parseArgs(): CliArgs {
   // landing the probe one day off from what the batch would have run.
   const periodTo = addDays(truncateToJstDate(new Date()), -1);
   const periodFrom = addDays(periodTo, -6);
-  return { communityIds, periodFrom, periodTo };
+  return { communityIds, periodFrom, periodTo, variant };
 }
 
 /**
@@ -337,7 +348,7 @@ async function main(): Promise<void> {
   // Discover variants from the seed before opening the output dir so
   // a "no templates seeded" failure is reported up-front, before the
   // operator sees an empty `tmp/reports/` and wonders if the probe ran.
-  const variants = await fetchActiveGenerationVariants();
+  let variants = await fetchActiveGenerationVariants();
   if (variants.length === 0) {
     console.error(
       "No active SYSTEM GENERATION templates found in t_report_templates. " +
@@ -345,6 +356,17 @@ async function main(): Promise<void> {
     );
     await prismaClient.$disconnect();
     process.exit(1);
+  }
+  if (args.variant) {
+    if (!variants.includes(args.variant)) {
+      console.error(
+        `--variant=${args.variant} is not an active GENERATION variant. ` +
+          `Active variants: [${variants.join(", ")}]`,
+      );
+      await prismaClient.$disconnect();
+      process.exit(1);
+    }
+    variants = [args.variant];
   }
 
   const outDir = join(process.cwd(), "tmp", "reports");
