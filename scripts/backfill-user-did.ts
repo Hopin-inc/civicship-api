@@ -41,6 +41,9 @@
  *   - 既に INTERNAL 行を持つ user は skip（重複 DID Document を生成しない）。
  *   - 既に SUBMITTED / CONFIRMED な UserDidAnchor も skip。
  *   - 失敗時は当該 UserDidAnchor を `status=FAILED` + `lastError` で残す。
+ *   - 中断後の再実行は Step 2(INSERT) と Step 3(Cardano submit) を独立に
+ *     評価する。全 user の INSERT が済んでいても、未送信の PENDING /
+ *     未ブロードキャストの FAILED anchor が残っていれば Step 3 から再開する。
  *
  * Required env (loaded from `.env.dev` via dotenvx):
  *   BLOCKFROST_PROJECT_ID, CARDANO_PLATFORM_PRIVATE_KEY_HEX,
@@ -205,13 +208,29 @@ interface PendingAnchorRow {
   documentCbor: Buffer | null;
 }
 
-async function findPendingAnchors(chunkSize: number): Promise<PendingAnchorRow[]> {
+/**
+ * UserDidAnchor rows that still need a Cardano submission.
+ *
+ *   - `PENDING`            — inserted by Step 2, never attempted on chain.
+ *   - `FAILED` + no txHash — a previous Step 3 run aborted BEFORE the tx was
+ *                            broadcast (metadata-oversize pre-check, or a
+ *                            getUtxos / buildAnchorTx error). No tx exists,
+ *                            so retrying cannot double-anchor or double-spend.
+ *
+ * `FAILED` rows that DO carry a `chainTxHash` are deliberately excluded: a tx
+ * was already broadcast for them, so re-submitting would anchor the same op a
+ * second time. Those require manual operator triage.
+ */
+const SUBMITTABLE_ANCHOR_WHERE = {
+  status: { in: [AnchorStatus.PENDING, AnchorStatus.FAILED] },
+  batchId: null,
+  chainTxHash: null,
+  operation: DidOperation.CREATE,
+} as const;
+
+async function findSubmittableAnchors(chunkSize: number): Promise<PendingAnchorRow[]> {
   return prismaClient.userDidAnchor.findMany({
-    where: {
-      status: AnchorStatus.PENDING,
-      batchId: null,
-      operation: DidOperation.CREATE,
-    },
+    where: SUBMITTABLE_ANCHOR_WHERE,
     select: {
       id: true,
       did: true,
@@ -221,6 +240,10 @@ async function findPendingAnchors(chunkSize: number): Promise<PendingAnchorRow[]
     orderBy: { createdAt: "asc" },
     take: chunkSize,
   });
+}
+
+async function countSubmittableAnchors(): Promise<number> {
+  return prismaClient.userDidAnchor.count({ where: SUBMITTABLE_ANCHOR_WHERE });
 }
 
 async function main(): Promise<number> {
@@ -245,8 +268,28 @@ async function main(): Promise<number> {
   );
   if (!surveyStep.ok) return 1;
   const users = surveyStep.value;
-  if (users.length === 0) {
-    process.stdout.write("Nothing to do — every user already has an INTERNAL did:web.\n");
+
+  // The DB INSERT (Step 2) and the Cardano submit (Step 3) are independent
+  // units of work. A previous run can complete every INSERT and still leave
+  // anchors un-submitted — e.g. it crashed or aborted partway through Step 3
+  // (metadata-oversize). On such a re-run `users` is empty (every user
+  // already has an INTERNAL row) yet the PENDING anchors must still be
+  // drained. Gate "Nothing to do" on BOTH surveys so those anchors are
+  // never stranded.
+  const pendingStep = await runStep<number>(
+    "db: UserDidAnchor rows awaiting Cardano submit",
+    async () => {
+      const count = await countSubmittableAnchors();
+      return { value: count, detail: `${count} anchor(s) awaiting submit` };
+    },
+  );
+  if (!pendingStep.ok) return 1;
+  const pendingAnchorCount = pendingStep.value;
+
+  if (users.length === 0 && pendingAnchorCount === 0) {
+    process.stdout.write(
+      "Nothing to do — every user has an INTERNAL did:web and no anchors are pending.\n",
+    );
     return 0;
   }
 
@@ -336,7 +379,7 @@ async function main(): Promise<number> {
   // when a chunk fails (the failure path `break`s out; operator must reset
   // FAILED rows back to PENDING before re-running).
   while (true) {
-    const chunk = await findPendingAnchors(flags.chunkSize);
+    const chunk = await findSubmittableAnchors(flags.chunkSize);
     if (chunk.length === 0) break;
     chunkIdx += 1;
 
@@ -375,10 +418,14 @@ async function main(): Promise<number> {
     });
     const size = metadataByteSize(aux);
     if (size > MAX_METADATA_TX_BYTES) {
+      // Pre-submission size check: no tx was built or broadcast, so this
+      // chunk's rows are still valid PENDING work. Leave them untouched
+      // (NOT marked FAILED) so a re-run with a smaller --chunk-size picks
+      // them straight back up.
       process.stderr.write(
-        `chunk ${chunkIdx} metadata ${size}B exceeds 16KB ceiling; lower --chunk-size and retry\n`,
+        `chunk ${chunkIdx} metadata ${size}B exceeds 16KB ceiling; ` +
+          `re-run with a smaller --chunk-size (current ${flags.chunkSize})\n`,
       );
-      await markChunkFailed(chunk, `metadata oversize (${size}B)`);
       return 1;
     }
 
@@ -429,9 +476,10 @@ async function main(): Promise<number> {
     if (!submitOk.ok) {
       await markChunkFailed(chunk, submitOk.detail);
       failedTotal += chunk.length;
-      // Bail out — re-running picks up the FAILED rows once the operator
-      // resets them to PENDING (manual). Continuing would keep burning
-      // ADA on the same broken state.
+      // Bail out. A re-run auto-resumes any FAILED row that never reached
+      // the chain (no chainTxHash) via `findSubmittableAnchors`; rows that
+      // WERE broadcast need manual triage. Continuing here would keep
+      // burning ADA on the same broken state.
       break;
     }
     confirmedTotal += chunk.length;
