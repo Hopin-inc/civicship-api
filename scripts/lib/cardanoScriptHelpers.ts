@@ -88,15 +88,29 @@ export function runScript(
   cleanup: () => Promise<unknown> = () => Promise.resolve(),
 ): void {
   main()
-    .then((code) => {
-      cleanup().finally(() => process.exit(code));
-    })
+    .then((code) => exitAfterCleanup(cleanup, code))
     .catch((err: unknown) => {
       process.stderr.write(
         `ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
       );
-      cleanup().finally(() => process.exit(1));
+      exitAfterCleanup(cleanup, 1);
     });
+}
+
+/**
+ * Run `cleanup`, then exit with `code`. A `cleanup` rejection is caught and
+ * logged rather than left to surface as an unhandled promise rejection — the
+ * process is already terminating, and the exit code (not the cleanup
+ * outcome) is what matters.
+ */
+function exitAfterCleanup(cleanup: () => Promise<unknown>, code: number): void {
+  cleanup()
+    .catch((err: unknown) => {
+      process.stderr.write(
+        `WARN: cleanup failed: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+    })
+    .finally(() => process.exit(code));
 }
 
 /**

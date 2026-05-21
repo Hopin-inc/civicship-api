@@ -22,8 +22,10 @@
  * ---------------------
  *
  *   1. SELECT `UserDidAnchor` rows that are on chain
- *      (`status IN (SUBMITTED, CONFIRMED)`, `chainTxHash IS NOT NULL`)
- *      but still have `chainOpIndex IS NULL`.
+ *      (`status IN (SUBMITTED, CONFIRMED)`, `chainTxHash IS NOT NULL`,
+ *      `operation IN (CREATE, UPDATE)`) but still have `chainOpIndex IS NULL`.
+ *      DEACTIVATE ops carry no on-chain doc hash, so they cannot be
+ *      cross-checked and are out of scope (manual triage only).
  *   2. Group those rows by `chainTxHash`.
  *   3. For each distinct tx: fetch Cardano metadata label 1985 via
  *      Blockfrost and read the ordered `ops[]` array.
@@ -79,14 +81,21 @@ interface TargetRow {
 
 /**
  * `UserDidAnchor` rows that are anchored on chain but still lack a
- * `chainOpIndex`. `FAILED` rows are deliberately excluded even when they
- * carry a `chainTxHash` — those need manual operator triage (see
- * `backfill-user-did.ts` SUBMITTABLE_ANCHOR_WHERE).
+ * `chainOpIndex`.
+ *
+ * Restricted to CREATE / UPDATE: those ops carry a document hash (`h`) in
+ * the on-chain metadata, so the derived index can be cross-checked against
+ * `documentHash` before it is written. DEACTIVATE ops carry no `h` (see the
+ * `DidOp` shape in txBuilder), so this tool cannot verify them — they are
+ * left for manual operator triage rather than risking a wrong index.
+ * `FAILED` rows are likewise excluded even when they carry a `chainTxHash`
+ * (see `backfill-user-did.ts` SUBMITTABLE_ANCHOR_WHERE).
  */
 async function findRowsMissingOpIndex(limit?: number): Promise<TargetRow[]> {
   const rows = await prismaClient.userDidAnchor.findMany({
     where: {
       status: { in: [AnchorStatus.SUBMITTED, AnchorStatus.CONFIRMED] },
+      operation: { in: [DidOperation.CREATE, DidOperation.UPDATE] },
       chainTxHash: { not: null },
       chainOpIndex: null,
     },
@@ -230,10 +239,17 @@ function resolveTxGroup(
     }
 
     const op = candidates[0];
-    // Final integrity cross-check: the on-chain doc hash MUST equal the DB
-    // `documentHash`. A mismatch means the row and the chain disagree —
-    // writing the index would aim the verifier at the wrong op.
-    if (op.h !== null && op.h.toLowerCase() !== row.documentHash.toLowerCase()) {
+    // Final integrity cross-check. A CREATE/UPDATE op always carries `h` on
+    // chain (txBuilder enforces a 64-hex-char hash), and only CREATE/UPDATE
+    // rows reach here (findRowsMissingOpIndex filters them). A missing or
+    // mismatched hash means the row and the chain disagree, so the index is
+    // NOT written — aiming the verifier at the wrong op is worse than
+    // leaving `chainOpIndex` NULL.
+    if (op.h === null) {
+      skip(row, `on-chain op for ${row.operation} row has no doc hash (h); cannot verify`);
+      continue;
+    }
+    if (op.h.toLowerCase() !== row.documentHash.toLowerCase()) {
       skip(row, `doc hash mismatch: chain=${op.h} db=${row.documentHash}`);
       continue;
     }
