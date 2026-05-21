@@ -18,13 +18,14 @@ import type { IContext } from "@/types/server";
  *
  * Usage:
  *   dotenvx run -f .env.prd -- tsx scripts/probe-reports.ts \
- *     --community=<id1>[,<id2>,...] [--from=YYYY-MM-DD --to=YYYY-MM-DD] \
+ *     --community=<id1>[,<id2>,...]|all [--from=YYYY-MM-DD --to=YYYY-MM-DD] \
  *     [--variant=WEEKLY_SUMMARY]
  *
- * `--community` accepts one ID or a CSV of IDs. Each (community,
- * variant) pair runs in isolation — an error on one pair logs and
- * continues so a missing JUDGE template or transient LLM 5xx on one
- * variant doesn't block the rest.
+ * `--community` accepts one ID, a CSV of IDs, or the literal `all` to
+ * resolve every community from the DB (mirrors the weekly batch).
+ * Each (community, variant) pair runs in isolation — an error on one
+ * pair logs and continues so a missing JUDGE template or transient LLM
+ * 5xx on one variant doesn't block the rest.
  *
  * The variant set is discovered at startup from the seeded SYSTEM
  * templates (kind=GENERATION, isActive=true, isEnabled=true), so
@@ -77,8 +78,21 @@ async function fetchActiveGenerationVariants(): Promise<string[]> {
   return rows.map((r) => r.variant);
 }
 
+/**
+ * Fetch every community id, for `--community=all`. Mirrors the live
+ * weekly batch's `tx.community.findMany({ select: { id: true } })` so a
+ * full back-fill covers exactly the same set the batch would have.
+ */
+async function fetchAllCommunityIds(): Promise<string[]> {
+  const rows = await prismaClient.community.findMany({ select: { id: true } });
+  return rows.map((r) => r.id);
+}
+
 interface CliArgs {
+  /** Explicit community ids; empty when `allCommunities` is true. */
   communityIds: string[];
+  /** True for `--community=all` — resolve every community from the DB. */
+  allCommunities: boolean;
   periodFrom: Date;
   periodTo: Date;
   /** When set, restrict generation to this single variant (e.g.
@@ -87,7 +101,7 @@ interface CliArgs {
 }
 
 const USAGE =
-  "Usage: tsx scripts/probe-reports.ts --community=<id1>[,<id2>,...] " +
+  "Usage: tsx scripts/probe-reports.ts --community=<id1>[,<id2>,...]|all " +
   "[--from=YYYY-MM-DD --to=YYYY-MM-DD] [--variant=WEEKLY_SUMMARY]";
 
 /**
@@ -105,14 +119,19 @@ function parseArgs(): CliArgs {
   if (!communityArg) {
     throw new Error(USAGE);
   }
+  // `--community=all` resolves every community from the DB at run time
+  // (see main); ids stay empty here so parseArgs is DB-free / testable.
+  const allCommunities = communityArg.trim() === "all";
   // CSV-split + trim + drop empties so accidental trailing commas /
   // whitespace from shell expansions don't surface as empty IDs that
   // would later fail at the application layer with a confusing error.
-  const communityIds = communityArg
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  if (communityIds.length === 0) {
+  const communityIds = allCommunities
+    ? []
+    : communityArg
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+  if (!allCommunities && communityIds.length === 0) {
     throw new Error("--community must contain at least one non-empty id");
   }
   const variant = map.get("variant");
@@ -124,6 +143,7 @@ function parseArgs(): CliArgs {
   if (fromArg && toArg) {
     return {
       communityIds,
+      allCommunities,
       periodFrom: new Date(`${fromArg}T00:00:00Z`),
       periodTo: new Date(`${toArg}T00:00:00Z`),
       variant,
@@ -138,7 +158,7 @@ function parseArgs(): CliArgs {
   // landing the probe one day off from what the batch would have run.
   const periodTo = addDays(truncateToJstDate(new Date()), -1);
   const periodFrom = addDays(periodTo, -6);
-  return { communityIds, periodFrom, periodTo, variant };
+  return { communityIds, allCommunities, periodFrom, periodTo, variant };
 }
 
 /**
@@ -369,12 +389,24 @@ async function main(): Promise<void> {
     variants = [args.variant];
   }
 
+  const communityIds = args.allCommunities
+    ? await fetchAllCommunityIds()
+    : args.communityIds;
+  if (communityIds.length === 0) {
+    console.error("No communities found to probe (t_communities is empty).");
+    await prismaClient.$disconnect();
+    process.exit(1);
+  }
+
   const outDir = join(process.cwd(), "tmp", "reports");
   mkdirSync(outDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
+  const communityLabel = args.allCommunities
+    ? `all (${communityIds.length})`
+    : `[${communityIds.join(", ")}]`;
   console.info(
-    `Probe: communities=[${args.communityIds.join(", ")}] period=[${args.periodFrom
+    `Probe: communities=${communityLabel} period=[${args.periodFrom
       .toISOString()
       .slice(0, 10)}, ${args.periodTo.toISOString().slice(0, 10)}]`,
   );
@@ -383,7 +415,7 @@ async function main(): Promise<void> {
   console.info("");
 
   const outcomes: VariantOutcome[] = [];
-  for (const communityId of args.communityIds) {
+  for (const communityId of communityIds) {
     const ctx = makeProbeContext(communityId);
     for (const variant of variants) {
       const outcome = await runOneVariant({
@@ -405,7 +437,7 @@ async function main(): Promise<void> {
   // Group by community so the operator can scan one community's status
   // line cluster at a time instead of interleaving 4 variants × N
   // communities in a flat list.
-  for (const communityId of args.communityIds) {
+  for (const communityId of communityIds) {
     console.info(`[${communityId}]`);
     for (const o of outcomes.filter((x) => x.communityId === communityId)) {
       const judgeSuffix = o.judgeScore != null ? ` judge=${o.judgeScore}` : "";
