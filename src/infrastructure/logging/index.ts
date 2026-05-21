@@ -30,7 +30,7 @@ const isBatch = process.env.PROCESS_TYPE === "batch";
  */
 function resolveLogLevel(): string {
   const override = process.env.LOG_LEVEL?.toLowerCase();
-  if (override && override in winston.config.npm.levels) {
+  if (override && Object.prototype.hasOwnProperty.call(winston.config.npm.levels, override)) {
     return override;
   }
   if (isBatch) return "info";

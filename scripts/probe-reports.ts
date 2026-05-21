@@ -125,12 +125,15 @@ function parseArgs(): CliArgs {
   // CSV-split + trim + drop empties so accidental trailing commas /
   // whitespace from shell expansions don't surface as empty IDs that
   // would later fail at the application layer with a confusing error.
-  const communityIds = allCommunities
+  const parsedCommunityIds = allCommunities
     ? []
     : communityArg
         .split(",")
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
+  // De-dupe so `--community=id1,id1` doesn't generate (and overwrite)
+  // the same community's report twice in one run.
+  const communityIds = [...new Set(parsedCommunityIds)];
   if (!allCommunities && communityIds.length === 0) {
     throw new Error("--community must contain at least one non-empty id");
   }
