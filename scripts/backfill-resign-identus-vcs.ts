@@ -20,15 +20,21 @@
  *
  * What this script does
  * ---------------------
- *   1. `vc_format = 'IDENTUS_JWT'` AND `revoked_at IS NULL` の行を全件抽出。
+ *   1. `vc_format = 'IDENTUS_JWT'` AND `status = 'COMPLETED'` AND
+ *      `revoked_at IS NULL` の行を全件抽出。
+ *      `status = 'COMPLETED'` で絞るのは「発行が成功した行」だけを再発行
+ *      対象にするため — prd の IDENTUS_JWT 行は発行成功済みでも `vc_jwt`
+ *      が NULL のまま `claims` のみに VC 内容が残っているケースがある。
+ *      status が PENDING / PROCESSING / FAILED の行は発行が完了して
+ *      おらず復元すべき VC が存在しないため対象外（再発行しない）。
  *   2. 各行について (`vc_jwt` が NULL/空 かどうかに依らず):
  *        - subject DID  = `buildUserDid(userId)`
  *                         (`did:web:api.civicship.app:users:<userId>`)
  *          ※ User DID backfill が完了している前提。
  *        - claims       = `claims` JSON カラムをそのまま使用
  *          (legacy `VCIssuanceRequestConverter` が `EvaluationCredential`
- *           形で書き込んだ値が source of truth)。prd の IDENTUS_JWT 行は
- *           `vc_jwt` が NULL でも `claims` に VC 内容が残っているため、
+ *           形で書き込んだ値が source of truth)。COMPLETED の IDENTUS_JWT
+ *           行は `vc_jwt` が NULL でも `claims` に VC 内容が残っているため、
  *           `vc_jwt` の有無に関わらず `claims` から復元して再発行する。
  *        - issuanceDate = `completedAt ?? requestedAt ?? createdAt`
  *          (原本の発行時刻を保持し、再発行の瞬間で上書きしない)。
@@ -69,7 +75,7 @@ import "reflect-metadata";
 import "@/application/provider";
 
 import { container } from "tsyringe";
-import { VcFormat } from "@prisma/client";
+import { VcFormat, VcIssuanceStatus } from "@prisma/client";
 
 import { prismaClient } from "@/infrastructure/prisma/client";
 import type { JwtSigner } from "@/application/domain/credential/shared/jwtSigner";
@@ -128,6 +134,7 @@ async function main(): Promise<number> {
   const candidates = await prismaClient.vcIssuanceRequest.findMany({
     where: {
       vcFormat: VcFormat.IDENTUS_JWT,
+      status: VcIssuanceStatus.COMPLETED,
       revokedAt: null,
     },
     select: {
@@ -143,7 +150,7 @@ async function main(): Promise<number> {
   });
 
   process.stdout.write(
-    `Found ${candidates.length} IDENTUS_JWT VC row(s) with revokedAt IS NULL\n\n`,
+    `Found ${candidates.length} IDENTUS_JWT VC row(s) with status=COMPLETED, revokedAt IS NULL\n\n`,
   );
   if (candidates.length === 0) {
     return 0;
@@ -173,6 +180,7 @@ async function main(): Promise<number> {
           where: {
             id: row.id,
             vcFormat: VcFormat.IDENTUS_JWT,
+            status: VcIssuanceStatus.COMPLETED,
             revokedAt: null,
           },
           data: {
@@ -181,7 +189,9 @@ async function main(): Promise<number> {
           },
         });
         if (result.count !== 1) {
-          throw new Error("row no longer matches IDENTUS_JWT / revokedAt=null (changed after read)");
+          throw new Error(
+            "row no longer matches IDENTUS_JWT / status=COMPLETED / revokedAt=null (changed after read)",
+          );
         }
         resigned += 1;
         process.stdout.write(`OK    ${row.id}: reissued INTERNAL_JWT (new len=${newJwt.length})\n`);
