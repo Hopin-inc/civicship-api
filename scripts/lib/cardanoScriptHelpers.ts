@@ -98,3 +98,38 @@ export function runScript(
       cleanup().finally(() => process.exit(1));
     });
 }
+
+/**
+ * CLI flags common to one-shot backfill scripts:
+ *   - `confirm` — `--confirm` toggles execute mode (otherwise dry-run).
+ *   - `limit`   — `--limit=<n>` caps the number of rows processed.
+ */
+export interface ConfirmLimitFlags {
+  confirm: boolean;
+  limit?: number;
+}
+
+/**
+ * Parse the `--confirm` / `--limit=<n>` flags. Throws on an unknown flag or a
+ * non-positive `--limit`. Extracted because every backfill script otherwise
+ * repeats this exact parser verbatim.
+ */
+export function parseConfirmLimitFlags(argv: string[]): ConfirmLimitFlags {
+  const flags: ConfirmLimitFlags = { confirm: false };
+  for (const arg of argv) {
+    if (arg === "--confirm") {
+      flags.confirm = true;
+      continue;
+    }
+    const limit = /^--limit=(\d+)$/.exec(arg);
+    if (limit) {
+      flags.limit = Number.parseInt(limit[1], 10);
+      continue;
+    }
+    throw new Error(`Unknown flag: ${arg}`);
+  }
+  if (flags.limit !== undefined && flags.limit <= 0) {
+    throw new Error("--limit must be > 0");
+  }
+  return flags;
+}

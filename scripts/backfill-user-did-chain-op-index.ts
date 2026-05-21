@@ -61,32 +61,7 @@ import { prismaClient } from "@/infrastructure/prisma/client";
 import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
 import { METADATA_LABEL_1985 } from "@/infrastructure/libs/cardano/txBuilder";
 
-import { runScript, runStep } from "./lib/cardanoScriptHelpers.ts";
-
-interface Flags {
-  confirm: boolean;
-  limit?: number;
-}
-
-function parseFlags(argv: string[]): Flags {
-  const flags: Flags = { confirm: false };
-  for (const arg of argv) {
-    if (arg === "--confirm") {
-      flags.confirm = true;
-      continue;
-    }
-    const limit = /^--limit=(\d+)$/.exec(arg);
-    if (limit) {
-      flags.limit = Number.parseInt(limit[1], 10);
-      continue;
-    }
-    throw new Error(`Unknown flag: ${arg}`);
-  }
-  if (flags.limit !== undefined && flags.limit <= 0) {
-    throw new Error("--limit must be > 0");
-  }
-  return flags;
-}
+import { parseConfirmLimitFlags, runScript, runStep } from "./lib/cardanoScriptHelpers.ts";
 
 /** Resolve the Cardano network from env (mirrors `backfill-user-did.ts`). */
 function resolveChainNetwork(): ChainNetwork {
@@ -270,7 +245,7 @@ function resolveTxGroup(
 }
 
 async function main(): Promise<number> {
-  const flags = parseFlags(process.argv.slice(2));
+  const flags = parseConfirmLimitFlags(process.argv.slice(2));
   process.stdout.write("Backfill UserDidAnchor.chainOpIndex from on-chain metadata\n\n");
   process.stdout.write(`mode: ${flags.confirm ? "EXECUTE" : "DRY-RUN"}\n`);
   if (flags.limit !== undefined) process.stdout.write(`limit: ${flags.limit}\n`);
