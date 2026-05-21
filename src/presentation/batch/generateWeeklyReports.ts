@@ -13,9 +13,7 @@ export async function generateWeeklyReports() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const reportUseCase = container.resolve<ReportUseCase>("ReportUseCase");
 
-  logger.debug("Starting weekly report generation batch...");
-
-  const ctx = { issuer, isAdmin: true } as IContext;
+  logger.info("Starting weekly report generation batch...");
 
   const communities = await issuer.internal((tx) =>
     tx.community.findMany({ select: { id: true } }),
@@ -30,6 +28,12 @@ export async function generateWeeklyReports() {
   let errorCount = 0;
 
   for (const community of communities) {
+    // generateReport resolves the target community via getCommunityIdFromCtx
+    // (ctx.communityId, set from the x-community-id header on the GraphQL
+    // path). The batch has no HTTP request, so communityId must be set on
+    // the ctx explicitly per community — otherwise generateReport throws
+    // AuthorizationError("communityId is required") for every community.
+    const ctx = { issuer, isAdmin: true, communityId: community.id } as IContext;
     try {
       // Intentionally skip only DRAFT/APPROVED/PUBLISHED/SKIPPED reports.
       // REJECTED reports are treated as "not existing" so the batch
@@ -64,7 +68,6 @@ export async function generateWeeklyReports() {
             periodFrom: weekAgo,
             periodTo: yesterday,
           },
-          permission: { communityId: community.id },
         },
         ctx,
       );
@@ -91,7 +94,7 @@ export async function generateWeeklyReports() {
     }
   }
 
-  logger.debug(
+  logger.info(
     `Weekly report batch completed: ${successCount} generated, ` +
       `${zeroActivitySkipCount} skipped (no activity), ` +
       `${alreadyExistsCount} skipped (already exists), ` +
