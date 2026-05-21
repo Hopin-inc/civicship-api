@@ -1,78 +1,22 @@
 import "reflect-metadata";
 import "@/application/provider";
 import logger from "@/infrastructure/logging";
-import { container } from "tsyringe";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
-import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
-import { createDIDRequests } from "./requestDID";
-import { IContext } from "@/types/server";
-import { createVCRequests } from "@/presentation/batch/requestDIDVC/requestVC";
-import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
-import { checkBit } from "@/utils/misc";
 
 /**
- * EvaluationとIdentityに基づいて、
- * - 未リクエストのDIDを送信
- * - Evaluation(PASSED)だがVCリクエスト未発行のユーザーにVCを送信
+ * `BATCH_PROCESS_NAME=request-did-vc` で起動される Cloud Run Job のエントリ。
+ *
+ * 旧 IDENTUS 連携で「Evaluation を見て DID/VC 発行リクエストを Pending 行に
+ * 入れる」役割を担っていたが、内製化後は VC 発行は GraphQL mutation
+ * (`issueVc`) で同期発行され、anchor は週次 batch (`sync-did-vc`) で
+ * 一括処理されるため本エントリは不要。Cloud Scheduler job
+ * `kyoso-dev-civicship-batch-scheduler-request-did-vc` を PAUSED のまま
+ * 放置 / 削除する前提で no-op とする。
+ *
+ * 関連: docs/report/did-vc-internalization.md §5.3.1
  */
 export async function requestDIDVC() {
-  /**
-   * BATCH_DID_VC_REQUEST_MODE:
-   *   3: DID 実行 / VC 実行
-   *   2: DID 実行 / VC 無効
-   *   1: DID 無効 / VC 実行
-   *   0: DID 無効 / VC 無効
-   */
-  const requestMode = process.env.BATCH_DID_VC_REQUEST_MODE ? parseInt(process.env.BATCH_DID_VC_REQUEST_MODE) : 3; // デフォルトで全て実行
-  const executeDID = checkBit(requestMode, 2);
-  const executeVC = checkBit(requestMode, 1);
-
-  let limit = process.env.BATCH_LIMIT ? parseInt(process.env.BATCH_LIMIT) : undefined;
-  if (limit && limit > 0) {
-    logger.debug(`🚀 Starting DID & VC request batch (MODE: ${ requestMode }, LIMIT: ${ limit })`, {
-      executeDID,
-      executeVC,
-    });
-  } else {
-    limit = undefined;
-    logger.debug(`🚀 Starting DID & VC request batch (MODE: ${ requestMode })`, {
-      executeDID,
-      executeVC,
-    });
-  }
-
-  const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
-  const didService = container.resolve<DIDIssuanceService>("DIDIssuanceService");
-  const vcService = container.resolve<VCIssuanceRequestService>("VCIssuanceRequestService");
-  const vcConverter = container.resolve<VCIssuanceRequestConverter>("VCIssuanceRequestConverter");
-  const ctx = { issuer } as IContext;
-
-  try {
-    // --- DID ---
-    if (executeDID) {
-      const didResult = await createDIDRequests(issuer, didService, ctx, limit);
-      logger.debug(
-        `📦 DID Requests: ${ didResult.total } total, ` +
-        `${ didResult.successCount } succeeded, ` +
-        `${ didResult.failureCount } failed, ` +
-        `${ didResult.skippedCount } skipped.`,
-      );
-    }
-
-    // --- VC ---
-    if (executeVC) {
-      const vcResult = await createVCRequests(issuer, vcService, vcConverter, ctx, limit);
-      logger.debug(
-        `📦 VC Requests: ${ vcResult.total } total, ` +
-        `${ vcResult.successCount } succeeded, ` +
-        `${ vcResult.failureCount } failed, ` +
-        `${ vcResult.skippedCount } skipped.`,
-      );
-    }
-
-    logger.debug("✅ DID & VC request batch completed");
-  } catch (error) {
-    logger.error("💥 Error in DID/VC request batch", error);
-  }
+  logger.warn(
+    "[request-did-vc] deprecated entry — anchor batch は sync-did-vc に統合済み。" +
+      "Cloud Scheduler の `request-did-vc` job は PAUSED のまま放置してください。",
+  );
 }

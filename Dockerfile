@@ -109,13 +109,29 @@ USER root
 # block security-patch bumps from upstream — debian rolls these forward on
 # a fast cadence specifically because they ARE security-relevant. We pin
 # the base image (`node:20-slim@sha256:...`) for reproducibility and let
-# debian's apt resolve the latest patched openssl / ca-certificates within
-# that frozen distribution snapshot.
-# hadolint ignore=DL3008
+# debian's apt resolve the latest patched packages within that frozen
+# distribution snapshot.
+#
+# `apt-get upgrade` (DL3005) patches OS-level CVEs in packages that ship
+# pre-installed in the base image but lag behind debian-security updates
+# (libgnutls30 / libc6 / libsystemd0 等)。digest pin で base image を固定
+# している以上、ここで upgrade しないと digest 公開後に出た debian-security
+# fix が image に取り込まれず、Trivy が該当パッケージを CVE として検出し
+# 続ける。DL3005 は通常 base image 更新を促す rule だが、digest 固定運用
+# では upgrade が唯一の OS パッチ経路なので局所的に ignore する。
+#
+# `rm -rf .../npm` は node に同梱される npm CLI を runtime image から除去
+# する。runtime stage は `node dist/...` を実行するだけで (build は builder
+# stage の pnpm/corepack が担当)、npm は不要。npm に bundle された依存
+# (tar / glob / minimatch / cross-spawn 等) が CVE として継続的に検出される
+# ため、未使用の npm ごと削除して attack surface を減らす。
+# hadolint ignore=DL3005,DL3008
 RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssl ca-certificates \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 USER node
 
 ENV NODE_ENV=production \

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { DidMethod, PrismaClient } from "@prisma/client";
 import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
 import { Prisma } from "@prisma/client";
 import { GqlDidIssuanceRequest } from "@/types/graphql";
@@ -20,7 +20,10 @@ export function createDidIssuanceRequestsByUserIdLoader(prisma: PrismaClient) {
     "userId",
     async (userIds) =>
       prisma.didIssuanceRequest.findMany({
-        where: { userId: { in: [...userIds] } },
+        // IDENTUS 時代の did:prism 行は履歴として DB に残すが、API では
+        // 自前発行の did:web (INTERNAL) のみを返す。レガシー DID を
+        // クライアントに露出させない担保はフロント任せにせずここで行う。
+        where: { userId: { in: [...userIds] }, didMethod: DidMethod.INTERNAL },
         select,
       }),
     (record): GqlDidIssuanceRequest => ({
@@ -33,6 +36,6 @@ export function createDidIssuanceRequestsByUserIdLoader(prisma: PrismaClient) {
       completedAt: record.completedAt ?? null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt ?? null,
-    })
+    }),
   );
 }

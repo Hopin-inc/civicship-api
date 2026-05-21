@@ -54,12 +54,17 @@ WORKDIR /app
 # ca-certificates (required for Prisma engine detection on node:20-slim).
 # `USER root` は apt-get install のための局所昇格、直後に `USER node` に戻す。
 USER root
-# See `Dockerfile` for why we don't pin openssl / ca-certificates versions.
-# hadolint ignore=DL3008
+# See `Dockerfile` runtime stage for the full rationale on why we don't pin
+# openssl / ca-certificates versions, why we run `apt-get upgrade` (DL3005,
+# OS-level CVE patching under a digest-pinned base image), and why we strip
+# the bundled npm CLI (`/usr/local/.../npm`) from the runtime image.
+# hadolint ignore=DL3005,DL3008
 RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssl ca-certificates \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 USER node
 
 ENV NODE_ENV=production \

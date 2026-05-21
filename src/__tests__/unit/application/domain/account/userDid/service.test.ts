@@ -1,0 +1,280 @@
+/**
+ * Unit tests for `UserDidService` (Phase 1 step 7).
+ *
+ * Strategy A: the repository is a stub but tests inject a `useValue` mock
+ * so we can assert the call shape. The service's pure encoding /
+ * hashing path is exercised end-to-end — only persistence is mocked.
+ */
+
+import "reflect-metadata";
+import { container } from "tsyringe";
+import { decode as cborDecode } from "cbor-x";
+import { blake2b } from "@noble/hashes/blake2b";
+import { bytesToHex } from "@noble/hashes/utils";
+import UserDidService from "@/application/domain/account/userDid/service";
+import { IContext } from "@/types/server";
+import {
+  buildDeactivatedDidDocument,
+  buildMinimalDidDocument,
+  buildUserDid,
+} from "@/infrastructure/libs/did/userDidBuilder";
+
+const VALID_USER_ID = "u_xyz_phase1";
+const SAMPLE_NETWORK = "CARDANO_PREPROD" as const;
+
+// Captured before any test mutates process.env; restored in afterAll.
+const ORIGINAL_CARDANO_NETWORK = process.env.CARDANO_NETWORK;
+
+class MockUserDidAnchorRepository {
+  findLatestByUserId = jest.fn().mockResolvedValue(null);
+  findCreateByUserId = jest.fn().mockResolvedValue(null);
+  createCreate = jest.fn();
+  createUpdate = jest.fn();
+  createDeactivate = jest.fn();
+}
+
+describe("UserDidService", () => {
+  let mockRepository: MockUserDidAnchorRepository;
+  let service: UserDidService;
+  const mockCtx = {} as IContext;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    container.reset();
+
+    // `defaultNetwork()` reads CARDANO_NETWORK at call time and process.env
+    // is shared across the test process — unset it so the default-network
+    // assertions below are deterministic regardless of the CI environment.
+    delete process.env.CARDANO_NETWORK;
+
+    mockRepository = new MockUserDidAnchorRepository();
+    container.register("UserDidAnchorRepository", { useValue: mockRepository });
+    container.register("UserDidService", { useClass: UserDidService });
+
+    service = container.resolve(UserDidService);
+  });
+
+  afterAll(() => {
+    if (ORIGINAL_CARDANO_NETWORK === undefined) {
+      delete process.env.CARDANO_NETWORK;
+    } else {
+      process.env.CARDANO_NETWORK = ORIGINAL_CARDANO_NETWORK;
+    }
+  });
+
+  describe("createDidForUser", () => {
+    it("builds did:web string + minimal Document and persists with Blake2b-256 hash", async () => {
+      mockRepository.createCreate.mockResolvedValue({ ok: true });
+
+      await service.createDidForUser(mockCtx, VALID_USER_ID);
+
+      expect(mockRepository.createCreate).toHaveBeenCalledTimes(1);
+      const [ctxArg, input, txArg] = mockRepository.createCreate.mock.calls[0];
+
+      expect(ctxArg).toBe(mockCtx);
+      expect(txArg).toBeUndefined();
+      expect(input.userId).toBe(VALID_USER_ID);
+      expect(input.did).toBe(buildUserDid(VALID_USER_ID));
+      // DEFAULT_NETWORK は CARDANO_NETWORK 由来。テストでは env 未設定 → preprod。
+      expect(input.network).toBe("CARDANO_PREPROD");
+
+      // documentHash is 64 hex chars (32 bytes) of Blake2b-256 over the
+      // CBOR-encoded minimal Document.
+      expect(input.documentHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(input.documentCbor).toBeInstanceOf(Uint8Array);
+
+      // Round-trip: decoded CBOR matches the minimal Document exactly.
+      const decoded = cborDecode(input.documentCbor as Uint8Array);
+      expect(decoded).toEqual(buildMinimalDidDocument(VALID_USER_ID));
+
+      // Hash matches manually-computed Blake2b-256 of the same bytes.
+      const recomputed = bytesToHex(blake2b(input.documentCbor as Uint8Array, { dkLen: 32 }));
+      expect(input.documentHash).toBe(recomputed);
+    });
+
+    it("defaults the anchor network to CARDANO_MAINNET when CARDANO_NETWORK=mainnet", async () => {
+      process.env.CARDANO_NETWORK = "mainnet";
+      mockRepository.createCreate.mockResolvedValue({ ok: true });
+
+      await service.createDidForUser(mockCtx, VALID_USER_ID);
+
+      const [, input] = mockRepository.createCreate.mock.calls[0];
+      expect(input.network).toBe("CARDANO_MAINNET");
+    });
+
+    it("forwards the supplied tx to the repository", async () => {
+      mockRepository.createCreate.mockResolvedValue({ ok: true });
+      const fakeTx = { sentinel: true } as never;
+
+      await service.createDidForUser(mockCtx, VALID_USER_ID, fakeTx);
+
+      expect(mockRepository.createCreate).toHaveBeenCalledTimes(1);
+      const [, , txArg] = mockRepository.createCreate.mock.calls[0];
+      expect(txArg).toBe(fakeTx);
+    });
+
+    it("propagates the supplied network", async () => {
+      mockRepository.createCreate.mockResolvedValue({ ok: true });
+
+      await service.createDidForUser(mockCtx, VALID_USER_ID, undefined, SAMPLE_NETWORK);
+
+      const [, input] = mockRepository.createCreate.mock.calls[0];
+      expect(input.network).toBe(SAMPLE_NETWORK);
+    });
+
+    it("rejects userIds that violate the §9.2 regex", async () => {
+      // `assertValidUserId` (called by `buildUserDid`) throws on uppercase / colons.
+      await expect(service.createDidForUser(mockCtx, "BAD:ID")).rejects.toThrow(/§9\.2/);
+      expect(mockRepository.createCreate).not.toHaveBeenCalled();
+    });
+
+    it("is idempotent — returns the existing CREATE anchor without enqueueing a duplicate", async () => {
+      // A user has exactly one did:web (§5.2.1): when a CREATE anchor
+      // already exists, the service returns it and never calls createCreate.
+      const existing = { id: "uda_existing" };
+      mockRepository.findCreateByUserId.mockResolvedValueOnce(existing);
+
+      const result = await service.createDidForUser(mockCtx, VALID_USER_ID);
+
+      expect(result).toBe(existing);
+      expect(mockRepository.createCreate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("updateDid", () => {
+    // updateDid now requires an existing, non-deactivated anchor to chain
+    // from (§5.1.6). Happy-path tests seed one.
+    const PRIOR_CREATE = { id: "uda_prev_create", operation: "CREATE" };
+
+    it("re-anchors the minimal Document via createUpdate", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_CREATE);
+      mockRepository.createUpdate.mockResolvedValue({ ok: true });
+
+      await service.updateDid(mockCtx, VALID_USER_ID);
+
+      expect(mockRepository.createUpdate).toHaveBeenCalledTimes(1);
+      expect(mockRepository.createCreate).not.toHaveBeenCalled();
+      const [, input] = mockRepository.createUpdate.mock.calls[0];
+      expect(input.did).toBe(buildUserDid(VALID_USER_ID));
+      expect(input.documentCbor).toBeInstanceOf(Uint8Array);
+
+      // CBOR shape parity with createDidForUser (Phase 1 only re-anchors
+      // the minimal document — see §B / §10.1.3 future work note).
+      const decoded = cborDecode(input.documentCbor as Uint8Array);
+      expect(decoded).toEqual(buildMinimalDidDocument(VALID_USER_ID));
+    });
+
+    it("links previousAnchorId to the user's latest anchor (§5.1.6 hash chain)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_CREATE);
+      mockRepository.createUpdate.mockResolvedValue({ ok: true });
+
+      await service.updateDid(mockCtx, VALID_USER_ID);
+
+      const [, input] = mockRepository.createUpdate.mock.calls[0];
+      expect(input.previousAnchorId).toBe("uda_prev_create");
+    });
+
+    it("resolves the prior anchor inside the supplied transaction", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_CREATE);
+      mockRepository.createUpdate.mockResolvedValue({ ok: true });
+      const fakeTx = { sentinel: true } as never;
+
+      await service.updateDid(mockCtx, VALID_USER_ID, fakeTx);
+
+      expect(mockRepository.findLatestByUserId).toHaveBeenCalledWith(VALID_USER_ID, fakeTx);
+    });
+
+    it("throws when the user has no existing DID anchor", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(null);
+
+      await expect(service.updateDid(mockCtx, VALID_USER_ID)).rejects.toThrow(
+        /no DID anchor to update/,
+      );
+      expect(mockRepository.createUpdate).not.toHaveBeenCalled();
+    });
+
+    it("throws when the DID is already deactivated", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce({
+        id: "uda_dead",
+        operation: "DEACTIVATE",
+      });
+
+      await expect(service.updateDid(mockCtx, VALID_USER_ID)).rejects.toThrow(
+        /already deactivated/,
+      );
+      expect(mockRepository.createUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deactivateDid", () => {
+    const PRIOR_UPDATE = { id: "uda_prev_update", operation: "UPDATE" };
+
+    it("hashes the tombstone Document and emits createDeactivate without CBOR", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_UPDATE);
+      mockRepository.createDeactivate.mockResolvedValue({ ok: true });
+
+      await service.deactivateDid(mockCtx, VALID_USER_ID);
+
+      expect(mockRepository.createDeactivate).toHaveBeenCalledTimes(1);
+      const [, input] = mockRepository.createDeactivate.mock.calls[0];
+      expect(input.userId).toBe(VALID_USER_ID);
+      expect(input.did).toBe(buildUserDid(VALID_USER_ID));
+      // §E: tombstone CBOR is null on chain — resolver reconstructs it.
+      expect((input as { documentCbor?: unknown }).documentCbor).toBeUndefined();
+
+      // documentHash references the canonical tombstone shape so verifiers
+      // can reproduce it offline.
+      const tombstoneCbor = (await import("cbor-x")).encode(
+        buildDeactivatedDidDocument(VALID_USER_ID),
+      );
+      const tombstoneBytes =
+        tombstoneCbor instanceof Uint8Array ? tombstoneCbor : new Uint8Array(tombstoneCbor);
+      const expectedHash = bytesToHex(blake2b(tombstoneBytes, { dkLen: 32 }));
+      expect(input.documentHash).toBe(expectedHash);
+    });
+
+    it("links previousAnchorId to the user's latest anchor (§5.1.6 mandatory prev)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_UPDATE);
+      mockRepository.createDeactivate.mockResolvedValue({ ok: true });
+
+      await service.deactivateDid(mockCtx, VALID_USER_ID);
+
+      const [, input] = mockRepository.createDeactivate.mock.calls[0];
+      expect(input.previousAnchorId).toBe("uda_prev_update");
+    });
+
+    it("resolves the prior anchor inside the supplied transaction", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(PRIOR_UPDATE);
+      mockRepository.createDeactivate.mockResolvedValue({ ok: true });
+      const fakeTx = { sentinel: true } as never;
+
+      await service.deactivateDid(mockCtx, VALID_USER_ID, fakeTx);
+
+      expect(mockRepository.findLatestByUserId).toHaveBeenCalledWith(VALID_USER_ID, fakeTx);
+    });
+
+    it("throws when the user has no existing DID anchor (§5.1.6 prev is mandatory)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce(null);
+
+      await expect(service.deactivateDid(mockCtx, VALID_USER_ID)).rejects.toThrow(
+        /no DID anchor to deactivate/,
+      );
+      expect(mockRepository.createDeactivate).not.toHaveBeenCalled();
+    });
+
+    it("allows re-deactivating an already-deactivated DID (append-only lifecycle)", async () => {
+      mockRepository.findLatestByUserId.mockResolvedValueOnce({
+        id: "uda_dead",
+        operation: "DEACTIVATE",
+      });
+      mockRepository.createDeactivate.mockResolvedValue({ ok: true });
+
+      await service.deactivateDid(mockCtx, VALID_USER_ID);
+
+      // A second DEACTIVATE still chains from the prior DEACTIVATE anchor,
+      // so `prev` stays non-null and §5.1.6 holds.
+      const [, input] = mockRepository.createDeactivate.mock.calls[0];
+      expect(input.previousAnchorId).toBe("uda_dead");
+    });
+  });
+});
