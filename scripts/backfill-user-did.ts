@@ -74,6 +74,7 @@ import {
   DidIssuanceStatus,
   DidMethod,
   DidOperation,
+  Prisma,
 } from "@prisma/client";
 
 import { prismaClient } from "@/infrastructure/prisma/client";
@@ -221,12 +222,12 @@ interface PendingAnchorRow {
  * was already broadcast for them, so re-submitting would anchor the same op a
  * second time. Those require manual operator triage.
  */
-const SUBMITTABLE_ANCHOR_WHERE = {
+const SUBMITTABLE_ANCHOR_WHERE: Prisma.UserDidAnchorWhereInput = {
   status: { in: [AnchorStatus.PENDING, AnchorStatus.FAILED] },
   batchId: null,
   chainTxHash: null,
   operation: DidOperation.CREATE,
-} as const;
+};
 
 async function findSubmittableAnchors(chunkSize: number): Promise<PendingAnchorRow[]> {
   return prismaClient.userDidAnchor.findMany({
