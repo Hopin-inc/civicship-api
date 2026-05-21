@@ -30,13 +30,13 @@
 |---|---|:---:|---|
 | 1 | `/point/verify` が外部 HTTP 呼び出しゼロでローカル DB 参照のみで応答 | ✅ | `PointVerifyClient` は `t_transaction_anchors.leaf_ids` への GIN index `$queryRaw` overlap lookup に置換済 (PR #1172) |
 | 2 | 新規 DID/VC が IDENTUS API を一切呼ばずに発行される | ✅ | `VcIssuanceService.issueVc` → `KmsJwtSigner`。`DIDVCServerClient` (`src/infrastructure/libs/did.ts`) は呼び出し元なし |
-| 3 | 任意の第三者が Cardano explorer + HTTPS GET だけで DID/VC の存在・内容を独立検証できる | ✅ | metadata label 1985 / `/.well-known/did.json` / `/users/:id/did.json` (proof 付き) / `/vc/:id/inclusion-proof` で確認可能 |
+| 3 | 任意の第三者が Cardano explorer + HTTPS GET だけで DID/VC の存在・内容を独立検証できる | ⚠️ | **DID は達成** — metadata label 1985 / `/.well-known/did.json` / `/users/:id/did.json` (proof 付き) で確認可能。**VC は未達** — VC の Merkle anchor 配線が未実装で `VcAnchor` 行が生成されず `/vc/:id/inclusion-proof` が機能しない（§6.2 参照） |
 | 4 | DID の鍵ローテ・deactivate が Cardano 上に追跡可能な履歴として記録 | ✅ | `UserDidAnchor.operation` (CREATE/UPDATE/DEACTIVATE) → metadata 1985 ops[] |
 | 5 | 月額運用コスト ≤ $5/月 | ✅ | Blockfrost free tier + KMS 一鍵 ($0.06) + tx 手数料 ($0.5) ≒ $1/月 |
 | 6 | 既存 GraphQL schema (`DidIssuanceRequest` / `VcIssuanceRequest`) への破壊的変更ゼロ | ✅ | 型・enum 共に保持 (`IDENTUS_VC_PRISM` enum は legacy 互換) |
 | 7 | `/point/verify` レスポンス形 (`{ txId, status, transactionHash, rootHash, label }`) は維持 | ✅ | response shape そのまま |
 
-**合計**: ✅ 7 / ⚠️ 0 / ❌ 0 → **100% 達成**。
+**合計**: ✅ 6 / ⚠️ 1 / ❌ 0 → DID / Transaction の anchor・検証は達成。VC の Merkle anchor 配線のみ未実装で Phase 2 持ち越し（§6.2）。
 
 ---
 
@@ -115,7 +115,7 @@
 | **VC format** | `IDENTUS_VC_PRISM` (IDENTUS 専用 JWT) | `INTERNAL_JWT` (W3C VC JWT) | ✅ |
 | **VC 署名** | IDENTUS key | Cloud KMS Ed25519 | ✅ |
 | **VC 失効** | IDENTUS revocation list | W3C Bitstring Status List 2021 | ✅ |
-| **Merkle root commit** | civicship が計算 → IDENTUS が Cardano に書込 | civicship が Blockfrost 経由で直接 Cardano に書込 | ✅ |
+| **Merkle root commit** | civicship が計算 → IDENTUS が Cardano に書込 | Transaction: civicship が Blockfrost 経由で直接 Cardano に書込 ✅ ／ VC: anchor 配線が未実装 ⚠️（§6.2） | ⚠️ |
 | **`/point/verify`** | IDENTUS API HTTP call | `t_transaction_anchors.leaf_ids` への GIN index `$queryRaw` overlap lookup (PR #1172) | ✅ |
 | **第三者検証** | 不可能 (IDENTUS 内部) | Cardano explorer + HTTPS GET で完結 | ✅ |
 | **GraphQL schema (`DidIssuanceRequest` / `VcIssuanceRequest`)** | IDENTUS バックエンド前提 | shape 維持、`didMethod` / `vcFormat` enum で内製区別 | ✅ |
@@ -140,12 +140,15 @@
 
 ### 6.1 ❌ 致命 (成功基準未達)
 
-**該当なし** — PR #1172 (`/point/verify` 内製化) の merge で全 7 基準達成。
+**該当なし** — `/point/verify` 内製化 (PR #1172) を含む中核機能は達成。VC の
+Merkle anchor のみ未配線だが、現時点で VC anchor を要するユースケースが無いため
+致命ではなく Phase 2 持ち越しとする（§6.2）。
 
 ### 6.2 🟡 中 (運用 readiness)
 
 | 項目 | 状態 |
 |---|---|
+| **VC の Merkle anchor 配線（Phase 2）** | 未実装。発行済 VC を `VcAnchor` 行に束ねる sweep 処理が無く週次バッチに VC が供給されない → `/vc/:id/inclusion-proof` が全 VC で機能しない。VC anchor を要するユースケース再来時に対応する方針 |
 | ドメイン hardening (DNSSEC / CAA / HSTS preload) | 別エージェントへ delegation 済 |
 | `INTERNAL_DID_VC_ENABLED` feature flag の prd 切替 | prd release 計画 (Phase 3 Day 2) と連動 |
 | `epic/replace-identsu` → `develop` 統合 PR | cardano-canary CI を develop 上で有効化するため必要 |
