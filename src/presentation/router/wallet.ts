@@ -1,14 +1,16 @@
 import express from 'express';
 import { container } from 'tsyringe';
 import NFTWalletUsecase from '@/application/domain/account/nft-wallet/usecase';
+import { AuthorizationError, NotFoundError } from '@/errors/graphql';
 import { apiKeyAuthMiddleware } from '@/presentation/middleware/api-key-auth';
+import { requireApiKeyVendor } from '@/presentation/middleware/api-key-vendor';
 import { validateFirebasePhoneAuth } from '@/presentation/middleware/firebase-phone-auth';
 import { nftReadRateLimit, walletRateLimit } from '@/presentation/middleware/rate-limit';
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
 
-const router = express();
+const router = express.Router();
 
 const ETH_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 
@@ -118,6 +120,92 @@ router.get('/nft-wallets/:walletAddress',
       });
     } catch (error) {
       logger.error('Wallet read error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+router.post('/nft-wallets/link',
+  walletRateLimit,
+  apiKeyAuthMiddleware,
+  requireApiKeyVendor,
+  validateFirebasePhoneAuth,
+  async (req, res) => {
+    try {
+      const vendor = res.locals.apiKey?.vendor;
+      if (!vendor) {
+        return res.status(403).json({ error: 'API key is not associated with a vendor' });
+      }
+
+      const user = res.locals.user;
+      if (!user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const issuer = new PrismaClientIssuer();
+      const ctx = { issuer } as IContext;
+      const nftWalletUsecase = container.resolve(NFTWalletUsecase);
+
+      const result = await nftWalletUsecase.linkVendorUser(ctx, vendor, user.id);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      logger.error('Vendor user link error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+);
+
+router.post('/nft-wallets/by-ref',
+  walletRateLimit,
+  apiKeyAuthMiddleware,
+  requireApiKeyVendor,
+  async (req, res) => {
+    try {
+      const vendor = res.locals.apiKey?.vendor;
+      if (!vendor) {
+        return res.status(403).json({ error: 'API key is not associated with a vendor' });
+      }
+
+      const { walletRef, walletAddress, name } = (req.body ?? {}) as {
+        walletRef?: unknown;
+        walletAddress?: unknown;
+        name?: unknown;
+      };
+
+      if (typeof walletRef !== 'string' || walletRef.length === 0) {
+        return res.status(400).json({ error: 'walletRef is required' });
+      }
+      if (typeof walletAddress !== 'string' || !ETH_ADDRESS_PATTERN.test(walletAddress)) {
+        return res
+          .status(400)
+          .json({ error: 'walletAddress is required and must be a valid address' });
+      }
+      if (name !== undefined && typeof name !== 'string') {
+        return res.status(400).json({ error: 'name must be a string' });
+      }
+
+      const issuer = new PrismaClientIssuer();
+      const ctx = { issuer } as IContext;
+      const nftWalletUsecase = container.resolve(NFTWalletUsecase);
+
+      const result = await nftWalletUsecase.registerWalletByRef(
+        ctx,
+        vendor,
+        walletRef,
+        walletAddress,
+        name,
+      );
+
+      return res.status(200).json({ success: true, ...result });
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return res.status(404).json({ error: error.message, entity: error.entityName });
+      }
+      if (error instanceof AuthorizationError) {
+        return res.status(403).json({ error: error.message });
+      }
+      logger.error('Wallet registration by ref error:', error);
       return res.status(500).json({ error: 'Internal server error' });
     }
   }

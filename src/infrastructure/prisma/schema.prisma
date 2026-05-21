@@ -380,6 +380,7 @@ model User {
 
   identities          Identity[]
   nftWallets          NftWallet[]
+  vendorUserLinks     VendorUserLink[]
   didIssuanceRequests DidIssuanceRequest[]
   vcIssuanceRequests  VcIssuanceRequest[]
 
@@ -1447,6 +1448,25 @@ model NftWallet {
 enum NftWalletType {
   INTERNAL // read and write
   EXTERNAL // only read
+}
+
+// 業者 (vendor) が end user を「ログイン時に Firebase で本人確認した」事実を表す。
+// Shopify webhook など end user 不在の server-side 処理から wallet 登録するとき、
+// この link の ref を渡すことで「正規に認証済みのユーザー」だけを登録対象にできる。
+model VendorUserLink {
+  id     String    @id @default(cuid())
+  ref    String    @unique // 業者に渡す不透明トークン (crypto random)
+  vendor NftVendor
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([vendor, userId])
+  @@index([userId])
+  @@map("t_vendor_user_links")
 }
 
 model NftToken {

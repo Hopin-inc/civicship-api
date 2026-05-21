@@ -206,6 +206,7 @@ Table t_users {
   image t_images
   identities t_identities [not null]
   nftWallets t_nft_wallets [not null]
+  vendorUserLinks t_vendor_user_links [not null]
   didIssuanceRequests t_did_issuance_requests [not null]
   vcIssuanceRequests t_vc_issuance_requests [not null]
   memberships t_memberships [not null]
@@ -638,6 +639,20 @@ Table t_nft_wallets {
   nftInstances t_nft_instances [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+}
+
+Table t_vendor_user_links {
+  id String [pk]
+  ref String [unique, not null]
+  vendor NftVendor [not null]
+  userId String [not null]
+  user t_users [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (vendor, userId) [unique]
+  }
 }
 
 Table t_nft_tokens {
@@ -1495,6 +1510,8 @@ Ref: t_incentive_grants.communityId > t_communities.id [delete: Cascade]
 Ref: t_incentive_grants.transactionId - t_transactions.id [delete: Restrict]
 
 Ref: t_nft_wallets.userId > t_users.id [delete: Restrict]
+
+Ref: t_vendor_user_links.userId > t_users.id [delete: Cascade]
 
 Ref: t_nft_tokens.communityId > t_communities.id [delete: Set Null]
 

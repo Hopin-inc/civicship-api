@@ -833,6 +833,16 @@ OTHER OTHER
     }
   
 
+  "t_vendor_user_links" {
+    String id "🗝️"
+    String ref 
+    NftVendor vendor 
+    String user_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_nft_tokens" {
     String id "🗝️"
     String address 
@@ -1290,6 +1300,8 @@ OTHER OTHER
     "t_nft_wallets" |o--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" |o--|o "NftChain" : "enum:chain"
     "t_nft_wallets" }o--|| t_users : "user"
+    "t_vendor_user_links" |o--|| "NftVendor" : "enum:vendor"
+    "t_vendor_user_links" }o--|| t_users : "user"
     "t_nft_tokens" }o--|o t_communities : "community"
     "t_nft_tokens" |o--|o "NftVendor" : "enum:issued_by_vendor"
     "t_nft_tokens" |o--|o "NftChain" : "enum:chain"

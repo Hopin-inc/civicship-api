@@ -34,6 +34,7 @@ import type { Transaction } from "@prisma/client";
 import type { IncentiveGrant } from "@prisma/client";
 import type { ApiKey } from "@prisma/client";
 import type { NftWallet } from "@prisma/client";
+import type { VendorUserLink } from "@prisma/client";
 import type { NftToken } from "@prisma/client";
 import type { NftInstance } from "@prisma/client";
 import type { NftMint } from "@prisma/client";
@@ -350,6 +351,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "nftWallets",
                 type: "NftWallet",
                 relationName: "NftWalletToUser"
+            }, {
+                name: "vendorUserLinks",
+                type: "VendorUserLink",
+                relationName: "UserToVendorUserLink"
             }, {
                 name: "didIssuanceRequests",
                 type: "DidIssuanceRequest",
@@ -914,6 +919,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "nftInstances",
                 type: "NftInstance",
                 relationName: "NftInstanceToNftWallet"
+            }]
+    }, {
+        name: "VendorUserLink",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "UserToVendorUserLink"
             }]
     }, {
         name: "NftToken",
@@ -3143,6 +3155,7 @@ type UserFactoryDefineInput = {
     image?: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
     nftWallets?: Prisma.NftWalletCreateNestedManyWithoutUserInput;
+    vendorUserLinks?: Prisma.VendorUserLinkCreateNestedManyWithoutUserInput;
     didIssuanceRequests?: Prisma.DidIssuanceRequestCreateNestedManyWithoutUserInput;
     vcIssuanceRequests?: Prisma.VcIssuanceRequestCreateNestedManyWithoutUserInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
@@ -7631,6 +7644,163 @@ export const defineNftWalletFactory = (<TOptions extends NftWalletFactoryDefineO
 }) as NftWalletFactoryBuilder;
 
 defineNftWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineNftWalletFactoryInternal(options, defaultTransientFieldValues);
+
+type VendorUserLinkScalarOrEnumFields = {
+    ref: string;
+    vendor: NftVendor;
+};
+
+type VendorUserLinkuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutVendorUserLinksInput["create"]>;
+};
+
+type VendorUserLinkFactoryDefineInput = {
+    id?: string;
+    ref?: string;
+    vendor?: NftVendor;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    user: VendorUserLinkuserFactory | Prisma.UserCreateNestedOneWithoutVendorUserLinksInput;
+};
+
+type VendorUserLinkTransientFields = Record<string, unknown> & Partial<Record<keyof VendorUserLinkFactoryDefineInput, never>>;
+
+type VendorUserLinkFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<VendorUserLinkFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<VendorUserLink, Prisma.VendorUserLinkCreateInput, TTransients>;
+
+type VendorUserLinkFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<VendorUserLinkFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: VendorUserLinkFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<VendorUserLink, Prisma.VendorUserLinkCreateInput, TTransients>;
+
+function isVendorUserLinkuserFactory(x: VendorUserLinkuserFactory | Prisma.UserCreateNestedOneWithoutVendorUserLinksInput | undefined): x is VendorUserLinkuserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type VendorUserLinkTraitKeys<TOptions extends VendorUserLinkFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface VendorUserLinkFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "VendorUserLink";
+    build(inputData?: Partial<Prisma.VendorUserLinkCreateInput & TTransients>): PromiseLike<Prisma.VendorUserLinkCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.VendorUserLinkCreateInput & TTransients>): PromiseLike<Prisma.VendorUserLinkCreateInput>;
+    buildList(list: readonly Partial<Prisma.VendorUserLinkCreateInput & TTransients>[]): PromiseLike<Prisma.VendorUserLinkCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.VendorUserLinkCreateInput & TTransients>): PromiseLike<Prisma.VendorUserLinkCreateInput[]>;
+    pickForConnect(inputData: VendorUserLink): Pick<VendorUserLink, "id">;
+    create(inputData?: Partial<Prisma.VendorUserLinkCreateInput & TTransients>): PromiseLike<VendorUserLink>;
+    createList(list: readonly Partial<Prisma.VendorUserLinkCreateInput & TTransients>[]): PromiseLike<VendorUserLink[]>;
+    createList(count: number, item?: Partial<Prisma.VendorUserLinkCreateInput & TTransients>): PromiseLike<VendorUserLink[]>;
+    createForConnect(inputData?: Partial<Prisma.VendorUserLinkCreateInput & TTransients>): PromiseLike<Pick<VendorUserLink, "id">>;
+}
+
+export interface VendorUserLinkFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends VendorUserLinkFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): VendorUserLinkFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateVendorUserLinkScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): VendorUserLinkScalarOrEnumFields {
+    return {
+        ref: getScalarFieldValueGenerator().String({ modelName: "VendorUserLink", fieldName: "ref", isId: false, isUnique: true, seq }),
+        vendor: "BORDERLESS"
+    };
+}
+
+function defineVendorUserLinkFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends VendorUserLinkFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): VendorUserLinkFactoryInterface<TTransients, VendorUserLinkTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly VendorUserLinkTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("VendorUserLink", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.VendorUserLinkCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateVendorUserLinkScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<VendorUserLinkFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<VendorUserLinkFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isVendorUserLinkuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            } as Prisma.VendorUserLinkCreateInput;
+            const data: Prisma.VendorUserLinkCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VendorUserLinkCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: VendorUserLink) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.VendorUserLinkCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().vendorUserLink.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VendorUserLinkCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.VendorUserLinkCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "VendorUserLink" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: VendorUserLinkTraitKeys<TOptions>, ...names: readonly VendorUserLinkTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface VendorUserLinkFactoryBuilder {
+    <TOptions extends VendorUserLinkFactoryDefineOptions>(options: TOptions): VendorUserLinkFactoryInterface<{}, VendorUserLinkTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends VendorUserLinkTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends VendorUserLinkFactoryDefineOptions<TTransients>>(options: TOptions) => VendorUserLinkFactoryInterface<TTransients, VendorUserLinkTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link VendorUserLink} model.
+ *
+ * @param options
+ * @returns factory {@link VendorUserLinkFactoryInterface}
+ */
+export const defineVendorUserLinkFactory = (<TOptions extends VendorUserLinkFactoryDefineOptions>(options: TOptions): VendorUserLinkFactoryInterface<TOptions> => {
+    return defineVendorUserLinkFactoryInternal(options, {});
+}) as VendorUserLinkFactoryBuilder;
+
+defineVendorUserLinkFactory.withTransientFields = defaultTransientFieldValues => options => defineVendorUserLinkFactoryInternal(options, defaultTransientFieldValues);
 
 type NftTokenScalarOrEnumFields = {
     address: string;
