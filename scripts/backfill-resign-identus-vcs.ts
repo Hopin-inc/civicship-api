@@ -80,6 +80,13 @@ import {
   signJwt,
 } from "./lib/resignVcCli.ts";
 
+/** Human-readable kind of a non-object JSON value, for error messages. */
+function describeJsonKind(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  return typeof value;
+}
+
 /**
  * The legacy `VCIssuanceRequestConverter` always writes `claims` as a JSON
  * object, but defend against NULL / array / scalar rows so a single corrupt
@@ -87,8 +94,7 @@ import {
  */
 function asClaimsObject(claims: unknown): Record<string, unknown> {
   if (claims === null || typeof claims !== "object" || Array.isArray(claims)) {
-    const kind = claims === null ? "null" : Array.isArray(claims) ? "array" : typeof claims;
-    throw new Error(`claims is not a JSON object (got ${kind})`);
+    throw new Error(`claims is not a JSON object (got ${describeJsonKind(claims)})`);
   }
   return claims as Record<string, unknown>;
 }
