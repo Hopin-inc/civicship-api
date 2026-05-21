@@ -163,18 +163,21 @@ function normalizeMetadataText(value: unknown): string {
     return value.map((v) => normalizeMetadataText(v)).join("");
   }
   if (typeof value === "string") return value;
-  if (value === null || value === undefined) return "";
-  return String(value);
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  // null / undefined / object / symbol: not a meaningful metadata text value.
+  return "";
 }
 
 /** Parse the ordered `ops[]` array out of a label-1985 `json_metadata` blob. */
 function extractOps(jsonMetadata: unknown): ChainOp[] {
   if (!jsonMetadata || typeof jsonMetadata !== "object") {
-    throw new Error("metadata label 1985 payload is not an object");
+    throw new TypeError("metadata label 1985 payload is not an object");
   }
   const ops = (jsonMetadata as { ops?: unknown }).ops;
   if (!Array.isArray(ops)) {
-    throw new Error("metadata label 1985 has no `ops` array");
+    throw new TypeError("metadata label 1985 has no `ops` array");
   }
   return ops.map((op, index) => {
     const o = (op && typeof op === "object" ? op : {}) as Record<string, unknown>;
@@ -221,12 +224,15 @@ function resolveTxGroup(
 ): { matches: Match[]; unresolved: Unresolved[] } {
   const matches: Match[] = [];
   const unresolved: Unresolved[] = [];
+  const skip = (row: TargetRow, reason: string): void => {
+    unresolved.push({ row, reason });
+  };
 
   for (const row of rows) {
     const expectedK = operationToK(row.operation);
     const sameDid = ops.filter((o) => o.did === row.did);
     if (sameDid.length === 0) {
-      unresolved.push({ row, reason: `did ${row.did} not present in tx ops[]` });
+      skip(row, `did ${row.did} not present in tx ops[]`);
       continue;
     }
 
@@ -235,10 +241,7 @@ function resolveTxGroup(
     // weekly batch) is still disambiguated.
     let candidates = sameDid.filter((o) => o.k === expectedK);
     if (candidates.length === 0) {
-      unresolved.push({
-        row,
-        reason: `did ${row.did} present but no op has kind k='${expectedK}'`,
-      });
+      skip(row, `did ${row.did} present but no op has kind k='${expectedK}'`);
       continue;
     }
     if (candidates.length > 1) {
@@ -247,10 +250,7 @@ function resolveTxGroup(
       );
     }
     if (candidates.length !== 1) {
-      unresolved.push({
-        row,
-        reason: `ambiguous: ${candidates.length} ops match did+kind+hash`,
-      });
+      skip(row, `ambiguous: ${candidates.length} ops match did+kind+hash`);
       continue;
     }
 
@@ -259,10 +259,7 @@ function resolveTxGroup(
     // `documentHash`. A mismatch means the row and the chain disagree —
     // writing the index would aim the verifier at the wrong op.
     if (op.h !== null && op.h.toLowerCase() !== row.documentHash.toLowerCase()) {
-      unresolved.push({
-        row,
-        reason: `doc hash mismatch: chain=${op.h} db=${row.documentHash}`,
-      });
+      skip(row, `doc hash mismatch: chain=${op.h} db=${row.documentHash}`);
       continue;
     }
 
