@@ -78,39 +78,39 @@ export function bytesToHex(b: Uint8Array): string {
  * on both the success and failure paths; on an uncaught error the stack is
  * written to stderr and the process exits 1.
  *
+ * `main` and `cleanup` are invoked behind `await` inside an async wrapper so a
+ * *synchronous* throw from either is normalized into the same handling path as
+ * a rejected promise — the exit code is always honoured and a `cleanup`
+ * failure never escapes as an unhandled rejection.
+ *
  * `cleanup` is passed in (rather than imported) so this module keeps its
  * "no DI container / no Prisma / no `@/infrastructure`" constraint — every
- * one-shot script otherwise repeats this same `main().then().catch()`
- * boilerplate verbatim.
+ * one-shot script otherwise repeats this same boilerplate verbatim.
  */
 export function runScript(
   main: () => Promise<number>,
   cleanup: () => Promise<unknown> = () => Promise.resolve(),
 ): void {
-  main()
-    .then((code) => exitAfterCleanup(cleanup, code))
-    .catch((err: unknown) => {
+  void (async () => {
+    let code = 1;
+    try {
+      code = await main();
+    } catch (err) {
       process.stderr.write(
         `ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
       );
-      exitAfterCleanup(cleanup, 1);
-    });
-}
-
-/**
- * Run `cleanup`, then exit with `code`. A `cleanup` rejection is caught and
- * logged rather than left to surface as an unhandled promise rejection — the
- * process is already terminating, and the exit code (not the cleanup
- * outcome) is what matters.
- */
-function exitAfterCleanup(cleanup: () => Promise<unknown>, code: number): void {
-  cleanup()
-    .catch((err: unknown) => {
+    }
+    try {
+      await cleanup();
+    } catch (err) {
+      // The process is already terminating; a cleanup failure must not mask
+      // the exit code or surface as an unhandled rejection.
       process.stderr.write(
         `WARN: cleanup failed: ${err instanceof Error ? err.message : String(err)}\n`,
       );
-    })
-    .finally(() => process.exit(code));
+    }
+    process.exit(code);
+  })();
 }
 
 /**
