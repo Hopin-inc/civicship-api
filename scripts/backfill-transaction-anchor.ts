@@ -63,29 +63,11 @@ import {
 import { buildRoot } from "@/infrastructure/libs/merkle/merkleTreeBuilder";
 import { deriveCardanoKeypair } from "@/infrastructure/libs/cardano/keygen";
 
-import { parseFixedLengthHex, runStep } from "./lib/cardanoScriptHelpers.ts";
-
-interface Flags {
-  confirm: boolean;
-  limit?: number;
-}
-
-function parseFlags(argv: string[]): Flags {
-  const flags: Flags = { confirm: false };
-  for (const arg of argv) {
-    if (arg === "--confirm") {
-      flags.confirm = true;
-      continue;
-    }
-    const limit = /^--limit=(\d+)$/.exec(arg);
-    if (limit) {
-      flags.limit = Number.parseInt(limit[1], 10);
-      continue;
-    }
-    throw new Error(`Unknown flag: ${arg}`);
-  }
-  return flags;
-}
+import {
+  parseConfirmLimitFlags,
+  parseFixedLengthHex,
+  runStep,
+} from "./lib/cardanoScriptHelpers.ts";
 
 interface PlatformConfig {
   network: "preprod" | "mainnet";
@@ -121,7 +103,7 @@ async function fetchCurrentSlot(projectId: string, network: "preprod" | "mainnet
 }
 
 async function main(): Promise<number> {
-  const flags = parseFlags(process.argv.slice(2));
+  const flags = parseConfirmLimitFlags(process.argv.slice(2));
   process.stdout.write("Backfill Transaction anchor — single 1-tx Merkle commit\n\n");
   process.stdout.write(`mode: ${flags.confirm ? "EXECUTE" : "DRY-RUN"}\n`);
   if (flags.limit !== undefined) process.stdout.write(`limit: ${flags.limit}\n`);
