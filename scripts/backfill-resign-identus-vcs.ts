@@ -130,7 +130,7 @@ async function main(): Promise<number> {
       requestedAt: true,
       completedAt: true,
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     take: flags.limit,
   });
 
@@ -162,25 +162,36 @@ async function main(): Promise<number> {
       }
 
       const issuedAt = row.completedAt ?? row.requestedAt ?? row.createdAt;
-      const subjectDid = buildUserDid(row.userId);
 
       if (flags.confirm) {
         const newJwt = await buildInternalJwt({ userId: row.userId, claims: row.claims, issuedAt }, signer);
-        await prismaClient.vcIssuanceRequest.update({
-          where: { id: row.id },
+        // Re-apply the original selection filter on write: a row that was
+        // revoked or already converted between the read and here must NOT
+        // be clobbered. `count !== 1` means the row changed under us.
+        const result = await prismaClient.vcIssuanceRequest.updateMany({
+          where: {
+            id: row.id,
+            vcFormat: VcFormat.IDENTUS_JWT,
+            revokedAt: null,
+          },
           data: {
             vcFormat: VcFormat.INTERNAL_JWT,
             vcJwt: newJwt,
           },
         });
+        if (result.count !== 1) {
+          throw new Error("row no longer matches IDENTUS_JWT / revokedAt=null (changed after read)");
+        }
         resigned += 1;
-        process.stdout.write(`OK    ${row.id}: reissued INTERNAL_JWT (subject=${subjectDid}, new len=${newJwt.length})\n`);
+        process.stdout.write(`OK    ${row.id}: reissued INTERNAL_JWT (new len=${newJwt.length})\n`);
       } else {
         // dry-run: 件数のみ。KMS 署名・DB 書き込みは行わない。subject DID
-        // と claims 形状の検証だけ実施し、不正な行は failed として顕在化。
+        // 導出と claims 形状の検証だけ実施し、不正な行は failed として顕在化。
+        // subject DID(userId を含む) はログに出さない。
+        buildUserDid(row.userId);
         asClaimsObject(row.claims);
         resigned += 1;
-        process.stdout.write(`DRY   ${row.id}: would reissue INTERNAL_JWT (subject=${subjectDid})\n`);
+        process.stdout.write(`DRY   ${row.id}: would reissue INTERNAL_JWT\n`);
       }
     } catch (err) {
       failed += 1;
