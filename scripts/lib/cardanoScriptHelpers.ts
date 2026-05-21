@@ -71,3 +71,79 @@ export function bytesToHex(b: Uint8Array): string {
   for (const byte of b) s += byte.toString(16).padStart(2, "0");
   return s;
 }
+
+/**
+ * Run a script's `main` to completion and exit the process with its returned
+ * code. `cleanup` (e.g. `() => prismaClient.$disconnect()`) always runs first,
+ * on both the success and failure paths; on an uncaught error the stack is
+ * written to stderr and the process exits 1.
+ *
+ * `main` and `cleanup` are invoked behind `await` inside an async wrapper so a
+ * *synchronous* throw from either is normalized into the same handling path as
+ * a rejected promise — the exit code is always honoured and a `cleanup`
+ * failure never escapes as an unhandled rejection.
+ *
+ * `cleanup` is passed in (rather than imported) so this module keeps its
+ * "no DI container / no Prisma / no `@/infrastructure`" constraint — every
+ * one-shot script otherwise repeats this same boilerplate verbatim.
+ */
+export function runScript(
+  main: () => Promise<number>,
+  cleanup: () => Promise<unknown> = () => Promise.resolve(),
+): void {
+  void (async () => {
+    let code = 1;
+    try {
+      code = await main();
+    } catch (err) {
+      process.stderr.write(
+        `ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
+      );
+    }
+    try {
+      await cleanup();
+    } catch (err) {
+      // The process is already terminating; a cleanup failure must not mask
+      // the exit code or surface as an unhandled rejection.
+      process.stderr.write(
+        `WARN: cleanup failed: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+    }
+    process.exit(code);
+  })();
+}
+
+/**
+ * CLI flags common to one-shot backfill scripts:
+ *   - `confirm` — `--confirm` toggles execute mode (otherwise dry-run).
+ *   - `limit`   — `--limit=<n>` caps the number of rows processed.
+ */
+export interface ConfirmLimitFlags {
+  confirm: boolean;
+  limit?: number;
+}
+
+/**
+ * Parse the `--confirm` / `--limit=<n>` flags. Throws on an unknown flag or a
+ * non-positive `--limit`. Extracted because every backfill script otherwise
+ * repeats this exact parser verbatim.
+ */
+export function parseConfirmLimitFlags(argv: string[]): ConfirmLimitFlags {
+  const flags: ConfirmLimitFlags = { confirm: false };
+  for (const arg of argv) {
+    if (arg === "--confirm") {
+      flags.confirm = true;
+      continue;
+    }
+    const limit = /^--limit=(\d+)$/.exec(arg);
+    if (limit) {
+      flags.limit = Number.parseInt(limit[1], 10);
+      continue;
+    }
+    throw new Error(`Unknown flag: ${arg}`);
+  }
+  if (flags.limit !== undefined && flags.limit <= 0) {
+    throw new Error("--limit must be > 0");
+  }
+  return flags;
+}

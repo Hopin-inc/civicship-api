@@ -30,7 +30,10 @@
  *          — this is a DID-only anchor batch).
  *        - `buildAnchorTx` → `submitTx` → `awaitConfirmation`.
  *        - UPDATE the chunk's `UserDidAnchor` rows to
- *          `status=CONFIRMED, chainTxHash, batchId`.
+ *          `status=CONFIRMED, chainTxHash, chainOpIndex, batchId` —
+ *          `chainOpIndex` is the row's 0-based position in the on-chain
+ *          metadata `ops[]` array, which the verifier needs to locate the
+ *          operation (`ops[chainOpIndex]`).
  *        - Sleep `--inter-tx-sleep-ms` (default 5 min) before the next
  *          chunk to let the change UTxO settle.
  *
@@ -91,7 +94,7 @@ import {
 import { buildMinimalDidDocument, buildUserDid } from "@/infrastructure/libs/did/userDidBuilder";
 import { deriveCardanoKeypair } from "@/infrastructure/libs/cardano/keygen";
 
-import { bytesToHex, parseFixedLengthHex, runStep } from "./lib/cardanoScriptHelpers.ts";
+import { bytesToHex, parseFixedLengthHex, runScript, runStep } from "./lib/cardanoScriptHelpers.ts";
 
 const DEFAULT_CHUNK_SIZE = 80;
 const DEFAULT_INTER_TX_SLEEP_MS = 5 * 60 * 1000;
@@ -451,15 +454,31 @@ async function main(): Promise<number> {
         });
         const txHash = await client.submitTx(built.txCborBytes);
         // Mark SUBMITTED early so a crash mid-await still leaves a trail.
-        await prismaClient.userDidAnchor.updateMany({
-          where: { id: { in: chunk.map((r) => r.id) } },
-          data: {
-            status: AnchorStatus.SUBMITTED,
-            chainTxHash: txHash,
-            submittedAt: new Date(),
-            batchId: bid,
-          },
-        });
+        //
+        // Per-row `update` (not a single `updateMany`) because `chainOpIndex`
+        // differs per row: `ops[i]` was built from `chunk[i]` directly above,
+        // so an anchor's position in the on-chain metadata `ops[]` array is
+        // exactly its index in `chunk`. The verifier resolves a DID op via
+        // `ops[chainOpIndex]`, so a CONFIRMED anchor with a NULL
+        // `chainOpIndex` is unverifiable. Wrap the per-row updates in one
+        // `$transaction` so the whole chunk is marked atomically — exactly
+        // the atomicity the former `updateMany` gave — ensuring a re-run can
+        // never re-submit a partially-marked chunk and double-anchor.
+        const submittedAt = new Date();
+        await prismaClient.$transaction(
+          chunk.map((row, opIndex) =>
+            prismaClient.userDidAnchor.update({
+              where: { id: row.id },
+              data: {
+                status: AnchorStatus.SUBMITTED,
+                chainTxHash: txHash,
+                submittedAt,
+                batchId: bid,
+                chainOpIndex: opIndex,
+              },
+            }),
+          ),
+        );
         const confirmed = await client.awaitConfirmation(txHash);
         await prismaClient.userDidAnchor.updateMany({
           where: { id: { in: chunk.map((r) => r.id) } },
@@ -512,13 +531,4 @@ async function markChunkFailed(rows: ReadonlyArray<{ id: string }>, reason: stri
     });
 }
 
-main()
-  .then((code) => {
-    prismaClient.$disconnect().finally(() => process.exit(code));
-  })
-  .catch((err: unknown) => {
-    process.stderr.write(
-      `ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
-    );
-    prismaClient.$disconnect().finally(() => process.exit(1));
-  });
+runScript(main, () => prismaClient.$disconnect());
