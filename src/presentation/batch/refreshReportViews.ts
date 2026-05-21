@@ -18,13 +18,13 @@ export async function refreshReportViews() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const reportUseCase = container.resolve<ReportUseCase>("ReportUseCase");
 
-  logger.debug("🔄 Starting report views refresh batch...");
+  logger.info("🔄 Starting report views refresh batch...");
 
   const ctx = { issuer } as IContext;
 
   try {
     await reportUseCase.refreshAllReportViews(ctx);
-    logger.debug("✅ Report views refresh batch completed successfully");
+    logger.info("✅ Report views refresh batch completed successfully");
   } catch (error) {
     logger.error("❌ Error in report views refresh batch:", error);
     throw error;

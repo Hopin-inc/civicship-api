@@ -13,7 +13,7 @@ export async function generateWeeklyReports() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const reportUseCase = container.resolve<ReportUseCase>("ReportUseCase");
 
-  logger.debug("Starting weekly report generation batch...");
+  logger.info("Starting weekly report generation batch...");
 
   const ctx = { issuer, isAdmin: true } as IContext;
 
@@ -91,7 +91,7 @@ export async function generateWeeklyReports() {
     }
   }
 
-  logger.debug(
+  logger.info(
     `Weekly report batch completed: ${successCount} generated, ` +
       `${zeroActivitySkipCount} skipped (no activity), ` +
       `${alreadyExistsCount} skipped (already exists), ` +

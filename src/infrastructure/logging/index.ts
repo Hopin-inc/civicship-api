@@ -15,6 +15,27 @@ const isLocal =
   process.env.LOCAL_DEV === "true" ||
   process.env.NODE_ENV === "test";
 const isProduction = process.env.NODE_ENV === "production";
+const isBatch = process.env.PROCESS_TYPE === "batch";
+
+/**
+ * Log level resolution, in priority order:
+ *  1. `LOG_LEVEL` env — explicit override so ops can dial verbosity without
+ *     a redeploy. Ignored when it is not a known winston npm level, so a
+ *     typo cannot silently take down all logging.
+ *  2. Batch jobs (`PROCESS_TYPE=batch`) — `info`, so their low-frequency
+ *     lifecycle/summary lines stay visible in production instead of being
+ *     dropped by the API's noise-suppressing `warn` threshold.
+ *  3. Otherwise — `warn` in production (log volume / cost control),
+ *     `debug` everywhere else.
+ */
+function resolveLogLevel(): string {
+  const override = process.env.LOG_LEVEL?.toLowerCase();
+  if (override && override in winston.config.npm.levels) {
+    return override;
+  }
+  if (isBatch) return "info";
+  return isProduction ? "warn" : "debug";
+}
 
 const baseFormats: winston.Logform.Format[] = [
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
@@ -55,7 +76,7 @@ if (isLocal) {
 }
 
 const logger = winston.createLogger({
-  level: isProduction ? "warn" : "debug",
+  level: resolveLogLevel(),
   format: winston.format.combine(...baseFormats),
   transports,
 });
