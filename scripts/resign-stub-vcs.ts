@@ -35,32 +35,7 @@ import { container } from "tsyringe";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import type { JwtSigner } from "@/application/domain/credential/shared/jwtSigner";
 import { STUB_SIGNATURE } from "@/application/domain/credential/shared/stubJwtSigner";
-
-interface Flags {
-  confirm: boolean;
-  limit?: number;
-}
-
-function parseFlags(argv: string[]): Flags {
-  const flags: Flags = { confirm: false };
-  for (const arg of argv) {
-    if (arg === "--confirm") {
-      flags.confirm = true;
-      continue;
-    }
-    const limitMatch = /^--limit=(\d+)$/.exec(arg);
-    if (limitMatch) {
-      flags.limit = Number.parseInt(limitMatch[1], 10);
-      continue;
-    }
-    throw new Error(`Unknown flag: ${arg}`);
-  }
-  return flags;
-}
-
-function base64urlEncodeJson(value: unknown): string {
-  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
-}
+import { parseResignCliFlags, runResignScript, signJwt } from "./lib/resignVcCli.ts";
 
 function payloadSegmentOf(vcJwt: string): string {
   const segments = vcJwt.split(".");
@@ -76,20 +51,8 @@ function isStubSignature(vcJwt: string): boolean {
     || segments[2] === STUB_SIGNATURE;
 }
 
-async function rebuildJwt(payloadB64u: string, signer: JwtSigner): Promise<string> {
-  await signer.prepare();
-  const headerB64u = base64urlEncodeJson({
-    alg: signer.alg,
-    typ: "JWT",
-    kid: signer.kid,
-  });
-  const signingInput = `${headerB64u}.${payloadB64u}`;
-  const signature = await signer.sign(signingInput);
-  return `${signingInput}.${signature}`;
-}
-
 async function main(): Promise<number> {
-  const flags = parseFlags(process.argv.slice(2));
+  const flags = parseResignCliFlags(process.argv.slice(2));
   process.stdout.write("Re-sign STUB_SIGNATURE VCs with KmsJwtSigner\n\n");
   process.stdout.write(`mode: ${flags.confirm ? "EXECUTE" : "DRY-RUN"}\n`);
   if (flags.limit !== undefined) process.stdout.write(`limit: ${flags.limit}\n`);
@@ -124,7 +87,7 @@ async function main(): Promise<number> {
         continue;
       }
       const payloadB64u = payloadSegmentOf(row.vcJwt);
-      const newJwt = await rebuildJwt(payloadB64u, signer);
+      const newJwt = await signJwt(signer, payloadB64u);
 
       if (flags.confirm) {
         await prismaClient.vcIssuanceRequest.update({
@@ -154,11 +117,4 @@ async function main(): Promise<number> {
   return failed === 0 ? 0 : 1;
 }
 
-main()
-  .then((code) => {
-    prismaClient.$disconnect().finally(() => process.exit(code));
-  })
-  .catch((err: unknown) => {
-    process.stderr.write(`ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
-    prismaClient.$disconnect().finally(() => process.exit(1));
-  });
+runResignScript(main, () => prismaClient.$disconnect());

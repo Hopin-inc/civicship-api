@@ -14,7 +14,9 @@
  * This is distinct from `resign-stub-vcs.ts`: that script targets Phase 1
  * `INTERNAL_JWT` rows whose signature segment is the `STUB_SIGNATURE`
  * marker. `IDENTUS_JWT` rows never carry that marker, so they are out of
- * scope there and need this dedicated backfill.
+ * scope there and need this dedicated backfill. The shared CLI plumbing
+ * (`--confirm` / `--limit`, JWT signing, teardown) lives in
+ * `scripts/lib/resignVcCli.ts`.
  *
  * What this script does
  * ---------------------
@@ -71,32 +73,12 @@ import type { JwtSigner } from "@/application/domain/credential/shared/jwtSigner
 import { CIVICSHIP_ISSUER_DID } from "@/application/domain/credential/shared/constants";
 import { buildVcPayload } from "@/application/domain/credential/vcIssuance/service";
 import { buildUserDid } from "@/infrastructure/libs/did/userDidBuilder";
-
-interface Flags {
-  confirm: boolean;
-  limit?: number;
-}
-
-function parseFlags(argv: string[]): Flags {
-  const flags: Flags = { confirm: false };
-  for (const arg of argv) {
-    if (arg === "--confirm") {
-      flags.confirm = true;
-      continue;
-    }
-    const limitMatch = /^--limit=(\d+)$/.exec(arg);
-    if (limitMatch) {
-      flags.limit = Number.parseInt(limitMatch[1], 10);
-      continue;
-    }
-    throw new Error(`Unknown flag: ${arg}`);
-  }
-  return flags;
-}
-
-function base64urlEncodeJson(value: unknown): string {
-  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
-}
+import {
+  base64urlEncodeJson,
+  parseResignCliFlags,
+  runResignScript,
+  signJwt,
+} from "./lib/resignVcCli.ts";
 
 /**
  * The legacy `VCIssuanceRequestConverter` always writes `claims` as a JSON
@@ -105,44 +87,30 @@ function base64urlEncodeJson(value: unknown): string {
  */
 function asClaimsObject(claims: unknown): Record<string, unknown> {
   if (claims === null || typeof claims !== "object" || Array.isArray(claims)) {
-    throw new Error(`claims is not a JSON object (got ${claims === null ? "null" : Array.isArray(claims) ? "array" : typeof claims})`);
+    const kind = claims === null ? "null" : Array.isArray(claims) ? "array" : typeof claims;
+    throw new Error(`claims is not a JSON object (got ${kind})`);
   }
   return claims as Record<string, unknown>;
 }
 
-/** Build the new INTERNAL_JWT (header.payload.signature) for one row. */
+/** Build the new KMS-signed INTERNAL_JWT (header.payload.signature) for one row. */
 async function buildInternalJwt(
-  row: {
-    userId: string;
-    claims: unknown;
-    issuedAt: Date;
-  },
+  row: { userId: string; claims: unknown; issuedAt: Date },
   signer: JwtSigner,
 ): Promise<string> {
-  const subjectDid = buildUserDid(row.userId);
+  // Mirror `VcIssuanceService.issueVc` payload shape; `credentialStatus` is
+  // intentionally omitted (replay/legacy path — no new StatusList slot).
   const payload = buildVcPayload({
     issuer: CIVICSHIP_ISSUER_DID,
-    subject: subjectDid,
+    subject: buildUserDid(row.userId),
     claims: asClaimsObject(row.claims),
     issuedAt: row.issuedAt,
   });
-
-  // Mirror `VcIssuanceService.issueVc`: refresh the signer snapshot, then
-  // read `alg` / `kid` synchronously for the header before signing.
-  await signer.prepare();
-  const headerB64u = base64urlEncodeJson({
-    alg: signer.alg,
-    typ: "JWT",
-    kid: signer.kid,
-  });
-  const payloadB64u = base64urlEncodeJson(payload);
-  const signingInput = `${headerB64u}.${payloadB64u}`;
-  const signature = await signer.sign(signingInput);
-  return `${signingInput}.${signature}`;
+  return signJwt(signer, base64urlEncodeJson(payload));
 }
 
 async function main(): Promise<number> {
-  const flags = parseFlags(process.argv.slice(2));
+  const flags = parseResignCliFlags(process.argv.slice(2));
   process.stdout.write("Re-issue IDENTUS_JWT VCs as KMS-signed INTERNAL_JWT\n\n");
   process.stdout.write(`mode: ${flags.confirm ? "EXECUTE" : "DRY-RUN"}\n`);
   if (flags.limit !== undefined) process.stdout.write(`limit: ${flags.limit}\n`);
@@ -231,11 +199,4 @@ async function main(): Promise<number> {
   return failed === 0 ? 0 : 1;
 }
 
-main()
-  .then((code) => {
-    prismaClient.$disconnect().finally(() => process.exit(code));
-  })
-  .catch((err: unknown) => {
-    process.stderr.write(`ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
-    prismaClient.$disconnect().finally(() => process.exit(1));
-  });
+runResignScript(main, () => prismaClient.$disconnect());
