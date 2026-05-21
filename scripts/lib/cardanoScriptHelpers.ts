@@ -71,3 +71,30 @@ export function bytesToHex(b: Uint8Array): string {
   for (const byte of b) s += byte.toString(16).padStart(2, "0");
   return s;
 }
+
+/**
+ * Run a script's `main` to completion and exit the process with its returned
+ * code. `cleanup` (e.g. `() => prismaClient.$disconnect()`) always runs first,
+ * on both the success and failure paths; on an uncaught error the stack is
+ * written to stderr and the process exits 1.
+ *
+ * `cleanup` is passed in (rather than imported) so this module keeps its
+ * "no DI container / no Prisma / no `@/infrastructure`" constraint — every
+ * one-shot script otherwise repeats this same `main().then().catch()`
+ * boilerplate verbatim.
+ */
+export function runScript(
+  main: () => Promise<number>,
+  cleanup: () => Promise<unknown> = () => Promise.resolve(),
+): void {
+  main()
+    .then((code) => {
+      cleanup().finally(() => process.exit(code));
+    })
+    .catch((err: unknown) => {
+      process.stderr.write(
+        `ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
+      );
+      cleanup().finally(() => process.exit(1));
+    });
+}

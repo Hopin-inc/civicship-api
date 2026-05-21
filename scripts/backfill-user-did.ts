@@ -94,7 +94,7 @@ import {
 import { buildMinimalDidDocument, buildUserDid } from "@/infrastructure/libs/did/userDidBuilder";
 import { deriveCardanoKeypair } from "@/infrastructure/libs/cardano/keygen";
 
-import { bytesToHex, parseFixedLengthHex, runStep } from "./lib/cardanoScriptHelpers.ts";
+import { bytesToHex, parseFixedLengthHex, runScript, runStep } from "./lib/cardanoScriptHelpers.ts";
 
 const DEFAULT_CHUNK_SIZE = 80;
 const DEFAULT_INTER_TX_SLEEP_MS = 5 * 60 * 1000;
@@ -531,13 +531,4 @@ async function markChunkFailed(rows: ReadonlyArray<{ id: string }>, reason: stri
     });
 }
 
-main()
-  .then((code) => {
-    prismaClient.$disconnect().finally(() => process.exit(code));
-  })
-  .catch((err: unknown) => {
-    process.stderr.write(
-      `ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
-    );
-    prismaClient.$disconnect().finally(() => process.exit(1));
-  });
+runScript(main, () => prismaClient.$disconnect());

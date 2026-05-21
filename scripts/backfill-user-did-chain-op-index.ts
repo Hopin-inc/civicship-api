@@ -61,7 +61,7 @@ import { prismaClient } from "@/infrastructure/prisma/client";
 import { BlockfrostClient } from "@/infrastructure/libs/blockfrost/client";
 import { METADATA_LABEL_1985 } from "@/infrastructure/libs/cardano/txBuilder";
 
-import { runStep } from "./lib/cardanoScriptHelpers.ts";
+import { runScript, runStep } from "./lib/cardanoScriptHelpers.ts";
 
 interface Flags {
   confirm: boolean;
@@ -377,13 +377,4 @@ async function main(): Promise<number> {
   return unresolvedTotal === 0 ? 0 : 1;
 }
 
-main()
-  .then((code) => {
-    prismaClient.$disconnect().finally(() => process.exit(code));
-  })
-  .catch((err: unknown) => {
-    process.stderr.write(
-      `ERROR: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`,
-    );
-    prismaClient.$disconnect().finally(() => process.exit(1));
-  });
+runScript(main, () => prismaClient.$disconnect());
