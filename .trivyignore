@@ -36,3 +36,14 @@
 #   なる場合は SECURITY.md "Rollback conditions" の手順で降格できる。
 #   無言で `exit-code` を書き換えると政策との乖離が生まれるので、必ず
 #   SECURITY.md と本ファイル両方を同時に更新すること。
+
+# ----------------------------------------------------------------------------
+# 影響範囲: libgnutls30 (Debian 12 bookworm / base image `node:20-slim`)。
+#           internal + external 両 runtime image。
+# 理由: fix=3.7.9-2+deb12u7 は Debian 側で提供済みだが、digest pin している
+#       base image (node:20-slim) にまだ deb12u7 が取り込まれていない。
+#       恒久対応は base image digest を deb12u7 入りの node:20-slim へ bump
+#       すること (別 security-ops タスク)。それまでの時限回避。
+# expires: 2026-06-04  担当: 709sakata (#923)
+CVE-2026-33845
+CVE-2026-42010
