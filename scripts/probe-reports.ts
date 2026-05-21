@@ -136,8 +136,12 @@ function parseArgs(): CliArgs {
  * prd directly via .env.prd), so RLS scoping is irrelevant — every
  * issuer flavour collapses to "use the raw client". Mirrors the same
  * shim style used by `scripts/ci/run-golden-cases.ts`.
+ *
+ * `communityId` must still be set: generateReport resolves the target
+ * community from ctx via getCommunityIdFromCtx, so a probe context
+ * without it throws AuthorizationError before any work happens.
  */
-function makeProbeContext(): IContext {
+function makeProbeContext(communityId: string): IContext {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const passthrough = <T>(fn: (tx: any) => Promise<T>): Promise<T> => fn(prismaClient);
   return {
@@ -151,6 +155,7 @@ function makeProbeContext(): IContext {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       admin: (_ctx: IContext, fn: any) => passthrough(fn),
     },
+    communityId,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
@@ -235,7 +240,6 @@ async function runOneVariant(args: RunOneArgs): Promise<VariantOutcome> {
           periodFrom,
           periodTo,
         },
-        permission: { communityId },
       },
       ctx,
     );
@@ -329,7 +333,6 @@ async function main(): Promise<void> {
   }
 
   const usecase = container.resolve(ReportUseCase);
-  const ctx = makeProbeContext();
 
   // Discover variants from the seed before opening the output dir so
   // a "no templates seeded" failure is reported up-front, before the
@@ -359,6 +362,7 @@ async function main(): Promise<void> {
 
   const outcomes: VariantOutcome[] = [];
   for (const communityId of args.communityIds) {
+    const ctx = makeProbeContext(communityId);
     for (const variant of variants) {
       const outcome = await runOneVariant({
         usecase,
