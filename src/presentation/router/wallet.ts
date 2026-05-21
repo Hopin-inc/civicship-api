@@ -5,7 +5,11 @@ import { AuthorizationError, NotFoundError } from '@/errors/graphql';
 import { apiKeyAuthMiddleware } from '@/presentation/middleware/api-key-auth';
 import { requireApiKeyVendor } from '@/presentation/middleware/api-key-vendor';
 import { validateFirebasePhoneAuth } from '@/presentation/middleware/firebase-phone-auth';
-import { nftReadRateLimit, walletRateLimit } from '@/presentation/middleware/rate-limit';
+import {
+  nftReadRateLimit,
+  nftWebhookRateLimit,
+  walletRateLimit,
+} from '@/presentation/middleware/rate-limit';
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
@@ -157,7 +161,7 @@ router.post('/nft-wallets/link',
 );
 
 router.post('/nft-wallets/by-ref',
-  walletRateLimit,
+  nftWebhookRateLimit,
   apiKeyAuthMiddleware,
   requireApiKeyVendor,
   async (req, res) => {
