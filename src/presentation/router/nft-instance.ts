@@ -6,8 +6,8 @@ import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
 import { requireApiKeyVendor } from "@/presentation/middleware/api-key-vendor";
 import {
-  nftInstanceSyncRateLimit,
   nftReadRateLimit,
+  nftWebhookRateLimit,
 } from "@/presentation/middleware/rate-limit";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
@@ -23,7 +23,7 @@ const isOptionalString = (value: unknown): value is string | undefined =>
 
 router.put(
   "/nft-tokens/:tokenAddress/instances/:instanceId",
-  nftInstanceSyncRateLimit,
+  nftWebhookRateLimit,
   apiKeyAuthMiddleware,
   requireApiKeyVendor,
   async (req, res) => {

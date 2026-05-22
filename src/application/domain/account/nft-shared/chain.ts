@@ -1,15 +1,17 @@
 import { NftChain, NftVendor, NftWalletType } from "@prisma/client";
 
 /**
- * NftWallet の chain を (type, env) から自動決定する。
- * - EXTERNAL: 常に BASE_SEPOLIA (業者がまだ mainnet 移行できていない)
- * - INTERNAL: dev → CARDANO_PREPROD、prd → CARDANO_MAINNET
+ * NftWallet の chain を type から決定する。
+ * - INTERNAL: NMKR custodial = Cardano。dev → CARDANO_PREPROD、prd → CARDANO_MAINNET
+ * - EXTERNAL: null。EVM の EOA アドレスは Base / Polygon / Ethereum で同一であり、
+ *   wallet 単位で単一チェーンを確定できない。どのチェーンの NFT かは
+ *   NftToken / NftInstance 側の chain が持つ。
  */
-export function deriveChainForWallet(type: NftWalletType): NftChain {
+export function deriveChainForWallet(type: NftWalletType): NftChain | null {
   if (type === NftWalletType.INTERNAL) {
     return isProduction() ? NftChain.CARDANO_MAINNET : NftChain.CARDANO_PREPROD;
   }
-  return NftChain.BASE_SEPOLIA;
+  return null;
 }
 
 /**
@@ -19,7 +21,7 @@ export function deriveChainForWallet(type: NftWalletType): NftChain {
  */
 export const VENDOR_ALLOWED_CHAINS: Record<NftVendor, ReadonlyArray<NftChain>> = {
   [NftVendor.BORDERLESS]: [NftChain.BASE_SEPOLIA],
-  [NftVendor.KIBOTCHA]: [NftChain.BASE_SEPOLIA],
+  [NftVendor.KIBOTCHA]: [NftChain.POLYGON_MAINNET, NftChain.POLYGON_AMOY],
 };
 
 export function isChainAllowedForVendor(vendor: NftVendor, chain: NftChain): boolean {

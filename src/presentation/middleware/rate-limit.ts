@@ -50,16 +50,6 @@ export const nftTokenSyncRateLimit = rateLimit({
   legacyHeaders: false,
 });
 
-export const nftInstanceSyncRateLimit = rateLimit({
-  windowMs: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.windowMs,
-  max: RATE_LIMIT_CONFIG.NFT_SYNC_OPERATIONS.max,
-  message: {
-    error: 'Too many NFT instance sync requests from this IP, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 export const nftReadRateLimit = rateLimit({
   windowMs: RATE_LIMIT_CONFIG.NFT_READ_OPERATIONS.windowMs,
   max: RATE_LIMIT_CONFIG.NFT_READ_OPERATIONS.max,
