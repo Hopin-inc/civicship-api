@@ -10,7 +10,10 @@ import {
   nftWebhookRateLimit,
   walletRateLimit,
 } from '@/presentation/middleware/rate-limit';
-import { normalizeEvmAddress } from '@/presentation/router/utils/validation';
+import {
+  MAX_LENGTHS,
+  normalizeEvmAddress,
+} from '@/presentation/router/utils/validation';
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
@@ -178,16 +181,23 @@ router.post('/nft-wallets/by-ref',
         name?: unknown;
       };
 
-      if (typeof walletRef !== 'string' || walletRef.length === 0) {
-        return res.status(400).json({ error: 'walletRef is required' });
+      if (
+        typeof walletRef !== 'string' ||
+        walletRef.length === 0 ||
+        walletRef.length > MAX_LENGTHS.WALLET_REF
+      ) {
+        return res.status(400).json({ error: 'walletRef is required (max 128 characters)' });
       }
       if (typeof walletAddress !== 'string' || !ETH_ADDRESS_PATTERN.test(walletAddress)) {
         return res
           .status(400)
           .json({ error: 'walletAddress is required and must be a valid address' });
       }
-      if (name !== undefined && typeof name !== 'string') {
-        return res.status(400).json({ error: 'name must be a string' });
+      if (
+        name !== undefined &&
+        (typeof name !== 'string' || name.length > MAX_LENGTHS.NAME)
+      ) {
+        return res.status(400).json({ error: `name must be a string up to ${MAX_LENGTHS.NAME} characters` });
       }
 
       const issuer = new PrismaClientIssuer();

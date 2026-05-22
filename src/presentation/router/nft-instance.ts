@@ -11,6 +11,8 @@ import {
 } from "@/presentation/middleware/rate-limit";
 import {
   EVM_ADDRESS_PATTERN,
+  MAX_LENGTHS,
+  findOversizedField,
   isValidHttpsUrl,
   normalizeEvmAddress,
 } from "@/presentation/router/utils/validation";
@@ -22,7 +24,7 @@ import { IContext } from "@/types/server";
 
 const router = express.Router();
 
-const INSTANCE_ID_PATTERN = /^\d+$/;
+const INSTANCE_ID_PATTERN = /^\d{1,78}$/;
 
 const isOptionalString = (value: unknown): value is string | undefined =>
   value === undefined || typeof value === "string";
@@ -67,6 +69,15 @@ router.put(
         !isOptionalString(body.imageUrl)
       ) {
         return res.status(400).json({ error: "Invalid field type" });
+      }
+
+      const oversized = findOversizedField(body, {
+        name: MAX_LENGTHS.NAME,
+        description: MAX_LENGTHS.DESCRIPTION,
+        imageUrl: MAX_LENGTHS.URL,
+      });
+      if (oversized) {
+        return res.status(400).json({ error: oversized });
       }
 
       if (body.imageUrl !== undefined && !isValidHttpsUrl(body.imageUrl)) {

@@ -9,6 +9,8 @@ import { requireApiKeyVendor } from "@/presentation/middleware/api-key-vendor";
 import { nftReadRateLimit, nftTokenSyncRateLimit } from "@/presentation/middleware/rate-limit";
 import {
   EVM_ADDRESS_PATTERN,
+  MAX_LENGTHS,
+  findOversizedField,
   isValidHttpsUrl,
   normalizeEvmAddress,
 } from "@/presentation/router/utils/validation";
@@ -64,6 +66,21 @@ router.put(
         !isOptionalString(body.iconUrl)
       ) {
         return res.status(400).json({ error: "Invalid field type" });
+      }
+
+      const oversized = findOversizedField(body, {
+        type: MAX_LENGTHS.TYPE,
+        name: MAX_LENGTHS.NAME,
+        symbol: MAX_LENGTHS.SYMBOL,
+        decimals: MAX_LENGTHS.NUMERIC_STRING,
+        totalSupply: MAX_LENGTHS.NUMERIC_STRING,
+        holders: MAX_LENGTHS.NUMERIC_STRING,
+        exchangeRate: MAX_LENGTHS.NUMERIC_STRING,
+        circulatingMarketCap: MAX_LENGTHS.NUMERIC_STRING,
+        iconUrl: MAX_LENGTHS.URL,
+      });
+      if (oversized) {
+        return res.status(400).json({ error: oversized });
       }
 
       if (body.iconUrl !== undefined && !isValidHttpsUrl(body.iconUrl)) {

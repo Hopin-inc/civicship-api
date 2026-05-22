@@ -28,3 +28,36 @@ export const EVM_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 export function normalizeEvmAddress(address: string): string {
   return address.toLowerCase();
 }
+
+/**
+ * NFT 連携 API の各フィールド最大長。実用上の値 + α で abuse 防御。
+ * 数値文字列 (uint256) の十進最大は 78 桁、URL は典型的なブラウザ上限の 2048。
+ */
+export const MAX_LENGTHS = {
+  NAME: 256,
+  SYMBOL: 32,
+  TYPE: 32,
+  DESCRIPTION: 4096,
+  NUMERIC_STRING: 128,
+  URL: 2048,
+  INSTANCE_ID: 78,
+  WALLET_REF: 128,
+} as const;
+
+/**
+ * `body` の中で `limits` に書かれた最大長を超えるフィールドを 1 件見つけて
+ * エラーメッセージを返す。型チェック (isOptionalString 等) を通過済みの前提。
+ * 違反なしなら null。
+ */
+export function findOversizedField(
+  body: Record<string, unknown>,
+  limits: Record<string, number>,
+): string | null {
+  for (const [field, maxLen] of Object.entries(limits)) {
+    const value = body[field];
+    if (typeof value === "string" && value.length > maxLen) {
+      return `${field} must be at most ${maxLen} characters`;
+    }
+  }
+  return null;
+}
