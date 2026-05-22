@@ -347,7 +347,7 @@ Content-Type: application/json
 | `holders` | string |   | 保有者数 |
 | `exchangeRate` | string |   | 取引レート |
 | `circulatingMarketCap` | string |   | 流通時価総額 |
-| `iconUrl` | string |   | アイコン URL |
+| `iconUrl` | string |   | アイコン URL。指定する場合は `https://` の有効な URL であること (不正なら 400) |
 | `metadata` | object |   | 上記以外の任意の追加データ |
 
 `chain` の取り得る値: `BASE_SEPOLIA` / `BASE_MAINNET` / `POLYGON_MAINNET` / `POLYGON_AMOY` / `CARDANO_PREPROD` / `CARDANO_MAINNET`。
@@ -453,7 +453,7 @@ Content-Type: application/json
 | `ownerWalletAddress` | string | ✓ | 所有者の EOA アドレス。事前に `PUT /api/nft-wallets/:walletAddress` 等で登録済みであること |
 | `name` | string |   | インスタンス名 |
 | `description` | string |   | 説明 |
-| `imageUrl` | string |   | 画像 URL |
+| `imageUrl` | string |   | 画像 URL。指定する場合は `https://` の有効な URL であること (不正なら 400)。`ipfs://` は不可 — UI で直接描画するため https ゲートウェイ URL で送ること |
 | `metadata` | object |   | 上記以外の任意の追加データ |
 
 リクエストボディ全体は `NftInstance.json` カラムに保存される。

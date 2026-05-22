@@ -7,6 +7,7 @@ import { AuthorizationError, ValidationError } from "@/errors/graphql";
 import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
 import { requireApiKeyVendor } from "@/presentation/middleware/api-key-vendor";
 import { nftReadRateLimit, nftTokenSyncRateLimit } from "@/presentation/middleware/rate-limit";
+import { isValidHttpsUrl } from "@/presentation/router/utils/validation";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
@@ -59,6 +60,10 @@ router.put(
         !isOptionalString(body.iconUrl)
       ) {
         return res.status(400).json({ error: "Invalid field type" });
+      }
+
+      if (body.iconUrl !== undefined && !isValidHttpsUrl(body.iconUrl)) {
+        return res.status(400).json({ error: "iconUrl must be a valid https URL" });
       }
 
       if (

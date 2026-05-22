@@ -9,6 +9,7 @@ import {
   nftReadRateLimit,
   nftWebhookRateLimit,
 } from "@/presentation/middleware/rate-limit";
+import { isValidHttpsUrl } from "@/presentation/router/utils/validation";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
@@ -59,6 +60,10 @@ router.put(
         !isOptionalString(body.imageUrl)
       ) {
         return res.status(400).json({ error: "Invalid field type" });
+      }
+
+      if (body.imageUrl !== undefined && !isValidHttpsUrl(body.imageUrl)) {
+        return res.status(400).json({ error: "imageUrl must be a valid https URL" });
       }
 
       if (
