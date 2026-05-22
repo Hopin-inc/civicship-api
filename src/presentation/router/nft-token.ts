@@ -8,6 +8,7 @@ import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
 import { requireApiKeyVendor } from "@/presentation/middleware/api-key-vendor";
 import { nftReadRateLimit, nftTokenSyncRateLimit } from "@/presentation/middleware/rate-limit";
 import { isValidHttpsUrl } from "@/presentation/router/utils/validation";
+import { tokenExplorerUrl } from "@/presentation/router/utils/explorer";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
@@ -132,7 +133,10 @@ router.get(
         });
       }
 
-      return res.status(200).json(token);
+      return res.status(200).json({
+        ...token,
+        explorerUrl: tokenExplorerUrl(token.chain, token.address),
+      });
     } catch (error) {
       logger.error("NFT token read error:", error);
       return res.status(500).json({ error: "Internal server error" });

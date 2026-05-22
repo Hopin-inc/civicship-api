@@ -398,7 +398,7 @@ GET /api/nft-tokens/:address
 X-API-Key: <key>
 ```
 
-`200 OK` でレコード全体 (`id`, `address`, `name`, `symbol`, `type`, `json`, `communityId`, `createdAt`, `updatedAt`) を返す。`json` には PUT で送ったボディが格納されている。
+`200 OK` でレコード全体 (`id`, `address`, `name`, `symbol`, `type`, `chain`, `json`, `communityId`, `createdAt`, `updatedAt`) に加え、`explorerUrl` を返す。`json` には PUT で送ったボディが格納されている。`explorerUrl` は `chain` + `address` から導出したブロックエクスプローラー URL (EVM チェーンのみ。導出できない場合は `null`)。
 
 主なエラー:
 
@@ -525,6 +525,8 @@ X-API-Key: <key>
   "instanceId": "42",
   "tokenAddress": "0xabc...123",
   "nftTokenId": "ckxyz...",
+  "chain": "POLYGON_MAINNET",
+  "explorerUrl": "https://polygonscan.com/nft/0xabc...123/42",
   "ownerWalletAddress": "0xdef...456",
   "nftWalletId": "ckwallet...",
   "name": "メンバーシップ #42",
@@ -537,6 +539,8 @@ X-API-Key: <key>
   "updatedAt": "2026-04-27T01:00:00.000Z"
 }
 ```
+
+`explorerUrl` は `chain` + `tokenAddress` + `instanceId` から導出したブロックエクスプローラー URL (EVM チェーンのみ。導出できない場合は `null`)。一覧 (`GET .../instances`) の各要素も同じスキーマ。
 
 主なエラー:
 

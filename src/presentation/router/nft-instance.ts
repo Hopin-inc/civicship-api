@@ -10,6 +10,8 @@ import {
   nftWebhookRateLimit,
 } from "@/presentation/middleware/rate-limit";
 import { isValidHttpsUrl } from "@/presentation/router/utils/validation";
+import { instanceExplorerUrl } from "@/presentation/router/utils/explorer";
+import { PrismaNftInstance } from "@/application/domain/account/nft-instance/data/type";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
@@ -114,6 +116,31 @@ router.put(
 const DEFAULT_INSTANCE_LIST_LIMIT = 50;
 const MAX_INSTANCE_LIST_LIMIT = 200;
 
+function toInstanceResponse(instance: PrismaNftInstance) {
+  return {
+    id: instance.id,
+    instanceId: instance.instanceId,
+    tokenAddress: instance.nftToken.address,
+    nftTokenId: instance.nftTokenId,
+    chain: instance.nftToken.chain,
+    explorerUrl: instanceExplorerUrl(
+      instance.nftToken.chain,
+      instance.nftToken.address,
+      instance.instanceId,
+    ),
+    ownerWalletAddress: instance.nftWallet?.walletAddress ?? null,
+    nftWalletId: instance.nftWalletId,
+    name: instance.name,
+    description: instance.description,
+    imageUrl: instance.imageUrl,
+    json: instance.json,
+    status: instance.status,
+    communityId: instance.communityId,
+    createdAt: instance.createdAt,
+    updatedAt: instance.updatedAt,
+  };
+}
+
 router.get(
   "/nft-tokens/:tokenAddress/instances",
   nftReadRateLimit,
@@ -140,22 +167,7 @@ router.get(
       const rows = await usecase.listByTokenAddress(ctx, tokenAddress, limit + 1, cursor);
 
       const hasNext = rows.length > limit;
-      const items = rows.slice(0, limit).map((instance) => ({
-        id: instance.id,
-        instanceId: instance.instanceId,
-        tokenAddress: instance.nftToken.address,
-        nftTokenId: instance.nftTokenId,
-        ownerWalletAddress: instance.nftWallet?.walletAddress ?? null,
-        nftWalletId: instance.nftWalletId,
-        name: instance.name,
-        description: instance.description,
-        imageUrl: instance.imageUrl,
-        json: instance.json,
-        status: instance.status,
-        communityId: instance.communityId,
-        createdAt: instance.createdAt,
-        updatedAt: instance.updatedAt,
-      }));
+      const items = rows.slice(0, limit).map(toInstanceResponse);
 
       const nextCursor = hasNext ? items[items.length - 1]?.id ?? null : null;
 
@@ -200,22 +212,7 @@ router.get(
         });
       }
 
-      return res.status(200).json({
-        id: instance.id,
-        instanceId: instance.instanceId,
-        tokenAddress: instance.nftToken.address,
-        nftTokenId: instance.nftTokenId,
-        ownerWalletAddress: instance.nftWallet?.walletAddress ?? null,
-        nftWalletId: instance.nftWalletId,
-        name: instance.name,
-        description: instance.description,
-        imageUrl: instance.imageUrl,
-        json: instance.json,
-        status: instance.status,
-        communityId: instance.communityId,
-        createdAt: instance.createdAt,
-        updatedAt: instance.updatedAt,
-      });
+      return res.status(200).json(toInstanceResponse(instance));
     } catch (error) {
       logger.error("NFT instance read error:", error);
       return res.status(500).json({ error: "Internal server error" });
