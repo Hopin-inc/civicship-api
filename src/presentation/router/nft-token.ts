@@ -7,7 +7,11 @@ import { AuthorizationError, ValidationError } from "@/errors/graphql";
 import { apiKeyAuthMiddleware } from "@/presentation/middleware/api-key-auth";
 import { requireApiKeyVendor } from "@/presentation/middleware/api-key-vendor";
 import { nftReadRateLimit, nftTokenSyncRateLimit } from "@/presentation/middleware/rate-limit";
-import { isValidHttpsUrl } from "@/presentation/router/utils/validation";
+import {
+  EVM_ADDRESS_PATTERN,
+  isValidHttpsUrl,
+  normalizeEvmAddress,
+} from "@/presentation/router/utils/validation";
 import { tokenExplorerUrl } from "@/presentation/router/utils/explorer";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import logger from "@/infrastructure/logging";
@@ -15,7 +19,6 @@ import { IContext } from "@/types/server";
 
 const router = express.Router();
 
-const ETH_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 const NFT_CHAIN_VALUES = Object.values(NftChain);
 
 const isOptionalString = (value: unknown): value is string | undefined =>
@@ -28,15 +31,15 @@ router.put(
   requireApiKeyVendor,
   async (req, res) => {
     try {
-      const { address } = req.params;
       const vendor = res.locals.apiKey?.vendor;
       if (!vendor) {
         return res.status(403).json({ error: "API key is not associated with a vendor" });
       }
 
-      if (!ETH_ADDRESS_PATTERN.test(address)) {
+      if (!EVM_ADDRESS_PATTERN.test(req.params.address)) {
         return res.status(400).json({ error: "Invalid contract address format" });
       }
+      const address = normalizeEvmAddress(req.params.address);
 
       const body = (req.body ?? {}) as Record<string, unknown>;
 
@@ -114,11 +117,10 @@ router.get(
   apiKeyAuthMiddleware,
   async (req, res) => {
     try {
-      const { address } = req.params;
-
-      if (!ETH_ADDRESS_PATTERN.test(address)) {
+      if (!EVM_ADDRESS_PATTERN.test(req.params.address)) {
         return res.status(400).json({ error: "Invalid contract address format" });
       }
+      const address = normalizeEvmAddress(req.params.address);
 
       const issuer = new PrismaClientIssuer();
       const ctx = { issuer } as IContext;

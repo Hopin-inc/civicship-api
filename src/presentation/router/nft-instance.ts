@@ -9,7 +9,11 @@ import {
   nftReadRateLimit,
   nftWebhookRateLimit,
 } from "@/presentation/middleware/rate-limit";
-import { isValidHttpsUrl } from "@/presentation/router/utils/validation";
+import {
+  EVM_ADDRESS_PATTERN,
+  isValidHttpsUrl,
+  normalizeEvmAddress,
+} from "@/presentation/router/utils/validation";
 import { instanceExplorerUrl } from "@/presentation/router/utils/explorer";
 import { PrismaNftInstance } from "@/application/domain/account/nft-instance/data/type";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -18,7 +22,6 @@ import { IContext } from "@/types/server";
 
 const router = express.Router();
 
-const ETH_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 const INSTANCE_ID_PATTERN = /^\d+$/;
 
 const isOptionalString = (value: unknown): value is string | undefined =>
@@ -31,15 +34,16 @@ router.put(
   requireApiKeyVendor,
   async (req, res) => {
     try {
-      const { tokenAddress, instanceId } = req.params;
+      const { instanceId } = req.params;
       const vendor = res.locals.apiKey?.vendor;
       if (!vendor) {
         return res.status(403).json({ error: "API key is not associated with a vendor" });
       }
 
-      if (!ETH_ADDRESS_PATTERN.test(tokenAddress)) {
+      if (!EVM_ADDRESS_PATTERN.test(req.params.tokenAddress)) {
         return res.status(400).json({ error: "Invalid contract address format" });
       }
+      const tokenAddress = normalizeEvmAddress(req.params.tokenAddress);
 
       if (!INSTANCE_ID_PATTERN.test(instanceId)) {
         return res.status(400).json({ error: "Invalid instance id format" });
@@ -49,12 +53,13 @@ router.put(
 
       if (
         typeof body.ownerWalletAddress !== "string" ||
-        !ETH_ADDRESS_PATTERN.test(body.ownerWalletAddress)
+        !EVM_ADDRESS_PATTERN.test(body.ownerWalletAddress)
       ) {
         return res
           .status(400)
           .json({ error: "ownerWalletAddress is required and must be a valid address" });
       }
+      const ownerWalletAddress = normalizeEvmAddress(body.ownerWalletAddress);
 
       if (
         !isOptionalString(body.name) ||
@@ -76,7 +81,7 @@ router.put(
       }
 
       const input: UpsertInstanceInput = {
-        ownerWalletAddress: body.ownerWalletAddress,
+        ownerWalletAddress,
         name: body.name ?? null,
         description: body.description ?? null,
         imageUrl: body.imageUrl ?? null,
@@ -147,11 +152,10 @@ router.get(
   apiKeyAuthMiddleware,
   async (req, res) => {
     try {
-      const { tokenAddress } = req.params;
-
-      if (!ETH_ADDRESS_PATTERN.test(tokenAddress)) {
+      if (!EVM_ADDRESS_PATTERN.test(req.params.tokenAddress)) {
         return res.status(400).json({ error: "Invalid contract address format" });
       }
+      const tokenAddress = normalizeEvmAddress(req.params.tokenAddress);
 
       const limitParam = typeof req.query.limit === "string" ? Number(req.query.limit) : Number.NaN;
       const limit = Number.isFinite(limitParam)
@@ -185,11 +189,12 @@ router.get(
   apiKeyAuthMiddleware,
   async (req, res) => {
     try {
-      const { tokenAddress, instanceId } = req.params;
+      const { instanceId } = req.params;
 
-      if (!ETH_ADDRESS_PATTERN.test(tokenAddress)) {
+      if (!EVM_ADDRESS_PATTERN.test(req.params.tokenAddress)) {
         return res.status(400).json({ error: "Invalid contract address format" });
       }
+      const tokenAddress = normalizeEvmAddress(req.params.tokenAddress);
 
       if (!INSTANCE_ID_PATTERN.test(instanceId)) {
         return res.status(400).json({ error: "Invalid instance id format" });

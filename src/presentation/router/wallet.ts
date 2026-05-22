@@ -10,6 +10,7 @@ import {
   nftWebhookRateLimit,
   walletRateLimit,
 } from '@/presentation/middleware/rate-limit';
+import { normalizeEvmAddress } from '@/presentation/router/utils/validation';
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 import { IContext } from '@/types/server';
@@ -197,7 +198,7 @@ router.post('/nft-wallets/by-ref',
         ctx,
         vendor,
         walletRef,
-        walletAddress,
+        normalizeEvmAddress(walletAddress),
         name,
       );
 
