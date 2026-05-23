@@ -94,18 +94,33 @@ jobs:
         run: |
           set -euo pipefail
 
-          # 複数 resolver を順に試して最初に応答した結果を返す。
-          # 戻り値: 0 = 応答取得 (空文字含む) / 1 = 全 resolver 沈黙
+          # 複数 resolver を順に試して結果を返す。
+          # dig +short は SERVFAIL でも exit 0 を返し出力が空になるため、
+          # 「exit 0 かつ空」は「真にレコード無し」とは断定できない。空応答時
+          # は次 resolver も試し、全 resolver が応答かつ全て空のときのみ
+          # 「レコード無し」(空文字) として 0 を返す。
+          # 戻り値: 0 = いずれかの resolver から応答取得 (空文字 = 真に無し)
+          #         1 = 全 resolver が無応答 (network issue)
           query_ds() {
             local name=$1
-            local resolver out
+            local resolver out got_response=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
               if out=$(dig +short +tries=3 +time=3 DS "$name" @"$resolver" 2>/dev/null); then
-                printf '%s' "$out"
-                return 0
+                got_response=1
+                if [ -n "$out" ]; then
+                  printf '%s' "$out"
+                  return 0
+                fi
+                # 空: SERVFAIL の可能性を排除するため次 resolver も試す
+              else
+                echo "::warning::dig DS $name @$resolver no reply, trying next resolver" >&2
               fi
-              echo "::warning::dig DS $name @$resolver failed (transient), trying next resolver" >&2
             done
+            if [ "$got_response" = "1" ]; then
+              # 全 resolver が応答 & 全部空 → 真にレコード無し
+              printf ''
+              return 0
+            fi
             return 1
           }
 
@@ -160,16 +175,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          # DS と同様、SERVFAIL を「レコード無し」と誤判定しないよう
+          # 空応答時は次 resolver も試し、全 resolver が応答 & 全部空のときのみ
+          # 「レコード無し」として 0 を返す。
           query_caa() {
             local name=$1
-            local resolver out
+            local resolver out got_response=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
               if out=$(dig +short +tries=3 +time=3 CAA "$name" @"$resolver" 2>/dev/null); then
-                printf '%s' "$out"
-                return 0
+                got_response=1
+                if [ -n "$out" ]; then
+                  printf '%s' "$out"
+                  return 0
+                fi
+              else
+                echo "::warning::dig CAA $name @$resolver no reply, trying next resolver" >&2
               fi
-              echo "::warning::dig CAA $name @$resolver failed (transient), trying next resolver" >&2
             done
+            if [ "$got_response" = "1" ]; then
+              printf ''
+              return 0
+            fi
             return 1
           }
 
