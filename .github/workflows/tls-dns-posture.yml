@@ -90,22 +90,28 @@ jobs:
       # alarm が飛ぶ事例があった。リゾルバ fallback と短い timeout で dig の
       # transient 失敗を「DS 不在」と区別する。`set -e` 下でも dig の失敗で
       # スクリプトが死なないよう、戻り値は `||` 経由で受ける。
+      #
+      # さらに GitHub Actions runner からの UDP/53 は (resolver を問わず)
+      # 断続的に黙って drop される時間帯があり、その場合 1.1.1.1 / 8.8.8.8 /
+      # 9.9.9.9 への UDP がすべて no reply で落ちる。resolver fallback だけ
+      # では救えないので、同じ resolver に対して TCP (+tcp) で retry してから
+      # 次の resolver に進む。TCP/53 は同じ public DNS で受け付けられる。
       - name: DNSSEC DS record check (${{ matrix.host }})
         run: |
           set -euo pipefail
 
-          # 複数 resolver を順に試して結果を返す。
+          # 複数 resolver × (UDP → TCP) を順に試して結果を返す。
           # dig +short は SERVFAIL でも exit 0 を返し出力が空になるため、
           # 「exit 0 かつ空」は「真にレコード無し」とは断定できない。空応答時
           # は次 resolver も試し、全 resolver が応答かつ全て空のときのみ
           # 「レコード無し」(空文字) として 0 を返す。
           # 戻り値: 0 = いずれかの resolver から応答取得 (空文字 = 真に無し)
-          #         1 = 全 resolver が無応答 (network issue)
+          #         1 = 全 resolver が UDP/TCP とも無応答 (network issue)
           query_ds() {
             local name=$1
             local resolver out got_response=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
-              if out=$(dig +short +tries=3 +time=3 DS "$name" @"$resolver" 2>/dev/null); then
+              if out=$(dig +short +tries=2 +time=3 DS "$name" @"$resolver" 2>/dev/null); then
                 got_response=1
                 if [ -n "$out" ]; then
                   printf '%s' "$out"
@@ -113,7 +119,18 @@ jobs:
                 fi
                 # 空: SERVFAIL の可能性を排除するため次 resolver も試す
               else
-                echo "::warning::dig DS $name @$resolver no reply, trying next resolver" >&2
+                echo "::warning::dig DS $name @$resolver UDP no reply, retrying via TCP" >&2
+                # UDP/53 が runner から drop されているケースの fallback。
+                # TCP のほうが connection timeout を取れる分やや長めに。
+                if out=$(dig +short +tries=2 +time=5 +tcp DS "$name" @"$resolver" 2>/dev/null); then
+                  got_response=1
+                  if [ -n "$out" ]; then
+                    printf '%s' "$out"
+                    return 0
+                  fi
+                else
+                  echo "::warning::dig DS $name @$resolver TCP also no reply, trying next resolver" >&2
+                fi
               fi
             done
             if [ "$got_response" = "1" ]; then
@@ -177,19 +194,29 @@ jobs:
 
           # DS と同様、SERVFAIL を「レコード無し」と誤判定しないよう
           # 空応答時は次 resolver も試し、全 resolver が応答 & 全部空のときのみ
-          # 「レコード無し」として 0 を返す。
+          # 「レコード無し」として 0 を返す。UDP/53 が runner から drop される
+          # 時間帯に備えて、各 resolver で UDP → TCP の順に試す。
           query_caa() {
             local name=$1
             local resolver out got_response=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
-              if out=$(dig +short +tries=3 +time=3 CAA "$name" @"$resolver" 2>/dev/null); then
+              if out=$(dig +short +tries=2 +time=3 CAA "$name" @"$resolver" 2>/dev/null); then
                 got_response=1
                 if [ -n "$out" ]; then
                   printf '%s' "$out"
                   return 0
                 fi
               else
-                echo "::warning::dig CAA $name @$resolver no reply, trying next resolver" >&2
+                echo "::warning::dig CAA $name @$resolver UDP no reply, retrying via TCP" >&2
+                if out=$(dig +short +tries=2 +time=5 +tcp CAA "$name" @"$resolver" 2>/dev/null); then
+                  got_response=1
+                  if [ -n "$out" ]; then
+                    printf '%s' "$out"
+                    return 0
+                  fi
+                else
+                  echo "::warning::dig CAA $name @$resolver TCP also no reply, trying next resolver" >&2
+                fi
               fi
             done
             if [ "$got_response" = "1" ]; then
