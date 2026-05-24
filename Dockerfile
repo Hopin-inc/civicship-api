@@ -40,7 +40,7 @@
 # ---------------------------------------------------------------------------
 # Builder stage: prune to production deps, preserving Prisma generator output.
 # ---------------------------------------------------------------------------
-FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS builder
+FROM node:26-slim@sha256:1e738cb88890a15c71880323fbc35a739b7bbc703d72e8bfd1613128f8182f78 AS builder
 
 WORKDIR /app
 
@@ -90,7 +90,7 @@ RUN if [ -s /tmp/prisma-snapshot.tar ]; then \
 # ---------------------------------------------------------------------------
 # Runtime stage: minimal, non-root, HEALTHCHECK enabled.
 # ---------------------------------------------------------------------------
-FROM node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS runtime
+FROM node:26-slim@sha256:1e738cb88890a15c71880323fbc35a739b7bbc703d72e8bfd1613128f8182f78 AS runtime
 
 WORKDIR /app
 
