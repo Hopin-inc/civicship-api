@@ -59,21 +59,16 @@ jobs:
           - api.civicship.app
 
     steps:
-      - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
-        with:
-          # 公開 DNS resolver (1.1.1.1) と https://hstspreload.org / 対象 host
-          # への egress が必須なので audit に留める (block にすると dig も死ぬ)。
-          egress-policy: audit
-          disable-sudo: true
-
+      # `dig` は ubuntu-latest の標準 image に同梱されている想定だが、image 更新で
+      # 外れる将来に備えて存在を確認し、無ければ bind9-dnsutils を入れる。harden-runner
+      # は `disable-sudo: true` で sudo を封じるため、この install step は必ず
+      # harden-runner より前に置く (= sudo が必要になるのはここだけで、以降は不要)。
       # 当初は delv で local re-validation していたが、step-security/harden-runner
       # が立てる DNS proxy が DNSKEY query を refused にするため "permission
       # denied resolving ... DNSKEY" で chain 不成立扱いになる (run 26404045225)。
       # 代替として 3 つの独立 validating recursor (Cloudflare/Google/Quad9) が
       # 全員 AD bit を立てることを確認する方式に切り替えたので、delv ではなく
-      # dig だけがあればよい。`dig` は ubuntu-latest の標準 image に同梱されて
-      # いないため bind9-dnsutils を入れる。
+      # dig だけがあればよい。
       - name: Install DNS utilities (bind9-dnsutils)
         run: |
           set -euo pipefail
@@ -82,6 +77,14 @@ jobs:
             sudo apt-get install -y -qq bind9-dnsutils
           fi
           dig -v 2>&1 | head -n1
+
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          # 公開 DNS resolver (1.1.1.1) と https://hstspreload.org / 対象 host
+          # への egress が必須なので audit に留める (block にすると dig も死ぬ)。
+          egress-policy: audit
+          disable-sudo: true
 
       # 公開 DNS resolver 経由で DNSSEC DS レコードを引く。DS が空になっていると
       # 親ゾーン (.app) に署名チェーンが繋がらず DNSSEC が事実上 OFF。
@@ -104,49 +107,64 @@ jobs:
           set -euo pipefail
 
           # 複数 resolver × (UDP → TCP) を順に試して結果を返す。
-          # dig +short は SERVFAIL でも exit 0 を返し出力が空になるため、
-          # 「exit 0 かつ空」は「真にレコード無し」とは断定できない。空応答時
-          # は次 resolver も試し、全 resolver が応答かつ全て空のときのみ
-          # 「レコード無し」(空文字) として 0 を返す。
-          # 戻り値: 0 = いずれかの resolver から応答取得 (空文字 = 真に無し)
-          #         1 = 全 resolver が UDP/TCP とも無応答 (network issue)
+          # dig +short は SERVFAIL を含むあらゆる失敗で exit 0 + 空出力になるため、
+          # 「真の NODATA」(NOERROR + 0 answer) と「DNSSEC chain 障害」(SERVFAIL)
+          # の区別がつかない。よって +short をやめて full output を取り、ヘッダの
+          # `status:` を見て分岐する。
+          # 戻り値: 0 = 答えが取れた (stdout 非空) または真の NODATA/NXDOMAIN (stdout 空)
+          #         1 = 全 resolver が SERVFAIL/REFUSED/無応答 (chain or network issue)
           query_ds() {
             local name=$1
-            local resolver out got_response=0
+            local resolver proto out status answer noerror_seen=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
-              if out=$(dig +short +tries=2 +time=3 DS "$name" @"$resolver" 2>/dev/null); then
-                got_response=1
-                if [ -n "$out" ]; then
-                  printf '%s' "$out"
-                  return 0
+              # UDP/53 が runner から drop されているケースの fallback。
+              # TCP のほうが connection timeout を取れる分やや長めに。
+              for proto in "" "+tcp"; do
+                if ! out=$(dig +tries=2 +time=$([ -z "$proto" ] && echo 3 || echo 5) \
+                            $proto DS "$name" @"$resolver" 2>/dev/null); then
+                  echo "::warning::dig DS $name @$resolver ${proto:-UDP}: no reply" >&2
+                  continue
                 fi
-                # 空: SERVFAIL の可能性を排除するため次 resolver も試す
-              else
-                echo "::warning::dig DS $name @$resolver UDP no reply, retrying via TCP" >&2
-                # UDP/53 が runner から drop されているケースの fallback。
-                # TCP のほうが connection timeout を取れる分やや長めに。
-                if out=$(dig +short +tries=2 +time=5 +tcp DS "$name" @"$resolver" 2>/dev/null); then
-                  got_response=1
-                  if [ -n "$out" ]; then
-                    printf '%s' "$out"
-                    return 0
-                  fi
-                else
-                  echo "::warning::dig DS $name @$resolver TCP also no reply, trying next resolver" >&2
-                fi
-              fi
+                status=$(echo "$out" | sed -n 's/.*status: \([A-Z]*\).*/\1/p' | head -n1)
+                case "$status" in
+                  NOERROR)
+                    answer=$(echo "$out" \
+                      | awk '/^;; ANSWER SECTION:/{f=1; next} /^$/{f=0} f' \
+                      | grep -v '^;;' || true)
+                    if [ -n "$answer" ]; then
+                      printf '%s' "$answer"
+                      return 0
+                    fi
+                    # NOERROR + 0 answer = 真の NODATA。次 resolver でも一致するか確認。
+                    noerror_seen=1
+                    break
+                    ;;
+                  NXDOMAIN)
+                    noerror_seen=1
+                    break
+                    ;;
+                  SERVFAIL|REFUSED)
+                    echo "::warning::dig DS $name @$resolver ${proto:-UDP}: status=$status" >&2
+                    # SERVFAIL は chain 障害の可能性 → next proto / next resolver
+                    ;;
+                  *)
+                    echo "::warning::dig DS $name @$resolver ${proto:-UDP}: unexpected status=${status:-empty}" >&2
+                    ;;
+                esac
+              done
             done
-            if [ "$got_response" = "1" ]; then
-              # 全 resolver が応答 & 全部空 → 真にレコード無し
+            if [ "$noerror_seen" = "1" ]; then
+              # いずれかの resolver が NOERROR/NXDOMAIN を返した → 真の NODATA
               printf ''
               return 0
             fi
+            # 全 resolver が SERVFAIL/REFUSED/無応答
             return 1
           }
 
           host="${{ matrix.host }}"
           if ! ds=$(query_ds "$host"); then
-            echo "::error::All DNS resolvers failed to respond for DS $host (network issue, not a posture failure)"
+            echo "::error::All DNS resolvers returned SERVFAIL or did not respond for DS $host — DNSSEC chain or network issue, not NODATA"
             exit 1
           fi
 
@@ -159,7 +177,7 @@ jobs:
               exit 1
             fi
             if ! ds_apex=$(query_ds "$apex"); then
-              echo "::error::All DNS resolvers failed to respond for DS $apex (network issue)"
+              echo "::error::All DNS resolvers returned SERVFAIL or did not respond for DS $apex — DNSSEC chain or network issue"
               exit 1
             fi
             if [ -z "$ds_apex" ]; then
@@ -243,34 +261,48 @@ jobs:
         run: |
           set -euo pipefail
 
-          # DS と同様、SERVFAIL を「レコード無し」と誤判定しないよう
-          # 空応答時は次 resolver も試し、全 resolver が応答 & 全部空のときのみ
-          # 「レコード無し」として 0 を返す。UDP/53 が runner から drop される
-          # 時間帯に備えて、各 resolver で UDP → TCP の順に試す。
+          # DS と同様、+short だと SERVFAIL を「レコード無し」と誤判定するため
+          # full output を取って status: を見る。NOERROR + 0 answer (真の NODATA) と
+          # SERVFAIL (DNSSEC chain / recursor 障害) を区別し、後者を network/chain
+          # 異常としてエラーにする。UDP/53 が runner から drop される時間帯に備えて
+          # 各 resolver で UDP → TCP の順に試す。
           query_caa() {
             local name=$1
-            local resolver out got_response=0
+            local resolver proto out status answer noerror_seen=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
-              if out=$(dig +short +tries=2 +time=3 CAA "$name" @"$resolver" 2>/dev/null); then
-                got_response=1
-                if [ -n "$out" ]; then
-                  printf '%s' "$out"
-                  return 0
+              for proto in "" "+tcp"; do
+                if ! out=$(dig +tries=2 +time=$([ -z "$proto" ] && echo 3 || echo 5) \
+                            $proto CAA "$name" @"$resolver" 2>/dev/null); then
+                  echo "::warning::dig CAA $name @$resolver ${proto:-UDP}: no reply" >&2
+                  continue
                 fi
-              else
-                echo "::warning::dig CAA $name @$resolver UDP no reply, retrying via TCP" >&2
-                if out=$(dig +short +tries=2 +time=5 +tcp CAA "$name" @"$resolver" 2>/dev/null); then
-                  got_response=1
-                  if [ -n "$out" ]; then
-                    printf '%s' "$out"
-                    return 0
-                  fi
-                else
-                  echo "::warning::dig CAA $name @$resolver TCP also no reply, trying next resolver" >&2
-                fi
-              fi
+                status=$(echo "$out" | sed -n 's/.*status: \([A-Z]*\).*/\1/p' | head -n1)
+                case "$status" in
+                  NOERROR)
+                    answer=$(echo "$out" \
+                      | awk '/^;; ANSWER SECTION:/{f=1; next} /^$/{f=0} f' \
+                      | grep -v '^;;' || true)
+                    if [ -n "$answer" ]; then
+                      printf '%s' "$answer"
+                      return 0
+                    fi
+                    noerror_seen=1
+                    break
+                    ;;
+                  NXDOMAIN)
+                    noerror_seen=1
+                    break
+                    ;;
+                  SERVFAIL|REFUSED)
+                    echo "::warning::dig CAA $name @$resolver ${proto:-UDP}: status=$status" >&2
+                    ;;
+                  *)
+                    echo "::warning::dig CAA $name @$resolver ${proto:-UDP}: unexpected status=${status:-empty}" >&2
+                    ;;
+                esac
+              done
             done
-            if [ "$got_response" = "1" ]; then
+            if [ "$noerror_seen" = "1" ]; then
               printf ''
               return 0
             fi
@@ -279,14 +311,14 @@ jobs:
 
           host="${{ matrix.host }}"
           if ! caa=$(query_caa "$host"); then
-            echo "::error::All DNS resolvers failed to respond for CAA $host (network issue, not a posture failure)"
+            echo "::error::All DNS resolvers returned SERVFAIL or did not respond for CAA $host — DNSSEC chain or network issue, not NODATA"
             exit 1
           fi
           if [ -z "$caa" ]; then
             apex=$(echo "$host" | awk -F. '{print $(NF-1)"."$NF}')
             if [ "$host" != "$apex" ]; then
               if ! caa=$(query_caa "$apex"); then
-                echo "::error::All DNS resolvers failed to respond for CAA $apex (network issue)"
+                echo "::error::All DNS resolvers returned SERVFAIL or did not respond for CAA $apex — DNSSEC chain or network issue"
                 exit 1
               fi
               echo "Falling back to parent zone $apex CAA"
@@ -317,23 +349,51 @@ jobs:
           host="${{ matrix.host }}"
           # 主要ブラウザの UA を付けて CF の bot challenge をまず回避する。
           ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15'
-          headers=$(curl -sIL --max-time 10 -A "$ua" "https://${host}/")
-          echo "--- response headers (all redirect hops) ---"
-          echo "$headers"
-          echo "--------------------------------------------"
 
-          if echo "$headers" | grep -qi '^cf-mitigated: challenge'; then
+          # まず redirect chain 全体を覗いて (1) CF challenge を踏んでいないか
+          # 確認、(2) 最終的にたどり着いた URL を取得する。redirect 途中の応答
+          # にしか HSTS が乗っていないケースを誤って通さないため、HSTS 判定は
+          # 必ず "最終 hop の応答ヘッダだけ" で行う。
+          all_headers=$(curl -sIL --max-time 10 -A "$ua" \
+                          -w '\n___FINAL_URL___%{url_effective}\n' \
+                          "https://${host}/")
+          final_url=$(echo "$all_headers" | sed -n 's/^___FINAL_URL___//p' | tail -n1)
+          # 表示用には ___FINAL_URL___ 行を除去する。
+          printed_headers=$(echo "$all_headers" | grep -v '^___FINAL_URL___')
+          echo "--- response headers (all redirect hops) ---"
+          echo "$printed_headers"
+          echo "--- final URL: $final_url ---"
+
+          # CF challenge はどの hop で発生しても以降の HSTS 検証は無意味なので、
+          # chain 全体をスキャンして検出する。
+          if echo "$printed_headers" | grep -qi '^cf-mitigated: challenge'; then
             echo "::warning::Cloudflare bot challenge intercepted runner request for https://${host}/; HSTS header sampling skipped, relying on hstspreload.org list status in the next step"
             exit 0
           fi
 
-          hsts=$(echo "$headers" | grep -i 'strict-transport-security' || true)
+          # 最終 hop だけを再取得 (HEAD)。中間 hop の HSTS で誤って通さない。
+          if [ -z "$final_url" ]; then
+            echo "::error::Could not determine final URL after redirects for https://${host}/"
+            exit 1
+          fi
+          final_headers=$(curl -sI --max-time 10 -A "$ua" "$final_url")
+          echo "--- final hop headers ---"
+          echo "$final_headers"
+          echo "-------------------------"
+
+          # 最終 hop で再度 CF challenge を踏む可能性も一応見ておく。
+          if echo "$final_headers" | grep -qi '^cf-mitigated: challenge'; then
+            echo "::warning::Cloudflare bot challenge on final hop for ${final_url}; HSTS header sampling skipped"
+            exit 0
+          fi
+
+          hsts=$(echo "$final_headers" | grep -i '^strict-transport-security:' || true)
           if [ -z "$hsts" ]; then
-            echo "::error::strict-transport-security header missing on https://${host}/"
+            echo "::error::strict-transport-security header missing on final hop ${final_url} (started from https://${host}/)"
             exit 1
           fi
           if ! echo "$hsts" | grep -qi 'preload'; then
-            echo "::error::HSTS header missing 'preload' directive for ${host}"
+            echo "::error::HSTS header missing 'preload' directive for ${host} (final hop ${final_url})"
             echo "Got: $hsts"
             exit 1
           fi
