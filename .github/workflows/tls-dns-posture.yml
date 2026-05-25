@@ -115,12 +115,13 @@ jobs:
           #         1 = 全 resolver が SERVFAIL/REFUSED/無応答 (chain or network issue)
           query_ds() {
             local name=$1
-            local resolver proto out status answer noerror_seen=0
+            local resolver proto out status answer timeout noerror_seen=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
               # UDP/53 が runner から drop されているケースの fallback。
               # TCP のほうが connection timeout を取れる分やや長めに。
               for proto in "" "+tcp"; do
-                if ! out=$(dig +tries=2 +time=$([ -z "$proto" ] && echo 3 || echo 5) \
+                if [ -z "$proto" ]; then timeout=3; else timeout=5; fi
+                if ! out=$(dig +tries=2 +time="$timeout" \
                             $proto DS "$name" @"$resolver" 2>/dev/null); then
                   echo "::warning::dig DS $name @$resolver ${proto:-UDP}: no reply" >&2
                   continue
@@ -268,10 +269,11 @@ jobs:
           # 各 resolver で UDP → TCP の順に試す。
           query_caa() {
             local name=$1
-            local resolver proto out status answer noerror_seen=0
+            local resolver proto out status answer timeout noerror_seen=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
               for proto in "" "+tcp"; do
-                if ! out=$(dig +tries=2 +time=$([ -z "$proto" ] && echo 3 || echo 5) \
+                if [ -z "$proto" ]; then timeout=3; else timeout=5; fi
+                if ! out=$(dig +tries=2 +time="$timeout" \
                             $proto CAA "$name" @"$resolver" 2>/dev/null); then
                   echo "::warning::dig CAA $name @$resolver ${proto:-UDP}: no reply" >&2
                   continue
