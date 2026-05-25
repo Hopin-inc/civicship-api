@@ -304,19 +304,29 @@ jobs:
       # 削ってしまうと Chrome 等の HSTS preload リストへの登録維持条件
       # (https://hstspreload.org/) を満たさず将来的に外される。
       #
-      # `-L` で redirect を follow し、最終 response から header を取る。
-      # 一部 CDN/LB は apex / www / 言語別 path に redirect してから初めて
-      # 正規の HSTS header を返すため、HEAD 1 発だけでは header を取り
-      # こぼす (run 26404353384 で確認: 手元 curl は HSTS 返るが runner は
-      # missing と判定された)。-IL なら各 hop の header が grep に乗る。
+      # civicship.app は Cloudflare 配下で、GitHub Actions の IP は CF の
+      # Bot Fight Mode / Managed Challenge で 403 (cf-mitigated: challenge)
+      # を返されることがある (run 26404562623)。その場合 challenge page には
+      # HSTS が乗らず "missing" と誤判定されるため、まず browser-like UA で
+      # challenge を回避する。それでも CF challenge を踏んだら runner から
+      # オリジン直叩きはできない状況なので、本 step は warning に格下げし、
+      # HSTS 維持の判定は次 step (hstspreload.org 公式 list status) に委ねる。
       - name: HSTS response header check (${{ matrix.host }})
         run: |
           set -euo pipefail
           host="${{ matrix.host }}"
-          headers=$(curl -sIL --max-time 10 "https://${host}/")
+          # 主要ブラウザの UA を付けて CF の bot challenge をまず回避する。
+          ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15'
+          headers=$(curl -sIL --max-time 10 -A "$ua" "https://${host}/")
           echo "--- response headers (all redirect hops) ---"
           echo "$headers"
           echo "--------------------------------------------"
+
+          if echo "$headers" | grep -qi '^cf-mitigated: challenge'; then
+            echo "::warning::Cloudflare bot challenge intercepted runner request for https://${host}/; HSTS header sampling skipped, relying on hstspreload.org list status in the next step"
+            exit 0
+          fi
+
           hsts=$(echo "$headers" | grep -i 'strict-transport-security' || true)
           if [ -z "$hsts" ]; then
             echo "::error::strict-transport-security header missing on https://${host}/"
