@@ -170,15 +170,22 @@ jobs:
 
       # delv で DNSSEC chain 全体を検証。"fully validated" を含まなければ
       # chain 切断 (= DS / RRSIG mismatch、KSK ローテ失敗等)。
+      # DS check と同じく runner からの UDP/53 が drop される時間帯に備え、
+      # UDP 失敗時は同じ resolver に +tcp で再試行する。TCP でも fully
+      # validated に達しなければ初めて posture broken とみなす。
       - name: DNSSEC chain validation via delv (${{ matrix.host }})
         run: |
           set -euo pipefail
           # delv は失敗時 stderr に "validation failure" を出す。+rtrace は
           # path を残してデバッグしやすくする。
           out=$(delv +rtrace @1.1.1.1 ${{ matrix.host }} A 2>&1 || true)
+          if ! echo "$out" | grep -q 'fully validated'; then
+            echo "::warning::delv UDP could not validate DNSSEC chain for ${{ matrix.host }}, retrying via TCP"
+            out=$(delv +tcp +rtrace @1.1.1.1 ${{ matrix.host }} A 2>&1 || true)
+          fi
           echo "$out"
           if ! echo "$out" | grep -q 'fully validated'; then
-            echo "::error::delv could not fully validate DNSSEC chain for ${{ matrix.host }}"
+            echo "::error::delv could not fully validate DNSSEC chain for ${{ matrix.host }} (UDP and TCP both failed)"
             exit 1
           fi
 
@@ -186,8 +193,8 @@ jobs:
       # してはいけない」を宣言しているか確認。CAA が消える / issuer が
       # 想定外に増えると、任意の CA で証明書発行できてしまう (= TLS MITM の
       # 入口になる)。subdomain の CAA は親ドメインから継承されうるので
-      # 親側も併せて確認。DS check と同じく resolver fallback + timeout で
-      # transient な dig 失敗を posture 異常から切り分ける。
+      # 親側も併せて確認。DS check と同じく resolver fallback + UDP→TCP
+      # fallback で transient な dig 失敗を posture 異常から切り分ける。
       - name: CAA record check (${{ matrix.host }})
         run: |
           set -euo pipefail
