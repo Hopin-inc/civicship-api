@@ -303,17 +303,27 @@ jobs:
       # preload リスト登録自体は手動申請が必要だが、`preload` directive を
       # 削ってしまうと Chrome 等の HSTS preload リストへの登録維持条件
       # (https://hstspreload.org/) を満たさず将来的に外される。
+      #
+      # `-L` で redirect を follow し、最終 response から header を取る。
+      # 一部 CDN/LB は apex / www / 言語別 path に redirect してから初めて
+      # 正規の HSTS header を返すため、HEAD 1 発だけでは header を取り
+      # こぼす (run 26404353384 で確認: 手元 curl は HSTS 返るが runner は
+      # missing と判定された)。-IL なら各 hop の header が grep に乗る。
       - name: HSTS response header check (${{ matrix.host }})
         run: |
           set -euo pipefail
-          headers=$(curl -sI --max-time 10 https://${{ matrix.host }}/)
+          host="${{ matrix.host }}"
+          headers=$(curl -sIL --max-time 10 "https://${host}/")
+          echo "--- response headers (all redirect hops) ---"
+          echo "$headers"
+          echo "--------------------------------------------"
           hsts=$(echo "$headers" | grep -i 'strict-transport-security' || true)
           if [ -z "$hsts" ]; then
-            echo "::error::strict-transport-security header missing on https://${{ matrix.host }}/"
+            echo "::error::strict-transport-security header missing on https://${host}/"
             exit 1
           fi
           if ! echo "$hsts" | grep -qi 'preload'; then
-            echo "::error::HSTS header missing 'preload' directive for ${{ matrix.host }}"
+            echo "::error::HSTS header missing 'preload' directive for ${host}"
             echo "Got: $hsts"
             exit 1
           fi
