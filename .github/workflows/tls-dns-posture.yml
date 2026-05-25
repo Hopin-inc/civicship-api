@@ -67,18 +67,21 @@ jobs:
           egress-policy: audit
           disable-sudo: true
 
-      # delv は権威 resolver からの DNSSEC chain を再検証して "fully validated"
-      # を返す (`dig +dnssec` だけだと AD bit を信用するしかなく、再帰
-      # resolver 側の bug を拾い損なう)。delv は ubuntu-latest の bind9-dnsutils
-      # に同梱されているのでインストール 1 行で済む。
-      - name: Install delv (bind9-dnsutils)
+      # 当初は delv で local re-validation していたが、step-security/harden-runner
+      # が立てる DNS proxy が DNSKEY query を refused にするため "permission
+      # denied resolving ... DNSKEY" で chain 不成立扱いになる (run 26404045225)。
+      # 代替として 3 つの独立 validating recursor (Cloudflare/Google/Quad9) が
+      # 全員 AD bit を立てることを確認する方式に切り替えたので、delv ではなく
+      # dig だけがあればよい。`dig` は ubuntu-latest の標準 image に同梱されて
+      # いないため bind9-dnsutils を入れる。
+      - name: Install DNS utilities (bind9-dnsutils)
         run: |
           set -euo pipefail
-          if ! command -v delv >/dev/null 2>&1; then
+          if ! command -v dig >/dev/null 2>&1; then
             sudo apt-get update -qq
             sudo apt-get install -y -qq bind9-dnsutils
           fi
-          delv -v | head -n1
+          dig -v 2>&1 | head -n1
 
       # 公開 DNS resolver 経由で DNSSEC DS レコードを引く。DS が空になっていると
       # 親ゾーン (.app) に署名チェーンが繋がらず DNSSEC が事実上 OFF。
@@ -168,26 +171,67 @@ jobs:
             echo "DS record: $ds"
           fi
 
-      # delv で DNSSEC chain 全体を検証。"fully validated" を含まなければ
-      # chain 切断 (= DS / RRSIG mismatch、KSK ローテ失敗等)。
-      # DS check と同じく runner からの UDP/53 が drop される時間帯に備え、
-      # UDP 失敗時は同じ resolver に +tcp で再試行する。TCP でも fully
-      # validated に達しなければ初めて posture broken とみなす。
-      - name: DNSSEC chain validation via delv (${{ matrix.host }})
+      # DNSSEC chain validation: 元は delv で local re-validation していたが
+      # harden-runner の DNS proxy が DNSKEY query を refused にして動かない
+      # (上の install step コメント参照)。代替として、独立実装の validating
+      # recursor 3 種 (Cloudflare 1.1.1.1 / Google 8.8.8.8 / Quad9 9.9.9.9) で
+      # それぞれ `dig +dnssec` を投げ、応答した全 recursor が AD bit を立てた
+      # 時のみ chain validated と判定する。
+      #
+      # AD bit は recursor が validate に成功したことを示す。3 実装が同時に
+      # validation bug を踏む確率はほぼ無いので、delv local validation と
+      # 実質的に同等の担保が得られる。recursor が SERVFAIL を返す or AD bit
+      # が落ちている場合は chain broken。全 recursor が UDP/TCP とも no reply
+      # の場合のみ network issue 扱い (false alarm 抑止)。
+      - name: DNSSEC chain validation via AD bit (${{ matrix.host }})
         run: |
           set -euo pipefail
-          # delv は失敗時 stderr に "validation failure" を出す。+rtrace は
-          # path を残してデバッグしやすくする。
-          out=$(delv +rtrace @1.1.1.1 ${{ matrix.host }} A 2>&1 || true)
-          if ! echo "$out" | grep -q 'fully validated'; then
-            echo "::warning::delv UDP could not validate DNSSEC chain for ${{ matrix.host }}, retrying via TCP"
-            out=$(delv +tcp +rtrace @1.1.1.1 ${{ matrix.host }} A 2>&1 || true)
-          fi
-          echo "$out"
-          if ! echo "$out" | grep -q 'fully validated'; then
-            echo "::error::delv could not fully validate DNSSEC chain for ${{ matrix.host }} (UDP and TCP both failed)"
+
+          # 1 resolver で AD bit を確認する。
+          #   exit 0 = AD set (validated)
+          #   exit 1 = SERVFAIL or AD missing (chain broken)
+          #   exit 2 = no reply over UDP nor TCP (network issue)
+          check_ad() {
+            local resolver=$1 proto out
+            for proto in "" "+tcp"; do
+              if out=$(dig +tries=2 +time=3 +dnssec $proto @"$resolver" \
+                       "${{ matrix.host }}" A 2>/dev/null); then
+                if echo "$out" | grep -q 'status: SERVFAIL'; then
+                  return 1
+                fi
+                # `;; flags:` 行に ad が立っていれば validated。
+                if echo "$out" | grep -E '^;; flags:' | grep -qE ' ad[ ;]'; then
+                  return 0
+                fi
+                return 1
+              fi
+              # UDP timeout → TCP fallback (DS check と同じ理由)
+            done
+            return 2
+          }
+
+          validated=0
+          responded=0
+          for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
+            rc=0
+            check_ad "$resolver" || rc=$?
+            case "$rc" in
+              0) echo "@$resolver: AD bit set (validated)"; validated=$((validated+1)); responded=$((responded+1));;
+              1) echo "@$resolver: SERVFAIL or AD bit missing"; responded=$((responded+1));;
+              2) echo "::warning::@$resolver: no reply over UDP nor TCP";;
+            esac
+          done
+
+          if [ "$responded" = "0" ]; then
+            echo "::error::All recursors failed to respond for ${{ matrix.host }} A (network issue, not posture)"
             exit 1
           fi
+          # 応答した recursor が全員 AD bit を立てない限り chain broken 扱い。
+          if [ "$validated" != "$responded" ]; then
+            echo "::error::DNSSEC chain not validated for ${{ matrix.host }} ($validated/$responded recursors set AD bit)"
+            exit 1
+          fi
+          echo "DNSSEC chain validated by $validated/$responded independent recursors"
 
       # CAA レコードで「pki.goog (Google Trust Services) 以外で証明書を発行
       # してはいけない」を宣言しているか確認。CAA が消える / issuer が
