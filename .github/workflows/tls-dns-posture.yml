@@ -111,11 +111,20 @@ jobs:
           # 「真の NODATA」(NOERROR + 0 answer) と「DNSSEC chain 障害」(SERVFAIL)
           # の区別がつかない。よって +short をやめて full output を取り、ヘッダの
           # `status:` を見て分岐する。
-          # 戻り値: 0 = 答えが取れた (stdout 非空) または真の NODATA/NXDOMAIN (stdout 空)
-          #         1 = 全 resolver が SERVFAIL/REFUSED/無応答 (chain or network issue)
+          #
+          # 戻り値 (tri-state):
+          #   0 + 非空 stdout = answer 取得 (DS レコード本体)
+          #   0 + 空 stdout   = NOERROR/NXDOMAIN no answer = 真の NODATA
+          #   2 + 空 stdout   = 全 resolver が SERVFAIL/REFUSED (DNSSEC chain か zone-cut なし)
+          #                     - subdomain で DS を引くと zone-cut が無いため validating
+          #                       recursor は NSEC で不在証明を要求し、それが無くて
+          #                       SERVFAIL を返すのが正常 (EDE 12 "NSEC Missing")。
+          #                       呼び出し側で subdomain なら apex fallback、apex なら
+          #                       posture failure として扱う。
+          #   1 + 空 stdout   = 全 resolver 無応答 (network issue)
           query_ds() {
             local name=$1
-            local resolver proto out status answer timeout noerror_seen=0
+            local resolver proto out status answer timeout noerror_seen=0 servfail_seen=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
               # UDP/53 が runner から drop されているケースの fallback。
               # TCP のほうが connection timeout を取れる分やや長めに。
@@ -145,8 +154,10 @@ jobs:
                     break
                     ;;
                   SERVFAIL|REFUSED)
+                    servfail_seen=1
                     echo "::warning::dig DS $name @$resolver ${proto:-UDP}: status=$status" >&2
-                    # SERVFAIL は chain 障害の可能性 → next proto / next resolver
+                    # SERVFAIL は (a) chain 障害 か (b) subdomain DS の正常 SERVFAIL の
+                    # どちらか。呼び出し側で区別するため exit 2 にする。
                     ;;
                   *)
                     echo "::warning::dig DS $name @$resolver ${proto:-UDP}: unexpected status=${status:-empty}" >&2
@@ -159,36 +170,72 @@ jobs:
               printf ''
               return 0
             fi
-            # 全 resolver が SERVFAIL/REFUSED/無応答
+            if [ "$servfail_seen" = "1" ]; then
+              # 全 resolver SERVFAIL → DNSSEC chain か subdomain DS の正常 SERVFAIL
+              printf ''
+              return 2
+            fi
+            # 全 resolver 無応答
             return 1
           }
 
           host="${{ matrix.host }}"
-          if ! ds=$(query_ds "$host"); then
-            echo "::error::All DNS resolvers returned SERVFAIL or did not respond for DS $host — DNSSEC chain or network issue, not NODATA"
-            exit 1
-          fi
+          apex=$(echo "$host" | awk -F. '{print $(NF-1)"."$NF}')
 
-          if [ -z "$ds" ]; then
-            # subdomain は親 (apex) の DS でカバーされるケースがある。subdomain
-            # 側が空なら apex に fallback して chain の存在を確認する。
-            apex=$(echo "$host" | awk -F. '{print $(NF-1)"."$NF}')
-            if [ "$host" = "$apex" ]; then
-              echo "::error::DNSSEC DS record missing for $host"
+          ds=""
+          rc=0
+          ds=$(query_ds "$host") || rc=$?
+          case "$rc" in
+            0)
+              if [ -n "$ds" ]; then
+                echo "DS record for $host:"
+                echo "$ds"
+                exit 0
+              fi
+              # 真の NODATA: apex から chain が来てるか確認 (subdomain ケース)
+              if [ "$host" = "$apex" ]; then
+                echo "::error::DNSSEC DS record missing for $host (NOERROR/NXDOMAIN no answer)"
+                exit 1
+              fi
+              echo "DS NODATA at $host (subdomain), checking parent zone $apex"
+              ;;
+            2)
+              # SERVFAIL: subdomain で zone-cut が無い場合の正常応答 (EDE 12) と
+              # 親ゾーンの chain 障害を区別するため、apex で chain の存在を確認。
+              if [ "$host" = "$apex" ]; then
+                echo "::error::DNSSEC chain failure for $host (all resolvers returned SERVFAIL/REFUSED) — DS lookup at apex must not SERVFAIL"
+                exit 1
+              fi
+              echo "DS SERVFAIL at $host (subdomain, expected when no zone cut), checking parent zone $apex"
+              ;;
+            *)
+              echo "::error::All DNS resolvers failed to respond for DS $host — network issue, not posture"
               exit 1
-            fi
-            if ! ds_apex=$(query_ds "$apex"); then
-              echo "::error::All DNS resolvers returned SERVFAIL or did not respond for DS $apex — DNSSEC chain or network issue"
+              ;;
+          esac
+
+          # subdomain fallback: apex の DS は厳密に answer が返らないと posture broken。
+          ds_apex=""
+          rc=0
+          ds_apex=$(query_ds "$apex") || rc=$?
+          case "$rc" in
+            0)
+              if [ -z "$ds_apex" ]; then
+                echo "::error::DNSSEC DS record missing for parent zone $apex (chain not anchored at apex, so $host cannot be DNSSEC-protected)"
+                exit 1
+              fi
+              echo "DS via parent zone $apex:"
+              echo "$ds_apex"
+              ;;
+            2)
+              echo "::error::DNSSEC chain failure for parent zone $apex (all resolvers returned SERVFAIL) — apex DS must not SERVFAIL"
               exit 1
-            fi
-            if [ -z "$ds_apex" ]; then
-              echo "::error::DNSSEC DS record missing for $host and parent zone $apex"
+              ;;
+            *)
+              echo "::error::All DNS resolvers failed to respond for DS $apex — network issue"
               exit 1
-            fi
-            echo "DS via parent zone $apex: $ds_apex"
-          else
-            echo "DS record: $ds"
-          fi
+              ;;
+          esac
 
       # DNSSEC chain validation: 元は delv で local re-validation していたが
       # harden-runner の DNS proxy が DNSKEY query を refused にして動かない
@@ -264,12 +311,13 @@ jobs:
 
           # DS と同様、+short だと SERVFAIL を「レコード無し」と誤判定するため
           # full output を取って status: を見る。NOERROR + 0 answer (真の NODATA) と
-          # SERVFAIL (DNSSEC chain / recursor 障害) を区別し、後者を network/chain
-          # 異常としてエラーにする。UDP/53 が runner から drop される時間帯に備えて
-          # 各 resolver で UDP → TCP の順に試す。
+          # SERVFAIL (DNSSEC chain / recursor 障害) を区別する tri-state。
+          # subdomain CAA は親ドメインから (CA 側のアルゴリズム RFC 8659 で)
+          # 継承されうるので、subdomain で NODATA でも SERVFAIL でも apex に
+          # fallback する。apex で SERVFAIL/network failure は posture broken。
           query_caa() {
             local name=$1
-            local resolver proto out status answer timeout noerror_seen=0
+            local resolver proto out status answer timeout noerror_seen=0 servfail_seen=0
             for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
               for proto in "" "+tcp"; do
                 if [ -z "$proto" ]; then timeout=3; else timeout=5; fi
@@ -296,6 +344,7 @@ jobs:
                     break
                     ;;
                   SERVFAIL|REFUSED)
+                    servfail_seen=1
                     echo "::warning::dig CAA $name @$resolver ${proto:-UDP}: status=$status" >&2
                     ;;
                   *)
@@ -308,23 +357,54 @@ jobs:
               printf ''
               return 0
             fi
+            if [ "$servfail_seen" = "1" ]; then
+              printf ''
+              return 2
+            fi
             return 1
           }
 
           host="${{ matrix.host }}"
-          if ! caa=$(query_caa "$host"); then
-            echo "::error::All DNS resolvers returned SERVFAIL or did not respond for CAA $host — DNSSEC chain or network issue, not NODATA"
-            exit 1
-          fi
-          if [ -z "$caa" ]; then
-            apex=$(echo "$host" | awk -F. '{print $(NF-1)"."$NF}')
-            if [ "$host" != "$apex" ]; then
-              if ! caa=$(query_caa "$apex"); then
-                echo "::error::All DNS resolvers returned SERVFAIL or did not respond for CAA $apex — DNSSEC chain or network issue"
+          apex=$(echo "$host" | awk -F. '{print $(NF-1)"."$NF}')
+
+          caa=""
+          rc=0
+          caa=$(query_caa "$host") || rc=$?
+          case "$rc" in
+            0) : ;;  # answer or genuine NODATA → 進む (NODATA なら apex fallback)
+            2)
+              # SERVFAIL: subdomain なら apex 継承で OK な可能性。apex 側で判定。
+              if [ "$host" = "$apex" ]; then
+                echo "::error::CAA lookup SERVFAIL at apex $host (all resolvers) — DNSSEC chain or recursor failure, not NODATA"
                 exit 1
               fi
-              echo "Falling back to parent zone $apex CAA"
-            fi
+              echo "CAA SERVFAIL at $host (subdomain), checking parent zone $apex"
+              caa=""
+              ;;
+            *)
+              echo "::error::All DNS resolvers failed to respond for CAA $host — network issue"
+              exit 1
+              ;;
+          esac
+
+          if [ -z "$caa" ] && [ "$host" != "$apex" ]; then
+            rc=0
+            caa=$(query_caa "$apex") || rc=$?
+            case "$rc" in
+              0)
+                if [ -n "$caa" ]; then
+                  echo "Falling back to parent zone $apex CAA"
+                fi
+                ;;
+              2)
+                echo "::error::CAA lookup SERVFAIL at parent zone $apex — DNSSEC chain or recursor failure"
+                exit 1
+                ;;
+              *)
+                echo "::error::All DNS resolvers failed to respond for CAA $apex — network issue"
+                exit 1
+                ;;
+            esac
           fi
           echo "CAA records:"
           echo "$caa"
