@@ -61,6 +61,19 @@ export const publicJoinMenu: RichMenuDefinition = {
         uri: "https://drive.google.com/file/d/1DAZ2IEdApt-X8SolJ2CKAE6mpw6bHxyk/view?usp=sharing",
       },
     },
+    {
+      bounds: {
+        x: 886,
+        y: 1044,
+        width: 1500,
+        height: 576,
+      },
+      action: {
+        type: "uri",
+        label: "社員権NFT購入",
+        uri: "https://dao.izudao.net/",
+      },
+    },
   ],
   alias: "public-join",
   imagePath: "images/public_menu_join.png",
