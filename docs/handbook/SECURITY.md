@@ -464,11 +464,19 @@ CA が証明書を発行していないかを事後検出する。
 - **Workflow:** `.github/workflows/ct-log-check.yml` (毎月 1 日 09:00 UTC /
   手動実行可)
 - **照会先:** [crt.sh](https://crt.sh/?q=civicship.app) の CT 検索 API
-- **検出時:** 想定外の issuer を検出したら job を fail させ、
-  `SLACK_WEBHOOK_INFRA` 経由で Slack 通知
+- **fail 対象 (重要ホスト):** CAA を `pki.goog` にロックしている did:web
+  重要ホスト — `civicship.app` / `www.civicship.app` / `api.civicship.app` —
+  に対し想定外の issuer (wildcard SAN 経由含む) を検出したら job を fail
+  させ、`SLACK_WEBHOOK_INFRA` 経由で Slack 通知する。
+- **warning のみ (非重要ホスト):** `cms.` / `izu.` / `kotohira.` など外部
+  platform (Cloudflare Pages / Vercel / Netlify 等) で運用するサブドメインは
+  Sectigo / Let's Encrypt 経由で edge 証明書を発行することがあり、apex とは
+  別の CAA を持つ。これらは CAA 違反でも did:web への脅威でもないため、
+  `q=civicship.app` で拾えても fail させず `::warning::` annotation の記録に
+  留める (誤検知で Slack を鳴らさない)。
 - **位置付け:** CAA (発行の事前制限) を破った証明書を検出する第 2 線。
   did:web は `civicship.app` の TLS 証明書の真正性に依存するため、
-  不正発行は DID Document の MITM に直結する
+  重要ホストへの不正発行は DID Document の MITM に直結する
 
 ## Container Image Scanning (Trivy)
 

@@ -49,8 +49,25 @@ jobs:
 
       # crt.sh の Certificate Transparency 検索 API (output=json) で
       # civicship.app 関連の証明書を取得し、Google Trust Services 以外の CA が
-      # 混ざっていないか確認する。想定外 CA を 1 つでも検出したら step を fail
-      # させ、GitHub annotation と (後続 step で) Slack に通知する。
+      # 混ざっていないか確認する。ただし fail させるのは did:web の真正性に
+      # 直結する重要ホスト (CRITICAL_HOSTS = apex / www / api) を対象とする
+      # 想定外 CA に限る。その他のサブドメイン向けの想定外 CA は fail させず
+      # `::warning::` でのみ記録する (理由は下記)。重要ホストの想定外 CA を
+      # 検出したら step を fail させ、GitHub annotation と (後続 step で) Slack
+      # に通知する。
+      #
+      # なぜホストで絞るか:
+      #   q=civicship.app は crt.sh の identity マッチで apex だけでなく全
+      #   subdomain にもヒットする。地域マイクロサイトや CMS
+      #   (cms./izu./kotohira.civicship.app 等) は Cloudflare Pages / Vercel /
+      #   Netlify といった外部 platform で運用され、それらは Sectigo /
+      #   Let's Encrypt 経由で edge 証明書を発行する。これらのサブドメインは
+      #   apex とは別の (あるいは無い) CAA を持つため、Sectigo 証明書が出ても
+      #   CAA 違反でも did:web への脅威でもない。脅威モデル上保護すべきは
+      #   CAA を pki.goog にロックした重要ホスト (apex/www/api) なので、fail
+      #   条件もそこに限定する (docs/handbook/SECURITY.md "CT Log Monitoring")。
+      #   なお wildcard SAN (`*.civicship.app`) は www/api を 1 ラベルで覆うため
+      #   重要ホスト扱いで判定する (apex は wildcard では覆われない)。
       #
       # crt.sh は過去の全証明書 (期限切れ含む) を返すため、CAA を pki.goog に
       # ロックする前の歴史的証明書をそのまま見ると恒久的に誤検知する
@@ -97,6 +114,9 @@ jobs:
           WINDOW_DAYS = 60
           cutoff = datetime.now(timezone.utc) - timedelta(days=WINDOW_DAYS)
           allowed = ['Google Trust Services']
+          # did:web の真正性に直結し、CAA を pki.goog にロックしている重要ホスト。
+          # これらを対象にした想定外 CA だけを fail 扱いにする。
+          CRITICAL_HOSTS = ['civicship.app', 'www.civicship.app', 'api.civicship.app']
 
           def not_before(cert):
               raw = (cert.get('not_before') or '').strip()
@@ -108,15 +128,64 @@ jobs:
                   return None
               return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
+          def cert_names(cert):
+              # crt.sh は common_name と name_value (改行区切りの SAN) を返す。
+              names = set()
+              cn = (cert.get('common_name') or '').strip().lower()
+              if cn:
+                  names.add(cn)
+              for n in (cert.get('name_value') or '').split('\n'):
+                  n = n.strip().lower()
+                  if n:
+                      names.add(n)
+              return names
+
+          def covers(name, host):
+              # 完全一致、または wildcard (1 ラベルのみ) マッチ。
+              if name == host:
+                  return True
+              if name.startswith('*.'):
+                  suffix = name[1:]  # '.civicship.app'
+                  if host.endswith(suffix):
+                      label = host[:-len(suffix)]
+                      return bool(label) and '.' not in label
+              return False
+
+          def matched_critical(cert):
+              names = cert_names(cert)
+              return {h for h in CRITICAL_HOSTS if any(covers(n, h) for n in names)}
+
           data = json.load(sys.stdin)
           recent = [c for c in data if (nb := not_before(c)) and nb >= cutoff]
-          issuers = {c.get('issuer_name', '') for c in recent}
-          unexpected = sorted(i for i in issuers if i and not any(a in i for a in allowed))
-          if unexpected:
-              for u in unexpected:
-                  print(f'::error::想定外の CA を検出 (直近 {WINDOW_DAYS} 日以内に発行): {u}')
+
+          critical_hits = {}  # issuer -> set(重要ホスト)
+          other_hits = {}     # issuer -> set(その他ホスト)
+          for c in recent:
+              issuer = c.get('issuer_name', '')
+              if not issuer or any(a in issuer for a in allowed):
+                  continue
+              crit = matched_critical(c)
+              if crit:
+                  critical_hits.setdefault(issuer, set()).update(crit)
+              else:
+                  other_hits.setdefault(issuer, set()).update(cert_names(c))
+
+          # 重要ホスト以外 (地域マイクロサイト等) の想定外 CA は fail させず警告のみ。
+          for issuer, names in sorted(other_hits.items()):
+              sample = ', '.join(sorted(names)[:5])
+              print(f'::warning::想定外 CA だが did:web 非重要ホスト向けのため fail させない: {issuer} — 対象: {sample}')
+
+          if critical_hits:
+              for issuer, names in sorted(critical_hits.items()):
+                  tgt = ', '.join(sorted(names))
+                  print(f'::error::did:web 重要ホストに想定外の CA を検出 (直近 {WINDOW_DAYS} 日以内に発行): {issuer} — 対象: {tgt}')
               sys.exit(1)
-          print(f'OK: 直近 {WINDOW_DAYS} 日以内発行の証明書 {len(recent)} 件 / {len(issuers)} issuer はすべて Google Trust Services')
+
+          sep = ', '
+          print(f'OK: 直近 {WINDOW_DAYS} 日以内発行の証明書 {len(recent)} 件。重要ホスト ({sep.join(CRITICAL_HOSTS)}) に想定外 CA なし。')
+          if other_hits:
+              total = sum(len(v) for v in other_hits.values())
+              print(f'(参考: 非重要ホスト向けの想定外 CA を {len(other_hits)} issuer / {total} ホストで warning 記録)')
           "
 
       # 想定外の CA を検出して step が fail したときだけ Slack に投げる
