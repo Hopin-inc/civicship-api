@@ -233,12 +233,18 @@ jobs:
           fi
           echo "DNSSEC chain validated by $validated/$responded independent recursors"
 
-      # CAA レコードで「pki.goog (Google Trust Services) 以外で証明書を発行
-      # してはいけない」を宣言しているか確認。CAA が消える / issuer が
-      # 想定外に増えると、任意の CA で証明書発行できてしまう (= TLS MITM の
-      # 入口になる)。subdomain の CAA は親ドメインから継承されうるので
-      # 親側も併せて確認。DS check と同じく resolver fallback + UDP→TCP
-      # fallback で transient な dig 失敗を posture 異常から切り分ける。
+      # CAA レコードが存在し、少なくとも pki.goog (Google Trust Services) を
+      # 許可 issuer として含んでいるかを確認する。civicship.app は Cloudflare
+      # proxy 構成で、CAA は Cloudflare が CA パートナー (pki.goog / comodoca.com
+      # =Sectigo / digicert.com / letsencrypt.org / ssl.com) を自動管理して
+      # いる (詳細は docs/handbook/SECURITY.md "Edge & TLS Hardening")。ここでは
+      # 「CAA が丸ごと消える / pki.goog が外れる」回帰を daily で拾うのが目的
+      # なので pki.goog の存在のみを必須条件とする (許可 CA の網羅一致までは
+      # 見ない — それは ct-log-check.yml が CT log 実測で担当)。CAA が消える /
+      # issuer 制限が外れると任意の CA で証明書発行できてしまう (= TLS MITM の
+      # 入口)。subdomain の CAA は親ドメインから継承されうるので親側も併せて
+      # 確認。DS check と同じく resolver fallback + UDP→TCP fallback で transient
+      # な dig 失敗を posture 異常から切り分ける。
       - name: CAA record check (${{ matrix.host }})
         run: |
           set -euo pipefail

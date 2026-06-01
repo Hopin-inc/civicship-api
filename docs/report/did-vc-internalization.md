@@ -1264,7 +1264,7 @@ router.get("/vc/:vcId/inclusion-proof", async (req, res) => {
 最小チェックリスト（Phase 0 で確認）:
 
 - [x] DNSSEC 有効化（`dig +dnssec civicship.app DS` で DS レコード確認） — Cloudflare Registrar 移管 + DS 登録済 (2026-05、§9.6 参照)
-- [x] CAA レコード設定（`pki.goog` 単独に限定。GCP-managed cert 専用方針に合わせ最狭化、2026-05、§9.6 参照）
+- [x] CAA レコード設定（Cloudflare proxy 構成のため Cloudflare 管理の CA パートナー — `pki.goog` / `comodoca.com`=Sectigo / `digicert.com` / `letsencrypt.org` / `ssl.com` — を許可。`dig CAA civicship.app` で実値確認、§9.6 参照）。<br>※ 当初の「`pki.goog` 単独」案は Universal SSL が使用 CA を選べず Cloudflare が CAA を自動管理し直すため未達。単一 CA に固定する場合は Advanced Certificate Manager + Universal SSL 無効化が必要 (未実施)
 - [x] HSTS ヘッダ送出（`max-age=31536000; includeSubDomains; preload`）
 - [x] HSTS preload list 登録（https://hstspreload.org/）
 - [x] TLS 1.2/1.3 のみ、それ以下は無効化 — Cloudflare proxy 化で公開 TLS は edge 終端、min TLS version 1.2 設定済 (2026-05、§9.6 参照)
@@ -1756,14 +1756,14 @@ if (result.count === 0) {
    civicship.app. CAA 0 iodef "mailto:info@hopin.co.jp"
    ```
    → 注意: Sectigo / Cloudflare 発行の既存サブドメイン証明書がある場合、それらも CAA に許可するか、サブドメイン別 CAA を切るか判断が必要
-   → **実装結果 (2026-05)**: GCP-managed cert のみで運用する方針が確定したため、CAA は `pki.goog` 単独に絞り込み済 (`letsencrypt.org` は未許可)。下記 "Hardening 完了状態" 参照。
+   → **実装結果 (2026-06 訂正)**: 当初は「`pki.goog` 単独に絞り込み」と記録していたが、`dig CAA civicship.app` で確認したところ実態は Cloudflare proxy がデフォルトで自動管理する CA パートナーセット (`pki.goog` / `comodoca.com`=Sectigo / `digicert.com` / `letsencrypt.org` / `ssl.com`) を許可していた。Universal SSL は使用 CA を選べず Cloudflare が CAA を自動管理し直すため、単独化は未達。公開 (edge) 証明書は Cloudflare Universal SSL がこれら CA を rotate して発行する (現状 Sectigo)。GCP-managed `pki.goog` 証明書は origin 証明書であり公開側ではない。単一 CA に固定したい場合は Advanced Certificate Manager (CA 固定) + Universal SSL 無効化が必要 (未実施)。下記 "Hardening 完了状態" 参照。
 
 優先度中（Phase 1 で対応）:
 
 4. OCSP stapling 有効化（GCLB Backend Service）
    → **実装結果 (2026-05)**: Cloudflare proxy 有効時は Cloudflare が OCSP stapling を自動処理するため、GCLB 側の個別設定は不要。下記 "Hardening 完了状態" 参照。
 5. CT log の不審な発行アラート設定（Cert Spotter / Google Cert Transparency Monitoring）
-   → **実装結果 (2026-05)**: 外部 SaaS ではなく GitHub Actions workflow (`.github/workflows/ct-log-check.yml`) で crt.sh を月次照会し、Google Trust Services 以外の issuer を検出したら Slack 通知する方式で実装済。下記 "Hardening 完了状態" 参照。
+   → **実装結果 (2026-05 / 2026-06 訂正)**: 外部 SaaS ではなく GitHub Actions workflow (`.github/workflows/ct-log-check.yml`) で crt.sh を月次照会し、**CAA で許可していない CA** (許可セット = Google Trust Services / Sectigo / DigiCert / Let's Encrypt / SSL.com) が直近 60 日以内に発行していたら Slack 通知する方式で実装済。当初は「Google Trust Services 以外」を検出する設計だったが、Cloudflare Universal SSL が Sectigo 等を CAA 許可内で正規発行するため誤検知していた。allowlist を CAA の許可セットに揃えて修正。下記 "Hardening 完了状態" 参照。
 6. ドメイン更新期限を 5-10 年以上前払いに設定
    → **実装結果 (2026-05)**: ムームードメインから Cloudflare Registrar へ移管完了、更新期間を延長済。下記 "Hardening 完了状態" 参照。
 7. DNS / レジストラの管理者 MFA 強制
@@ -1786,7 +1786,7 @@ if (result.count === 0) {
 #### Phase 0 受け入れ基準（civicship.app 側）
 
 - [x] DNSSEC: `dig +dnssec civicship.app DS` で DS レコード確認 (Cloudflare Registrar 移管 + DS 登録 + resolver の `ad` フラグ確認済、2026-05)
-- [x] CAA: `dig CAA civicship.app +short` で許可 CA リスト確認 (`pki.goog` 単独、2026-05)
+- [x] CAA: `dig CAA civicship.app +short` で許可 CA リスト確認 (Cloudflare 管理の CA パートナーセット: `pki.goog` / `comodoca.com`=Sectigo / `digicert.com` / `letsencrypt.org` / `ssl.com`、2026-06 訂正。当初記録の「`pki.goog` 単独」は未達)
 - [x] SSL Labs: `api.civicship.app` が **A+** を取得 (2026-05 実測)。Cloudflare proxy 化で公開 TLS の終端が Cloudflare edge へ移行し min TLS version 1.2 設定済 → TLS 1.0/1.1 / 弱 cipher の露出は解消 (GCLB SSL policy MODERN 化は不要と判断、下記フォローアップ参照)
 - [x] HSTS preload: 維持 (`hstspreload.org` で登録維持確認済、2026-05)
 
@@ -1798,14 +1798,14 @@ hardening スプリントで以下を完了済:
 | 対策 | 状態 | 備考 |
 |---|---|---|
 | DNSSEC 有効化 + DS 登録 | ✅ Done | Cloudflare Registrar に移管後、DS 登録完了。chain of trust は `ad` フラグで確認 |
-| CAA = `pki.goog` のみ | ✅ Done | GCP-managed cert 専用方針に合わせ最狭に絞り込み |
+| CAA = Cloudflare CA パートナーセット | ✅ Done | `pki.goog` / `comodoca.com`=Sectigo / `digicert.com` / `letsencrypt.org` / `ssl.com` を Cloudflare が自動管理。当初の「`pki.goog` 単独」は Universal SSL 構成上未達 (2026-06 訂正)。単一 CA 固定は ACM + Universal SSL 無効化が必要 (未実施) |
 | Cloudflare SSL モード = Full (Strict) | ✅ Done | 旧 Flexible 設定を廃止。edge↔origin TLS の中間者攻撃面を閉塞 |
 | Cloudflare Proxied (orange-cloud) | ✅ Done | `civicship.app` / `www.civicship.app` / `api.civicship.app` |
 | Always Use HTTPS | ✅ Done | Cloudflare 側で HTTP→HTTPS redirect |
 | Bot Fight Mode | ✅ Done | Cloudflare 側 ON |
 | Cloudflare Registrar 集約 | ✅ Done | レジストラ MFA / 移管ロック / 自動更新を Cloudflare 側で一元管理 |
 | `/.well-known/security.txt` | ✅ Done | `civicship.app` / `api.civicship.app` 両方で配信 (RFC 9116) |
-| CT log 月次監視 (crt.sh) | ✅ Done | GitHub Actions `.github/workflows/ct-log-check.yml`。Google Trust Services 以外の issuer 検出時に job fail + Slack 通知 |
+| CT log 月次監視 (crt.sh) | ✅ Done | GitHub Actions `.github/workflows/ct-log-check.yml`。**CAA 許可外の CA** (許可セット = Google Trust Services / Sectigo / DigiCert / Let's Encrypt / SSL.com) を直近 60 日以内に検出時 job fail + Slack 通知 (2026-06 訂正: 旧「Google 以外」判定は Cloudflare の Sectigo 正規発行で誤検知のため CAA セットに整合) |
 
 **フォローアップ対応状況 (2026-05 時点で全項目クローズ)**:
 
