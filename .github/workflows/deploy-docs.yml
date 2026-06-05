@@ -17,10 +17,11 @@ on:
       - ".github/workflows/deploy-docs.yml"
   workflow_dispatch:
 
+# 権限は job 単位で最小化する。トップレベルで付けると build job にも
+# id-token: write が継承され、environment 保護のない job が OIDC トークンを
+# 取得できてしまう（セキュリティ指摘の原因）。
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Pages への同時デプロイは1つに直列化（実行中をキャンセルしない）。
 concurrency:
@@ -31,6 +32,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
@@ -68,6 +71,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # OIDC トークン書き込みはこの job だけに限定し、environment で保護する。
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
