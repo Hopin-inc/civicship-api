@@ -5,9 +5,9 @@ name: Deploy Docs
 #
 # 公開 URL: https://hopin-inc.github.io/civicship-api/
 #
-# Pages のソースは「Deploy from a branch」→ `gh-pages` / (root) を想定。
-# この方式なら公式 Pages action (deploy-pages 等) を使わずに済み、リポジトリの
-# action 全 SHA ピン留め方針を崩さない（成果物を gh-pages ブランチへ push する）。
+# Pages のソースは「GitHub Actions」を想定（Settings → Pages → Source）。
+# 公式 Pages action (upload-pages-artifact / deploy-pages) は full SHA で
+# ピン留めし、リポジトリの action 全 SHA ピン留め方針を維持する。
 
 on:
   push:
@@ -18,14 +18,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # gh-pages ブランチへ push するため
+  contents: read
+  pages: write
+  id-token: write
 
+# Pages への同時デプロイは1つに直列化（実行中をキャンセルしない）。
 concurrency:
-  group: deploy-docs
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -47,8 +50,7 @@ jobs:
           node-version: "20"
 
       # website/ は root の pnpm workspace から独立させているので --ignore-workspace。
-      # （root の pnpm-workspace.yaml は packages: ['.'] のみ。docs ビルドに API 依存を
-      #   持ち込まないための分離。）
+      # （API 依存を docs ビルドに持ち込まないための分離。）
       - name: Install docs dependencies
         working-directory: website
         run: pnpm install --ignore-workspace
@@ -57,19 +59,25 @@ jobs:
         working-directory: website
         run: pnpm docs:build
 
-      # GitHub Pages の Jekyll 処理を無効化（VitePress の _ 始まりアセット対策）。
-      - name: Disable Jekyll
-        run: touch website/.vitepress/dist/.nojekyll
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: website/.vitepress/dist
 
-      - name: Publish to gh-pages
-        working-directory: website/.vitepress/dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git init -q
-          git checkout -q -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -q -m "deploy docs from ${GITHUB_SHA}"
-          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
