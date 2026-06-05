@@ -1,0 +1,15 @@
+{
+  "name": "civicship-docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "civicship 導入団体向けの公開ドキュメントサイト (VitePress)。社内向け docs/ とは分離している。",
+  "scripts": {
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "1.6.3"
+  }
+}

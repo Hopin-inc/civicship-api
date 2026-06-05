@@ -1,0 +1,75 @@
+name: Deploy Docs
+
+# 公開ドキュメントサイト (website/, VitePress) を GitHub Pages へデプロイする。
+# develop への push で website/ が変わったときだけ動く。
+#
+# 公開 URL: https://hopin-inc.github.io/civicship-api/
+#
+# Pages のソースは「Deploy from a branch」→ `gh-pages` / (root) を想定。
+# この方式なら公式 Pages action (deploy-pages 等) を使わずに済み、リポジトリの
+# action 全 SHA ピン留め方針を崩さない（成果物を gh-pages ブランチへ push する）。
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "website/**"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write # gh-pages ブランチへ push するため
+
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+          disable-sudo: true
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: "20"
+
+      # website/ は root の pnpm workspace から独立させているので --ignore-workspace。
+      # （root の pnpm-workspace.yaml は packages: ['.'] のみ。docs ビルドに API 依存を
+      #   持ち込まないための分離。）
+      - name: Install docs dependencies
+        working-directory: website
+        run: pnpm install --ignore-workspace
+
+      - name: Build docs
+        working-directory: website
+        run: pnpm docs:build
+
+      # GitHub Pages の Jekyll 処理を無効化（VitePress の _ 始まりアセット対策）。
+      - name: Disable Jekyll
+        run: touch website/.vitepress/dist/.nojekyll
+
+      - name: Publish to gh-pages
+        working-directory: website/.vitepress/dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git init -q
+          git checkout -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "deploy docs from ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
