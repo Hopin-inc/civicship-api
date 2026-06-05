@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.33.0",
   "description": "civicship 導入団体向けの公開ドキュメントサイト (VitePress)。社内向け docs/ とは分離している。",
   "scripts": {
     "docs:dev": "vitepress dev",
