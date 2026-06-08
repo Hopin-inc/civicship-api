@@ -4,6 +4,7 @@ import { izuConfig } from "./izu";
 import { daisConfig } from "./dais";
 import { kibotchaConfig } from "./kibotcha";
 import { ubuyamaConfig } from "@/infrastructure/richmenu/ubuyama";
+import { sanrikuConfig } from "@/infrastructure/richmenu/sanriku";
 
 export const communityConfigs: Record<string, CommunityRichMenuConfig> = {
   neo88: neo88Config,
@@ -11,6 +12,7 @@ export const communityConfigs: Record<string, CommunityRichMenuConfig> = {
   dais: daisConfig,
   kibotcha: kibotchaConfig,
   ubuyama: ubuyamaConfig,
+  sanriku: sanrikuConfig,
 };
 
 export function getCommunityConfig(communityId: string): CommunityRichMenuConfig | undefined {
