@@ -1,4 +1,4 @@
-import { CommunityRichMenuConfig } from "../types";
+import { CommunityRichMenuConfig } from "@/infrastructure/richmenu/types";
 import { sanrikuUseMenu } from "./definitions/use";
 import { sanrikuEarnMenu } from "./definitions/earn";
 import { sanrikuJoinMenu } from "./definitions/join";

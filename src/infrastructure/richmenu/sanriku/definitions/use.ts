@@ -1,4 +1,4 @@
-import { RichMenuDefinition } from "../../types";
+import { RichMenuDefinition } from "@/infrastructure/richmenu/types";
 import { LineRichMenuType } from "@prisma/client";
 
 /**

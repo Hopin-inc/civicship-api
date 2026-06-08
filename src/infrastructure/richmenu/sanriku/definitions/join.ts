@@ -1,4 +1,4 @@
-import { RichMenuDefinition } from "../../types";
+import { RichMenuDefinition } from "@/infrastructure/richmenu/types";
 
 /**
  * さんりくDAO「参加する(Join)」メニュー。
