@@ -1,15 +1,20 @@
 import { IContext } from "@/types/server";
-import { NftWalletType, Prisma } from "@prisma/client";
+import { NftVendor, NftWalletType, Prisma } from "@prisma/client";
 import { injectable, inject } from "tsyringe";
 import { fetchWithRetry } from "@/utils/retry";
 import logger from "@/infrastructure/logging";
 import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/repository";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
+import VendorUserLinkRepository from "@/application/domain/account/nft-wallet/data/vendorUserLinkRepository";
+import { deriveChainForWallet } from "@/application/domain/account/nft-shared/chain";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 import pLimit from "p-limit";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
-import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
+import {
+  PrismaNftWalletCreateDetail,
+  PrismaNftWalletDetail,
+} from "@/application/domain/account/nft-wallet/data/type";
 import crypto from "crypto";
 import { getErrorCode, getErrorType } from "@/utils/error";
 
@@ -54,8 +59,74 @@ export default class NFTWalletService {
     @inject("NFTWalletRepository") private nftWalletRepository: NFTWalletRepository,
     @inject("NftTokenRepository") private nftTokenRepository: NftTokenRepository,
     @inject("NftInstanceRepository") private nftInstanceRepository: NftInstanceRepository,
+    @inject("VendorUserLinkRepository")
+    private vendorUserLinkRepository: VendorUserLinkRepository,
     @inject("NmkrClient") private nmkrClient: NmkrClient,
   ) {}
+  async findByWalletAddress(ctx: IContext, walletAddress: string) {
+    return this.nftWalletRepository.findByWalletAddress(ctx, walletAddress);
+  }
+
+  async findByUserId(ctx: IContext, userId: string) {
+    return this.nftWalletRepository.findByUserId(ctx, userId);
+  }
+
+  /**
+   * (vendor, userId) の VendorUserLink を取得/生成し、ref を返す。
+   * ログイン時に呼ぶ。ref は webhook 登録 (registerWalletByRef) の許可台帳になる。
+   */
+  async linkVendorUser(
+    ctx: IContext,
+    vendor: NftVendor,
+    userId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    return this.vendorUserLinkRepository.getOrCreate(ctx, vendor, userId, tx);
+  }
+
+  async resolveVendorUserLink(ctx: IContext, ref: string) {
+    return this.vendorUserLinkRepository.findByRef(ctx, ref);
+  }
+
+  /**
+   * 既存 wallet があれば上書きせずそれを返す。無ければ walletAddress で新規作成。
+   * webhook 経由 (registerWalletByRef) 用。既存 wallet を絶対に潰さない。
+   */
+  async getOrCreateWalletByUser(
+    ctx: IContext,
+    userId: string,
+    walletAddress: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ wallet: PrismaNftWalletDetail | PrismaNftWalletCreateDetail; created: boolean }> {
+    const existingByUser = await this.nftWalletRepository.findByUserId(ctx, userId);
+    if (existingByUser) {
+      return { wallet: existingByUser, created: false };
+    }
+
+    const existingByAddress = await this.nftWalletRepository.findByWalletAddress(
+      ctx,
+      walletAddress,
+    );
+    if (existingByAddress) {
+      if (existingByAddress.userId !== userId) {
+        throw new Error("This wallet address is already linked to another user.");
+      }
+      return { wallet: existingByAddress, created: false };
+    }
+
+    const created = await this.nftWalletRepository.create(
+      ctx,
+      {
+        walletAddress,
+        type: NftWalletType.EXTERNAL,
+        chain: deriveChainForWallet(NftWalletType.EXTERNAL),
+        user: { connect: { id: userId } },
+      },
+      tx,
+    );
+    return { wallet: created, created: true };
+  }
+
   async createOrUpdateWalletAddress(
     ctx: IContext,
     userId: string,
@@ -85,6 +156,7 @@ export default class NFTWalletService {
       {
         walletAddress,
         type: NftWalletType.EXTERNAL,
+        chain: deriveChainForWallet(NftWalletType.EXTERNAL),
         user: { connect: { id: userId } },
       },
       tx,
@@ -343,6 +415,7 @@ export default class NFTWalletService {
     return await this.nftWalletRepository.create(ctx, {
       walletAddress,
       type: NftWalletType.INTERNAL,
+      chain: deriveChainForWallet(NftWalletType.INTERNAL),
       user: { connect: { id: userId } },
     });
   }

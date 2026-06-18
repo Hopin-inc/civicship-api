@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { NftChain, NftVendor, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
 import { INftTokenRepository } from "./interface";
@@ -45,6 +45,8 @@ export default class NftTokenRepository implements INftTokenRepository {
       symbol?: string | null;
       type: string;
       json?: Record<string, unknown>;
+      issuedByVendor?: NftVendor;
+      chain?: NftChain;
     },
     tx: Prisma.TransactionClient,
   ) {
@@ -55,6 +57,8 @@ export default class NftTokenRepository implements INftTokenRepository {
         symbol: data.symbol,
         type: data.type,
         json: data.json,
+        ...(data.issuedByVendor === undefined ? {} : { issuedByVendor: data.issuedByVendor }),
+        ...(data.chain === undefined ? {} : { chain: data.chain }),
       },
       create: {
         address: data.address,
@@ -62,6 +66,8 @@ export default class NftTokenRepository implements INftTokenRepository {
         symbol: data.symbol ?? null,
         type: data.type,
         json: data.json ?? null,
+        issuedByVendor: data.issuedByVendor ?? null,
+        chain: data.chain ?? null,
       },
       select: {
         id: true,
@@ -71,32 +77,22 @@ export default class NftTokenRepository implements INftTokenRepository {
     });
   }
 
-  async findByAddress(ctx: IContext, address: string, tx?: Prisma.TransactionClient) {
+  async findByAddress(
+    ctx: IContext,
+    address: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftToken | null> {
     if (tx) {
       return tx.nftToken.findUnique({
         where: { address },
-        select: {
-          id: true,
-          address: true,
-          name: true,
-          symbol: true,
-          type: true,
-          updatedAt: true,
-        },
+        select: nftTokenSelect,
       });
     }
 
     return ctx.issuer.internal(async (t) => {
       return t.nftToken.findUnique({
         where: { address },
-        select: {
-          id: true,
-          address: true,
-          name: true,
-          symbol: true,
-          type: true,
-          updatedAt: true,
-        },
+        select: nftTokenSelect,
       });
     });
   }

@@ -268,6 +268,24 @@ UNKNOWN UNKNOWN
     
 
 
+        NftVendor {
+            BORDERLESS BORDERLESS
+KIBOTCHA KIBOTCHA
+        }
+    
+
+
+        NftChain {
+            BASE_SEPOLIA BASE_SEPOLIA
+BASE_MAINNET BASE_MAINNET
+POLYGON_MAINNET POLYGON_MAINNET
+POLYGON_AMOY POLYGON_AMOY
+CARDANO_PREPROD CARDANO_PREPROD
+CARDANO_MAINNET CARDANO_MAINNET
+        }
+    
+
+
         NftWalletType {
             INTERNAL INTERNAL
 EXTERNAL EXTERNAL
@@ -850,6 +868,7 @@ CARDANO_PREPROD CARDANO_PREPROD
     String key 
     String name 
     Boolean is_active 
+    NftVendor vendor "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -859,6 +878,17 @@ CARDANO_PREPROD CARDANO_PREPROD
     String id "🗝️"
     NftWalletType type 
     String wallet_address 
+    NftChain chain "❓"
+    String user_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_vendor_user_links" {
+    String id "🗝️"
+    String ref 
+    NftVendor vendor 
     String user_id 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -873,6 +903,8 @@ CARDANO_PREPROD CARDANO_PREPROD
     String symbol "❓"
     Json json "❓"
     String community_id "❓"
+    NftVendor issued_by_vendor "❓"
+    NftChain chain "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -1411,9 +1443,15 @@ CARDANO_PREPROD CARDANO_PREPROD
     "t_incentive_grants" }o--|| t_communities : "community"
     "t_incentive_grants" |o--|o "IncentiveGrantFailureCode" : "enum:failure_code"
     "t_incentive_grants" |o--|o t_transactions : "transaction"
+    "m_api_keys" |o--|o "NftVendor" : "enum:vendor"
     "t_nft_wallets" |o--|| "NftWalletType" : "enum:type"
+    "t_nft_wallets" |o--|o "NftChain" : "enum:chain"
     "t_nft_wallets" }o--|| t_users : "user"
+    "t_vendor_user_links" |o--|| "NftVendor" : "enum:vendor"
+    "t_vendor_user_links" }o--|| t_users : "user"
     "t_nft_tokens" }o--|o t_communities : "community"
+    "t_nft_tokens" |o--|o "NftVendor" : "enum:issued_by_vendor"
+    "t_nft_tokens" |o--|o "NftChain" : "enum:chain"
     "t_nft_instances" |o--|| "NftInstanceStatus" : "enum:status"
     "t_nft_instances" }o--|| t_nft_tokens : "nftToken"
     "t_nft_instances" }o--|o t_nft_wallets : "nftWallet"

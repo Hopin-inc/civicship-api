@@ -33,6 +33,19 @@ export default interface INftInstanceRepository {
 
   findById(ctx: IContext, id: string): Promise<PrismaNftInstance | null>;
 
+  findByTokenAddressAndInstanceId(
+    ctx: IContext,
+    tokenAddress: string,
+    instanceId: string,
+  ): Promise<PrismaNftInstance | null>;
+
+  findManyByTokenAddress(
+    ctx: IContext,
+    tokenAddress: string,
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaNftInstance[]>;
+
   count(ctx: IContext, where: Prisma.NftInstanceWhereInput): Promise<number>;
 
   upsert(
