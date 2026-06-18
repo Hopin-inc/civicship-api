@@ -960,10 +960,11 @@ export default class ReportUseCase {
   }
 
   /**
-   * Phase 2 sysAdmin: cross-community report search. The IsAdmin
-   * directive on the GraphQL query is the only authz gate (no
-   * community scoping hand-off) — the usecase trusts the
-   * directive and does not re-check sysRole.
+   * Phase 2: cross-community report search. SYS_ADMIN sees every
+   * community (or filters by `args.communityId`); IsCommunityOwner
+   * callers are pinned to their own community — the optional
+   * `communityId` arg, when supplied, must match `ctx.communityId`
+   * to keep the result set from leaking other communities' reports.
    */
   async browseAllReports(
     args: GqlQueryReportsAllArgs,
@@ -972,8 +973,26 @@ export default class ReportUseCase {
     const first = args.first
       ? validateIntInRange(args.first, 1, MAX_REPORTS_PER_PAGE, "first")
       : DEFAULT_REPORTS_PER_PAGE;
+
+    // Non-admin callers (community owners) must stay inside their own
+    // community. If they pass `communityId`, it has to match the
+    // header-bound scope; if they omit it, we inject ctx.communityId so
+    // the underlying repo doesn't fan out across the platform.
+    // `getCommunityIdFromCtx` throws when the header is missing — the
+    // IsCommunityOwner rule already rejects that state, but rechecking
+    // here keeps the cross-community guarantee local to this method
+    // rather than implicit in the authz layer.
+    let scopedCommunityId = args.communityId ?? undefined;
+    if (!ctx.isAdmin) {
+      const ctxCommunityId = getCommunityIdFromCtx(ctx);
+      if (args.communityId && args.communityId !== ctxCommunityId) {
+        throw new AuthorizationError("communityId does not match the current scope");
+      }
+      scopedCommunityId = ctxCommunityId;
+    }
+
     const result = await this.service.getAllReports(ctx, {
-      communityId: args.communityId ?? undefined,
+      communityId: scopedCommunityId,
       status: args.status ?? undefined,
       variant: args.variant ?? undefined,
       publishedAfter: args.publishedAfter ? new Date(args.publishedAfter) : undefined,

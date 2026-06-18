@@ -1,0 +1,406 @@
+name: TLS / DNS Posture (civicship.app + api.civicship.app)
+
+# civicship.app / api.civicship.app の DNSSEC / CAA / HSTS preload 設定が
+# 誰かの誤操作で外れた瞬間に検知する daily monitoring。設計書 §15.3 / §9.6 参照。
+#
+# 背景:
+#   did:web は HTTPS / DNS のセキュリティに依存する (DID Document の真正性が
+#   civicship.app の TLS 証明書 + DNS 解決の正しさで担保される)。DNSSEC が
+#   落ちる、CAA レコードが消える、HSTS preload が外れる、いずれも did:web
+#   verifier に対する攻撃面 (DNS hijack / 不正 CA 経由の TLS MITM) を広げる。
+#   設定変更は通常 Phase 0 で一度行ったあとは誰も触らないので、daily check
+#   で「気付いたら外れていた」を防ぐ。
+#
+# 対象ホスト:
+#   - civicship.app           did Document の親ドメイン (well-known/did.json)
+#   - api.civicship.app       per-user DID (/users/:id/did.json) と VC
+#                             credentialStatus / inclusion-proof エンドポイント
+#   どちらが落ちても verifier 体験が壊れる (DID resolution が止まる) ため
+#   両方を独立して check する。Apex のみ check していると subdomain だけ CAA
+#   が消えた事故を拾えない。
+#
+# Issue 起票はしない:
+#   trivy-daily と違い、posture 監視は「直す対象が決まっている」(DNS / CDN
+#   設定をロールバックするだけ)。tracking issue を upsert する価値は薄く、
+#   その瞬間の Slack 通知で十分。
+#
+# 関連: docs/report/did-vc-internalization.md §15.3 / §9.6 / 18 章 運用要件
+
+on:
+  schedule:
+    # 毎日 09:00 JST = 00:00 UTC. JST 業務開始時に「今朝の posture」が
+    # 直近の run としてある状態を作る。
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# 同時刻に schedule + workflow_dispatch が走るのを避ける。
+concurrency:
+  group: tls-dns-posture
+  cancel-in-progress: false
+
+jobs:
+  posture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    # matrix で apex / api を独立 job 化。片側が落ちてももう片側まで走り、
+    # Slack 通知で「どちらが壊れているか」が一発で分かる。両方落ちている
+    # ケース (= apex zone 障害) でも notification は 2 本飛ぶ。
+    strategy:
+      fail-fast: false
+      matrix:
+        host:
+          - civicship.app
+          - api.civicship.app
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          # 公開 DNS resolver (1.1.1.1) と https://hstspreload.org / 対象 host
+          # への egress が必須なので audit に留める (block にすると dig も死ぬ)。
+          egress-policy: audit
+          disable-sudo: true
+
+      # 当初は delv で local re-validation していたが、step-security/harden-runner
+      # が立てる DNS proxy が DNSKEY query を refused にするため "permission
+      # denied resolving ... DNSKEY" で chain 不成立扱いになる (run 26404045225)。
+      # 代替として 3 つの独立 validating recursor (Cloudflare/Google/Quad9) が
+      # 全員 AD bit を立てることを確認する方式に切り替えたので、delv ではなく
+      # dig だけがあればよい。`dig` は ubuntu-latest の標準 image に同梱されて
+      # いないため bind9-dnsutils を入れる。
+      - name: Install DNS utilities (bind9-dnsutils)
+        run: |
+          set -euo pipefail
+          if ! command -v dig >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq bind9-dnsutils
+          fi
+          dig -v 2>&1 | head -n1
+
+      # 公開 DNS resolver 経由で DNSSEC DS レコードを引く。DS が空になっていると
+      # 親ゾーン (.app) に署名チェーンが繋がらず DNSSEC が事実上 OFF。
+      # api.civicship.app は通常 CNAME → apex なので apex 側の DS が引ければ
+      # 両方 OK の扱い、ただし matrix で個別に引いて誤設定を可視化する。
+      #
+      # 過去に 1.1.1.1 への UDP/53 が一時的に応答しないことで dig 自体が exit
+      # code 9 (no reply) で落ち、posture 異常ではないのに Slack に false
+      # alarm が飛ぶ事例があった。リゾルバ fallback と短い timeout で dig の
+      # transient 失敗を「DS 不在」と区別する。`set -e` 下でも dig の失敗で
+      # スクリプトが死なないよう、戻り値は `||` 経由で受ける。
+      #
+      # さらに GitHub Actions runner からの UDP/53 は (resolver を問わず)
+      # 断続的に黙って drop される時間帯があり、その場合 1.1.1.1 / 8.8.8.8 /
+      # 9.9.9.9 への UDP がすべて no reply で落ちる。resolver fallback だけ
+      # では救えないので、同じ resolver に対して TCP (+tcp) で retry してから
+      # 次の resolver に進む。TCP/53 は同じ public DNS で受け付けられる。
+      - name: DNSSEC DS record check (${{ matrix.host }})
+        run: |
+          set -euo pipefail
+
+          # 複数 resolver × (UDP → TCP) を順に試して結果を返す。
+          # dig +short は SERVFAIL でも exit 0 を返し出力が空になるため、
+          # 「exit 0 かつ空」は「真にレコード無し」とは断定できない。空応答時
+          # は次 resolver も試し、全 resolver が応答かつ全て空のときのみ
+          # 「レコード無し」(空文字) として 0 を返す。
+          # 戻り値: 0 = いずれかの resolver から応答取得 (空文字 = 真に無し)
+          #         1 = 全 resolver が UDP/TCP とも無応答 (network issue)
+          query_ds() {
+            local name=$1
+            local resolver out got_response=0
+            for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
+              if out=$(dig +short +tries=2 +time=3 DS "$name" @"$resolver" 2>/dev/null); then
+                got_response=1
+                if [ -n "$out" ]; then
+                  printf '%s' "$out"
+                  return 0
+                fi
+                # 空: SERVFAIL の可能性を排除するため次 resolver も試す
+              else
+                echo "::warning::dig DS $name @$resolver UDP no reply, retrying via TCP" >&2
+                # UDP/53 が runner から drop されているケースの fallback。
+                # TCP のほうが connection timeout を取れる分やや長めに。
+                if out=$(dig +short +tries=2 +time=5 +tcp DS "$name" @"$resolver" 2>/dev/null); then
+                  got_response=1
+                  if [ -n "$out" ]; then
+                    printf '%s' "$out"
+                    return 0
+                  fi
+                else
+                  echo "::warning::dig DS $name @$resolver TCP also no reply, trying next resolver" >&2
+                fi
+              fi
+            done
+            if [ "$got_response" = "1" ]; then
+              # 全 resolver が応答 & 全部空 → 真にレコード無し
+              printf ''
+              return 0
+            fi
+            return 1
+          }
+
+          host="${{ matrix.host }}"
+          if ! ds=$(query_ds "$host"); then
+            echo "::error::All DNS resolvers failed to respond for DS $host (network issue, not a posture failure)"
+            exit 1
+          fi
+
+          if [ -z "$ds" ]; then
+            # subdomain は親 (apex) の DS でカバーされるケースがある。subdomain
+            # 側が空なら apex に fallback して chain の存在を確認する。
+            apex=$(echo "$host" | awk -F. '{print $(NF-1)"."$NF}')
+            if [ "$host" = "$apex" ]; then
+              echo "::error::DNSSEC DS record missing for $host"
+              exit 1
+            fi
+            if ! ds_apex=$(query_ds "$apex"); then
+              echo "::error::All DNS resolvers failed to respond for DS $apex (network issue)"
+              exit 1
+            fi
+            if [ -z "$ds_apex" ]; then
+              echo "::error::DNSSEC DS record missing for $host and parent zone $apex"
+              exit 1
+            fi
+            echo "DS via parent zone $apex: $ds_apex"
+          else
+            echo "DS record: $ds"
+          fi
+
+      # DNSSEC chain validation: 元は delv で local re-validation していたが
+      # harden-runner の DNS proxy が DNSKEY query を refused にして動かない
+      # (上の install step コメント参照)。代替として、独立実装の validating
+      # recursor 3 種 (Cloudflare 1.1.1.1 / Google 8.8.8.8 / Quad9 9.9.9.9) で
+      # それぞれ `dig +dnssec` を投げ、応答した全 recursor が AD bit を立てた
+      # 時のみ chain validated と判定する。
+      #
+      # AD bit は recursor が validate に成功したことを示す。3 実装が同時に
+      # validation bug を踏む確率はほぼ無いので、delv local validation と
+      # 実質的に同等の担保が得られる。recursor が SERVFAIL を返す or AD bit
+      # が落ちている場合は chain broken。全 recursor が UDP/TCP とも no reply
+      # の場合のみ network issue 扱い (false alarm 抑止)。
+      - name: DNSSEC chain validation via AD bit (${{ matrix.host }})
+        run: |
+          set -euo pipefail
+
+          # 1 resolver で AD bit を確認する。
+          #   exit 0 = AD set (validated)
+          #   exit 1 = SERVFAIL or AD missing (chain broken)
+          #   exit 2 = no reply over UDP nor TCP (network issue)
+          check_ad() {
+            local resolver=$1 proto out
+            for proto in "" "+tcp"; do
+              if out=$(dig +tries=2 +time=3 +dnssec $proto @"$resolver" \
+                       "${{ matrix.host }}" A 2>/dev/null); then
+                if echo "$out" | grep -q 'status: SERVFAIL'; then
+                  return 1
+                fi
+                # `;; flags:` 行に ad が立っていれば validated。
+                if echo "$out" | grep -E '^;; flags:' | grep -qE ' ad[ ;]'; then
+                  return 0
+                fi
+                return 1
+              fi
+              # UDP timeout → TCP fallback (DS check と同じ理由)
+            done
+            return 2
+          }
+
+          validated=0
+          responded=0
+          for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
+            rc=0
+            check_ad "$resolver" || rc=$?
+            case "$rc" in
+              0) echo "@$resolver: AD bit set (validated)"; validated=$((validated+1)); responded=$((responded+1));;
+              1) echo "@$resolver: SERVFAIL or AD bit missing"; responded=$((responded+1));;
+              2) echo "::warning::@$resolver: no reply over UDP nor TCP";;
+            esac
+          done
+
+          if [ "$responded" = "0" ]; then
+            echo "::error::All recursors failed to respond for ${{ matrix.host }} A (network issue, not posture)"
+            exit 1
+          fi
+          # 応答した recursor が全員 AD bit を立てない限り chain broken 扱い。
+          if [ "$validated" != "$responded" ]; then
+            echo "::error::DNSSEC chain not validated for ${{ matrix.host }} ($validated/$responded recursors set AD bit)"
+            exit 1
+          fi
+          echo "DNSSEC chain validated by $validated/$responded independent recursors"
+
+      # CAA レコードが存在し、少なくとも pki.goog (Google Trust Services) を
+      # 許可 issuer として含んでいるかを確認する。civicship.app は Cloudflare
+      # proxy 構成で、CAA は Cloudflare が CA パートナー (pki.goog / comodoca.com
+      # =Sectigo / digicert.com / letsencrypt.org / ssl.com) を自動管理して
+      # いる (詳細は docs/handbook/SECURITY.md "Edge & TLS Hardening")。ここでは
+      # 「CAA が丸ごと消える / pki.goog が外れる」回帰を daily で拾うのが目的
+      # なので pki.goog の存在のみを必須条件とする (許可 CA の網羅一致までは
+      # 見ない — それは ct-log-check.yml が CT log 実測で担当)。CAA が消える /
+      # issuer 制限が外れると任意の CA で証明書発行できてしまう (= TLS MITM の
+      # 入口)。subdomain の CAA は親ドメインから継承されうるので親側も併せて
+      # 確認。DS check と同じく resolver fallback + UDP→TCP fallback で transient
+      # な dig 失敗を posture 異常から切り分ける。
+      - name: CAA record check (${{ matrix.host }})
+        run: |
+          set -euo pipefail
+
+          # DS と同様、SERVFAIL を「レコード無し」と誤判定しないよう
+          # 空応答時は次 resolver も試し、全 resolver が応答 & 全部空のときのみ
+          # 「レコード無し」として 0 を返す。UDP/53 が runner から drop される
+          # 時間帯に備えて、各 resolver で UDP → TCP の順に試す。
+          query_caa() {
+            local name=$1
+            local resolver out got_response=0
+            for resolver in 1.1.1.1 8.8.8.8 9.9.9.9; do
+              if out=$(dig +short +tries=2 +time=3 CAA "$name" @"$resolver" 2>/dev/null); then
+                got_response=1
+                if [ -n "$out" ]; then
+                  printf '%s' "$out"
+                  return 0
+                fi
+              else
+                echo "::warning::dig CAA $name @$resolver UDP no reply, retrying via TCP" >&2
+                if out=$(dig +short +tries=2 +time=5 +tcp CAA "$name" @"$resolver" 2>/dev/null); then
+                  got_response=1
+                  if [ -n "$out" ]; then
+                    printf '%s' "$out"
+                    return 0
+                  fi
+                else
+                  echo "::warning::dig CAA $name @$resolver TCP also no reply, trying next resolver" >&2
+                fi
+              fi
+            done
+            if [ "$got_response" = "1" ]; then
+              printf ''
+              return 0
+            fi
+            return 1
+          }
+
+          host="${{ matrix.host }}"
+          if ! caa=$(query_caa "$host"); then
+            echo "::error::All DNS resolvers failed to respond for CAA $host (network issue, not a posture failure)"
+            exit 1
+          fi
+          if [ -z "$caa" ]; then
+            apex=$(echo "$host" | awk -F. '{print $(NF-1)"."$NF}')
+            if [ "$host" != "$apex" ]; then
+              if ! caa=$(query_caa "$apex"); then
+                echo "::error::All DNS resolvers failed to respond for CAA $apex (network issue)"
+                exit 1
+              fi
+              echo "Falling back to parent zone $apex CAA"
+            fi
+          fi
+          echo "CAA records:"
+          echo "$caa"
+          if ! echo "$caa" | grep -q 'pki.goog'; then
+            echo "::error::CAA record does not include expected issuer pki.goog for $host"
+            exit 1
+          fi
+
+      # HSTS preload directive が response header に乗っているか確認。
+      # preload リスト登録自体は手動申請が必要だが、`preload` directive を
+      # 削ってしまうと Chrome 等の HSTS preload リストへの登録維持条件
+      # (https://hstspreload.org/) を満たさず将来的に外される。
+      #
+      # civicship.app は Cloudflare 配下で、GitHub Actions の IP は CF の
+      # Bot Fight Mode / Managed Challenge で 403 (cf-mitigated: challenge)
+      # を返されることがある (run 26404562623)。その場合 challenge page には
+      # HSTS が乗らず "missing" と誤判定されるため、まず browser-like UA で
+      # challenge を回避する。それでも CF challenge を踏んだら runner から
+      # オリジン直叩きはできない状況なので、本 step は warning に格下げし、
+      # HSTS 維持の判定は次 step (hstspreload.org 公式 list status) に委ねる。
+      - name: HSTS response header check (${{ matrix.host }})
+        run: |
+          set -euo pipefail
+          host="${{ matrix.host }}"
+          # 主要ブラウザの UA を付けて CF の bot challenge をまず回避する。
+          ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15'
+          headers=$(curl -sIL --max-time 10 -A "$ua" "https://${host}/")
+          echo "--- response headers (all redirect hops) ---"
+          echo "$headers"
+          echo "--------------------------------------------"
+
+          if echo "$headers" | grep -qi '^cf-mitigated: challenge'; then
+            echo "::warning::Cloudflare bot challenge intercepted runner request for https://${host}/; HSTS header sampling skipped, relying on hstspreload.org list status in the next step"
+            exit 0
+          fi
+
+          hsts=$(echo "$headers" | grep -i 'strict-transport-security' || true)
+          if [ -z "$hsts" ]; then
+            echo "::error::strict-transport-security header missing on https://${host}/"
+            exit 1
+          fi
+          if ! echo "$hsts" | grep -qi 'preload'; then
+            echo "::error::HSTS header missing 'preload' directive for ${host}"
+            echo "Got: $hsts"
+            exit 1
+          fi
+          echo "HSTS header: $hsts"
+
+      # https://hstspreload.org/api/v2/status?domain=... で preload list 上の
+      # 公式 status を確認。response の `status` が "preloaded" 以外だと
+      # Chrome に登録されていない (= preload 効果なし)。header check と独立
+      # して走らせるのは、header だけ正しくて公式 list から外れた状態を
+      # 拾えるようにするため。
+      - name: HSTS preload list status (${{ matrix.host }})
+        run: |
+          set -euo pipefail
+          json=$(curl -sS --max-time 15 \
+            "https://hstspreload.org/api/v2/status?domain=${{ matrix.host }}")
+          echo "Response: $json"
+          status=$(echo "$json" | jq -r '.status // empty')
+          if [ -z "$status" ]; then
+            echo "::error::hstspreload.org returned no status field for ${{ matrix.host }}"
+            exit 1
+          fi
+          # preloaded = Chrome に焼き込み済 / 完全 OK
+          # pending   = 申請中だが Chrome rollout 待ち (warning のみ、fail させない)
+          # その他 (unknown / removed / rejected) は posture broken。
+          case "$status" in
+            preloaded)
+              echo "preload status OK: $status"
+              ;;
+            pending)
+              echo "::warning::HSTS preload status is 'pending' for ${{ matrix.host }} — Chrome rollout 待ち"
+              ;;
+            *)
+              echo "::error::HSTS preload status is '$status' for ${{ matrix.host }} (expected 'preloaded')"
+              exit 1
+              ;;
+          esac
+
+      # いずれかの check が失敗した時だけ Slack に投げる。SLACK_WEBHOOK_INFRA
+      # secret が未登録の repo (= Phase 0 で webhook を設定する前) でも step
+      # が無声に skip するように `if` で webhook の有無を確認する。secret は
+      # context にそのまま埋め込めないので env 経由で渡す。
+      #
+      # secrets:
+      #   SLACK_WEBHOOK_INFRA  infra channel 宛 Slack incoming webhook URL。
+      #                        repo secret 名は `SLACK_WEBHOOK_INFRA`。
+      - name: Slack notify on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_INFRA: ${{ secrets.SLACK_WEBHOOK_INFRA }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HOST: ${{ matrix.host }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_INFRA:-}" ]; then
+            echo "::warning::SLACK_WEBHOOK_INFRA not set; skipping Slack notify."
+            exit 0
+          fi
+          payload=$(cat <<EOF
+          {"text":":rotating_light: ${HOST} TLS/DNS posture broken — see ${RUN_URL}"}
+          EOF
+          )
+          curl -sS -X POST "$SLACK_WEBHOOK_INFRA" \
+            -H 'Content-Type: application/json' \
+            -d "$payload"

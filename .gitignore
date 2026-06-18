@@ -29,6 +29,10 @@ coverage
 # Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
 
+# Claude Code agent isolated worktrees (runtime artifact)
+.claude/worktrees/
+.claude/settings.local.json
+
 # Bower dependency directory (https://bower.io/)
 bower_components
 
@@ -84,6 +88,7 @@ web_modules/
 .env.local
 .env.dev
 .env.prd
+.env.keys
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -157,3 +162,4 @@ tmp/
 
 # NMKR generated files
 /src/infrastructure/libs/nmkr/types/*.d.ts
+kms-poc-sa.json

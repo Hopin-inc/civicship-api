@@ -401,6 +401,93 @@ app.post('/admin/users', adminController.createUser);
 - Auditing Administrator Actions
 - Recording Security Violations
 
+## Edge & TLS Hardening
+
+公開ドメイン (`civicship.app` / `api.civicship.app` / `www.civicship.app`) の
+edge レイヤと TLS 設定は、以下の構成で運用している。設定変更は基盤側
+(Cloudflare / GCP Load Balancer) で行い、アプリケーションコードからは触らない。
+
+### Domain & DNS
+
+- **Registrar:** Cloudflare Registrar に集約 (旧 registrar から移管完了)
+- **DNSSEC:** 有効化 + DS レコード登録済。chain of trust は resolver の
+  `ad` (Authenticated Data) フラグで確認可能
+- **CAA:** Cloudflare proxy 構成のため、公開証明書は Cloudflare Universal
+  SSL の edge 証明書 (CA パートナーを rotate) で配信される。CAA は
+  Cloudflare が自動管理し、その CA パートナー — `pki.goog` (Google Trust
+  Services) / `comodoca.com` (Sectigo) / `digicert.com` / `letsencrypt.org` /
+  `ssl.com` — を許可している。`dig CAA civicship.app` で実値を確認できる。
+  > **Note:** 「`pki.goog` 単独に限定」する案を検討したが、Universal SSL は
+  > 使用 CA を選べず Cloudflare が CAA を自動管理し直すため、実装では Cloudflare
+  > 管理の上記 5 社セットを正規として採用した。公開証明書を単一 CA に固定
+  > したい場合は Cloudflare Advanced Certificate Manager (CA 固定) + Universal
+  > SSL 無効化が必要 (未実施)。
+- **Cloudflare Proxy:** `civicship.app` / `www.civicship.app` /
+  `api.civicship.app` を Proxied (orange-cloud) で運用
+
+### TLS
+
+- **Cloudflare SSL モード:** Full (Strict) — origin 証明書の検証まで行う
+  (旧 Flexible 設定は廃止)
+- **Origin 証明書:** GCP-managed certificate (`pki.goog`)。これは
+  Cloudflare↔GCP 間の **origin** 証明書であり、公開 (edge) 証明書ではない点に
+  注意。公開証明書は Cloudflare Universal SSL が CA パートナーから発行する
+  (上記 CAA 参照)
+- **Always Use HTTPS:** Cloudflare 側で ON。HTTP リクエストは edge で
+  HTTPS に redirect
+- **GCLB SSL Policy:** GCLB は Cloudflare proxy の背後にあり、公開 TLS は
+  Cloudflare edge で終端する。Cloudflare 側で最低 TLS バージョンを 1.2 に
+  設定済のため TLS 1.0/1.1 クライアントは edge でブロックされ、OCSP
+  stapling も Cloudflare proxy 有効時は Cloudflare が自動処理する。GCLB に
+  直接到達しない構成のため、GCLB SSL policy の `MODERN` 化は不要と判断。
+  詳細は
+  [`docs/report/did-vc-internalization.md` §9.6 Hardening 完了状態](../report/did-vc-internalization.md#96-dns--tls-乗っ取りに対する脅威モデルdidweb-固有)
+  参照
+
+### HSTS
+
+- **Header:** `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+- **送出元:**
+  - GCP Load Balancer のカスタムレスポンスヘッダー (API 側)
+  - Next.js config (フロント側)
+- **Preload List:** [hstspreload.org](https://hstspreload.org/) に
+  登録済 (主要ブラウザに同梱)
+
+### Bot 対策
+
+- **Cloudflare Bot Fight Mode:** ON
+
+### `/.well-known/security.txt`
+
+セキュリティ報告窓口を [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116)
+形式で公開:
+
+- `https://civicship.app/.well-known/security.txt`
+- `https://api.civicship.app/.well-known/security.txt`
+
+### CT Log Monitoring
+
+CAA で発行 CA を絞っても、CA 側のミス発行や検証バイパスは CAA だけでは
+物理的に防げない。Certificate Transparency log を月次で照会し、
+`civicship.app` 系ドメインに対し **CAA で許可していない CA** が証明書を
+発行していないかを事後検出する。
+
+- **Workflow:** `.github/workflows/ct-log-check.yml` (毎月 1 日 09:00 UTC /
+  手動実行可)
+- **照会先:** [crt.sh](https://crt.sh/?q=civicship.app) の CT 検索 API
+- **判定:** allowlist を CAA の許可 CA セット (Google Trust Services /
+  Sectigo=comodoca.com / DigiCert / Let's Encrypt / SSL.com) と揃え、直近
+  60 日以内に発行 (not_before) された証明書のうち **この集合から外れた
+  issuer** を 1 つでも検出したら job を fail させ、`SLACK_WEBHOOK_INFRA`
+  経由で Slack 通知する。Cloudflare Universal SSL は上記 CA を rotate する
+  ため、Sectigo edge 証明書が出ても (CAA 許可内なので) fail しない。
+- **rolling window:** crt.sh は期限切れ含む全証明書を返すため、直近 60 日
+  発行分のみを対象とする (月次 cron に対し 2x のオーバーラップ)。
+- **位置付け:** CAA (発行の事前制限) を破った証明書 = CAA 許可外 CA からの
+  ミス発行 / 不正発行を検出する第 2 線。did:web は `civicship.app` の TLS
+  証明書の真正性に依存するため、許可外 CA からの不正発行は DID Document の
+  MITM に直結する
+
 ## Container Image Scanning (Trivy)
 
 Cloud Run にデプロイされる image は、`docker push` 直後 / `gcloud run deploy` 前に

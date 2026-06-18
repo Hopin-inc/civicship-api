@@ -184,6 +184,30 @@ jobs:
           sarif_file: trivy-external.sarif
           category: trivy-external-critical
 
+      # `gh issue create` / `gh issue edit --add-label` で使う label を先に
+      # 用意する。repo に label が存在しないと
+      # `could not add label: '...' not found` で step が落ちる
+      # (`trivy-daily` は default では存在しない label)。既存 label の
+      # color/description を壊さないよう、欠けている label だけ作成する。
+      - name: Ensure issue labels exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ensure_label() {
+            local name="$1" color="$2" desc="$3"
+            if gh label list --repo "$REPO" --limit 200 --json name --jq '.[].name' \
+                 | grep -qxF "$name"; then
+              echo "Label '${name}' already exists — leaving as-is."
+            else
+              gh label create "$name" --repo "$REPO" --color "$color" --description "$desc"
+              echo "Created label '${name}'."
+            fi
+          }
+          ensure_label trivy-daily B60205 "Daily Trivy CVE scan tracking issue (managed by trivy-daily.yml)"
+          ensure_label security D93F0B "Security-related issue or vulnerability"
+
       # body 生成 + 既存 issue との CVE-ID set 比較 + upsert/close。
       - name: Manage Trivy tracking issue
         env:

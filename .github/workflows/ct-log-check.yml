@@ -1,0 +1,177 @@
+name: CT Log Check (civicship.app)
+
+# civicship.app とその subdomain に対し、想定外の CA から TLS 証明書が
+# 発行されていないかを Certificate Transparency log (crt.sh) で月次監視する。
+#
+# 背景:
+#   CAA レコードで `pki.goog` (Google Trust Services) のみに発行を制限して
+#   いるが、CAA は「CA がチェックを遵守する前提」の宣言であり、CA 側の
+#   ミス発行や検証バイパスを物理的に防ぐものではない。CT log は公開証明書が
+#   記録される append-only ログなので、「CAA を破って発行された証明書」を
+#   事後検出する最後の砦になる。did:web は civicship.app の TLS 証明書の
+#   真正性に依存するため、不正発行は DID Document の TLS MITM に直結する。
+#
+#   tls-dns-posture.yml が CAA レコード「設定」の存在を毎日見るのに対し、
+#   本 workflow は実際に「発行された証明書」を見る。役割が異なるため別
+#   workflow とし、変化の遅い CT log に合わせて月次で実行する。
+#
+# 関連: docs/report/did-vc-internalization.md §9.6 / docs/handbook/SECURITY.md
+#       (Edge & TLS Hardening)
+
+on:
+  schedule:
+    # 毎月 1 日 09:00 UTC (JST 18:00)。CT log は変化が遅いので月次で十分。
+    - cron: '0 9 1 * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# schedule と workflow_dispatch が同時刻に走るのを避ける。
+concurrency:
+  group: ct-log-check
+  cancel-in-progress: false
+
+jobs:
+  check-ct-logs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          # crt.sh / Slack webhook への HTTPS egress が必須なので audit に留める。
+          egress-policy: audit
+          disable-sudo: true
+
+      # crt.sh の Certificate Transparency 検索 API (output=json) で
+      # civicship.app 関連の証明書を取得し、CAA で許可している CA 以外が
+      # 証明書を発行していないかを確認する。CAA ポリシーから外れた issuer を
+      # 1 つでも検出したら step を fail させ、GitHub annotation と (後続 step で)
+      # Slack に通知する。
+      #
+      # 許可 CA を CAA と整合させる理由:
+      #   civicship.app は Cloudflare proxied で、公開 TLS (crt.sh / did:web
+      #   verifier が見る証明書) は Cloudflare edge で終端する。GCP-managed
+      #   (pki.goog) 証明書は origin 証明書 (Cloudflare↔GCP 間) であって公開側
+      #   ではない。Cloudflare Universal SSL は CA パートナー (Google Trust
+      #   Services / Sectigo / DigiCert / Let's Encrypt / SSL.com) を rotate
+      #   して edge 証明書を発行し、civicship.app の CAA はまさにこの 5 社
+      #   (pki.goog / comodoca.com=Sectigo / digicert.com / letsencrypt.org /
+      #   ssl.com) を Cloudflare が自動管理して許可している。したがって本
+      #   workflow の allowlist も CAA の許可セットに揃え、「CAA で許可した CA
+      #   以外が発行したら鳴らす」検知器とする (= CAA ポリシー逸脱 / ミス発行の
+      #   事後検出)。詳細は docs/handbook/SECURITY.md "CT Log Monitoring"。
+      #
+      # crt.sh は過去の全証明書 (期限切れ含む) を返すため、CAA を絞る前の
+      # 歴史的証明書をそのまま見ると恒久的に誤検知しうる。直近 WINDOW_DAYS
+      # 日以内に発行 (not_before) された証明書だけを対象とする rolling window
+      # 方式とし、月次 cron に対し十分なオーバーラップを取る。
+      #
+      # crt.sh は過負荷時に HTTP 200 のまま空ボディ / HTML を返すことがあり、
+      # curl の --retry は status が成功なら弾けない。有効な JSON が取れるまで
+      # bash 側でリトライし、全試行が失敗したら crt.sh のインフラ不調
+      # (セキュリティ事象ではない) として `::warning::` 止まりにする — job は
+      # 緑のまま、Slack も鳴らさない。月次なので次回 cron で再試行される。
+      - name: Check CT logs for civicship.app
+        run: |
+          set -uo pipefail
+
+          # 有効な JSON が取れるまでリトライ。空 200 / HTML 応答も失敗扱い。
+          attempts=5
+          body=""
+          for i in $(seq 1 "$attempts"); do
+            resp=$(curl -sS --max-time 45 "https://crt.sh/?q=civicship.app&output=json" || true)
+            if printf '%s' "$resp" | python3 -c "import json,sys; json.load(sys.stdin)" >/dev/null 2>&1; then
+              body="$resp"
+              echo "crt.sh: 有効な JSON を取得 (試行 ${i}/${attempts})"
+              break
+            fi
+            echo "crt.sh: 非 JSON 応答 (試行 ${i}/${attempts})"
+            [ "$i" -lt "$attempts" ] && sleep 20
+          done
+
+          if [ -z "$body" ]; then
+            # crt.sh のインフラ不調。セキュリティ事象ではないので job は赤に
+            # せず warning 止まりにする (月次なので次回 cron で再試行される)。
+            echo "::warning::crt.sh が有効な JSON を返しませんでした (${attempts} 回試行)。今回の CT log チェックはスキップします。"
+            exit 0
+          fi
+
+          printf '%s' "$body" | python3 -c "
+          import json, sys
+          from datetime import datetime, timedelta, timezone
+
+          # 月次 cron に対し 2x のオーバーラップ。run が 1 回飛んでも取りこぼさない。
+          WINDOW_DAYS = 60
+          cutoff = datetime.now(timezone.utc) - timedelta(days=WINDOW_DAYS)
+
+          # civicship.app の CAA で許可している CA と整合させる。CAA 識別子 →
+          # crt.sh の issuer_name に現れる組織名の対応:
+          #   pki.goog        -> Google Trust Services
+          #   comodoca.com    -> Sectigo (旧 Comodo CA)
+          #   digicert.com    -> DigiCert
+          #   letsencrypt.org -> Let's Encrypt
+          #   ssl.com         -> SSL Corp / SSL.com
+          # ここから外れた issuer = CAA ポリシー逸脱 (ミス発行 / 不正発行) として fail。
+          # (Let は apostrophe を含むため chr(39) で組み立て、シェル二重引用符と衝突させない)
+          allowed = [
+              'Google Trust Services',
+              'Sectigo',
+              'COMODO',
+              'DigiCert',
+              'Let' + chr(39) + 's Encrypt',
+              'SSL Corp',
+              'SSL.com',
+          ]
+
+          def not_before(cert):
+              raw = (cert.get('not_before') or '').strip()
+              if not raw:
+                  return None
+              try:
+                  dt = datetime.fromisoformat(raw)
+              except ValueError:
+                  return None
+              return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+          data = json.load(sys.stdin)
+          recent = [c for c in data if (nb := not_before(c)) and nb >= cutoff]
+          issuers = {c.get('issuer_name', '') for c in recent}
+          unexpected = sorted(i for i in issuers if i and not any(a in i for a in allowed))
+          if unexpected:
+              for u in unexpected:
+                  print(f'::error::CAA で許可していない CA を検出 (直近 {WINDOW_DAYS} 日以内に発行): {u}')
+              sys.exit(1)
+          print(f'OK: 直近 {WINDOW_DAYS} 日以内発行の証明書 {len(recent)} 件 / {len(issuers)} issuer はすべて CAA 許可 CA')
+          "
+
+      # 想定外の CA を検出して step が fail したときだけ Slack に投げる
+      # (crt.sh 取得失敗は前 step が warning + exit 0 で吸収するため鳴らない)。
+      # SLACK_WEBHOOK_INFRA secret 未登録の repo でも step が無声に skip する
+      # ように `if` で webhook の有無を確認する。tls-dns-posture.yml と同じ
+      # secret / 同じ通知パターン。
+      #
+      # secrets:
+      #   SLACK_WEBHOOK_INFRA  infra channel 宛 Slack incoming webhook URL。
+      - name: Slack notify on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_INFRA: ${{ secrets.SLACK_WEBHOOK_INFRA }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_INFRA:-}" ]; then
+            echo "::warning::SLACK_WEBHOOK_INFRA not set; skipping Slack notify."
+            exit 0
+          fi
+          payload=$(cat <<EOF
+          {"text":":rotating_light: civicship.app CT log check failed — 想定外の CA を検出。see ${RUN_URL}"}
+          EOF
+          )
+          curl -sS -X POST "$SLACK_WEBHOOK_INFRA" \
+            -H 'Content-Type: application/json' \
+            -d "$payload"

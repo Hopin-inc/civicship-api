@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { SignInProvider } from "@/consts/utils";
 import { auth } from "@/infrastructure/libs/firebase";
 import logger from "@/infrastructure/logging";
@@ -18,6 +18,14 @@ export interface LINETokenVerifyResponse {
 }
 
 export class LIFFService {
+  private static throwAxiosError(prefix: string, error: AxiosError): never {
+    const err = error.response?.data as { error?: string; error_description?: string } | undefined;
+    const detail = err?.error
+      ? `${err.error}: ${err.error_description || error.message}`
+      : error.message;
+    throw new Error(`[${prefix}] ${detail}`, { cause: error });
+  }
+
   static async verifyAccessToken(
     accessToken: string,
     channelId: string,
@@ -38,13 +46,11 @@ export class LIFFService {
       return data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const err = error.response?.data;
-        throw new Error(
-          `[LINE Token Verification] ${err?.error}: ${err?.error_description || error.message}`,
-        );
+        LIFFService.throwAxiosError("LINE Token Verification", error);
       }
       throw new Error(
         `[LINE Token Verification] ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
       );
     }
   }
@@ -57,13 +63,11 @@ export class LIFFService {
       return response.data as LINEProfile;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const err = error.response?.data;
-        throw new Error(
-          `[LINE Profile Fetch] ${err?.error}: ${err?.error_description || error.message}`,
-        );
+        LIFFService.throwAxiosError("LINE Profile Fetch", error);
       }
       throw new Error(
         `[LINE Profile Fetch] ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
       );
     }
   }
@@ -88,7 +92,7 @@ export class LIFFService {
       return customToken;
     } catch (error) {
       logger.error("Error creating Firebase custom token:", error);
-      throw new Error("Failed to create authentication token");
+      throw new Error("Failed to create authentication token", { cause: error });
     }
   }
 }

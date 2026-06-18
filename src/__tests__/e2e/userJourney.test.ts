@@ -158,6 +158,7 @@ describe("End-to-End User Journey Integration Tests", () => {
     const communityResult = await communityUseCase.userCreateCommunityAndJoin(
       {
         input: {
+          originalId: `c-${uniqueId.slice(-10).replace(/[^a-zA-Z0-9-]/g, "")}`,
           name: `Multi User Community ${uniqueId}`,
           pointName: "pts",
         },

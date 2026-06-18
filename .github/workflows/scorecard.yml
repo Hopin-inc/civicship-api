@@ -21,11 +21,11 @@ on:
     - cron: '0 22 * * 1'
   push:
     branches:
-      # default branch に push されたタイミング (= PR merge 直後) に再採点。
-      # 本 repo の development フローは develop 起点 (`ci.yml` の push trigger
-      # も `[master]` だが Scorecard は default branch のスコアを評価するため
-      # 別途 develop 側でも採点する)。
-      - master
+      # Scorecard は default branch でしか動かない (それ以外を渡すと
+      # `Only the default branch <name> is supported` で job 全体が fail する)。
+      # 本 repo の default branch は develop なので develop のみ列挙する。
+      # master 側は default branch ではないため Scorecard の対象外で、
+      # cron + branch_protection_rule で十分カバーされる。
       - develop
 
 # Scorecard の各 check は read 権限で十分なので job 単位で job-level に

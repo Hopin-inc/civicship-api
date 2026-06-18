@@ -1,4 +1,5 @@
 import { RichMenuDefinition } from "../../types";
+import { buyMembershipNftArea } from "./shared";
 
 export const publicJoinMenu: RichMenuDefinition = {
   size: {
@@ -61,6 +62,7 @@ export const publicJoinMenu: RichMenuDefinition = {
         uri: "https://drive.google.com/file/d/1DAZ2IEdApt-X8SolJ2CKAE6mpw6bHxyk/view?usp=sharing",
       },
     },
+    buyMembershipNftArea,
   ],
   alias: "public-join",
   imagePath: "images/public_menu_join.png",
