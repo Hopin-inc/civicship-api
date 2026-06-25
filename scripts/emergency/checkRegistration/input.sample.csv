@@ -1,0 +1,4 @@
+phoneNumber,nftSequence,name,errorType,error
++819012345678,6,山田太郎,FIREBASE_NOT_FOUND,"There is no user record corresponding to the provided identifier."
++819023456789,7,鈴木花子,FIREBASE_NOT_FOUND,"There is no user record corresponding to the provided identifier."
+09034567890,8,佐藤一郎,FIREBASE_NOT_FOUND,"There is no user record corresponding to the provided identifier."
