@@ -93,16 +93,31 @@ export function parseCheckCsv(csvContent: string): CheckInputRecord[] {
     const name = nameIdx !== -1 ? (cols[nameIdx] ?? "") : "";
     const rawSeq = seqIdx !== -1 ? (cols[seqIdx] ?? "") : "";
 
+    const seq = /^[0-9]+$/.test(rawSeq) ? parseInt(rawSeq, 10) : null;
+
     const resolved = resolveE164(rawPhone);
     if (!resolved.ok) {
       logger.warn(`電話番号を解決できませんでした (CSV行 ${lineNumber})`, {
         rawPhone,
         error: resolved.error,
       });
+      // スキップせず invalidPhone として集計に残す（生値でキー化して重複排除）
+      const key = `invalid:${rawPhone}`;
+      const existingInvalid = byPhone.get(key);
+      if (existingInvalid) {
+        if (seq !== null && !existingInvalid.nftSequences.includes(seq)) {
+          existingInvalid.nftSequences.push(seq);
+        }
+        return;
+      }
+      byPhone.set(key, {
+        phoneNumber: rawPhone || "(empty)",
+        name,
+        nftSequences: seq !== null ? [seq] : [],
+        invalidReason: resolved.error,
+      });
       return;
     }
-
-    const seq = /^[0-9]+$/.test(rawSeq) ? parseInt(rawSeq, 10) : null;
 
     const existing = byPhone.get(resolved.e164);
     if (existing) {

@@ -15,18 +15,18 @@ import { aggregate, writeOutputFiles, printSummary } from "./helpers/outputGener
  * 集計・CSV出力する。ウォレット作成やDB書き込みは一切行わない。
  *
  * 使い方:
- *   pnpm emergency:check-registration [入力CSVパス] [出力ディレクトリ]
- *   - 入力CSVパス省略時: scripts/emergency/checkRegistration/input.csv
- *   - 出力ディレクトリ省略時: scripts/emergency/checkRegistration/output
+ *   前回ダウンロードした errors CSV を下記の固定パスに置いてから実行する。
+ *     入力: scripts/emergency/checkRegistration/input.csv
+ *     出力: scripts/emergency/checkRegistration/output/
+ *   $ pnpm emergency:check-registration
+ *
+ * 入力・出力パスはリポジトリ内の固定値とし、外部入力（コマンドライン引数等）から
+ * 組み立てない（パスインジェクションを避けるため）。
  */
 async function main() {
   const baseDir = path.join(process.cwd(), "scripts/emergency/checkRegistration");
-  const inputPath = process.argv[2]
-    ? path.resolve(process.cwd(), process.argv[2])
-    : path.join(baseDir, "input.csv");
-  const outputDir = process.argv[3]
-    ? path.resolve(process.cwd(), process.argv[3])
-    : path.join(baseDir, "output");
+  const inputPath = path.join(baseDir, "input.csv");
+  const outputDir = path.join(baseDir, "output");
 
   logger.info("登録状況チェックを開始します（確認専用・副作用なし）");
   logger.info(`入力CSV: ${inputPath}`);
