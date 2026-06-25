@@ -1,8 +1,11 @@
 import * as fs from "fs";
 import * as path from "path";
-import logger from "../../../../src/infrastructure/logging";
+import logger from "@/infrastructure/logging";
 import { CheckResult, CheckSummary } from "../types";
 
+/**
+ * チェック結果の配列を種別（登録済み / 未登録 / 確認不可）ごとに振り分けて集計する。
+ */
 export function aggregate(results: CheckResult[]): CheckSummary {
   const summary: CheckSummary = {
     registered: [],
@@ -27,10 +30,17 @@ export function aggregate(results: CheckResult[]): CheckSummary {
   return summary;
 }
 
+/** CSVの1フィールドをダブルクオートで囲みエスケープする（カンマ・引用符対策）。 */
 function csvField(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
+/**
+ * 集計結果を2つのCSVに書き出す:
+ *   - registered.csv          … 登録済みになった人（＝前回からの変化分）
+ *   - still-not-registered.csv … まだ未登録の人
+ * いずれも電話番号(PII)を含むため、出力先はgit管理外ディレクトリ。
+ */
 export function writeOutputFiles(summary: CheckSummary, outputDir: string): void {
   fs.mkdirSync(outputDir, { recursive: true });
 
@@ -59,6 +69,9 @@ export function writeOutputFiles(summary: CheckSummary, outputDir: string): void
   });
 }
 
+/**
+ * 集計結果のサマリ（チェック対象数・登録済み人数と登録率・未登録人数）をログ出力する。
+ */
 export function printSummary(summary: CheckSummary, totalChecked: number): void {
   const registered = summary.registered.length;
   const notRegistered = summary.notRegistered.length;

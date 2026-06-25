@@ -2,7 +2,7 @@ import "reflect-metadata";
 import "@/application/provider";
 import * as process from "node:process";
 import * as path from "path";
-import logger from "../../../src/infrastructure/logging";
+import logger from "@/infrastructure/logging";
 import { loadCheckCsv } from "./helpers/csvParser";
 import { checkAll } from "./helpers/checker";
 import { aggregate, writeOutputFiles, printSummary } from "./helpers/outputGenerator";

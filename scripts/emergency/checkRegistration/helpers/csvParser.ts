@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import logger from "../../../../src/infrastructure/logging";
+import logger from "@/infrastructure/logging";
 import { normalizeJapanesePhoneNumber } from "../../nftMint/helpers/phoneNormalizer";
 import { CheckInputRecord } from "../types";
 
@@ -140,6 +140,10 @@ export function parseCheckCsv(csvContent: string): CheckInputRecord[] {
   return Array.from(byPhone.values());
 }
 
+/**
+ * 指定パスのCSVを読み込み、パース済みの入力レコード配列を返す。
+ * ファイルが無い、または有効な行が無い場合は例外を投げる。
+ */
 export function loadCheckCsv(filePath: string): CheckInputRecord[] {
   if (!fs.existsSync(filePath)) {
     throw new Error(`入力CSVが見つかりません: ${filePath}`);

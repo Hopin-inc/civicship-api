@@ -1,5 +1,5 @@
-import { auth } from "../../../../src/infrastructure/libs/firebase";
-import logger from "../../../../src/infrastructure/logging";
+import { auth } from "@/infrastructure/libs/firebase";
+import logger from "@/infrastructure/logging";
 import { CheckInputRecord, CheckResult } from "../types";
 
 /**

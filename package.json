@@ -32,6 +32,7 @@
     "db:seed-report-golden-cases:dev": "dotenvx run -f .env.dev -- pnpm db:seed-report-golden-cases",
     "ci:report-golden": "tsx scripts/ci/run-golden-cases.ts",
     "emergency:check-registration": "tsx scripts/emergency/checkRegistration/index.ts",
+    "emergency:check-registration:prd": "tsx scripts/confirmPrd.ts 'emergency:check-registration:prd' && dotenvx run -f .env.prd -- pnpm emergency:check-registration",
     "db:generate": "prisma-case-format --file src/infrastructure/prisma/schema.prisma && prisma format --schema src/infrastructure/prisma/schema.prisma && prisma generate --sql --schema src/infrastructure/prisma/schema.prisma",
     "db:generate:local": "dotenvx run -f .env.local -- pnpm db:generate",
     "db:generate:dev": "dotenvx run -f .env.dev -- pnpm db:generate",
