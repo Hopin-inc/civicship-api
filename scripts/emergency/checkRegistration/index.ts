@@ -1,5 +1,3 @@
-import "reflect-metadata";
-import "@/application/provider";
 import * as process from "node:process";
 import * as path from "path";
 import logger from "@/infrastructure/logging";
