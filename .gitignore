@@ -163,3 +163,7 @@ tmp/
 # NMKR generated files
 /src/infrastructure/libs/nmkr/types/*.d.ts
 kms-poc-sa.json
+
+# Emergency registration-check artifacts (contain phone numbers / PII)
+scripts/emergency/checkRegistration/output/
+scripts/emergency/checkRegistration/input.csv
