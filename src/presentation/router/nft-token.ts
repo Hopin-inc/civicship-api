@@ -93,7 +93,12 @@ router.put(
         return res.status(400).json({ error: "metadata must be an object" });
       }
 
-      // null は undefined と等価扱い (UpsertTokenInput の string fields は string | undefined)
+      // 正規化方針 (UpsertTokenInput の型定義に揃える):
+      //   - name / symbol: string | null → null は保持 (DB に NULL 反映)
+      //   - decimals / totalSupply / holders / exchangeRate /
+      //     circulatingMarketCap / iconUrl: string | undefined → null は
+      //     undefined に潰す (= 更新しない)
+      //   - metadata: object | undefined → null/undefined は更新しない
       const input: UpsertTokenInput = {
         type: body.type,
         chain: body.chain as NftChain,
