@@ -1,6 +1,8 @@
 import { IContext } from "@/types/server";
+import { NftVendor } from "@prisma/client";
 import { injectable, inject } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import logger from "@/infrastructure/logging";
 import { getErrorCode, getErrorType } from "@/utils/error";
@@ -19,12 +21,26 @@ export type RegisterWalletResult = {
   userId: string;
 };
 
+export type LinkVendorUserResult = {
+  walletRef: string;
+  wallet: { walletAddress: string; chain: string | null } | null;
+};
+
+export type RegisterWalletByRefResult = {
+  created: boolean;
+  wallet: { walletAddress: string; chain: string | null };
+};
+
 @injectable()
 export default class NFTWalletUsecase {
   constructor(
     @inject("PrismaClientIssuer") private issuer: PrismaClientIssuer,
     @inject("NFTWalletService") private nftWalletService: NFTWalletService,
   ) {}
+
+  async getByWalletAddress(ctx: IContext, walletAddress: string) {
+    return this.nftWalletService.findByWalletAddress(ctx, walletAddress);
+  }
 
   async registerWallet(
     ctx: IContext,
@@ -46,15 +62,92 @@ export default class NFTWalletUsecase {
           where: { id: userId },
           data: { name: userName },
         });
-        logger.debug("✅ Updated user name", { userId, userName });
+        // 名前は PII につき値はログに残さない (更新有無のみ)
+        logger.debug("✅ Updated user name", { userId });
       }
 
       logger.debug("✅ Wallet registered", { userId, walletAddress });
-      
+
       return {
         id: wallet.id,
         walletAddress: wallet.walletAddress,
         userId: wallet.userId,
+      };
+    });
+  }
+
+  /**
+   * ログイン時に呼ぶ。(vendor, userId) の VendorUserLink を取得/生成し、
+   * 不透明な walletRef と既存 wallet (あれば) を返す。
+   * 業者は walletRef を保管し、後続の webhook で registerWalletByRef に渡す。
+   */
+  async linkVendorUser(
+    ctx: IContext,
+    vendor: NftVendor,
+    userId: string,
+  ): Promise<LinkVendorUserResult> {
+    return this.issuer.public(ctx, async (tx) => {
+      const link = await this.nftWalletService.linkVendorUser(ctx, vendor, userId, tx);
+      const wallet = await this.nftWalletService.findByUserId(ctx, userId);
+
+      return {
+        walletRef: link.ref,
+        wallet: wallet
+          ? { walletAddress: wallet.walletAddress, chain: wallet.chain }
+          : null,
+      };
+    });
+  }
+
+  /**
+   * Shopify webhook など server-side から呼ぶ。walletRef で認証済みユーザーを解決し、
+   * wallet を登録する。既存 wallet があれば上書きせずそれを返す (created: false)。
+   */
+  async registerWalletByRef(
+    ctx: IContext,
+    vendor: NftVendor,
+    walletRef: string,
+    walletAddress: string,
+    name?: string,
+  ): Promise<RegisterWalletByRefResult> {
+    const link = await this.nftWalletService.resolveVendorUserLink(ctx, walletRef);
+    if (!link) {
+      // walletRef は不透明な secret として業者に渡しているので、エラー応答にも反映しない
+      throw new NotFoundError("VendorUserLink");
+    }
+    if (link.vendor !== vendor) {
+      throw new AuthorizationError("walletRef belongs to another vendor");
+    }
+
+    return this.issuer.public(ctx, async (tx) => {
+      const { wallet, created } = await this.nftWalletService.getOrCreateWalletByUser(
+        ctx,
+        link.userId,
+        walletAddress,
+        tx,
+      );
+
+      if (created && name) {
+        const user = await tx.user.findUnique({
+          where: { id: link.userId },
+          select: { name: true },
+        });
+        if (user?.name === "名前未設定") {
+          await tx.user.update({ where: { id: link.userId }, data: { name } });
+          // 名前は PII につき値はログに残さない (更新有無のみ)
+          logger.debug("✅ Updated user name", { userId: link.userId });
+        }
+      }
+
+      logger.debug("✅ Wallet registered by ref", {
+        userId: link.userId,
+        walletAddress: wallet.walletAddress,
+        created,
+      });
+
+      return {
+        created,
+        wallet: { walletAddress: wallet.walletAddress, chain: wallet.chain },
       };
     });
   }

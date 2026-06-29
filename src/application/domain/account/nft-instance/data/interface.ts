@@ -33,6 +33,19 @@ export default interface INftInstanceRepository {
 
   findById(ctx: IContext, id: string): Promise<PrismaNftInstance | null>;
 
+  findByTokenAddressAndInstanceId(
+    ctx: IContext,
+    tokenAddress: string,
+    instanceId: string,
+  ): Promise<PrismaNftInstance | null>;
+
+  findManyByTokenAddress(
+    ctx: IContext,
+    tokenAddress: string,
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaNftInstance[]>;
+
   count(ctx: IContext, where: Prisma.NftInstanceWhereInput): Promise<number>;
 
   upsert(
@@ -42,7 +55,10 @@ export default interface INftInstanceRepository {
       name?: string | null;
       description?: string | null;
       imageUrl?: string | null;
-      json: Record<string, unknown>;
+      // undefined = update では json を触らない (create 時のみ {} を default 採用) /
+      // null      = 明示的にクリア (Prisma.DbNull) /
+      // object    = JSON として upsert
+      json?: Prisma.InputJsonValue | null;
       nftWalletId: string;
       nftTokenId: string;
       communityId?: string | null;
