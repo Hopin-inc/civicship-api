@@ -97,8 +97,8 @@ export function parseCheckCsv(csvContent: string): CheckInputRecord[] {
 
     const resolved = resolveE164(rawPhone);
     if (!resolved.ok) {
+      // 生の電話番号は PII なので line 番号と理由のみ残す
       logger.warn(`電話番号を解決できませんでした (CSV行 ${lineNumber})`, {
-        rawPhone,
         error: resolved.error,
       });
       // スキップせず invalidPhone として集計に残す（生値でキー化して重複排除）

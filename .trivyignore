@@ -44,6 +44,10 @@
 #       base image (node:20-slim) にまだ deb12u7 が取り込まれていない。
 #       恒久対応は base image digest を deb12u7 入りの node:20-slim へ bump
 #       すること (別 security-ops タスク)。それまでの時限回避。
-# expires: 2026-06-04  担当: 709sakata (#923)
+# expires: 2026-07-13  担当: 709sakata (#923, #1234)
+#   ※ 2026-06-04 から延長。base image bump タスクが未着手のため再延長。
+#      次回の棚卸し時に base image bump 状況を確認し、解消なら本エントリ削除、
+#      未解消なら更なる延長判断 (CRITICAL 時限 ignore 最長 2 週間ルールから逸脱
+#      しているので、長期化する場合は SECURITY.md の "advisory への降格" 検討)。
 CVE-2026-33845
 CVE-2026-42010

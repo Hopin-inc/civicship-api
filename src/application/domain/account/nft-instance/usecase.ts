@@ -62,9 +62,12 @@ export default class NftInstanceUseCase {
   ): Promise<UpsertNftInstanceResult> {
     const nftToken = await this.service.findTokenByAddress(ctx, tokenAddress);
 
-    if (nftToken.issuedByVendor && nftToken.issuedByVendor !== vendor) {
+    // 親 token が未 claim (issuedByVendor=null) もしくは別 vendor 発行の場合は拒否。
+    // 仕様: instance PUT は親 token が claim 済み (current vendor 発行) を要求する。
+    // 業者は先に PUT /api/nft-tokens/:address で token を claim してから instance を登録する運用。
+    if (nftToken.issuedByVendor !== vendor) {
       throw new AuthorizationError(
-        `NftToken (address: ${tokenAddress}) is issued by another vendor`,
+        `NftToken (address: ${tokenAddress}) is not claimed by this vendor`,
       );
     }
 

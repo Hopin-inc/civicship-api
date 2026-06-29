@@ -130,7 +130,9 @@ export default class NftInstanceRepository implements INftInstanceRepository {
           nftToken: { address: tokenAddress },
         },
         include: nftInstanceInclude,
-        orderBy: { createdAt: "desc" },
+        // createdAt のみだと同 ms 内の複数行で順序が不安定になり cursor page が
+        // 同一行を返したり抜けたりするので、id で tie-break する
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });

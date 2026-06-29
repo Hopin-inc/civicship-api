@@ -54,8 +54,8 @@ export async function checkRecord(record: CheckInputRecord): Promise<CheckResult
     }
 
     // 予期せぬエラーは「未登録」と誤判定せず、ログを残して処理を中断する
+    // 電話番号 (PII) は意図せず流出しないようコードとメッセージのみ残す
     logger.error(`予期せぬエラーのため中断します`, {
-      phoneNumber: record.phoneNumber,
       code: error?.code,
       error: errorMessage,
     });
