@@ -1,5 +1,7 @@
 import { bigintToSafeNumber } from "@/application/domain/report/util";
 import {
+  GqlAnalyticsChainDepthBucket,
+  GqlAnalyticsCohortFunnelPoint,
   GqlAnalyticsCohortRetentionPoint,
   GqlAnalyticsCommunityAlerts,
   GqlAnalyticsCommunitySummaryCard,
@@ -17,6 +19,7 @@ import {
 } from "@/types/graphql";
 import {
   AnalyticsAllTimeTotalsRow,
+  AnalyticsChainDepthBucketRow,
   AnalyticsMemberStatsRow,
   AnalyticsMonthlyActivityRow,
 } from "@/application/domain/analytics/community/data/type";
@@ -31,6 +34,7 @@ import {
   StageBreakdown,
   StageBucketStats,
   StageCounts,
+  AnalyticsCohortFunnelPoint,
   TenureDistribution,
   WeeklyRetentionPoint,
 } from "@/application/domain/analytics/community/aggregations";
@@ -97,6 +101,33 @@ export default class AnalyticsCommunityPresenter {
       // without per-element transformation.
       monthlyHistogram: d.monthlyHistogram,
     };
+  }
+
+  /**
+   * Chain-depth histogram. The bucket shape (depth + count) matches the
+   * GraphQL type 1:1, so this is a passthrough map — its purpose is to
+   * keep payload formatting on the presenter rather than leaking the
+   * Prisma row type out of the usecase.
+   */
+  static chainDepthDistribution(
+    rows: AnalyticsChainDepthBucketRow[],
+  ): GqlAnalyticsChainDepthBucket[] {
+    return rows.map((r) => ({ depth: r.depth, count: r.count }));
+  }
+
+  /**
+   * Per-cohort send-funnel series. Point shape (cohortMonth + 4 stage
+   * counts) matches the GraphQL type 1:1; same passthrough rationale as
+   * `chainDepthDistribution`.
+   */
+  static cohortFunnel(points: AnalyticsCohortFunnelPoint[]): GqlAnalyticsCohortFunnelPoint[] {
+    return points.map((p) => ({
+      cohortMonth: p.cohortMonth,
+      acquired: p.acquired,
+      activatedD30: p.activatedD30,
+      repeated: p.repeated,
+      habitual: p.habitual,
+    }));
   }
 
   // --- L2 ----------------------------------------------------------------

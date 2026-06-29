@@ -3,6 +3,8 @@ import { IContext } from "@/types/server";
 import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import {
   GqlQueryAnalyticsCommunityArgs,
+  GqlAnalyticsChainDepthBucket,
+  GqlAnalyticsCohortFunnelPoint,
   GqlAnalyticsCohortRetentionPoint,
   GqlAnalyticsCommunityAlerts,
   GqlAnalyticsCommunitySummaryCard,
@@ -24,7 +26,6 @@ import {
   computeStageBreakdown,
   computeStageCounts,
   computeTenureDistribution,
-  AnalyticsCohortFunnelPoint,
 } from "@/application/domain/analytics/community/aggregations";
 import {
   MAX_LIMIT,
@@ -32,7 +33,6 @@ import {
   paginateMembers,
 } from "@/application/domain/analytics/community/pagination";
 import {
-  AnalyticsChainDepthBucketRow,
   AnalyticsMemberStatsRow,
   AnalyticsMonthlyActivityRow,
 } from "@/application/domain/analytics/community/data/type";
@@ -280,17 +280,16 @@ export default class AnalyticsCommunityUseCase {
   async chainDepthDistribution(
     root: AnalyticsCommunityRoot,
     ctx: IContext,
-  ): Promise<AnalyticsChainDepthBucketRow[]> {
-    // Bucket shape (depth + count) matches the GraphQL type 1:1, so the
-    // rows pass through without a presenter transform.
-    return this.service.getChainDepthDistribution(ctx, root.communityId, root.asOf);
+  ): Promise<GqlAnalyticsChainDepthBucket[]> {
+    const rows = await this.service.getChainDepthDistribution(ctx, root.communityId, root.asOf);
+    return AnalyticsCommunityPresenter.chainDepthDistribution(rows);
   }
 
-  async cohortFunnel(root: AnalyticsCommunityRoot): Promise<AnalyticsCohortFunnelPoint[]> {
+  async cohortFunnel(root: AnalyticsCommunityRoot): Promise<GqlAnalyticsCohortFunnelPoint[]> {
     const members = await root.loadMembers();
-    // Funnel point shape (cohortMonth + 4 stage counts) matches the
-    // GraphQL type 1:1.
-    return computeCohortFunnel(members, root.asOf, root.windowMonths, root.thresholds);
+    return AnalyticsCommunityPresenter.cohortFunnel(
+      computeCohortFunnel(members, root.asOf, root.windowMonths, root.thresholds),
+    );
   }
 
   async hubMemberCount(root: AnalyticsCommunityRoot, ctx: IContext): Promise<number> {
