@@ -11,6 +11,11 @@ import { clampFirst } from "@/application/domain/utils";
 import { Prisma } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 
+// Prisma.InputJsonValue は再帰 union (object / array / primitive) で、
+// router からは plain object に検証済みで流れてくる前提のため
+// repository に渡すタイミングで cast する。
+type JsonInput = Prisma.InputJsonValue | null | undefined;
+
 export type UpsertInstanceInput = {
   ownerWalletAddress: string;
   name?: string | null;
@@ -84,7 +89,7 @@ export default class NftInstanceService {
         imageUrl: input.imageUrl ?? null,
         // metadata の null/undefined 区別は repository 層が責任を持つ
         // (undefined = update では触らず create では {}, null = どちらでも DbNull)
-        json: input.metadata,
+        json: input.metadata as JsonInput,
         nftWalletId: nftWallet.id,
         nftTokenId: nftToken.id,
         communityId: nftToken.communityId,
