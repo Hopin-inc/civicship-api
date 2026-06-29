@@ -95,10 +95,11 @@ router.put(
         name: body.name ?? null,
         description: body.description ?? null,
         imageUrl: body.imageUrl ?? null,
+        // 未指定 (undefined = 既存維持) と明示的 null (クリア要求) を区別して下流に伝える
         metadata:
-          body.metadata == null
+          body.metadata === undefined
             ? undefined
-            : (body.metadata as Record<string, unknown>),
+            : (body.metadata as Record<string, unknown> | null),
       };
 
       const issuer = new PrismaClientIssuer();

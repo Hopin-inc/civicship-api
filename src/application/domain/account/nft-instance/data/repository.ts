@@ -146,7 +146,10 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       name?: string | null;
       description?: string | null;
       imageUrl?: string | null;
-      json: unknown;
+      // json: undefined = update path はフィールド省略 (既存値維持) /
+      //        null      = 明示的にクリア (Prisma.DbNull) /
+      //        object    = JSON として upsert
+      json?: Prisma.InputJsonValue | null;
       nftWalletId: string;
       nftTokenId: string;
       communityId?: string | null;
@@ -154,6 +157,16 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     nftTokenId: string,
     tx: Prisma.TransactionClient,
   ) {
+    const jsonForUpdate: Prisma.InputJsonValue | typeof Prisma.DbNull | undefined =
+      data.json === undefined
+        ? undefined
+        : data.json === null
+          ? Prisma.DbNull
+          : data.json;
+    // create 時 (= 行が無い) は必ず初期値を入れる。null なら DbNull、それ以外は値 or {}
+    const jsonForCreate: Prisma.InputJsonValue | typeof Prisma.DbNull =
+      data.json === null ? Prisma.DbNull : (data.json ?? {});
+
     return tx.nftInstance.upsert({
       where: {
         nftTokenId_instanceId: {
@@ -165,7 +178,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         name: data.name,
         description: data.description,
         imageUrl: data.imageUrl,
-        json: data.json,
+        ...(jsonForUpdate === undefined ? {} : { json: jsonForUpdate }),
         nftWalletId: data.nftWalletId,
         communityId: data.communityId,
       },
@@ -174,7 +187,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         name: data.name,
         description: data.description,
         imageUrl: data.imageUrl,
-        json: data.json,
+        json: jsonForCreate,
         nftWalletId: data.nftWalletId,
         nftTokenId: data.nftTokenId,
         communityId: data.communityId,

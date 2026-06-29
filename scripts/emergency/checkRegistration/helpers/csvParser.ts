@@ -11,7 +11,10 @@ import { CheckInputRecord } from "../types";
 export function resolveE164(
   raw: string,
 ): { ok: true; e164: string } | { ok: false; error: string } {
-  const trimmed = raw.trim();
+  // outputGenerator.csvField で CSV インジェクション対策に先頭 `'` を付与する
+  // ことがある (例: `'+8190...`)。再読み込み時に `+` 始まりと判定できなくなる
+  // ので、先頭の `'` を 1 つだけ剥がしてから解釈する。
+  const trimmed = raw.trim().replace(/^'/, "");
   if (!trimmed) {
     return { ok: false, error: "電話番号が空です" };
   }

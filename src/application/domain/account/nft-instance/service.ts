@@ -16,7 +16,8 @@ export type UpsertInstanceInput = {
   name?: string | null;
   description?: string | null;
   imageUrl?: string | null;
-  metadata?: Record<string, unknown>;
+  // undefined = 未指定 (json は触らない) / null = 明示的にクリア / object = upsert
+  metadata?: Record<string, unknown> | null;
 };
 
 @injectable()
@@ -81,7 +82,9 @@ export default class NftInstanceService {
         name: input.name ?? null,
         description: input.description ?? null,
         imageUrl: input.imageUrl ?? null,
-        json: input.metadata ?? {},
+        // metadata の null/undefined 区別は repository 層が責任を持つ
+        // (undefined = update では触らず create では {}, null = どちらでも DbNull)
+        json: input.metadata,
         nftWalletId: nftWallet.id,
         nftTokenId: nftToken.id,
         communityId: nftToken.communityId,
