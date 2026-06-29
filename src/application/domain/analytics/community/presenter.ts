@@ -2,7 +2,6 @@ import { bigintToSafeNumber } from "@/application/domain/report/util";
 import {
   GqlAnalyticsCohortRetentionPoint,
   GqlAnalyticsCommunityAlerts,
-  GqlAnalyticsCommunityPayload,
   GqlAnalyticsCommunitySummaryCard,
   GqlAnalyticsLatestCohort,
   GqlAnalyticsMemberList,
@@ -18,7 +17,6 @@ import {
 } from "@/types/graphql";
 import {
   AnalyticsAllTimeTotalsRow,
-  AnalyticsChainDepthBucketRow,
   AnalyticsMemberStatsRow,
   AnalyticsMonthlyActivityRow,
 } from "@/application/domain/analytics/community/data/type";
@@ -33,7 +31,6 @@ import {
   StageBreakdown,
   StageBucketStats,
   StageCounts,
-  AnalyticsCohortFunnelPoint,
   TenureDistribution,
   WeeklyRetentionPoint,
 } from "@/application/domain/analytics/community/aggregations";
@@ -249,51 +246,6 @@ export default class AnalyticsCommunityPresenter {
     };
   }
 
-  static communityDetail(params: {
-    communityId: string;
-    communityName: string;
-    asOf: Date;
-    windowMonths: number;
-    summary: GqlAnalyticsCommunitySummaryCard;
-    stages: GqlAnalyticsStageDistribution;
-    monthlyActivityTrend: GqlAnalyticsMonthlyActivityPoint[];
-    retentionTrend: GqlAnalyticsRetentionTrendPoint[];
-    cohortRetention: GqlAnalyticsCohortRetentionPoint[];
-    memberList: GqlAnalyticsMemberList;
-    alerts: GqlAnalyticsCommunityAlerts;
-    dormantCount: number;
-    chainDepthDistribution: AnalyticsChainDepthBucketRow[];
-    cohortFunnel: AnalyticsCohortFunnelPoint[];
-    hubMemberCount: number;
-    tenureDistribution: TenureDistribution;
-  }): GqlAnalyticsCommunityPayload {
-    return {
-      communityId: params.communityId,
-      communityName: params.communityName,
-      asOf: params.asOf,
-      windowMonths: params.windowMonths,
-      summary: params.summary,
-      stages: params.stages,
-      monthlyActivityTrend: params.monthlyActivityTrend,
-      retentionTrend: params.retentionTrend,
-      cohortRetention: params.cohortRetention,
-      memberList: params.memberList,
-      alerts: params.alerts,
-      dormantCount: params.dormantCount,
-      // Chain-depth bucket shape (depth + count) matches the
-      // GraphQL type 1:1 so the array passes through without
-      // per-element transformation.
-      chainDepthDistribution: params.chainDepthDistribution,
-      // Same passthrough pattern: the cohort funnel point shape
-      // (cohortMonth + 4 stage counts) matches the GraphQL type
-      // 1:1.
-      cohortFunnel: params.cohortFunnel,
-      hubMemberCount: params.hubMemberCount,
-      tenureDistribution: AnalyticsCommunityPresenter.tenureDistribution(
-        params.tenureDistribution,
-      ),
-    };
-  }
 }
 
 /**
