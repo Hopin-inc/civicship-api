@@ -61,3 +61,15 @@ export function findOversizedField(
   }
   return null;
 }
+
+/**
+ * オプショナル文字列 (string | null | undefined) かどうかを判定する。
+ * JSON で `{"field": null}` と送られたケースを許容するためのガード。
+ * JSON シリアライザによっては未指定値を `null` で出すため、API として
+ * 「未指定」と「明示的 null」は等価に扱うのが業者フレンドリー。
+ */
+export function isOptionalStringOrNull(
+  value: unknown,
+): value is string | null | undefined {
+  return value === undefined || value === null || typeof value === "string";
+}

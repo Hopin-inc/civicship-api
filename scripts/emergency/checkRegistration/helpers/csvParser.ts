@@ -11,7 +11,10 @@ import { CheckInputRecord } from "../types";
 export function resolveE164(
   raw: string,
 ): { ok: true; e164: string } | { ok: false; error: string } {
-  const trimmed = raw.trim();
+  // outputGenerator.csvField で CSV インジェクション対策に先頭 `'` を付与する
+  // ことがある (例: `'+8190...`)。再読み込み時に `+` 始まりと判定できなくなる
+  // ので、先頭の `'` を 1 つだけ剥がしてから解釈する。
+  const trimmed = raw.trim().replace(/^'/, "");
   if (!trimmed) {
     return { ok: false, error: "電話番号が空です" };
   }
@@ -97,8 +100,8 @@ export function parseCheckCsv(csvContent: string): CheckInputRecord[] {
 
     const resolved = resolveE164(rawPhone);
     if (!resolved.ok) {
+      // 生の電話番号は PII なので line 番号と理由のみ残す
       logger.warn(`電話番号を解決できませんでした (CSV行 ${lineNumber})`, {
-        rawPhone,
         error: resolved.error,
       });
       // スキップせず invalidPhone として集計に残す（生値でキー化して重複排除）

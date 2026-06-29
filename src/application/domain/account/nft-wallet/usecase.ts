@@ -62,7 +62,8 @@ export default class NFTWalletUsecase {
           where: { id: userId },
           data: { name: userName },
         });
-        logger.debug("✅ Updated user name", { userId, userName });
+        // 名前は PII につき値はログに残さない (更新有無のみ)
+        logger.debug("✅ Updated user name", { userId });
       }
 
       logger.debug("✅ Wallet registered", { userId, walletAddress });
@@ -111,7 +112,8 @@ export default class NFTWalletUsecase {
   ): Promise<RegisterWalletByRefResult> {
     const link = await this.nftWalletService.resolveVendorUserLink(ctx, walletRef);
     if (!link) {
-      throw new NotFoundError("VendorUserLink", { walletRef });
+      // walletRef は不透明な secret として業者に渡しているので、エラー応答にも反映しない
+      throw new NotFoundError("VendorUserLink");
     }
     if (link.vendor !== vendor) {
       throw new AuthorizationError("walletRef belongs to another vendor");
@@ -132,7 +134,8 @@ export default class NFTWalletUsecase {
         });
         if (user?.name === "名前未設定") {
           await tx.user.update({ where: { id: link.userId }, data: { name } });
-          logger.debug("✅ Updated user name", { userId: link.userId, name });
+          // 名前は PII につき値はログに残さない (更新有無のみ)
+          logger.debug("✅ Updated user name", { userId: link.userId });
         }
       }
 

@@ -11,6 +11,7 @@ import {
   EVM_ADDRESS_PATTERN,
   MAX_LENGTHS,
   findOversizedField,
+  isOptionalStringOrNull,
   isValidHttpsUrl,
   normalizeEvmAddress,
 } from "@/presentation/router/utils/validation";
@@ -22,9 +23,6 @@ import { IContext } from "@/types/server";
 const router = express.Router();
 
 const NFT_CHAIN_VALUES = Object.values(NftChain);
-
-const isOptionalString = (value: unknown): value is string | undefined =>
-  value === undefined || typeof value === "string";
 
 router.put(
   "/nft-tokens/:address",
@@ -56,14 +54,14 @@ router.put(
       }
 
       if (
-        !isOptionalString(body.name) ||
-        !isOptionalString(body.symbol) ||
-        !isOptionalString(body.decimals) ||
-        !isOptionalString(body.totalSupply) ||
-        !isOptionalString(body.holders) ||
-        !isOptionalString(body.exchangeRate) ||
-        !isOptionalString(body.circulatingMarketCap) ||
-        !isOptionalString(body.iconUrl)
+        !isOptionalStringOrNull(body.name) ||
+        !isOptionalStringOrNull(body.symbol) ||
+        !isOptionalStringOrNull(body.decimals) ||
+        !isOptionalStringOrNull(body.totalSupply) ||
+        !isOptionalStringOrNull(body.holders) ||
+        !isOptionalStringOrNull(body.exchangeRate) ||
+        !isOptionalStringOrNull(body.circulatingMarketCap) ||
+        !isOptionalStringOrNull(body.iconUrl)
       ) {
         return res.status(400).json({ error: "Invalid field type" });
       }
@@ -83,29 +81,39 @@ router.put(
         return res.status(400).json({ error: oversized });
       }
 
-      if (body.iconUrl !== undefined && !isValidHttpsUrl(body.iconUrl)) {
+      if (typeof body.iconUrl === "string" && !isValidHttpsUrl(body.iconUrl)) {
         return res.status(400).json({ error: "iconUrl must be a valid https URL" });
       }
 
       if (
         body.metadata !== undefined &&
-        (typeof body.metadata !== "object" || body.metadata === null || Array.isArray(body.metadata))
+        body.metadata !== null &&
+        (typeof body.metadata !== "object" || Array.isArray(body.metadata))
       ) {
         return res.status(400).json({ error: "metadata must be an object" });
       }
 
+      // 正規化方針 (UpsertTokenInput の型定義に揃える):
+      //   - name / symbol: string | null → null は保持 (DB に NULL 反映)
+      //   - decimals / totalSupply / holders / exchangeRate /
+      //     circulatingMarketCap / iconUrl: string | undefined → null は
+      //     undefined に潰す (= 更新しない)
+      //   - metadata: object | undefined → null/undefined は更新しない
       const input: UpsertTokenInput = {
         type: body.type,
         chain: body.chain as NftChain,
         name: body.name ?? null,
         symbol: body.symbol ?? null,
-        decimals: body.decimals,
-        totalSupply: body.totalSupply,
-        holders: body.holders,
-        exchangeRate: body.exchangeRate,
-        circulatingMarketCap: body.circulatingMarketCap,
-        iconUrl: body.iconUrl,
-        metadata: body.metadata as Record<string, unknown> | undefined,
+        decimals: body.decimals ?? undefined,
+        totalSupply: body.totalSupply ?? undefined,
+        holders: body.holders ?? undefined,
+        exchangeRate: body.exchangeRate ?? undefined,
+        circulatingMarketCap: body.circulatingMarketCap ?? undefined,
+        iconUrl: body.iconUrl ?? undefined,
+        metadata:
+          body.metadata == null
+            ? undefined
+            : (body.metadata as Record<string, unknown>),
       };
 
       const issuer = new PrismaClientIssuer();

@@ -13,6 +13,7 @@ import {
   EVM_ADDRESS_PATTERN,
   MAX_LENGTHS,
   findOversizedField,
+  isOptionalStringOrNull,
   isValidHttpsUrl,
   normalizeEvmAddress,
 } from "@/presentation/router/utils/validation";
@@ -25,9 +26,6 @@ import { IContext } from "@/types/server";
 const router = express.Router();
 
 const INSTANCE_ID_PATTERN = /^\d{1,78}$/;
-
-const isOptionalString = (value: unknown): value is string | undefined =>
-  value === undefined || typeof value === "string";
 
 router.put(
   "/nft-tokens/:tokenAddress/instances/:instanceId",
@@ -64,9 +62,9 @@ router.put(
       const ownerWalletAddress = normalizeEvmAddress(body.ownerWalletAddress);
 
       if (
-        !isOptionalString(body.name) ||
-        !isOptionalString(body.description) ||
-        !isOptionalString(body.imageUrl)
+        !isOptionalStringOrNull(body.name) ||
+        !isOptionalStringOrNull(body.description) ||
+        !isOptionalStringOrNull(body.imageUrl)
       ) {
         return res.status(400).json({ error: "Invalid field type" });
       }
@@ -80,13 +78,14 @@ router.put(
         return res.status(400).json({ error: oversized });
       }
 
-      if (body.imageUrl !== undefined && !isValidHttpsUrl(body.imageUrl)) {
+      if (typeof body.imageUrl === "string" && !isValidHttpsUrl(body.imageUrl)) {
         return res.status(400).json({ error: "imageUrl must be a valid https URL" });
       }
 
       if (
         body.metadata !== undefined &&
-        (typeof body.metadata !== "object" || body.metadata === null || Array.isArray(body.metadata))
+        body.metadata !== null &&
+        (typeof body.metadata !== "object" || Array.isArray(body.metadata))
       ) {
         return res.status(400).json({ error: "metadata must be an object" });
       }
@@ -96,7 +95,11 @@ router.put(
         name: body.name ?? null,
         description: body.description ?? null,
         imageUrl: body.imageUrl ?? null,
-        metadata: body.metadata as Record<string, unknown> | undefined,
+        // 未指定 (undefined = 既存維持) と明示的 null (クリア要求) を区別して下流に伝える
+        metadata:
+          body.metadata === undefined
+            ? undefined
+            : (body.metadata as Record<string, unknown> | null),
       };
 
       const issuer = new PrismaClientIssuer();

@@ -30,9 +30,16 @@ export function aggregate(results: CheckResult[]): CheckSummary {
   return summary;
 }
 
-/** CSVの1フィールドをダブルクオートで囲みエスケープする（カンマ・引用符対策）。 */
+/**
+ * CSVの1フィールドをダブルクオートで囲みエスケープする。
+ * - カンマ・引用符・改行のクオート: ダブルクオートで囲み、内部の `"` を `""` にエスケープ
+ * - CSV インジェクション対策: 先頭が `=`/`+`/`-`/`@`/タブ/CR の値は数式扱いされないよう
+ *   先頭にシングルクオート (`'`) を付けてサニタイズ (Excel / Google Sheets で自動評価される脆弱性回避)
+ * - phoneNumber (`+81...`) のような先頭記号付きの値もこの関数を通すことで安全に保存される
+ */
 function csvField(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+  const sanitized = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${sanitized.replace(/"/g, '""')}"`;
 }
 
 /**
@@ -45,9 +52,13 @@ export function writeOutputFiles(summary: CheckSummary, outputDir: string): void
   fs.mkdirSync(outputDir, { recursive: true });
 
   // 登録済みになった人（＝前回からの変化分）
+  // phoneNumber は `+81...` で始まるため csvField で必ずクオート + 数式扱い防止する。
+  // firebaseUid も同様に csvField を通す (将来の値変化や CSV インジェクション防御)。
   const registeredCsv = [
     "phoneNumber,name,firebaseUid",
-    ...summary.registered.map((r) => `${r.phoneNumber},${csvField(r.name)},${r.firebaseUid}`),
+    ...summary.registered.map(
+      (r) => `${csvField(r.phoneNumber)},${csvField(r.name)},${csvField(r.firebaseUid)}`,
+    ),
   ].join("\n");
   const registeredPath = path.join(outputDir, "registered.csv");
   fs.writeFileSync(registeredPath, registeredCsv, "utf-8");
@@ -59,7 +70,7 @@ export function writeOutputFiles(summary: CheckSummary, outputDir: string): void
   const notRegisteredCsv = [
     "phoneNumber,name,error",
     ...summary.notRegistered.map(
-      (r) => `${r.phoneNumber},${csvField(r.name)},${csvField(r.error)}`,
+      (r) => `${csvField(r.phoneNumber)},${csvField(r.name)},${csvField(r.error)}`,
     ),
   ].join("\n");
   const notRegisteredPath = path.join(outputDir, "still-not-registered.csv");
