@@ -176,6 +176,9 @@ const resolvers = {
   ReportTemplate: report.ReportTemplate,
   AdminReportSummaryRow: report.AdminReportSummaryRow,
   ReportFeedback: reportFeedback.ReportFeedback,
+
+  AnalyticsCommunityPayload: analyticsCommunity.AnalyticsCommunityPayload,
+
   GenerateReportPayload: report.GenerateReportPayload,
   UpdateReportTemplatePayload: report.UpdateReportTemplatePayload,
   ApproveReportPayload: report.ApproveReportPayload,
