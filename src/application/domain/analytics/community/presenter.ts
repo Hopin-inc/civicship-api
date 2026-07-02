@@ -1,8 +1,9 @@
 import { bigintToSafeNumber } from "@/application/domain/report/util";
 import {
+  GqlAnalyticsChainDepthBucket,
+  GqlAnalyticsCohortFunnelPoint,
   GqlAnalyticsCohortRetentionPoint,
   GqlAnalyticsCommunityAlerts,
-  GqlAnalyticsCommunityPayload,
   GqlAnalyticsCommunitySummaryCard,
   GqlAnalyticsLatestCohort,
   GqlAnalyticsMemberList,
@@ -100,6 +101,33 @@ export default class AnalyticsCommunityPresenter {
       // without per-element transformation.
       monthlyHistogram: d.monthlyHistogram,
     };
+  }
+
+  /**
+   * Chain-depth histogram. The bucket shape (depth + count) matches the
+   * GraphQL type 1:1, so this is a passthrough map — its purpose is to
+   * keep payload formatting on the presenter rather than leaking the
+   * Prisma row type out of the usecase.
+   */
+  static chainDepthDistribution(
+    rows: AnalyticsChainDepthBucketRow[],
+  ): GqlAnalyticsChainDepthBucket[] {
+    return rows.map((r) => ({ depth: r.depth, count: r.count }));
+  }
+
+  /**
+   * Per-cohort send-funnel series. Point shape (cohortMonth + 4 stage
+   * counts) matches the GraphQL type 1:1; same passthrough rationale as
+   * `chainDepthDistribution`.
+   */
+  static cohortFunnel(points: AnalyticsCohortFunnelPoint[]): GqlAnalyticsCohortFunnelPoint[] {
+    return points.map((p) => ({
+      cohortMonth: p.cohortMonth,
+      acquired: p.acquired,
+      activatedD30: p.activatedD30,
+      repeated: p.repeated,
+      habitual: p.habitual,
+    }));
   }
 
   // --- L2 ----------------------------------------------------------------
@@ -249,51 +277,6 @@ export default class AnalyticsCommunityPresenter {
     };
   }
 
-  static communityDetail(params: {
-    communityId: string;
-    communityName: string;
-    asOf: Date;
-    windowMonths: number;
-    summary: GqlAnalyticsCommunitySummaryCard;
-    stages: GqlAnalyticsStageDistribution;
-    monthlyActivityTrend: GqlAnalyticsMonthlyActivityPoint[];
-    retentionTrend: GqlAnalyticsRetentionTrendPoint[];
-    cohortRetention: GqlAnalyticsCohortRetentionPoint[];
-    memberList: GqlAnalyticsMemberList;
-    alerts: GqlAnalyticsCommunityAlerts;
-    dormantCount: number;
-    chainDepthDistribution: AnalyticsChainDepthBucketRow[];
-    cohortFunnel: AnalyticsCohortFunnelPoint[];
-    hubMemberCount: number;
-    tenureDistribution: TenureDistribution;
-  }): GqlAnalyticsCommunityPayload {
-    return {
-      communityId: params.communityId,
-      communityName: params.communityName,
-      asOf: params.asOf,
-      windowMonths: params.windowMonths,
-      summary: params.summary,
-      stages: params.stages,
-      monthlyActivityTrend: params.monthlyActivityTrend,
-      retentionTrend: params.retentionTrend,
-      cohortRetention: params.cohortRetention,
-      memberList: params.memberList,
-      alerts: params.alerts,
-      dormantCount: params.dormantCount,
-      // Chain-depth bucket shape (depth + count) matches the
-      // GraphQL type 1:1 so the array passes through without
-      // per-element transformation.
-      chainDepthDistribution: params.chainDepthDistribution,
-      // Same passthrough pattern: the cohort funnel point shape
-      // (cohortMonth + 4 stage counts) matches the GraphQL type
-      // 1:1.
-      cohortFunnel: params.cohortFunnel,
-      hubMemberCount: params.hubMemberCount,
-      tenureDistribution: AnalyticsCommunityPresenter.tenureDistribution(
-        params.tenureDistribution,
-      ),
-    };
-  }
 }
 
 /**
