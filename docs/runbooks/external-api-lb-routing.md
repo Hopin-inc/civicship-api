@@ -24,7 +24,7 @@
 
 `api.civicship.app` 宛リクエストが通る層と、それぞれの設定の所在地:
 
-```
+```text
 Client
   → ① Cloudflare (Proxied, Bot Fight Mode)   … Cloudflareダッシュボード / gitの外
   → ② GCP HTTPS LB + Cloud Armor              … gcloud compute（本runbookの対象）
