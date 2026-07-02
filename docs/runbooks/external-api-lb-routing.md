@@ -104,13 +104,13 @@ cp /tmp/urlmap.yaml /tmp/urlmap.backup.yaml
 （`defaultService` は変更しない = `/api/*` 以外は Internal のまま）:
 
 ```yaml
-  - defaultService: https://www.googleapis.com/compute/v1/projects/co-creation-dao-prod/global/backendServices/prod-civicship-backend
-    name: api-matcher
+  - name: api-matcher
+    defaultService: https://www.googleapis.com/compute/v1/projects/co-creation-dao-prod/global/backendServices/prod-civicship-backend
     pathRules:
-    - paths:
-      - /api
-      - /api/*
-      service: https://www.googleapis.com/compute/v1/projects/co-creation-dao-prod/global/backendServices/prod-civicship-external-backend
+      - paths:
+          - /api
+          - /api/*
+        service: https://www.googleapis.com/compute/v1/projects/co-creation-dao-prod/global/backendServices/prod-civicship-external-backend
 ```
 
 ```bash
