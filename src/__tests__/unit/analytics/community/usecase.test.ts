@@ -1,6 +1,11 @@
 import "reflect-metadata";
 import AnalyticsCommunityUseCase from "@/application/domain/analytics/community/usecase";
 import type AnalyticsCommunityService from "@/application/domain/analytics/community/service";
+import {
+  DEFAULT_HUB_BREADTH_THRESHOLD,
+  DEFAULT_WINDOW_DAYS,
+  DEFAULT_WINDOW_MONTHS,
+} from "@/application/domain/analytics/community/service";
 import { IContext } from "@/types/server";
 import { AuthorizationError } from "@/errors/graphql";
 
@@ -95,7 +100,7 @@ describe("AnalyticsCommunityUseCase lazy field resolution", () => {
     expect(root.communityId).toBe("kibotcha");
     expect(root.communityName).toBe("きぼっちゃ");
     expect(root.asOf).toBe(asOf);
-    expect(root.windowMonths).toBe(10); // DEFAULT_WINDOW_MONTHS
+    expect(root.windowMonths).toBe(DEFAULT_WINDOW_MONTHS);
     expect(typeof root.loadMembers).toBe("function");
     expect(typeof root.loadMonthlyActivity).toBe("function");
 
@@ -154,7 +159,11 @@ describe("AnalyticsCommunityUseCase lazy field resolution", () => {
     // Empty member set → funnel points exist (one per window month) but
     // with zero counts; the important assertion is the mapped shape.
     const funnel = await usecase.cohortFunnel(root);
-    expect(Array.isArray(funnel)).toBe(true);
+    // computeCohortFunnel emits one zero-filled point per window month
+    // even for an empty member set, so the array is never empty — assert
+    // the length up front so the per-element checks below can't pass
+    // vacuously on an unexpectedly empty result.
+    expect(funnel).toHaveLength(DEFAULT_WINDOW_MONTHS);
     funnel.forEach((p) => {
       expect(p).toEqual(
         expect.objectContaining({
@@ -180,5 +189,16 @@ describe("AnalyticsCommunityUseCase lazy field resolution", () => {
     expect(service.getAlerts).toHaveBeenCalledWith(adminCtx, "kibotcha", asOf);
 
     await expect(usecase.hubMemberCount(root, adminCtx)).resolves.toBe(2);
+    // L2 hub classification uses the fixed 28-day window (matching L1's
+    // default) and the request's clamped hub-breadth threshold, not the
+    // trend-length `windowMonths`. Pin those args so a regression in the
+    // window/threshold wiring is caught.
+    expect(service.getWindowHubMemberCount).toHaveBeenCalledWith(
+      adminCtx,
+      "kibotcha",
+      asOf,
+      DEFAULT_WINDOW_DAYS,
+      DEFAULT_HUB_BREADTH_THRESHOLD,
+    );
   });
 });
