@@ -469,4 +469,50 @@ describe("AnalyticsCommunityPresenter", () => {
       expect(out.dormantCount).toBe(1);
     });
   });
+
+  describe("chainDepthDistribution / cohortFunnel — passthrough mapping", () => {
+    it("maps chain-depth rows to the GraphQL bucket shape 1:1", () => {
+      const out = AnalyticsCommunityPresenter.chainDepthDistribution([
+        { depth: 1, count: 5 },
+        { depth: 5, count: 2 },
+      ]);
+      expect(out).toEqual([
+        { depth: 1, count: 5 },
+        { depth: 5, count: 2 },
+      ]);
+    });
+
+    it("returns an empty array for an empty chain-depth input", () => {
+      expect(AnalyticsCommunityPresenter.chainDepthDistribution([])).toEqual([]);
+    });
+
+    it("maps cohort-funnel points 1:1 and passes the cohortMonth Date through untouched", () => {
+      const cohortMonth = new Date("2026-04-01T00:00:00Z");
+      const out = AnalyticsCommunityPresenter.cohortFunnel([
+        {
+          cohortMonth,
+          acquired: 10,
+          activatedD30: 6,
+          repeated: 3,
+          habitual: 1,
+        },
+      ]);
+      expect(out).toEqual([
+        {
+          cohortMonth,
+          acquired: 10,
+          activatedD30: 6,
+          repeated: 3,
+          habitual: 1,
+        },
+      ]);
+      // Date identity is preserved (serialised as Datetime downstream),
+      // not coerced to a string or a new Date instance.
+      expect(out[0].cohortMonth).toBe(cohortMonth);
+    });
+
+    it("returns an empty array for an empty cohort-funnel input", () => {
+      expect(AnalyticsCommunityPresenter.cohortFunnel([])).toEqual([]);
+    });
+  });
 });
