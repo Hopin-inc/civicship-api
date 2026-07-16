@@ -151,5 +151,23 @@ describe("VCIssuanceRequestUseCase (authz hardening)", () => {
 
       expect(result).toBeNull();
     });
+
+    it("denies a non-admin caller a request with no owner (null userId)", async () => {
+      mockService.findVcIssuanceRequest.mockResolvedValueOnce(makeRow({ userId: null as never }));
+      const ctx = makeCtx();
+
+      const result = await usecase.visitorViewVcIssuanceRequest(ctx, { id: "vcr-1" });
+
+      expect(result).toBeNull();
+    });
+
+    it("lets an admin read a request with no owner (null userId)", async () => {
+      mockService.findVcIssuanceRequest.mockResolvedValueOnce(makeRow({ userId: null as never }));
+      const ctx = makeCtx({ isAdmin: true, currentUser: { id: "admin-1" } as never });
+
+      const result = await usecase.visitorViewVcIssuanceRequest(ctx, { id: "vcr-1" });
+
+      expect(result).not.toBeNull();
+    });
   });
 });
