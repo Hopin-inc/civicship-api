@@ -14,7 +14,6 @@ export default class VCIssuanceRequestResolver {
   Query = {
     vcIssuanceRequests: (_: unknown, args: GqlQueryVcIssuanceRequestsArgs, ctx: IContext) => {
       return this.usecase.visitorBrowseVcIssuanceRequests(ctx, args);
-      return this.usecase.visitorBrowseVcIssuanceRequests(ctx, args);
     },
 
     vcIssuanceRequest: (_: unknown, args: GqlQueryVcIssuanceRequestArgs, ctx: IContext) => {
