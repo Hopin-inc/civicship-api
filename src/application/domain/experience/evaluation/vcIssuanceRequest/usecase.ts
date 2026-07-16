@@ -15,13 +15,16 @@ import { AuthenticationError } from "@/errors/graphql";
  * True when the caller is the target user, or when the caller is an admin.
  * Mirrors the ownership predicate in the sibling `credential/vcIssuance`
  * usecase — both VC-surface read paths must apply the same "self-or-admin"
- * gate. Kept local (a 3-line predicate isn't worth a shared module) and
- * returns `false` for anonymous callers as defence-in-depth behind the
- * schema's `IsUser` rule.
+ * gate. Kept local (a 3-line predicate isn't worth a shared module).
+ *
+ * `userId` is nullable so callers can pass a row's FK directly: an admin
+ * still gets access even for a `userId`-less row, while a non-admin (or an
+ * anonymous caller) is denied — the `!!userId` guard makes a missing owner
+ * never match. Defence-in-depth behind the schema's `IsUser` rule.
  */
-function isSelfOrAdmin(ctx: IContext, userId: string): boolean {
+function isSelfOrAdmin(ctx: IContext, userId: string | null | undefined): boolean {
   if (ctx.isAdmin) return true;
-  return ctx.currentUser?.id === userId;
+  return !!userId && ctx.currentUser?.id === userId;
 }
 
 @injectable()
@@ -75,7 +78,7 @@ export default class VCIssuanceRequestUseCase {
   ): Promise<GqlVcIssuanceRequest | null> {
     const request = await this.service.findVcIssuanceRequest(ctx, id);
     if (!request) return null;
-    if (!request.userId || !isSelfOrAdmin(ctx, request.userId)) return null;
+    if (!isSelfOrAdmin(ctx, request.userId)) return null;
     return VCIssuanceRequestPresenter.get(request);
   }
 
