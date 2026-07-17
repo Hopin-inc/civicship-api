@@ -112,6 +112,7 @@ enum TransactionReason {
   ONBOARDING
 
   DONATION
+  CONTRIBUTION
   GRANT
 
   TICKET_PURCHASED

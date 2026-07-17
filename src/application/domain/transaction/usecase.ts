@@ -7,6 +7,7 @@ import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
 import { clampFirst, getCommunityIdFromCtx, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
 import logger from "@/infrastructure/logging";
@@ -169,53 +170,91 @@ export default class TransactionUseCase {
   ): Promise<GqlTransactionDonateSelfPointPayload> {
     const { communityId, toUserId, transferPoints, comment } = input;
     const currentUserId = getCurrentUserId(ctx);
-    const fromWallet = await this.walletService.findMemberWalletOrThrow(
-      ctx,
-      currentUserId,
-      communityId,
-    );
     const uploadedImages = await this.uploadTransactionImages(input.images);
 
-    const transaction = await ctx.issuer.onlyBelongingCommunity(
-      ctx,
-      async (tx: Prisma.TransactionClient) => {
-        const toWallet = await this.walletService.findMemberWalletOrThrow(
-          ctx,
-          toUserId,
-          communityId,
-          tx,
-        );
+    let transaction: PrismaTransactionDetail;
 
-        const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
-          fromWallet,
-          toWallet,
-          transferPoints,
-        );
+    if (toUserId == null) {
+      // 送付先ユーザーが指定されない場合は、コミュニティ財布への送付
+      // (フリマ支払い・DAO への返還等) として扱う。送金元はカレントユーザー、
+      // 送金先は communityId のコミュニティ財布 (member → community)。
+      transaction = await ctx.issuer.onlyBelongingCommunity(
+        ctx,
+        async (tx: Prisma.TransactionClient) => {
+          const { fromWalletId, toWalletId } =
+            await this.walletValidator.validateCommunityMemberTransfer(
+              ctx,
+              tx,
+              communityId,
+              currentUserId,
+              transferPoints,
+              TransactionReason.CONTRIBUTION,
+            );
 
-        return await this.transactionService.donateSelfPoint(
-          ctx,
-          fromWallet.id,
-          toWalletId,
-          transferPoints,
-          tx,
-          comment ?? undefined,
-          uploadedImages,
-        );
-      },
-    );
+          return await this.transactionService.contributeToCommunity(
+            ctx,
+            fromWalletId,
+            toWalletId,
+            transferPoints,
+            tx,
+            comment ?? undefined,
+            uploadedImages,
+          );
+        },
+      );
+    } else {
+      const fromWallet = await this.walletService.findMemberWalletOrThrow(
+        ctx,
+        currentUserId,
+        communityId,
+      );
+
+      transaction = await ctx.issuer.onlyBelongingCommunity(
+        ctx,
+        async (tx: Prisma.TransactionClient) => {
+          const toWallet = await this.walletService.findMemberWalletOrThrow(
+            ctx,
+            toUserId,
+            communityId,
+            tx,
+          );
+
+          const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+            fromWallet,
+            toWallet,
+            transferPoints,
+          );
+
+          return await this.transactionService.donateSelfPoint(
+            ctx,
+            fromWallet.id,
+            toWalletId,
+            transferPoints,
+            tx,
+            comment ?? undefined,
+            uploadedImages,
+          );
+        },
+      );
+    }
 
     await ctx.issuer.internal(async (tx) => {
       await this.transactionService.refreshCurrentPoint(ctx, tx);
     });
 
-    this.notificationService
-      .pushPointDonationReceivedMessage(ctx, transaction.id, toUserId)
-      .catch((error) => {
-        logger.error("Failed to send point donation notification", {
-          transactionId: transaction.id,
-          error,
+    // コミュニティ送付には受取ユーザーが存在しないため、通知はメンバー間送付のみ。
+    // 受信者が通知から即座にウォレットを開いても最新残高を見られるよう、
+    // materialized view (refreshCurrentPoint) の更新後に通知を発火する。
+    if (toUserId != null) {
+      this.notificationService
+        .pushPointDonationReceivedMessage(ctx, transaction.id, toUserId)
+        .catch((error) => {
+          logger.error("Failed to send point donation notification", {
+            transactionId: transaction.id,
+            error,
+          });
         });
-      });
+    }
 
     return TransactionPresenter.giveUserPoint(transaction);
   }
