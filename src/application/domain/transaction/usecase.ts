@@ -174,7 +174,7 @@ export default class TransactionUseCase {
 
     let transaction: PrismaTransactionDetail;
 
-    if (!toUserId) {
+    if (toUserId == null) {
       // 送付先ユーザーが指定されない場合は、コミュニティ財布への送付
       // (フリマ支払い・DAO への返還等) として扱う。送金元はカレントユーザー、
       // 送金先は communityId のコミュニティ財布 (member → community)。
