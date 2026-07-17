@@ -76,6 +76,53 @@ describe("WalletValidator", () => {
         toWalletId: memberWallet.id,
       });
     });
+
+    it("should validate transfer for CONTRIBUTION as member → community (createIfNeeded = false)", async () => {
+      mockService.findCommunityWalletOrThrow.mockResolvedValue(communityWallet);
+      mockService.findMemberWalletOrThrow.mockResolvedValue(memberWallet);
+
+      const result = await validator.validateCommunityMemberTransfer(
+        mockCtx,
+        mockTx,
+        communityId,
+        userId,
+        transferPoints,
+        TransactionReason.CONTRIBUTION,
+      );
+
+      // メンバー → コミュニティ: 送金元がメンバー財布、送金先がコミュニティ財布
+      expect(mockService.findMemberWalletOrThrow).toHaveBeenCalledWith(
+        mockCtx,
+        userId,
+        communityId,
+        mockTx,
+      );
+      // CONTRIBUTION は GRANT と異なりメンバー財布を勝手に作らない
+      expect(mockService.createMemberWalletIfNeeded).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        fromWalletId: memberWallet.id,
+        toWalletId: communityWallet.id,
+      });
+    });
+
+    it("should throw InsufficientBalanceError for CONTRIBUTION when member balance is insufficient", async () => {
+      mockService.findCommunityWalletOrThrow.mockResolvedValue(communityWallet);
+      mockService.findMemberWalletOrThrow.mockResolvedValue({
+        ...memberWallet,
+        currentPointView: { currentPoint: BigInt(50) },
+      });
+
+      await expect(
+        validator.validateCommunityMemberTransfer(
+          mockCtx,
+          mockTx,
+          communityId,
+          userId,
+          100,
+          TransactionReason.CONTRIBUTION,
+        ),
+      ).rejects.toThrow(InsufficientBalanceError);
+    });
   });
 
   describe("validateTransferMemberToMember", () => {
@@ -241,7 +288,9 @@ describe("WalletValidator", () => {
         currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
-      await expect(validator.validateTransfer(-100, fromWallet, toWallet)).rejects.toThrow(ValidationError);
+      await expect(validator.validateTransfer(-100, fromWallet, toWallet)).rejects.toThrow(
+        ValidationError,
+      );
     });
 
     it("should throw ValidationError for zero transfer amounts", async () => {
@@ -254,7 +303,9 @@ describe("WalletValidator", () => {
         currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
-      await expect(validator.validateTransfer(0, fromWallet, toWallet)).rejects.toThrow(ValidationError);
+      await expect(validator.validateTransfer(0, fromWallet, toWallet)).rejects.toThrow(
+        ValidationError,
+      );
     });
 
     it("should throw InsufficientBalanceError if currentPoint is insufficient", async () => {

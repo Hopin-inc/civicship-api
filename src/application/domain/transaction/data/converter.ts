@@ -110,6 +110,30 @@ export default class TransactionConverter {
     };
   }
 
+  contributeToCommunity(
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    createdBy: string,
+    comment?: string,
+    parentTxId?: string,
+    chainDepth?: number,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
+  ): Prisma.TransactionCreateInput {
+    return {
+      reason: TransactionReason.CONTRIBUTION,
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
+      createdByUser: { connect: { id: createdBy } },
+      comment,
+      ...(parentTxId ? { parentTx: { connect: { id: parentTxId } } } : {}),
+      ...(chainDepth !== undefined ? { chainDepth } : {}),
+      ...(uploadedImages?.length ? { images: { create: uploadedImages } } : {}),
+    };
+  }
+
   reservationCreated(
     fromWalletId: string,
     toWalletId: string,
@@ -206,10 +230,22 @@ function buildTransactionWhereInput(
   if (filter.toUserId) conditions.push({ toWallet: { user: { id: filter.toUserId } } });
   if (filter.fromWalletType) conditions.push({ fromWallet: { type: filter.fromWalletType } });
   if (filter.toWalletType) conditions.push({ toWallet: { type: filter.toWalletType } });
-  if (filter.fromUserName) conditions.push({ fromWallet: { user: { name: { contains: filter.fromUserName } } } });
-  if (filter.toUserName) conditions.push({ toWallet: { user: { name: { contains: filter.toUserName } } } });
-  if (filter.fromDidValue) conditions.push({ fromWallet: { user: { didIssuanceRequests: { some: { didValue: { contains: filter.fromDidValue } } } } } });
-  if (filter.toDidValue) conditions.push({ toWallet: { user: { didIssuanceRequests: { some: { didValue: { contains: filter.toDidValue } } } } } });
+  if (filter.fromUserName)
+    conditions.push({ fromWallet: { user: { name: { contains: filter.fromUserName } } } });
+  if (filter.toUserName)
+    conditions.push({ toWallet: { user: { name: { contains: filter.toUserName } } } });
+  if (filter.fromDidValue)
+    conditions.push({
+      fromWallet: {
+        user: { didIssuanceRequests: { some: { didValue: { contains: filter.fromDidValue } } } },
+      },
+    });
+  if (filter.toDidValue)
+    conditions.push({
+      toWallet: {
+        user: { didIssuanceRequests: { some: { didValue: { contains: filter.toDidValue } } } },
+      },
+    });
   // 再帰的に and/or/not を処理
   if (filter.and) {
     conditions.push({

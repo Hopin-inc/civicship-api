@@ -116,6 +116,8 @@ function getTransferDirection(reason: TransactionReason): TransferDirection {
     case TransactionReason.ONBOARDING:
     case TransactionReason.GRANT:
       return TransferDirection.COMMUNITY_TO_MEMBER;
+    case TransactionReason.CONTRIBUTION:
+      return TransferDirection.MEMBER_TO_COMMUNITY;
     case TransactionReason.POINT_REWARD:
     case TransactionReason.TICKET_PURCHASED:
     case TransactionReason.TICKET_REFUNDED:
