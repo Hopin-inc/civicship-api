@@ -4715,7 +4715,11 @@ export type GqlTransactionDonateSelfPointInput = {
   comment?: InputMaybe<Scalars['String']['input']>;
   communityId: Scalars['ID']['input'];
   images?: InputMaybe<Array<GqlImageInput>>;
-  toUserId: Scalars['ID']['input'];
+  /**
+   * 送付先メンバーの ID。省略した場合は communityId のコミュニティ財布への
+   * 送付 (フリマ支払い・DAO への返還等) として扱われる。
+   */
+  toUserId?: InputMaybe<Scalars['ID']['input']>;
   transferPoints: Scalars['Int']['input'];
 };
 
@@ -4778,6 +4782,7 @@ export type GqlTransactionIssueCommunityPointSuccess = {
 };
 
 export const GqlTransactionReason = {
+  Contribution: 'CONTRIBUTION',
   Donation: 'DONATION',
   Grant: 'GRANT',
   Onboarding: 'ONBOARDING',
