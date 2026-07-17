@@ -236,8 +236,16 @@ export default class TransactionUseCase {
           );
         },
       );
+    }
 
-      // コミュニティ送付には受取ユーザーが存在しないため、通知はメンバー間送付のみ。
+    await ctx.issuer.internal(async (tx) => {
+      await this.transactionService.refreshCurrentPoint(ctx, tx);
+    });
+
+    // コミュニティ送付には受取ユーザーが存在しないため、通知はメンバー間送付のみ。
+    // 受信者が通知から即座にウォレットを開いても最新残高を見られるよう、
+    // materialized view (refreshCurrentPoint) の更新後に通知を発火する。
+    if (toUserId != null) {
       this.notificationService
         .pushPointDonationReceivedMessage(ctx, transaction.id, toUserId)
         .catch((error) => {
@@ -247,10 +255,6 @@ export default class TransactionUseCase {
           });
         });
     }
-
-    await ctx.issuer.internal(async (tx) => {
-      await this.transactionService.refreshCurrentPoint(ctx, tx);
-    });
 
     return TransactionPresenter.giveUserPoint(transaction);
   }
