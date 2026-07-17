@@ -61,7 +61,7 @@
   "author": "",
   "license": "GPL-3.0-only",
   "devDependencies": {
-    "@babel/core": "^7.29.0",
+    "@babel/core": "^7.29.6",
     "@babel/preset-env": "^7.29.2",
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^9.7.0",
