@@ -226,18 +226,20 @@ describe("TransactionService", () => {
 
   describe("contributeToCommunity", () => {
     it("should create a CONTRIBUTION transaction and pass through to the repository", async () => {
+      const fromWalletId = "member-wallet-1";
+      const toWalletId = "community-wallet-1";
       const mockTransaction = {
         id: "tx-contrib-1",
         reason: "CONTRIBUTION",
         fromPointChange: transferPoints,
-        to: walletId,
+        to: toWalletId,
         toPointChange: transferPoints,
       };
 
       const convertedData = {
         reason: "CONTRIBUTION",
         fromPointChange: transferPoints,
-        to: walletId,
+        to: toWalletId,
         toPointChange: transferPoints,
       };
 
@@ -246,17 +248,23 @@ describe("TransactionService", () => {
 
       const result = await mockService.contributeToCommunity(
         mockCtx,
-        walletId,
-        walletId,
+        fromWalletId,
+        toWalletId,
         transferPoints,
         mockTx,
         comment,
       );
 
-      expect(mockRepository.findLatestReceivedTx).toHaveBeenCalledWith(mockCtx, walletId, mockTx);
+      // 送金元財布 (fromWalletId) を基準に親トランザクションを探索する
+      expect(mockRepository.findLatestReceivedTx).toHaveBeenCalledWith(
+        mockCtx,
+        fromWalletId,
+        mockTx,
+      );
+      // from/to の引数マッピングが崩れていないことを検証する
       expect(mockConverter.contributeToCommunity).toHaveBeenCalledWith(
-        walletId,
-        walletId,
+        fromWalletId,
+        toWalletId,
         transferPoints,
         "test-user-id",
         comment,
