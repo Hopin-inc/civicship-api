@@ -3730,7 +3730,12 @@ input TransactionDonateSelfPointInput {
   comment: String
   communityId: ID!
   images: [ImageInput!]
-  toUserId: ID!
+
+  """
+  送付先メンバーの ID。省略した場合は communityId のコミュニティ財布への
+  送付 (フリマ支払い・DAO への返還等) として扱われる。
+  """
+  toUserId: ID
   transferPoints: Int!
 }
 
@@ -3789,6 +3794,7 @@ type TransactionIssueCommunityPointSuccess {
 }
 
 enum TransactionReason {
+  CONTRIBUTION
   DONATION
   GRANT
   ONBOARDING

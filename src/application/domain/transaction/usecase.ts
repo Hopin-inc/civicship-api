@@ -169,12 +169,49 @@ export default class TransactionUseCase {
   ): Promise<GqlTransactionDonateSelfPointPayload> {
     const { communityId, toUserId, transferPoints, comment } = input;
     const currentUserId = getCurrentUserId(ctx);
+    const uploadedImages = await this.uploadTransactionImages(input.images);
+
+    // 送付先ユーザーが指定されない場合は、コミュニティ財布への送付
+    // (フリマ支払い・DAO への返還等) として扱う。送金元はカレントユーザー、
+    // 送金先は communityId のコミュニティ財布 (member → community)。
+    if (!toUserId) {
+      const contribution = await ctx.issuer.onlyBelongingCommunity(
+        ctx,
+        async (tx: Prisma.TransactionClient) => {
+          const { fromWalletId, toWalletId } =
+            await this.walletValidator.validateCommunityMemberTransfer(
+              ctx,
+              tx,
+              communityId,
+              currentUserId,
+              transferPoints,
+              TransactionReason.CONTRIBUTION,
+            );
+
+          return await this.transactionService.contributeToCommunity(
+            ctx,
+            fromWalletId,
+            toWalletId,
+            transferPoints,
+            tx,
+            comment ?? undefined,
+            uploadedImages,
+          );
+        },
+      );
+
+      await ctx.issuer.internal(async (tx) => {
+        await this.transactionService.refreshCurrentPoint(ctx, tx);
+      });
+
+      return TransactionPresenter.giveUserPoint(contribution);
+    }
+
     const fromWallet = await this.walletService.findMemberWalletOrThrow(
       ctx,
       currentUserId,
       communityId,
     );
-    const uploadedImages = await this.uploadTransactionImages(input.images);
 
     const transaction = await ctx.issuer.onlyBelongingCommunity(
       ctx,

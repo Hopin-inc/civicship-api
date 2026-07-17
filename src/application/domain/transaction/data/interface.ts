@@ -1,6 +1,9 @@
 import { Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaTransactionDetail, TransactionChainRow } from "@/application/domain/transaction/data/type";
+import {
+  PrismaTransactionDetail,
+  TransactionChainRow,
+} from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { GqlQueryTransactionsArgs } from "@/types/graphql";
 
@@ -45,6 +48,16 @@ export interface ITransactionService {
   ): Promise<PrismaTransactionDetail>;
 
   donateSelfPoint(
+    ctx: IContext,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    tx: Prisma.TransactionClient,
+    comment?: string,
+    uploadedImages?: Prisma.ImageCreateWithoutTransactionsInput[],
+  ): Promise<PrismaTransactionDetail>;
+
+  contributeToCommunity(
     ctx: IContext,
     fromWalletId: string,
     toWalletId: string,
