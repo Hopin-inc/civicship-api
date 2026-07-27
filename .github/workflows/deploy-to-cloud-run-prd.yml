@@ -178,14 +178,14 @@ jobs:
 
       - name: Upload Trivy CRITICAL results to Security tab
         if: ${{ steps.download.outcome == 'success' && hashFiles('trivy-critical.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           sarif_file: trivy-critical.sarif
           category: trivy-critical
 
       - name: Upload Trivy HIGH results to Security tab
         if: ${{ steps.download.outcome == 'success' && hashFiles('trivy-high.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           sarif_file: trivy-high.sarif
           category: trivy-high
