@@ -91,6 +91,25 @@ push messages at anybody.
 Visit `/api/dev-login/reset` on the portal. It clears the cookie and bounces you
 back, and the middleware provisions a new user on the next page load.
 
+`?next=/some/path` picks where to land afterwards.
+
+## Testing the admin screens
+
+`/api/dev-login/reset?role=owner` provisions the next user as an OWNER, which is
+what `/admin/wallet`, `/admin/members` and `/admin/analytics` require;
+`?role=manager` covers the rest of `/admin`. Without the parameter you get a
+plain member. `POST /dev-auth/session` takes the same value as `{ "role": ... }`.
+
+Member is the default on purpose. It is what most of the app renders, and
+permission-gated UI — nav entries, buttons that appear only for admins — is
+exactly the kind of thing that breaks without anyone noticing. Fixing the role at
+OWNER would mean never seeing that view again. Because the role is chosen per
+reset rather than configured, you can flip between the two in seconds and compare.
+
+The role only ever applies to a brand-new throwaway account. Nothing here
+elevates an existing user, so it stays inside the same bound as the rest of the
+route: what you can get is an account that anyone could already have created.
+
 ## Cleaning up
 
 Provisioned identities are prefixed `dev-anon-`, so both rows for a user match a
