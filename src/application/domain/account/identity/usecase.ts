@@ -155,27 +155,37 @@ export default class IdentityUseCase {
     communityId: string,
     name: string,
   ): Promise<User> {
-    // Two identities, mirroring a completed real signup: the community-scoped
-    // LINE identity that authenticates the session, plus a PHONE identity so the
-    // portal treats the account as phone-verified and lands the tester on the
-    // app rather than on the phone-verification step. The PHONE uid is derived
-    // from the same random suffix, so both rows are cleaned up by one
-    // `uid LIKE 'dev-anon-%'` sweep.
-    const user = await this.identityService.createUserAndIdentity({
-      name,
-      slug: uid,
-      currentPrefecture: CurrentPrefecture.UNKNOWN,
-      identities: {
-        create: [
-          { uid, platform: IdentityPlatform.Line, communityId },
-          { uid: `${uid}-phone`, platform: IdentityPlatform.Phone },
-        ],
-      },
-    });
+    // All four rows go in one transaction. Creating the user first and joining
+    // the community afterwards would leave a user with no membership and no
+    // wallet behind whenever the second step failed — and since every call here
+    // mints a fresh uid, a retry cannot reuse that orphan, so they would just
+    // accumulate. The user row is written through `tx` directly rather than via
+    // identityService, whose repository API takes no transaction client.
+    const user = await ctx.issuer.public(ctx, async (tx) => {
+      // Two identities, mirroring a completed real signup: the community-scoped
+      // LINE identity that authenticates the session, plus a PHONE identity so
+      // the portal treats the account as phone-verified and lands the tester on
+      // the app rather than on the phone-verification step. The PHONE uid is
+      // derived from the same random suffix, so both rows are cleaned up by one
+      // `uid LIKE 'dev-anon-%'` sweep.
+      const created = await tx.user.create({
+        data: {
+          name,
+          slug: uid,
+          currentPrefecture: CurrentPrefecture.UNKNOWN,
+          identities: {
+            create: [
+              { uid, platform: IdentityPlatform.Line, communityId },
+              { uid: `${uid}-phone`, platform: IdentityPlatform.Phone },
+            ],
+          },
+        },
+      });
 
-    await ctx.issuer.public(ctx, async (tx) => {
-      await this.membershipService.joinIfNeeded(ctx, user.id, communityId, tx);
-      await this.walletService.createMemberWalletIfNeeded(ctx, user.id, communityId, tx);
+      await this.membershipService.joinIfNeeded(ctx, created.id, communityId, tx);
+      await this.walletService.createMemberWalletIfNeeded(ctx, created.id, communityId, tx);
+
+      return created;
     });
 
     logger.info("🧪 [devAuth] Provisioned anonymous dev user", {
