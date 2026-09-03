@@ -29,9 +29,17 @@ prd deploy workflows never pass it, on either repo. An unset or unrecognised
 value disables the path, so production does not depend on remembering to turn
 anything off.
 
-The gate is re-checked on every request rather than cached at startup, and
-`verifyDevToken` re-checks it before validating anything — so a token minted on
-dev is inert against production.
+The two sides evaluate that gate differently, which is worth knowing when
+reasoning about it:
+
+- **api** — `isDevLoginEnabled()` reads `ENV` on every call, and `verifyDevToken`
+  re-checks it before validating anything. So a token minted on dev is inert
+  against production even if one somehow reaches it.
+- **portal** — `isStaging` / `isLocal` are module-level constants evaluated once
+  at import, so the answer is fixed for the life of a deployment rather than
+  re-derived per request.
+
+Either way the deciding input is `ENV`, and production sets none.
 
 ## Why the token is not signed
 
