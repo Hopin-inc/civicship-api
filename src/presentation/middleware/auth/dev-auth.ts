@@ -4,15 +4,16 @@ import logger from "@/infrastructure/logging";
 import { AuthHeaders, AuthResult } from "./types";
 import { AuthMeta } from "@/types/server";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
-import { isDevLoginEnabled, verifyDevToken } from "@/config/devAuth";
+import { DEV_UID_PREFIX, isDevLoginEnabled, verifyDevToken } from "@/config/devAuth";
 
 /**
  * Dev-only authentication path.
  *
- * Resolves the current user straight from a signed dev token, skipping Firebase
+ * Resolves the current user straight from a dev token, skipping Firebase
  * entirely. Returns `null` whenever this does not apply — dev login disabled,
- * no token, bad signature, expired, wrong community, or no matching Identity —
- * so the caller falls through to the normal Firebase flow untouched.
+ * no token, malformed, expired, wrong community, a uid outside the dev namespace,
+ * or no matching Identity — so the caller falls through to the normal Firebase
+ * flow untouched.
  *
  * The user lookup is deliberately identical to `handleFirebaseAuth`'s: the only
  * thing that changes is how the uid is established, never what a session can see.
@@ -25,6 +26,10 @@ export async function handleDevAuth(
 
   const payload = verifyDevToken(headers.devToken);
   if (!payload) return null;
+
+  // verifyDevToken already enforces this; repeated here so the invariant that
+  // bounds a dev session to disposable accounts is visible at the lookup itself.
+  if (!payload.uid.startsWith(DEV_UID_PREFIX)) return null;
 
   const communityId = headers.communityId!;
 
