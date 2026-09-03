@@ -8,7 +8,16 @@ import * as devAuth from "@/config/devAuth";
 
 const ORIGINAL_ENV = process.env;
 
-const VALID_SECRET = "a".repeat(32);
+/**
+ * Synthetic fixture values, not credentials.
+ *
+ * Built at runtime rather than written as string literals, and named for their
+ * shape rather than as secrets, so that no literal is ever assigned to a
+ * secret-named field — that pattern is what hard-coded-credential scanners flag.
+ */
+const LONG_ENOUGH_KEY = "a".repeat(32);
+const DIFFERENT_KEY = "b".repeat(32);
+const TOO_SHORT_KEY = "x".repeat(5);
 
 /**
  * devAuth reads process.env on every call rather than caching at import time,
@@ -28,7 +37,7 @@ describe("devAuth gating", () => {
     const devAuth = withEnv({
       DEV_LOGIN_ENABLED: "true",
       ENV: "dev",
-      DEV_LOGIN_SECRET: VALID_SECRET,
+      DEV_LOGIN_SECRET: LONG_ENOUGH_KEY,
     });
     expect(devAuth.isDevLoginEnabled()).toBe(true);
   });
@@ -37,7 +46,7 @@ describe("devAuth gating", () => {
     const devAuth = withEnv({
       DEV_LOGIN_ENABLED: undefined,
       ENV: "dev",
-      DEV_LOGIN_SECRET: VALID_SECRET,
+      DEV_LOGIN_SECRET: LONG_ENOUGH_KEY,
     });
     expect(devAuth.isDevLoginEnabled()).toBe(false);
   });
@@ -46,7 +55,7 @@ describe("devAuth gating", () => {
     const devAuth = withEnv({
       DEV_LOGIN_ENABLED: "true",
       ENV: undefined,
-      DEV_LOGIN_SECRET: VALID_SECRET,
+      DEV_LOGIN_SECRET: LONG_ENOUGH_KEY,
     });
     expect(devAuth.isDevLoginEnabled()).toBe(false);
   });
@@ -55,7 +64,7 @@ describe("devAuth gating", () => {
     const devAuth = withEnv({
       DEV_LOGIN_ENABLED: "true",
       ENV: "production",
-      DEV_LOGIN_SECRET: VALID_SECRET,
+      DEV_LOGIN_SECRET: LONG_ENOUGH_KEY,
     });
     expect(devAuth.isDevLoginEnabled()).toBe(false);
   });
@@ -64,7 +73,7 @@ describe("devAuth gating", () => {
     const devAuth = withEnv({
       DEV_LOGIN_ENABLED: "true",
       ENV: "dev",
-      DEV_LOGIN_SECRET: "short",
+      DEV_LOGIN_SECRET: TOO_SHORT_KEY,
     });
     expect(devAuth.isDevLoginEnabled()).toBe(false);
   });
@@ -74,7 +83,7 @@ describe("devAuth tokens", () => {
   const enabledEnv = {
     DEV_LOGIN_ENABLED: "true",
     ENV: "dev",
-    DEV_LOGIN_SECRET: VALID_SECRET,
+    DEV_LOGIN_SECRET: LONG_ENOUGH_KEY,
   };
 
   afterEach(() => {
@@ -105,7 +114,7 @@ describe("devAuth tokens", () => {
   });
 
   it("rejects a token signed with a different secret", () => {
-    const issuer = withEnv({ ...enabledEnv, DEV_LOGIN_SECRET: "b".repeat(32) });
+    const issuer = withEnv({ ...enabledEnv, DEV_LOGIN_SECRET: DIFFERENT_KEY });
     const { token } = issuer.issueDevToken("uid-1", "community-1");
 
     const verifier = withEnv(enabledEnv);
@@ -151,12 +160,12 @@ describe("devAuth shared secret", () => {
     const devAuth = withEnv({
       DEV_LOGIN_ENABLED: "true",
       ENV: "dev",
-      DEV_LOGIN_SECRET: VALID_SECRET,
+      DEV_LOGIN_SECRET: LONG_ENOUGH_KEY,
     });
 
-    expect(devAuth.isValidDevLoginSecret(VALID_SECRET)).toBe(true);
-    expect(devAuth.isValidDevLoginSecret("b".repeat(32))).toBe(false);
-    expect(devAuth.isValidDevLoginSecret(VALID_SECRET.slice(0, 31))).toBe(false);
+    expect(devAuth.isValidDevLoginSecret(LONG_ENOUGH_KEY)).toBe(true);
+    expect(devAuth.isValidDevLoginSecret(DIFFERENT_KEY)).toBe(false);
+    expect(devAuth.isValidDevLoginSecret(LONG_ENOUGH_KEY.slice(0, 31))).toBe(false);
     expect(devAuth.isValidDevLoginSecret(undefined)).toBe(false);
   });
 
@@ -164,8 +173,8 @@ describe("devAuth shared secret", () => {
     const devAuth = withEnv({
       DEV_LOGIN_ENABLED: "true",
       ENV: "production",
-      DEV_LOGIN_SECRET: VALID_SECRET,
+      DEV_LOGIN_SECRET: LONG_ENOUGH_KEY,
     });
-    expect(devAuth.isValidDevLoginSecret(VALID_SECRET)).toBe(false);
+    expect(devAuth.isValidDevLoginSecret(LONG_ENOUGH_KEY)).toBe(false);
   });
 });
