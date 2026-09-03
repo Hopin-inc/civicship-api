@@ -1,10 +1,9 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import crypto from "crypto";
 import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { createLoaders } from "@/presentation/graphql/dataloader";
-import { prismaClient } from "@/infrastructure/prisma/client";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { IContext } from "@/types/server";
 import { sessionLoginRateLimit } from "@/presentation/middleware/rate-limit";
@@ -20,13 +19,26 @@ const DEV_UID_PREFIX = "dev-anon-";
  * On a deployment where dev login is off, the route must be indistinguishable
  * from one that was never mounted — a 401 would confirm it exists.
  */
-const notFound = (res: express.Response) => res.status(404).json({ error: "Not found" });
+const notFound = (res: Response) => res.status(404).json({ error: "Not found" });
 
 /**
- * POST /dev-auth/session
+ * Rejects everything with 404 when dev login is disabled.
  *
- * Dev-only. Mints a dev token so the caller is authenticated as a real,
- * community-joined user — no LINE, no Firebase.
+ * Runs ahead of the body parser and the rate limiter deliberately: behind them,
+ * malformed JSON would answer 400 and a burst 429, and either one tells a caller
+ * that something is mounted here.
+ */
+function requireDevLoginEnabled(_req: Request, res: Response, next: NextFunction): void {
+  if (!isDevLoginEnabled()) {
+    notFound(res);
+    return;
+  }
+  next();
+}
+
+/**
+ * Mints a dev token so the caller is authenticated as a real, community-joined
+ * user — no LINE, no Firebase.
  *
  * Body: { uid?: string }
  *   - uid given     → impersonate that existing identity (404 if unknown)
@@ -35,9 +47,7 @@ const notFound = (res: express.Response) => res.status(404).json({ error: "Not f
  * Requires the `x-dev-login-secret` header, so only the portal's server-side
  * route can call it — never the browser directly.
  */
-router.post("/session", express.json(), sessionLoginRateLimit, async (req, res) => {
-  if (!isDevLoginEnabled()) return notFound(res);
-
+async function handleDevSession(req: Request, res: Response) {
   const secret = req.headers["x-dev-login-secret"];
   if (!isValidDevLoginSecret(typeof secret === "string" ? secret : undefined)) {
     logger.warn("🚫 [devAuth] Rejected /dev-auth/session: bad or missing secret");
@@ -49,9 +59,16 @@ router.post("/session", express.json(), sessionLoginRateLimit, async (req, res) 
     return res.status(400).json({ error: "Missing x-community-id header" });
   }
 
-  const requestedUid: unknown = req.body?.uid;
-  if (requestedUid !== undefined && typeof requestedUid !== "string") {
+  // An explicitly supplied uid must name a real identity. Treating an empty or
+  // blank string as "not supplied" would silently provision a new user for a
+  // caller that clearly meant to impersonate a specific one.
+  const rawUid: unknown = req.body?.uid;
+  if (rawUid !== undefined && typeof rawUid !== "string") {
     return res.status(400).json({ error: "uid must be a string" });
+  }
+  const requestedUid = typeof rawUid === "string" ? rawUid.trim() : undefined;
+  if (rawUid !== undefined && !requestedUid) {
+    return res.status(400).json({ error: "uid must not be empty" });
   }
 
   const issuer = new PrismaClientIssuer();
@@ -119,6 +136,14 @@ router.post("/session", express.json(), sessionLoginRateLimit, async (req, res) 
     });
     return res.status(500).json({ error: "Dev login failed" });
   }
-});
+}
+
+router.post(
+  "/session",
+  requireDevLoginEnabled,
+  express.json(),
+  sessionLoginRateLimit,
+  handleDevSession,
+);
 
 export default router;

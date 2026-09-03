@@ -117,11 +117,13 @@ describe("devAuth tokens", () => {
     const now = Date.now();
     const { token } = devAuth.issueDevToken("uid-1", "community-1");
 
-    jest.spyOn(Date, "now").mockReturnValue(now + devAuth.DEV_TOKEN_TTL_MS + 1);
+    // Hold the spy: calling jest.spyOn again would wrap the mock and restore
+    // only that wrapper, leaving Date.now mocked for every later test.
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(now + devAuth.DEV_TOKEN_TTL_MS + 1);
     try {
       expect(devAuth.verifyDevToken(token)).toBeNull();
     } finally {
-      jest.spyOn(Date, "now").mockRestore();
+      nowSpy.mockRestore();
     }
   });
 
