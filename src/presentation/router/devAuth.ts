@@ -46,7 +46,8 @@ const ALLOWED_ROLES: Role[] = [Role.MEMBER, Role.MANAGER, Role.OWNER];
  * out a fresh disposable account, so there is nothing here worth guarding with a
  * secret and the feature needs no configuration at all.
  *
- * Body: { role?: "MEMBER" | "MANAGER" | "OWNER" } — defaults to MEMBER.
+ * Body: { role?: "MEMBER" | "MANAGER" | "OWNER" } — defaults to OWNER, so a
+ * tester can reach the admin screens without first working out how to get there.
  * Choosing a role grants it on a brand-new account in a dev community; it never
  * elevates an existing one, so it stays inside the same bound as the rest of the
  * route.
@@ -61,7 +62,7 @@ async function handleDevSession(req: Request, res: Response) {
   if (rawRole !== undefined && typeof rawRole !== "string") {
     return res.status(400).json({ error: "role must be a string" });
   }
-  const role = rawRole === undefined ? Role.MEMBER : (rawRole.toUpperCase() as Role);
+  const role = rawRole === undefined ? Role.OWNER : (rawRole.toUpperCase() as Role);
   if (!ALLOWED_ROLES.includes(role)) {
     return res.status(400).json({ error: `role must be one of ${ALLOWED_ROLES.join(", ")}` });
   }

@@ -149,16 +149,17 @@ export default class IdentityUseCase {
    * bonus grant and no LINE notification. Fake users should not consume real
    * incentive budget or push messages at anybody.
    *
-   * `role` decides what the tester can reach. It defaults to MEMBER so the
-   * ordinary member view — the one most of the app renders, and the one whose
-   * permission-gated UI quietly breaks — is what you get unless you ask for more.
+   * `role` decides what the tester can reach, and defaults to OWNER. A dev
+   * deployment exists to be poked at, and a tester who lands without access to
+   * the admin screens has to work out how to grant it before they can start.
+   * Pass MEMBER when the ordinary member view is what you want to look at.
    */
   async devProvisionAnonymousUser(
     ctx: IContext,
     uid: string,
     communityId: string,
     name: string,
-    role: Role = Role.MEMBER,
+    role: Role = Role.OWNER,
   ): Promise<User> {
     // All four rows go in one transaction. Creating the user first and joining
     // the community afterwards would leave a user with no membership and no
@@ -191,13 +192,13 @@ export default class IdentityUseCase {
 
       // joinIfNeeded goes through the shared converter, which leaves role at its
       // schema default of MEMBER. Set it here rather than teaching that converter
-      // about a dev-only concern — it is on the real signup path too.
-      if (role !== Role.MEMBER) {
-        await tx.membership.update({
-          where: { userId_communityId: { userId: created.id, communityId } },
-          data: { role },
-        });
-      }
+      // about a dev-only concern — it is on the real signup path too. Written
+      // unconditionally so the row says what was asked for, instead of depending
+      // on the requested role happening to match that schema default.
+      await tx.membership.update({
+        where: { userId_communityId: { userId: created.id, communityId } },
+        data: { role },
+      });
 
       await this.walletService.createMemberWalletIfNeeded(ctx, created.id, communityId, tx);
 
