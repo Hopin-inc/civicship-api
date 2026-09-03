@@ -24,7 +24,7 @@ import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
-import { User } from "@prisma/client";
+import { CurrentPrefecture, User } from "@prisma/client";
 
 @injectable()
 export default class IdentityUseCase {
@@ -135,6 +135,56 @@ export default class IdentityUseCase {
 
     await this.storeUserAuthTokens(ctx, input);
     return IdentityPresenter.create(res);
+  }
+
+  /**
+   * Dev-only: provisions a throwaway but fully-registered user.
+   *
+   * Used by the dev login route so a tester can land on a non-production
+   * deployment already signed in, without a LINE account and without Firebase.
+   * Only ever reachable when `isDevLoginEnabled()` holds — see config/devAuth.ts.
+   *
+   * It gives the user exactly what a real signup gives them minus the parts that
+   * reach outside the system: a membership and a member wallet, but no signup
+   * bonus grant and no LINE notification. Fake users should not consume real
+   * incentive budget or push messages at anybody.
+   */
+  async devProvisionAnonymousUser(
+    ctx: IContext,
+    uid: string,
+    communityId: string,
+    name: string,
+  ): Promise<User> {
+    // Two identities, mirroring a completed real signup: the community-scoped
+    // LINE identity that authenticates the session, plus a PHONE identity so the
+    // portal treats the account as phone-verified and lands the tester on the
+    // app rather than on the phone-verification step. The PHONE uid is derived
+    // from the same random suffix, so both rows are cleaned up by one
+    // `uid LIKE 'dev-anon-%'` sweep.
+    const user = await this.identityService.createUserAndIdentity({
+      name,
+      slug: uid,
+      currentPrefecture: CurrentPrefecture.UNKNOWN,
+      identities: {
+        create: [
+          { uid, platform: IdentityPlatform.Line, communityId },
+          { uid: `${uid}-phone`, platform: IdentityPlatform.Phone },
+        ],
+      },
+    });
+
+    await ctx.issuer.public(ctx, async (tx) => {
+      await this.membershipService.joinIfNeeded(ctx, user.id, communityId, tx);
+      await this.walletService.createMemberWalletIfNeeded(ctx, user.id, communityId, tx);
+    });
+
+    logger.info("🧪 [devAuth] Provisioned anonymous dev user", {
+      userId: user.id.slice(-6),
+      uid: uid.slice(-6),
+      communityId,
+    });
+
+    return user;
   }
 
   private async initializeUserAssets(

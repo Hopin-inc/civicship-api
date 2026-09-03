@@ -5,6 +5,7 @@ import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { extractAuthHeaders } from "@/presentation/middleware/auth/extract-headers";
 import { handleFirebaseAuth } from "@/presentation/middleware/auth/firebase-auth";
+import { handleDevAuth } from "@/presentation/middleware/auth/dev-auth";
 import logger from "@/infrastructure/logging";
 import { trace, context } from "@opentelemetry/api";
 import { runRequestSecurityChecks } from "@/presentation/middleware/auth/security";
@@ -62,6 +63,12 @@ async function createContext({ req }: { req: Request }): Promise<IContext> {
   // Pass the issuer to runRequestSecurityChecks for potential admin auth
   const adminContext = await runRequestSecurityChecks(req, headers, issuer);
   if (adminContext) return adminContext;
+
+  // Dev-only impersonation login. Returns null unless dev login is explicitly
+  // enabled on a non-production ENV and a valid dev token was presented, so
+  // production requests fall straight through to Firebase.
+  const devContext = await handleDevAuth(headers, issuer);
+  if (devContext) return devContext;
 
   // Use the same issuer for Firebase auth if admin auth didn't handle the request
   return await handleFirebaseAuth(headers, issuer);

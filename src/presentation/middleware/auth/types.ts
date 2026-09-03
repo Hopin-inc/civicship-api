@@ -18,6 +18,8 @@ export interface AuthHeaders {
   phoneTokenExpiresAt?: string;
   phoneUid?: string;
   hasCookie?: boolean;
+  /** Dev-only impersonation token. Only ever populated when dev login is enabled. */
+  devToken?: string;
 }
 
 /**
