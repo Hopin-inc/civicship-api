@@ -24,9 +24,9 @@ const notFound = (res: Response) => res.status(404).json({ error: "Not found" })
 /**
  * Rejects everything with 404 when dev login is disabled.
  *
- * Runs ahead of the body parser and the rate limiter deliberately: behind them,
- * malformed JSON would answer 400 and a burst 429, and either one tells a caller
- * that something is mounted here.
+ * Runs ahead of the body parser so that a malformed body on a disabled
+ * deployment still answers 404 rather than 400 — see the ordering note on the
+ * route below for why it runs *behind* the rate limiter.
  */
 function requireDevLoginEnabled(_req: Request, res: Response, next: NextFunction): void {
   if (!isDevLoginEnabled()) {
@@ -138,11 +138,26 @@ async function handleDevSession(req: Request, res: Response) {
   }
 }
 
+/**
+ * Middleware order here is a deliberate trade-off between two opposing concerns.
+ *
+ * The rate limiter goes first because this route makes an authorization decision
+ * (the shared-secret check) while unauthenticated, and that is exactly what needs
+ * a brute-force ceiling. The cost is that a disabled deployment still answers 429
+ * under a burst instead of 404, which reveals that the path exists.
+ *
+ * That leak is worth accepting: this repository is public, so the route is
+ * discoverable by reading the source — hiding the path buys nothing, whereas an
+ * unthrottled secret check is a real weakness.
+ *
+ * The disabled gate still precedes the body parser, so the more useful half of
+ * hiding the route survives: a malformed body answers 404, not 400.
+ */
 router.post(
   "/session",
+  sessionLoginRateLimit,
   requireDevLoginEnabled,
   express.json(),
-  sessionLoginRateLimit,
   handleDevSession,
 );
 
