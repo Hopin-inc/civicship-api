@@ -2,6 +2,7 @@ import http from "http";
 import logger from "@/infrastructure/logging";
 import { AuthHeaders } from "./types";
 import { SESSION_COOKIE_NAME, getSessionCookieName } from "@/config/constants";
+import { DEV_TOKEN_COOKIE_NAME, DEV_TOKEN_HEADER_NAME, isDevLoginEnabled } from "@/config/devAuth";
 
 function safeDecodeURIComponent(v: string): string {
   try {
@@ -43,17 +44,27 @@ export function extractAuthHeaders(req: http.IncomingMessage): AuthHeaders {
   // In session mode, use only the session cookie; in id_token mode, use only Authorization header
   const idToken = authMode === "session" ? sessionCookie : bearer;
 
+  // Dev-only impersonation token. Read from a header (browser-side Apollo) or a
+  // cookie (forwarded by the portal on SSR requests). Deliberately kept out of
+  // the idToken slot so the Firebase path is untouched, and never even read
+  // unless dev login is enabled.
+  const devToken = isDevLoginEnabled()
+    ? getHeader(DEV_TOKEN_HEADER_NAME) || cookies[DEV_TOKEN_COOKIE_NAME] || undefined
+    : undefined;
+
   const headers: AuthHeaders = {
     authMode,
     idToken,
     communityId: getHeader("x-community-id"),
     hasCookie: !!req.headers.cookie,
+    devToken,
   };
 
   logger.debug("🪶 Extracted auth headers", {
     authMode,
     hasIdToken: !!headers.idToken,
     hasCookie: !!req.headers.cookie,
+    hasDevToken: !!headers.devToken,
     communityId: headers.communityId,
   });
 

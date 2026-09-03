@@ -4,7 +4,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 
 export type AuthMeta = {
-  authMode: "id_token" | "session" | "admin" | "anonymous";
+  authMode: "id_token" | "session" | "admin" | "anonymous" | "dev";
   hasIdToken: boolean;
   hasCookie: boolean;
 };

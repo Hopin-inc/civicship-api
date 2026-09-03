@@ -7,6 +7,7 @@ import { createApolloServer } from "@/presentation/graphql/server";
 import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
+import devAuthRouter from "@/presentation/router/devAuth";
 import anchorBatchRouter from "@/presentation/router/admin/anchorBatch";
 import didRouter from "@/presentation/router/did";
 import credentialsRouter from "@/presentation/router/credentials";
@@ -79,6 +80,10 @@ async function startServer() {
     authHandler(apolloServer),
   );
   app.use("/line", lineRouter);
+  // Dev-only impersonation login. The router itself 404s on every request
+  // unless dev login is explicitly enabled on a non-production ENV, so
+  // mounting it unconditionally is inert in production.
+  app.use("/dev-auth", devAuthRouter);
   app.use("/admin/anchor-batch", anchorBatchRouter);
   // Phase 1 DID/VC public routes (§5.4):
   //   /.well-known/did.json
