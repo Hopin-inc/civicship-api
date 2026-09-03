@@ -24,7 +24,7 @@ import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
-import { CurrentPrefecture, User } from "@prisma/client";
+import { CurrentPrefecture, Role, User } from "@prisma/client";
 
 @injectable()
 export default class IdentityUseCase {
@@ -148,12 +148,17 @@ export default class IdentityUseCase {
    * reach outside the system: a membership and a member wallet, but no signup
    * bonus grant and no LINE notification. Fake users should not consume real
    * incentive budget or push messages at anybody.
+   *
+   * `role` decides what the tester can reach. It defaults to MEMBER so the
+   * ordinary member view — the one most of the app renders, and the one whose
+   * permission-gated UI quietly breaks — is what you get unless you ask for more.
    */
   async devProvisionAnonymousUser(
     ctx: IContext,
     uid: string,
     communityId: string,
     name: string,
+    role: Role = Role.MEMBER,
   ): Promise<User> {
     // All four rows go in one transaction. Creating the user first and joining
     // the community afterwards would leave a user with no membership and no
@@ -183,6 +188,17 @@ export default class IdentityUseCase {
       });
 
       await this.membershipService.joinIfNeeded(ctx, created.id, communityId, tx);
+
+      // joinIfNeeded goes through the shared converter, which leaves role at its
+      // schema default of MEMBER. Set it here rather than teaching that converter
+      // about a dev-only concern — it is on the real signup path too.
+      if (role !== Role.MEMBER) {
+        await tx.membership.update({
+          where: { userId_communityId: { userId: created.id, communityId } },
+          data: { role },
+        });
+      }
+
       await this.walletService.createMemberWalletIfNeeded(ctx, created.id, communityId, tx);
 
       return created;
@@ -192,6 +208,7 @@ export default class IdentityUseCase {
       userId: user.id.slice(-6),
       uid: uid.slice(-6),
       communityId,
+      role,
     });
 
     return user;

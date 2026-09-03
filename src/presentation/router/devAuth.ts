@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import crypto from "crypto";
 import { container } from "tsyringe";
+import { Role } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { createLoaders } from "@/presentation/graphql/dataloader";
@@ -32,20 +33,37 @@ function requireDevLoginEnabled(_req: Request, res: Response, next: NextFunction
   next();
 }
 
+/** Roles a dev session may be provisioned with. */
+const ALLOWED_ROLES: Role[] = [Role.MEMBER, Role.MANAGER, Role.OWNER];
+
 /**
  * Provisions a throwaway user and returns a dev token naming it, so the caller
  * is authenticated as a real, community-joined user — no LINE, no Firebase.
  *
- * Takes no identity from the caller. An earlier revision accepted a uid to
+ * Takes no *identity* from the caller. An earlier revision accepted a uid to
  * impersonate an existing account, which is precisely what made a shared secret
  * necessary to gate this route. Dropping it means the endpoint can only ever hand
  * out a fresh disposable account, so there is nothing here worth guarding with a
  * secret and the feature needs no configuration at all.
+ *
+ * Body: { role?: "MEMBER" | "MANAGER" | "OWNER" } — defaults to MEMBER.
+ * Choosing a role grants it on a brand-new account in a dev community; it never
+ * elevates an existing one, so it stays inside the same bound as the rest of the
+ * route.
  */
 async function handleDevSession(req: Request, res: Response) {
   const communityId = req.headers["x-community-id"];
   if (typeof communityId !== "string" || !communityId) {
     return res.status(400).json({ error: "Missing x-community-id header" });
+  }
+
+  const rawRole: unknown = req.body?.role;
+  if (rawRole !== undefined && typeof rawRole !== "string") {
+    return res.status(400).json({ error: "role must be a string" });
+  }
+  const role = rawRole === undefined ? Role.MEMBER : (rawRole.toUpperCase() as Role);
+  if (!ALLOWED_ROLES.includes(role)) {
+    return res.status(400).json({ error: `role must be one of ${ALLOWED_ROLES.join(", ")}` });
   }
 
   const issuer = new PrismaClientIssuer();
@@ -75,13 +93,14 @@ async function handleDevSession(req: Request, res: Response) {
       uid,
       communityId,
       `テストユーザー ${suffix.slice(0, 6)}`,
+      role,
     );
 
     const { token, expiresAt } = issueDevToken(uid, communityId);
     return res.json({
       devToken: token,
       expiresAt,
-      user: { id: user.id, name: user.name, uid },
+      user: { id: user.id, name: user.name, uid, role },
     });
   } catch (error) {
     logger.error("🔥 [devAuth] /dev-auth/session failed", {
