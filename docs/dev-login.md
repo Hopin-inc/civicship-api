@@ -16,7 +16,7 @@ Each side decides from the deployment identity it already carries:
 | Service | Enabled when |
 | --- | --- |
 | civicship-api | `ENV` is one of `LOCAL` / `local` / `dev` / `development` / `staging` |
-| civicship-portal | the build is staging or local (`ENV=staging`, or `NODE_ENV=development`) |
+| civicship-portal | the build is staging or local (`ENV=staging`, `ENV=LOCAL`, or `NODE_ENV=development`) |
 
 The dev deploy workflows already stamp these — `ENV=dev` on the api,
 `ENV=staging` on the portal — so a dev deployment has it on and nothing else
