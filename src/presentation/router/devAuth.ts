@@ -7,15 +7,11 @@ import { createLoaders } from "@/presentation/graphql/dataloader";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { IContext } from "@/types/server";
 import { sessionLoginRateLimit } from "@/presentation/middleware/rate-limit";
-import { isDevLoginEnabled, isValidDevLoginSecret, issueDevToken } from "@/config/devAuth";
+import { DEV_UID_PREFIX, isDevLoginEnabled, issueDevToken } from "@/config/devAuth";
 
 const router = express();
 
-/** Prefix that makes dev-provisioned identities trivially greppable and deletable. */
-const DEV_UID_PREFIX = "dev-anon-";
-
 /**
- * Every failure mode answers 404, including a bad secret.
  * On a deployment where dev login is off, the route must be indistinguishable
  * from one that was never mounted — a 401 would confirm it exists.
  */
@@ -37,38 +33,19 @@ function requireDevLoginEnabled(_req: Request, res: Response, next: NextFunction
 }
 
 /**
- * Mints a dev token so the caller is authenticated as a real, community-joined
- * user — no LINE, no Firebase.
+ * Provisions a throwaway user and returns a dev token naming it, so the caller
+ * is authenticated as a real, community-joined user — no LINE, no Firebase.
  *
- * Body: { uid?: string }
- *   - uid given     → impersonate that existing identity (404 if unknown)
- *   - uid omitted   → provision a fresh throwaway user and impersonate it
- *
- * Requires the `x-dev-login-secret` header, so only the portal's server-side
- * route can call it — never the browser directly.
+ * Takes no identity from the caller. An earlier revision accepted a uid to
+ * impersonate an existing account, which is precisely what made a shared secret
+ * necessary to gate this route. Dropping it means the endpoint can only ever hand
+ * out a fresh disposable account, so there is nothing here worth guarding with a
+ * secret and the feature needs no configuration at all.
  */
 async function handleDevSession(req: Request, res: Response) {
-  const secret = req.headers["x-dev-login-secret"];
-  if (!isValidDevLoginSecret(typeof secret === "string" ? secret : undefined)) {
-    logger.warn("🚫 [devAuth] Rejected /dev-auth/session: bad or missing secret");
-    return notFound(res);
-  }
-
   const communityId = req.headers["x-community-id"];
   if (typeof communityId !== "string" || !communityId) {
     return res.status(400).json({ error: "Missing x-community-id header" });
-  }
-
-  // An explicitly supplied uid must name a real identity. Treating an empty or
-  // blank string as "not supplied" would silently provision a new user for a
-  // caller that clearly meant to impersonate a specific one.
-  const rawUid: unknown = req.body?.uid;
-  if (rawUid !== undefined && typeof rawUid !== "string") {
-    return res.status(400).json({ error: "uid must be a string" });
-  }
-  const requestedUid = typeof rawUid === "string" ? rawUid.trim() : undefined;
-  if (rawUid !== undefined && !requestedUid) {
-    return res.status(400).json({ error: "uid must not be empty" });
   }
 
   const issuer = new PrismaClientIssuer();
@@ -81,29 +58,7 @@ async function handleDevSession(req: Request, res: Response) {
       return res.status(404).json({ error: "Unknown community" });
     }
 
-    // Impersonate an existing identity when one was named.
-    if (requestedUid) {
-      const identity = await issuer.internal((tx) =>
-        tx.identity.findFirst({
-          where: { uid: requestedUid, communityId },
-          select: { uid: true, user: { select: { id: true, name: true } } },
-        }),
-      );
-      if (!identity) {
-        logger.warn("🚫 [devAuth] No identity for requested uid", { communityId });
-        return notFound(res);
-      }
-
-      const { token, expiresAt } = issueDevToken(identity.uid, communityId);
-      return res.json({
-        devToken: token,
-        expiresAt,
-        user: { id: identity.user.id, name: identity.user.name, uid: identity.uid },
-        provisioned: false,
-      });
-    }
-
-    // Otherwise mint a brand-new throwaway user so each tester is isolated.
+    // A fresh user per call, so testers never share state.
     const suffix = crypto.randomBytes(8).toString("hex");
     const uid = `${DEV_UID_PREFIX}${suffix}`;
 
@@ -127,7 +82,6 @@ async function handleDevSession(req: Request, res: Response) {
       devToken: token,
       expiresAt,
       user: { id: user.id, name: user.name, uid },
-      provisioned: true,
     });
   } catch (error) {
     logger.error("🔥 [devAuth] /dev-auth/session failed", {
@@ -141,14 +95,14 @@ async function handleDevSession(req: Request, res: Response) {
 /**
  * Middleware order here is a deliberate trade-off between two opposing concerns.
  *
- * The rate limiter goes first because this route makes an authorization decision
- * (the shared-secret check) while unauthenticated, and that is exactly what needs
- * a brute-force ceiling. The cost is that a disabled deployment still answers 429
- * under a burst instead of 404, which reveals that the path exists.
+ * The rate limiter goes first because this route creates a database record while
+ * unauthenticated, and that is exactly what needs a ceiling. The cost is that a
+ * disabled deployment still answers 429 under a burst instead of 404, which
+ * reveals that the path exists.
  *
  * That leak is worth accepting: this repository is public, so the route is
  * discoverable by reading the source — hiding the path buys nothing, whereas an
- * unthrottled secret check is a real weakness.
+ * unthrottled user-creating endpoint is a real weakness.
  *
  * The disabled gate still precedes the body parser, so the more useful half of
  * hiding the route survives: a malformed body answers 404, not 400.
