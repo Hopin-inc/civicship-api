@@ -4,22 +4,19 @@
  * a token cannot be forged, replayed after expiry, or reused across communities.
  */
 
+import * as devAuth from "@/config/devAuth";
+
 const ORIGINAL_ENV = process.env;
 
 const VALID_SECRET = "a".repeat(32);
 
-/** devAuth reads process.env at call time, but must be re-imported per env setup to stay isolated. */
-function loadDevAuth() {
-  let mod: typeof import("@/config/devAuth");
-  jest.isolateModules(() => {
-    mod = require("@/config/devAuth");
-  });
-  return mod!;
-}
-
-function withEnv(overrides: Record<string, string | undefined>) {
+/**
+ * devAuth reads process.env on every call rather than caching at import time,
+ * so swapping the environment is enough to re-gate it — no module reloading.
+ */
+function withEnv(overrides: Record<string, string | undefined>): typeof devAuth {
   process.env = { ...ORIGINAL_ENV, ...overrides };
-  return loadDevAuth();
+  return devAuth;
 }
 
 describe("devAuth gating", () => {
