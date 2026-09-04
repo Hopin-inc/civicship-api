@@ -1,7 +1,6 @@
 import express, { NextFunction, Request, Response } from "express";
 import crypto from "crypto";
 import { container } from "tsyringe";
-import { Role } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { createLoaders } from "@/presentation/graphql/dataloader";
@@ -20,10 +19,6 @@ const notFound = (res: Response) => res.status(404).json({ error: "Not found" })
 
 /**
  * Rejects everything with 404 when dev login is disabled.
- *
- * Runs ahead of the body parser so that a malformed body on a disabled
- * deployment still answers 404 rather than 400 — see the ordering note on the
- * route below for why it runs *behind* the rate limiter.
  */
 function requireDevLoginEnabled(_req: Request, res: Response, next: NextFunction): void {
   if (!isDevLoginEnabled()) {
@@ -33,38 +28,23 @@ function requireDevLoginEnabled(_req: Request, res: Response, next: NextFunction
   next();
 }
 
-/** Roles a dev session may be provisioned with. */
-const ALLOWED_ROLES: Role[] = [Role.MEMBER, Role.MANAGER, Role.OWNER];
-
 /**
  * Provisions a throwaway user and returns a dev token naming it, so the caller
  * is authenticated as a real, community-joined user — no LINE, no Firebase.
  *
- * Takes no *identity* from the caller. An earlier revision accepted a uid to
- * impersonate an existing account, which is precisely what made a shared secret
- * necessary to gate this route. Dropping it means the endpoint can only ever hand
- * out a fresh disposable account, so there is nothing here worth guarding with a
- * secret and the feature needs no configuration at all.
+ * Takes no input beyond the community: no identity, no role, no body at all. An
+ * earlier revision accepted a uid to impersonate an existing account, which is
+ * precisely what made a shared secret necessary to gate this route. Dropping it
+ * means the endpoint can only ever hand out a fresh disposable account, so there
+ * is nothing here worth guarding with a secret and the feature needs no
+ * configuration at all.
  *
- * Body: { role?: "MEMBER" | "MANAGER" | "OWNER" } — defaults to OWNER, so a
- * tester can reach the admin screens without first working out how to get there.
- * Choosing a role grants it on a brand-new account in a dev community; it never
- * elevates an existing one, so it stays inside the same bound as the rest of the
- * route.
+ * The account is an OWNER, so a tester lands able to reach the admin screens.
  */
 async function handleDevSession(req: Request, res: Response) {
   const communityId = req.headers["x-community-id"];
   if (typeof communityId !== "string" || !communityId) {
     return res.status(400).json({ error: "Missing x-community-id header" });
-  }
-
-  const rawRole: unknown = req.body?.role;
-  if (rawRole !== undefined && typeof rawRole !== "string") {
-    return res.status(400).json({ error: "role must be a string" });
-  }
-  const role = rawRole === undefined ? Role.OWNER : (rawRole.toUpperCase() as Role);
-  if (!ALLOWED_ROLES.includes(role)) {
-    return res.status(400).json({ error: `role must be one of ${ALLOWED_ROLES.join(", ")}` });
   }
 
   const issuer = new PrismaClientIssuer();
@@ -94,14 +74,13 @@ async function handleDevSession(req: Request, res: Response) {
       uid,
       communityId,
       `テストユーザー ${suffix.slice(0, 6)}`,
-      role,
     );
 
     const { token, expiresAt } = issueDevToken(uid, communityId);
     return res.json({
       devToken: token,
       expiresAt,
-      user: { id: user.id, name: user.name, uid, role },
+      user: { id: user.id, name: user.name, uid },
     });
   } catch (error) {
     logger.error("🔥 [devAuth] /dev-auth/session failed", {
@@ -113,8 +92,6 @@ async function handleDevSession(req: Request, res: Response) {
 }
 
 /**
- * Middleware order here is a deliberate trade-off between two opposing concerns.
- *
  * The rate limiter goes first because this route creates a database record while
  * unauthenticated, and that is exactly what needs a ceiling. The cost is that a
  * disabled deployment still answers 429 under a burst instead of 404, which
@@ -124,15 +101,8 @@ async function handleDevSession(req: Request, res: Response) {
  * discoverable by reading the source — hiding the path buys nothing, whereas an
  * unthrottled user-creating endpoint is a real weakness.
  *
- * The disabled gate still precedes the body parser, so the more useful half of
- * hiding the route survives: a malformed body answers 404, not 400.
+ * No body parser: the handler reads nothing but the community header.
  */
-router.post(
-  "/session",
-  sessionLoginRateLimit,
-  requireDevLoginEnabled,
-  express.json(),
-  handleDevSession,
-);
+router.post("/session", sessionLoginRateLimit, requireDevLoginEnabled, handleDevSession);
 
 export default router;
