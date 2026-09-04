@@ -26,6 +26,19 @@ import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
 import { CurrentPrefecture, Role, User } from "@prisma/client";
 
+/**
+ * What the dev login route needs to know about the user it just provisioned.
+ *
+ * A narrow shape rather than the Prisma `User`, so the route does not depend on
+ * the database model. The usual answer here would be a presenter, but presenters
+ * in this codebase convert Prisma rows into GraphQL payloads, and
+ * `/dev-auth/session` is a plain REST route with no GraphQL type to target.
+ */
+export interface DevProvisionedUser {
+  id: string;
+  name: string;
+}
+
 @injectable()
 export default class IdentityUseCase {
   constructor(
@@ -158,7 +171,7 @@ export default class IdentityUseCase {
     uid: string,
     communityId: string,
     name: string,
-  ): Promise<User> {
+  ): Promise<DevProvisionedUser> {
     // All four rows go in one transaction. Creating the user first and joining
     // the community afterwards would leave a user with no membership and no
     // wallet behind whenever the second step failed — and since every call here
@@ -207,7 +220,7 @@ export default class IdentityUseCase {
       communityId,
     });
 
-    return user;
+    return { id: user.id, name: user.name };
   }
 
   private async initializeUserAssets(
