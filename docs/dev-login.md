@@ -81,11 +81,14 @@ be used to flood the dev database either.
 
 ## What the dev user gets
 
-A membership and a member wallet — the same as a real signup, minus the parts
-that reach outside the system, and with the membership set to OWNER rather than
-MEMBER (see [Roles](#roles)). **No signup bonus is granted and no LINE
-notification is sent**: fake users should not consume real incentive budget or
-push messages at anybody.
+An **OWNER** membership and a member wallet. Owner because a dev deployment
+exists to be poked at: `/admin` — including the owner-only `/admin/wallet`,
+`/admin/members` and `/admin/analytics` — should be reachable the moment you
+land, not after working out how to grant yourself access.
+
+Otherwise the same as a real signup, minus the parts that reach outside the
+system: **no signup bonus is granted and no LINE notification is sent**. Fake
+users should not consume real incentive budget or push messages at anybody.
 
 ## Starting over with a fresh user
 
@@ -93,28 +96,6 @@ Visit `/api/dev-login/reset` on the portal. It clears the cookie and bounces you
 back, and the middleware provisions a new user on the next page load.
 
 `?next=/some/path` picks where to land afterwards.
-
-## Roles
-
-The dev user is an **OWNER**, so `/admin` and everything under it — including
-`/admin/wallet`, `/admin/members` and `/admin/analytics`, which are owner-only —
-is reachable the moment you land. A dev deployment exists to be poked at, and
-having to work out how to grant yourself access before you can start is friction
-with nothing on the other side of it.
-
-`/api/dev-login/reset?role=member` provisions a plain member instead, and
-`?role=manager` sits in between. `POST /dev-auth/session` takes the same
-value as `{ "role": ... }`.
-
-Worth reaching for `?role=member` when you are checking a screen an ordinary
-member sees. Permission-gated UI — nav entries, buttons that only appear for
-admins — looks correct from an owner account whether or not it still is, so a
-member-facing regression is invisible from the default. Flipping between the two
-takes seconds.
-
-The role only ever applies to a brand-new throwaway account. Nothing here
-elevates an existing user, so it stays inside the same bound as the rest of the
-route: what you can get is an account that anyone could already have created.
 
 ## Cleaning up
 
