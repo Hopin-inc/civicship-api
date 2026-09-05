@@ -237,16 +237,28 @@ function assertNonProduction() {
   console.info(`ENV=${env}`);
 }
 
+/**
+ * The `demo-` prefix alone is not enough to scope a delete: the same script run
+ * against two communities writes the same ids under each, so every query here
+ * is also constrained to COMMUNITY_ID. Slots carry no community of their own
+ * and are reached through their opportunity.
+ */
+const demoRowsOfThisCommunity = { id: { startsWith: PREFIX }, communityId: COMMUNITY_ID };
+const demoSlotsOfThisCommunity = {
+  id: { startsWith: PREFIX },
+  opportunity: { communityId: COMMUNITY_ID },
+};
+
 async function remove() {
   const slots = await prismaClient.opportunitySlot.deleteMany({
-    where: { id: { startsWith: PREFIX } },
+    where: demoSlotsOfThisCommunity,
   });
   const opportunities = await prismaClient.opportunity.deleteMany({
-    where: { id: { startsWith: PREFIX } },
+    where: demoRowsOfThisCommunity,
   });
-  const places = await prismaClient.place.deleteMany({ where: { id: { startsWith: PREFIX } } });
+  const places = await prismaClient.place.deleteMany({ where: demoRowsOfThisCommunity });
   console.info(
-    `Removed ${slots.count} slots, ${opportunities.count} opportunities, ${places.count} places.`,
+    `Removed ${slots.count} slots, ${opportunities.count} opportunities, ${places.count} places from "${COMMUNITY_ID}".`,
   );
 }
 
@@ -382,8 +394,10 @@ async function removeWithDryRun() {
     await remove();
     return;
   }
-  const n = await prismaClient.opportunity.count({ where: { id: { startsWith: PREFIX } } });
-  console.info(`Would remove ${n} opportunities and their places and slots.`);
+  const n = await prismaClient.opportunity.count({ where: demoRowsOfThisCommunity });
+  console.info(
+    `Would remove ${n} opportunities and their places and slots from "${COMMUNITY_ID}".`,
+  );
 }
 
 async function main() {
