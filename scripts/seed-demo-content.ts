@@ -191,6 +191,36 @@ const OPPORTUNITIES: OpportunitySeed[] = [
   },
 ];
 
+/**
+ * `src/messages/` carries `en` and `ja` catalogues, but neither has an
+ * `opportunities.json`: the opportunity and reservation screens are hardcoded
+ * Japanese. The body text is the one thing on those screens this script
+ * controls, so each one ends with a short English guide that names the
+ * Japanese labels the reader is looking at. The section clamps to six lines
+ * behind a "read more", so this stays brief.
+ */
+function reviewerGuide(o: OpportunitySeed) {
+  const lines = [
+    "— Booking this —",
+    "The buttons here are in Japanese. Choose a date under 日時 (date and time), set 参加人数 (how many people), then tap 申し込む (Apply).",
+    o.requireApproval
+      ? "案内人が承認すると、予約が確定します — the host has to approve before this booking is confirmed."
+      : "No host approval is needed; applying confirms it.",
+  ];
+  if (o.feeRequired) {
+    lines.push(
+      "料金は現地でお支払いください — the fee is paid on the day. Nothing is charged in the app.",
+    );
+  }
+  if (o.pointsToEarn) {
+    lines.push(`獲得予定ポイント数 — taking part earns ${o.pointsToEarn} community points.`);
+  }
+  lines.push(
+    "The host's side is under /admin/reservations: 申込を承認する approves an application, and declining and cancelling a session are there too.",
+  );
+  return lines.join("\n");
+}
+
 function assertNonProduction() {
   const env = process.env.ENV;
   if (FORCE) {
@@ -329,7 +359,7 @@ async function writeOpportunities(hostUserId: string, imageIds: string[]) {
       title: o.title,
       category: o.category,
       description: o.description,
-      body: o.body,
+      body: `${o.body}\n\n${reviewerGuide(o)}`,
       feeRequired: o.feeRequired ?? null,
       pointsToEarn: o.pointsToEarn ?? null,
       communityId: COMMUNITY_ID,
