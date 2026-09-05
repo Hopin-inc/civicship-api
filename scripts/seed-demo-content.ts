@@ -29,14 +29,16 @@ const PREFIX = "demo-";
 const NON_PRODUCTION_ENVS = ["LOCAL", "local", "dev", "development", "staging"];
 
 const args = process.argv.slice(2);
-const has = (flag: string) => args.includes(flag);
-const valueOf = (name: string, fallback: string) =>
-  args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1] ?? fallback;
+const hasFlag = (flag: string) => args.includes(flag);
+const optionValue = (name: string, fallback: string) => {
+  const given = args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+  return given && given.length > 0 ? given : fallback;
+};
 
-const DRY_RUN = has("--dry-run");
-const REMOVE = has("--remove");
-const FORCE = has("--force");
-const COMMUNITY_ID = valueOf("community", "neo88");
+const DRY_RUN = hasFlag("--dry-run");
+const REMOVE = hasFlag("--remove");
+const FORCE = hasFlag("--force");
+const COMMUNITY_ID = optionValue("community", "neo88");
 
 const day = 24 * 60 * 60 * 1000;
 const at = (daysFromNow: number, hour: number) => {
@@ -213,29 +215,19 @@ async function remove() {
   );
 }
 
-async function main() {
-  assertNonProduction();
-
-  if (REMOVE) {
-    if (DRY_RUN) {
-      const n = await prismaClient.opportunity.count({ where: { id: { startsWith: PREFIX } } });
-      console.info(`Would remove ${n} opportunities and their places and slots.`);
-      return;
-    }
-    await remove();
-    return;
-  }
-
+async function resolveCommunity() {
   const community = await prismaClient.community.findUnique({ where: { id: COMMUNITY_ID } });
-  if (!community) {
-    console.error(
-      `Community "${COMMUNITY_ID}" not found. Pass --community=<id>; the communities present are:`,
-    );
-    const all = await prismaClient.community.findMany({ select: { id: true, name: true } });
-    all.forEach((c) => console.error(`  ${c.id}  ${c.name}`));
-    process.exit(1);
-  }
+  if (community) return community;
 
+  console.error(
+    `Community "${COMMUNITY_ID}" not found. Pass --community=<id>; the communities present are:`,
+  );
+  const all = await prismaClient.community.findMany({ select: { id: true, name: true } });
+  all.forEach((c) => console.error(`  ${c.id}  ${c.name}`));
+  process.exit(1);
+}
+
+async function resolveHostUserId() {
   const host = await prismaClient.membership.findFirst({
     where: {
       communityId: COMMUNITY_ID,
@@ -253,12 +245,15 @@ async function main() {
     );
     process.exit(1);
   }
-  console.info(`Community: ${community.name} (${community.id})`);
   console.info(`Host user: ${host.user?.name ?? host.userId}`);
+  return host.userId;
+}
 
-  // Reuse image rows that already exist. Image URLs must be on a host the
-  // portal's next.config allow-list admits, so inventing new ones would
-  // render as broken images.
+/**
+ * Image URLs must be on a host the portal's next.config allow-list admits, so
+ * inventing new ones would render as broken images. Reuse rows that exist.
+ */
+async function pickImageIds() {
   const images = await prismaClient.image.findMany({
     where: { isPublic: true },
     orderBy: { createdAt: "desc" },
@@ -270,20 +265,22 @@ async function main() {
   } else if (images.length < OPPORTUNITIES.length) {
     console.warn(`! Only ${images.length} image rows available; some will be shared or omitted.`);
   }
+  return images.map((i) => i.id);
+}
 
-  if (DRY_RUN) {
-    console.info(`\nWould write ${PLACES.length} places and ${OPPORTUNITIES.length} opportunities:`);
-    OPPORTUNITIES.forEach((o) => {
-      console.info(`  ${PREFIX}opp-${o.key}  ${o.title}`);
-      o.slots.forEach((s) =>
-        console.info(
-          `    ${at(s.inDays, s.startHour).toISOString()} → ${at(s.inDays, s.endHour).toISOString()}  capacity ${s.capacity}`,
-        ),
-      );
-    });
-    return;
+function printPlan() {
+  console.info(`\nWould write ${PLACES.length} places and ${OPPORTUNITIES.length} opportunities:`);
+  for (const o of OPPORTUNITIES) {
+    console.info(`  ${PREFIX}opp-${o.key}  ${o.title}`);
+    for (const s of o.slots) {
+      const starts = at(s.inDays, s.startHour).toISOString();
+      const ends = at(s.inDays, s.endHour).toISOString();
+      console.info(`    ${starts} → ${ends}  capacity ${s.capacity}`);
+    }
   }
+}
 
+async function writePlaces() {
   for (const p of PLACES) {
     const id = `${PREFIX}place-${p.key}`;
     const data = {
@@ -298,10 +295,29 @@ async function main() {
     await prismaClient.place.upsert({ where: { id }, update: data, create: { id, ...data } });
   }
   console.info(`Places: ${PLACES.length} written.`);
+}
 
+async function writeSlots(opportunityId: string, o: OpportunitySeed) {
+  for (const [slotIndex, s] of o.slots.entries()) {
+    const id = `${PREFIX}slot-${o.key}-${slotIndex}`;
+    const data = {
+      opportunityId,
+      startsAt: at(s.inDays, s.startHour),
+      endsAt: at(s.inDays, s.endHour),
+      capacity: s.capacity,
+    };
+    await prismaClient.opportunitySlot.upsert({
+      where: { id },
+      update: data,
+      create: { id, ...data },
+    });
+  }
+}
+
+async function writeOpportunities(hostUserId: string, imageIds: string[]) {
   for (const [index, o] of OPPORTUNITIES.entries()) {
     const id = `${PREFIX}opp-${o.key}`;
-    const imageId = images[index % Math.max(images.length, 1)]?.id;
+    const imageId = imageIds.length > 0 ? imageIds[index % imageIds.length] : undefined;
     const data = {
       publishStatus: PublishStatus.PUBLIC,
       requireApproval: o.requireApproval,
@@ -313,31 +329,39 @@ async function main() {
       pointsToEarn: o.pointsToEarn ?? null,
       communityId: COMMUNITY_ID,
       placeId: `${PREFIX}place-${o.placeKey}`,
-      createdBy: host.userId,
+      createdBy: hostUserId,
     };
     await prismaClient.opportunity.upsert({
       where: { id },
       update: { ...data, ...(imageId ? { images: { set: [{ id: imageId }] } } : {}) },
       create: { id, ...data, ...(imageId ? { images: { connect: [{ id: imageId }] } } : {}) },
     });
-
-    for (const [slotIndex, s] of o.slots.entries()) {
-      const slotId = `${PREFIX}slot-${o.key}-${slotIndex}`;
-      const slotData = {
-        opportunityId: id,
-        startsAt: at(s.inDays, s.startHour),
-        endsAt: at(s.inDays, s.endHour),
-        capacity: s.capacity,
-      };
-      await prismaClient.opportunitySlot.upsert({
-        where: { id: slotId },
-        update: slotData,
-        create: { id: slotId, ...slotData },
-      });
-    }
+    await writeSlots(id, o);
   }
   const slotCount = OPPORTUNITIES.reduce((n, o) => n + o.slots.length, 0);
   console.info(`Opportunities: ${OPPORTUNITIES.length} written, ${slotCount} slots.`);
+}
+
+async function removeWithDryRun() {
+  if (!DRY_RUN) return remove();
+  const n = await prismaClient.opportunity.count({ where: { id: { startsWith: PREFIX } } });
+  console.info(`Would remove ${n} opportunities and their places and slots.`);
+}
+
+async function main() {
+  assertNonProduction();
+
+  if (REMOVE) return removeWithDryRun();
+
+  const community = await resolveCommunity();
+  console.info(`Community: ${community.name} (${community.id})`);
+  const hostUserId = await resolveHostUserId();
+  const imageIds = await pickImageIds();
+
+  if (DRY_RUN) return printPlan();
+
+  await writePlaces();
+  await writeOpportunities(hostUserId, imageIds);
 }
 
 main()
