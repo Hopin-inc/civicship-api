@@ -59,40 +59,40 @@ type PlaceSeed = {
 const PLACES: PlaceSeed[] = [
   {
     key: "tokushima",
-    name: "藍の里 工房",
-    address: "徳島県徳島市徳島町城内",
+    name: "Indigo Workshop, Tokushima",
+    address: "Tokushima-cho Jonai, Tokushima City, Tokushima",
     cityCode: "362018",
     latitude: 34.0703,
     longitude: 134.5549,
   },
   {
     key: "yoshinogawa",
-    name: "吉野川リバーベース",
-    address: "徳島県吉野川市山川町",
+    name: "Yoshino River Base",
+    address: "Yamakawa-cho, Yoshinogawa City, Tokushima",
     cityCode: "362051",
     latitude: 34.0533,
     longitude: 134.3167,
   },
   {
     key: "takamatsu",
-    name: "高松 まちなか交流スペース",
-    address: "香川県高松市番町",
+    name: "Takamatsu Community Kitchen",
+    address: "Bancho, Takamatsu City, Kagawa",
     cityCode: "372013",
     latitude: 34.3428,
     longitude: 134.0466,
   },
   {
     key: "mitoyo",
-    name: "三豊 里山フィールド",
-    address: "香川県三豊市山本町",
+    name: "Mitoyo Satoyama Field",
+    address: "Yamamoto-cho, Mitoyo City, Kagawa",
     cityCode: "372081",
     latitude: 34.1836,
     longitude: 133.7139,
   },
   {
     key: "matsuyama",
-    name: "松山 みかん農園",
-    address: "愛媛県松山市中島大浦",
+    name: "Matsuyama Citrus Orchard",
+    address: "Nakajima Oura, Matsuyama City, Ehime",
     cityCode: "382019",
     latitude: 33.9906,
     longitude: 132.8419,
@@ -116,10 +116,11 @@ const OPPORTUNITIES: OpportunitySeed[] = [
   {
     key: "aizome",
     placeKey: "tokushima",
-    title: "藍染めのハンカチをつくる",
+    title: "Dye a handkerchief with Tokushima indigo",
     category: OpportunityCategory.ACTIVITY,
-    description: "徳島の藍で、自分だけの一枚を染め上げる2時間。手ぶらで参加できます。",
-    body: "藍甕（あいがめ）の仕込みの話を聞いてから、絞り方を選んでハンカチを染めます。染めた作品はその日に持ち帰れます。汚れてもよい服装でお越しください。",
+    description:
+      "Two hours dyeing a piece of your own with the indigo Tokushima has grown for centuries. Nothing to bring.",
+    body: "We start with how the indigo vat is prepared and fermented, then you choose a tie-dye pattern and dye a handkerchief. You take your piece home the same day. Wear clothes you do not mind staining.",
     feeRequired: 3500,
     requireApproval: false,
     slots: [
@@ -131,10 +132,11 @@ const OPPORTUNITIES: OpportunitySeed[] = [
   {
     key: "udon",
     placeKey: "takamatsu",
-    title: "手打ちうどん体験と、まちの話",
+    title: "Make Sanuki udon by hand, and hear about the town",
     category: OpportunityCategory.ACTIVITY,
-    description: "粉から打って、茹でて、食べる。うどんを入口に高松のまちの話も聞けます。",
-    body: "小麦粉から生地をつくり、足踏み、寝かせ、切りまで一通り体験します。打ったうどんはその場で釜あげにして食べます。エプロンはこちらで用意します。",
+    description:
+      "Mix it, knead it, cut it, eat it. Udon is the way in; the conversation is about Takamatsu.",
+    body: "You make the dough from flour, knead it underfoot, rest it and cut the noodles yourself, then eat what you made straight from the pot. Aprons are provided.",
     feeRequired: 2800,
     requireApproval: false,
     slots: [
@@ -145,10 +147,11 @@ const OPPORTUNITIES: OpportunitySeed[] = [
   {
     key: "mikan",
     placeKey: "matsuyama",
-    title: "みかん農家の収穫を手伝う",
+    title: "Help a citrus grower through the harvest",
     category: OpportunityCategory.ACTIVITY,
-    description: "収穫期の忙しい半日を一緒に。作業のあとは畑でみかんを食べて帰れます。",
-    body: "傾斜地の畑で、はさみを使った収穫とコンテナ運びをお願いします。動きやすい服装と滑りにくい靴でお越しください。軍手とはさみは貸し出します。",
+    description:
+      "Half a morning of the busiest weeks of the grower's year. Eat as much as you like in the grove afterwards.",
+    body: "The grove is on a slope. You will cut fruit with shears and carry crates. Wear clothes you can move in and shoes that grip. Gloves and shears are lent to you.",
     pointsToEarn: 500,
     requireApproval: true,
     slots: [
@@ -159,10 +162,11 @@ const OPPORTUNITIES: OpportunitySeed[] = [
   {
     key: "sup",
     placeKey: "yoshinogawa",
-    title: "吉野川でSUPに乗る",
+    title: "Stand-up paddleboarding on the Yoshino River",
     category: OpportunityCategory.ACTIVITY,
-    description: "流れのゆるい区間で、はじめてでも立てるところまで。ライフジャケット付き。",
-    body: "陸上での練習のあと、川に出ます。泳げなくても参加できますが、濡れてもよい服装と着替えをお持ちください。増水時は中止の連絡をします。",
+    description:
+      "A slow stretch of the river, and enough time to get you standing on your first try. Life jacket included.",
+    body: "We practise on land before going out on the water. You do not need to be able to swim, but bring clothes you can get wet in and a change afterwards. If the river is high we cancel and let you know.",
     feeRequired: 5000,
     requireApproval: false,
     slots: [
@@ -173,10 +177,11 @@ const OPPORTUNITIES: OpportunitySeed[] = [
   {
     key: "satoyama",
     placeKey: "mitoyo",
-    title: "里山の道を刈りひらく",
+    title: "Clear a mountain path back into use",
     category: OpportunityCategory.QUEST,
-    description: "使われなくなった山道を歩けるように戻す作業。ポイントが付きます。",
-    body: "草刈り機の使える方は持参いただけると助かります。はじめての方には鎌での作業をお願いします。長袖・長ズボン・帽子でお越しください。",
+    description:
+      "A path through the hills has grown over. Cutting it back makes it walkable again, and earns points.",
+    body: "If you can handle a brush cutter, bringing one helps. First-timers work with a sickle. Long sleeves, long trousers and a hat.",
     pointsToEarn: 800,
     requireApproval: true,
     slots: [
