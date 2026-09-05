@@ -16,7 +16,9 @@ import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
-import IncentiveGrantService, { SignupBonusGrantResult } from "@/application/domain/transaction/incentiveGrant/service";
+import IncentiveGrantService, {
+  SignupBonusGrantResult,
+} from "@/application/domain/transaction/incentiveGrant/service";
 import TransactionService from "@/application/domain/transaction/service";
 import NotificationService from "@/application/domain/notification/service";
 import CommunityService from "@/application/domain/account/community/service";
@@ -50,7 +52,7 @@ export default class IdentityUseCase {
     @inject("TransactionService") private readonly transactionService: TransactionService,
     @inject("NotificationService") private readonly notificationService: NotificationService,
     @inject("CommunityService") private readonly communityService: CommunityService,
-  ) { }
+  ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
     return {
@@ -87,7 +89,10 @@ export default class IdentityUseCase {
     try {
       await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
     } catch (error) {
-      logger.error("Failed to delete Firebase Auth user during account deletion", { uid: uid.slice(-6), error });
+      logger.error("Failed to delete Firebase Auth user during account deletion", {
+        uid: uid.slice(-6),
+        error,
+      });
     }
     return IdentityPresenter.delete(user);
   }
@@ -107,7 +112,13 @@ export default class IdentityUseCase {
     expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
 
     try {
-      await this.identityService.storeAuthTokens(phoneUid, null, authToken, refreshToken, expiryTime);
+      await this.identityService.storeAuthTokens(
+        phoneUid,
+        null,
+        authToken,
+        refreshToken,
+        expiryTime,
+      );
 
       return {
         success: true,
@@ -151,13 +162,19 @@ export default class IdentityUseCase {
   }
 
   /**
-   * Dev-only: provisions a throwaway but fully-registered user.
+   * Dev-only: returns the community's shared demo account, creating it on the
+   * first call.
    *
    * Used by the dev login route so a tester can land on a non-production
    * deployment already signed in, without a LINE account and without Firebase.
    * Only ever reachable when `isDevLoginEnabled()` holds — see config/devAuth.ts.
    *
-   * It gives the user exactly what a real signup gives them minus the parts that
+   * One account per community rather than one per call, so two people looking at
+   * the same deployment see the same bookings and a visitor who loses their
+   * cookie comes back to their own history. The cost is that they can also undo
+   * each other; `docs/dev-login.md` records that under Limits.
+   *
+   * The account gets exactly what a real signup gives, minus the parts that
    * reach outside the system: a membership and a member wallet, but no signup
    * bonus grant and no LINE notification. Fake users should not consume real
    * incentive budget or push messages at anybody.
@@ -172,18 +189,45 @@ export default class IdentityUseCase {
     communityId: string,
     name: string,
   ): Promise<DevProvisionedUser> {
+    // The uid is derived from the community rather than minted per call, so the
+    // first visitor creates the account and everyone afterwards lands on it.
+    const existing = await this.findDevUser(ctx, uid, communityId);
+    if (existing) return existing;
+
     // All four rows go in one transaction. Creating the user first and joining
     // the community afterwards would leave a user with no membership and no
-    // wallet behind whenever the second step failed — and since every call here
-    // mints a fresh uid, a retry cannot reuse that orphan, so they would just
-    // accumulate. The user row is written through `tx` directly rather than via
-    // identityService, whose repository API takes no transaction client.
-    const user = await ctx.issuer.public(ctx, async (tx) => {
+    // wallet behind whenever the second step failed, and every later call would
+    // then find that orphan and hand out an account that can do nothing. The
+    // user row is written through `tx` directly rather than via identityService,
+    // whose repository API takes no transaction client.
+    let user;
+    try {
+      user = await this.createDevUser(ctx, uid, communityId, name);
+    } catch (error) {
+      // Two first-time callers can arrive together; the one that loses the
+      // unique constraint on (uid, communityId) reads back what the winner
+      // committed rather than failing the request.
+      const raced = await this.findDevUser(ctx, uid, communityId);
+      if (raced) return raced;
+      throw error;
+    }
+
+    logger.info("🧪 [devAuth] Provisioned shared dev user", {
+      userId: user.id.slice(-6),
+      uid: uid.slice(-6),
+      communityId,
+    });
+
+    return { id: user.id, name: user.name };
+  }
+
+  private async createDevUser(ctx: IContext, uid: string, communityId: string, name: string) {
+    return ctx.issuer.public(ctx, async (tx) => {
       // Two identities, mirroring a completed real signup: the community-scoped
       // LINE identity that authenticates the session, plus a PHONE identity so
       // the portal treats the account as phone-verified and lands the tester on
       // the app rather than on the phone-verification step. The PHONE uid is
-      // derived from the same random suffix, so both rows are cleaned up by one
+      // derived from the same base, so both rows are cleaned up by one
       // `uid LIKE 'dev-anon-%'` sweep.
       const created = await tx.user.create({
         data: {
@@ -213,14 +257,26 @@ export default class IdentityUseCase {
 
       return created;
     });
+  }
 
-    logger.info("🧪 [devAuth] Provisioned anonymous dev user", {
-      userId: user.id.slice(-6),
-      uid: uid.slice(-6),
-      communityId,
-    });
-
-    return { id: user.id, name: user.name };
+  /**
+   * Reads back the account a dev uid names, or null before the first visitor has
+   * created it. Also the recovery path when two first-time callers race: the one
+   * that loses the unique constraint on `(uid, communityId)` re-reads instead of
+   * failing the request.
+   */
+  private async findDevUser(
+    ctx: IContext,
+    uid: string,
+    communityId: string,
+  ): Promise<DevProvisionedUser | null> {
+    const identity = await ctx.issuer.internal((tx) =>
+      tx.identity.findUnique({
+        where: { uid_communityId: { uid, communityId } },
+        select: { user: { select: { id: true, name: true } } },
+      }),
+    );
+    return identity?.user ? { id: identity.user.id, name: identity.user.name } : null;
   }
 
   private async initializeUserAssets(
@@ -303,7 +359,13 @@ export default class IdentityUseCase {
     if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
       const expiryTime = this.deriveExpiryTime(lineTokenExpiresAt);
       const refreshToken = lineRefreshToken || "";
-      await this.identityService.storeAuthTokens(ctx.uid, ctx.communityId, ctx.idToken, refreshToken, expiryTime);
+      await this.identityService.storeAuthTokens(
+        ctx.uid,
+        ctx.communityId,
+        ctx.idToken,
+        refreshToken,
+        expiryTime,
+      );
       logger.debug(`Stored LINE auth tokens for ${ctx.uid}`);
     }
   }
@@ -338,7 +400,11 @@ export default class IdentityUseCase {
       // Check if user exists via LINE identity (ctx.uid) even though no phone identity exists
       // This handles the case where a user has LINE Identity but no Phone Identity and no Membership
       if (ctx.uid && ctx.platform === IdentityPlatform.Line) {
-        const userByLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid, ctx.communityId);
+        const userByLineIdentity = await this.identityService.findUserByIdentity(
+          ctx,
+          ctx.uid,
+          ctx.communityId,
+        );
 
         if (userByLineIdentity) {
           logger.debug("[checkPhoneUser] User found via LINE identity, checking membership", {
@@ -357,15 +423,23 @@ export default class IdentityUseCase {
 
           if (existingMembershipForLineUser) {
             // User has LINE Identity and Membership, just needs Phone Identity linked
-            logger.debug("[checkPhoneUser] User has LINE identity and membership, linking phone identity", {
-              phoneUid,
-              lineUid: ctx.uid,
-              userId: userByLineIdentity.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] User has LINE identity and membership, linking phone identity",
+              {
+                phoneUid,
+                lineUid: ctx.uid,
+                userId: userByLineIdentity.id,
+                communityId: ctx.communityId,
+              },
+            );
 
             await ctx.issuer.public(ctx, async (tx) => {
-              await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
+              await this.identityService.linkPhoneIdentity(
+                ctx,
+                userByLineIdentity.id,
+                phoneUid,
+                tx,
+              );
             });
 
             return {
@@ -375,16 +449,24 @@ export default class IdentityUseCase {
             };
           } else {
             // User has LINE Identity but no Membership - create membership and link phone identity
-            logger.debug("[checkPhoneUser] User has LINE identity but no membership, creating membership and linking phone", {
-              phoneUid,
-              lineUid: ctx.uid,
-              userId: userByLineIdentity.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] User has LINE identity but no membership, creating membership and linking phone",
+              {
+                phoneUid,
+                lineUid: ctx.uid,
+                userId: userByLineIdentity.id,
+                communityId: ctx.communityId,
+              },
+            );
 
             const joinResult = await ctx.issuer.public(ctx, async (tx) => {
               // Link phone identity to existing user
-              await this.identityService.linkPhoneIdentity(ctx, userByLineIdentity.id, phoneUid, tx);
+              await this.identityService.linkPhoneIdentity(
+                ctx,
+                userByLineIdentity.id,
+                phoneUid,
+                tx,
+              );
 
               // Create membership
               const membership = await this.membershipService.joinIfNeeded(
@@ -426,7 +508,11 @@ export default class IdentityUseCase {
             });
 
             // Send signup bonus notification (best-effort, after transaction commits)
-            this.sendSignupBonusNotification(ctx, joinResult.signupBonusResult, userByLineIdentity.id);
+            this.sendSignupBonusNotification(
+              ctx,
+              joinResult.signupBonusResult,
+              userByLineIdentity.id,
+            );
 
             return {
               status: GqlPhoneUserStatus.ExistingDifferentCommunity,
@@ -470,7 +556,11 @@ export default class IdentityUseCase {
         // Perform identity check and creation within the same transaction to avoid race conditions
         // This follows the same pattern as EXISTING_DIFFERENT_COMMUNITY case
         await ctx.issuer.public(ctx, async (tx) => {
-          const existingLineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid!, ctx.communityId);
+          const existingLineIdentity = await this.identityService.findUserByIdentity(
+            ctx,
+            ctx.uid!,
+            ctx.communityId,
+          );
 
           logger.debug("[checkPhoneUser] Checking LINE identity for EXISTING_SAME_COMMUNITY", {
             phoneUid,
@@ -492,20 +582,26 @@ export default class IdentityUseCase {
               });
               throw new Error("This LINE account is already linked to another user");
             }
-            logger.debug("[checkPhoneUser] LINE identity already exists for this user, skipping creation", {
-              uid: ctx.uid,
-              platform: ctx.platform,
-              userId: existingUser.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] LINE identity already exists for this user, skipping creation",
+              {
+                uid: ctx.uid,
+                platform: ctx.platform,
+                userId: existingUser.id,
+                communityId: ctx.communityId,
+              },
+            );
           } else {
-            logger.debug("[checkPhoneUser] Creating new LINE identity for existing membership user", {
-              phoneUid,
-              currentUid: ctx.uid,
-              currentPlatform: ctx.platform,
-              userId: existingUser.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] Creating new LINE identity for existing membership user",
+              {
+                phoneUid,
+                currentUid: ctx.uid,
+                currentPlatform: ctx.platform,
+                userId: existingUser.id,
+                communityId: ctx.communityId,
+              },
+            );
             await this.identityService.addIdentityToUser(
               ctx,
               existingUser.id,
@@ -514,12 +610,15 @@ export default class IdentityUseCase {
               ctx.communityId,
               tx,
             );
-            logger.debug("[checkPhoneUser] Successfully created LINE identity for existing membership user", {
-              uid: ctx.uid,
-              platform: ctx.platform,
-              userId: existingUser.id,
-              communityId: ctx.communityId,
-            });
+            logger.debug(
+              "[checkPhoneUser] Successfully created LINE identity for existing membership user",
+              {
+                uid: ctx.uid,
+                platform: ctx.platform,
+                userId: existingUser.id,
+                communityId: ctx.communityId,
+              },
+            );
           }
         });
       }
@@ -561,7 +660,11 @@ export default class IdentityUseCase {
         throw new AuthenticationError();
       }
 
-      const existingIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid, ctx.communityId);
+      const existingIdentity = await this.identityService.findUserByIdentity(
+        ctx,
+        ctx.uid,
+        ctx.communityId,
+      );
 
       logger.debug("[checkPhoneUser] Checking if current LINE identity exists", {
         phoneUid,

@@ -1,5 +1,4 @@
 import express, { NextFunction, Request, Response } from "express";
-import crypto from "crypto";
 import { container } from "tsyringe";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
@@ -29,14 +28,16 @@ function requireDevLoginEnabled(_req: Request, res: Response, next: NextFunction
 }
 
 /**
- * Provisions a throwaway user and returns a dev token naming it, so the caller
- * is authenticated as a real, community-joined user — no LINE, no Firebase.
+ * Returns a dev token naming the community's shared demo account, creating that
+ * account on the first call, so the caller is authenticated as a real
+ * community-joined user — no LINE, no Firebase.
  *
  * Takes no input beyond the community: no identity, no role, no body at all. An
  * earlier revision accepted a uid to impersonate an existing account, which is
  * precisely what made a shared secret necessary to gate this route. Dropping it
- * means the endpoint can only ever hand out a fresh disposable account, so there
- * is nothing here worth guarding with a secret and the feature needs no
+ * means the endpoint can only ever name one account, whose uid this handler
+ * derives and which lives only on a non-production database — so there is
+ * nothing here worth guarding with a secret and the feature needs no
  * configuration at all.
  *
  * The account is an OWNER, so a tester lands able to reach the admin screens.
@@ -57,9 +58,12 @@ async function handleDevSession(req: Request, res: Response) {
       return res.status(404).json({ error: "Unknown community" });
     }
 
-    // A fresh user per call, so testers never share state.
-    const suffix = crypto.randomBytes(8).toString("hex");
-    const uid = `${DEV_UID_PREFIX}${suffix}`;
+    // One account per community, not one per call. Reviewers looking at the same
+    // deployment should see each other's bookings, and a visitor who loses their
+    // cookie should come back to their own history rather than to an empty
+    // account. It also stops the row-per-page-load the previous shape created: a
+    // user, two identities, a membership and a wallet every time anyone landed.
+    const uid = `${DEV_UID_PREFIX}shared-${communityId}`;
 
     const ctx = {
       issuer,
@@ -69,12 +73,7 @@ async function handleDevSession(req: Request, res: Response) {
     } as IContext;
 
     const useCase = container.resolve(IdentityUseCase);
-    const user = await useCase.devProvisionAnonymousUser(
-      ctx,
-      uid,
-      communityId,
-      `テストユーザー ${suffix.slice(0, 6)}`,
-    );
+    const user = await useCase.devProvisionAnonymousUser(ctx, uid, communityId, "Demo User");
 
     const { token, expiresAt } = issueDevToken(uid, communityId);
     return res.json({
@@ -92,7 +91,7 @@ async function handleDevSession(req: Request, res: Response) {
 }
 
 /**
- * The rate limiter goes first because this route creates a database record while
+ * The rate limiter goes first because this route reaches the database while
  * unauthenticated, and that is exactly what needs a ceiling. The cost is that a
  * disabled deployment still answers 429 under a burst instead of 404, which
  * reveals that the path exists.
