@@ -348,7 +348,10 @@ async function writeOpportunities(hostUserId: string, imageIds: string[]) {
 }
 
 async function removeWithDryRun() {
-  if (!DRY_RUN) return remove();
+  if (!DRY_RUN) {
+    await remove();
+    return;
+  }
   const n = await prismaClient.opportunity.count({ where: { id: { startsWith: PREFIX } } });
   console.info(`Would remove ${n} opportunities and their places and slots.`);
 }
@@ -356,14 +359,20 @@ async function removeWithDryRun() {
 async function main() {
   assertNonProduction();
 
-  if (REMOVE) return removeWithDryRun();
+  if (REMOVE) {
+    await removeWithDryRun();
+    return;
+  }
 
   const community = await resolveCommunity();
   console.info(`Community: ${community.name} (${community.id})`);
   const hostUserId = await resolveHostUserId();
   const imageIds = await pickImageIds();
 
-  if (DRY_RUN) return printPlan();
+  if (DRY_RUN) {
+    printPlan();
+    return;
+  }
 
   await writePlaces();
   await writeOpportunities(hostUserId, imageIds);
