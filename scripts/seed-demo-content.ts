@@ -13,6 +13,10 @@
  *   pnpm tsx scripts/seed-demo-content.ts
  *   pnpm tsx scripts/seed-demo-content.ts --remove
  *
+ * Slot dates are relative to the run: each session repeats fortnightly out to
+ * `--days` (default 90), so a run in September still has dates to book in
+ * November. Running it again moves the whole schedule forward.
+ *
  * Against the dev database:
  *
  *   dotenvx run -f .env.dev -- pnpm tsx scripts/seed-demo-content.ts
@@ -39,6 +43,20 @@ const DRY_RUN = hasFlag("--dry-run");
 const REMOVE = hasFlag("--remove");
 const FORCE = hasFlag("--force");
 const COMMUNITY_ID = optionValue("community", "neo88");
+
+/**
+ * How far ahead sessions are scheduled, and how often each one repeats. A
+ * reviewer opening the application weeks after this ran still needs something
+ * bookable, so each session below is a fortnightly series rather than a single
+ * date, running to the horizon.
+ */
+const HORIZON_DAYS = Number(optionValue("days", "90"));
+const REPEAT_EVERY_DAYS = 14;
+
+if (!Number.isFinite(HORIZON_DAYS) || HORIZON_DAYS < 1) {
+  console.error(`--days must be a positive number of days; got "${optionValue("days", "90")}".`);
+  process.exit(1);
+}
 
 const day = 24 * 60 * 60 * 1000;
 const at = (daysFromNow: number, hour: number) => {
@@ -111,6 +129,25 @@ type OpportunitySeed = {
   requireApproval: boolean;
   slots: { inDays: number; startHour: number; endHour: number; capacity: number }[];
 };
+
+/**
+ * Every session repeats every REPEAT_EVERY_DAYS until HORIZON_DAYS. Base
+ * offsets that differ by a multiple of the interval would otherwise land on
+ * the same hour of the same day, so identical occurrences are dropped.
+ */
+function occurrencesOf(o: OpportunitySeed) {
+  const seen = new Set<string>();
+  const out: { inDays: number; startHour: number; endHour: number; capacity: number }[] = [];
+  for (const s of o.slots) {
+    for (let d = s.inDays; d <= HORIZON_DAYS; d += REPEAT_EVERY_DAYS) {
+      const key = `${d}-${s.startHour}-${s.endHour}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ ...s, inDays: d });
+    }
+  }
+  return out.sort((a, b) => a.inDays - b.inDays || a.startHour - b.startHour);
+}
 
 const OPPORTUNITIES: OpportunitySeed[] = [
   {
@@ -318,8 +355,9 @@ async function pickImageIds() {
 function printPlan() {
   console.info(`\nWould write ${PLACES.length} places and ${OPPORTUNITIES.length} opportunities:`);
   for (const o of OPPORTUNITIES) {
-    console.info(`  ${PREFIX}opp-${o.key}  ${o.title}`);
-    for (const s of o.slots) {
+    const occurrences = occurrencesOf(o);
+    console.info(`  ${PREFIX}opp-${o.key}  ${o.title}  (${occurrences.length} sessions)`);
+    for (const s of occurrences) {
       const starts = at(s.inDays, s.startHour).toISOString();
       const ends = at(s.inDays, s.endHour).toISOString();
       console.info(`    ${starts} → ${ends}  capacity ${s.capacity}`);
@@ -345,7 +383,8 @@ async function writePlaces() {
 }
 
 async function writeSlots(opportunityId: string, o: OpportunitySeed) {
-  for (const [slotIndex, s] of o.slots.entries()) {
+  const written: string[] = [];
+  for (const [slotIndex, s] of occurrencesOf(o).entries()) {
     const id = `${PREFIX}slot-${o.key}-${slotIndex}`;
     const data = {
       opportunityId,
@@ -358,10 +397,18 @@ async function writeSlots(opportunityId: string, o: OpportunitySeed) {
       update: data,
       create: { id, ...data },
     });
+    written.push(id);
   }
+  // A shorter horizon than a previous run would leave its extra sessions
+  // behind, dated in the past. Only this opportunity's demo slots are touched.
+  await prismaClient.opportunitySlot.deleteMany({
+    where: { opportunityId, id: { startsWith: PREFIX }, NOT: { id: { in: written } } },
+  });
+  return written.length;
 }
 
 async function writeOpportunities(hostUserId: string, imageIds: string[]) {
+  let slotCount = 0;
   for (const [index, o] of OPPORTUNITIES.entries()) {
     const id = `${PREFIX}opp-${o.key}`;
     const imageId = imageIds.length > 0 ? imageIds[index % imageIds.length] : undefined;
@@ -383,9 +430,8 @@ async function writeOpportunities(hostUserId: string, imageIds: string[]) {
       update: { ...data, ...(imageId ? { images: { set: [{ id: imageId }] } } : {}) },
       create: { id, ...data, ...(imageId ? { images: { connect: [{ id: imageId }] } } : {}) },
     });
-    await writeSlots(id, o);
+    slotCount += await writeSlots(id, o);
   }
-  const slotCount = OPPORTUNITIES.reduce((n, o) => n + o.slots.length, 0);
   console.info(`Opportunities: ${OPPORTUNITIES.length} written, ${slotCount} slots.`);
 }
 
