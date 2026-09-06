@@ -26,7 +26,19 @@
  */
 import "reflect-metadata";
 import { prismaClient } from "@/infrastructure/prisma/client";
-import { OpportunityCategory, PublishStatus, Role, MembershipStatus } from "@prisma/client";
+import {
+  OpportunityCategory,
+  PublishStatus,
+  Role,
+  MembershipStatus,
+  WalletType,
+  TicketStatus,
+  TicketStatusReason,
+  ReservationStatus,
+  ParticipationStatus,
+  ParticipationStatusReason,
+  EvaluationStatus,
+} from "@prisma/client";
 
 const PREFIX = "demo-";
 
@@ -128,6 +140,11 @@ type OpportunitySeed = {
   pointsToEarn?: number;
   requireApproval: boolean;
   slots: { inDays: number; startHour: number; endHour: number; capacity: number }[];
+  /**
+   * One session already held, so the member state below has something to hang a
+   * completed participation on. Excluded from the fortnightly series.
+   */
+  pastSession?: { daysAgo: number; startHour: number; endHour: number; capacity: number };
 };
 
 /**
@@ -138,6 +155,11 @@ type OpportunitySeed = {
 function occurrencesOf(o: OpportunitySeed) {
   const seen = new Set<string>();
   const out: { inDays: number; startHour: number; endHour: number; capacity: number }[] = [];
+  if (o.pastSession) {
+    const { daysAgo, ...rest } = o.pastSession;
+    out.push({ ...rest, inDays: -daysAgo });
+    seen.add(`${-daysAgo}-${rest.startHour}-${rest.endHour}`);
+  }
   for (const s of o.slots) {
     for (let d = s.inDays; d <= HORIZON_DAYS; d += REPEAT_EVERY_DAYS) {
       const key = `${d}-${s.startHour}-${s.endHour}`;
@@ -160,6 +182,7 @@ const OPPORTUNITIES: OpportunitySeed[] = [
     body: "We start with how the indigo vat is prepared and fermented, then you choose a tie-dye pattern and dye a handkerchief. You take your piece home the same day. Wear clothes you do not mind staining.",
     feeRequired: 3500,
     requireApproval: false,
+    pastSession: { daysAgo: 14, startHour: 10, endHour: 12, capacity: 8 },
     slots: [
       { inDays: 7, startHour: 10, endHour: 12, capacity: 8 },
       { inDays: 14, startHour: 10, endHour: 12, capacity: 8 },
@@ -287,6 +310,18 @@ const demoSlotsOfThisCommunity = {
 };
 
 async function remove() {
+  // Tickets reference a utility with Restrict, so they go first. Deleting a
+  // reservation cascades to its participation, and that to its evaluation.
+  const tickets = await prismaClient.ticket.deleteMany({
+    where: { id: { startsWith: PREFIX }, utility: { communityId: COMMUNITY_ID } },
+  });
+  const utilities = await prismaClient.utility.deleteMany({ where: demoRowsOfThisCommunity });
+  const reservations = await prismaClient.reservation.deleteMany({
+    where: {
+      id: { startsWith: PREFIX },
+      opportunitySlot: { opportunity: { communityId: COMMUNITY_ID } },
+    },
+  });
   const slots = await prismaClient.opportunitySlot.deleteMany({
     where: demoSlotsOfThisCommunity,
   });
@@ -295,7 +330,9 @@ async function remove() {
   });
   const places = await prismaClient.place.deleteMany({ where: demoRowsOfThisCommunity });
   console.info(
-    `Removed ${slots.count} slots, ${opportunities.count} opportunities, ${places.count} places from "${COMMUNITY_ID}".`,
+    `Removed ${tickets.count} tickets, ${utilities.count} utilities, ` +
+      `${reservations.count} bookings, ${slots.count} slots, ` +
+      `${opportunities.count} opportunities, ${places.count} places from "${COMMUNITY_ID}".`,
   );
 }
 
@@ -352,8 +389,201 @@ async function pickImageIds() {
   return images.map((i) => i.id);
 }
 
+/**
+ * The shared demo account only exists once someone has opened the development
+ * deployment: `devProvisionAnonymousUser` creates the identity, the membership
+ * and the wallet on first sign-in. Reproducing that here would duplicate logic
+ * that has to stay in step with the login path, so this looks the account up
+ * and says what to do when it is not there yet.
+ */
+async function resolveDemoMember() {
+  const identity = await prismaClient.identity.findUnique({
+    where: { uid_communityId: { uid: `dev-anon-shared-${COMMUNITY_ID}`, communityId: COMMUNITY_ID } },
+    select: { userId: true },
+  });
+  if (!identity) return null;
+
+  const wallet = await prismaClient.wallet.findFirst({
+    where: { userId: identity.userId, communityId: COMMUNITY_ID, type: WalletType.MEMBER },
+    select: { id: true },
+  });
+  return { userId: identity.userId, walletId: wallet?.id ?? null };
+}
+
+/** The two aizome sessions the member state hangs on: the one already held, and the next one. */
+async function resolveAizomeSlots() {
+  const slots = await prismaClient.opportunitySlot.findMany({
+    where: { opportunityId: `${PREFIX}opp-aizome` },
+    orderBy: { startsAt: "asc" },
+    select: { id: true, startsAt: true },
+  });
+  const now = new Date();
+  return {
+    past: slots.find((s) => s.startsAt < now)?.id ?? null,
+    upcoming: slots.find((s) => s.startsAt >= now)?.id ?? null,
+  };
+}
+
+/**
+ * State that belongs to the demo account rather than to the community: a ticket
+ * to spend, a booking waiting for the host to approve, and a session already
+ * attended and passed.
+ *
+ * The evaluation is written as PASSED with no issuance request, which is what
+ * /admin/credentials lists as awaiting issuance — the credential itself is
+ * issued through that screen, by the pipeline that anchors and signs it.
+ * Points are not written here: a balance is a view over the ledger, and the
+ * ledger is the application's to write.
+ */
+async function writeMemberState(hostUserId: string) {
+  const member = await resolveDemoMember();
+  if (!member) {
+    console.warn(
+      `! No shared demo account in "${COMMUNITY_ID}" yet — open the development ` +
+        `deployment once so it is created, then run this again to add the ticket, ` +
+        `the booking and the completed session.`,
+    );
+    return;
+  }
+
+  const utilityId = `${PREFIX}utility-daypass`;
+  const utility = {
+    name: "Day pass",
+    description: "Covers one session at any of the demo experiences.",
+    pointsRequired: 500,
+    communityId: COMMUNITY_ID,
+    ownerId: hostUserId,
+  };
+  await prismaClient.utility.upsert({
+    where: { id: utilityId },
+    update: utility,
+    create: { id: utilityId, ...utility },
+  });
+
+  if (member.walletId) {
+    const ticketId = `${PREFIX}ticket-daypass`;
+    const ticket = {
+      status: TicketStatus.AVAILABLE,
+      reason: TicketStatusReason.GIFTED,
+      walletId: member.walletId,
+      utilityId,
+    };
+    await prismaClient.ticket.upsert({
+      where: { id: ticketId },
+      update: ticket,
+      create: { id: ticketId, ...ticket },
+    });
+  } else {
+    console.warn("! The demo account has no member wallet; skipping the ticket.");
+  }
+
+  const { past, upcoming } = await resolveAizomeSlots();
+
+  if (upcoming) {
+    await writeBooking({
+      key: "applied",
+      slotId: upcoming,
+      userId: member.userId,
+      reservationStatus: ReservationStatus.APPLIED,
+      participationStatus: ParticipationStatus.PENDING,
+      reason: ParticipationStatusReason.RESERVATION_APPLIED,
+    });
+  }
+
+  if (past) {
+    const { participationId } = await writeBooking({
+      key: "attended",
+      slotId: past,
+      userId: member.userId,
+      reservationStatus: ReservationStatus.ACCEPTED,
+      participationStatus: ParticipationStatus.PARTICIPATED,
+      reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+    });
+    const evaluationId = `${PREFIX}eval-attended`;
+    const evaluation = {
+      status: EvaluationStatus.PASSED,
+      comment: "Attended and completed the session.",
+      participationId,
+      evaluatorId: hostUserId,
+    };
+    await prismaClient.evaluation.upsert({
+      where: { id: evaluationId },
+      update: evaluation,
+      create: { id: evaluationId, ...evaluation },
+    });
+  }
+
+  console.info("Member state: 1 utility, 1 ticket, 2 bookings, 1 passed evaluation.");
+}
+
+async function writeBooking(b: {
+  key: string;
+  slotId: string;
+  userId: string;
+  reservationStatus: ReservationStatus;
+  participationStatus: ParticipationStatus;
+  reason: ParticipationStatusReason;
+}) {
+  const reservationId = `${PREFIX}resv-${b.key}`;
+  const reservation = {
+    opportunitySlotId: b.slotId,
+    status: b.reservationStatus,
+    // Nobody paid with points here, and this count is what a cancellation
+    // multiplies by pointsRequired to work out the refund.
+    participantCountWithPoint: 0,
+    createdBy: b.userId,
+  };
+  await prismaClient.reservation.upsert({
+    where: { id: reservationId },
+    update: reservation,
+    create: { id: reservationId, ...reservation },
+  });
+
+  const historyId = `${PREFIX}resv-hist-${b.key}`;
+  const history = { reservationId, status: b.reservationStatus, createdBy: b.userId };
+  await prismaClient.reservationHistory.upsert({
+    where: { id: historyId },
+    update: history,
+    create: { id: historyId, ...history },
+  });
+
+  const participationId = `${PREFIX}part-${b.key}`;
+  const participation = {
+    status: b.participationStatus,
+    reason: b.reason,
+    userId: b.userId,
+    opportunitySlotId: b.slotId,
+    reservationId,
+    communityId: COMMUNITY_ID,
+  };
+  await prismaClient.participation.upsert({
+    where: { id: participationId },
+    update: participation,
+    create: { id: participationId, ...participation },
+  });
+
+  const partHistoryId = `${PREFIX}part-hist-${b.key}`;
+  const partHistory = {
+    participationId,
+    status: b.participationStatus,
+    reason: b.reason,
+    createdBy: b.userId,
+  };
+  await prismaClient.participationStatusHistory.upsert({
+    where: { id: partHistoryId },
+    update: partHistory,
+    create: { id: partHistoryId, ...partHistory },
+  });
+
+  return { reservationId, participationId };
+}
+
 function printPlan() {
-  console.info(`\nWould write ${PLACES.length} places and ${OPPORTUNITIES.length} opportunities:`);
+  console.info(
+    `\nWould write ${PLACES.length} places and ${OPPORTUNITIES.length} opportunities, ` +
+      `plus a utility, a ticket, two bookings and one passed evaluation for the ` +
+      `shared demo account:`,
+  );
   for (const o of OPPORTUNITIES) {
     const occurrences = occurrencesOf(o);
     console.info(`  ${PREFIX}opp-${o.key}  ${o.title}  (${occurrences.length} sessions)`);
@@ -466,6 +696,7 @@ async function main() {
 
   await writePlaces();
   await writeOpportunities(hostUserId, imageIds);
+  await writeMemberState(hostUserId);
 }
 
 main()
