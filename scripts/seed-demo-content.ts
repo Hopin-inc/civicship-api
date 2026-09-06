@@ -44,6 +44,7 @@ import {
 
 const PREFIX = "demo-";
 
+
 const NON_PRODUCTION_ENVS = ["LOCAL", "local", "dev", "development", "staging"];
 
 const args = process.argv.slice(2);
@@ -57,6 +58,15 @@ const DRY_RUN = hasFlag("--dry-run");
 const REMOVE = hasFlag("--remove");
 const FORCE = hasFlag("--force");
 const COMMUNITY_ID = optionValue("community", "neo88");
+/**
+ * Every id this script writes, scoped to the community it belongs to.
+ *
+ * The prefix alone is not enough. `upsert` matches on the id, so seeding a
+ * second community with unscoped ids would not create its own rows — it would
+ * update the first community's and carry them across, and removing either
+ * would take the other's with it.
+ */
+const idFor = (suffix: string) => `${PREFIX}${COMMUNITY_ID}-${suffix}`;
 
 /**
  * How far ahead sessions are scheduled, and how often each one repeats. A
@@ -335,7 +345,9 @@ async function remove() {
   const places = await prismaClient.place.deleteMany({ where: demoRowsOfThisCommunity });
   // Last: the opportunities and evaluations naming this user as their host are
   // gone by now, and the membership goes with the user.
-  const hosts = await prismaClient.user.deleteMany({ where: { id: `${PREFIX}host` } });
+  const hosts = await prismaClient.user.deleteMany({
+    where: { id: idFor("host") },
+  });
   console.info(
     `Removed ${tickets.count} tickets, ${utilities.count} utilities, ` +
       `${reservations.count} bookings, ${slots.count} slots, ` +
@@ -368,10 +380,13 @@ async function resolveCommunity() {
  * no identity row, so it cannot sign in.
  */
 async function resolveHostUserId() {
-  const id = `${PREFIX}host`;
+  // Community-scoped, for the same reason the deletes above are: seeding two
+  // communities would otherwise share one User row, and removing either would
+  // cascade the other's host membership away with it.
+  const id = idFor("host");
   const user = {
     name: "Demo Host",
-    slug: `${PREFIX}host`,
+    slug: idFor("host"),
     bio: "Runs the demonstration experiences on this development deployment.",
     currentPrefecture: CurrentPrefecture.TOKUSHIMA,
   };
@@ -436,7 +451,7 @@ async function resolveDemoMember() {
 /** The two aizome sessions the member state hangs on: the one already held, and the next one. */
 async function resolveAizomeSlots() {
   const slots = await prismaClient.opportunitySlot.findMany({
-    where: { opportunityId: `${PREFIX}opp-aizome` },
+    where: { opportunityId: idFor("opp-aizome") },
     orderBy: { startsAt: "asc" },
     select: { id: true, startsAt: true },
   });
@@ -469,7 +484,7 @@ async function writeMemberState(hostUserId: string) {
     return;
   }
 
-  const utilityId = `${PREFIX}utility-daypass`;
+  const utilityId = idFor("utility-daypass");
   const utility = {
     name: "Day pass",
     description: "Covers one session at any of the demo experiences.",
@@ -484,7 +499,7 @@ async function writeMemberState(hostUserId: string) {
   });
 
   if (member.walletId) {
-    const ticketId = `${PREFIX}ticket-daypass`;
+    const ticketId = idFor("ticket-daypass");
     const ticket = {
       status: TicketStatus.AVAILABLE,
       reason: TicketStatusReason.GIFTED,
@@ -522,7 +537,7 @@ async function writeMemberState(hostUserId: string) {
       participationStatus: ParticipationStatus.PARTICIPATED,
       reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
     });
-    const evaluationId = `${PREFIX}eval-attended`;
+    const evaluationId = idFor("eval-attended");
     const evaluation = {
       status: EvaluationStatus.PASSED,
       comment: "Attended and completed the session.",
@@ -547,7 +562,7 @@ async function writeBooking(b: {
   participationStatus: ParticipationStatus;
   reason: ParticipationStatusReason;
 }) {
-  const reservationId = `${PREFIX}resv-${b.key}`;
+  const reservationId = idFor(`resv-${b.key}`);
   const reservation = {
     opportunitySlotId: b.slotId,
     status: b.reservationStatus,
@@ -562,7 +577,7 @@ async function writeBooking(b: {
     create: { id: reservationId, ...reservation },
   });
 
-  const historyId = `${PREFIX}resv-hist-${b.key}`;
+  const historyId = idFor(`resv-hist-${b.key}`);
   const history = { reservationId, status: b.reservationStatus, createdBy: b.userId };
   await prismaClient.reservationHistory.upsert({
     where: { id: historyId },
@@ -570,7 +585,7 @@ async function writeBooking(b: {
     create: { id: historyId, ...history },
   });
 
-  const participationId = `${PREFIX}part-${b.key}`;
+  const participationId = idFor(`part-${b.key}`);
   const participation = {
     status: b.participationStatus,
     reason: b.reason,
@@ -585,7 +600,7 @@ async function writeBooking(b: {
     create: { id: participationId, ...participation },
   });
 
-  const partHistoryId = `${PREFIX}part-hist-${b.key}`;
+  const partHistoryId = idFor(`part-hist-${b.key}`);
   const partHistory = {
     participationId,
     status: b.participationStatus,
@@ -609,7 +624,8 @@ function printPlan() {
   );
   for (const o of OPPORTUNITIES) {
     const occurrences = occurrencesOf(o);
-    console.info(`  ${PREFIX}opp-${o.key}  ${o.title}  (${occurrences.length} sessions)`);
+    const id = idFor(`opp-${o.key}`);
+    console.info(`  ${id}  ${o.title}  (${occurrences.length} sessions)`);
     for (const s of occurrences) {
       const starts = at(s.inDays, s.startHour).toISOString();
       const ends = at(s.inDays, s.endHour).toISOString();
@@ -620,7 +636,7 @@ function printPlan() {
 
 async function writePlaces() {
   for (const p of PLACES) {
-    const id = `${PREFIX}place-${p.key}`;
+    const id = idFor(`place-${p.key}`);
     const data = {
       name: p.name,
       address: p.address,
@@ -638,7 +654,7 @@ async function writePlaces() {
 async function writeSlots(opportunityId: string, o: OpportunitySeed) {
   const written: string[] = [];
   for (const [slotIndex, s] of occurrencesOf(o).entries()) {
-    const id = `${PREFIX}slot-${o.key}-${slotIndex}`;
+    const id = idFor(`slot-${o.key}-${slotIndex}`);
     const data = {
       opportunityId,
       startsAt: at(s.inDays, s.startHour),
@@ -663,7 +679,7 @@ async function writeSlots(opportunityId: string, o: OpportunitySeed) {
 async function writeOpportunities(hostUserId: string, imageIds: string[]) {
   let slotCount = 0;
   for (const [index, o] of OPPORTUNITIES.entries()) {
-    const id = `${PREFIX}opp-${o.key}`;
+    const id = idFor(`opp-${o.key}`);
     const imageId = imageIds.length > 0 ? imageIds[index % imageIds.length] : undefined;
     const data = {
       publishStatus: PublishStatus.PUBLIC,
@@ -677,7 +693,7 @@ async function writeOpportunities(hostUserId: string, imageIds: string[]) {
       feeRequired: o.feeRequired ?? null,
       pointsToEarn: o.pointsToEarn ?? null,
       communityId: COMMUNITY_ID,
-      placeId: `${PREFIX}place-${o.placeKey}`,
+      placeId: idFor(`place-${o.placeKey}`),
       createdBy: hostUserId,
     };
     await prismaClient.opportunity.upsert({
