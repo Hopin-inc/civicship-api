@@ -278,7 +278,9 @@ function reviewerGuide(o: OpportunitySeed) {
     lines.push(`獲得予定ポイント数 — taking part earns ${o.pointsToEarn} community points.`);
   }
   lines.push(
-    "The host's side is under /admin/reservations: 申込を承認する approves an application, and declining and cancelling a session are there too.",
+    "— Managing it —",
+    "You are signed in with owner rights on this community, so this listing is yours to operate even though a demonstration host created it.",
+    "/admin/opportunities edits the listing and its dates. /admin/reservations is where 申込を承認する approves an application; declining and cancelling a session are there too.",
   );
   return lines.join("\n");
 }
@@ -666,7 +668,9 @@ async function writeOpportunities(hostUserId: string, imageIds: string[]) {
     const data = {
       publishStatus: PublishStatus.PUBLIC,
       requireApproval: o.requireApproval,
-      title: o.title,
+      // Marked in the title so a reviewer can tell seeded content from the
+      // community's own at a glance, in lists and in search results alike.
+      title: `[Demo] ${o.title}`,
       category: o.category,
       description: o.description,
       body: `${o.body}\n\n${reviewerGuide(o)}`,
