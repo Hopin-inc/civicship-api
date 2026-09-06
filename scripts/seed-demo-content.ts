@@ -34,6 +34,7 @@ import {
   WalletType,
   TicketStatus,
   TicketStatusReason,
+  ClaimLinkStatus,
   ReservationStatus,
   ParticipationStatus,
   ParticipationStatusReason,
@@ -282,6 +283,7 @@ function reviewerGuide(o: OpportunitySeed) {
   if (o.feeRequired) {
     lines.push(
       "料金は現地でお支払いください — the fee is paid on the day. Nothing is charged in the app.",
+      "チケットを利用 — a day pass, if you hold one, covers one person's fee here.",
     );
   }
   if (o.pointsToEarn) {
@@ -329,6 +331,15 @@ async function remove() {
   const tickets = await prismaClient.ticket.deleteMany({
     where: { id: { startsWith: PREFIX }, utility: { communityId: COMMUNITY_ID } },
   });
+  // A claim link needs its issuer and an issuer needs its utility, so they come
+  // apart in that order. Neither carries a community of its own; both are
+  // reached through the utility.
+  const claimLinks = await prismaClient.ticketClaimLink.deleteMany({
+    where: { id: { startsWith: PREFIX }, issuer: { utility: { communityId: COMMUNITY_ID } } },
+  });
+  const issuers = await prismaClient.ticketIssuer.deleteMany({
+    where: { id: { startsWith: PREFIX }, utility: { communityId: COMMUNITY_ID } },
+  });
   const utilities = await prismaClient.utility.deleteMany({ where: demoRowsOfThisCommunity });
   const reservations = await prismaClient.reservation.deleteMany({
     where: {
@@ -349,7 +360,8 @@ async function remove() {
     where: { id: idFor("host") },
   });
   console.info(
-    `Removed ${tickets.count} tickets, ${utilities.count} utilities, ` +
+    `Removed ${tickets.count} tickets, ${claimLinks.count} claim links, ` +
+      `${issuers.count} ticket issuers, ${utilities.count} utilities, ` +
       `${reservations.count} bookings, ${slots.count} slots, ` +
       `${opportunities.count} opportunities, ${places.count} places, ` +
       `${hosts.count} host user from "${COMMUNITY_ID}".`,
@@ -467,6 +479,14 @@ async function resolveAizomeSlots() {
  * to spend, a booking waiting for the host to approve, and a session already
  * attended and passed.
  *
+ * A ticket is only worth holding if it can be seen and used, and both take more
+ * than the ticket row. /tickets lists claim links rather than tickets — it asks
+ * for links holding an AVAILABLE ticket that belongs to this user — so a ticket
+ * with no link behind it is invisible there, which is why the profile counted
+ * one and the page showed none. And the reservation flow offers a ticket only
+ * for a utility its opportunity requires; with that list empty the API skips
+ * ticket payment altogether, so the toggle would have spent nothing.
+ *
  * The evaluation is written as PASSED with no issuance request, which is what
  * /admin/credentials lists as awaiting issuance — the credential itself is
  * issued through that screen, by the pipeline that anchors and signs it.
@@ -485,17 +505,49 @@ async function writeMemberState(hostUserId: string) {
   }
 
   const utilityId = idFor("utility-daypass");
+  // Only the experiences that charge a fee name the utility: a ticket has
+  // something to cover there, and the API spends one only where the opportunity
+  // requires the utility it is for.
+  const coveredOpportunities = OPPORTUNITIES.filter((o) => o.feeRequired).map((o) => ({
+    id: idFor(`opp-${o.key}`),
+  }));
   const utility = {
     name: "Day pass",
-    description: "Covers one session at any of the demo experiences.",
+    description: "Covers one person's fee at any of the demo experiences that charge one.",
     pointsRequired: 500,
     communityId: COMMUNITY_ID,
     ownerId: hostUserId,
   };
   await prismaClient.utility.upsert({
     where: { id: utilityId },
-    update: utility,
-    create: { id: utilityId, ...utility },
+    // `set` rather than `connect`, so an experience dropped from the list above
+    // stops requiring the utility on the next run instead of keeping it.
+    update: { ...utility, requiredForOpportunities: { set: coveredOpportunities } },
+    create: {
+      id: utilityId,
+      ...utility,
+      requiredForOpportunities: { connect: coveredOpportunities },
+    },
+  });
+
+  // The chain a claimed ticket carries: an issuer holding the utility on the
+  // host's behalf, and the link the ticket was claimed through.
+  const issuerId = idFor("ticket-issuer-daypass");
+  const issuer = { qtyToBeIssued: 1, utilityId, ownerId: hostUserId };
+  await prismaClient.ticketIssuer.upsert({
+    where: { id: issuerId },
+    update: issuer,
+    create: { id: issuerId, ...issuer },
+  });
+
+  const claimLinkId = idFor("ticket-link-daypass");
+  const claimLink = { status: ClaimLinkStatus.CLAIMED, qty: 1, issuerId };
+  await prismaClient.ticketClaimLink.upsert({
+    where: { id: claimLinkId },
+    // claimedAt is left to the create: it records when the ticket was claimed,
+    // and a re-run does not claim it again.
+    update: claimLink,
+    create: { id: claimLinkId, ...claimLink, claimedAt: new Date() },
   });
 
   if (member.walletId) {
@@ -505,6 +557,7 @@ async function writeMemberState(hostUserId: string) {
       reason: TicketStatusReason.GIFTED,
       walletId: member.walletId,
       utilityId,
+      claimLinkId,
     };
     await prismaClient.ticket.upsert({
       where: { id: ticketId },
@@ -551,7 +604,10 @@ async function writeMemberState(hostUserId: string) {
     });
   }
 
-  console.info("Member state: 1 utility, 1 ticket, 2 bookings, 1 passed evaluation.");
+  console.info(
+    `Member state: 1 utility required by ${coveredOpportunities.length} experiences, ` +
+      `1 ticket with its issuer and claim link, 2 bookings, 1 passed evaluation.`,
+  );
 }
 
 async function writeBooking(b: {
@@ -619,7 +675,8 @@ async function writeBooking(b: {
 function printPlan() {
   console.info(
     `\nWould write ${PLACES.length} places and ${OPPORTUNITIES.length} opportunities, ` +
-      `plus a utility, a ticket, two bookings and one passed evaluation for the ` +
+      `plus a utility with its ticket issuer and claim link, a ticket, two ` +
+      `bookings and one passed evaluation for the ` +
       `shared demo account:`,
   );
   for (const o of OPPORTUNITIES) {
