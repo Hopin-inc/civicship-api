@@ -38,6 +38,8 @@ import {
   ParticipationStatus,
   ParticipationStatusReason,
   EvaluationStatus,
+  CurrentPrefecture,
+  MembershipStatusReason,
 } from "@prisma/client";
 
 const PREFIX = "demo-";
@@ -276,7 +278,9 @@ function reviewerGuide(o: OpportunitySeed) {
     lines.push(`獲得予定ポイント数 — taking part earns ${o.pointsToEarn} community points.`);
   }
   lines.push(
-    "The host's side is under /admin/reservations: 申込を承認する approves an application, and declining and cancelling a session are there too.",
+    "— Managing it —",
+    "You are signed in with owner rights on this community, so this listing is yours to operate even though a demonstration host created it.",
+    "/admin/opportunities edits the listing and its dates. /admin/reservations is where 申込を承認する approves an application; declining and cancelling a session are there too.",
   );
   return lines.join("\n");
 }
@@ -329,10 +333,14 @@ async function remove() {
     where: demoRowsOfThisCommunity,
   });
   const places = await prismaClient.place.deleteMany({ where: demoRowsOfThisCommunity });
+  // Last: the opportunities and evaluations naming this user as their host are
+  // gone by now, and the membership goes with the user.
+  const hosts = await prismaClient.user.deleteMany({ where: { id: `${PREFIX}host` } });
   console.info(
     `Removed ${tickets.count} tickets, ${utilities.count} utilities, ` +
       `${reservations.count} bookings, ${slots.count} slots, ` +
-      `${opportunities.count} opportunities, ${places.count} places from "${COMMUNITY_ID}".`,
+      `${opportunities.count} opportunities, ${places.count} places, ` +
+      `${hosts.count} host user from "${COMMUNITY_ID}".`,
   );
 }
 
@@ -348,26 +356,41 @@ async function resolveCommunity() {
   process.exit(1);
 }
 
+/**
+ * The opportunities need an owning user, and neither obvious candidate works.
+ * A real community member would have their name shown as the host of five
+ * invented experiences. The shared demo account would make the reviewer the
+ * host of everything they are looking at: "look at another resident's profile"
+ * would open their own, and every evaluation would be self-awarded.
+ *
+ * So the host is a third party seeded here — a member of this community who is
+ * nobody real, and who is not the account the reviewer signs in as. It carries
+ * no identity row, so it cannot sign in.
+ */
 async function resolveHostUserId() {
-  const host = await prismaClient.membership.findFirst({
-    where: {
-      communityId: COMMUNITY_ID,
-      status: MembershipStatus.JOINED,
-      role: { in: [Role.OWNER, Role.MANAGER] },
-      NOT: { user: { identities: { some: { uid: { startsWith: "dev-anon-" } } } } },
-    },
-    orderBy: [{ role: "asc" }, { createdAt: "asc" }],
-    select: { userId: true, user: { select: { name: true } } },
+  const id = `${PREFIX}host`;
+  const user = {
+    name: "Demo Host",
+    slug: `${PREFIX}host`,
+    bio: "Runs the demonstration experiences on this development deployment.",
+    currentPrefecture: CurrentPrefecture.TOKUSHIMA,
+  };
+  await prismaClient.user.upsert({ where: { id }, update: user, create: { id, ...user } });
+
+  const membership = {
+    status: MembershipStatus.JOINED,
+    reason: MembershipStatusReason.ASSIGNED,
+    role: Role.MANAGER,
+    headline: "Demonstration host",
+  };
+  await prismaClient.membership.upsert({
+    where: { userId_communityId: { userId: id, communityId: COMMUNITY_ID } },
+    update: membership,
+    create: { userId: id, communityId: COMMUNITY_ID, ...membership },
   });
-  if (!host) {
-    console.error(
-      `No OWNER or MANAGER membership found in "${COMMUNITY_ID}". ` +
-        `The opportunities need an owning user; create one first.`,
-    );
-    process.exit(1);
-  }
-  console.info(`Host user: ${host.user?.name ?? host.userId}`);
-  return host.userId;
+
+  console.info(`Host user: ${user.name} (${id})`);
+  return id;
 }
 
 /**
@@ -645,7 +668,9 @@ async function writeOpportunities(hostUserId: string, imageIds: string[]) {
     const data = {
       publishStatus: PublishStatus.PUBLIC,
       requireApproval: o.requireApproval,
-      title: o.title,
+      // Marked in the title so a reviewer can tell seeded content from the
+      // community's own at a glance, in lists and in search results alike.
+      title: `[Demo] ${o.title}`,
       category: o.category,
       description: o.description,
       body: `${o.body}\n\n${reviewerGuide(o)}`,
