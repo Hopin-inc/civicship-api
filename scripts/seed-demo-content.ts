@@ -528,7 +528,9 @@ async function writeBooking(b: {
   const reservation = {
     opportunitySlotId: b.slotId,
     status: b.reservationStatus,
-    participantCountWithPoint: 1,
+    // Nobody paid with points here, and this count is what a cancellation
+    // multiplies by pointsRequired to work out the refund.
+    participantCountWithPoint: 0,
     createdBy: b.userId,
   };
   await prismaClient.reservation.upsert({
