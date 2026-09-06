@@ -624,7 +624,8 @@ function printPlan() {
   );
   for (const o of OPPORTUNITIES) {
     const occurrences = occurrencesOf(o);
-    console.info(`  ${idFor(`opp-${o.key}`)}  ${o.title}  (${occurrences.length} sessions)`);
+    const id = idFor(`opp-${o.key}`);
+    console.info(`  ${id}  ${o.title}  (${occurrences.length} sessions)`);
     for (const s of occurrences) {
       const starts = at(s.inDays, s.startHour).toISOString();
       const ends = at(s.inDays, s.endHour).toISOString();
