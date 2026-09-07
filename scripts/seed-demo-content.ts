@@ -97,8 +97,11 @@ if (!Number.isFinite(HORIZON_DAYS) || HORIZON_DAYS < 1) {
  */
 const TICKET_COUNT = Number(optionValue("tickets", "10"));
 
-if (!Number.isFinite(TICKET_COUNT) || TICKET_COUNT < 1) {
-  console.error(`--tickets must be a positive number; got "${optionValue("tickets", "10")}".`);
+// Integer, not merely finite: the count is a loop bound and it is also written
+// to the issuer's and claim link's Int columns, so a fractional value would
+// write fewer tickets than it claims and then fail on the column type.
+if (!Number.isInteger(TICKET_COUNT) || TICKET_COUNT < 1) {
+  console.error(`--tickets must be a positive integer; got "${optionValue("tickets", "10")}".`);
   process.exit(1);
 }
 
