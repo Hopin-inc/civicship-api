@@ -15,7 +15,10 @@
  *
  * Slot dates are relative to the run: each session repeats fortnightly out to
  * `--days` (default 90), so a run in September still has dates to book in
- * November. Running it again moves the whole schedule forward.
+ * November. Running it again moves the whole schedule forward, and hands back
+ * every ticket and booking a reviewer has used — which matters because the dev
+ * login gives every visitor the same account. `--tickets` (default 10) sets how
+ * many that account holds.
  *
  * Against the dev database:
  *
@@ -80,6 +83,22 @@ const REPEAT_EVERY_DAYS = 14;
 
 if (!Number.isFinite(HORIZON_DAYS) || HORIZON_DAYS < 1) {
   console.error(`--days must be a positive number of days; got "${optionValue("days", "90")}".`);
+  process.exit(1);
+}
+
+/**
+ * How many tickets the demo account holds.
+ *
+ * The dev login hands every visitor the same account — one shared demo account
+ * per community — so reviewers are not separate users and whatever one spends
+ * is gone for the next. A single ticket meant the first booking emptied
+ * /tickets for everyone after. This is the buffer, not a fix for the sharing:
+ * re-running this script is what restores anything a reviewer has used.
+ */
+const TICKET_COUNT = Number(optionValue("tickets", "10"));
+
+if (!Number.isFinite(TICKET_COUNT) || TICKET_COUNT < 1) {
+  console.error(`--tickets must be a positive number; got "${optionValue("tickets", "10")}".`);
   process.exit(1);
 }
 
@@ -212,6 +231,7 @@ const OPPORTUNITIES: OpportunitySeed[] = [
     body: "You make the dough from flour, knead it underfoot, rest it and cut the noodles yourself, then eat what you made straight from the pot. Aprons are provided.",
     feeRequired: 2800,
     requireApproval: false,
+    pastSession: { daysAgo: 9, startHour: 11, endHour: 13, capacity: 10 },
     slots: [
       { inDays: 5, startHour: 11, endHour: 13, capacity: 10 },
       { inDays: 12, startHour: 11, endHour: 13, capacity: 10 },
@@ -227,6 +247,7 @@ const OPPORTUNITIES: OpportunitySeed[] = [
     body: "The grove is on a slope. You will cut fruit with shears and carry crates. Wear clothes you can move in and shoes that grip. Gloves and shears are lent to you.",
     pointsToEarn: 500,
     requireApproval: true,
+    pastSession: { daysAgo: 18, startHour: 9, endHour: 12, capacity: 5 },
     slots: [
       { inDays: 10, startHour: 9, endHour: 12, capacity: 5 },
       { inDays: 17, startHour: 9, endHour: 12, capacity: 5 },
@@ -242,6 +263,7 @@ const OPPORTUNITIES: OpportunitySeed[] = [
     body: "We practise on land before going out on the water. You do not need to be able to swim, but bring clothes you can get wet in and a change afterwards. If the river is high we cancel and let you know.",
     feeRequired: 5000,
     requireApproval: false,
+    pastSession: { daysAgo: 5, startHour: 9, endHour: 11, capacity: 6 },
     slots: [
       { inDays: 9, startHour: 9, endHour: 11, capacity: 6 },
       { inDays: 16, startHour: 13, endHour: 15, capacity: 6 },
@@ -257,6 +279,7 @@ const OPPORTUNITIES: OpportunitySeed[] = [
     body: "If you can handle a brush cutter, bringing one helps. First-timers work with a sickle. Long sleeves, long trousers and a hat.",
     pointsToEarn: 800,
     requireApproval: true,
+    pastSession: { daysAgo: 23, startHour: 9, endHour: 12, capacity: 12 },
     slots: [
       { inDays: 8, startHour: 9, endHour: 12, capacity: 12 },
       { inDays: 22, startHour: 9, endHour: 12, capacity: 12 },
@@ -326,6 +349,12 @@ const demoSlotsOfThisCommunity = {
 };
 
 async function remove() {
+  // A ticket that has been spent carries status history, and that history holds
+  // the ticket with Restrict — so the history goes before the ticket, or the
+  // delete below fails on a database where anyone has actually used one.
+  const histories = await prismaClient.ticketStatusHistory.deleteMany({
+    where: { ticket: { id: { startsWith: PREFIX }, utility: { communityId: COMMUNITY_ID } } },
+  });
   // Tickets reference a utility with Restrict, so they go first. Deleting a
   // reservation cascades to its participation, and that to its evaluation.
   const tickets = await prismaClient.ticket.deleteMany({
@@ -360,7 +389,8 @@ async function remove() {
     where: { id: idFor("host") },
   });
   console.info(
-    `Removed ${tickets.count} tickets, ${claimLinks.count} claim links, ` +
+    `Removed ${tickets.count} tickets, ${histories.count} ticket status histories, ` +
+      `${claimLinks.count} claim links, ` +
       `${issuers.count} ticket issuers, ${utilities.count} utilities, ` +
       `${reservations.count} bookings, ${slots.count} slots, ` +
       `${opportunities.count} opportunities, ${places.count} places, ` +
@@ -460,18 +490,32 @@ async function resolveDemoMember() {
   return { userId: identity.userId, walletId: wallet?.id ?? null };
 }
 
-/** The two aizome sessions the member state hangs on: the one already held, and the next one. */
-async function resolveAizomeSlots() {
+/**
+ * For each experience, the session already held and the next one — the two the
+ * member state hangs a booking on.
+ *
+ * One experience's worth is not enough: every reviewer signs in as the same
+ * shared demo account, so the first to approve, decline or evaluate a booking
+ * takes it away from the rest. Spreading a pair across all five leaves the
+ * others something to act on, and re-running this script hands back whatever
+ * has been acted on.
+ */
+async function resolveDemoSlots() {
   const slots = await prismaClient.opportunitySlot.findMany({
-    where: { opportunityId: idFor("opp-aizome") },
+    where: { opportunity: { id: { startsWith: PREFIX }, communityId: COMMUNITY_ID } },
     orderBy: { startsAt: "asc" },
-    select: { id: true, startsAt: true },
+    select: { id: true, startsAt: true, opportunityId: true },
   });
   const now = new Date();
-  return {
-    past: slots.find((s) => s.startsAt < now)?.id ?? null,
-    upcoming: slots.find((s) => s.startsAt >= now)?.id ?? null,
-  };
+
+  return OPPORTUNITIES.map((o) => {
+    const mine = slots.filter((s) => s.opportunityId === idFor(`opp-${o.key}`));
+    return {
+      key: o.key,
+      past: mine.find((s) => s.startsAt < now)?.id ?? null,
+      upcoming: mine.find((s) => s.startsAt >= now)?.id ?? null,
+    };
+  });
 }
 
 /**
@@ -533,7 +577,7 @@ async function writeMemberState(hostUserId: string) {
   // The chain a claimed ticket carries: an issuer holding the utility on the
   // host's behalf, and the link the ticket was claimed through.
   const issuerId = idFor("ticket-issuer-daypass");
-  const issuer = { qtyToBeIssued: 1, utilityId, ownerId: hostUserId };
+  const issuer = { qtyToBeIssued: TICKET_COUNT, utilityId, ownerId: hostUserId };
   await prismaClient.ticketIssuer.upsert({
     where: { id: issuerId },
     update: issuer,
@@ -541,7 +585,7 @@ async function writeMemberState(hostUserId: string) {
   });
 
   const claimLinkId = idFor("ticket-link-daypass");
-  const claimLink = { status: ClaimLinkStatus.CLAIMED, qty: 1, issuerId };
+  const claimLink = { status: ClaimLinkStatus.CLAIMED, qty: TICKET_COUNT, issuerId };
   await prismaClient.ticketClaimLink.upsert({
     where: { id: claimLinkId },
     // claimedAt is left to the create: it records when the ticket was claimed,
@@ -551,7 +595,6 @@ async function writeMemberState(hostUserId: string) {
   });
 
   if (member.walletId) {
-    const ticketId = idFor("ticket-daypass");
     const ticket = {
       status: TicketStatus.AVAILABLE,
       reason: TicketStatusReason.GIFTED,
@@ -559,38 +602,59 @@ async function writeMemberState(hostUserId: string) {
       utilityId,
       claimLinkId,
     };
-    await prismaClient.ticket.upsert({
-      where: { id: ticketId },
-      update: ticket,
-      create: { id: ticketId, ...ticket },
-    });
+    const written: string[] = [];
+    for (let n = 1; n <= TICKET_COUNT; n++) {
+      const ticketId = idFor(`ticket-daypass-${n}`);
+      // `update` carries the status, so a re-run hands back every ticket a
+      // reviewer has spent.
+      await prismaClient.ticket.upsert({
+        where: { id: ticketId },
+        update: ticket,
+        create: { id: ticketId, ...ticket },
+      });
+      written.push(ticketId);
+    }
+    // A smaller --tickets than a previous run would leave the extras behind,
+    // and so would the un-numbered id this script used to write. Spent tickets
+    // carry status history that holds them, so that goes first.
+    const surplus = {
+      id: { startsWith: PREFIX },
+      utilityId,
+      NOT: { id: { in: written } },
+    };
+    await prismaClient.ticketStatusHistory.deleteMany({ where: { ticket: surplus } });
+    await prismaClient.ticket.deleteMany({ where: surplus });
   } else {
-    console.warn("! The demo account has no member wallet; skipping the ticket.");
+    console.warn("! The demo account has no member wallet; skipping the tickets.");
   }
 
-  const { past, upcoming } = await resolveAizomeSlots();
+  let applied = 0;
+  let attended = 0;
 
-  if (upcoming) {
-    await writeBooking({
-      key: "applied",
-      slotId: upcoming,
-      userId: member.userId,
-      reservationStatus: ReservationStatus.APPLIED,
-      participationStatus: ParticipationStatus.PENDING,
-      reason: ParticipationStatusReason.RESERVATION_APPLIED,
-    });
-  }
+  for (const { key, past, upcoming } of await resolveDemoSlots()) {
+    if (upcoming) {
+      await writeBooking({
+        key: `applied-${key}`,
+        slotId: upcoming,
+        userId: member.userId,
+        reservationStatus: ReservationStatus.APPLIED,
+        participationStatus: ParticipationStatus.PENDING,
+        reason: ParticipationStatusReason.RESERVATION_APPLIED,
+      });
+      applied++;
+    }
 
-  if (past) {
+    if (!past) continue;
+
     const { participationId } = await writeBooking({
-      key: "attended",
+      key: `attended-${key}`,
       slotId: past,
       userId: member.userId,
       reservationStatus: ReservationStatus.ACCEPTED,
       participationStatus: ParticipationStatus.PARTICIPATED,
       reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
     });
-    const evaluationId = idFor("eval-attended");
+    const evaluationId = idFor(`eval-attended-${key}`);
     const evaluation = {
       status: EvaluationStatus.PASSED,
       comment: "Attended and completed the session.",
@@ -602,11 +666,21 @@ async function writeMemberState(hostUserId: string) {
       update: evaluation,
       create: { id: evaluationId, ...evaluation },
     });
+    attended++;
   }
+
+  // The two bookings this script used to write carried un-suffixed ids. Named
+  // outright rather than swept by prefix: deleting a reservation takes its
+  // participation, histories and evaluation with it, which is not something to
+  // aim at a pattern.
+  await prismaClient.reservation.deleteMany({
+    where: { id: { in: [idFor("resv-applied"), idFor("resv-attended")] } },
+  });
 
   console.info(
     `Member state: 1 utility required by ${coveredOpportunities.length} experiences, ` +
-      `1 ticket with its issuer and claim link, 2 bookings, 1 passed evaluation.`,
+      `${TICKET_COUNT} tickets on one issuer and claim link, ${applied} applied ` +
+      `bookings, ${attended} attended with a passed evaluation each.`,
   );
 }
 
@@ -675,9 +749,9 @@ async function writeBooking(b: {
 function printPlan() {
   console.info(
     `\nWould write ${PLACES.length} places and ${OPPORTUNITIES.length} opportunities, ` +
-      `plus a utility with its ticket issuer and claim link, a ticket, two ` +
-      `bookings and one passed evaluation for the ` +
-      `shared demo account:`,
+      `plus a utility with its ticket issuer and claim link, ${TICKET_COUNT} ` +
+      `tickets, and an applied and an attended booking per experience with a ` +
+      `passed evaluation each, for the shared demo account:`,
   );
   for (const o of OPPORTUNITIES) {
     const occurrences = occurrencesOf(o);
