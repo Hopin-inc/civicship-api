@@ -105,7 +105,7 @@ jobs:
       # Security タブ (Code Scanning) に上げて、各 check が low/medium/high で
       # surface されるようにする。trivy / codeql と同居するため category 必須。
       - name: Upload to Security tab
-        uses: github/codeql-action/upload-sarif@4f3212b61783c3c68e8309a0f18a699764811cda # v3.27.1
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           sarif_file: scorecard-results.sarif
           category: scorecard
