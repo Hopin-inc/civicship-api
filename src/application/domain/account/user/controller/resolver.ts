@@ -54,8 +54,12 @@ export default class UserResolver {
     },
 
     identities: (parent, _: unknown, ctx: IContext) => {
+      // Identities expose login credentials (LINE / phone uid). They must only
+      // ever be readable by the account owner — never by another logged-in
+      // user. Leaking another user's phone uid enables account-takeover via the
+      // unverified-phoneUid linking path (identityCheckPhoneUser / linkPhoneAuth).
       const viewerId = ctx.currentUser?.id;
-      if (!viewerId || !parent.id) return null;
+      if (!viewerId || !parent.id || viewerId !== parent.id) return null;
       return ctx.loaders.identitiesByUser.load(parent.id);
     },
 
